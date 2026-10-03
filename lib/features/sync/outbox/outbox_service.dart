@@ -490,6 +490,10 @@ class MatrixOutboxService extends _OutboxServiceBase
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncGitHubAccount msg => _enqueueWriter.enqueueGitHubAccount(
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncNotification msg => _enqueueWriter.enqueueNotification(
           msg: msg,
           commonFields: commonFields,

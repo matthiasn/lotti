@@ -60,6 +60,7 @@ int priorityForMessage(SyncMessage message) {
     SyncAgentBundle() => OutboxPriority.normal.index,
     SyncThemingSelection() => OutboxPriority.normal.index,
     SyncDailyOsUserName() => OutboxPriority.normal.index,
+    SyncGitHubAccount() => OutboxPriority.normal.index,
     SyncEntityDefinition() => OutboxPriority.low.index,
     SyncAiConfig() => OutboxPriority.low.index,
     SyncAiConfigDelete() => OutboxPriority.low.index,

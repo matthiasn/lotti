@@ -123,6 +123,10 @@ const dashboardsNotification = 'DASHBOARDS_CHANGED';
 const measurablesNotification = 'MEASURABLES_CHANGED';
 const labelsNotification = 'LABELS_CHANGED';
 const settingsNotification = 'SETTINGS_CHANGED';
+
+/// The GitHub account record changed: a token connected, disconnected or
+/// received from another device.
+const gitHubAccountNotification = 'GITHUB_ACCOUNT_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 

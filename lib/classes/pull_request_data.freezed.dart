@@ -323,8 +323,9 @@ mixin _$PullRequestSnapshot {
 /// server's clock, shared by every device, orders observations; the
 /// device clock never stamps one.
  DateTime get observedAt; String get title; PullRequestStatus get status; String get htmlUrl; String get headSha; String get headRef; String get baseRef;/// When the pull request was opened on GitHub (`created_at`), in UTC:
-/// what an open one's age reads from and what orders pull requests newest first.
-/// Null in a snapshot stored before it was read, until the next refresh.
+/// what an open one's age reads from, and what orders pull requests
+/// newest first. Null in a snapshot stored before it was read, until
+/// the next refresh.
 /// Left out of the JSON when null, and out of the observation digest
 /// always — it never changes for a pull request, so it says nothing
 /// about which observation is later, and a version that does not know
@@ -575,8 +576,9 @@ class _PullRequestSnapshot implements PullRequestSnapshot {
 @override final  String headRef;
 @override final  String baseRef;
 /// When the pull request was opened on GitHub (`created_at`), in UTC:
-/// what an open one's age reads from and what orders pull requests newest first.
-/// Null in a snapshot stored before it was read, until the next refresh.
+/// what an open one's age reads from, and what orders pull requests
+/// newest first. Null in a snapshot stored before it was read, until
+/// the next refresh.
 /// Left out of the JSON when null, and out of the observation digest
 /// always — it never changes for a pull request, so it says nothing
 /// about which observation is later, and a version that does not know

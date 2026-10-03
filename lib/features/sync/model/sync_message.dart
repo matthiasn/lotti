@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -277,6 +278,21 @@ sealed class SyncMessage with _$SyncMessage {
     required int updatedAt,
     required SyncEntryStatus status,
   }) = SyncDailyOsUserName;
+
+  /// The user's GitHub account: the read-only token and the login it was
+  /// checked against, or a disconnection when [token] is null. Applied into
+  /// the receiver's keychain (`GitHubTokenStorage.applyIfNewer`) under
+  /// last-write-wins on [updatedAt] (epoch millis), an equal stamp decided by
+  /// content — the single-field register of `SyncSettings` in `specs/tla/`.
+  /// Like an inference provider's key it travels end-to-end encrypted; the
+  /// token is a [SyncSecret], so the message never prints it. A device
+  /// preference, not journal data: no gap detection.
+  const factory SyncMessage.gitHubAccount({
+    required int updatedAt,
+    required SyncEntryStatus status,
+    SyncSecret? token,
+    String? login,
+  }) = SyncGitHubAccount;
 
   const factory SyncMessage.notification({
     required String id,

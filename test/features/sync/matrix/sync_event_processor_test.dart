@@ -13,11 +13,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
@@ -37,6 +39,7 @@ import 'package:path/path.dart' as path;
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../github/in_memory_keychain.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 // --- Glados generators for the _decodeSyncEventPayload round-trip property. ---
@@ -2000,6 +2003,137 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
       expect(await realSettings.itemByKey('THEME_MODE'), 'system');
     });
+  });
+
+  group('a synced GitHub account', () {
+    late GitHubTokenStorage storage;
+
+    setUp(() {
+      storage = GitHubTokenStorage(inMemoryKeychain({}), namespace: 'real');
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        gitHubTokenStorage: storage,
+      );
+    });
+
+    Future<void> deliver(SyncMessage message) async {
+      when(() => event.text).thenReturn(encodeMessage(message));
+      await processor.process(event: event, journalDb: journalDb);
+    }
+
+    SyncMessage account({required int updatedAt, String? token}) =>
+        SyncMessage.gitHubAccount(
+          updatedAt: updatedAt,
+          status: SyncEntryStatus.update,
+          token: token == null ? null : SyncSecret(token),
+          login: token == null ? null : 'pingu',
+        );
+
+    test(
+      'lands in this keychain, not yet checked here, and is announced',
+      () async {
+        await deliver(account(token: 'ghp_synced', updatedAt: 100));
+
+        final held = await storage.read();
+        expect(held!.token, 'ghp_synced');
+        expect(held.login, 'pingu');
+        expect(held.updatedAt, 100);
+        expect(held.verified, isFalse);
+        verify(
+          () => updateNotifications.notify({
+            gitHubAccountNotification,
+          }, fromSync: true),
+        ).called(1);
+      },
+    );
+
+    test('an older version changes nothing and announces nothing', () async {
+      await storage.save(token: 'ghp_here', login: 'pingu');
+
+      await deliver(account(token: 'ghp_late', updatedAt: 100));
+
+      expect(await storage.readToken(), 'ghp_here');
+      verifyNever(
+        () => updateNotifications.notify({
+          gitHubAccountNotification,
+        }, fromSync: true),
+      );
+    });
+
+    test('a disconnection made elsewhere forgets the token here', () async {
+      await deliver(account(token: 'ghp_synced', updatedAt: 100));
+      await deliver(account(updatedAt: 200));
+
+      expect(await storage.readToken(), isNull);
+      expect((await storage.read())!.updatedAt, 200);
+    });
+
+    test(
+      'a keychain that fails to write logs it and propagates, so the inbound '
+      'queue retries it',
+      () async {
+        final failing = MockSecureStorage();
+        when(
+          () => failing.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(
+          () => failing.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenThrow(Exception('keychain locked'));
+        processor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          gitHubTokenStorage: GitHubTokenStorage(failing, namespace: 'real'),
+        );
+
+        await expectLater(
+          deliver(account(token: 'ghp_synced', updatedAt: 100)),
+          throwsA(isA<Exception>()),
+        );
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => updateNotifications.notify({
+            gitHubAccountNotification,
+          }, fromSync: true),
+        );
+      },
+    );
+
+    test(
+      'without a keychain store it is acknowledged and dropped',
+      () async {
+        processor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+        );
+
+        await deliver(account(token: 'ghp_synced', updatedAt: 100));
+
+        verifyNever(
+          () => updateNotifications.notify({
+            gitHubAccountNotification,
+          }, fromSync: true),
+        );
+      },
+    );
   });
 
   group('SyncEventProcessor - Backfill Messages', () {

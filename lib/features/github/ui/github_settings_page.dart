@@ -2,11 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// What the page last learned about the user's other devices.
+enum _SyncNote {
+  /// The token went to the outbox.
+  sent,
+
+  /// The outbox did not take it; the user may try again.
+  sendFailed,
+
+  /// A change made here is owed: it is sent at the next start.
+  owed,
+
+  /// Sync caught up and no token arrived — said only while there is none.
+  noToken,
+}
 
 /// Mobile / Beamer wrapper for the GitHub setting.
 class GitHubSettingsPage extends StatelessWidget {
@@ -20,8 +36,10 @@ class GitHubSettingsPage extends StatelessWidget {
   );
 }
 
-/// Connects this device to GitHub with the user's personal access token,
-/// or shows whose token it holds and lets the user remove it.
+/// Connects to GitHub with the user's personal access token, or shows whose
+/// token it holds and lets the user remove it. The token syncs to the user's
+/// other devices; a small action sends it to them again, or — on a device
+/// without one — asks sync to catch up, rather than syncing on every visit.
 class GitHubSettingsBody extends ConsumerStatefulWidget {
   const GitHubSettingsBody({super.key});
 
@@ -34,6 +52,10 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
   var _showToken = false;
   var _connecting = false;
   String? _error;
+
+  /// The other-devices action in flight, and what it last found.
+  var _syncing = false;
+  _SyncNote? _syncNote;
 
   @override
   void dispose() {
@@ -49,6 +71,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     final failure = await ref
         .read(gitHubAccountControllerProvider.notifier)
         .connect(_tokenController.text);
+    final owed = failure == null && await _changeOwed();
     if (!mounted) return;
     setState(() {
       _connecting = false;
@@ -56,14 +79,80 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
           ? null
           : gitHubFailureMessage(context.messages, failure);
       if (failure == null) _tokenController.clear();
+      _syncNote = owed ? _SyncNote.owed : null;
     });
+  }
+
+  Future<void> _disconnect() async {
+    await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
+    final owed = await _changeOwed();
+    if (!mounted) return;
+    setState(() => _syncNote = owed ? _SyncNote.owed : null);
+  }
+
+  Future<bool> _changeOwed() =>
+      ref.read(gitHubAccountControllerProvider.notifier).changeOwed();
+
+  Future<void> _sendToOtherDevices() async {
+    setState(() {
+      _syncing = true;
+      _syncNote = null;
+    });
+    bool? sent = false;
+    try {
+      sent = await ref
+          .read(gitHubAccountControllerProvider.notifier)
+          .sendToOtherDevices();
+    } finally {
+      // Whatever went wrong, the action is available again.
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          _syncNote = switch (sent) {
+            true => _SyncNote.sent,
+            false => _SyncNote.sendFailed,
+            null => null,
+          };
+        });
+      }
+    }
+  }
+
+  Future<void> _checkOtherDevices() async {
+    setState(() {
+      _syncing = true;
+      _syncNote = null;
+    });
+    final controller = ref.read(gitHubAccountControllerProvider.notifier);
+    try {
+      await controller.checkOtherDevices();
+    } on Exception {
+      // Best effort: a received token GitHub rejects shows as the account's
+      // own error, and a catch-up that failed leaves the action to try again.
+    } finally {
+      // Whatever went wrong, the action is available again.
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          _syncNote = _SyncNote.noToken;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final login = ref.watch(gitHubAccountControllerProvider).value;
+    final account = ref.watch(gitHubAccountControllerProvider);
+    final login = account.value;
+    // A token from another device that GitHub rejected: say why, and take a
+    // new one here.
+    final rejected = switch (account.error) {
+      GitHubException(:final kind) => gitHubFailureMessage(messages, kind),
+      _ => null,
+    };
+    final canSync = ref.watch(gitHubAccountSyncProvider).canCheckOtherDevices;
     final secondary = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
@@ -99,9 +188,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               label: messages.githubDisconnectButton,
               variant: DesignSystemButtonVariant.secondary,
               leadingIcon: LottiIcons.signOut,
-              onPressed: () => ref
-                  .read(gitHubAccountControllerProvider.notifier)
-                  .disconnect(),
+              onPressed: _disconnect,
             ),
           ] else ...[
             Text(messages.githubTokenIntro, style: secondary),
@@ -110,7 +197,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               key: const Key('github_token'),
               controller: _tokenController,
               label: messages.githubTokenLabel,
-              errorText: _error,
+              errorText: _error ?? rejected,
               obscureText: !_showToken,
               trailingIcon: _showToken ? LottiIcons.hidden : LottiIcons.visible,
               trailingIconKey: const Key('github_token_toggle'),
@@ -133,9 +220,41 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
                   : _connect,
             ),
           ],
+          if (canSync) ...[
+            SizedBox(height: tokens.spacing.step4),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: DesignSystemButton(
+                key: const Key('github_other_devices'),
+                label: login != null
+                    ? messages.githubSendToOtherDevices
+                    : messages.githubCheckOtherDevices,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.dense,
+                leadingIcon: LottiIcons.sync,
+                onPressed: _syncing
+                    ? null
+                    : login != null
+                    ? _sendToOtherDevices
+                    : _checkOtherDevices,
+              ),
+            ),
+            // Tied to the account as it is now: a token that arrives after
+            // the check leaves no stale "none arrived" beside it.
+            if (switch (_syncNote) {
+                  _SyncNote.sent => messages.githubSentToOtherDevices,
+                  _SyncNote.sendFailed => messages.githubSendFailed,
+                  _SyncNote.owed => messages.githubChangeOwed,
+                  _SyncNote.noToken when login == null =>
+                    messages.githubNoTokenFromOtherDevices,
+                  _ => null,
+                }
+                case final note?)
+              Text(note, key: const Key('github_sync_note'), style: secondary),
+          ],
           SizedBox(height: tokens.spacing.step5),
           Row(
-            key: const Key('github_token_kept_on_device'),
+            key: const Key('github_token_privacy'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
@@ -145,7 +264,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
-                child: Text(messages.githubTokenKeptOnDevice, style: secondary),
+                child: Text(messages.githubTokenPrivacy, style: secondary),
               ),
             ],
           ),

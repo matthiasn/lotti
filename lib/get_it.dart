@@ -31,6 +31,8 @@ import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/github/repository/github_account_sync.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
@@ -345,6 +347,19 @@ Future<void> registerSingletons({
   // enqueue, a crash after the write, or filters saved before they synced.
   // Failures are logged and retried by the repository itself.
   unawaited(savedTaskFiltersRepository.flushPending());
+
+  // Send a GitHub account change a previous run still owed: the outbox
+  // refused its row, or the app stopped before it was taken. A failure stays
+  // owed for the next start or the next change. Only where sync runs: a guest
+  // world has nothing to send, and never reads the keychain at boot.
+  if (profile.capabilities.syncEnabled) {
+    unawaited(
+      GitHubAccountSync(
+        storage: gitHubTokenStorageForProfile(secureStorage, profile),
+        enqueueOrThrow: outboxService.enqueueMessageOrThrow,
+      ).flushOwed(),
+    );
+  }
 
   // Sync-aware consumption and attribution services, now that OutboxService
   // is available. In guest worlds these bind to the inert outbox and a null

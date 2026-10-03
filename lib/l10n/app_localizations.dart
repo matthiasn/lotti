@@ -11189,6 +11189,18 @@ abstract class AppLocalizations {
   /// **'Also linked to “{title}”'**
   String githubAlsoLinkedTo(String title);
 
+  /// No description provided for @githubChangeOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device. It could not be sent to your other devices yet; Lotti tries again when it next starts.'**
+  String get githubChangeOwed;
+
+  /// No description provided for @githubCheckOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Check my other devices'**
+  String get githubCheckOtherDevices;
+
   /// Status line part: how many CI checks of a pull request fail.
   ///
   /// In en, this message translates to:
@@ -11387,6 +11399,12 @@ abstract class AppLocalizations {
   /// **'Merge conflicts'**
   String get githubMergeConflicts;
 
+  /// No description provided for @githubNoTokenFromOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'No token has arrived from your other devices yet. On a device that has one, use “Send to my other devices”.'**
+  String get githubNoTokenFromOtherDevices;
+
   /// No description provided for @githubNotRefreshed.
   ///
   /// In en, this message translates to:
@@ -11513,6 +11531,24 @@ abstract class AppLocalizations {
   /// **'Review requested'**
   String get githubReviewPending;
 
+  /// No description provided for @githubSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send it to your other devices. Try again.'**
+  String get githubSendFailed;
+
+  /// No description provided for @githubSendToOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to my other devices'**
+  String get githubSendToOtherDevices;
+
+  /// No description provided for @githubSentToOtherDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent. Your other devices pick it up when they next sync.'**
+  String get githubSentToOtherDevices;
+
   /// No description provided for @githubStatusClosed.
   ///
   /// In en, this message translates to:
@@ -11549,17 +11585,17 @@ abstract class AppLocalizations {
   /// **'Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.'**
   String get githubTokenIntro;
 
-  /// No description provided for @githubTokenKeptOnDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'The token stays on this device: it is never synced, and it is only ever sent to api.github.com.'**
-  String get githubTokenKeptOnDevice;
-
   /// No description provided for @githubTokenLabel.
   ///
   /// In en, this message translates to:
   /// **'Personal access token'**
   String get githubTokenLabel;
+
+  /// No description provided for @githubTokenPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.'**
+  String get githubTokenPrivacy;
 
   /// No description provided for @githubTokenShow.
   ///
@@ -25180,6 +25216,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Entry link'**
   String get syncPayloadEntryLink;
+
+  /// No description provided for @syncPayloadGitHubAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub account'**
+  String get syncPayloadGitHubAccount;
 
   /// No description provided for @syncPayloadJournalEntity.
   ///

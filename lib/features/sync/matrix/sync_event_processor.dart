@@ -35,6 +35,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -155,6 +156,7 @@ class SyncEventProcessor {
     this._syncNodeProfileRepository,
     this._fts5Db,
     this._syncEventTrust,
+    this._gitHubTokenStorage,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
        _journalEntityLoader =
@@ -206,6 +208,11 @@ class SyncEventProcessor {
   // upsert is skipped.
   final SyncNodeProfileRepository? _syncNodeProfileRepository;
   final Fts5Db? _fts5Db;
+
+  /// Where a received GitHub account lands: this world's keychain record.
+  /// Optional so harnesses without one keep working; then a received
+  /// account is acknowledged and dropped.
+  final GitHubTokenStorage? _gitHubTokenStorage;
 
   // Cached local host id. Resolved lazily on the first event that carries
   // an `originatingHostId`. Vector-clock host ids are stable for the life

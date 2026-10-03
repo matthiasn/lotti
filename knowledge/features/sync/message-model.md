@@ -60,16 +60,18 @@ sources:
 
 # Families
 
-Everything on the wire is a `SyncMessage` — a freezed union with twenty-five
+Everything on the wire is a `SyncMessage` — a freezed union with twenty-nine
 variants:
 
 `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
 `syncNodeProfile`, `aiConfigDelete`, `savedTaskFilter`,
 `savedTaskFilterDelete`, `configFlag`, `themingSelection`, `dailyOsUserName`,
-`notification`, `notificationStateUpdate`, `onboardingSnapshotBegin`,
-`onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
-`onboardingSnapshotEnd`, `backfillRequest`, `backfillResponse`, `mediaRequest`,
-`agentEntity`, `agentLink`, `consumptionEvent`, `agentBundle`, `outboxBundle`.
+`gitHubAccount`, `notification`, `notificationStateUpdate`,
+`onboardingSnapshotBegin`, `onboardingSnapshotAccepted`,
+`onboardingTerminalCounters`, `onboardingSnapshotEnd`, `backfillRequest`,
+`deepBackfillInventory`, `deepBackfillRequest`, `backfillResponse`,
+`mediaRequest`, `agentWakeCoordination`, `agentEntity`, `agentLink`,
+`consumptionEvent`, `agentBundle`, `outboxBundle`.
 
 ## Initial-onboarding controls
 
@@ -178,6 +180,16 @@ Entities*) still re-enqueues every stored definition; receivers treat the
 copies as no-ops.
 
 # Settings without sequence recovery
+
+`gitHubAccount` carries the user's GitHub token and its login, or a
+disconnection, into the receiver's keychain rather than a database
+(`GitHubTokenStorage.applyIfNewer`): one keystore value holds the token, the
+login and the stamp, so it is written in one step, and the later stamp wins,
+an equal one decided by content. The token is a `SyncSecret`, whose
+`toString` is redacted, so the message never prints it; the outbox and apply
+log lines carry only the stamp. `specs/tla/GitHubAccountSync.tla` models it
+with changes made on the devices themselves; see
+[GitHub pull requests](../github.md).
 
 `themingSelection` and `dailyOsUserName` use the versioned settings group
 comparison in the [settings group contract](../../architecture/persistence.md#settings-groups).

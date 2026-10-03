@@ -6594,6 +6594,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Op dit apparaat opgeslagen. Het kon nog niet naar je andere apparaten worden gestuurd; Lotti probeert het opnieuw bij de volgende start.';
+
+  @override
+  String get githubCheckOtherDevices => 'Mijn andere apparaten controleren';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6729,6 +6736,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubMergeConflicts => 'Mergeconflicten';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Er is nog geen token van je andere apparaten binnengekomen. Gebruik op een apparaat dat er een heeft ‘Naar mijn andere apparaten sturen’.';
+
+  @override
   String get githubNotRefreshed => 'Vernieuwen mislukt';
 
   @override
@@ -6800,6 +6811,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubReviewPending => 'Review gevraagd';
 
   @override
+  String get githubSendFailed =>
+      'Kon niet naar je andere apparaten worden gestuurd. Probeer het opnieuw.';
+
+  @override
+  String get githubSendToOtherDevices => 'Naar mijn andere apparaten sturen';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Verstuurd. Je andere apparaten nemen het over bij de volgende synchronisatie.';
+
+  @override
   String get githubStatusClosed => 'Gesloten';
 
   @override
@@ -6819,11 +6841,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository\'s waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo\'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Het token blijft op dit apparaat: het wordt nooit gesynchroniseerd en alleen naar api.github.com verstuurd.';
+  String get githubTokenLabel => 'Persoonlijk toegangstoken';
 
   @override
-  String get githubTokenLabel => 'Persoonlijk toegangstoken';
+  String get githubTokenPrivacy =>
+      'Het token synchroniseert end-to-end versleuteld met je andere apparaten. Lotti gebruikt het alleen voor verzoeken aan api.github.com.';
 
   @override
   String get githubTokenShow => 'Token tonen';
@@ -15222,6 +15244,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Verwijzing naar invoer';
+
+  @override
+  String get syncPayloadGitHubAccount => 'GitHub-account';
 
   @override
   String get syncPayloadJournalEntity => 'Journal';

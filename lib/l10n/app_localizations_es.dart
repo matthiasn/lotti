@@ -6652,6 +6652,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Guardado en este dispositivo. Aún no se pudo enviar a tus otros dispositivos; Lotti lo volverá a intentar la próxima vez que se inicie.';
+
+  @override
+  String get githubCheckOtherDevices => 'Comprobar mis otros dispositivos';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6788,6 +6795,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubMergeConflicts => 'Conflictos de fusión';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Todavía no ha llegado ningún token de tus otros dispositivos. En un dispositivo que tenga uno, usa «Enviar a mis otros dispositivos».';
+
+  @override
   String get githubNotRefreshed => 'No se pudo actualizar';
 
   @override
@@ -6859,6 +6870,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubReviewPending => 'Revisión solicitada';
 
   @override
+  String get githubSendFailed =>
+      'No se pudo enviar a tus otros dispositivos. Inténtalo de nuevo.';
+
+  @override
+  String get githubSendToOtherDevices => 'Enviar a mis otros dispositivos';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Enviado. Tus otros dispositivos lo recibirán en la próxima sincronización.';
+
+  @override
   String get githubStatusClosed => 'Cerrada';
 
   @override
@@ -6878,11 +6900,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Lotti lee las pull requests que vinculas a tus tareas con tu propio token de acceso personal. Crea un token fine-grained para los repositorios en los que trabajas, con acceso de solo lectura a \"Pull requests\" y \"Commit statuses\". GitHub no deja que ese token lea los check runs de un repositorio privado, así que allí la CI puede estar incompleta; un token clásico con el scope \"repo\" sí puede leerlos.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'El token se queda en este dispositivo: nunca se sincroniza y solo se envía a api.github.com.';
+  String get githubTokenLabel => 'Token de acceso personal';
 
   @override
-  String get githubTokenLabel => 'Token de acceso personal';
+  String get githubTokenPrivacy =>
+      'El token se sincroniza cifrado de extremo a extremo con tus otros dispositivos. Lotti solo lo usa para solicitudes a api.github.com.';
 
   @override
   String get githubTokenShow => 'Mostrar token';
@@ -15378,6 +15400,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Enlace de entrada';
+
+  @override
+  String get syncPayloadGitHubAccount => 'Cuenta de GitHub';
 
   @override
   String get syncPayloadJournalEntity => 'Entrada de diario';

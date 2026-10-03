@@ -6683,6 +6683,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Salvat pe acest dispozitiv. Încă nu a putut fi trimis pe celelalte dispozitive ale dvs.; Lotti încearcă din nou la următoarea pornire.';
+
+  @override
+  String get githubCheckOtherDevices =>
+      'Verificați celelalte dispozitive ale mele';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6821,6 +6829,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubMergeConflicts => 'Conflicte de îmbinare';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Încă nu a sosit niciun token de pe celelalte dispozitive ale dvs. Pe un dispozitiv care are unul, folosiți „Trimiteți pe celelalte dispozitive ale mele”.';
+
+  @override
   String get githubNotRefreshed => 'Actualizarea a eșuat';
 
   @override
@@ -6892,6 +6904,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubReviewPending => 'Revizuire solicitată';
 
   @override
+  String get githubSendFailed =>
+      'Nu a putut fi trimis pe celelalte dispozitive ale dvs. Încercați din nou.';
+
+  @override
+  String get githubSendToOtherDevices =>
+      'Trimiteți pe celelalte dispozitive ale mele';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Trimis. Celelalte dispozitive ale dvs. îl preiau la următoarea sincronizare.';
+
+  @override
   String get githubStatusClosed => 'Închis';
 
   @override
@@ -6911,11 +6935,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Tokenul rămâne pe acest dispozitiv: nu este sincronizat niciodată și este trimis doar către api.github.com.';
+  String get githubTokenLabel => 'Token de acces personal';
 
   @override
-  String get githubTokenLabel => 'Token de acces personal';
+  String get githubTokenPrivacy =>
+      'Tokenul se sincronizează criptat end-to-end cu celelalte dispozitive ale dvs. Lotti îl folosește doar pentru cereri către api.github.com.';
 
   @override
   String get githubTokenShow => 'Afișați tokenul';
@@ -15485,6 +15509,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Link intrare';
+
+  @override
+  String get syncPayloadGitHubAccount => 'Cont GitHub';
 
   @override
   String get syncPayloadJournalEntity => 'Intrare jurnal';

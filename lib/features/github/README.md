@@ -35,9 +35,12 @@ skill prompt builder.
 
 ## Privacy
 
-The token is the user's own personal access token. It stays in the device
-keystore and is sent only to `https://api.github.com`. It is never synced,
-logged or exported. Pull request web pages are never fetched.
+The token is the user's own read-only personal access token. It lives in
+the device keystore and syncs to the user's other devices end-to-end
+encrypted, like an inference provider's key; a token that arrives is checked
+with GitHub before it is used as connected. It is sent only to
+`https://api.github.com`, and never logged or exported. Pull request web pages
+are never fetched.
 
 ## Where the code sits
 

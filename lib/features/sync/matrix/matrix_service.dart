@@ -383,7 +383,7 @@ class MatrixService {
   /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket:
   /// `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
   /// `aiConfigDelete`, `savedTaskFilter`, `savedTaskFilterDelete`, `configFlag`,
-  /// `themingSelection`, `dailyOsUserName`, `notification`,
+  /// `themingSelection`, `dailyOsUserName`, `gitHubAccount`, `notification`,
   /// `notificationStateUpdate`, `onboardingSnapshotBegin`,
   /// `onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
   /// `onboardingSnapshotEnd`, `consumptionEvent`, `backfillRequest`,
@@ -423,6 +423,7 @@ class MatrixService {
       configFlag: (_) => 'configFlag',
       themingSelection: (_) => 'themingSelection',
       dailyOsUserName: (_) => 'dailyOsUserName',
+      gitHubAccount: (_) => 'gitHubAccount',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',
       onboardingSnapshotBegin: (_) => 'onboardingSnapshotBegin',

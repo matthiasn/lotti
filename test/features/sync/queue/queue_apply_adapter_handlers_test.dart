@@ -463,6 +463,14 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
+    test('SyncGitHubAccount bypasses outer wrap (the keychain)', () {
+      const message = SyncMessage.gitHubAccount(
+        updatedAt: 1,
+        status: SyncEntryStatus.update,
+      );
+      expect(wraps(message), isFalse);
+    });
+
     test('SyncDailyOsUserName bypasses outer wrap (settings_db)', () {
       const message = SyncMessage.dailyOsUserName(
         userName: 'Sam',

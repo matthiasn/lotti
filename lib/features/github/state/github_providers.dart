@@ -9,12 +9,15 @@ import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -33,9 +36,9 @@ final gitHubClientProvider = Provider<GitHubClient>((ref) {
 
 /// The token store of the active profile.
 final gitHubTokenStorageProvider = Provider<GitHubTokenStorage>(
-  (ref) => GitHubTokenStorage(
+  (ref) => gitHubTokenStorageForProfile(
     getIt<SecureStorage>(),
-    namespace: ref.watch(profileContextProvider).profile.id,
+    ref.watch(profileContextProvider),
   ),
   name: 'gitHubTokenStorageProvider',
 );
@@ -164,24 +167,80 @@ final StreamProviderFamily<String?, String> pullRequestHolderTitleProvider =
       }
     }, name: 'pullRequestHolderTitleProvider');
 
+/// Sends this device's GitHub account to the user's other devices, and asks
+/// sync to catch up. A world without sync — a guest or demo world — gets an
+/// inert outbox and no catch-up.
+final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
+  (ref) => GitHubAccountSync(
+    storage: ref.watch(gitHubTokenStorageProvider),
+    enqueueOrThrow: (message) =>
+        getIt<OutboxService>().enqueueMessageOrThrow(message),
+    rescan:
+        ref.watch(syncFeatureAvailableProvider) &&
+            getIt.isRegistered<MatrixService>()
+        ? () => getIt<MatrixService>().forceRescan()
+        : null,
+  ),
+  name: 'gitHubAccountSyncProvider',
+);
+
 /// The GitHub login whose token this device holds, or null.
+///
+/// The token syncs between the user's devices. One that arrived from another
+/// device is checked with GitHub (`GET /user`) before it is shown as
+/// connected: until a check succeeds — GitHub rejected it, or could not be
+/// asked yet (offline, rate limited) — the failure is the state, an error,
+/// and "check my other devices" checks again.
+///
+/// Never retried on its own: a rejection is final until the user enters a
+/// token or another one arrives, and asking GitHub again and again with a
+/// revoked token would only spend the rate limit.
 final gitHubAccountControllerProvider =
     AsyncNotifierProvider<GitHubAccountController, String?>(
       GitHubAccountController.new,
       name: 'gitHubAccountControllerProvider',
+      retry: (_, _) => null,
     );
 
 class GitHubAccountController extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async {
+    // A token connected, disconnected or received elsewhere: read again.
+    final changes = getIt<UpdateNotifications>().updateStream
+        .where((ids) => ids.contains(gitHubAccountNotification))
+        .listen((_) => ref.invalidateSelf());
+    ref.onDispose(changes.cancel);
+
     final storage = ref.watch(gitHubTokenStorageProvider);
-    final token = await storage.readToken();
-    if (token == null || token.isEmpty) return null;
-    return storage.readLogin();
+    // A newer token can arrive while GitHub is checking one: the check marks
+    // only the version it checked, and the newer one is then checked too.
+    for (var attempt = 0; ; attempt++) {
+      final record = await storage.read();
+      if (record == null || !record.connected) return null;
+      if (record.verified) return record.login;
+      // Any failure is the answer until a check succeeds: a token GitHub
+      // rejected, or one it could not be asked about yet, is not shown as
+      // connected under the login it arrived with.
+      final login = await ref
+          .read(gitHubClientProvider)
+          .fetchViewerLogin(record.token!);
+      final marked = await storage.markVerified(
+        token: record.token!,
+        updatedAt: record.updatedAt,
+        login: login,
+      );
+      if (marked || attempt >= 2) return marked ? login : null;
+    }
   }
 
-  /// Checks [token] with GitHub and stores it only if GitHub accepts it.
-  /// Returns why it was refused, or null once it is stored.
+  /// Whether a change made here has not reached the outbox yet; it is sent
+  /// again at the next start or the next change.
+  Future<bool> changeOwed() async =>
+      (await ref.read(gitHubTokenStorageProvider).read())?.owed ?? false;
+
+  /// Checks [token] with GitHub, stores it only if GitHub accepts it, and
+  /// sends it to the user's other devices. Returns why it was refused, or
+  /// null once it is stored.
   Future<GitHubFailureKind?> connect(String token) async {
     final trimmed = token.trim();
     if (trimmed.isEmpty) return GitHubFailureKind.noToken;
@@ -193,15 +252,32 @@ class GitHubAccountController extends AsyncNotifier<String?> {
           .read(gitHubTokenStorageProvider)
           .save(token: trimmed, login: login);
       state = AsyncData(login);
+      await ref.read(gitHubAccountSyncProvider).flushOwed();
       return null;
     } on GitHubException catch (e) {
       return e.kind;
     }
   }
 
+  /// Forgets the token here and on the user's other devices.
   Future<void> disconnect() async {
     await ref.read(gitHubTokenStorageProvider).clear();
     state = const AsyncData(null);
+    await ref.read(gitHubAccountSyncProvider).flushOwed();
+  }
+
+  /// Sends the token held here to the user's other devices again — one
+  /// connected before tokens synced, or that a device joining later missed.
+  /// Returns whether the outbox took it, or null when there is none to send.
+  Future<bool?> sendToOtherDevices() =>
+      ref.read(gitHubAccountSyncProvider).resend();
+
+  /// Asks sync to catch up, then reads the token again: on a device that
+  /// has none, one sent from another device arrives this way.
+  Future<void> checkOtherDevices() async {
+    await ref.read(gitHubAccountSyncProvider).checkOtherDevices();
+    ref.invalidateSelf();
+    await future;
   }
 }
 

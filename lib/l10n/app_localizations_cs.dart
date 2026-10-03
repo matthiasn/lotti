@@ -6642,6 +6642,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Uloženo v tomto zařízení. Na tvá další zařízení se zatím nepodařilo odeslat; Lotti to zkusí znovu při příštím spuštění.';
+
+  @override
+  String get githubCheckOtherDevices => 'Zkontrolovat má další zařízení';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6779,6 +6786,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubMergeConflicts => 'Konflikty při slučování';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Z tvých dalších zařízení zatím žádný token nedorazil. Na zařízení, které ho má, použij „Poslat na má další zařízení“.';
+
+  @override
   String get githubNotRefreshed => 'Aktualizace se nezdařila';
 
   @override
@@ -6850,6 +6861,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubReviewPending => 'Vyžádána revize';
 
   @override
+  String get githubSendFailed =>
+      'Nepodařilo se ho poslat na tvá další zařízení. Zkus to znovu.';
+
+  @override
+  String get githubSendToOtherDevices => 'Poslat na má další zařízení';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Odesláno. Tvá další zařízení si ho převezmou při příští synchronizaci.';
+
+  @override
   String get githubStatusClosed => 'Uzavřený';
 
   @override
@@ -6869,11 +6891,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Token zůstává v tomto zařízení: nikdy se nesynchronizuje a posílá se jen na api.github.com.';
+  String get githubTokenLabel => 'Osobní přístupový token';
 
   @override
-  String get githubTokenLabel => 'Osobní přístupový token';
+  String get githubTokenPrivacy =>
+      'Token se synchronizuje na tvá další zařízení s koncovým šifrováním. Lotti ho používá jen pro požadavky na api.github.com.';
 
   @override
   String get githubTokenShow => 'Zobrazit token';
@@ -15379,6 +15401,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Odkaz na položku';
+
+  @override
+  String get syncPayloadGitHubAccount => 'Účet GitHub';
 
   @override
   String get syncPayloadJournalEntity => 'Položka deníku';

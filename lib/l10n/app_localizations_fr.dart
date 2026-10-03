@@ -6674,6 +6674,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Enregistré sur cet appareil. L\'envoi à tes autres appareils n\'a pas encore pu se faire ; Lotti réessaiera à son prochain démarrage.';
+
+  @override
+  String get githubCheckOtherDevices => 'Vérifier mes autres appareils';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6810,6 +6817,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubMergeConflicts => 'Conflits de fusion';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Aucun jeton n\'est encore arrivé de tes autres appareils. Sur un appareil qui en a un, utilise « Envoyer à mes autres appareils ».';
+
+  @override
   String get githubNotRefreshed => 'Actualisation impossible';
 
   @override
@@ -6881,6 +6892,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubReviewPending => 'Revue demandée';
 
   @override
+  String get githubSendFailed =>
+      'Impossible de l\'envoyer à tes autres appareils. Réessaie.';
+
+  @override
+  String get githubSendToOtherDevices => 'Envoyer à mes autres appareils';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Envoyé. Tes autres appareils le récupéreront à la prochaine synchronisation.';
+
+  @override
   String get githubStatusClosed => 'Fermée';
 
   @override
@@ -6900,11 +6922,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d\'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d\'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Le jeton reste sur cet appareil : il n\'est jamais synchronisé et n\'est envoyé qu\'à api.github.com.';
+  String get githubTokenLabel => 'Jeton d\'accès personnel';
 
   @override
-  String get githubTokenLabel => 'Jeton d\'accès personnel';
+  String get githubTokenPrivacy =>
+      'Le jeton se synchronise chiffré de bout en bout avec tes autres appareils. Lotti ne l\'utilise que pour les requêtes vers api.github.com.';
 
   @override
   String get githubTokenShow => 'Afficher le jeton';
@@ -15439,6 +15461,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Lien d\'entrée';
+
+  @override
+  String get syncPayloadGitHubAccount => 'Compte GitHub';
 
   @override
   String get syncPayloadJournalEntity => 'Entrée de journal';

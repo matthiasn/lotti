@@ -6568,6 +6568,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Gemt på denne enhed. Det kunne ikke sendes til dine andre enheder endnu; Lotti prøver igen ved næste start.';
+
+  @override
+  String get githubCheckOtherDevices => 'Tjek mine andre enheder';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6702,6 +6709,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubMergeConflicts => 'Flettekonflikter';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Der er endnu ikke kommet et token fra dine andre enheder. Brug “Send til mine andre enheder” på en enhed, der har et.';
+
+  @override
   String get githubNotRefreshed => 'Kunne ikke opdatere';
 
   @override
@@ -6773,6 +6784,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubReviewPending => 'Review anmodet';
 
   @override
+  String get githubSendFailed =>
+      'Det kunne ikke sendes til dine andre enheder. Prøv igen.';
+
+  @override
+  String get githubSendToOtherDevices => 'Send til mine andre enheder';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Sendt. Dine andre enheder henter det ved næste synkronisering.';
+
+  @override
   String get githubStatusClosed => 'Lukket';
 
   @override
@@ -6792,11 +6814,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Tokenet bliver på denne enhed: det synkroniseres aldrig og sendes kun til api.github.com.';
+  String get githubTokenLabel => 'Personligt adgangstoken';
 
   @override
-  String get githubTokenLabel => 'Personligt adgangstoken';
+  String get githubTokenPrivacy =>
+      'Tokenet synkroniseres end-to-end-krypteret til dine andre enheder. Lotti bruger det kun til forespørgsler til api.github.com.';
 
   @override
   String get githubTokenShow => 'Vis token';
@@ -15176,6 +15198,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Indgangslink';
+
+  @override
+  String get syncPayloadGitHubAccount => 'GitHub-konto';
 
   @override
   String get syncPayloadJournalEntity => 'Dagbogsindlæg';
