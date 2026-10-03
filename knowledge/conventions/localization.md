@@ -16,6 +16,10 @@ sources:
     resource: ../../l10n.yaml
     title: Localization generation config
     last_modified: 2025-08-16
+  - id: parity-check
+    resource: ../../tool/ci/check_arb_parity.dart
+    title: CI check that every catalog holds every key
+    last_modified: 2026-10-03
   - id: change-summary
     resource: ../../lib/features/agents/ui/localized_change_summary.dart
     title: Render-time proposal summaries
@@ -38,8 +42,14 @@ Translate as you add; do not leave the gap for someone else to find later.
 `app_en_GB.arb` is the one exception, and only in one direction: it gets an entry
 when the spelling differs from US English, and nothing when it does not.
 
-`missing_translations.txt` is the backstop that reports what slipped through, not
-the plan.
+**CI enforces it.** `flutter gen-l10n` does not fail on an untranslated key: it
+falls back to English and lists the key in the gitignored
+`missing_translations.txt`, which nobody reads — five catalogs once fell 121 keys
+behind that way. `tool/ci/check_arb_parity.dart` runs in the analyze workflow and
+fails when a full catalog lacks a key of `app_en.arb`, or when any catalog holds a
+key `app_en.arb` no longer has (a renamed or removed message that is never shown).
+A regional catalog such as `app_en_GB.arb` may be partial, because it inherits
+from its base language. Run it locally with `dart run tool/ci/check_arb_parity.dart`.
 
 Access is through `context.messages.labelName`.
 
@@ -126,11 +136,15 @@ The app addresses users **informally**:
 | German | du / deine | Sie / Ihre |
 | French | tu / tes | vous / vos |
 | Spanish | tú / tus | usted / sus |
+| Italian | tu / tuo | Lei / Suo |
+| Portuguese (European) | tu / teu | você / o senhor |
+| Dutch | je / jij | u / uw |
+| Danish | du / dig | De / Dem |
+| Swedish | du / din | ni / er |
+| Czech | ty / tvůj | vy / váš |
 
 **Romanian is the deliberate exception** — it uses the formal `dvs.` register
 consistently.
-
-`missing_translations.txt` records gaps, and `make l10n` prints them.
 
 # Where dates and numbers are localized instead
 

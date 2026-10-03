@@ -49,3 +49,8 @@ jobs:
       # hold signing and store secrets, so every action names its commit.
       - name: Check GitHub Actions are pinned to commits
         run: dart run tool/ci/check_action_pins.dart
+      # gen-l10n does not fail on an untranslated key — it falls back to
+      # English and lists the key in a gitignored file nobody reads, which is
+      # how five catalogs fell 121 keys behind. Every catalog holds every key.
+      - name: Check ARB catalogs hold every key
+        run: dart run tool/ci/check_arb_parity.dart

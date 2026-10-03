@@ -1355,71 +1355,71 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiAssistantTitle => 'Generera...';
 
   @override
-  String get aiAttributionArtifactOutput => 'Output';
+  String get aiAttributionArtifactOutput => 'Utdata';
 
   @override
-  String get aiAttributionCompletedAt => 'Completed at';
+  String get aiAttributionCompletedAt => 'Slutförd';
 
   @override
-  String get aiAttributionCost => 'Cost';
+  String get aiAttributionCost => 'Kostnad';
 
   @override
-  String get aiAttributionCostUnknown => 'Cost unknown';
+  String get aiAttributionCostUnknown => 'Kostnad okänd';
 
   @override
-  String get aiAttributionCreator => 'Creator';
+  String get aiAttributionCreator => 'Skapad av';
 
   @override
-  String get aiAttributionDiagnostics => 'Diagnostics';
+  String get aiAttributionDiagnostics => 'Diagnostik';
 
   @override
-  String get aiAttributionDuration => 'Duration';
+  String get aiAttributionDuration => 'Varaktighet';
 
   @override
-  String get aiAttributionInteractions => 'Interactions';
+  String get aiAttributionInteractions => 'Interaktioner';
 
   @override
-  String get aiAttributionLoading => 'Loading AI attribution…';
+  String get aiAttributionLoading => 'Läser in AI-ursprung…';
 
   @override
   String get aiAttributionNoInteractionDetails =>
-      'No interaction details are available.';
+      'Det finns inga detaljer om interaktionerna.';
 
   @override
-  String get aiAttributionRequestEvidence => 'Request evidence';
+  String get aiAttributionRequestEvidence => 'Underlag för begäran';
 
   @override
-  String get aiAttributionResponseEvidence => 'Response evidence';
+  String get aiAttributionResponseEvidence => 'Underlag för svaret';
 
   @override
   String aiAttributionSecondary(String model, String time, int callCount) {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
       locale: localeName,
-      other: '$callCount calls',
-      one: '1 call',
-      zero: 'no calls',
+      other: '$callCount anrop',
+      one: '1 anrop',
+      zero: 'inga anrop',
     );
     return '$model · $time · $_temp0';
   }
 
   @override
-  String get aiAttributionStartedAt => 'Started at';
+  String get aiAttributionStartedAt => 'Startad';
 
   @override
   String get aiAttributionStatus => 'Status';
 
   @override
-  String get aiAttributionStatusCancelled => 'Cancelled';
+  String get aiAttributionStatusCancelled => 'Avbruten';
 
   @override
-  String get aiAttributionStatusFailed => 'Failed';
+  String get aiAttributionStatusFailed => 'Misslyckades';
 
   @override
-  String get aiAttributionStatusPartial => 'Partial';
+  String get aiAttributionStatusPartial => 'Delvis';
 
   @override
-  String get aiAttributionStatusSucceeded => 'Completed';
+  String get aiAttributionStatusSucceeded => 'Slutförd';
 
   @override
   String aiAttributionSummary(String actor, String trigger, String status) {
@@ -1427,7 +1427,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTitle => 'AI attribution';
+  String get aiAttributionTitle => 'AI-ursprung';
 
   @override
   String aiAttributionTokenBreakdown(
@@ -1436,47 +1436,47 @@ class AppLocalizationsSv extends AppLocalizations {
     String cached,
     String reasoning,
   ) {
-    return 'Input: $input · Output: $output · Cached: $cached · Reasoning: $reasoning';
+    return 'Indata: $input · Utdata: $output · Cachat: $cached · Resonemang: $reasoning';
   }
 
   @override
   String get aiAttributionTokens => 'Tokens';
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokenUsageUnknown => 'Tokenanvändning okänd';
 
   @override
-  String get aiAttributionTrigger => 'Trigger';
+  String get aiAttributionTrigger => 'Utlösare';
 
   @override
   String get aiAttributionTriggerAgent => 'Agent';
 
   @override
-  String get aiAttributionTriggerAutomatic => 'Automatic';
+  String get aiAttributionTriggerAutomatic => 'Automatisk';
 
   @override
-  String get aiAttributionTriggerImported => 'Imported';
+  String get aiAttributionTriggerImported => 'Importerad';
 
   @override
-  String get aiAttributionTriggerManual => 'Manual';
+  String get aiAttributionTriggerManual => 'Manuell';
 
   @override
-  String get aiAttributionTriggerScheduled => 'Scheduled';
+  String get aiAttributionTriggerScheduled => 'Schemalagd';
 
   @override
-  String get aiAttributionTriggerSynced => 'From sync';
+  String get aiAttributionTriggerSynced => 'Från synkronisering';
 
   @override
-  String get aiAttributionUnavailable => 'AI attribution is unavailable.';
+  String get aiAttributionUnavailable => 'AI-ursprunget är inte tillgängligt.';
 
   @override
-  String get aiAttributionUnknownCreator => 'Unknown creator';
+  String get aiAttributionUnknownCreator => 'Okänd skapare';
 
   @override
-  String get aiAttributionUnknownModel => 'Unknown model';
+  String get aiAttributionUnknownModel => 'Okänd modell';
 
   @override
-  String get aiAttributionYou => 'You';
+  String get aiAttributionYou => 'Du';
 
   @override
   String get aiCapabilityChipImageGeneration => 'Bildgenerering';
@@ -1569,7 +1569,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String aiConsumptionAttributionReference(String id) {
-    return 'Attribution $id';
+    return 'Ursprung $id';
   }
 
   @override
@@ -1626,7 +1626,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Transkription';
 
   @override
-  String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
+  String get aiConsumptionTypeEmbeddingIndexing => 'Indexering av inbäddningar';
 
   @override
   String get aiConsumptionTypeImageAnalysis => 'Bildanalys';
@@ -1645,10 +1645,10 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
       locale: localeName,
-      other: '$callCount calls',
-      one: '1 call',
+      other: '$callCount anrop',
+      one: '1 anrop',
     );
-    return 'AI work · $_temp0';
+    return 'AI-arbete · $_temp0';
   }
 
   @override
@@ -3025,18 +3025,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.';
+      'Låt assistenten i den här kategorin uppdatera sig själv när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.';
 
   @override
-  String get categoryAutomaticAgentWakesLabel =>
-      'Wake the assistant automatically';
+  String get categoryAutomaticAgentWakesLabel => 'Väck assistenten automatiskt';
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe new audio and analyze new images in this category automatically';
+      'Transkribera nytt ljud och analysera nya bilder i den här kategorin automatiskt';
 
   @override
-  String get categoryAutomaticInferenceLabel => 'Automatic inference';
+  String get categoryAutomaticInferenceLabel => 'Automatisk inferens';
 
   @override
   String get categoryCreationError =>
@@ -3193,7 +3192,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputListening => 'Lyssnar...';
 
   @override
-  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+  String get chatInputNoAudioRecorded => 'Inget ljud spelades in. Försök igen.';
 
   @override
   String get chatInputPleaseWait => 'Vänta, snälla...';
@@ -4231,7 +4230,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get createNewLinkedTask => 'Skapa ny länkad uppgift…';
 
   @override
-  String get createNewLinkedTaskTitle => 'New linked task';
+  String get createNewLinkedTaskTitle => 'Ny länkad uppgift';
 
   @override
   String get customColor => 'Specialfärg';
@@ -4247,7 +4246,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityActionFailed =>
-      'That action didn\'t finish. Your recording is still safe—try again.';
+      'Åtgärden slutfördes inte. Din inspelning är fortfarande säker – försök igen.';
 
   @override
   String get dailyOsNextActivityAgentActionFailed =>
@@ -4286,81 +4285,84 @@ class AppLocalizationsSv extends AppLocalizations {
       'AI-tjänsten var upptagen eller gick inte att nå.';
 
   @override
-  String get dailyOsNextActivityDaySummary => 'Day summary';
+  String get dailyOsNextActivityDaySummary => 'Dagssammanfattning';
 
   @override
   String get dailyOsNextActivityDeleteDialogBody =>
-      'The audio and its pending transcription are removed from this day.';
+      'Ljudet och dess väntande transkription tas bort från den här dagen.';
 
   @override
-  String get dailyOsNextActivityDeleteDialogTitle => 'Delete this recording?';
+  String get dailyOsNextActivityDeleteDialogTitle =>
+      'Radera den här inspelningen?';
 
   @override
-  String get dailyOsNextActivityDeleteRecording => 'Delete';
+  String get dailyOsNextActivityDeleteRecording => 'Radera';
 
   @override
-  String get dailyOsNextActivityEmpty => 'No recordings or check-ins yet.';
+  String get dailyOsNextActivityEmpty =>
+      'Inga inspelningar eller avstämningar än.';
 
   @override
   String get dailyOsNextActivityLoadFailed =>
-      'Your saved activity is still on this device, but it couldn\'t be loaded right now.';
+      'Din sparade aktivitet finns kvar på den här enheten, men den kunde inte läsas in just nu.';
 
   @override
   String get dailyOsNextActivityMissingAudio =>
-      'This entry is retained, but its audio file isn\'t available on this device. Restore the file, then retry.';
+      'Posten finns kvar, men ljudfilen är inte tillgänglig på den här enheten. Återställ filen och försök sedan igen.';
 
   @override
-  String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+  String get dailyOsNextActivityNeedsAttention => 'Behöver åtgärdas';
 
   @override
   String get dailyOsNextActivityOpenAiSetup => 'Öppna Daily OS-inställningar';
 
   @override
-  String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
+  String get dailyOsNextActivityOpenSetup =>
+      'Öppna inställningar för transkription';
 
   @override
-  String get dailyOsNextActivityPlanAvailable => 'Your day plan is available.';
+  String get dailyOsNextActivityPlanAvailable => 'Din dagsplan är tillgänglig.';
 
   @override
-  String get dailyOsNextActivityPlanCreated => 'Plan created';
+  String get dailyOsNextActivityPlanCreated => 'Plan skapad';
 
   @override
-  String get dailyOsNextActivityReady => 'Ready to use';
+  String get dailyOsNextActivityReady => 'Redo att använda';
 
   @override
-  String get dailyOsNextActivityRetry => 'Retry transcription';
+  String get dailyOsNextActivityRetry => 'Försök transkribera igen';
 
   @override
-  String get dailyOsNextActivityRetryLoad => 'Try loading again';
+  String get dailyOsNextActivityRetryLoad => 'Försök läsa in igen';
 
   @override
   String get dailyOsNextActivityRetryStep => 'Försök igen';
 
   @override
-  String get dailyOsNextActivitySaved => 'Saved locally';
+  String get dailyOsNextActivitySaved => 'Sparad lokalt';
 
   @override
   String get dailyOsNextActivitySetupRequired =>
-      'Your recording is safe. Set up an audio transcription model, then retry.';
+      'Din inspelning är säker. Konfigurera en modell för ljudtranskription och försök sedan igen.';
 
   @override
-  String get dailyOsNextActivitySubmitted => 'Added to day';
+  String get dailyOsNextActivitySubmitted => 'Tillagd i dagen';
 
   @override
-  String get dailyOsNextActivityTranscribing => 'Transcribing';
+  String get dailyOsNextActivityTranscribing => 'Transkriberar';
 
   @override
   String get dailyOsNextActivityTranscriptPending =>
-      'Your recording is saved. The transcript is still pending.';
+      'Din inspelning är sparad. Transkriptionen väntar fortfarande.';
 
   @override
-  String get dailyOsNextActivityUseToPlan => 'Use to build plan';
+  String get dailyOsNextActivityUseToPlan => 'Använd för att skapa planen';
 
   @override
-  String get dailyOsNextActivityUseToRefine => 'Use to refine';
+  String get dailyOsNextActivityUseToRefine => 'Använd för att förfina';
 
   @override
-  String get dailyOsNextActivityWaitingForNetwork => 'Waiting for connection';
+  String get dailyOsNextActivityWaitingForNetwork => 'Väntar på anslutning';
 
   @override
   String get dailyOsNextAgendaCapacityComfortable => 'Bekvämt';
@@ -4477,7 +4479,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureErrorAudioPersistFailed =>
-      'The recording couldn\'t be saved.';
+      'Inspelningen kunde inte sparas.';
 
   @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
@@ -4489,7 +4491,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
-      'Your recording is saved. Transcription couldn\'t finish.';
+      'Din inspelning är sparad. Transkriptionen kunde inte slutföras.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
@@ -4546,7 +4548,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Recension';
 
   @override
-  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Inspelning sparad';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Fångster';
@@ -4642,17 +4644,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'Idag är din.';
 
   @override
-  String get dailyOsNextDayAgentStatusAttention => 'Needs attention';
+  String get dailyOsNextDayAgentStatusAttention => 'Behöver åtgärdas';
 
   @override
-  String get dailyOsNextDayAgentStatusDayClosed => 'Day closed';
+  String get dailyOsNextDayAgentStatusDayClosed => 'Dagen är stängd';
 
   @override
-  String get dailyOsNextDayAgentStatusWorking => 'Planning…';
+  String get dailyOsNextDayAgentStatusWorking => 'Planerar…';
 
   @override
   String dailyOsNextDayAgentTokensToday(int tokens) {
-    return '$tokens tokens spent planning this day';
+    return '$tokens tokens använda för att planera den här dagen';
   }
 
   @override
@@ -4850,37 +4852,37 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextPlanChangesFailedNotificationBody =>
-      'Open Lotti to see what happened and try again.';
+      'Öppna Lotti för att se vad som hände och försök igen.';
 
   @override
   String get dailyOsNextPlanChangesFailedNotificationTitle =>
-      'Your plan changes didn\'t finish';
+      'Dina planändringar slutfördes inte';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
-      'The proposed changes are waiting for your review.';
+      'De föreslagna ändringarna väntar på din granskning.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
-      'Your plan changes are ready';
+      'Dina planändringar är klara';
 
   @override
   String get dailyOsNextPlanFailedNotificationBody =>
-      'Open Lotti to see what happened and try again.';
+      'Öppna Lotti för att se vad som hände och försök igen.';
 
   @override
   String get dailyOsNextPlanFailedNotificationTitle =>
-      'Your day plan didn\'t finish';
+      'Din dagsplan slutfördes inte';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>
-      'The draft is waiting for your review.';
+      'Utkastet väntar på din granskning.';
 
   @override
-  String get dailyOsNextPlanReadyNotificationTitle => 'Your day plan is ready';
+  String get dailyOsNextPlanReadyNotificationTitle => 'Din dagsplan är klar';
 
   @override
-  String get dailyOsNextPlanViewActivity => 'Activity';
+  String get dailyOsNextPlanViewActivity => 'Aktivitet';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -5184,8 +5186,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: ' Förfallen med $days dagar på $date',
-      one: ' Förfallen med 1 dag på $date',
+      other: 'Förfallen med $days dagar på $date',
+      one: 'Förfallen med 1 dag på $date',
       zero: 'Förfallen på $date',
     );
     return '$_temp0';
@@ -6305,17 +6307,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get doneButton => 'Klart';
 
   @override
-  String get editLinkTypeCounterpartLabel => 'Linked task';
+  String get editLinkTypeCounterpartLabel => 'Länkad uppgift';
 
   @override
   String get editLinkTypeFailedMessage =>
-      'Couldn\'t update the relationship. Please try again.';
+      'Relationen kunde inte uppdateras. Försök igen.';
 
   @override
-  String get editLinkTypeTitle => 'Edit relationship';
+  String get editLinkTypeTitle => 'Redigera relation';
 
   @override
-  String get editLinkTypeTooltip => 'Edit relationship';
+  String get editLinkTypeTooltip => 'Redigera relation';
 
   @override
   String get editMenuTitle => 'Redigering';
@@ -9335,7 +9337,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get linkBlocksCycleErrorMessage =>
-      'This would create a blocking cycle — choose a different task.';
+      'Det skulle skapa en blockeringscykel – välj en annan uppgift.';
 
   @override
   String linkCreatedMessage(String relation, String title) {
@@ -9343,23 +9345,23 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get linkCreatedUndo => 'Undo';
+  String get linkCreatedUndo => 'Ångra';
 
   @override
   String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
+      'Länken kunde inte skapas. Försök igen.';
 
   @override
-  String get linkDirectionLabel => 'This task…';
+  String get linkDirectionLabel => 'Den här uppgiften…';
 
   @override
   String get linkedTaskImageBadge => 'Från länkad uppgift';
 
   @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+  String get linkedTasksBlockedBySectionTitle => 'Blockeras av';
 
   @override
-  String get linkedTasksEmptyAction => 'Link a task…';
+  String get linkedTasksEmptyAction => 'Länka en uppgift…';
 
   @override
   String get linkedTasksEmptyHint =>
@@ -9375,44 +9377,44 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkExistingTask => 'Länka befintlig uppgift…';
 
   @override
-  String get linkExistingTaskTitle => 'Link existing task';
+  String get linkExistingTaskTitle => 'Länka befintlig uppgift';
 
   @override
-  String get linkPhraseBasic => 'Relates to';
+  String get linkPhraseBasic => 'Relaterar till';
 
   @override
-  String get linkPhraseBlocksInverse => 'Is blocked by';
+  String get linkPhraseBlocksInverse => 'Blockeras av';
 
   @override
-  String get linkPhraseBlocksPrimary => 'Blocks';
+  String get linkPhraseBlocksPrimary => 'Blockerar';
 
   @override
-  String get linkPhraseDuplicatesInverse => 'Is duplicated by';
+  String get linkPhraseDuplicatesInverse => 'Dupliceras av';
 
   @override
-  String get linkPhraseDuplicatesPrimary => 'Duplicates';
+  String get linkPhraseDuplicatesPrimary => 'Duplicerar';
 
   @override
-  String get linkPhraseFixesInverse => 'Is fixed by';
+  String get linkPhraseFixesInverse => 'Åtgärdas av';
 
   @override
-  String get linkPhraseFixesPrimary => 'Fixes';
+  String get linkPhraseFixesPrimary => 'Åtgärdar';
 
   @override
-  String get linkPhraseFollowsUpInverse => 'Has follow-up';
+  String get linkPhraseFollowsUpInverse => 'Har uppföljning';
 
   @override
-  String get linkPhraseFollowsUpPrimary => 'Follows up on';
+  String get linkPhraseFollowsUpPrimary => 'Följer upp';
 
   @override
-  String get linkPhraseSupersedesInverse => 'Is superseded by';
+  String get linkPhraseSupersedesInverse => 'Ersätts av';
 
   @override
-  String get linkPhraseSupersedesPrimary => 'Supersedes';
+  String get linkPhraseSupersedesPrimary => 'Ersätter';
 
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
-    return 'Create task: $title';
+    return 'Skapa uppgift: $title';
   }
 
   @override
@@ -9515,7 +9517,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get linkTaskButton => 'Link';
+  String get linkTaskButton => 'Länka';
 
   @override
   String get listPaneHideTooltip => 'Dölj lista';
@@ -9539,20 +9541,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get lockdownMenuSemanticsLabel => 'Låsningsmeny';
 
   @override
-  String get logbookEmptyHint => 'Create your first entry to start journaling.';
+  String get logbookEmptyHint =>
+      'Skapa din första post för att börja skriva dagbok.';
 
   @override
-  String get logbookEmptyTitle => 'Your logbook is empty';
+  String get logbookEmptyTitle => 'Din loggbok är tom';
 
   @override
-  String get logbookNewEntriesHint => 'New entries will open here.';
+  String get logbookNewEntriesHint => 'Nya poster öppnas här.';
 
   @override
   String get logbookNoMatchesHint =>
-      'Adjust your search or filters to see more.';
+      'Justera din sökning eller dina filter för att se mer.';
 
   @override
-  String get logbookNoMatchesTitle => 'No entries match';
+  String get logbookNoMatchesTitle => 'Inga poster matchar';
 
   @override
   String get loggingDomainAgentRuntime => 'Agentens runtime';
@@ -14676,7 +14679,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get speechModalTitle => 'Taligenkänning';
 
   @override
-  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+  String get speechNoAudioRecorded => 'Inget ljud spelades in. Försök igen.';
 
   @override
   String get speechSettingsAutoPrepareChatAudio =>
@@ -15713,8 +15716,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocked by $count tasks',
-      one: 'Blocked by 1 task',
+      other: 'Blockeras av $count uppgifter',
+      one: 'Blockeras av 1 uppgift',
     );
     return '$_temp0';
   }
@@ -15724,14 +15727,15 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tap to see $count blockers',
-      one: 'Blocked by $title',
+      other: 'Tryck för att se $count blockeringar',
+      one: 'Blockeras av $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockedByUnresolvedLabel => 'Blocker not synced yet';
+  String get taskBlockedByUnresolvedLabel =>
+      'Blockeringen är inte synkroniserad än';
 
   @override
   String get taskBlockedInCycleChipLabel => 'Blockerad i en cykel';
@@ -15742,11 +15746,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String taskBlockedReason(String title) {
-    return 'Blocked by: $title';
+    return 'Blockeras av: $title';
   }
 
   @override
-  String get taskBlockerPickerTitle => 'What\'s blocking this?';
+  String get taskBlockerPickerTitle => 'Vad blockerar detta?';
 
   @override
   String get taskCategoryAllLabel => 'alla';
@@ -16491,12 +16495,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String transcriptLanguageLabel(String language) {
-    return 'Language: $language';
+    return 'Språk: $language';
   }
 
   @override
   String transcriptModelLabel(String provider, String model) {
-    return 'Model: $provider, $model';
+    return 'Modell: $provider, $model';
   }
 
   @override

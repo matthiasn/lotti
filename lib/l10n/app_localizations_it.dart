@@ -1367,68 +1367,68 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiAttributionArtifactOutput => 'Output';
 
   @override
-  String get aiAttributionCompletedAt => 'Completed at';
+  String get aiAttributionCompletedAt => 'Completato alle';
 
   @override
-  String get aiAttributionCost => 'Cost';
+  String get aiAttributionCost => 'Costo';
 
   @override
-  String get aiAttributionCostUnknown => 'Cost unknown';
+  String get aiAttributionCostUnknown => 'Costo sconosciuto';
 
   @override
-  String get aiAttributionCreator => 'Creator';
+  String get aiAttributionCreator => 'Creato da';
 
   @override
-  String get aiAttributionDiagnostics => 'Diagnostics';
+  String get aiAttributionDiagnostics => 'Diagnostica';
 
   @override
-  String get aiAttributionDuration => 'Duration';
+  String get aiAttributionDuration => 'Durata';
 
   @override
-  String get aiAttributionInteractions => 'Interactions';
+  String get aiAttributionInteractions => 'Interazioni';
 
   @override
-  String get aiAttributionLoading => 'Loading AI attribution…';
+  String get aiAttributionLoading => 'Caricamento attribuzione IA…';
 
   @override
   String get aiAttributionNoInteractionDetails =>
-      'No interaction details are available.';
+      'Non ci sono dettagli sulle interazioni.';
 
   @override
-  String get aiAttributionRequestEvidence => 'Request evidence';
+  String get aiAttributionRequestEvidence => 'Dettagli della richiesta';
 
   @override
-  String get aiAttributionResponseEvidence => 'Response evidence';
+  String get aiAttributionResponseEvidence => 'Dettagli della risposta';
 
   @override
   String aiAttributionSecondary(String model, String time, int callCount) {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
       locale: localeName,
-      other: '$callCount calls',
-      one: '1 call',
-      zero: 'no calls',
+      other: '$callCount chiamate',
+      one: '1 chiamata',
+      zero: 'nessuna chiamata',
     );
     return '$model · $time · $_temp0';
   }
 
   @override
-  String get aiAttributionStartedAt => 'Started at';
+  String get aiAttributionStartedAt => 'Iniziato alle';
 
   @override
-  String get aiAttributionStatus => 'Status';
+  String get aiAttributionStatus => 'Stato';
 
   @override
-  String get aiAttributionStatusCancelled => 'Cancelled';
+  String get aiAttributionStatusCancelled => 'Annullato';
 
   @override
-  String get aiAttributionStatusFailed => 'Failed';
+  String get aiAttributionStatusFailed => 'Non riuscito';
 
   @override
-  String get aiAttributionStatusPartial => 'Partial';
+  String get aiAttributionStatusPartial => 'Parziale';
 
   @override
-  String get aiAttributionStatusSucceeded => 'Completed';
+  String get aiAttributionStatusSucceeded => 'Completato';
 
   @override
   String aiAttributionSummary(String actor, String trigger, String status) {
@@ -1436,7 +1436,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTitle => 'AI attribution';
+  String get aiAttributionTitle => 'Attribuzione IA';
 
   @override
   String aiAttributionTokenBreakdown(
@@ -1445,47 +1445,48 @@ class AppLocalizationsIt extends AppLocalizations {
     String cached,
     String reasoning,
   ) {
-    return 'Input: $input · Output: $output · Cached: $cached · Reasoning: $reasoning';
+    return 'Input: $input · Output: $output · In cache: $cached · Ragionamento: $reasoning';
   }
 
   @override
-  String get aiAttributionTokens => 'Tokens';
+  String get aiAttributionTokens => 'Token';
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokenUsageUnknown => 'Utilizzo dei token sconosciuto';
 
   @override
-  String get aiAttributionTrigger => 'Trigger';
+  String get aiAttributionTrigger => 'Attivazione';
 
   @override
-  String get aiAttributionTriggerAgent => 'Agent';
+  String get aiAttributionTriggerAgent => 'Agente';
 
   @override
-  String get aiAttributionTriggerAutomatic => 'Automatic';
+  String get aiAttributionTriggerAutomatic => 'Automatica';
 
   @override
-  String get aiAttributionTriggerImported => 'Imported';
+  String get aiAttributionTriggerImported => 'Importata';
 
   @override
-  String get aiAttributionTriggerManual => 'Manual';
+  String get aiAttributionTriggerManual => 'Manuale';
 
   @override
-  String get aiAttributionTriggerScheduled => 'Scheduled';
+  String get aiAttributionTriggerScheduled => 'Pianificata';
 
   @override
-  String get aiAttributionTriggerSynced => 'From sync';
+  String get aiAttributionTriggerSynced => 'Da sincronizzazione';
 
   @override
-  String get aiAttributionUnavailable => 'AI attribution is unavailable.';
+  String get aiAttributionUnavailable =>
+      'L\'attribuzione IA non è disponibile.';
 
   @override
-  String get aiAttributionUnknownCreator => 'Unknown creator';
+  String get aiAttributionUnknownCreator => 'Autore sconosciuto';
 
   @override
-  String get aiAttributionUnknownModel => 'Unknown model';
+  String get aiAttributionUnknownModel => 'Modello sconosciuto';
 
   @override
-  String get aiAttributionYou => 'You';
+  String get aiAttributionYou => 'Tu';
 
   @override
   String get aiCapabilityChipImageGeneration => 'Generazione di immagini';
@@ -1581,7 +1582,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String aiConsumptionAttributionReference(String id) {
-    return 'Attribution $id';
+    return 'Attribuzione $id';
   }
 
   @override
@@ -1638,7 +1639,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiConsumptionTypeAudioTranscription => 'Trascrizione';
 
   @override
-  String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
+  String get aiConsumptionTypeEmbeddingIndexing =>
+      'Indicizzazione degli embedding';
 
   @override
   String get aiConsumptionTypeImageAnalysis => 'Analisi immagine';
@@ -1657,10 +1659,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
       locale: localeName,
-      other: '$callCount calls',
-      one: '1 call',
+      other: '$callCount chiamate',
+      one: '1 chiamata',
     );
-    return 'AI work · $_temp0';
+    return 'Lavoro IA · $_temp0';
   }
 
   @override
@@ -3054,18 +3056,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.';
+      'Lascia che l\'assistente di questa categoria si aggiorni da solo quando un\'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.';
 
   @override
   String get categoryAutomaticAgentWakesLabel =>
-      'Wake the assistant automatically';
+      'Attiva l\'assistente automaticamente';
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe new audio and analyze new images in this category automatically';
+      'Trascrivi i nuovi audio e analizza le nuove immagini di questa categoria automaticamente';
 
   @override
-  String get categoryAutomaticInferenceLabel => 'Automatic inference';
+  String get categoryAutomaticInferenceLabel => 'Inferenza automatica';
 
   @override
   String get categoryCreationError =>
@@ -3223,7 +3225,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatInputListening => 'Ascoltare...';
 
   @override
-  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+  String get chatInputNoAudioRecorded =>
+      'Non è stato registrato nessun audio. Riprova.';
 
   @override
   String get chatInputPleaseWait => 'Ti prego, aspetta...';
@@ -4273,7 +4276,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createNewLinkedTask => 'Creare un nuovo compito collegato…';
 
   @override
-  String get createNewLinkedTaskTitle => 'New linked task';
+  String get createNewLinkedTaskTitle => 'Nuova attività collegata';
 
   @override
   String get customColor => 'Colore personalizzato';
@@ -4289,7 +4292,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextActivityActionFailed =>
-      'That action didn\'t finish. Your recording is still safe—try again.';
+      'L\'azione non è stata completata. La tua registrazione è ancora al sicuro: riprova.';
 
   @override
   String get dailyOsNextActivityAgentActionFailed =>
@@ -4328,82 +4331,86 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il servizio IA era occupato o irraggiungibile.';
 
   @override
-  String get dailyOsNextActivityDaySummary => 'Day summary';
+  String get dailyOsNextActivityDaySummary => 'Riepilogo della giornata';
 
   @override
   String get dailyOsNextActivityDeleteDialogBody =>
-      'The audio and its pending transcription are removed from this day.';
+      'L\'audio e la sua trascrizione in attesa vengono rimossi da questa giornata.';
 
   @override
-  String get dailyOsNextActivityDeleteDialogTitle => 'Delete this recording?';
+  String get dailyOsNextActivityDeleteDialogTitle =>
+      'Eliminare questa registrazione?';
 
   @override
-  String get dailyOsNextActivityDeleteRecording => 'Delete';
+  String get dailyOsNextActivityDeleteRecording => 'Elimina';
 
   @override
-  String get dailyOsNextActivityEmpty => 'No recordings or check-ins yet.';
+  String get dailyOsNextActivityEmpty =>
+      'Ancora nessuna registrazione o check-in.';
 
   @override
   String get dailyOsNextActivityLoadFailed =>
-      'Your saved activity is still on this device, but it couldn\'t be loaded right now.';
+      'La tua attività salvata è ancora su questo dispositivo, ma al momento non è stato possibile caricarla.';
 
   @override
   String get dailyOsNextActivityMissingAudio =>
-      'This entry is retained, but its audio file isn\'t available on this device. Restore the file, then retry.';
+      'Questa voce è conservata, ma il suo file audio non è disponibile su questo dispositivo. Ripristina il file, poi riprova.';
 
   @override
-  String get dailyOsNextActivityNeedsAttention => 'Needs attention';
+  String get dailyOsNextActivityNeedsAttention => 'Richiede attenzione';
 
   @override
   String get dailyOsNextActivityOpenAiSetup =>
       'Apri la configurazione di Daily OS';
 
   @override
-  String get dailyOsNextActivityOpenSetup => 'Open transcription setup';
+  String get dailyOsNextActivityOpenSetup =>
+      'Apri la configurazione della trascrizione';
 
   @override
-  String get dailyOsNextActivityPlanAvailable => 'Your day plan is available.';
+  String get dailyOsNextActivityPlanAvailable =>
+      'Il tuo piano della giornata è disponibile.';
 
   @override
-  String get dailyOsNextActivityPlanCreated => 'Plan created';
+  String get dailyOsNextActivityPlanCreated => 'Piano creato';
 
   @override
-  String get dailyOsNextActivityReady => 'Ready to use';
+  String get dailyOsNextActivityReady => 'Pronto da usare';
 
   @override
-  String get dailyOsNextActivityRetry => 'Retry transcription';
+  String get dailyOsNextActivityRetry => 'Riprova la trascrizione';
 
   @override
-  String get dailyOsNextActivityRetryLoad => 'Try loading again';
+  String get dailyOsNextActivityRetryLoad => 'Riprova a caricare';
 
   @override
   String get dailyOsNextActivityRetryStep => 'Riprova';
 
   @override
-  String get dailyOsNextActivitySaved => 'Saved locally';
+  String get dailyOsNextActivitySaved => 'Salvato in locale';
 
   @override
   String get dailyOsNextActivitySetupRequired =>
-      'Your recording is safe. Set up an audio transcription model, then retry.';
+      'La tua registrazione è al sicuro. Configura un modello di trascrizione audio, poi riprova.';
 
   @override
-  String get dailyOsNextActivitySubmitted => 'Added to day';
+  String get dailyOsNextActivitySubmitted => 'Aggiunto alla giornata';
 
   @override
-  String get dailyOsNextActivityTranscribing => 'Transcribing';
+  String get dailyOsNextActivityTranscribing => 'Trascrizione in corso';
 
   @override
   String get dailyOsNextActivityTranscriptPending =>
-      'Your recording is saved. The transcript is still pending.';
+      'La tua registrazione è salvata. La trascrizione è ancora in attesa.';
 
   @override
-  String get dailyOsNextActivityUseToPlan => 'Use to build plan';
+  String get dailyOsNextActivityUseToPlan => 'Usa per creare il piano';
 
   @override
-  String get dailyOsNextActivityUseToRefine => 'Use to refine';
+  String get dailyOsNextActivityUseToRefine => 'Usa per perfezionare';
 
   @override
-  String get dailyOsNextActivityWaitingForNetwork => 'Waiting for connection';
+  String get dailyOsNextActivityWaitingForNetwork => 'In attesa di connessione';
 
   @override
   String get dailyOsNextAgendaCapacityComfortable => 'Confortevole';
@@ -4461,7 +4468,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextAgendaStateOpen => 'Aprire';
 
   @override
-  String get dailyOsNextAgendaStateOverdue => 'Suggerimento';
+  String get dailyOsNextAgendaStateOverdue => 'Scaduto';
 
   @override
   String dailyOsNextAgendaSummary(String scheduled, String capacity) {
@@ -4521,7 +4528,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureErrorAudioPersistFailed =>
-      'The recording couldn\'t be saved.';
+      'Non è stato possibile salvare la registrazione.';
 
   @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
@@ -4533,7 +4540,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
-      'Your recording is saved. Transcription couldn\'t finish.';
+      'La tua registrazione è salvata. Non è stato possibile completare la trascrizione.';
 
   @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
@@ -4591,7 +4598,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Recensione';
 
   @override
-  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Registrazione salvata';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Catture';
@@ -4688,17 +4695,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextCommitTodayIsYours => 'Oggi è tuo.';
 
   @override
-  String get dailyOsNextDayAgentStatusAttention => 'Needs attention';
+  String get dailyOsNextDayAgentStatusAttention => 'Richiede attenzione';
 
   @override
-  String get dailyOsNextDayAgentStatusDayClosed => 'Day closed';
+  String get dailyOsNextDayAgentStatusDayClosed => 'Giornata chiusa';
 
   @override
-  String get dailyOsNextDayAgentStatusWorking => 'Planning…';
+  String get dailyOsNextDayAgentStatusWorking => 'Pianificazione…';
 
   @override
   String dailyOsNextDayAgentTokensToday(int tokens) {
-    return '$tokens tokens spent planning this day';
+    return '$tokens token usati per pianificare questa giornata';
   }
 
   @override
@@ -4899,37 +4906,38 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get dailyOsNextPlanChangesFailedNotificationBody =>
-      'Open Lotti to see what happened and try again.';
+      'Apri Lotti per vedere cos\'è successo e riprova.';
 
   @override
   String get dailyOsNextPlanChangesFailedNotificationTitle =>
-      'Your plan changes didn\'t finish';
+      'Le modifiche al piano non sono state completate';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationBody =>
-      'The proposed changes are waiting for your review.';
+      'Le modifiche proposte aspettano la tua revisione.';
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
-      'Your plan changes are ready';
+      'Le modifiche al piano sono pronte';
 
   @override
   String get dailyOsNextPlanFailedNotificationBody =>
-      'Open Lotti to see what happened and try again.';
+      'Apri Lotti per vedere cos\'è successo e riprova.';
 
   @override
   String get dailyOsNextPlanFailedNotificationTitle =>
-      'Your day plan didn\'t finish';
+      'Il piano della giornata non è stato completato';
 
   @override
   String get dailyOsNextPlanReadyNotificationBody =>
-      'The draft is waiting for your review.';
+      'La bozza aspetta la tua revisione.';
 
   @override
-  String get dailyOsNextPlanReadyNotificationTitle => 'Your day plan is ready';
+  String get dailyOsNextPlanReadyNotificationTitle =>
+      'Il piano della giornata è pronto';
 
   @override
-  String get dailyOsNextPlanViewActivity => 'Activity';
+  String get dailyOsNextPlanViewActivity => 'Attività';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Ordine del giorno';
@@ -6374,17 +6382,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get doneButton => 'Fatto';
 
   @override
-  String get editLinkTypeCounterpartLabel => 'Linked task';
+  String get editLinkTypeCounterpartLabel => 'Attività collegata';
 
   @override
   String get editLinkTypeFailedMessage =>
-      'Couldn\'t update the relationship. Please try again.';
+      'Non è stato possibile aggiornare la relazione. Riprova.';
 
   @override
-  String get editLinkTypeTitle => 'Edit relationship';
+  String get editLinkTypeTitle => 'Modifica relazione';
 
   @override
-  String get editLinkTypeTooltip => 'Edit relationship';
+  String get editLinkTypeTooltip => 'Modifica relazione';
 
   @override
   String get editMenuTitle => 'Modifica';
@@ -9433,7 +9441,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get linkBlocksCycleErrorMessage =>
-      'This would create a blocking cycle — choose a different task.';
+      'Si creerebbe un ciclo di blocchi: scegli un\'altra attività.';
 
   @override
   String linkCreatedMessage(String relation, String title) {
@@ -9441,23 +9449,23 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get linkCreatedUndo => 'Undo';
+  String get linkCreatedUndo => 'Annulla';
 
   @override
   String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
+      'Non è stato possibile creare il collegamento. Riprova.';
 
   @override
-  String get linkDirectionLabel => 'This task…';
+  String get linkDirectionLabel => 'Questa attività…';
 
   @override
   String get linkedTaskImageBadge => 'Da un\'attività collegata';
 
   @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+  String get linkedTasksBlockedBySectionTitle => 'Bloccata da';
 
   @override
-  String get linkedTasksEmptyAction => 'Link a task…';
+  String get linkedTasksEmptyAction => 'Collega un\'attività…';
 
   @override
   String get linkedTasksEmptyHint =>
@@ -9473,44 +9481,44 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkExistingTask => 'Collegare il compito esistente…';
 
   @override
-  String get linkExistingTaskTitle => 'Link existing task';
+  String get linkExistingTaskTitle => 'Collega attività esistente';
 
   @override
-  String get linkPhraseBasic => 'Relates to';
+  String get linkPhraseBasic => 'È correlata a';
 
   @override
-  String get linkPhraseBlocksInverse => 'Is blocked by';
+  String get linkPhraseBlocksInverse => 'È bloccata da';
 
   @override
-  String get linkPhraseBlocksPrimary => 'Blocks';
+  String get linkPhraseBlocksPrimary => 'Blocca';
 
   @override
-  String get linkPhraseDuplicatesInverse => 'Is duplicated by';
+  String get linkPhraseDuplicatesInverse => 'È duplicata da';
 
   @override
-  String get linkPhraseDuplicatesPrimary => 'Duplicates';
+  String get linkPhraseDuplicatesPrimary => 'Duplica';
 
   @override
-  String get linkPhraseFixesInverse => 'Is fixed by';
+  String get linkPhraseFixesInverse => 'È risolta da';
 
   @override
-  String get linkPhraseFixesPrimary => 'Fixes';
+  String get linkPhraseFixesPrimary => 'Risolve';
 
   @override
-  String get linkPhraseFollowsUpInverse => 'Has follow-up';
+  String get linkPhraseFollowsUpInverse => 'Ha un seguito';
 
   @override
-  String get linkPhraseFollowsUpPrimary => 'Follows up on';
+  String get linkPhraseFollowsUpPrimary => 'È il seguito di';
 
   @override
-  String get linkPhraseSupersedesInverse => 'Is superseded by';
+  String get linkPhraseSupersedesInverse => 'È sostituita da';
 
   @override
-  String get linkPhraseSupersedesPrimary => 'Supersedes';
+  String get linkPhraseSupersedesPrimary => 'Sostituisce';
 
   @override
   String linkPickerCreateTaskSemanticLabel(String title) {
-    return 'Create task: $title';
+    return 'Crea attività: $title';
   }
 
   @override
@@ -9613,7 +9621,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get linkTaskButton => 'Link';
+  String get linkTaskButton => 'Collega';
 
   @override
   String get listPaneHideTooltip => 'Nascondi elenco';
@@ -9637,20 +9645,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get lockdownMenuSemanticsLabel => 'Menu modalità limitata';
 
   @override
-  String get logbookEmptyHint => 'Create your first entry to start journaling.';
+  String get logbookEmptyHint =>
+      'Crea la tua prima voce per iniziare il diario.';
 
   @override
-  String get logbookEmptyTitle => 'Your logbook is empty';
+  String get logbookEmptyTitle => 'Il tuo diario è vuoto';
 
   @override
-  String get logbookNewEntriesHint => 'New entries will open here.';
+  String get logbookNewEntriesHint => 'Le nuove voci si apriranno qui.';
 
   @override
   String get logbookNoMatchesHint =>
-      'Adjust your search or filters to see more.';
+      'Modifica la ricerca o i filtri per vedere altro.';
 
   @override
-  String get logbookNoMatchesTitle => 'No entries match';
+  String get logbookNoMatchesTitle => 'Nessuna voce corrisponde';
 
   @override
   String get loggingDomainAgentRuntime => 'Tempo libero dell\'agente';
@@ -14846,7 +14855,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get speechModalTitle => 'Riconoscimento vocale';
 
   @override
-  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+  String get speechNoAudioRecorded =>
+      'Non è stato registrato nessun audio. Riprova.';
 
   @override
   String get speechSettingsAutoPrepareChatAudio =>
@@ -15898,8 +15908,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Blocked by $count tasks',
-      one: 'Blocked by 1 task',
+      other: 'Bloccata da $count attività',
+      one: 'Bloccata da 1 attività',
     );
     return '$_temp0';
   }
@@ -15909,14 +15919,14 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tap to see $count blockers',
-      one: 'Blocked by $title',
+      other: 'Tocca per vedere $count blocchi',
+      one: 'Bloccata da $title',
     );
     return '$_temp0';
   }
 
   @override
-  String get taskBlockedByUnresolvedLabel => 'Blocker not synced yet';
+  String get taskBlockedByUnresolvedLabel => 'Blocco non ancora sincronizzato';
 
   @override
   String get taskBlockedInCycleChipLabel => 'Bloccata in un ciclo';
@@ -15927,11 +15937,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String taskBlockedReason(String title) {
-    return 'Blocked by: $title';
+    return 'Bloccata da: $title';
   }
 
   @override
-  String get taskBlockerPickerTitle => 'What\'s blocking this?';
+  String get taskBlockerPickerTitle => 'Cosa la blocca?';
 
   @override
   String get taskCategoryAllLabel => 'tutti quanti';
@@ -16677,12 +16687,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String transcriptLanguageLabel(String language) {
-    return 'Language: $language';
+    return 'Lingua: $language';
   }
 
   @override
   String transcriptModelLabel(String provider, String model) {
-    return 'Model: $provider, $model';
+    return 'Modello: $provider, $model';
   }
 
   @override
