@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -234,6 +235,78 @@ void main() {
           level: any(named: 'level'),
         ),
       );
+    });
+  });
+
+  group('DomainLogger.listenToDomainFlags', () {
+    late DomainLogger logger;
+    late Map<String, StreamController<bool>> flags;
+
+    Stream<bool> watchFlag(String flagName) => flags[flagName]!.stream;
+
+    setUp(() {
+      logger = DomainLogger(loggingService: MockLoggingService());
+      flags = {
+        for (final domain in LogDomain.values)
+          domain.flagName: StreamController<bool>.broadcast(sync: true),
+      };
+    });
+    tearDown(() async {
+      await logger.dispose();
+      for (final controller in flags.values) {
+        await controller.close();
+      }
+    });
+
+    test('each domain follows its own flag, on and off', () async {
+      await logger.listenToDomainFlags(watchFlag);
+      expect(logger.enabledDomains, isEmpty);
+
+      flags[LogDomain.agentRuntime.flagName]!.add(true);
+      flags[LogDomain.sync.flagName]!.add(true);
+      flags[LogDomain.agentWorkflow.flagName]!.add(false);
+      expect(logger.enabledDomains, {LogDomain.agentRuntime, LogDomain.sync});
+
+      flags[LogDomain.agentRuntime.flagName]!.add(false);
+      expect(logger.enabledDomains, {LogDomain.sync});
+    });
+
+    test('a repeat call replaces the previous subscriptions', () async {
+      await logger.listenToDomainFlags(watchFlag);
+      final previous = flags;
+      flags = {
+        for (final domain in LogDomain.values)
+          domain.flagName: StreamController<bool>.broadcast(sync: true),
+      };
+      addTearDown(() async {
+        for (final controller in previous.values) {
+          await controller.close();
+        }
+      });
+
+      await logger.listenToDomainFlags(watchFlag);
+
+      expect(previous.values.any((c) => c.hasListener), isFalse);
+      previous[LogDomain.sync.flagName]!.add(true);
+      expect(logger.enabledDomains, isEmpty);
+      flags[LogDomain.sync.flagName]!.add(true);
+      expect(logger.enabledDomains, {LogDomain.sync});
+    });
+
+    test('dispose stops following the flags', () async {
+      await logger.listenToDomainFlags(watchFlag);
+      await logger.dispose();
+
+      expect(flags.values.any((c) => c.hasListener), isFalse);
+    });
+
+    test('a flag stream that errors leaves its domain as it was', () async {
+      await logger.listenToDomainFlags(watchFlag);
+      flags[LogDomain.ai.flagName]!
+        ..add(true)
+        ..addError(StateError('db closed'));
+
+      expect(logger.enabledDomains, {LogDomain.ai});
     });
   });
 

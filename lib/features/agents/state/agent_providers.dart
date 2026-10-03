@@ -10,7 +10,6 @@ import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -51,8 +50,8 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
+        domainLoggerProvider,
         journalDbProvider,
-        loggingServiceProvider,
         outboxServiceProvider,
         syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -127,46 +126,6 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
     return null;
   }
   return getIt<SyncEventProcessor>();
-}
-
-/// Domain logger for agent runtime / workflow structured logging.
-///
-/// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
-/// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
-/// without rebuilding the provider. This prevents a flag toggle from
-/// cascading into orchestrator/workflow/service rebuilds and unintentionally
-/// restarting the agent runtime.
-final domainLoggerProvider = Provider<DomainLogger>(
-  domainLogger,
-  name: 'domainLoggerProvider',
-);
-DomainLogger domainLogger(Ref ref) {
-  // Use the GetIt-registered instance so sync components (also GetIt-managed)
-  // share the same DomainLogger and benefit from config flag toggles.
-  // Falls back to a fresh instance in tests where GetIt is not configured.
-  final logger = getIt.isRegistered<DomainLogger>()
-      ? getIt<DomainLogger>()
-      : DomainLogger(loggingService: ref.watch(loggingServiceProvider));
-
-  // Mutate enabledDomains in-place on flag changes — no provider rebuild.
-  void listenDomain(LogDomain domain) {
-    ref.listen(configFlagProvider(domain.flagName), (_, next) {
-      if (next.value ?? false) {
-        logger.enabledDomains.add(domain);
-      } else {
-        logger.enabledDomains.remove(domain);
-      }
-    });
-
-    // Seed the initial value synchronously from the current state.
-    final initial = ref.read(configFlagProvider(domain.flagName));
-    if (initial.value ?? false) {
-      logger.enabledDomains.add(domain);
-    }
-  }
-
-  LogDomain.values.forEach(listenDomain);
-  return logger;
 }
 
 /// The agent database instance (singleton via GetIt).

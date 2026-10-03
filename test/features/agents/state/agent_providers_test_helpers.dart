@@ -19,7 +19,11 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, outboxServiceProvider, syncDatabaseProvider;
+    show
+        domainLoggerProvider,
+        journalDbProvider,
+        outboxServiceProvider,
+        syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';

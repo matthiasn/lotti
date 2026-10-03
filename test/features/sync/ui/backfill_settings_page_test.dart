@@ -17,7 +17,6 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -25,6 +24,7 @@ import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -1311,7 +1311,7 @@ void main() {
           // getIt<DomainLogger> is unregistered in this harness; without the
           // override the controller's logger provider is in error state and
           // syncAll dies before reaching the operations.
-          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       when(
@@ -1328,7 +1328,7 @@ void main() {
           // getIt<DomainLogger> is unregistered in this harness; without the
           // override the controller's logger provider is in error state and
           // syncAll dies before reaching the operations.
-          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       final messages = messagesOf(tester);
@@ -1401,7 +1401,7 @@ void main() {
           // Without the logger override syncAll dies on the errored logger
           // provider before reaching the operations — the failure toast would
           // show, but not because of the stubbed throw above.
-          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       final messages = messagesOf(tester);
@@ -1722,7 +1722,7 @@ void main() {
             // Without a logger the controller's build errors mid-syncAll
             // (getIt<DomainLogger> is unregistered here) and every repair
             // takes the failure path.
-            syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           ],
         );
         when(
@@ -1739,7 +1739,7 @@ void main() {
             // Without a logger the controller's build errors mid-syncAll
             // (getIt<DomainLogger> is unregistered here) and every repair
             // takes the failure path.
-            syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           ],
         );
         final messages = messagesOf(tester);

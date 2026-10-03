@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
@@ -236,7 +237,7 @@ void main() {
         syncMaintenanceRepositoryProvider.overrideWithValue(
           mockSyncMaintenanceRepository,
         ),
-        syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+        domainLoggerProvider.overrideWithValue(mockLoggingService),
         syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
@@ -497,7 +498,7 @@ void main() {
         ProviderScope(
           overrides: [
             syncControllerProvider.overrideWith(() => controller),
-            syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+            domainLoggerProvider.overrideWithValue(mockLoggingService),
           ],
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
@@ -591,7 +592,7 @@ void main() {
         ProviderScope(
           overrides: [
             syncControllerProvider.overrideWith(() => controller),
-            syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+            domainLoggerProvider.overrideWithValue(mockLoggingService),
           ],
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,

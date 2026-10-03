@@ -66,6 +66,7 @@ void registerProcessLogging() {
     )
     ..registerSingleton<DomainLogger>(
       DomainLogger(loggingService: loggingService),
+      dispose: (logger) => logger.dispose(),
     );
 }
 
@@ -259,6 +260,7 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
+    domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
     // Daily OS and Goals plug their agent kinds into the shared runtime.

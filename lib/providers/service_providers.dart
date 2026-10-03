@@ -4,6 +4,8 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 
 /// Provides the configured [MatrixService]. Must be overridden in [ProviderScope].
@@ -44,6 +46,19 @@ final loggingServiceProvider = Provider<LoggingService>(
     'loggingServiceProvider must be overridden before use.',
   ),
   name: 'loggingServiceProvider',
+);
+
+/// The shared [DomainLogger].
+///
+/// `buildProviderOverrides` overrides it with the generation's instance, whose
+/// domain flags `DomainLogger.listenToDomainFlags` keeps current. A scope
+/// built without those overrides — a test — reads the getIt instance if one is
+/// registered, else a fresh logger over [loggingServiceProvider].
+final domainLoggerProvider = Provider<DomainLogger>(
+  (ref) => getIt.isRegistered<DomainLogger>()
+      ? getIt<DomainLogger>()
+      : DomainLogger(loggingService: ref.watch(loggingServiceProvider)),
+  name: 'domainLoggerProvider',
 );
 
 /// Provides the shared [OutboxService]. Must be overridden in [ProviderScope].
