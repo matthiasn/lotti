@@ -951,8 +951,8 @@ void main() {
         );
         _createQueueMarkers(sqlite);
 
-        // Insert a v12 queue row to prove it survives and the new status
-        // column backfills to the 'enqueued' default.
+        // A v12 queue row: the upgrade crosses v34, which drops rows queued
+        // before the trust gate and lowers the room's resume floor to them.
         sqlite.execute(r'''
           INSERT INTO inbound_event_queue
             (event_id, room_id, origin_ts, producer, raw_json, enqueued_at)
@@ -990,18 +990,21 @@ void main() {
           ]),
         );
 
-        // The surviving v12 row backfilled status to 'enqueued' and
-        // resurrection_count to 0.
-        final survivor = await db
-            .customSelect(
-              'SELECT status, resurrection_count, committed_at '
-              'FROM inbound_event_queue '
-              r"WHERE event_id = '$evt-v12'",
-            )
-            .getSingle();
-        expect(survivor.read<String>('status'), 'enqueued');
-        expect(survivor.read<int>('resurrection_count'), 0);
-        expect(survivor.readNullable<int>('committed_at'), isNull);
+        // The new columns carry the defaults existing rows backfill to.
+        final defaults = {
+          for (final row in columns)
+            row.read<String>('name'): row.readNullable<String>('dflt_value'),
+        };
+        expect(defaults['status'], "'enqueued'");
+        expect(defaults['resurrection_count'], '0');
+
+        // v34 dropped the pre-trust row and lowered its room's resume floor
+        // to it, so the next resume fetches it again through the gate.
+        expect(await db.select(db.inboundEventQueue).get(), isEmpty);
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals('!room-v12:example.org'))).getSingle();
+        expect(marker.resumeFloorTs, 1700000000000);
 
         // The drain index was rebuilt as a status-partial index covering
         // only the active (enqueued/retrying) rows.
@@ -1752,8 +1755,7 @@ void main() {
     );
 
     test(
-      'v33 migration adds a zeroed descriptor retry counter, keeping the '
-      'queued rows and their all-reason attempts',
+      'v33 migration adds the descriptor retry counter column',
       () async {
         const file = 'test_sync_v33_descriptor_attempts.db';
         final seeded = SyncDatabase(overriddenFilename: file);
@@ -1778,11 +1780,57 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), 34);
-        final rows = await db.select(db.inboundEventQueue).get();
+        final columns = await db
+            .customSelect(
+              "SELECT name FROM pragma_table_info('inbound_event_queue')",
+            )
+            .get();
         expect(
-          rows.map((r) => (r.eventId, r.attempts, r.descriptorAttempts)),
-          [(r'$queued', 7, 0)],
+          columns.map((c) => c.read<String>('name')),
+          contains('descriptor_attempts'),
         );
+        // The upgrade also crosses v34, which drops rows queued before the
+        // trust gate; that is covered by the v34 test below.
+        expect(await db.select(db.inboundEventQueue).get(), isEmpty);
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v34 migration drops rows queued before the trust gate and lowers each '
+      "room's resume floor so they are fetched again through it",
+      () async {
+        const file = 'test_sync_v34_pre_trust_rows.db';
+        final seeded = SyncDatabase(overriddenFilename: file);
+        await seeded.customStatement(
+          'INSERT INTO inbound_event_queue '
+          '(event_id, room_id, origin_ts, producer, raw_json, enqueued_at) '
+          r"VALUES ('$a1', '!a', 300, 'live', '{}', 1), "
+          r"('$a2', '!a', 200, 'live', '{}', 1), "
+          r"('$b1', '!b', 500, 'live', '{}', 1)",
+        );
+        // Room !a already has a later floor, room !b an earlier one.
+        await seeded.customStatement(
+          'INSERT INTO queue_markers (room_id, resume_floor_ts) '
+          "VALUES ('!a', 900), ('!b', 100)",
+        );
+        await seeded.close();
+        sqlite3.open(path.join(testDirectory!.path, file))
+          ..execute('DROP TABLE trusted_sync_senders')
+          ..execute('PRAGMA user_version = 33')
+          ..close();
+
+        final db = SyncDatabase(overriddenFilename: file);
+
+        expect(await db.select(db.inboundEventQueue).get(), isEmpty);
+        final floors = {
+          for (final m in await db.select(db.queueMarkers).get())
+            m.roomId: m.resumeFloorTs,
+        };
+        // The oldest dropped row wins over a later floor; an earlier floor
+        // already reaches back far enough and stays.
+        expect(floors, {'!a': 200, '!b': 100});
 
         await db.close();
       },

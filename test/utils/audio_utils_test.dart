@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
@@ -91,6 +92,20 @@ void main() {
       },
       tags: 'glados',
     );
+
+    test('a parent segment from sync stays inside the documents directory', () {
+      final hostile = JournalAudio(
+        meta: testAudioJournal.meta,
+        data: testAudioJournal.data.copyWith(
+          audioDirectory: '/audio/../../../',
+          audioFile: r'..\..\etc\passwd',
+        ),
+      );
+
+      final path = AudioUtils.getAudioPath(hostile, mockDocDir);
+
+      expect(p.isWithin(mockDocDir.path, path), isTrue, reason: path);
+    });
 
     test('getFullAudioPath returns correct full path', () async {
       final expectedPath =

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show compute;
+import 'package:flutter/foundation.dart' show compute, visibleForTesting;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -51,7 +51,12 @@ Future<Uint8List> decodeAttachmentBytes({
   try {
     decoded = downloadedBytes.length < _inlineGzipThreshold
         ? _cappedGzipDecode((downloadedBytes, maxDecodedBytes))
-        : await compute(_cappedGzipDecode, (downloadedBytes, maxDecodedBytes));
+        : await _oneWorkerDecodeAtATime(
+            () => compute(_cappedGzipDecode, (
+              downloadedBytes,
+              maxDecodedBytes,
+            )),
+          );
   } on AttachmentTooLargeException {
     logging.log(
       LogDomain.sync,
@@ -69,6 +74,41 @@ Future<Uint8List> decodeAttachmentBytes({
     subDomain: 'attachment.decode',
   );
   return decoded;
+}
+
+/// The tail of the worker-isolate decodes, so each starts after the last.
+///
+/// The limit bounds one decode; without this, a burst of attachments decoded
+/// on parallel isolates could each hold up to that much at once. Inline
+/// decodes need no turn: they run synchronously, so they never overlap.
+Future<void> _workerDecodeTail = Future<void>.value();
+
+int _workerDecodesInFlight = 0;
+int _workerDecodesPeak = 0;
+
+/// The most worker-isolate decodes that ever ran at once in this process.
+@visibleForTesting
+int get workerDecodesPeak => _workerDecodesPeak;
+
+/// Resets [workerDecodesPeak] between tests.
+@visibleForTesting
+void resetWorkerDecodesPeak() => _workerDecodesPeak = 0;
+
+Future<T> _oneWorkerDecodeAtATime<T>(Future<T> Function() decode) async {
+  final previous = _workerDecodeTail;
+  final turn = Completer<void>();
+  _workerDecodeTail = turn.future;
+  await previous;
+  _workerDecodesInFlight++;
+  if (_workerDecodesInFlight > _workerDecodesPeak) {
+    _workerDecodesPeak = _workerDecodesInFlight;
+  }
+  try {
+    return await decode();
+  } finally {
+    _workerDecodesInFlight--;
+    turn.complete();
+  }
 }
 
 /// The uncompressed length a gzip stream declares in its ISIZE trailer — its

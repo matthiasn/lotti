@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/confined_path.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 
@@ -50,15 +51,18 @@ String canonicalImageDirectory(String imageDirectory) {
   return withoutTrailing.isEmpty ? '/' : '/$withoutTrailing/';
 }
 
-/// Resolves [img] to its canonical location inside [documentsDirectory].
+/// Resolves [img] to its canonical location inside [documentsDirectory],
+/// confined to it (see [confinedDocumentPath]).
 String getCanonicalImagePath(
   JournalImage img, {
   String? documentsDirectory,
 }) {
   final docDir = documentsDirectory ?? getDocumentsDirectory().path;
-  final directory = canonicalImageDirectory(img.data.imageDirectory);
-  final relativeDirectory = directory.replaceFirst(RegExp('^/+'), '');
-  return p.normalize(p.join(docDir, relativeDirectory, img.data.imageFile));
+  return confinedDocumentPath(
+    docDir,
+    img.data.imageDirectory,
+    img.data.imageFile,
+  );
 }
 
 /// Reconstructs the path produced by the legacy missing-separator bug.
@@ -81,13 +85,12 @@ String getLegacyMalformedImagePath(
   }
 
   final legacyRoot = '${p.basename(docDir)}${segments.first}';
-  return p.normalize(
-    p.joinAll([
-      p.dirname(docDir),
-      legacyRoot,
-      ...segments.skip(1),
-      img.data.imageFile,
-    ]),
+  // Confined to the legacy sibling root, like the canonical path is to the
+  // documents directory.
+  return confinedDocumentPath(
+    p.join(p.dirname(docDir), legacyRoot),
+    segments.skip(1).join('/'),
+    img.data.imageFile,
   );
 }
 
