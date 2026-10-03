@@ -85,6 +85,14 @@ getit_check:
 developer_log_check:
 	$(DART_CMD) run tool/logging/validate.dart
 
+# Checks that raw spacing, typography and colour values outside the token
+# definitions only shrink (AGENTS.md: design-system tokens are mandatory).
+# After migrating a file, tighten with
+# `dart run tool/design_tokens/validate.dart --update-baseline`.
+.PHONY: token_check
+token_check:
+	$(DART_CMD) run tool/design_tokens/validate.dart
+
 # Checks the unreleased release notes in changelog.d/ — one new file per pull
 # request instead of an edit to the top of CHANGELOG.md, which is what used to
 # leave every open PR conflicted the moment one of them merged. Also fails when
