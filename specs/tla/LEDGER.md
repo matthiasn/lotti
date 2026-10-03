@@ -97,6 +97,11 @@ resolver, and the task contexts and suggestions built from them. Its seven
 design switches each have a counterexample. Not included in the historical
 totals above.
 
+The `PullRequestAssignment` design model (#4610) adds one spec, two
+configurations, three named properties and 75,426 distinct states. Three of its
+four design switches have a counterexample; the fourth, the picker's filter, is
+shown not to carry safety. Not included in the historical totals above.
+
 The `SavedTaskFilterSync` model (#4506) adds one spec, two configurations,
 five named properties and 2,753,540 distinct states. It came with a fix for
 saved filters that never reached a peer; all nine bugs were found by auditing
@@ -272,6 +277,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `ConversationLoop` | 2 | 6 (0) | P2×4 P3×2 | — | The turn limit counted the user messages left after trimming, so a wake calling nine tools a round never reached `maxTurnsPerWake` and kept calling the model, and synthesized tool-call ids repeated. A trim could also open the history on a tool call, a strategy that threw left calls unanswered for the next message, and nothing serialized sends on one conversation |
 | [#4603](https://github.com/matthiasn/lotti/pull/4603) | pending | github | `PullRequestSnapshot` | 5 | 0 | — | — | A design model written before most of the code: pull requests linked to tasks, refreshed on every task context, replicated with a concurrent-version resolver instead of a user-facing conflict. Each of its seven design switches has a counterexample; it settled ordering by the server's `Date`, a context preferring its own read, and writing only changed snapshots, so a refresh cannot wake the agent that started it |
+| [#4610](https://github.com/matthiasn/lotti/pull/4610) | pending | github | `PullRequestAssignment` | 2 | 0 | — | — | A design model written before the code: which task a pull request belongs to, the picker that leaves held ones out, and links racing on one device and across devices. Three of its four switches have a counterexample — refusing a conflicting entry at sync never converges — and TLC showed that a pull request moved between tasks can briefly look double-assigned, because sync does not deliver a device's entries in order |
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | pending | agents | `ProjectWakeGovernor` | 5 | 5 (5) | P2×2 P3×3 | [0113](../../docs/adr/0113-project-agents-update-in-synced-slots.md) | A project agent's report changes, synced to three devices, armed three device-local 06:00 fallbacks, and every sync arrival of the state repaired one more: each device ran its own paid inference for one report (`SyncedSlots = FALSE` breaks `StaleDoesNotTriggerWork` in five states). A change now only marks the report stale; one synced, leased update slot per agent refreshes it on one device. TLC rejected three drafts on the way — claiming offline, confirming a claim a connection drop never uploaded, and two devices arming different slots for one change |
 ## Sync follow-up evidence, 2026-09-26
 
