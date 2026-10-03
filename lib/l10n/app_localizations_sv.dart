@@ -6576,6 +6576,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get githubCheckOtherDevices => 'Kolla mina andra enheter';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6711,6 +6714,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubMergeConflicts => 'Sammanfogningskonflikter';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Ingen token har kommit från dina andra enheter än. Använd ”Skicka till mina andra enheter” på en enhet som har en.';
+
+  @override
   String get githubNotRefreshed => 'Kunde inte uppdatera';
 
   @override
@@ -6782,6 +6789,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubReviewPending => 'Granskning begärd';
 
   @override
+  String get githubSendToOtherDevices => 'Skicka till mina andra enheter';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Skickat. Dina andra enheter hämtar den vid nästa synkronisering.';
+
+  @override
   String get githubStatusClosed => 'Stängd';
 
   @override
@@ -6801,11 +6815,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Skapa en fine-grained token för de repon du arbetar i, med läsbehörighet till \"Pull requests\" och \"Commit statuses\". GitHub låter inte en sådan token läsa check runs i ett privat repo, så där kan CI vara ofullständig; en klassisk token med scopet \"repo\" kan läsa dem.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Token stannar på den här enheten: den synkas aldrig och skickas bara till api.github.com.';
+  String get githubTokenLabel => 'Personlig åtkomsttoken';
 
   @override
-  String get githubTokenLabel => 'Personlig åtkomsttoken';
+  String get githubTokenPrivacy =>
+      'Token synkas end-to-end-krypterad till dina andra enheter och skickas bara till api.github.com.';
 
   @override
   String get githubTokenShow => 'Visa token';
@@ -15191,6 +15205,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Inträdeslänk';
+
+  @override
+  String get syncPayloadGitHubAccount => 'GitHub-konto';
 
   @override
   String get syncPayloadJournalEntity => 'Dagboksanteckning';

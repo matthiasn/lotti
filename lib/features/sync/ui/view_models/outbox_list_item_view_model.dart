@@ -99,6 +99,7 @@ class OutboxListItemViewModel {
         configFlag: (_) => messages.syncPayloadConfigFlag,
         themingSelection: (_) => messages.syncPayloadThemingSelection,
         dailyOsUserName: (_) => messages.syncPayloadDailyOsUserName,
+        gitHubAccount: (_) => messages.syncPayloadGitHubAccount,
         notification: (_) => messages.syncPayloadNotification,
         notificationStateUpdate: (_) =>
             messages.syncPayloadNotificationStateUpdate,

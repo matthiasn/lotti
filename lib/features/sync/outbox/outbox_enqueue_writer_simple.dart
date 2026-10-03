@@ -126,6 +126,18 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'updatedAt=${msg.updatedAt}',
   );
 
+  /// Content-free: the log line never carries the token, nor the login.
+  Future<void> enqueueGitHubAccount({
+    required SyncGitHubAccount msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'gitHubAccount',
+    logMessage:
+        'enqueue type=SyncGitHubAccount subject=gitHubAccount '
+        'updatedAt=${msg.updatedAt} connected=${msg.token != null}',
+  );
+
   /// Enqueues a notification message: validates the payload path stays within
   /// the documents root, folds the message's own clock into
   /// `coveredVectorClocks`, sizes the row including the on-disk attachment, and

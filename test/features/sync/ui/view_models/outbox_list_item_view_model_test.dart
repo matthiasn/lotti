@@ -265,6 +265,18 @@ void main() {
             ),
             expectedLabel: (ctx) => ctx.messages.syncPayloadDailyOsUserName,
           ),
+          (
+            name: 'github account',
+            item: payloadItem(
+              id: 17,
+              message: const SyncMessage.gitHubAccount(
+                updatedAt: 0,
+                status: SyncEntryStatus.update,
+              ).toJson(),
+              subject: 'gitHubAccount',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadGitHubAccount,
+          ),
         ];
 
     for (final c in payloadKindCases) {

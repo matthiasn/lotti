@@ -8,10 +8,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/repository/github_account_sync.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -20,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../in_memory_keychain.dart';
 import '../pull_request_fixtures.dart';
 
 void main() {
@@ -53,73 +58,250 @@ void main() {
   }
 
   group('GitHubAccountController', () {
-    test('reads the stored login, or none without a token', () async {
-      when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
-      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
-      expect(
-        await container().read(gitHubAccountControllerProvider.future),
-        'pingu',
-      );
+    late Map<String, String> keychain;
+    late GitHubTokenStorage storage;
+    late List<SyncMessage> sent;
+    late int rescans;
+    late StreamController<Set<String>> updates;
 
-      when(tokens.readToken).thenAnswer((_) async => null);
+    setUp(() async {
+      keychain = {};
+      storage = GitHubTokenStorage(
+        inMemoryKeychain(keychain),
+        namespace: 'real',
+      );
+      sent = [];
+      rescans = 0;
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+    });
+
+    ProviderContainer account() {
+      final c = ProviderContainer(
+        overrides: [
+          gitHubClientProvider.overrideWithValue(client),
+          gitHubTokenStorageProvider.overrideWithValue(storage),
+          gitHubAccountSyncProvider.overrideWithValue(
+            GitHubAccountSync(
+              enqueue: (message) async => sent.add(message),
+              rescan: () async => rescans++,
+            ),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    // A token another device sent, not checked here yet.
+    Future<void> received(String token) => storage.applyIfNewer(
+      GitHubAccountRecord(token: token, login: 'pingu', updatedAt: 1),
+    );
+
+    test('reads the stored login, or none without a token', () async {
       expect(
-        await container().read(gitHubAccountControllerProvider.future),
+        await account().read(gitHubAccountControllerProvider.future),
         isNull,
       );
+
+      await storage.save(token: 'ghp_secret', login: 'pingu');
+      expect(
+        await account().read(gitHubAccountControllerProvider.future),
+        'pingu',
+      );
+      verifyNever(() => client.fetchViewerLogin(any()));
     });
 
-    test('stores a token only after GitHub accepts it', () async {
-      when(tokens.readToken).thenAnswer((_) async => null);
-      when(
-        () => client.fetchViewerLogin('ghp_secret'),
-      ).thenAnswer((_) async => 'pingu');
-      when(
-        () => tokens.save(token: 'ghp_secret', login: 'pingu'),
-      ).thenAnswer((_) async {});
-      final c = container();
-      await c.read(gitHubAccountControllerProvider.future);
+    test(
+      'stores a token only after GitHub accepts it, and sends it to the '
+      "user's other devices",
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_secret'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = account();
+        await c.read(gitHubAccountControllerProvider.future);
 
-      final failure = await c
-          .read(gitHubAccountControllerProvider.notifier)
-          .connect('  ghp_secret \n');
+        final failure = await c
+            .read(gitHubAccountControllerProvider.notifier)
+            .connect('  ghp_secret \n');
 
-      expect(failure, isNull);
-      expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
-      verify(() => tokens.save(token: 'ghp_secret', login: 'pingu')).called(1);
-    });
+        expect(failure, isNull);
+        expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
+        expect(await storage.readToken(), 'ghp_secret');
+        final message = sent.single as SyncGitHubAccount;
+        expect(message.token, const SyncSecret('ghp_secret'));
+        expect(message.login, 'pingu');
+        expect(message.updatedAt, (await storage.read())!.updatedAt);
+      },
+    );
 
-    test('a refused token is not stored, and says why', () async {
-      when(tokens.readToken).thenAnswer((_) async => null);
+    test('a refused token is not stored or sent, and says why', () async {
       when(() => client.fetchViewerLogin(any())).thenThrow(
         const GitHubException(GitHubFailureKind.unauthorized),
       );
-      final c = container();
+      final c = account();
       await c.read(gitHubAccountControllerProvider.future);
       final notifier = c.read(gitHubAccountControllerProvider.notifier);
 
       expect(await notifier.connect('ghp_bad'), GitHubFailureKind.unauthorized);
       expect(await notifier.connect('   '), GitHubFailureKind.noToken);
       expect(c.read(gitHubAccountControllerProvider).value, isNull);
-      verifyNever(
-        () => tokens.save(
-          token: any(named: 'token'),
-          login: any(named: 'login'),
-        ),
-      );
+      expect(await storage.read(), isNull);
+      expect(sent, isEmpty);
     });
 
-    test('disconnect forgets the token', () async {
-      when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
-      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
-      when(tokens.clear).thenAnswer((_) async {});
-      final c = container();
-      await c.read(gitHubAccountControllerProvider.future);
+    test(
+      'disconnect forgets the token here and on the other devices',
+      () async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        final c = account();
+        await c.read(gitHubAccountControllerProvider.future);
 
-      await c.read(gitHubAccountControllerProvider.notifier).disconnect();
+        await c.read(gitHubAccountControllerProvider.notifier).disconnect();
 
-      expect(c.read(gitHubAccountControllerProvider).value, isNull);
-      verify(tokens.clear).called(1);
-    });
+        expect(c.read(gitHubAccountControllerProvider).value, isNull);
+        expect(await storage.readToken(), isNull);
+        final message = sent.single as SyncGitHubAccount;
+        expect(message.token, isNull);
+      },
+    );
+
+    test(
+      'a token from another device is checked with GitHub before it shows '
+      'as connected (VerifyReceived)',
+      () async {
+        await received('ghp_synced');
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+
+        expect(
+          await account().read(gitHubAccountControllerProvider.future),
+          'pingu',
+        );
+        verify(() => client.fetchViewerLogin('ghp_synced')).called(1);
+        expect((await storage.read())!.verified, isTrue);
+
+        // Checked once: the next read does not ask again.
+        await account().read(gitHubAccountControllerProvider.future);
+        verifyNever(() => client.fetchViewerLogin('ghp_synced'));
+      },
+    );
+
+    test(
+      'a token from another device that GitHub rejects is reported, not '
+      'shown as connected',
+      () async {
+        await received('ghp_revoked');
+        when(() => client.fetchViewerLogin('ghp_revoked')).thenThrow(
+          const GitHubException(GitHubFailureKind.unauthorized),
+        );
+        final c = account();
+
+        await expectLater(
+          c.read(gitHubAccountControllerProvider.future),
+          throwsA(
+            isA<GitHubException>().having(
+              (e) => e.kind,
+              'kind',
+              GitHubFailureKind.unauthorized,
+            ),
+          ),
+        );
+        expect((await storage.read())!.verified, isFalse);
+      },
+    );
+
+    test(
+      'one this device cannot check yet shows the login it came with, and is '
+      'checked again next time',
+      () async {
+        await received('ghp_synced');
+        when(() => client.fetchViewerLogin('ghp_synced')).thenThrow(
+          const GitHubException(GitHubFailureKind.offline),
+        );
+
+        expect(
+          await account().read(gitHubAccountControllerProvider.future),
+          'pingu',
+        );
+        expect((await storage.read())!.verified, isFalse);
+      },
+    );
+
+    test(
+      'a token that arrives while the page is open is read at once',
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = account();
+        final seen = <String?>[];
+        c.listen(
+          gitHubAccountControllerProvider,
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        await received('ghp_synced');
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        expect(seen, [null]);
+        updates.add({gitHubAccountNotification});
+        await pumpEventQueue();
+
+        expect(seen.last, 'pingu');
+      },
+    );
+
+    test(
+      'sending to the other devices sends the held version, with its own '
+      'stamp, and nothing when there is no token',
+      () async {
+        final c = account();
+        final notifier = c.read(gitHubAccountControllerProvider.notifier);
+        expect(await notifier.sendToOtherDevices(), isFalse);
+        expect(sent, isEmpty);
+
+        final held = await storage.save(token: 'ghp_secret', login: 'pingu');
+        expect(await notifier.sendToOtherDevices(), isTrue);
+
+        final message = sent.single as SyncGitHubAccount;
+        expect(message.updatedAt, held.updatedAt);
+        expect(message.token, const SyncSecret('ghp_secret'));
+      },
+    );
+
+    test(
+      'checking the other devices asks sync to catch up, then reads again',
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = account();
+        expect(await c.read(gitHubAccountControllerProvider.future), isNull);
+        await received('ghp_synced');
+
+        await c
+            .read(gitHubAccountControllerProvider.notifier)
+            .checkOtherDevices();
+
+        expect(rescans, 1);
+        expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
+      },
+    );
   });
 
   group('PullRequestRefreshController', () {

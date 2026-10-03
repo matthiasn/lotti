@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -326,6 +327,29 @@ void main() {
 
       expect(message.lightThemeName, 'Indigo');
       expect(message.darkThemeName, 'Shark');
+    });
+  });
+
+  group('SyncMessage.gitHubAccount', () {
+    test('round-trips a token as a secret, and a disconnection', () {
+      const connected = SyncMessage.gitHubAccount(
+        updatedAt: 42,
+        status: SyncEntryStatus.update,
+        token: SyncSecret('ghp_secret'),
+        login: 'pingu',
+      );
+      const disconnected = SyncMessage.gitHubAccount(
+        updatedAt: 43,
+        status: SyncEntryStatus.update,
+      );
+
+      // As it is sent: JSON text, where the secret is its value.
+      final json =
+          jsonDecode(jsonEncode(connected.toJson())) as Map<String, dynamic>;
+      expect(json['runtimeType'], 'gitHubAccount');
+      expect(json['token'], 'ghp_secret');
+      expect(SyncMessage.fromJson(json), connected);
+      expect(SyncMessage.fromJson(disconnected.toJson()), disconnected);
     });
   });
 

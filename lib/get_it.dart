@@ -31,6 +31,7 @@ import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';

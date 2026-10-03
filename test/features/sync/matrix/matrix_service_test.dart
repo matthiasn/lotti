@@ -1342,6 +1342,10 @@ void main() {
         updatedAt: 0,
         status: SyncEntryStatus.initial,
       ),
+      'gitHubAccount': const SyncMessage.gitHubAccount(
+        updatedAt: 0,
+        status: SyncEntryStatus.initial,
+      ),
       'backfillRequest': const SyncMessage.backfillRequest(
         entries: [],
         requesterId: 'host-1',

@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
 
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:path/path.dart' as path;
 
 import 'outbox_service_test_harness.dart';
@@ -1055,6 +1056,25 @@ void main() {
         verify(() => syncDatabase.addOutboxItem(any())).called(1);
       },
     );
+  });
+
+  group('SyncGitHubAccount', () {
+    test('enqueues the account with its subject', () async {
+      const message = SyncMessage.gitHubAccount(
+        updatedAt: 42,
+        status: SyncEntryStatus.update,
+        token: SyncSecret('ghp_secret'),
+        login: 'pingu',
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      final companion = captured.single as OutboxCompanion;
+      expect(companion.subject.value, 'gitHubAccount');
+    });
   });
 
   group('SyncDailyOsUserName', () {

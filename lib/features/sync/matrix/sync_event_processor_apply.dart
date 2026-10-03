@@ -283,6 +283,35 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           rethrow;
         }
         return null;
+      case SyncGitHubAccount(:final token, :final login, :final updatedAt):
+        final storage = _gitHubTokenStorage;
+        if (storage == null) return null;
+        try {
+          final applied = await storage.applyIfNewer(
+            GitHubAccountRecord(
+              token: token?.value,
+              login: login,
+              updatedAt: updatedAt,
+            ),
+          );
+          if (!applied) return null;
+
+          _updateNotifications.notify(
+            {gitHubAccountNotification},
+            fromSync: true,
+          );
+
+          // Content-free: never log the token, nor whose it is.
+          _trace(
+            'apply gitHubAccount updatedAt=$updatedAt '
+            'connected=${token != null}',
+            subDomain: 'processor.apply',
+          );
+        } catch (e, st) {
+          _loggingService.error(LogDomain.sync, e, stackTrace: st);
+          rethrow;
+        }
+        return null;
       case SyncOnboardingSnapshotBegin() ||
           SyncOnboardingSnapshotAccepted() ||
           SyncOnboardingTerminalCounters() ||

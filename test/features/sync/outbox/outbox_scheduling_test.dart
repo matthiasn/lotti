@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -26,6 +27,7 @@ enum _GeneratedPriorityMessageKind {
   aiConfigDelete,
   themingSelection,
   dailyOsUserName,
+  gitHubAccount,
   backfillRequest,
   backfillResponse,
   mediaRequest,
@@ -160,6 +162,12 @@ class _GeneratedPriorityScenario {
           updatedAt: counterSlot,
           status: status,
         ),
+      _GeneratedPriorityMessageKind.gitHubAccount => SyncMessage.gitHubAccount(
+        updatedAt: counterSlot,
+        status: status,
+        token: SyncSecret('ghp-$counterSlot'),
+        login: 'login-$counterSlot',
+      ),
       _GeneratedPriorityMessageKind.backfillRequest =>
         SyncMessage.backfillRequest(
           entries: [
@@ -287,6 +295,7 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.notificationStateUpdate ||
       _GeneratedPriorityMessageKind.themingSelection ||
       _GeneratedPriorityMessageKind.dailyOsUserName ||
+      _GeneratedPriorityMessageKind.gitHubAccount ||
       _GeneratedPriorityMessageKind.configFlag ||
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
       _GeneratedPriorityMessageKind.entityDefinition ||

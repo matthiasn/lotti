@@ -273,6 +273,26 @@ Map<String, dynamic> _$SyncDailyOsUserNameToJson(
   'runtimeType': instance.$type,
 };
 
+SyncGitHubAccount _$SyncGitHubAccountFromJson(Map<String, dynamic> json) =>
+    SyncGitHubAccount(
+      updatedAt: (json['updatedAt'] as num).toInt(),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      token: json['token'] == null
+          ? null
+          : SyncSecret.fromJson(json['token'] as String),
+      login: json['login'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncGitHubAccountToJson(SyncGitHubAccount instance) =>
+    <String, dynamic>{
+      'updatedAt': instance.updatedAt,
+      'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'token': instance.token,
+      'login': instance.login,
+      'runtimeType': instance.$type,
+    };
+
 SyncNotification _$SyncNotificationFromJson(Map<String, dynamic> json) =>
     SyncNotification(
       id: json['id'] as String,

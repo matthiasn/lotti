@@ -92,6 +92,10 @@ Future<String? Function()> _registerMatrixSyncStack({
           syncNodeProfileRepository: syncNodeProfileRepository,
           fts5Db: getIt<Fts5Db>(),
           syncEventTrust: syncEventTrust,
+          gitHubTokenStorage: gitHubTokenStorageForProfile(
+            secureStorage,
+            getIt<ProfileContext>(),
+          ),
         )
         ..consumptionRepository = consumptionRepository
         ..onJournalEntityApplied = ChecklistRepository.settlerForReceived();

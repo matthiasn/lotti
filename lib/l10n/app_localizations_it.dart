@@ -6645,6 +6645,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get githubCheckOtherDevices => 'Controlla i miei altri dispositivi';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6781,6 +6784,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubMergeConflicts => 'Conflitti di merge';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Non è ancora arrivato nessun token dagli altri tuoi dispositivi. Su un dispositivo che ne ha uno, usa «Invia ai miei altri dispositivi».';
+
+  @override
   String get githubNotRefreshed => 'Aggiornamento non riuscito';
 
   @override
@@ -6852,6 +6859,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubReviewPending => 'Revisione richiesta';
 
   @override
+  String get githubSendToOtherDevices => 'Invia ai miei altri dispositivi';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Inviato. Gli altri tuoi dispositivi lo riceveranno alla prossima sincronizzazione.';
+
+  @override
   String get githubStatusClosed => 'Chiusa';
 
   @override
@@ -6871,11 +6885,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Lotti legge le pull request che colleghi alle attività con il tuo token di accesso personale. Crea un token fine-grained per i repository in cui lavori, con accesso in sola lettura a \"Pull requests\" e \"Commit statuses\". GitHub non permette a un token del genere di leggere i check run di un repository privato, quindi lì la CI può essere incompleta; un token classico con lo scope \"repo\" può leggerli.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Il token resta su questo dispositivo: non viene mai sincronizzato ed è inviato solo a api.github.com.';
+  String get githubTokenLabel => 'Token di accesso personale';
 
   @override
-  String get githubTokenLabel => 'Token di accesso personale';
+  String get githubTokenPrivacy =>
+      'Il token si sincronizza con crittografia end-to-end con gli altri tuoi dispositivi e viene inviato solo ad api.github.com.';
 
   @override
   String get githubTokenShow => 'Mostra token';
@@ -15372,6 +15386,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Collegamento di ingresso';
+
+  @override
+  String get syncPayloadGitHubAccount => 'Account GitHub';
 
   @override
   String get syncPayloadJournalEntity => 'Entrata del giornale';

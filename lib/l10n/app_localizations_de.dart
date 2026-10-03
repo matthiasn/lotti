@@ -6616,6 +6616,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get githubCheckOtherDevices => 'Meine anderen Geräte prüfen';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6751,6 +6754,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubMergeConflicts => 'Merge-Konflikte';
 
   @override
+  String get githubNoTokenFromOtherDevices =>
+      'Von deinen anderen Geräten ist noch kein Token angekommen. Nutze auf einem Gerät, das einen hat, „An meine anderen Geräte senden“.';
+
+  @override
   String get githubNotRefreshed => 'Aktualisierung fehlgeschlagen';
 
   @override
@@ -6822,6 +6829,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubReviewPending => 'Review angefragt';
 
   @override
+  String get githubSendToOtherDevices => 'An meine anderen Geräte senden';
+
+  @override
+  String get githubSentToOtherDevices =>
+      'Gesendet. Deine anderen Geräte übernehmen ihn bei der nächsten Synchronisierung.';
+
+  @override
   String get githubStatusClosed => 'Geschlossen';
 
   @override
@@ -6841,11 +6855,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit deinem eigenen Personal Access Token. Erstelle einen Fine-grained Token für die Repositories, in denen du arbeitest, mit Lesezugriff auf \"Pull requests\" und \"Commit statuses\". GitHub lässt einen solchen Token in einem privaten Repository keine Check-Runs lesen, dort kann CI also unvollständig sein; ein klassischer Token mit dem Scope \"repo\" kann sie lesen.';
 
   @override
-  String get githubTokenKeptOnDevice =>
-      'Der Token bleibt auf diesem Gerät: Er wird nie synchronisiert und nur an api.github.com gesendet.';
+  String get githubTokenLabel => 'Personal Access Token';
 
   @override
-  String get githubTokenLabel => 'Personal Access Token';
+  String get githubTokenPrivacy =>
+      'Der Token wird Ende-zu-Ende-verschlüsselt mit deinen anderen Geräten synchronisiert und nur an api.github.com gesendet.';
 
   @override
   String get githubTokenShow => 'Token anzeigen';
@@ -15291,6 +15305,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadEntryLink => 'Eintragsverknüpfung';
+
+  @override
+  String get syncPayloadGitHubAccount => 'GitHub-Konto';
 
   @override
   String get syncPayloadJournalEntity => 'Journaleintrag';
