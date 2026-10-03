@@ -42,6 +42,9 @@ void main() {
         overrides: [
           taskPullRequestsProvider(taskId).overrideWithValue(entries),
           pullRequestServiceProvider.overrideWithValue(service),
+          pullRequestHoldersProvider.overrideWith(
+            (ref, pr) => Stream.value(const {}),
+          ),
         ],
       ),
     );

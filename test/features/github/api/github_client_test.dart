@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 import '../github_fixtures.dart';
@@ -391,6 +392,71 @@ void main() {
           expect(e.toString(), contains('rateLimited'));
         }
       });
+    });
+  });
+
+  group('listOpenPullRequests', () {
+    const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
+    Map<String, dynamic> openJson(int number, {bool draft = false}) => {
+      'number': number,
+      'title': 'PR $number',
+      'updated_at': '2024-03-15T11:00:00Z',
+      'user': {'login': 'pingu'},
+      'draft': draft,
+    };
+
+    test(
+      'lists open pull requests, most recently updated first, every page',
+      () async {
+        final client = clientWith(
+          (request) => switch (request.url.queryParameters['page']) {
+            '1' => json([
+              for (var i = 1; i <= GitHubClient.pageSize; i++) openJson(i),
+            ]),
+            _ => json([openJson(101, draft: true)]),
+          },
+        );
+
+        final open = await client.listOpenPullRequests(
+          repository,
+          token: token,
+        );
+
+        expect(open, hasLength(GitHubClient.pageSize + 1));
+        expect(open.first.ref.toString(), 'penguin/colony#1');
+        expect(open.first.title, 'PR 1');
+        expect(open.first.authorLogin, 'pingu');
+        expect(open.first.updatedAt, DateTime.utc(2024, 3, 15, 11));
+        expect(open.last.draft, isTrue);
+        final first = requests.first.url;
+        expect(first.path, '/repos/penguin/colony/pulls');
+        expect(first.queryParameters, {
+          'state': 'open',
+          'sort': 'updated',
+          'direction': 'desc',
+          'per_page': '${GitHubClient.pageSize}',
+          'page': '1',
+        });
+      },
+    );
+
+    test('an item that is not an open pull request is invalid', () async {
+      for (final body in [
+        <Object>[
+          {'number': 'one'},
+        ],
+        <Object>['not an object'],
+      ]) {
+        expect(
+          await failureOf(
+            clientWith((_) => json(body)).listOpenPullRequests(
+              repository,
+              token: token,
+            ),
+          ),
+          GitHubFailureKind.invalidResponse,
+        );
+      }
     });
   });
 

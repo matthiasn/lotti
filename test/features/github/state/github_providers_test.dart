@@ -3,15 +3,23 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 import '../pull_request_fixtures.dart';
 
 void main() {
@@ -241,6 +249,129 @@ void main() {
     expect(
       c.read(taskPullRequestsProvider('task')).map((e) => e.data.number),
       [3, 9],
+    );
+  });
+
+  group('picker providers', () {
+    const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
+    const pr = PullRequestRef(owner: 'penguin', repo: 'colony', number: 12);
+    late MockJournalDb db;
+    late MockEntitiesCacheService categories;
+    late MockPullRequestRepository entries;
+    late StreamController<Set<String>> updates;
+
+    setUp(() async {
+      db = MockJournalDb();
+      categories = MockEntitiesCacheService();
+      entries = MockPullRequestRepository();
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications)
+            ..registerSingleton<EntitiesCacheService>(categories);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+    });
+
+    ProviderContainer pickerContainer() {
+      final c = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          pullRequestRepositoryProvider.overrideWithValue(entries),
+          pullRequestServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test(
+      "a task's repository is its category's, and none without one",
+      () async {
+        when(
+          () => db.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => testTask);
+        CategoryDefinition category(String? repo) => CategoryDefinition(
+          id: 'cat',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          name: 'Colony',
+          vectorClock: null,
+          private: false,
+          active: true,
+          githubRepository: repo,
+        );
+
+        when(
+          () => categories.getCategoryById(testTask.meta.categoryId),
+        ).thenReturn(category('https://github.com/penguin/colony'));
+        expect(
+          await pickerContainer().read(
+            taskGitHubRepositoryProvider(testTask.meta.id).future,
+          ),
+          repository,
+        );
+
+        when(
+          () => categories.getCategoryById(testTask.meta.categoryId),
+        ).thenReturn(category(null));
+        expect(
+          await pickerContainer().read(
+            taskGitHubRepositoryProvider(testTask.meta.id).future,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('the picker lists what the service offers', () async {
+      const listed = OpenPullRequestsListed([]);
+      when(
+        () => service.openPullRequests(repository),
+      ).thenAnswer((_) async => listed);
+
+      expect(
+        await pickerContainer().read(
+          openPullRequestsProvider(repository).future,
+        ),
+        same(listed),
+      );
+    });
+
+    test(
+      'holders are read again when a link or a pull request entry changes, '
+      'so a double assignment synced in shows up',
+      () async {
+        var holders = <String>{'task-1'};
+        when(
+          () => entries.holdersOf([pr]),
+        ).thenAnswer((_) async => {pr.key: holders});
+        final c = pickerContainer();
+        final seen = <Set<String>>[];
+        c.listen(
+          pullRequestHoldersProvider(pr),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        holders = {'task-1', 'task-2'};
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        updates.add({linkNotification});
+        await pumpEventQueue();
+
+        expect(seen, [
+          {'task-1'},
+          {'task-1', 'task-2'},
+        ]);
+      },
     );
   });
 }

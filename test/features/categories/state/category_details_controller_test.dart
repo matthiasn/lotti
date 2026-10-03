@@ -466,6 +466,31 @@ void main() {
       },
     );
 
+    test('sets and clears the GitHub repository', () async {
+      final category = CategoryTestUtils.createTestCategory().copyWith(
+        githubRepository: 'penguin/colony',
+      );
+      when(
+        () => mockRepository.watchCategory(testCategoryId),
+      ).thenAnswer((_) => Stream.value(category));
+
+      final container = makeContainer();
+      final controller = await loadCategory(container);
+      CategoryDetailsState state() =>
+          container.read(categoryDetailsControllerProvider(testCategoryId));
+
+      controller.updateGitHubRepository('penguin/igloo');
+      expect(state().category?.githubRepository, 'penguin/igloo');
+      expect(state().hasChanges, isTrue);
+
+      controller.updateGitHubRepository('penguin/colony');
+      expect(state().hasChanges, isFalse);
+
+      controller.updateGitHubRepository(null);
+      expect(state().category?.githubRepository, isNull);
+      expect(state().hasChanges, isTrue);
+    });
+
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],
