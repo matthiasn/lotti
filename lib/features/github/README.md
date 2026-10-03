@@ -21,6 +21,10 @@ items are done.
 - **Grounds checklist suggestions** in a pull request that was just refreshed.
   The agent proposes them through the existing checklist tool and the user
   confirms each one.
+- **Shows merged and closed pull requests in brief** in those contexts: their
+  outcome, size and a TL;DR, which the task agent's model writes once, where
+  the task's category allows automatic inference. Open ones keep every
+  detail.
 
 ## What it owns, and what it delegates
 
@@ -55,9 +59,11 @@ lib/features/github/
   domain/open_pull_request.dart           what the picker lists
   domain/pull_request_order.dart          observation order, digest, concurrent merge
   domain/pull_request_write_rule.dart     when an observation is written
+  domain/pull_request_summary_input.dart  what a summary is written from, and matched by
   repository/github_token_storage.dart    the token in the keystore
-  repository/pull_request_repository.dart link, unlink, track, persist an observation
+  repository/pull_request_repository.dart link, unlink, track, persist an observation, summaries
   service/pull_request_service.dart       link a pasted pull request, refresh one
+  service/pull_request_summarizer.dart    the TL;DR of a merged or closed pull request
   state/github_providers.dart             providers, account, token status, refresh
   ui/                                     settings page, task card, row, link modal,
                                           the Add sheet's tracking row

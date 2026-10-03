@@ -18,6 +18,8 @@ extension AiResponseTypeConsumptionMapping on AiResponseType {
         return AiConsumptionResponseType.imageGeneration;
       case AiResponseType.audioSummary:
         return AiConsumptionResponseType.audioSummary;
+      case AiResponseType.pullRequestSummary:
+        return AiConsumptionResponseType.textGeneration;
       // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
       // ignore: deprecated_member_use_from_same_package

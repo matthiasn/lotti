@@ -162,17 +162,212 @@ void main() {
     },
   );
 
-  test('a merged pull request skips checks, merge and reviews', () {
-    final merged = prSnapshot(status: PullRequestStatus.merged).copyWith(
+  group('a merged or closed pull request is shown in brief', () {
+    final merged = open.copyWith(
+      status: PullRequestStatus.merged,
       mergedAt: DateTime.utc(2026, 3, 15, 11),
     );
-    final text = render(
-      PullRequestContextItem(ref: ref, snapshot: merged, current: true),
+    const tldr = 'Makes penguins waddle twice as fast on the ice shelf.';
+
+    test(
+      'with its summary: outcome, size and TL;DR, no branch, checks or '
+      'description',
+      () {
+        for (final audience in PullRequestContextAudience.values) {
+          final text = render(
+            PullRequestContextItem(
+              ref: ref,
+              snapshot: merged,
+              current: true,
+              summary: tldr,
+            ),
+            audience: audience,
+          );
+
+          expect(
+            text.substring(text.indexOf('### ')),
+            '### penguin/colony#12 — Waddle faster\n'
+            '- Current: observed 2026-03-15T12:00:05.000Z.\n'
+            '- State: merged at 2026-03-15T11:00:00.000Z '
+            '(+10 −2, 3 files, 4 commits)\n'
+            '- TL;DR: $tldr',
+            reason: audience.name,
+          );
+        }
+      },
     );
 
-    expect(text, contains('- State: merged at 2026-03-15T11:00:00.000Z'));
-    expect(text, isNot(contains('- Checks:')));
-    expect(text, isNot(contains('- Reviews:')));
+    test(
+      'without one yet: the same brief block minus the TL;DR, never the full '
+      'description',
+      () {
+        final text = render(
+          PullRequestContextItem(ref: ref, snapshot: merged, current: true),
+        );
+
+        expect(
+          text.substring(text.indexOf('### ')),
+          '### penguin/colony#12 — Waddle faster\n'
+          '- Current: observed 2026-03-15T12:00:05.000Z.\n'
+          '- State: merged at 2026-03-15T11:00:00.000Z '
+          '(+10 −2, 3 files, 4 commits)',
+        );
+      },
+    );
+
+    test('one closed without merging says so, in brief', () {
+      final text = render(
+        PullRequestContextItem(
+          ref: ref,
+          snapshot: open.copyWith(status: PullRequestStatus.closed),
+          current: true,
+          summary: 'Abandoned for a sled.',
+        ),
+        audience: PullRequestContextAudience.codingPrompt,
+      );
+
+      expect(
+        text,
+        contains(
+          '- State: closed without merging (+10 −2, 3 files, 4 commits)\n'
+          '- TL;DR: Abandoned for a sled.',
+        ),
+      );
+      expect(text, isNot(contains('- Description:')));
+    });
+
+    test('an open or draft pull request keeps its full detail', () {
+      for (final snapshot in [open, open.copyWith(draft: true)]) {
+        final text = render(
+          PullRequestContextItem(
+            ref: ref,
+            snapshot: snapshot,
+            current: true,
+            summary: tldr,
+          ),
+        );
+
+        expect(text, contains('- Checks: failing'));
+        expect(text, contains('- Description:'));
+        expect(text, isNot(contains('- TL;DR:')));
+      }
+    });
+
+    test(
+      'the agent still sees only the name of one that was not refreshed '
+      '(SuggestRequiresRefresh)',
+      () {
+        final text = render(
+          PullRequestContextItem(
+            ref: ref,
+            snapshot: merged,
+            current: false,
+            failure: GitHubFailureKind.offline,
+            summary: tldr,
+          ),
+        );
+
+        expect(
+          text.substring(text.indexOf('### ')),
+          '### penguin/colony#12 — Waddle faster\n'
+          '- Not refreshed (GitHub could not be reached in time): its state '
+          'is unknown.',
+        );
+      },
+    );
+
+    test('the coding prompt shows one not refreshed as last known', () {
+      final text = render(
+        PullRequestContextItem(
+          ref: ref,
+          snapshot: merged,
+          current: false,
+          failure: GitHubFailureKind.offline,
+          summary: tldr,
+        ),
+        audience: PullRequestContextAudience.codingPrompt,
+      );
+
+      expect(text, contains('last known state, observed'));
+      expect(text, contains('- TL;DR: $tldr'));
+    });
+
+    test('a summary is one line, cut when a model ran long', () {
+      final text = render(
+        PullRequestContextItem(
+          ref: ref,
+          snapshot: merged,
+          current: true,
+          summary: '  First line.\n\nSecond   line.  ',
+        ),
+      );
+      expect(text, endsWith('- TL;DR: First line. Second line.'));
+
+      final long = render(
+        PullRequestContextItem(
+          ref: ref,
+          snapshot: merged,
+          current: true,
+          summary: 'y' * (pullRequestSummaryLimit + 10),
+        ),
+      );
+      expect(long, endsWith('- TL;DR: ${'y' * pullRequestSummaryLimit} …'));
+    });
+
+    test('both audiences are told what the brief form means', () {
+      for (final audience in PullRequestContextAudience.values) {
+        expect(
+          render(
+            PullRequestContextItem(ref: ref, snapshot: merged, current: true),
+            audience: audience,
+          ),
+          contains(
+            'A merged or closed pull request is shown in brief — its outcome, '
+            'size and, once one is written, a TL;DR of what it did: a merged '
+            'one is work done, one closed without merging is not.',
+          ),
+          reason: audience.name,
+        );
+      }
+    });
+
+    test(
+      'nine pull requests, eight of them merged, render a fraction of the '
+      'full detail',
+      () {
+        final body = 'Changes the colony. ' * 200;
+        final items = [
+          for (var n = 1; n <= 9; n++)
+            PullRequestContextItem(
+              ref: PullRequestRef(owner: 'penguin', repo: 'colony', number: n),
+              snapshot: (n == 9 ? open : merged).copyWith(body: body),
+              current: true,
+              summary: n == 9 ? null : tldr,
+            ),
+        ];
+        final full = [
+          for (final item in items)
+            PullRequestContextItem(
+              ref: item.ref,
+              snapshot: item.snapshot!.copyWith(
+                status: PullRequestStatus.open,
+              ),
+              current: true,
+            ),
+        ];
+
+        final brief = renderPullRequestContext(
+          items,
+          audience: PullRequestContextAudience.taskAgent,
+        ).length;
+        final detailed = renderPullRequestContext(
+          full,
+          audience: PullRequestContextAudience.taskAgent,
+        ).length;
+
+        expect(brief, lessThan(detailed ~/ 5));
+      },
+    );
   });
 
   test('closed and draft pull requests say so', () {

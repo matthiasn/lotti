@@ -3,8 +3,14 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
@@ -15,6 +21,7 @@ import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
+import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -54,6 +61,56 @@ final pullRequestRepositoryProvider = Provider<PullRequestRepository>(
   name: 'pullRequestRepositoryProvider',
 );
 
+/// Summarises merged and closed pull requests with the task agent's model,
+/// where the task's category has automatic inference switched on.
+final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
+  return PullRequestSummarizer(
+    repository: ref.watch(pullRequestRepositoryProvider),
+    automationAllowed: (taskId) async {
+      final db = ref.read(journalDbProvider);
+      final categoryId = (await db.journalEntityById(taskId))?.meta.categoryId;
+      if (categoryId == null) return false;
+      final category = await db.getCategoryById(categoryId);
+      return category?.automaticInferenceEnabledEffective ?? false;
+    },
+    modelFor: (taskId) async {
+      final profile = await ref
+          .read(profileAutomationResolverProvider)
+          .resolveForSubject(taskId);
+      return profile == null
+          ? null
+          : (
+              modelId: profile.thinkingModelId,
+              provider: profile.thinkingProvider,
+            );
+    },
+    generate:
+        ({
+          required prompt,
+          required systemMessage,
+          required model,
+          required taskId,
+          required categoryId,
+        }) => ref
+            .read(cloudInferenceRepositoryProvider)
+            .generateText(
+              prompt: prompt,
+              systemMessage: systemMessage,
+              model: model.modelId,
+              provider: model.provider,
+              temperature: 0.2,
+              maxCompletionTokens: null,
+              attribution: OneShotGenerationAttribution(
+                workType: AiWorkType.textGeneration,
+                triggerType: AiTriggerType.automatic,
+                categoryId: categoryId,
+                taskId: taskId,
+              ),
+            ),
+    logger: ref.watch(domainLoggerProvider),
+  );
+}, name: 'pullRequestSummarizerProvider');
+
 final pullRequestServiceProvider = Provider<PullRequestService>(
   (ref) => PullRequestService(
     client: ref.watch(gitHubClientProvider),
@@ -64,6 +121,7 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
           .read(gitHubTokenStatusProvider.notifier)
           .observe(token, accepted: accepted),
     ),
+    summarizer: ref.watch(pullRequestSummarizerProvider),
   ),
   name: 'pullRequestServiceProvider',
 );

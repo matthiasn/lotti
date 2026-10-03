@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
+import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 
 /// The outcome of a refresh.
 sealed class PullRequestRefresh {
@@ -92,20 +95,27 @@ typedef GitHubTokenVerdict =
     void Function(String token, {required bool accepted});
 
 /// Links pull requests to tasks and refreshes them from GitHub.
+///
+/// After every link and every refresh GitHub answered, the summarizer is asked
+/// to summarise the pull request, without waiting for it: it does so only
+/// for a merged or closed one that has no summary of its current content.
 class PullRequestService {
   PullRequestService({
     required GitHubClient client,
     required GitHubTokenStorage tokenStorage,
     required PullRequestRepository repository,
     GitHubTokenVerdict? onTokenVerdict,
+    PullRequestSummarizer? summarizer,
   }) : _github = client,
        _tokens = tokenStorage,
        _entries = repository,
-       _verdict = onTokenVerdict;
+       _verdict = onTokenVerdict,
+       _summaries = summarizer;
 
   final GitHubClient _github;
   final GitHubTokenStorage _tokens;
   final PullRequestRepository _entries;
+  final PullRequestSummarizer? _summaries;
 
   /// Told what each call with the stored token says about it. Only a
   /// success and a 401 do: offline, rate limited, forbidden or not found
@@ -171,7 +181,10 @@ class PullRequestService {
       alsoElsewhere: alsoElsewhere,
     );
     final linked = attempt.linked;
-    if (linked != null) return PullRequestLinked(linked);
+    if (linked != null) {
+      _summarize(linked.id);
+      return PullRequestLinked(linked);
+    }
     if (attempt.heldBy.isNotEmpty) return _held(taskId, attempt.heldBy, ref);
     return const PullRequestLinkNotStored();
   }
@@ -223,8 +236,14 @@ class PullRequestService {
     final observed = await _observe(entry.data.ref);
     if (observed is PullRequestRefreshed) {
       await _entries.persistObservation(entry.id, observed.observation);
+      _summarize(entry.id);
     }
     return observed;
+  }
+
+  void _summarize(String entryId) {
+    final summaries = _summaries;
+    if (summaries != null) unawaited(summaries.summarize(entryId));
   }
 
   Future<PullRequestRefresh> _observe(PullRequestRef ref) async {

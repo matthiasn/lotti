@@ -948,11 +948,13 @@ class UnifiedAiInferenceRepository {
           name: 'UnifiedAiInferenceRepository',
         );
       case AiResponseType.audioSummary:
-        // Audio summaries only exist on the skill path, which persists the
-        // response itself. The legacy prompt path can never produce one —
-        // there is no prompt config carrying this response type.
+      case AiResponseType.pullRequestSummary:
+        // Audio summaries only exist on the skill path, and pull request
+        // summaries in the GitHub feature; each persists its response itself.
+        // The legacy prompt path can never produce one — there is no prompt
+        // config carrying either response type.
         developer.log(
-          'Audio summary type received in response processing - no-op',
+          'Summary type received in response processing - no-op',
           name: 'UnifiedAiInferenceRepository',
         );
     }

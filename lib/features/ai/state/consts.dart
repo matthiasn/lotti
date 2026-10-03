@@ -10,6 +10,7 @@ const promptGenerationConst = 'PromptGeneration';
 const imagePromptGenerationConst = 'ImagePromptGeneration';
 const imageGenerationConst = 'ImageGeneration';
 const audioSummaryConst = 'AudioSummary';
+const pullRequestSummaryConst = 'PullRequestSummary';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -66,6 +67,13 @@ enum AiResponseType {
   /// TLDR on `AiResponseData` alongside the full markdown body.
   @JsonValue(audioSummaryConst)
   audioSummary,
+
+  /// A short summary of a merged or closed GitHub pull request, linked to its
+  /// pull request entry and read as its TL;DR in task contexts. Its `prompt`
+  /// is the pull request content it summarises (`pullRequestSummaryInput`),
+  /// which is how a reader tells whether it still matches.
+  @JsonValue(pullRequestSummaryConst)
+  pullRequestSummary,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -89,6 +97,7 @@ extension AiResponseTypeDisplay on AiResponseType {
       case AiResponseType.imageGeneration:
         return LottiIcons.aiSpark;
       case AiResponseType.audioSummary:
+      case AiResponseType.pullRequestSummary:
         return LottiIcons.summarize;
     }
   }

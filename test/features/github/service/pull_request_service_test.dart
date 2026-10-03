@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
@@ -441,6 +443,78 @@ void main() {
       await service.refresh(entry);
 
       expect(verdicts, isEmpty);
+    });
+  });
+
+  group('summaries', () {
+    late MockPullRequestSummarizer summarizer;
+    final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+
+    setUp(() {
+      summarizer = MockPullRequestSummarizer();
+      when(() => summarizer.summarize(any())).thenAnswer((_) async => false);
+      service = PullRequestService(
+        client: client,
+        tokenStorage: tokens,
+        repository: repository,
+        summarizer: summarizer,
+      );
+    });
+
+    test(
+      'a refresh GitHub answered asks for a summary once its observation is '
+      'offered, written or not, so a pull request merged long ago is '
+      'summarised too',
+      () async {
+        answers(prSnapshot(second: 30));
+        when(
+          () => repository.persistObservation(any(), any()),
+        ).thenAnswer((_) async => false);
+
+        await service.refresh(entry);
+
+        verifyInOrder([
+          () => repository.persistObservation(entry.id, any()),
+          () => summarizer.summarize(entry.id),
+        ]);
+      },
+    );
+
+    test('a failed refresh asks for nothing', () async {
+      fails(const GitHubException(GitHubFailureKind.offline));
+
+      await service.refresh(entry);
+
+      verifyNever(() => summarizer.summarize(any()));
+    });
+
+    test('a refresh does not wait for the summary', () async {
+      answers(prSnapshot(second: 30));
+      when(
+        () => repository.persistObservation(any(), any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => summarizer.summarize(any()),
+      ).thenAnswer((_) => Completer<bool>().future);
+
+      final result = await service.refresh(entry);
+
+      expect(result, isA<PullRequestRefreshed>());
+    });
+
+    test('a link asks for a summary of the new entry', () async {
+      answers(prSnapshot());
+      when(
+        () => repository.link(
+          taskId: taskId,
+          ref: ref,
+          snapshot: prSnapshot(),
+        ),
+      ).thenAnswer((_) async => PullRequestLinkAttempt(linked: entry));
+
+      await service.link(taskId: taskId, ref: ref);
+
+      verify(() => summarizer.summarize(entry.id)).called(1);
     });
   });
 }

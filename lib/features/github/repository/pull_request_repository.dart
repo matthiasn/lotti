@@ -1,7 +1,9 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
@@ -158,6 +160,39 @@ class PullRequestRepository {
     );
     return stored && written;
   }
+
+  /// The newest summary of entry [entryId] that was written from [input]
+  /// (`pullRequestSummaryInput`), or null when none was: the pull request
+  /// was never summarised, or changed since.
+  Future<String?> summaryOf(String entryId, String input) async {
+    for (final linked in await _db.getLinkedEntities(entryId)) {
+      if (linked is! AiResponseEntry) continue;
+      final data = linked.data;
+      if (data.type != AiResponseType.pullRequestSummary ||
+          data.prompt != input) {
+        continue;
+      }
+      final text = (data.tldr ?? data.response).trim();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
+  }
+
+  /// Stores [data] as a summary of [entry], linked from it and in
+  /// its category, so it syncs like any journal entry; returns whether it
+  /// was stored.
+  Future<bool> addSummary(
+    PullRequestEntry entry,
+    AiResponseData data, {
+    required DateTime start,
+  }) async =>
+      await _persistence.createAiResponseEntry(
+        data: data,
+        dateFrom: start,
+        linkedId: entry.id,
+        categoryId: entry.meta.categoryId,
+      ) !=
+      null;
 
   /// Unlinks pull request [ref] from [taskId]: every live entry of it is
   /// deleted like any other entry, including a duplicate another device

@@ -1,6 +1,7 @@
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
+import 'package:lotti/features/github/domain/pull_request_summary_input.dart';
 
 /// Who reads a rendered pull request section.
 enum PullRequestContextAudience {
@@ -14,8 +15,12 @@ enum PullRequestContextAudience {
   taskAgent,
 }
 
-/// How much of a pull request description a context carries.
+/// How much of an open pull request's description a context carries.
 const pullRequestDescriptionLimit = 4000;
+
+/// How much of a merged or closed pull request's summary a context carries,
+/// should a model ignore the length it was asked for.
+const pullRequestSummaryLimit = 600;
 
 /// The task's pull requests as Markdown for [audience], opening with how to
 /// use them; empty when there are none. Prompt text, so English.
@@ -44,7 +49,7 @@ const _agentGuidance =
     'changes complete what the item asks — propose checking that item with '
     'update_checklist_items and name the pull request (owner/repo#number) '
     'in the reason. A pull request marked not refreshed tells you nothing '
-    'about its state: never propose a checklist change from it.';
+    'about its state: never propose a checklist change from it. $_briefGuidance';
 
 const _codingPromptGuidance =
     'Pull requests linked to this task, refreshed from GitHub now. Treat '
@@ -54,7 +59,12 @@ const _codingPromptGuidance =
     'or the entry notes asking for something a pull request already '
     'contains — list each mismatch at the top of the prompt, before the '
     'request. A pull request marked not refreshed shows its last known '
-    'state, which may be out of date.';
+    'state, which may be out of date. $_briefGuidance';
+
+const _briefGuidance =
+    'A merged or closed pull request is shown in brief — its outcome, size '
+    'and, once one is written, a TL;DR of what it did: a merged one is work '
+    'done, one closed without merging is not.';
 
 String _renderItem(
   PullRequestContextItem item,
@@ -84,6 +94,16 @@ String _renderItem(
   }
   if (snapshot == null) return out.toString();
 
+  final size = _size(snapshot);
+  if (isSettledPullRequest(snapshot)) {
+    out.writeln(
+      '- State: ${_state(snapshot)}${size == null ? '' : ' ($size)'}',
+    );
+    final summary = item.summary;
+    if (summary != null) out.writeln('- TL;DR: ${_brief(summary)}');
+    return out.toString();
+  }
+
   out
     ..writeln('- State: ${_state(snapshot)}')
     ..writeln('- Branch: ${snapshot.headRef} → ${snapshot.baseRef}');
@@ -93,7 +113,6 @@ String _renderItem(
       ..writeln('- Merge: ${_mergeability(snapshot.mergeability)}')
       ..writeln('- Reviews: ${_reviews(snapshot.reviews)}');
   }
-  final size = _size(snapshot);
   if (size != null) out.writeln('- Size: $size');
   final body = snapshot.body?.trim();
   if (body != null && body.isNotEmpty) {
@@ -110,6 +129,14 @@ String _renderItem(
 }
 
 String _iso(DateTime t) => t.toUtc().toIso8601String();
+
+/// [summary] on one line, cut at [pullRequestSummaryLimit].
+String _brief(String summary) {
+  final line = summary.trim().replaceAll(RegExp(r'\s+'), ' ');
+  return line.length > pullRequestSummaryLimit
+      ? '${line.substring(0, pullRequestSummaryLimit)} …'
+      : line;
+}
 
 String _state(PullRequestSnapshot s) => switch (s.status) {
   PullRequestStatus.open => s.draft ? 'open, draft' : 'open',

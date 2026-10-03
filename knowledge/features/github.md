@@ -59,6 +59,12 @@ sources:
   - id: task-data
     resource: ../../lib/classes/task.dart
     title: TaskData.tracksPullRequests and the joins that keep it on
+  - id: summarizer
+    resource: ../../lib/features/github/service/pull_request_summarizer.dart
+    title: PullRequestSummarizer — the TL;DR of a merged or closed pull request
+  - id: summary-input
+    resource: ../../lib/features/github/domain/pull_request_summary_input.dart
+    title: pullRequestSummaryInput — what a summary is written from, and matched by
 ---
 
 A task can link the GitHub pull requests that implement it. Lotti fetches
@@ -74,10 +80,11 @@ in `specs/tla/`; the code conforms to them, and their headers name the class
 that implements each action. Built: the entry and its merge, the token and
 the client, linking by URL or from the picker, a pull request serving a
 second task only once the user confirms it, a
-category's repository, the refresh, the task's card, and the pull requests in
-coding prompts and task-agent wakes. Nothing is behind a config flag: a
-task shows the feature once the user turns pull request tracking on for it,
-which is offered while this device holds a token GitHub accepts. Still
+category's repository, the refresh, the task's card, the pull requests in
+coding prompts and task-agent wakes, and a merged or closed pull request
+shown there as a TL;DR. Nothing is behind a config flag: a task shows the
+feature once the user turns pull request tracking on for it, which is
+offered while this device holds a token GitHub accepts. Still
 design: a project's
 repository overriding its category's, and recording which checklist items a
 coding prompt targeted.
@@ -158,15 +165,20 @@ sequenceDiagram
     S->>R: persistObservation(entryId, observation)
     R->>DB: one transaction: re-read including deleted
     alt deleted, or stored observation is newer or equal
-        R-->>S: skipped
+        R-->>S: false
     else unchanged and stored stamp younger than the restamp interval
-        R-->>S: skipped
+        R-->>S: false
     else changed, or stale stamp
         R->>DB: write a new version (new clock)
-        R-->>S: written
+        R-->>S: true
     end
-    S-->>C: RefreshOutcome current(read observation) or failed(reason, cached)
+    S-)S: ask the summarizer, not waited for
+    S-->>C: PullRequestRefreshed(observation) or PullRequestRefreshFailed(kind)
 ```
+
+Whether the observation was written is not passed on: a caller may call the
+observation current either way. A refresh that fails returns its reason and
+the caller falls back to what is stored.
 
 Four rules, each a design switch in the model with the counterexample its
 absence produces:
@@ -525,8 +537,9 @@ vanishing from the context.
 - **Coding prompt** (`SkillInferenceRunner.runPromptGeneration`, the
   coding-prompt skill only — the design and research prompts share its skill
   type but not its subject): a `**Pull Requests:**` block after `**Related Tasks:**` with
-  each pull request's state, branch, checks (failing ones by name),
-  mergeability, reviews, size and description (cut at 4000 characters). A
+  each open pull request's state, branch, checks (failing ones by name),
+  mergeability, reviews, size and description (cut at 4000 characters), and
+  each merged or closed one in brief (below). A
   pull request that could not be refreshed shows its last known state,
   labelled with when it was observed and as possibly out of date. The block
   tells the model to ask only for what remains, and to list each mismatch —
@@ -534,10 +547,10 @@ vanishing from the context.
   work no item describes, entry notes asking for what a pull request already
   contains — at the top of the prompt.
 - **Task-agent wake** (`TaskAgentWorkflow`): a `## Pull Requests` section in
-  the volatile tail, after `## Linked Tasks`, never the cached prefix. A pull
-  request whose refresh failed appears by name only, its state unknown, so
-  the agent cannot derive a suggestion from stale data
-  (`SuggestRequiresRefresh`).
+  the volatile tail, after `## Linked Tasks`, never the cached prefix, with
+  the same detail. A pull request whose refresh failed appears by name only,
+  its state unknown — merged or not — so the agent cannot derive a
+  suggestion from stale data (`SuggestRequiresRefresh`).
 - **Checklist suggestions** need no new tool: the section tells the agent to
   propose checking an item through the deferred `update_checklist_items` when
   a current pull request shows it done, naming the pull request in the
@@ -553,3 +566,89 @@ A refresh during a wake runs inside the wake's agent-execution zone, and
 agent again. Without that, a daily restamp of an unchanged snapshot would
 schedule the next wake, every day. Either context leaves the section out, and
 logs, when building it fails.
+
+# Merged and closed pull requests in brief
+
+A task gathers pull requests, and most of them are history: merged long ago,
+or closed. Their descriptions, up to 4000 characters each, would ride along
+in every coding prompt and every wake. So both contexts show a merged or
+closed pull request (`isSettledPullRequest`) in brief:
+
+```text
+### owner/repo#123 — Its title
+- Current: observed 2026-10-03T12:00:05.000Z.
+- State: merged at 2026-10-01T09:12:00.000Z (+120 −30, 7 files, 3 commits)
+- TL;DR: What it changed, in one or two sentences.
+```
+
+No branch, checks, mergeability, reviews or description. Until a summary
+exists the block is the same without its TL;DR line — the title, outcome and
+size — so a context never waits for one and never falls back to the full
+description. A summary is put on one line and cut at 600 characters, should a
+model ignore the length it was asked for. Both contexts are told what the
+brief form means: a merged pull request is work done, one closed without
+merging is not; the coding prompt's mismatch instructions are unchanged. An
+open pull request, draft or not, keeps every detail. For a task with eight
+merged pull requests and one open one, each with a description past the
+4000-character cut, the wake's section shrinks from 39,774 characters to
+7,572 — 6,524 before any summary is written — most of what remains being the
+open one.
+
+**The summary** is an AI response entry (`AiResponseType.pullRequestSummary`)
+linked from the pull request entry, its text in `tldr`. It syncs like any
+journal entry, so a second device reads it rather than asking again; a
+client that predates the type skips it as undecodable, as with any new
+response type, and the pull request stays in brief there anyway once that
+client updates. Its `prompt` is `pullRequestSummaryInput`: the reference,
+title, outcome, size and description of the snapshot it was written from —
+nothing about when it was read. A context shows only a summary whose prompt
+is exactly the input of the snapshot it renders (`summaryOf`), the newest if
+two devices wrote one each. So a summary is never stale on screen: a
+retitled, re-described or reopened pull request has a different input, and
+shows in brief without a TL;DR, or in full, until a new one is written.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unsummarised: merged or closed snapshot stored
+    Unsummarised --> Asking: a refresh or link, the category allows it, and a model resolves
+    Asking --> Summarised: answer stored, the content still the same
+    Asking --> Unsummarised: failed, empty, unlinked, or the content changed meanwhile
+    Summarised --> Unsummarised: title, description or outcome changes
+    Summarised --> Summarised: restamp, checks or reviews change, or a copy syncs in
+```
+
+**When it is asked for.** `PullRequestService` hands every link and every
+refresh GitHub answered to `PullRequestSummarizer.summarize`, without waiting
+for it, whether or not the observation was written — so a pull request merged
+long before this existed, whose snapshot never changes again, is summarised
+too. Nothing happens unless the stored snapshot is settled and no summary
+matches its input: the hourly restamp of an unchanged snapshot, and a change
+of checks or reviews, ask for nothing. Then it takes the tasks that hold the
+pull request in order, and the first whose category has automatic inference
+switched on — the same consent every automatic inference needs
+([execution paths](ai/execution-paths.md#the-category-consent-gate)) — and
+whose agent's profile resolves (`resolveForSubject`) is the one it asks for,
+with that profile's thinking model, through `generateText`, recorded in the
+consumption ledger as automatic text generation for that task. The prompt is
+the input above: only what the pull request entry already holds. One request
+per entry runs at a time on a device; another is dropped and the next refresh
+asks again. Before storing, the entry is read again and nothing is stored if
+it was unlinked or its input changed. A failure is logged and stays
+unsummarised until a later refresh.
+
+**No wake loop.** The summarizer writes only the new response entry, never the
+pull request entry, so no refresh or merge sees it. Creating it notifies the
+response and the pull request entry; the task agent's subscription matches
+the task's id only, so the summary does not wake it, whether it was asked
+during a wake or from the task's card.
+
+**Why no new model.** The summary adds no state the existing models'
+properties depend on. It is derived, and checked against its source when it
+is read rather than kept in step with it: whatever order refreshes, syncs and
+summaries interleave in, a context shows a summary only of exactly the
+content it shows, and two devices writing one each leaves two equivalent
+entries, of which readers take the newest. It never writes the pull request
+entry, so `PullRequestSnapshot`'s write rule, ordering and merge are
+untouched, and the snapshot's serialisation and digest are unchanged. What
+would need a model — a write racing a read-compare-write of shared state —
+does not occur.
