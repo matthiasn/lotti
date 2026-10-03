@@ -19,6 +19,7 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -54,6 +55,7 @@ void main() {
         ..registerSingleton<JournalDb>(MockJournalDb())
         ..registerSingleton<SyncDatabase>(MockSyncDatabase())
         ..registerSingleton<LoggingService>(MockLoggingService())
+        ..registerSingleton<DomainLogger>(MockDomainLogger())
         ..registerSingleton<OutboxService>(MockOutboxService())
         ..registerSingleton<AiConfigRepository>(MockAiConfigRepository());
       // The real world advertises sync, so its provider bridge resolves a
