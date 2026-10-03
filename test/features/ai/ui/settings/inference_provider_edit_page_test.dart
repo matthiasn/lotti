@@ -14,12 +14,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart'
     show GeminiModelsRepository;
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart'
-    show MeliousInferenceException;
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart'
     show MistralInferenceException;
-import 'package:lotti/features/ai/repository/omlx_inference_repository.dart'
-    show OmlxInferenceException;
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
@@ -1900,7 +1897,10 @@ void main() {
       await _setTestSurface(tester, height: 1600);
 
       final fakeMeliousRepository = FakeMeliousInferenceRepository([
-        () async => throw const MeliousInferenceException('first failure'),
+        () async => throw const InferenceHttpException(
+          provider: 'Melious',
+          'first failure',
+        ),
         () async => const [
           KnownModel(
             providerModelId: 'openai/whisper-large-v3',
@@ -2522,6 +2522,79 @@ void main() {
       )!;
     }
 
+    testWidgets(
+      'a Gemini catalog failure shows the provider message, not an exception '
+      'type',
+      (WidgetTester tester) async {
+        // Every catalog provider now reports through InferenceHttpException,
+        // so Gemini gets the same readable detail Melious and oMLX always had.
+        await _setTestSurface(tester, height: 1200);
+        final provider = AiConfig.inferenceProvider(
+          id: 'gemini-provider-id',
+          name: 'Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        when(
+          () => mockRepository.getConfigById(
+            'gemini-provider-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value(<AiConfig>[]));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              geminiModelsRepositoryProvider.overrideWithValue(
+                GeminiModelsRepository(
+                  httpClient: MockClient(
+                    (_) async => http.Response(
+                      jsonEncode({
+                        'error': {'message': 'Gemini is down'},
+                      }),
+                      503,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(
+                body: AvailableModelsSection(
+                  providerId: 'gemini-provider-id',
+                  providerType: InferenceProviderType.gemini,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.textContaining('Gemini is down (HTTP 503)'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('InferenceHttpException'), findsNothing);
+      },
+    );
+
     testWidgets('dynamic catalog renders the detail for each error shape', (
       WidgetTester tester,
     ) async {
@@ -2535,7 +2608,8 @@ void main() {
           >[
             (
               type: InferenceProviderType.melious,
-              result: () async => throw const MeliousInferenceException(
+              result: () async => throw const InferenceHttpException(
+                provider: 'Melious',
                 'Rate limited',
                 statusCode: 429,
               ),
@@ -2543,7 +2617,8 @@ void main() {
             ),
             (
               type: InferenceProviderType.omlx,
-              result: () async => throw const OmlxInferenceException(
+              result: () async => throw const InferenceHttpException(
+                provider: 'oMLX',
                 'oMLX is down',
                 statusCode: 503,
               ),
@@ -2582,7 +2657,8 @@ void main() {
       await pumpDynamicCatalog(
         tester,
         providerType: InferenceProviderType.melious,
-        result: () async => throw MeliousInferenceException('x' * 400),
+        result: () async =>
+            throw InferenceHttpException(provider: 'Melious', 'x' * 400),
       );
 
       expect(find.textContaining('${'x' * 280}...'), findsOneWidget);

@@ -66,7 +66,7 @@ class WakeResult {
   /// wake wiring rethrows it as [WakeFailedException.reason] and the drain
   /// engine writes that into its failure *message*, which the PII-safe error
   /// log keeps verbatim. A caught exception is reported by type —
-  /// `'Task agent workflow failed (MeliousInferenceException)'` — and logged
+  /// `'Task agent workflow failed (InferenceHttpException)'` — and logged
   /// in full, with its stack trace, at the catch site.
   final String? error;
 }

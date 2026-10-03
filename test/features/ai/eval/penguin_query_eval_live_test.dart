@@ -16,7 +16,7 @@ import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -437,12 +437,12 @@ void main() {
           });
         } catch (error) {
           authorizationFailed =
-              error is MeliousInferenceException &&
+              error is InferenceHttpException &&
               (error.statusCode == 401 || error.statusCode == 403);
           artifact.addAll({
             'status': 'error',
             'errorType': error.runtimeType.toString(),
-            if (error is MeliousInferenceException) ...{
+            if (error is InferenceHttpException) ...{
               'httpStatus': error.statusCode,
               'causeType': error.originalError?.runtimeType.toString(),
             },

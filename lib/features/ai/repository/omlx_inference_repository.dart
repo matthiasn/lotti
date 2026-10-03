@@ -4,9 +4,13 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+
+/// How this repository names itself in an [InferenceHttpException].
+const _exceptionProvider = 'oMLX';
 
 /// Repository for oMLX's local OpenAI-compatible inference surface.
 ///
@@ -65,7 +69,8 @@ class OmlxInferenceRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw OmlxInferenceException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -79,7 +84,8 @@ class OmlxInferenceRepository {
       final data = switch (decoded) {
         {'data': final List<dynamic> data} => data,
         final List<dynamic> data => data,
-        _ => throw const OmlxInferenceException(
+        _ => throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'oMLX model list response must be a JSON object with data[] '
           'or a JSON array',
         ),
@@ -88,27 +94,31 @@ class OmlxInferenceRepository {
       return data
           .map((item) {
             if (item is! Map<String, dynamic>) {
-              throw const OmlxInferenceException(
+              throw const InferenceHttpException(
+                provider: _exceptionProvider,
                 'oMLX model entry must be a JSON object',
               );
             }
             return _knownModelFromPayload(item);
           })
           .toList(growable: false);
-    } on OmlxInferenceException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw OmlxInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'oMLX model list request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw OmlxInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'oMLX model list response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw OmlxInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to fetch oMLX models: $e',
         originalError: e,
       );
@@ -118,7 +128,8 @@ class OmlxInferenceRepository {
   KnownModel _knownModelFromPayload(Map<String, dynamic> model) {
     final providerModelId = model['id'] ?? model['name'];
     if (providerModelId is! String || providerModelId.trim().isEmpty) {
-      throw const OmlxInferenceException(
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
         'oMLX model entry is missing a string id',
       );
     }
@@ -270,7 +281,8 @@ class OmlxInferenceRepository {
 
       return baseUri.replace(path: '$basePath/$normalizedEndpoint');
     } on FormatException catch (e) {
-      throw OmlxInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Invalid base URL: $baseUrl',
         originalError: e,
       );
@@ -281,22 +293,3 @@ class OmlxInferenceRepository {
 final Map<String, KnownModel> _knownOmlxModels = {
   for (final model in omlxModels) model.providerModelId: model,
 };
-
-class OmlxInferenceException implements Exception {
-  const OmlxInferenceException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
-
-  final String message;
-  final int? statusCode;
-  final Object? originalError;
-
-  @override
-  String toString() {
-    final status = statusCode == null ? '' : ' (HTTP $statusCode)';
-    final cause = originalError == null ? '' : ': $originalError';
-    return 'OmlxInferenceException$status: $message$cause';
-  }
-}

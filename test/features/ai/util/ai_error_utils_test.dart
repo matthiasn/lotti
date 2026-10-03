@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
     show ModelNotInstalledException;
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
@@ -1060,6 +1061,34 @@ OpenAIClientException({
   });
 
   group('isAuthenticationFailure', () {
+    test('reads a refused key off the shared provider exception', () {
+      // Classification is by text, so the exception's `(HTTP n)` form is
+      // load-bearing: a refused key must classify whichever provider sent it.
+      for (final status in [401, 403]) {
+        expect(
+          AiErrorUtils.isAuthenticationFailure(
+            InferenceHttpException(
+              'nope',
+              provider: 'oMLX',
+              statusCode: status,
+            ),
+          ),
+          isTrue,
+          reason: '$status',
+        );
+      }
+      expect(
+        AiErrorUtils.isAuthenticationFailure(
+          const InferenceHttpException(
+            'gone',
+            provider: 'Gemini',
+            statusCode: 404,
+          ),
+        ),
+        isFalse,
+      );
+    });
+
     // Gemini's streaming error text, which every agent wake sees.
     String gemini(int status, String body) =>
         'Exception: Gemini streaming error $status for model gemini-3-flash: '

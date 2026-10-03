@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
+
+/// How this repository names itself in an [InferenceHttpException].
+const _exceptionProvider = 'Mistral OCR';
 
 /// Repository for Mistral OCR via the dedicated `/v1/ocr` endpoint.
 ///
@@ -69,7 +73,7 @@ class MistralOcrRepository {
   /// Error surface (matches the sibling transcription/inference repositories):
   /// argument validation throws [ArgumentError] **synchronously**, before the
   /// stream is created; operational failures (HTTP, parse, timeout) surface as
-  /// a [MistralOcrException] **on the returned stream**. A caller that only
+  /// a [InferenceHttpException] **on the returned stream**. A caller that only
   /// attaches `handleError` must therefore also guard the synchronous case.
   Stream<CreateChatCompletionStreamResponse> extractText({
     required String model,
@@ -179,7 +183,8 @@ class MistralOcrRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw MistralOcrException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -191,13 +196,15 @@ class MistralOcrRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw const MistralOcrException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Mistral OCR response must be a JSON object',
         );
       }
       final pages = decoded['pages'];
       if (pages is! List) {
-        throw const MistralOcrException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Mistral OCR response is missing a pages[] array',
         );
       }
@@ -215,15 +222,17 @@ class MistralOcrRepository {
         }
       }
       return markdown.join('\n\n');
-    } on MistralOcrException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw MistralOcrException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Mistral OCR request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw MistralOcrException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Mistral OCR response was not valid JSON',
         originalError: e,
       );
@@ -231,7 +240,8 @@ class MistralOcrRepository {
       // Keep transport details (which can carry the request URI) out of the
       // user-facing message. `originalError` retains the exception for
       // diagnostics/logging only.
-      throw MistralOcrException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to run Mistral OCR',
         originalError: e,
       );
@@ -261,23 +271,4 @@ class MistralOcrRepository {
   /// Host + path only — never the full URI, which from a user-configured base
   /// URL could carry credentials/tokens.
   static String _redactedEndpoint(Uri uri) => '${uri.host}${uri.path}';
-}
-
-class MistralOcrException implements Exception {
-  const MistralOcrException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
-
-  final String message;
-  final int? statusCode;
-  final Object? originalError;
-
-  @override
-  String toString() {
-    final status = statusCode == null ? '' : ' (HTTP $statusCode)';
-    final cause = originalError == null ? '' : ': $originalError';
-    return 'MistralOcrException$status: $message$cause';
-  }
 }

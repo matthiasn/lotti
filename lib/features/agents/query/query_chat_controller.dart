@@ -9,7 +9,7 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -481,7 +481,7 @@ class QueryChatController extends Notifier<QueryChatSession> {
           error is! QueryInferenceUnavailable) {
         // Provider errors can contain prompts, responses or credentials.
         // Record only their type, stage and numeric HTTP status, never text.
-        final httpStatus = error is MeliousInferenceException
+        final httpStatus = error is InferenceHttpException
             ? error.statusCode
             : null;
         logger.error(

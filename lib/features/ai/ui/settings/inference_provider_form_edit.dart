@@ -1,10 +1,11 @@
 import 'dart:developer' as developer;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
@@ -649,15 +650,9 @@ class _DynamicModelsError extends ConsumerWidget {
 
 String _dynamicModelsErrorDetail(Object error) {
   final detail = switch (error) {
-    MeliousInferenceException(
-      :final message,
-      :final statusCode,
-    ) =>
-      statusCode == null ? message : '$message (HTTP $statusCode)',
-    OmlxInferenceException(
-      :final message,
-      :final statusCode,
-    ) =>
+    // Every catalog provider reports failures this way, so each gets the
+    // provider's own message rather than an exception's type name.
+    InferenceHttpException(:final message, :final statusCode) =>
       statusCode == null ? message : '$message (HTTP $statusCode)',
     ArgumentError(:final message) => message?.toString() ?? error.toString(),
     _ => error.toString(),

@@ -400,7 +400,7 @@ void main() {
           triggerTokens: const {goalReportRefreshTriggerToken},
           finishedAt: DateTime(2026, 8, 16, 19, 14),
           error: StateError(
-            'MeliousInferenceException (HTTP 429): Insufficient balance '
+            'InferenceHttpException (HTTP 429): Insufficient balance '
             'for request. Required: 74, Available: 0',
           ),
         ),

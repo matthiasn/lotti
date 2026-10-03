@@ -12,6 +12,7 @@ import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
@@ -999,7 +1000,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
         throwsA(
-          isA<MeliousInferenceException>()
+          isA<InferenceHttpException>()
               .having((e) => e.message, 'message', 'Invalid Melious API key')
               .having((e) => e.statusCode, 'statusCode', 401),
         ),
@@ -1029,7 +1030,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Melious model list response was not valid JSON'),
@@ -1053,7 +1054,7 @@ void main() {
         await expectLater(
           repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<MeliousInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains(message),
@@ -1210,7 +1211,7 @@ void main() {
         await expectLater(
           repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<MeliousInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('top-level Melious failure'),
@@ -1237,7 +1238,7 @@ void main() {
           timeout: Duration.zero,
         ),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Melious model list request timed out'),
@@ -1258,7 +1259,7 @@ void main() {
       await expectLater(
         failingRepository.listModels(baseUrl: baseUrl, apiKey: apiKey),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Failed to fetch Melious models'),
@@ -1279,7 +1280,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
         throwsA(
-          isA<MeliousInferenceException>()
+          isA<InferenceHttpException>()
               .having((e) => e.statusCode, 'statusCode', 500)
               .having(
                 (e) => e.message,
@@ -2796,7 +2797,7 @@ void main() {
           provider: meliousProvider(),
         ),
         throwsA(
-          isA<MeliousInferenceException>()
+          isA<InferenceHttpException>()
               .having((e) => e.statusCode, 'statusCode', 503)
               .having((e) => e.message, 'message', 'image model unavailable'),
         ),
@@ -2816,7 +2817,7 @@ void main() {
           provider: meliousProvider(),
         ),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'Melious image generation response was not valid JSON',
@@ -2837,7 +2838,7 @@ void main() {
           timeout: Duration.zero,
         ),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'Melious image generation request timed out',
@@ -2859,7 +2860,7 @@ void main() {
           provider: meliousProvider(),
         ),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Failed to generate Melious image'),
@@ -2896,7 +2897,7 @@ void main() {
             model: 'flux-2-klein',
             provider: meliousProvider(),
           ),
-          throwsA(isA<MeliousInferenceException>()),
+          throwsA(isA<InferenceHttpException>()),
         );
       }
     });
@@ -3092,27 +3093,12 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl, apiKey: apiKey),
         throwsA(
-          isA<MeliousInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Melious model entry is missing a string id'),
           ),
         ),
-      );
-    });
-
-    test('MeliousInferenceException includes status and cause in toString', () {
-      expect(
-        const MeliousInferenceException(
-          'failed',
-          statusCode: 429,
-          originalError: 'rate limit',
-        ).toString(),
-        'MeliousInferenceException (HTTP 429): failed: rate limit',
-      );
-      expect(
-        const MeliousInferenceException('failed').toString(),
-        'MeliousInferenceException: failed',
       );
     });
   });
@@ -3571,7 +3557,7 @@ void main() {
     );
 
     test(
-      'wraps an HTTP timeout in a MeliousInferenceException without '
+      'wraps an HTTP timeout in a InferenceHttpException without '
       'real waiting',
       () async {
         var calls = 0;
@@ -3583,7 +3569,7 @@ void main() {
         await expectLater(
           collectChat(repo, InferenceImpactCollector()),
           throwsA(
-            isA<MeliousInferenceException>()
+            isA<InferenceHttpException>()
                 .having(
                   (e) => e.message,
                   'message',
@@ -3616,7 +3602,7 @@ void main() {
         await expectLater(
           collectChat(repo, InferenceImpactCollector()),
           throwsA(
-            isA<MeliousInferenceException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'model overloaded')
                 .having((e) => e.statusCode, 'statusCode', 503),
           ),
@@ -3631,7 +3617,7 @@ void main() {
         await expectLater(
           collectChat(malformed, InferenceImpactCollector()),
           throwsA(
-            isA<MeliousInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Melious chat completion response was not valid JSON',
@@ -3645,7 +3631,7 @@ void main() {
         await expectLater(
           collectChat(nonObject, InferenceImpactCollector()),
           throwsA(
-            isA<MeliousInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Melious chat completion response must be a JSON object',
@@ -3659,7 +3645,7 @@ void main() {
         await expectLater(
           collectChat(failing, InferenceImpactCollector()),
           throwsA(
-            isA<MeliousInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('Failed to complete Melious chat'),
