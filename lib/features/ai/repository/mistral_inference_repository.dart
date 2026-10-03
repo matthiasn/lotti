@@ -79,6 +79,8 @@ class MistralInferenceRepository {
         '${exception.runtimeType}',
         stackTrace: stackTrace,
         subDomain: subDomain,
+        // Keeps the classification the content-free string would lose.
+        errorType: exception.runtimeType,
       );
     }
   }
