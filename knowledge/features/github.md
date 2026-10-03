@@ -5,12 +5,18 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T03:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T04:30:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
     resource: ../../specs/tla/PullRequestSnapshot.tla
     title: PullRequestSnapshot — the design model this feature conforms to
+  - id: assignment-spec
+    resource: ../../specs/tla/PullRequestAssignment.tla
+    title: PullRequestAssignment — which task a pull request belongs to, and the picker
+  - id: picker
+    resource: ../../lib/features/github/ui/link_pull_request_modal.dart
+    title: The link modal — the open pull request picker and the pasted URL
   - id: spec-readme
     resource: ../../specs/tla/README.md
     title: Configurations, properties and the counterexample behind each design switch
@@ -53,14 +59,16 @@ builds: the coding prompt, and the task agent's wake, whose checklist
 proposals the user confirms. That closes the loop that used to run through
 screenshots of the pull request page.
 
-**Status: partly built.** The model is
-[`PullRequestSnapshot`](../../specs/tla/README.md) in `specs/tla/`; the code
-conforms to it, and its header names the class that implements each action.
-Built: the entry and its merge, the token and the client, linking by URL, the
-refresh, the task's card, and the pull requests in coding prompts and
-task-agent wakes, all behind the `enable_github_pull_requests` config flag.
-Still design: repository assignment and the picker, and recording which
-checklist items a coding prompt targeted.
+**Status: partly built.** The models are
+[`PullRequestSnapshot` and `PullRequestAssignment`](../../specs/tla/README.md)
+in `specs/tla/`; the code conforms to them, and their headers name the class
+that implements each action. Built: the entry and its merge, the token and
+the client, linking by URL or from the picker, one task per pull request, a
+category's repository, the refresh, the task's card, and the pull requests in
+coding prompts and task-agent wakes, all behind the
+`enable_github_pull_requests` config flag. Still design: a project's
+repository overriding its category's, and recording which checklist items a
+coding prompt targeted.
 
 # The entry
 
@@ -203,10 +211,48 @@ the refresh is the app's, the unlink is the user's.
 
 # Repositories
 
-A category can name a repository, `CategoryDefinition.githubRepository`
-(`owner/repo`); a project can name one too, and the project's wins. The
-picker lists the open pull requests of the task's repository; a pasted URL
-needs no repository assignment, only a token that can read it.
+A category names the repository its tasks work in,
+`CategoryDefinition.githubRepository` (`owner/repo`), typed in the GitHub
+section of the category's page — as `owner/repo` or as the repository's URL;
+what does not read as a repository is flagged and never stored. The section
+shows only while the flag is on. A task's repository is its category's
+(`taskGitHubRepositoryProvider`); a project's overriding it is still design.
+A pasted URL needs no repository, only a token that can read it.
+
+# One task per pull request
+
+A pull request belongs to one task (`specs/tla/PullRequestAssignment.tla`).
+`PullRequestRepository.holdersOf` answers which tasks hold a pull request,
+from one indexed query (`pullRequestAssignments`: the live `PullRequest` rows
+by `owner/repo#number`, joined to the live links from live tasks, private ones
+included). The picker leaves held pull requests out, but its list can be stale
+by the time the user picks, and a paste lists nothing; so
+`PullRequestRepository.link` re-checks and creates the entry in one step, one
+link at a time on the device. A pull request held by this task reads "already
+linked", one held by another "already linked to another task".
+
+```mermaid
+flowchart LR
+  Pick["Picked or pasted"] --> Held{"held by a task?"}
+  Held -->|"this task"| Already["already linked"]
+  Held -->|"another task"| Elsewhere["linked to another task"]
+  Held -->|"no"| Read["read from GitHub"]
+  Read -->|"fails"| Why["the reason"]
+  Read --> Link["link: check again and create, one at a time"]
+  Link -->|"held meanwhile"| Held
+  Link --> Linked["linked"]
+```
+
+Two devices that link the same pull request to different tasks before they
+sync cannot see each other. Sync keeps both entries — refusing the incoming
+one, the tempting way to enforce one task, would leave the devices disagreeing
+for good — so every device holds both, and a card whose pull request another
+task holds too says "Also linked to another task" first in its status line,
+until the user unlinks one. `pullRequestHoldersProvider` reads the holders
+again whenever a pull request entry or a link changes, so a conflict that
+syncs in shows at once. Sync does not deliver a device's entries in order, so
+a pull request moved from one task to another can show the flag for a moment
+until the unlink that preceded the move arrives.
 
 # In the task
 
@@ -219,11 +265,14 @@ part is a word; colour only backs it up. The age ticks on its own timer, so a
 row left open never reads younger than its snapshot.
 
 With nothing linked the card is one worded action; otherwise its header
-carries "+". Both open a modal that takes a pasted URL, reads the pull
-request from GitHub, and links it only if that read succeeded — a typo, a
-repository the token cannot see, or a pull request already on the task stays
-in the modal with the reason. (The picker of a repository's open pull
-requests comes with repository assignment.)
+carries "+". Both open the link modal: a field for a pasted URL, and below it
+the open pull requests of the task's repository that no task holds, most
+recently updated first, each with its author, whether it is a draft and how
+long ago it changed. Tapping one links it; a pasted URL links on Link. Either
+way the pull request is read from GitHub and linked only if that read
+succeeded — a typo, a repository the token cannot see, or a pull request a
+task holds stays in the modal with the reason. Without a repository on the
+task's category the modal says how to assign one.
 
 Opening a task refreshes every pull request whose snapshot is older than five
 minutes, once; each row also has its own refresh button, whose failure is

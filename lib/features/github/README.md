@@ -48,6 +48,8 @@ lib/features/github/
   api/pull_request_mapper.dart            responses to a PullRequestSnapshot
   context/                                refresh and render pull requests for task contexts
   domain/pull_request_ref.dart            parsing a pasted pull request
+  domain/github_repository.dart           parsing a category's owner/repo
+  domain/open_pull_request.dart           what the picker lists
   domain/pull_request_order.dart          observation order, digest, concurrent merge
   domain/pull_request_write_rule.dart     when an observation is written
   repository/github_token_storage.dart    the token in the keystore
@@ -57,10 +59,11 @@ lib/features/github/
   ui/                                     settings page, task card, row, link modal
 ```
 
-Everything is behind the `enable_github_pull_requests` config flag. Coding
+Everything is behind the `enable_github_pull_requests` config flag. A
+category names its repository; the "+" picker lists that repository's open
+pull requests no task holds, and a pull request belongs to one task. Coding
 prompts and task-agent wakes carry the task's pull requests, refreshed for
-them. The repository assignment and picker are still design; the concept
-below describes all of it.
+them. The concept below describes all of it.
 
 ## Further reading
 
