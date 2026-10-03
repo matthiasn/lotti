@@ -220,8 +220,10 @@ the refresh is the app's, the unlink is the user's.
   token that arrives from another device is checked here with `GET /user`
   before the page says "Connected as", and the check marks only the version it
   checked — a newer token that arrived during the check is checked on its own
-  (`VerifyMatchesVersion`); GitHub rejecting it shows the rejection and the
-  field instead, and the account provider never retries on its own. Guest and
+  (`VerifyMatchesVersion`). Until a check succeeds the page does not say
+  "Connected as": GitHub rejecting the token, or not being reachable yet,
+  shows that failure and the field instead, and the account provider never
+  retries on its own — "Check my other devices" checks again. Guest and
   demo worlds have no sync stack, so nothing reaches them.
 - Syncing is not tied to opening the page. The page has one small action: "Send
   to my other devices" when it holds a token — for one connected before tokens

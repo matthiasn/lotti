@@ -3097,7 +3097,7 @@
   "githubTokenHide": "Skjul token",
   "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.",
   "githubTokenLabel": "Personligt adgangstoken",
-  "githubTokenPrivacy": "Tokenet synkroniseres end-to-end-krypteret til dine andre enheder og sendes kun til api.github.com.",
+  "githubTokenPrivacy": "Tokenet synkroniseres end-to-end-krypteret til dine andre enheder. Lotti bruger det kun til forespørgsler til api.github.com.",
   "githubTokenShow": "Vis token",
   "githubUnlinkPullRequest": "Fjern pull request",
   "goalAssessmentHistoryTitle": "Daglige refleksioner",

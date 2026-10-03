@@ -6939,7 +6939,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Tokenul se sincronizează criptat end-to-end cu celelalte dispozitive ale dvs. și este trimis doar către api.github.com.';
+      'Tokenul se sincronizează criptat end-to-end cu celelalte dispozitive ale dvs. Lotti îl folosește doar pentru cereri către api.github.com.';
 
   @override
   String get githubTokenShow => 'Afișați tokenul';

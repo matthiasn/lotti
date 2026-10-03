@@ -188,9 +188,9 @@ final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
 ///
 /// The token syncs between the user's devices. One that arrived from another
 /// device is checked with GitHub (`GET /user`) before it is shown as
-/// connected: a token GitHub rejects is reported as that failure — an error
-/// state — instead; one this device cannot check yet (offline, rate limited)
-/// shows the login it came with, and is checked again next time.
+/// connected: until a check succeeds — GitHub rejected it, or could not be
+/// asked yet (offline, rate limited) — the failure is the state, an error,
+/// and "check my other devices" checks again.
 ///
 /// Never retried on its own: a rejection is final until the user enters a
 /// token or another one arrives, and asking GitHub again and again with a
@@ -218,18 +218,12 @@ class GitHubAccountController extends AsyncNotifier<String?> {
       final record = await storage.read();
       if (record == null || !record.connected) return null;
       if (record.verified) return record.login;
-      final String login;
-      try {
-        login = await ref
-            .read(gitHubClientProvider)
-            .fetchViewerLogin(record.token!);
-      } on GitHubException catch (e) {
-        if (e.kind == GitHubFailureKind.unauthorized ||
-            e.kind == GitHubFailureKind.forbidden) {
-          rethrow;
-        }
-        return record.login;
-      }
+      // Any failure is the answer until a check succeeds: a token GitHub
+      // rejected, or one it could not be asked about yet, is not shown as
+      // connected under the login it arrived with.
+      final login = await ref
+          .read(gitHubClientProvider)
+          .fetchViewerLogin(record.token!);
       final marked = await storage.markVerified(
         token: record.token!,
         updatedAt: record.updatedAt,

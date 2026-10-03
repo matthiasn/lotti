@@ -98,18 +98,24 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
       _syncing = true;
       _syncNote = null;
     });
-    final sent = await ref
-        .read(gitHubAccountControllerProvider.notifier)
-        .sendToOtherDevices();
-    if (!mounted) return;
-    setState(() {
-      _syncing = false;
-      _syncNote = switch (sent) {
-        true => _SyncNote.sent,
-        false => _SyncNote.sendFailed,
-        null => null,
-      };
-    });
+    bool? sent = false;
+    try {
+      sent = await ref
+          .read(gitHubAccountControllerProvider.notifier)
+          .sendToOtherDevices();
+    } finally {
+      // Whatever went wrong, the action is available again.
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          _syncNote = switch (sent) {
+            true => _SyncNote.sent,
+            false => _SyncNote.sendFailed,
+            null => null,
+          };
+        });
+      }
+    }
   }
 
   Future<void> _checkOtherDevices() async {
@@ -120,14 +126,18 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     final controller = ref.read(gitHubAccountControllerProvider.notifier);
     try {
       await controller.checkOtherDevices();
-    } on GitHubException {
-      // A received token GitHub rejects shows as the account's own error.
+    } on Exception {
+      // Best effort: a received token GitHub rejects shows as the account's
+      // own error, and a catch-up that failed leaves the action to try again.
+    } finally {
+      // Whatever went wrong, the action is available again.
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          _syncNote = _SyncNote.noToken;
+        });
+      }
     }
-    if (!mounted) return;
-    setState(() {
-      _syncing = false;
-      _syncNote = _SyncNote.noToken;
-    });
   }
 
   @override

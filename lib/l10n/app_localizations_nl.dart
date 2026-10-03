@@ -6845,7 +6845,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Het token synchroniseert end-to-end versleuteld met je andere apparaten en wordt alleen naar api.github.com gestuurd.';
+      'Het token synchroniseert end-to-end versleuteld met je andere apparaten. Lotti gebruikt het alleen voor verzoeken aan api.github.com.';
 
   @override
   String get githubTokenShow => 'Token tonen';

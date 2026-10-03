@@ -29,8 +29,11 @@ hold.
 3. **A disconnection syncs too.** Disconnecting forgets the token on every
    device, as deleting an inference provider removes its key everywhere.
 4. **A received token is checked before it shows.** A device asks GitHub
-   (`GET /user`) about a token it received before showing it as connected;
-   one GitHub rejects is reported, and the device asks for a token instead.
+   (`GET /user`) about a token it received before showing it as connected,
+   and marks only the version it checked. Until a check succeeds — GitHub
+   rejected it, or could not be reached — the failure is shown and the device
+   asks for a token instead; it never shows the login the token arrived
+   with.
 5. **Syncing is not tied to the settings page.** Connecting and disconnecting
    send; the page has one small action, "send to my other devices" or "check
    my other devices", rather than syncing every time it opens.

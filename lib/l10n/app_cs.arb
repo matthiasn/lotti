@@ -2847,7 +2847,7 @@
   "githubTokenHide": "Skrýt token",
   "githubTokenIntro": "Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.",
   "githubTokenLabel": "Osobní přístupový token",
-  "githubTokenPrivacy": "Token se synchronizuje na tvá další zařízení s koncovým šifrováním a posílá se jen na api.github.com.",
+  "githubTokenPrivacy": "Token se synchronizuje na tvá další zařízení s koncovým šifrováním. Lotti ho používá jen pro požadavky na api.github.com.",
   "githubTokenShow": "Zobrazit token",
   "githubUnlinkPullRequest": "Odpojit pull request",
   "goalAssessmentHistoryTitle": "Denní úvahy",

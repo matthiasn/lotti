@@ -6926,7 +6926,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Le jeton se synchronise chiffré de bout en bout avec tes autres appareils, et n\'est envoyé qu\'à api.github.com.';
+      'Le jeton se synchronise chiffré de bout en bout avec tes autres appareils. Lotti ne l\'utilise que pour les requêtes vers api.github.com.';
 
   @override
   String get githubTokenShow => 'Afficher le jeton';

@@ -6895,7 +6895,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Token se synchronizuje na tvá další zařízení s koncovým šifrováním a posílá se jen na api.github.com.';
+      'Token se synchronizuje na tvá další zařízení s koncovým šifrováním. Lotti ho používá jen pro požadavky na api.github.com.';
 
   @override
   String get githubTokenShow => 'Zobrazit token';

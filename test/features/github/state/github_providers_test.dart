@@ -237,19 +237,35 @@ void main() {
     );
 
     test(
-      'one this device cannot check yet shows the login it came with, and is '
-      'checked again next time',
+      'one this device cannot check yet is not shown under the login it came '
+      'with: the failure is reported, and checking again succeeds later',
       () async {
         await received('ghp_synced');
         when(() => client.fetchViewerLogin('ghp_synced')).thenThrow(
           const GitHubException(GitHubFailureKind.offline),
         );
+        final c = account();
 
-        expect(
-          await account().read(gitHubAccountControllerProvider.future),
-          'pingu',
+        await expectLater(
+          c.read(gitHubAccountControllerProvider.future),
+          throwsA(
+            isA<GitHubException>().having(
+              (e) => e.kind,
+              'kind',
+              GitHubFailureKind.offline,
+            ),
+          ),
         );
+        expect(c.read(gitHubAccountControllerProvider).value, isNull);
         expect((await storage.read())!.verified, isFalse);
+
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        await c
+            .read(gitHubAccountControllerProvider.notifier)
+            .checkOtherDevices();
+        expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
       },
     );
 

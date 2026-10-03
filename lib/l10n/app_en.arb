@@ -3825,7 +3825,7 @@
   "githubTokenHide": "Hide token",
   "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",
   "githubTokenLabel": "Personal access token",
-  "githubTokenPrivacy": "The token syncs end-to-end encrypted to your other devices, and is only ever sent to api.github.com.",
+  "githubTokenPrivacy": "The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.",
   "githubTokenShow": "Show token",
   "githubUnlinkPullRequest": "Unlink pull request",
   "goalAssessmentHistoryTitle": "Daily reflections",

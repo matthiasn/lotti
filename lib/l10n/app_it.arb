@@ -3097,7 +3097,7 @@
   "githubTokenHide": "Nascondi token",
   "githubTokenIntro": "Lotti legge le pull request che colleghi alle attività con il tuo token di accesso personale. Crea un token fine-grained per i repository in cui lavori, con accesso in sola lettura a \"Pull requests\" e \"Commit statuses\". GitHub non permette a un token del genere di leggere i check run di un repository privato, quindi lì la CI può essere incompleta; un token classico con lo scope \"repo\" può leggerli.",
   "githubTokenLabel": "Token di accesso personale",
-  "githubTokenPrivacy": "Il token si sincronizza con crittografia end-to-end con gli altri tuoi dispositivi e viene inviato solo ad api.github.com.",
+  "githubTokenPrivacy": "Il token si sincronizza con crittografia end-to-end con gli altri tuoi dispositivi. Lotti lo usa solo per le richieste ad api.github.com.",
   "githubTokenShow": "Mostra token",
   "githubUnlinkPullRequest": "Scollega pull request",
   "goalAssessmentHistoryTitle": "Riflessioni quotidiane",

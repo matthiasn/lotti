@@ -2840,7 +2840,7 @@
   "githubTokenHide": "Masquer le jeton",
   "githubTokenIntro": "Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.",
   "githubTokenLabel": "Jeton d'accès personnel",
-  "githubTokenPrivacy": "Le jeton se synchronise chiffré de bout en bout avec tes autres appareils, et n'est envoyé qu'à api.github.com.",
+  "githubTokenPrivacy": "Le jeton se synchronise chiffré de bout en bout avec tes autres appareils. Lotti ne l'utilise que pour les requêtes vers api.github.com.",
   "githubTokenShow": "Afficher le jeton",
   "githubUnlinkPullRequest": "Délier la pull request",
   "goalAssessmentHistoryTitle": "Réflexions quotidiennes",

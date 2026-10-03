@@ -6827,7 +6827,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Token synkas end-to-end-krypterad till dina andra enheter och skickas bara till api.github.com.';
+      'Token synkas end-to-end-krypterad till dina andra enheter. Lotti använder den bara för förfrågningar till api.github.com.';
 
   @override
   String get githubTokenShow => 'Visa token';

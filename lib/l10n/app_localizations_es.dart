@@ -6904,7 +6904,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'El token se sincroniza cifrado de extremo a extremo con tus otros dispositivos y solo se envía a api.github.com.';
+      'El token se sincroniza cifrado de extremo a extremo con tus otros dispositivos. Lotti solo lo usa para solicitudes a api.github.com.';
 
   @override
   String get githubTokenShow => 'Mostrar token';

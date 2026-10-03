@@ -6790,7 +6790,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'The token syncs end-to-end encrypted to your other devices, and is only ever sent to api.github.com.';
+      'The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.';
 
   @override
   String get githubTokenShow => 'Show token';

@@ -6818,7 +6818,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubTokenPrivacy =>
-      'Tokenet synkroniseres end-to-end-krypteret til dine andre enheder og sendes kun til api.github.com.';
+      'Tokenet synkroniseres end-to-end-krypteret til dine andre enheder. Lotti bruger det kun til forespørgsler til api.github.com.';
 
   @override
   String get githubTokenShow => 'Vis token';

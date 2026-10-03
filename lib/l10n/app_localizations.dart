@@ -11594,7 +11594,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubTokenPrivacy.
   ///
   /// In en, this message translates to:
-  /// **'The token syncs end-to-end encrypted to your other devices, and is only ever sent to api.github.com.'**
+  /// **'The token syncs end-to-end encrypted to your other devices. Lotti uses it only for requests to api.github.com.'**
   String get githubTokenPrivacy;
 
   /// No description provided for @githubTokenShow.

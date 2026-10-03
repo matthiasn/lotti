@@ -173,8 +173,8 @@ void main() {
     await pump(tester);
     expect(
       find.text(
-        'The token syncs end-to-end encrypted to your other devices, and is '
-        'only ever sent to api.github.com.',
+        'The token syncs end-to-end encrypted to your other devices. Lotti '
+        'uses it only for requests to api.github.com.',
       ),
       findsOneWidget,
     );
@@ -361,6 +361,20 @@ void main() {
 
         expect(sent, isEmpty);
         expect(find.byKey(const Key('github_sync_note')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'an unexpected failure while checking leaves the action available',
+      (tester) async {
+        onRescan = () async => throw Exception('sync stack gone');
+        await pump(tester);
+
+        await tester.tap(find.byKey(otherDevices));
+        await tester.pump();
+        await tester.pump();
+
+        expect(button(tester, otherDevices).onPressed, isNotNull);
       },
     );
 

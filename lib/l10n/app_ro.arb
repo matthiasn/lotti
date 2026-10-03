@@ -2840,7 +2840,7 @@
   "githubTokenHide": "Ascundeți tokenul",
   "githubTokenIntro": "Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.",
   "githubTokenLabel": "Token de acces personal",
-  "githubTokenPrivacy": "Tokenul se sincronizează criptat end-to-end cu celelalte dispozitive ale dvs. și este trimis doar către api.github.com.",
+  "githubTokenPrivacy": "Tokenul se sincronizează criptat end-to-end cu celelalte dispozitive ale dvs. Lotti îl folosește doar pentru cereri către api.github.com.",
   "githubTokenShow": "Afișați tokenul",
   "githubUnlinkPullRequest": "Dezlegați pull request-ul",
   "goalAssessmentHistoryTitle": "Reflecții zilnice",
