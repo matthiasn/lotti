@@ -136,6 +136,69 @@ void main() {
     );
 
     test(
+      '"blocked" shows when checks pass and the review is settled: then a '
+      'branch rule the line cannot name is in the way, and it is the only '
+      'sign of it',
+      () {
+        final snapshot = prSnapshot(checks: PullRequestCheckRollup.passing)
+            .copyWith(
+              mergeability: PullRequestMergeability.blocked,
+              reviews: const PullRequestReviews(
+                decision: PullRequestReviewDecision.approved,
+              ),
+            );
+        expect(
+          pullRequestStatusParts(
+            messages,
+            snapshot: snapshot,
+            failure: null,
+            now: now,
+          ),
+          [
+            ('Open', PullRequestTone.neutral),
+            ('3 min ago', PullRequestTone.neutral),
+            ('Checks passing', PullRequestTone.good),
+            ('Blocked by branch rules', PullRequestTone.attention),
+            ('Approved', PullRequestTone.good),
+          ],
+        );
+        // No checks reported and no review asked for explain nothing either.
+        expect(
+          words(
+            snapshot.copyWith(
+              checks: const PullRequestChecks(),
+              reviews: const PullRequestReviews(),
+            ),
+          ),
+          contains('Blocked by branch rules'),
+        );
+        // Failing checks explain it, as running checks and an outstanding
+        // review do.
+        expect(
+          words(
+            snapshot.copyWith(
+              checks: const PullRequestChecks(
+                rollup: PullRequestCheckRollup.failing,
+                failed: 1,
+              ),
+            ),
+          ),
+          isNot(contains('Blocked by branch rules')),
+        );
+        expect(
+          words(
+            snapshot.copyWith(
+              reviews: const PullRequestReviews(
+                decision: PullRequestReviewDecision.changesRequested,
+              ),
+            ),
+          ),
+          isNot(contains('Blocked by branch rules')),
+        );
+      },
+    );
+
+    test(
       'two pull requests read at the same moment show when each was opened, '
       'not when they were linked or read',
       () {

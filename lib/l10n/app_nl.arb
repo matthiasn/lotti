@@ -3030,6 +3030,7 @@
   "githubLinkUrlHint": "https://github.com/eigenaar/repo/pull/123",
   "githubLinkUrlLabel": "URL van de pull request",
   "githubMergeBehind": "Achter op de basisbranch",
+  "githubMergeBlocked": "Geblokkeerd door branchregels",
   "githubMergeConflicts": "Mergeconflicten",
   "githubNotRefreshed": "Vernieuwen mislukt",
   "githubNotRefreshedYet": "Nog niet vernieuwd",

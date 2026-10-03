@@ -3031,6 +3031,7 @@
   "githubLinkUrlHint": "https://github.com/agare/repo/pull/123",
   "githubLinkUrlLabel": "URL till pull request",
   "githubMergeBehind": "Efter basgrenen",
+  "githubMergeBlocked": "Blockerad av grenregler",
   "githubMergeConflicts": "Sammanfogningskonflikter",
   "githubNotRefreshed": "Kunde inte uppdatera",
   "githubNotRefreshedYet": "Inte uppdaterad än",

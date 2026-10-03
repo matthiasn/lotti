@@ -6642,6 +6642,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubMergeBehind => 'Efter basgrenen';
 
   @override
+  String get githubMergeBlocked => 'Blockerad av grenregler';
+
+  @override
   String get githubMergeConflicts => 'Sammanfogningskonflikter';
 
   @override

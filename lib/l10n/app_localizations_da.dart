@@ -6633,6 +6633,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubMergeBehind => 'Bagud i forhold til basisgrenen';
 
   @override
+  String get githubMergeBlocked => 'Blokeret af grenregler';
+
+  @override
   String get githubMergeConflicts => 'Flettekonflikter';
 
   @override

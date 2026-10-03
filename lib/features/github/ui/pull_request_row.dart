@@ -29,10 +29,13 @@ enum PullRequestTone { neutral, good, attention, bad }
 /// and its reviews.
 ///
 /// The age is GitHub's, not Lotti's: since it was opened, merged or closed
-/// ([pullRequestStateTime]), never since it was linked or last read. Only
-/// what someone can act on is shown: merge conflicts and a branch behind its
-/// base, not "blocked", which says only that a required review or check
-/// (already on the line) is missing.
+/// ([pullRequestStateTime]), never since it was linked or last read. Merge
+/// conflicts and a branch behind its base always show; "blocked" only when
+/// the line does not already explain it — checks failing or running, or a
+/// review requested or changes requested, are what usually block, and are
+/// shown. Otherwise a branch rule the line cannot name (resolved
+/// conversations, signed commits, a merge queue) is in the way, and "blocked"
+/// is the only sign of it.
 ///
 /// [snapshot] is null before the first successful refresh. [failure] is the
 /// last refresh's failure on this device, if it failed. [alsoElsewhere] says
@@ -104,6 +107,9 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         PullRequestMergeability.behind => [
           (messages.githubMergeBehind, PullRequestTone.attention),
         ],
+        PullRequestMergeability.blocked when !_blockExplained(snapshot) => [
+          (messages.githubMergeBlocked, PullRequestTone.attention),
+        ],
         PullRequestMergeability.blocked ||
         PullRequestMergeability.clean ||
         PullRequestMergeability.unknown => const <(String, PullRequestTone)>[],
@@ -123,6 +129,20 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
       },
   ];
 }
+
+/// Whether the status line already shows what usually blocks a merge:
+/// checks failing or still running, or a review outstanding.
+bool _blockExplained(PullRequestSnapshot snapshot) =>
+    switch (snapshot.checks.rollup) {
+      PullRequestCheckRollup.failing || PullRequestCheckRollup.pending => true,
+      PullRequestCheckRollup.passing || PullRequestCheckRollup.none => false,
+    } ||
+    switch (snapshot.reviews.decision) {
+      PullRequestReviewDecision.pending ||
+      PullRequestReviewDecision.changesRequested => true,
+      PullRequestReviewDecision.approved ||
+      PullRequestReviewDecision.none => false,
+    };
 
 /// When [snapshot]'s pull request entered its state: opened, merged or
 /// closed. Null when the snapshot does not say — one stored before it

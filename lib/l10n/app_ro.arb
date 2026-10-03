@@ -2774,6 +2774,7 @@
   "githubLinkUrlHint": "https://github.com/proprietar/repo/pull/123",
   "githubLinkUrlLabel": "URL-ul pull request-ului",
   "githubMergeBehind": "În urma ramurii de bază",
+  "githubMergeBlocked": "Blocat de regulile ramurii",
   "githubMergeConflicts": "Conflicte de îmbinare",
   "githubNotRefreshed": "Actualizarea a eșuat",
   "githubNotRefreshedYet": "Neactualizat încă",

@@ -288,11 +288,17 @@ reads from `createdAt`, a merged one's from `mergedAt`, a closed one's from
 `closedAt` (`pullRequestStateTime`), never from when it was linked or last
 read, so pull requests linked together still show their own ages. Past a
 week it names the weekday and date ("Sun, Sep 13"), with the year when it is
-not this one ("Tue, Dec 30, 2025"), as the picker does. A snapshot stored before it carried `createdAt` shows
-no age until its next refresh fills it in. Of mergeability only what someone
-can act on shows — merge conflicts, and a branch behind its base — not
-`blocked`, which says only that a required review or check, already on the
-line, is missing. Every part is a word; colour only backs it up. The age
+not this one ("Tue, Dec 30, 2025"), as the picker does. A snapshot stored
+before it carried `createdAt` shows no age until its next refresh fills it
+in — and that refresh is written at once, though `createdAt` is outside the
+digest, so the age and the order are stored and synced rather than held by
+the screen that refreshed. Merge conflicts and a branch behind its base
+always show. `blocked` shows only when the line does not explain it: checks
+failing or running, or a review requested or changes requested, are what
+usually block a merge and are on the line already; with checks passing and
+the review settled, a branch rule the line cannot name is in the way —
+resolved conversations, signed commits, a merge queue — and "blocked" is the
+only sign of it. Every part is a word; colour only backs it up. The age
 ticks on its own timer, so a row left open never reads younger than the
 state is.
 

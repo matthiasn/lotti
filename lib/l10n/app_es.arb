@@ -2774,6 +2774,7 @@
   "githubLinkUrlHint": "https://github.com/propietario/repo/pull/123",
   "githubLinkUrlLabel": "URL de la pull request",
   "githubMergeBehind": "Por detrás de la rama base",
+  "githubMergeBlocked": "Bloqueada por reglas de rama",
   "githubMergeConflicts": "Conflictos de fusión",
   "githubNotRefreshed": "No se pudo actualizar",
   "githubNotRefreshedYet": "Aún no actualizada",

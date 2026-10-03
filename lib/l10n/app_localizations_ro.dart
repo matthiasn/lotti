@@ -6749,6 +6749,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubMergeBehind => 'În urma ramurii de bază';
 
   @override
+  String get githubMergeBlocked => 'Blocat de regulile ramurii';
+
+  @override
   String get githubMergeConflicts => 'Conflicte de îmbinare';
 
   @override

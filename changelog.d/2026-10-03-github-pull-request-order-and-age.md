@@ -5,6 +5,6 @@
   pull request has been open — or since it was merged or closed, with the
   weekday and date (and year) once it is over a week old — instead of
   when Lotti last read it, so several pull requests linked at once no longer
-  all say "10 min ago". The card also no longer says "Blocked by branch
-  rules": that only repeated the missing review or check already shown next
-  to it.
+  all say "10 min ago". The card says "Blocked by branch rules" only when
+  nothing else on it explains why: no longer next to a missing review or a
+  failing check, which it only repeated.

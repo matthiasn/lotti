@@ -6683,6 +6683,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubMergeBehind => 'Hinter dem Basis-Branch';
 
   @override
+  String get githubMergeBlocked => 'Durch Branch-Regeln blockiert';
+
+  @override
   String get githubMergeConflicts => 'Merge-Konflikte';
 
   @override

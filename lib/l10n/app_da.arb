@@ -3031,6 +3031,7 @@
   "githubLinkUrlHint": "https://github.com/ejer/repo/pull/123",
   "githubLinkUrlLabel": "URL til pull request",
   "githubMergeBehind": "Bagud i forhold til basisgrenen",
+  "githubMergeBlocked": "Blokeret af grenregler",
   "githubMergeConflicts": "Flettekonflikter",
   "githubNotRefreshed": "Kunne ikke opdatere",
   "githubNotRefreshedYet": "Ikke opdateret endnu",

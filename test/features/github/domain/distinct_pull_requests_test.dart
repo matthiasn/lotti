@@ -77,19 +77,30 @@ void main() {
 
   test(
     'one whose opening is not known yet comes last, highest number first, '
-    'then by repository',
+    'then by repository — whatever order the entries arrive in',
     () {
-      expect(
-        ids(
-          distinctPullRequests([
-            pr('legacy-3-zeta', number: 3, repo: 'zeta'),
-            pr('unread-9', number: 9, observed: false),
-            pr('known', number: 1, createdAt: DateTime.utc(2026, 3, 2)),
-            pr('legacy-3-alpha', number: 3, repo: 'alpha'),
-          ]),
-        ),
-        ['known', 'unread-9', 'legacy-3-alpha', 'legacy-3-zeta'],
-      );
+      final entries = [
+        pr('legacy-3-zeta', number: 3, repo: 'zeta'),
+        pr('unread-9', number: 9, observed: false),
+        pr('known', number: 1, createdAt: DateTime.utc(2026, 3, 2)),
+        pr('legacy-3-alpha', number: 3, repo: 'alpha'),
+      ];
+      Iterable<List<PullRequestEntry>> orders(List<PullRequestEntry> rest) =>
+          rest.isEmpty
+          ? [<PullRequestEntry>[]]
+          : [
+              for (final first in rest)
+                for (final tail in orders([...rest]..remove(first)))
+                  [first, ...tail],
+            ];
+
+      for (final order in orders(entries)) {
+        expect(
+          ids(distinctPullRequests(order)),
+          ['known', 'unread-9', 'legacy-3-alpha', 'legacy-3-zeta'],
+          reason: ids(order).join(', '),
+        );
+      }
     },
   );
 }
