@@ -168,7 +168,10 @@ CREATE TABLE wake_run_log (
   soul_id TEXT,
   soul_version_id TEXT,
   user_rating REAL,
-  rated_at DATETIME
+  rated_at DATETIME,
+  -- Digest of the user-owned inputs a task-agent wake read (see
+  -- `taskWakeInputFingerprint`). Device-local, like the rest of this table.
+  input_fingerprint TEXT
 );
 
 CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
@@ -249,6 +252,12 @@ getAgentLinksByToIdAndType: SELECT * FROM agent_links WHERE to_id = :toId AND ty
 getWakeRunsByAgentId: SELECT * FROM wake_run_log WHERE agent_id = :agentId ORDER BY created_at DESC LIMIT :limit;
 
 getWakeRunByThreadId: SELECT * FROM wake_run_log WHERE agent_id = :agentId AND thread_id = :threadId ORDER BY created_at DESC LIMIT 1;
+
+getWakeRunByRunKey: SELECT * FROM wake_run_log WHERE run_key = :runKey;
+
+-- The inputs the agent's newest completed wake on this device read. A null
+-- row or column means "unknown", which never counts as unchanged.
+getLatestCompletedWakeInputFingerprint: SELECT input_fingerprint FROM wake_run_log WHERE agent_id = :agentId AND status = 'completed' ORDER BY created_at DESC LIMIT 1;
 
 getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND deleted_at IS NULL ORDER BY created_at DESC;
 

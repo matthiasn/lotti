@@ -1359,6 +1359,14 @@ void main() {
         expect(markdown, isNot(contains('a log entry')));
         expect(markdown, isNot(contains('logEntries')));
         expect(markdown, isNot(contains('{')));
+
+        // The wake-input fingerprint's variant drops only the moving total.
+        final withoutTime = await repository.buildTaskStateMarkdown(
+          taskId,
+          includeTimeSpent: false,
+        );
+        expect(withoutTime, contains('Estimate: 00:30'));
+        expect(withoutTime, isNot(contains('Time spent')));
       });
 
       test('buildTaskStateMarkdown resolves assigned label names', () async {

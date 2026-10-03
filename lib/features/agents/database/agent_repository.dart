@@ -615,6 +615,17 @@ class AgentRepository {
     String threadId,
   ) => _links.getWakeRunByThreadId(agentId, threadId);
 
+  Future<WakeRunLogData?> getWakeRunByRunKey(String runKey) =>
+      _links.getWakeRunByRunKey(runKey);
+
+  Future<String?> getLatestCompletedWakeInputFingerprint(String agentId) =>
+      _links.getLatestCompletedWakeInputFingerprint(agentId);
+
+  Future<void> updateWakeRunInputFingerprint(
+    String runKey,
+    String fingerprint,
+  ) => _links.updateWakeRunInputFingerprint(runKey, fingerprint);
+
   Future<List<WakeTokenUsageEntity>> getTokenUsageForAgent(
     String agentId, {
     int limit = 500,

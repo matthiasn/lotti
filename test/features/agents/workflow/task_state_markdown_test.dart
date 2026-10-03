@@ -189,6 +189,23 @@ void main() {
       expect(neither, isNot(contains('Time spent')));
     });
 
+    test('omits time spent but keeps the estimate when asked to', () {
+      final text = renderTaskStateMarkdown(
+        _task(estimatedDuration: '02:00', timeSpent: '01:30'),
+        includeTimeSpent: false,
+      );
+      expect(text, contains('- Estimate: 02:00\n'));
+      expect(text, isNot(contains('Time spent')));
+      // A ticking timer must not change the rendering at all.
+      expect(
+        text,
+        renderTaskStateMarkdown(
+          _task(estimatedDuration: '02:00', timeSpent: '00:05'),
+          includeTimeSpent: false,
+        ),
+      );
+    });
+
     test('omits due date, language, labels and suppressed ids when empty', () {
       final text = renderTaskStateMarkdown(_task(languageCode: null));
       expect(text, isNot(contains('Due:')));

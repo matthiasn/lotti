@@ -23,6 +23,7 @@ WakeRunLogData makeTestWakeRun({
   String? resolvedModelId,
   double? userRating,
   DateTime? ratedAt,
+  String? inputFingerprint,
 }) {
   return WakeRunLogData(
     runKey: runKey,
@@ -39,6 +40,7 @@ WakeRunLogData makeTestWakeRun({
     resolvedModelId: resolvedModelId,
     userRating: userRating,
     ratedAt: ratedAt,
+    inputFingerprint: inputFingerprint,
   );
 }
 

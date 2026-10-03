@@ -37,7 +37,7 @@ class AgentDatabase extends _$AgentDatabase {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 23;
+  static const int currentSchemaVersion = 24;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -517,6 +517,13 @@ class AgentDatabase extends _$AgentDatabase {
           // 0108). Agents deleted before this build are not recorded: their
           // late writes behave as before.
           await m.createTable(deletedAgents);
+        }
+        if (from < 24) {
+          // Older runs carry no fingerprint, so the first automatic wake
+          // after the upgrade always runs.
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN input_fingerprint TEXT',
+          );
         }
       },
     );

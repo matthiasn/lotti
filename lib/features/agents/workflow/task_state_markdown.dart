@@ -13,7 +13,9 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 ///
 /// Pure function of its inputs; line rules are deterministic:
 /// - `Estimate`/`Time spent` are omitted while they carry no information
-///   (`00:00`), as is the whole line when both do;
+///   (`00:00`), as is the whole line when both do; `Time spent` is also
+///   omitted when [includeTimeSpent] is false (the wake-input fingerprint,
+///   which must not move while a timer runs);
 /// - `Due`, `Language`, `Labels` and the suppressed-label line are omitted
 ///   when empty;
 /// - a checklist item renders as `- [ ] title (id: …)` with `, due …`,
@@ -23,13 +25,14 @@ String renderTaskStateMarkdown(
   AiInputTaskObject task, {
   List<Map<String, String>> labels = const [],
   List<String> suppressedLabelIds = const [],
+  bool includeTimeSpent = true,
 }) {
   final buffer = StringBuffer()
     ..writeln('- Title: ${task.title}')
     ..writeln('- Status: ${task.status} · Priority: ${task.priority}');
 
   final hasEstimate = task.estimatedDuration != '00:00';
-  final hasTimeSpent = task.timeSpent != '00:00';
+  final hasTimeSpent = includeTimeSpent && task.timeSpent != '00:00';
   if (hasEstimate || hasTimeSpent) {
     final parts = [
       if (hasEstimate) 'Estimate: ${task.estimatedDuration}',

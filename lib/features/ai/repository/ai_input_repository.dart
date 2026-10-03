@@ -293,7 +293,12 @@ class AiInputRepository {
   /// is supplied separately from the captured event log, so this carries only
   /// the mutable task facts (status, time, due, labels, checklist with item
   /// ids). Returns null when [id] does not resolve to a task.
-  Future<String?> buildTaskStateMarkdown(String id) async {
+  ///
+  /// [includeTimeSpent] is passed through to [renderTaskStateMarkdown].
+  Future<String?> buildTaskStateMarkdown(
+    String id, {
+    bool includeTimeSpent = true,
+  }) async {
     final aiInput = await generate(id);
     if (aiInput == null) return null;
 
@@ -317,6 +322,7 @@ class AiInputRepository {
       aiInput,
       labels: labels,
       suppressedLabelIds: suppressedLabelIds,
+      includeTimeSpent: includeTimeSpent,
     );
   }
 
