@@ -155,6 +155,22 @@ void main() {
       },
     );
 
+    test(
+      'a direct write from a copy read before tracking was on — a date or '
+      'label change — keeps it',
+      () async {
+        final before = await storedTask();
+        await repository.track(taskId);
+
+        final logic = getIt<PersistenceLogic>();
+        await logic.updateDbEntity(
+          before.copyWith(meta: await logic.updateMetadata(before.meta)),
+        );
+
+        expect((await storedTask()).data.tracksPullRequests, isTrue);
+      },
+    );
+
     test('a task that tracks already is not written again', () async {
       await repository.track(taskId);
       final clock = (await storedTask()).meta.vectorClock;

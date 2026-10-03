@@ -770,10 +770,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             curve: Curves.easeInOut,
           );
         } catch (error) {
+          // A guard only: the key marks a band of this page that is mounted
+          // and laid out by the time its context is found, and no test can
+          // make ensureVisible fail on one.
+          // coverage:ignore-start
           DevLogger.warning(
             name: 'TaskDetailsPage',
             message: 'Failed to scroll to $key: $error',
           );
+          // coverage:ignore-end
         } finally {
           _sectionRetryTimer?.cancel();
           if (mounted) {

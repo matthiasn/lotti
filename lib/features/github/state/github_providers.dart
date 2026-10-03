@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -57,9 +59,11 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
     client: ref.watch(gitHubClientProvider),
     tokenStorage: ref.watch(gitHubTokenStorageProvider),
     repository: ref.watch(pullRequestRepositoryProvider),
-    onTokenVerdict: (token, {required accepted}) => ref
-        .read(gitHubTokenStatusProvider.notifier)
-        .observe(token, accepted: accepted),
+    onTokenVerdict: (token, {required accepted}) => unawaited(
+      ref
+          .read(gitHubTokenStatusProvider.notifier)
+          .observe(token, accepted: accepted),
+    ),
   ),
   name: 'pullRequestServiceProvider',
 );
@@ -125,8 +129,18 @@ class GitHubTokenStatusController extends AsyncNotifier<GitHubTokenStatus> {
 
   /// Records what a call with [token] said: GitHub [accepted] it, or
   /// rejected it with a 401.
-  void observe(String token, {required bool accepted}) {
-    if (token != _token) return;
+  ///
+  /// Waits for the stored token to be read first. The first call is often
+  /// made before anything watched the status — reading this notifier is
+  /// what starts the read — and a verdict judged before the read finished
+  /// would be dropped, leaving a revoked token offered as valid.
+  Future<void> observe(String token, {required bool accepted}) async {
+    try {
+      await future;
+    } on Object {
+      return;
+    }
+    if (!ref.mounted || token != _token) return;
     final next = accepted
         ? GitHubTokenStatus.valid
         : GitHubTokenStatus.rejected;

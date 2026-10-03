@@ -366,8 +366,10 @@ A stored token was accepted by `GET /user` when it was saved, so it is
 made with the stored token — a success accepts it, a 401 rejects it, and
 offline, rate limited, forbidden or not found say nothing about it. Opening
 a task costs no extra request: refreshing its stale pull requests is the
-check. A verdict on a token that is no longer the stored one — replaced
-while its call was in flight — is ignored, and connecting or disconnecting
+check. A verdict waits for the stored token to be read, so a 401 on the
+first call — often made before anything watched the status — still rejects
+it. A verdict on a token that is no longer the stored one — replaced while
+its call was in flight — is ignored, and connecting or disconnecting
 invalidates the status, since reconnecting the same account leaves the
 login, and so the account state, unchanged. The rejection lives in memory:
 after a restart the token is taken as valid until the next call.
@@ -401,9 +403,14 @@ writes a task joins it with an `or` (`TaskDataOnStored.withTrackingOf`):
 
 | Path | What it would lose without the join |
 |------|-------------------------------------|
-| `onStored`, every write built on the stored task | a screen's copy read before tracking was turned on |
+| `JournalDb.updateJournalEntity`, for every version this device writes (`fromThisDevice`) | a date or label change, or any other direct write, built from a copy read before tracking was turned on — joined inside the write's transaction |
+| `onStored`, every write built on the stored task | the same, before the write: a change that only drops tracking is then no change, and not written at all |
 | `PersistenceUpdates.updateJournalEntity` | a star or flag toggled from such a copy |
 | conflict resolution (`conflict_merge.dart`) | the side the user did not keep |
+
+A version received from another device is stored as it came, so every device
+holds the same row under one clock; sync sends the stored row, so what this
+device joined is what its peers receive.
 
 The conflict view counts `data.tracksPullRequests` among the paths the
 resolution joins, so a conflict differing only there is not shown as an

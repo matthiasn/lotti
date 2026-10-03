@@ -3103,7 +3103,7 @@
   "githubTokenPrivacy": "Het token synchroniseert end-to-end versleuteld met je andere apparaten. Lotti gebruikt het alleen voor verzoeken aan api.github.com.",
   "githubTokenShow": "Token tonen",
   "githubTrackPullRequests": "Pull requests volgen",
-  "githubTrackPullRequestsHint": "Voegt een sectie toe voor de pull requests die deze taak uitvoeren.",
+  "githubTrackPullRequestsHint": "Voegt een sectie toe voor de pull requests die deze taak implementeren.",
   "githubUnlinkPullRequest": "Pull request ontkoppelen",
   "goalAssessmentHistoryTitle": "Dagelijkse reflecties",
   "goalAssessmentImproving": "Verbeterend",

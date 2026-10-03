@@ -6872,7 +6872,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubTrackPullRequestsHint =>
-      'Voegt een sectie toe voor de pull requests die deze taak uitvoeren.';
+      'Voegt een sectie toe voor de pull requests die deze taak implementeren.';
 
   @override
   String get githubUnlinkPullRequest => 'Pull request ontkoppelen';

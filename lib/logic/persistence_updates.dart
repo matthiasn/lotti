@@ -169,6 +169,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
         () async {
           final updateResult = await journalDb.updateJournalEntity(
             journalEntity,
+            fromThisDevice: true,
             precondition: precondition,
           );
           final applied = updateResult.applied;

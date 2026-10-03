@@ -2248,6 +2248,7 @@ void main() {
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
           overwrite: any<bool>(named: 'overwrite'),
+          fromThisDevice: any<bool>(named: 'fromThisDevice'),
         ),
       ).thenThrow(StateError(boom));
 
@@ -2344,6 +2345,7 @@ void main() {
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
           overwrite: any<bool>(named: 'overwrite'),
+          fromThisDevice: any<bool>(named: 'fromThisDevice'),
         ),
       ).thenThrow(StateError(boom));
 
@@ -2362,6 +2364,7 @@ void main() {
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
             overwrite: any<bool>(named: 'overwrite'),
+            fromThisDevice: any<bool>(named: 'fromThisDevice'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
 
@@ -2495,6 +2498,7 @@ void main() {
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
             overwrite: any<bool>(named: 'overwrite'),
+            fromThisDevice: any<bool>(named: 'fromThisDevice'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
         when(
@@ -2527,6 +2531,7 @@ void main() {
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
             overwrite: any<bool>(named: 'overwrite'),
+            fromThisDevice: any<bool>(named: 'fromThisDevice'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
         when(
@@ -2561,6 +2566,7 @@ void main() {
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
             overwrite: any<bool>(named: 'overwrite'),
+            fromThisDevice: any<bool>(named: 'fromThisDevice'),
           ),
         ).thenAnswer(
           (_) async => JournalUpdateResult.skipped(
@@ -2776,6 +2782,7 @@ void main() {
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
           overwrite: any<bool>(named: 'overwrite'),
+          fromThisDevice: any<bool>(named: 'fromThisDevice'),
         ),
       ).thenAnswer((_) async => result);
       // Writes built on the stored row (writeOnStored — updateTask among
@@ -2784,6 +2791,7 @@ void main() {
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
           overwrite: any<bool>(named: 'overwrite'),
+          fromThisDevice: any<bool>(named: 'fromThisDevice'),
           precondition: any(named: 'precondition'),
         ),
       ).thenAnswer((_) async => result);
@@ -2928,6 +2936,7 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             entry,
+            fromThisDevice: true,
             precondition: precondition,
           ),
         ).thenAnswer(
@@ -2949,6 +2958,7 @@ void main() {
         verify(
           () => journalDb.updateJournalEntity(
             entry,
+            fromThisDevice: true,
             precondition: precondition,
           ),
         ).called(1);
@@ -3012,6 +3022,7 @@ void main() {
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
           overwrite: any<bool>(named: 'overwrite'),
+          fromThisDevice: any<bool>(named: 'fromThisDevice'),
         ),
       ).thenThrow(Exception('db down'));
 
@@ -3144,6 +3155,7 @@ void main() {
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
             overwrite: any<bool>(named: 'overwrite'),
+            fromThisDevice: any<bool>(named: 'fromThisDevice'),
           ),
         ).thenAnswer((invocation) async {
           persistedEntity =

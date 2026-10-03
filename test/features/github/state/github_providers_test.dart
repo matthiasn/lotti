@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
@@ -524,19 +525,38 @@ void main() {
         final c = container();
         await settled(c);
 
-        statusIn(c).observe('ghp_secret', accepted: false);
+        await statusIn(c).observe('ghp_secret', accepted: false);
         expect(
           c.read(gitHubTokenStatusProvider).value,
           GitHubTokenStatus.rejected,
         );
         expect(c.read(gitHubTrackingAvailableProvider), isFalse);
 
-        statusIn(c).observe('ghp_secret', accepted: true);
+        await statusIn(c).observe('ghp_secret', accepted: true);
         expect(
           c.read(gitHubTokenStatusProvider).value,
           GitHubTokenStatus.valid,
         );
         expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+      },
+    );
+
+    test(
+      'a 401 that arrives before the stored token was read still rejects it',
+      () async {
+        when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+        when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+        final c = container();
+
+        // Nothing has read the status yet: this starts its read, and the
+        // verdict must wait for it rather than be judged against no token.
+        await statusIn(c).observe('ghp_secret', accepted: false);
+
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isFalse);
       },
     );
 
@@ -547,7 +567,7 @@ void main() {
       await settled(c);
 
       // A call made with the replaced token, answered after the swap.
-      statusIn(c).observe('ghp_old', accepted: false);
+      await statusIn(c).observe('ghp_old', accepted: false);
 
       expect(c.read(gitHubTokenStatusProvider).value, GitHubTokenStatus.valid);
     });
@@ -563,7 +583,7 @@ void main() {
       ).thenAnswer((_) async {});
       final c = container();
       await settled(c);
-      statusIn(c).observe('ghp_secret', accepted: false);
+      await statusIn(c).observe('ghp_secret', accepted: false);
 
       when(tokens.readToken).thenAnswer((_) async => 'ghp_fresh');
       await c
@@ -629,6 +649,46 @@ void main() {
         );
       },
     );
+  });
+
+  group('pullRequestContextServiceProvider', () {
+    late MockPullRequestRepository repository;
+
+    PullRequestContextService serviceIn() {
+      final c = ProviderContainer(
+        overrides: [
+          gitHubTokenStorageProvider.overrideWithValue(tokens),
+          pullRequestRepositoryProvider.overrideWithValue(repository),
+          pullRequestServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c.read(pullRequestContextServiceProvider);
+    }
+
+    setUp(() {
+      repository = MockPullRequestRepository();
+      when(() => repository.forTask(any())).thenAnswer((_) async => []);
+    });
+
+    test(
+      'is gated on the stored token: without one the task context asks '
+      'for nothing',
+      () async {
+        when(tokens.hasToken).thenAnswer((_) async => false);
+
+        expect(await serviceIn().forTask('task'), isEmpty);
+        verifyNever(() => repository.forTask(any()));
+        verifyZeroInteractions(service);
+      },
+    );
+
+    test("with a stored token it reads the task's pull requests", () async {
+      when(tokens.hasToken).thenAnswer((_) async => true);
+
+      expect(await serviceIn().forTask('task'), isEmpty);
+      verify(() => repository.forTask('task')).called(1);
+    });
   });
 
   group('taskShowsPullRequestsProvider', () {
