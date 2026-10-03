@@ -7,12 +7,12 @@ void main() {
   const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
 
   Map<String, dynamic> item({
-    Object? updatedAt = '2024-03-15T12:00:00+01:00',
+    Object? createdAt = '2024-03-15T12:00:00+01:00',
     Object? user = const {'login': 'pingu'},
   }) => {
     'number': 7,
     'title': 'Waddle faster',
-    'updated_at': updatedAt,
+    'created_at': createdAt,
     'user': user,
     'draft': true,
   };
@@ -25,8 +25,8 @@ void main() {
       const PullRequestRef(owner: 'penguin', repo: 'colony', number: 7),
     );
     expect(pr.title, 'Waddle faster');
-    expect(pr.updatedAt, DateTime.utc(2024, 3, 15, 11));
-    expect(pr.updatedAt.isUtc, isTrue);
+    expect(pr.createdAt, DateTime.utc(2024, 3, 15, 11));
+    expect(pr.createdAt.isUtc, isTrue);
     expect(pr.authorLogin, 'pingu');
     expect(pr.draft, isTrue);
   });
@@ -42,10 +42,10 @@ void main() {
     );
   });
 
-  for (final updatedAt in ['yesterday', 1710500000, null]) {
-    test('an update time of $updatedAt is not an open pull request', () {
+  for (final createdAt in ['yesterday', 1710500000, null]) {
+    test('an opening time of $createdAt is not an open pull request', () {
       expect(
-        () => openPullRequestFrom(item(updatedAt: updatedAt), repository),
+        () => openPullRequestFrom(item(createdAt: createdAt), repository),
         throwsFormatException,
       );
     });

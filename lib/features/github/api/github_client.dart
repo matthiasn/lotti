@@ -128,8 +128,8 @@ class GitHubClient {
     }
   }
 
-  /// The open pull requests of [repository], most recently updated first,
-  /// every page of them.
+  /// The open pull requests of [repository], newest first, every page of
+  /// them — GitHub's own order for a repository's pull requests.
   Future<List<OpenPullRequest>> listOpenPullRequests(
     GitHubRepository repository, {
     required String token,
@@ -137,7 +137,7 @@ class GitHubClient {
     final json = await _getAll(
       '/repos/${repository.owner}/${repository.repo}/pulls',
       token: token,
-      query: const {'state': 'open', 'sort': 'updated', 'direction': 'desc'},
+      query: const {'state': 'open', 'sort': 'created', 'direction': 'desc'},
     );
     try {
       return [

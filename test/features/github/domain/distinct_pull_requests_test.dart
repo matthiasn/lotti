@@ -10,8 +10,15 @@ void main() {
     int number = 42,
     String repo = 'lotti',
     bool deleted = false,
+    DateTime? createdAt,
+    bool observed = true,
   }) {
-    final e = prEntry(clock: {'a': 1}, id: id, deleted: deleted);
+    final e = prEntry(
+      clock: {'a': 1},
+      id: id,
+      deleted: deleted,
+      snapshot: observed ? prSnapshot().copyWith(createdAt: createdAt) : null,
+    );
     return e.copyWith(
       data: e.data.copyWith(number: number, repo: repo),
     );
@@ -46,16 +53,54 @@ void main() {
     );
   });
 
-  test('orders by number, then by repository', () {
-    expect(
-      ids(
-        distinctPullRequests([
-          pr('x', number: 9),
-          pr('y', number: 3, repo: 'zeta'),
-          pr('z', number: 3, repo: 'alpha'),
-        ]),
-      ),
-      ['z', 'y', 'x'],
-    );
-  });
+  test(
+    'newest first by when each was opened on GitHub, not by number: a '
+    'pull request from another repository sits where its date puts it',
+    () {
+      expect(
+        ids(
+          distinctPullRequests([
+            pr('old', number: 90, createdAt: DateTime.utc(2026, 3, 2)),
+            pr('new', number: 12, createdAt: DateTime.utc(2026, 3, 9)),
+            pr(
+              'middle',
+              number: 3,
+              repo: 'zeta',
+              createdAt: DateTime.utc(2026, 3, 5),
+            ),
+          ]),
+        ),
+        ['new', 'middle', 'old'],
+      );
+    },
+  );
+
+  test(
+    'one whose opening is not known yet comes last, highest number first, '
+    'then by repository — whatever order the entries arrive in',
+    () {
+      final entries = [
+        pr('legacy-3-zeta', number: 3, repo: 'zeta'),
+        pr('unread-9', number: 9, observed: false),
+        pr('known', number: 1, createdAt: DateTime.utc(2026, 3, 2)),
+        pr('legacy-3-alpha', number: 3, repo: 'alpha'),
+      ];
+      Iterable<List<PullRequestEntry>> orders(List<PullRequestEntry> rest) =>
+          rest.isEmpty
+          ? [<PullRequestEntry>[]]
+          : [
+              for (final first in rest)
+                for (final tail in orders([...rest]..remove(first)))
+                  [first, ...tail],
+            ];
+
+      for (final order in orders(entries)) {
+        expect(
+          ids(distinctPullRequests(order)),
+          ['known', 'unread-9', 'legacy-3-alpha', 'legacy-3-zeta'],
+          reason: ids(order).join(', '),
+        );
+      }
+    },
+  );
 }

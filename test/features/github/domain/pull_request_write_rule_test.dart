@@ -54,6 +54,30 @@ void main() {
     },
   );
 
+  test(
+    'a read that brings the opening to a snapshot stored without it is '
+    'written at once, though the digest leaves the opening out',
+    () {
+      final legacy = prSnapshot().copyWith(createdAt: null);
+      expect(
+        writes(stored: legacy, observation: prSnapshot(second: 5)),
+        isTrue,
+      );
+      // Unknown both times, or known both times: unchanged as before.
+      expect(
+        writes(
+          stored: legacy,
+          observation: prSnapshot(second: 5).copyWith(createdAt: null),
+        ),
+        isFalse,
+      );
+      expect(
+        writes(stored: prSnapshot(), observation: prSnapshot(second: 5)),
+        isFalse,
+      );
+    },
+  );
+
   test('an older or equal observation is never written (GuardNewer)', () {
     final stored = prSnapshot(second: 10, status: PullRequestStatus.merged);
     expect(writes(stored: stored, observation: prSnapshot()), isFalse);

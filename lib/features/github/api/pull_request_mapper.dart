@@ -24,6 +24,7 @@ PullRequestSnapshot pullRequestSnapshotFrom({
   final user = pull['user'];
   return PullRequestSnapshot(
     observedAt: observedAt.toUtc(),
+    createdAt: _date(pull['created_at']),
     title: _string(pull, 'title'),
     body: pull['body'] as String?,
     status: _status(pull),

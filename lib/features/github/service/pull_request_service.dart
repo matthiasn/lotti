@@ -142,8 +142,8 @@ class PullRequestService {
       : PullRequestLinkedElsewhere(holders);
 
   /// The open pull requests of [repository] that no task holds, for the
-  /// picker. What it shows can be stale by the time the user picks; [link]
-  /// decides.
+  /// picker, newest first as GitHub lists them. What it shows can be stale
+  /// by the time the user picks; [link] decides.
   Future<OpenPullRequestsResult> openPullRequests(
     GitHubRepository repository,
   ) async {
@@ -158,10 +158,17 @@ class PullRequestService {
       return OpenPullRequestsFailed(e.kind, retryAt: e.retryAt);
     }
     final held = await _entries.holdersOf(open.map((pr) => pr.ref));
-    return OpenPullRequestsListed([
-      for (final pr in open)
-        if (!held.containsKey(pr.ref.key)) pr,
-    ]);
+    return OpenPullRequestsListed(
+      [
+        for (final pr in open)
+          if (!held.containsKey(pr.ref.key)) pr,
+      ]..sort((a, b) {
+        final byCreated = b.createdAt.compareTo(a.createdAt);
+        return byCreated != 0
+            ? byCreated
+            : b.ref.number.compareTo(a.ref.number);
+      }),
+    );
   }
 
   /// Reads [entry]'s pull request from GitHub and stores the observation if

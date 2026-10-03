@@ -230,26 +230,29 @@ void main() {
     );
   });
 
-  test('taskPullRequestsProvider lists only live pull requests, by number', () {
-    PullRequestEntry pr(String id, int number, {bool deleted = false}) {
-      final e = prEntry(clock: {'a': 1}, id: id, deleted: deleted);
-      return e.copyWith(data: e.data.copyWith(number: number));
-    }
+  test(
+    'taskPullRequestsProvider lists only live pull requests, newest first',
+    () {
+      PullRequestEntry pr(String id, int number, {bool deleted = false}) {
+        final e = prEntry(clock: {'a': 1}, id: id, deleted: deleted);
+        return e.copyWith(data: e.data.copyWith(number: number));
+      }
 
-    final c = container(
-      linked: [
-        pr('b', 9),
-        testTextEntry,
-        pr('a', 3),
-        pr('gone', 1, deleted: true),
-      ],
-    );
+      final c = container(
+        linked: [
+          pr('b', 9),
+          testTextEntry,
+          pr('a', 3),
+          pr('gone', 1, deleted: true),
+        ],
+      );
 
-    expect(
-      c.read(taskPullRequestsProvider('task')).map((e) => e.data.number),
-      [3, 9],
-    );
-  });
+      expect(
+        c.read(taskPullRequestsProvider('task')).map((e) => e.data.number),
+        [9, 3],
+      );
+    },
+  );
 
   group('picker providers', () {
     const repository = GitHubRepository(owner: 'penguin', repo: 'colony');

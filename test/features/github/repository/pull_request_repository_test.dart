@@ -222,22 +222,27 @@ void main() {
     );
   });
 
-  test('forTask lists live pull requests by number', () async {
-    for (final number in [7, 3, 5]) {
-      await repository.link(
-        taskId: taskId,
-        ref: PullRequestRef(owner: 'o', repo: 'r', number: number),
-      );
-    }
-    final gone = (await repository.forTask(taskId)).first;
-    await repository.unlink(taskId: taskId, ref: gone.data.ref);
+  test(
+    'forTask lists live pull requests newest first — by number while none '
+    'has been read yet',
+    () async {
+      for (final number in [7, 3, 5]) {
+        await repository.link(
+          taskId: taskId,
+          ref: PullRequestRef(owner: 'o', repo: 'r', number: number),
+        );
+      }
+      final gone = (await repository.forTask(taskId)).first;
+      await repository.unlink(taskId: taskId, ref: gone.data.ref);
 
-    expect(
-      (await repository.forTask(taskId)).map((e) => e.data.number),
-      [5, 7],
-    );
-    expect(await repository.forTask('another-task'), isEmpty);
-  });
+      expect(gone.data.number, 7);
+      expect(
+        (await repository.forTask(taskId)).map((e) => e.data.number),
+        [5, 3],
+      );
+      expect(await repository.forTask('another-task'), isEmpty);
+    },
+  );
 
   test(
     'a duplicate another device created before the two synced is shown '

@@ -14,6 +14,7 @@ Map<String, dynamic> githubPullJson({
   'number': 12,
   'title': 'Waddle faster',
   'body': 'Implements the waddle.',
+  'created_at': '2024-03-14T09:30:00Z',
   'state': state,
   'draft': false,
   'merged': merged,

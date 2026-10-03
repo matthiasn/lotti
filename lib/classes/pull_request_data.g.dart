@@ -35,6 +35,9 @@ _PullRequestSnapshot _$PullRequestSnapshotFromJson(Map<String, dynamic> json) =>
       headSha: json['headSha'] as String,
       headRef: json['headRef'] as String,
       baseRef: json['baseRef'] as String,
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
       body: json['body'] as String?,
       draft: json['draft'] as bool? ?? false,
       authorLogin: json['authorLogin'] as String?,
@@ -75,6 +78,7 @@ Map<String, dynamic> _$PullRequestSnapshotToJson(
   'headSha': instance.headSha,
   'headRef': instance.headRef,
   'baseRef': instance.baseRef,
+  'createdAt': ?instance.createdAt?.toIso8601String(),
   'body': instance.body,
   'draft': instance.draft,
   'authorLogin': instance.authorLogin,

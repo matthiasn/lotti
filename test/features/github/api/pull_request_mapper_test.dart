@@ -24,6 +24,7 @@ void main() {
   test('copies identity, description and diff stats', () {
     final snapshot = map();
     expect(snapshot.observedAt, observedAt);
+    expect(snapshot.createdAt, DateTime.utc(2024, 3, 14, 9, 30));
     expect(snapshot.title, 'Waddle faster');
     expect(snapshot.body, 'Implements the waddle.');
     expect(snapshot.htmlUrl, 'https://github.com/penguin/colony/pull/12');
