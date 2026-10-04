@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/measurable_choice_series.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/measurable_choice_strip.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';

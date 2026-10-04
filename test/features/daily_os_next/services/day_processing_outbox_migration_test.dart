@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_legacy_file_store.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_migration.dart';

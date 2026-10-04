@@ -1,9 +1,9 @@
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 
-export 'package:lotti/features/goals/model/goal_health_data_types.dart'
+export 'package:lotti/classes/goal_health_data_types.dart'
     show GoalHealthDataTypes;
 
 enum GoalFormCompositeRule { all, any, atLeast }

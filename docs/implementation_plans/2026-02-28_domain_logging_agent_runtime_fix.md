@@ -65,7 +65,7 @@ navigates to a `LoggingSettingsPage`. This page shows:
 - Link to the existing log viewer
 
 Files to create/modify:
-- `lib/features/settings/ui/pages/advanced/logging_settings_page.dart` (new)
+- `lib/features/system_health/ui/pages/logging_settings_page.dart` (new)
 - `lib/features/settings/ui/pages/advanced_settings_page.dart` (add card)
 - Route registration in the beamer router
 - Localization strings in all 5 arb files
@@ -213,7 +213,7 @@ appears in the domain log files.
 | File | Purpose |
 |------|---------|
 | `lib/services/domain_logging.dart` | DomainLogger class with PII scrubbing |
-| `lib/features/settings/ui/pages/advanced/logging_settings_page.dart` | Domain toggle UI |
+| `lib/features/system_health/ui/pages/logging_settings_page.dart` | Domain toggle UI |
 | `test/services/domain_logging_test.dart` | Unit tests for DomainLogger + sanitization |
 | `test/features/settings/ui/pages/advanced/logging_settings_page_test.dart` | Widget tests |
 

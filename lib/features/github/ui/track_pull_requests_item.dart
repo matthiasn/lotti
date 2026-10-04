@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The "Add" sheet's row that turns pull request tracking on for task

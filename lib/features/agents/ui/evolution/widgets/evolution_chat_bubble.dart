@@ -1,8 +1,8 @@
 import 'package:lotti/features/agents/ui/chat/thinking_disclosure.dart';
 import 'package:lotti/features/agents/ui/chat/thinking_parser.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A single turn in the evolution conversation.

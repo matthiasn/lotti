@@ -3,9 +3,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/settings/dashboard_definition_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Loads the dashboard [dashboardId] and opens it in

@@ -109,16 +109,18 @@ flowchart BT
   Low["Lower features — categories, labels, ai_consumption, ai …"]
   Agents["agents, then speech and journal — the runtime above the AI layer it calls, the logbook above both"]
   Sync["sync — above the features whose entities it carries"]
-  High["Aggregators — settings, demo, tasks, projects, daily_os_next, onboarding …"]
+  High["Aggregators — demo, tasks, projects, daily_os_next, onboarding …"]
+  Settings["settings — hosts every feature's settings pages"]
   Shell["Shell — lib/beamer, pages, app_root, get_it*, main<br/>may import anything"]
-  Foundation --> DS --> Low --> Agents --> Sync --> High --> Shell
+  Foundation --> DS --> Low --> Agents --> Sync --> High --> Settings --> Shell
 ```
 
 Read the arrows as "is imported by". The full order is the `featureOrder` list
 in the guard, bottom to top: a feature may import the features before it,
 never the ones after, and the order is the one that left the fewest upward
 imports when the guard was introduced, adjusted by hand where the domain
-decides (sync above the features it carries, the agent runtime above AI).
+decides (sync above the features it carries, the agent runtime above AI,
+settings above every feature whose settings pages its route table hosts).
 Two kinds of import break it:
 
 - **upward** — a file imports a feature ranked above its own, including any

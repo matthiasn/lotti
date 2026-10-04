@@ -1,6 +1,5 @@
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/widgets/settings/settings_toggle_list.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / Beamer wrapper: adds the [SliverBoxAdapterPage] chrome and

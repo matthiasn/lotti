@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/agents/agent_database.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 

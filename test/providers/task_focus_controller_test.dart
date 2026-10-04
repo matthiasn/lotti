@@ -1,0 +1,229 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/providers/task_focus_controller.dart';
+
+void main() {
+  late ProviderContainer container;
+
+  const testTaskId = 'test-task-id';
+  const testEntryId = 'test-entry-id';
+
+  setUp(() {
+    container = ProviderContainer();
+  });
+
+  tearDown(() {
+    container.dispose();
+  });
+
+  group('TaskFocusIntent', () {
+    test('creates intent with required fields', () {
+      final intent = TaskFocusIntent(
+        taskId: testTaskId,
+        entryId: testEntryId,
+      );
+
+      expect(intent.taskId, equals(testTaskId));
+      expect(intent.target, TaskFocusTarget.entry);
+      expect(intent.entryId, equals(testEntryId));
+      expect(intent.alignment, equals(0.0));
+    });
+
+    test('creates suggestions intent with default alignment', () {
+      final intent = TaskFocusIntent.suggestions(taskId: testTaskId);
+
+      expect(intent.taskId, equals(testTaskId));
+      expect(intent.target, TaskFocusTarget.suggestions);
+      expect(intent.entryId, isNull);
+      expect(intent.alignment, equals(0.1));
+    });
+
+    test('toString names the entry for an entry intent', () {
+      final intent = TaskFocusIntent(
+        taskId: testTaskId,
+        entryId: testEntryId,
+        alignment: 0.5,
+      );
+
+      expect(
+        intent.toString(),
+        'TaskFocusIntent(taskId: test-task-id, entryId: test-entry-id, '
+        'alignment: 0.5)',
+      );
+    });
+
+    test('toString omits the entry for a suggestions intent', () {
+      final intent = TaskFocusIntent.suggestions(taskId: testTaskId);
+
+      expect(
+        intent.toString(),
+        'TaskFocusIntent.suggestions(taskId: test-task-id, alignment: 0.1)',
+      );
+    });
+
+    test('a pull requests intent names its target and carries no entry', () {
+      final intent = TaskFocusIntent.pullRequests(taskId: testTaskId);
+
+      expect(intent.target, TaskFocusTarget.pullRequests);
+      expect(intent.entryId, isNull);
+      expect(intent.alignment, 0.1);
+      expect(
+        intent.toString(),
+        'TaskFocusIntent.pullRequests(taskId: test-task-id, alignment: 0.1)',
+      );
+    });
+  });
+
+  group('TaskFocusController', () {
+    test('initial state is null', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+      final state = container.read(provider);
+
+      expect(state, isNull);
+    });
+
+    test('publishTaskFocus sets intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container
+          .read(provider.notifier)
+          .publishTaskFocus(
+            entryId: testEntryId,
+          );
+
+      final state = container.read(provider);
+      expect(state, isNotNull);
+      expect(state!.taskId, equals(testTaskId));
+      expect(state.target, TaskFocusTarget.entry);
+      expect(state.entryId, equals(testEntryId));
+      expect(state.alignment, equals(0.0));
+    });
+
+    test('publishSuggestionFocus sets suggestions intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container.read(provider.notifier).publishSuggestionFocus();
+
+      final state = container.read(provider);
+      expect(state, isNotNull);
+      expect(state!.taskId, equals(testTaskId));
+      expect(state.target, TaskFocusTarget.suggestions);
+      expect(state.entryId, isNull);
+      expect(state.alignment, equals(0.1));
+    });
+
+    test('publishPullRequestsFocus sets a pull requests intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container.read(provider.notifier).publishPullRequestsFocus();
+
+      final state = container.read(provider);
+      expect(state?.taskId, testTaskId);
+      expect(state?.target, TaskFocusTarget.pullRequests);
+      expect(state?.entryId, isNull);
+    });
+
+    test('publishTaskFocus with custom alignment', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container
+          .read(provider.notifier)
+          .publishTaskFocus(
+            entryId: testEntryId,
+            alignment: 0.5,
+          );
+
+      final state = container.read(provider);
+      expect(state!.alignment, equals(0.5));
+    });
+
+    test('clearIntent resets state to null', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+      final notifier = container.read(provider.notifier)
+        ..publishTaskFocus(
+          entryId: testEntryId,
+        );
+
+      // Verify intent was set
+      expect(container.read(provider), isNotNull);
+
+      // Clear intent
+      notifier.clearIntent();
+
+      // Verify intent is cleared
+      final state = container.read(provider);
+      expect(state, isNull);
+    });
+
+    test('multiple publish calls update the intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+      final notifier = container.read(provider.notifier)
+        ..publishTaskFocus(
+          entryId: 'entry1',
+        );
+
+      expect(container.read(provider)!.entryId, equals('entry1'));
+
+      // Second publish
+      notifier.publishTaskFocus(
+        entryId: 'entry2',
+      );
+
+      expect(container.read(provider)!.entryId, equals('entry2'));
+    });
+
+    test('re-trigger after clearIntent works', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+      final notifier = container.read(provider.notifier)
+        ..publishTaskFocus(
+          entryId: testEntryId,
+        );
+
+      expect(container.read(provider), isNotNull);
+
+      // Clear intent
+      notifier.clearIntent();
+      expect(container.read(provider), isNull);
+
+      // Re-trigger with same values should work
+      notifier.publishTaskFocus(
+        entryId: testEntryId,
+      );
+
+      final state = container.read(provider);
+      expect(state, isNotNull);
+      expect(state!.entryId, equals(testEntryId));
+    });
+
+    test('different task IDs have independent state', () {
+      const taskId1 = 'task-1';
+      const taskId2 = 'task-2';
+
+      final provider1 = taskFocusControllerProvider(taskId1);
+      final provider2 = taskFocusControllerProvider(taskId2);
+
+      container
+          .read(provider1.notifier)
+          .publishTaskFocus(
+            entryId: 'entry1',
+          );
+
+      container
+          .read(provider2.notifier)
+          .publishTaskFocus(
+            entryId: 'entry2',
+          );
+
+      // Verify each has its own state
+      expect(container.read(provider1)!.entryId, equals('entry1'));
+      expect(container.read(provider2)!.entryId, equals('entry2'));
+
+      // Clear task1
+      container.read(provider1.notifier).clearIntent();
+
+      // Verify only task1 is cleared
+      expect(container.read(provider1), isNull);
+      expect(container.read(provider2)!.entryId, equals('entry2'));
+    });
+  });
+}

@@ -1,0 +1,458 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/utils/scroll_anchor.dart';
+import 'package:material_ui/material_ui.dart';
+
+void main() {
+  group('anchorCorrectionOffset', () {
+    glados.Glados3(
+      glados.any.intInRange(-1000, 1001),
+      glados.any.intInRange(0, 1001),
+      glados.any.intInRange(0, 1001),
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'compensates generated drift exactly within scroll extents',
+      (drift, offsetSeed, maxExtent) {
+        final currentOffset = offsetSeed % (maxExtent + 1);
+        final unclamped = currentOffset + drift;
+        final expected = unclamped.clamp(0, maxExtent).toDouble();
+        final result = anchorCorrectionOffset(
+          anchorTop: 1000,
+          currentTop: 1000 + drift.toDouble(),
+          currentOffset: currentOffset.toDouble(),
+          minScrollExtent: 0,
+          maxScrollExtent: maxExtent.toDouble(),
+        );
+
+        if (drift == 0 || expected == currentOffset) {
+          expect(
+            result,
+            isNull,
+            reason: 'd=$drift o=$currentOffset m=$maxExtent',
+          );
+        } else {
+          expect(
+            result,
+            expected,
+            reason: 'd=$drift o=$currentOffset m=$maxExtent',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('null when drift is within tolerance', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 200,
+          currentTop: 200.3,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 1000,
+        ),
+        isNull,
+      );
+    });
+
+    test('compensates downward drift by scrolling forward', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 200,
+          currentTop: 260,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 1000,
+        ),
+        160,
+      );
+    });
+
+    test('compensates upward drift by scrolling back', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 200,
+          currentTop: 160,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 1000,
+        ),
+        60,
+      );
+    });
+
+    test('clamps to max scroll extent', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 100,
+          currentTop: 700,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 500,
+        ),
+        500,
+      );
+    });
+
+    test('clamps to min scroll extent', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 700,
+          currentTop: 100,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 1000,
+        ),
+        0,
+      );
+    });
+
+    test('null when clamping leaves the offset effectively unchanged', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 100,
+          currentTop: 160,
+          currentOffset: 500,
+          minScrollExtent: 0,
+          maxScrollExtent: 500,
+        ),
+        isNull,
+      );
+    });
+
+    test('honours a custom tolerance', () {
+      expect(
+        anchorCorrectionOffset(
+          anchorTop: 200,
+          currentTop: 203,
+          currentOffset: 100,
+          minScrollExtent: 0,
+          maxScrollExtent: 1000,
+          tolerance: 5,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('ScrollAnchor', () {
+    testWidgets(
+      'holds the anchored widget at its viewport position when content above '
+      'it grows',
+      (tester) async {
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        // Scroll so the anchor sits mid-viewport (not pinned at an extent).
+        state.controller.jumpTo(120);
+        await tester.pump();
+
+        final before = state.anchorTop();
+        expect(before, isNotNull);
+
+        // Capture the anchor, THEN grow the content above it (as a confirmed
+        // proposal would add a checklist item above the AI card).
+        state.anchor.hold();
+        state.grow(300);
+        await tester.pump();
+        await tester.pump();
+
+        final after = state.anchorTop();
+        expect(after, isNotNull);
+        // The anchor stayed essentially put despite 300px inserted above it.
+        expect((after! - before!).abs(), lessThan(2));
+        // ...and the scroll compensated by ~the inserted height.
+        expect(state.controller.offset, closeTo(420, 2));
+
+        // After the hold duration elapses, the hold releases itself.
+        await tester.pump(const Duration(milliseconds: 120));
+      },
+    );
+
+    testWidgets(
+      'corrects a shrink above it that lands well after the trigger',
+      (tester) async {
+        // The check-off case: the row above stays put for a while, then
+        // collapses. The hold must still be active when that delayed shrink
+        // finally lands — a short frame burst would have missed it.
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(300);
+        await tester.pump();
+
+        final before = state.anchorTop();
+        state.anchor.hold();
+
+        // Quiet stretch: nothing changes above, but well past a 24-frame burst.
+        await tester.pump(const Duration(milliseconds: 60));
+
+        // The delayed collapse finally shrinks the content above the anchor.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+
+        final after = state.anchorTop();
+        // The anchor held its viewport position despite the late shrink...
+        expect((after! - before!).abs(), lessThan(2));
+        // ...by scrolling back ~the removed height (300 - 150).
+        expect(state.controller.offset, closeTo(150, 2));
+      },
+    );
+
+    testWidgets('releases without fighting when the user scrolls mid-hold', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(120);
+      await tester.pump();
+
+      state.anchor.hold();
+      await tester.pump();
+
+      // The user deliberately scrolls — an offset change the anchor didn't make.
+      state.controller.jumpTo(260);
+      await tester.pump();
+
+      // A later shrink must NOT be compensated: the hold has bowed out, so the
+      // user's scroll position is preserved.
+      state.grow(-150);
+      await tester.pump();
+      await tester.pump();
+      expect(state.controller.offset, 260);
+    });
+
+    testWidgets(
+      'announces its corrections to a cooperating controller before jumping',
+      (tester) async {
+        final controller = _FakeCooperativeController();
+        addTearDown(controller.dispose);
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(
+          _AnchorHarness(key: harnessKey, controller: controller),
+        );
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(120);
+        await tester.pump();
+
+        state.anchor.hold();
+        state.grow(300);
+        await tester.pump();
+        await tester.pump();
+
+        // The anchor corrected the drift — and told the controller first, so
+        // a stabilizing controller would not read the jump as a user scroll.
+        expect(state.controller.offset, closeTo(420, 2));
+        expect(controller.adopted, [closeTo(420, 2)]);
+      },
+    );
+
+    testWidgets(
+      "adopts a cooperating controller's own correction instead of releasing",
+      (tester) async {
+        final controller = _FakeCooperativeController();
+        addTearDown(controller.dispose);
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(
+          _AnchorHarness(key: harnessKey, controller: controller),
+        );
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(120);
+        await tester.pump();
+
+        state.anchor.hold();
+        await tester.pump();
+
+        // Simulate the controller's own pre-paint compensation: content above
+        // grows 140 and the controller corrects the offset by the same amount
+        // in the same frame, marking the new offset as its own.
+        controller.ownedOffsets.add(260);
+        state.grow(140);
+        state.controller.jumpTo(260);
+        await tester.pump();
+
+        // The anchor recognises the correction as the controller's, not the
+        // user's, and keeps holding at the adopted offset.
+        expect(state.controller.offset, 260);
+
+        // The surviving hold still corrects a later uncompensated shrink.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+        expect(state.controller.offset, closeTo(110, 2));
+      },
+    );
+
+    testWidgets(
+      'hold(duration:) overrides the window the anchor was constructed with',
+      (tester) async {
+        // The below-card anchor is built for the card's short growth reveal but
+        // is reused for the much longer suggestion-resolve window. One anchor
+        // per anchored point is the invariant; the window is per-hold.
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(300);
+        await tester.pump();
+        final before = state.anchorTop();
+
+        state.anchor.hold(duration: const Duration(milliseconds: 500));
+
+        // Well past the 100ms the anchor was constructed with.
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // A shrink landing inside the overridden window is still corrected.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+        expect((state.anchorTop()! - before!).abs(), lessThan(2));
+        expect(state.controller.offset, closeTo(150, 2));
+
+        // ...and the overridden window still ends on its own.
+        await tester.pump(const Duration(milliseconds: 250));
+      },
+    );
+
+    testWidgets('release() ends an active hold without disposing the anchor', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(300);
+      await tester.pump();
+
+      state.anchor.hold();
+
+      state.anchor.release();
+
+      // Released: a shrink above is left uncorrected.
+      state.grow(-150);
+      await tester.pump();
+      await tester.pump();
+      expect(state.controller.offset, 300);
+
+      // ...but the anchor is still usable, unlike after dispose().
+      final before = state.anchorTop();
+      state.anchor.hold();
+      state.grow(-100);
+      await tester.pump();
+      await tester.pump();
+      expect((state.anchorTop()! - before!).abs(), lessThan(2));
+      expect(state.controller.offset, closeTo(200, 2));
+    });
+
+    testWidgets('dispose stops an in-flight hold', (tester) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(120);
+      await tester.pump();
+
+      state.anchor.hold();
+      state.anchor.dispose();
+      // After dispose a subsequent grow must not be compensated.
+      final offsetAfterDispose = state.controller.offset;
+      state.grow(300);
+      await tester.pump();
+      await tester.pump();
+      expect(state.controller.offset, offsetAfterDispose);
+    });
+  });
+}
+
+/// Records cooperation calls and lets a test declare which offsets count as
+/// the controller's own corrections.
+class _FakeCooperativeController extends ScrollController
+    implements CooperativeScrollStabilizer {
+  final List<double> adopted = [];
+  final Set<double> ownedOffsets = {};
+
+  @override
+  bool ownsOffset(double offset) => ownedOffsets.contains(offset);
+
+  @override
+  void adoptCorrection(double target) => adopted.add(target);
+}
+
+class _AnchorHarness extends StatefulWidget {
+  const _AnchorHarness({this.controller, super.key});
+
+  /// Externally owned controller; the harness creates (and disposes) its own
+  /// when null.
+  final ScrollController? controller;
+
+  @override
+  State<_AnchorHarness> createState() => _AnchorHarnessState();
+}
+
+class _AnchorHarnessState extends State<_AnchorHarness> {
+  late final ScrollController controller =
+      widget.controller ?? ScrollController();
+  final GlobalKey _anchorKey = GlobalKey();
+  late final ScrollAnchor anchor = ScrollAnchor(
+    controller: controller,
+    holdDuration: const Duration(milliseconds: 100),
+    locate: () {
+      final box = _anchorKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached) return null;
+      return box.localToGlobal(Offset.zero).dy;
+    },
+  );
+  double _spacer = 400;
+
+  double? anchorTop() {
+    final box = _anchorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return null;
+    return box.localToGlobal(Offset.zero).dy;
+  }
+
+  void grow(double by) => setState(() => _spacer += by);
+
+  @override
+  void dispose() {
+    anchor.dispose();
+    if (widget.controller == null) controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: MediaQuery(
+        data: const MediaQueryData(size: Size(400, 600)),
+        child: SingleChildScrollView(
+          controller: controller,
+          child: Column(
+            children: [
+              SizedBox(height: _spacer),
+              Container(
+                key: _anchorKey,
+                height: 50,
+                color: const Color(0xFF00FF00),
+              ),
+              const SizedBox(height: 2000),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

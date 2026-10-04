@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
+import 'package:lotti/utils/settings_urls.dart';
 
 /// Builds a settings page or panel body for a resolved URL.
 typedef SettingsRouteBuilder =

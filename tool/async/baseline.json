@@ -179,7 +179,7 @@
     "lib/features/system_health/ui/system_health_page.dart": 5,
     "lib/features/tasks/state/checklist_item_controller.dart": 2,
     "lib/features/tasks/state/linkable_tasks_controller.dart": 1,
-    "lib/features/tasks/state/saved_filters/saved_task_filters_repository.dart": 1,
+    "lib/logic/repositories/saved_task_filters_repository.dart": 1,
     "lib/features/tasks/state/task_list_density_controller.dart": 2,
     "lib/features/tasks/ui/checklists/checklist_card.dart": 1,
     "lib/features/tasks/ui/checklists/checklist_card_wrapper.dart": 1,

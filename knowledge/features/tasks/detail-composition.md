@@ -45,7 +45,7 @@ sources:
     title: taskOneLinerProvider and taskOneLinersProvider
     last_modified: 2026-08-12
   - id: scroll-stability
-    resource: ../../../lib/features/tasks/ui/widgets/viewport_stable_animated_size.dart
+    resource: ../../../lib/widgets/layout/viewport_stable_animated_size.dart
     title: TaskScrollStabilityScope and ViewportStableScrollController
     last_modified: 2026-09-08
   - id: estimate-quick-pick

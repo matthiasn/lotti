@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';

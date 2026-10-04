@@ -9,7 +9,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_in
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/pairing_check_code_view.da
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';

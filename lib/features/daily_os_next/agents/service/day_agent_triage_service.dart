@@ -2,10 +2,10 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/utils/day_agent_capture_helpers.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();

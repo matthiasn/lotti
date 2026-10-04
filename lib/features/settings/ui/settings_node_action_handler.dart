@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
-import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
+import 'package:lotti/providers/manual_language_controller.dart';
 
 /// Performs [SettingsNode.action] and reports whether an action was handled.
 ///

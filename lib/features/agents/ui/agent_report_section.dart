@@ -1,8 +1,8 @@
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/cards/task_detail_section_card.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Displays the contents of an agent report with an expandable TLDR section.

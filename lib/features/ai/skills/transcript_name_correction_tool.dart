@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
-import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
+import 'package:lotti/utils/transcript_term_corrector.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Name of the tool the thinking model calls to propose name corrections.

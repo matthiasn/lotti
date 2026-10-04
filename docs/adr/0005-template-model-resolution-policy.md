@@ -57,4 +57,4 @@ flowchart LR
 
 - `lib/features/agents/workflow/task_agent_workflow.dart`
 - `lib/features/agents/workflow/template_evolution_workflow.dart`
-- `lib/features/agents/util/inference_provider_resolver.dart`
+- `lib/features/ai/util/inference_provider_resolver.dart`

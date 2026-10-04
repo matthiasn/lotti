@@ -9,9 +9,9 @@ import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Chart card for a survey series (CFQ-11, GHQ-12, or PANAS): a multi-line plot

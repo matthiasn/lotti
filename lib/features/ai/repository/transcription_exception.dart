@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Exception thrown when audio transcription fails.

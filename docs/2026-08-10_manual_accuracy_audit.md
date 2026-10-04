@@ -69,7 +69,7 @@ Two errors:
 **(a) It lists 8 languages; the app offers 11.** Dutch, Danish and Swedish are
 missing.
 
-- `lib/features/settings/state/manual_language_controller.dart:20-32` — the
+- `lib/providers/manual_language_controller.dart:20-32` — the
   `ManualLanguage` enum: `english, german, french, italian, spanish, czech,
   dutch, romanian, portuguese, danish, swedish`.
 - `lib/features/settings/ui/pages/advanced/manual_language_settings_page.dart:43-125`
@@ -80,7 +80,7 @@ The manual never says this.
 
 - `lib/beamer/beamer_app.dart:1298`, `:1318`, `:1340` — the stored override is
   read and passed as `locale:` to the app's localized widget tree.
-- `lib/features/settings/state/manual_language_controller.dart:10-14` — "The
+- `lib/providers/manual_language_controller.dart:10-14` — "The
   stored key intentionally retains its original name so existing user
   preferences keep working after the setting began controlling Lotti's UI."
 - `lib/l10n/app_en.arb:5037` — the in-app subtitle already says it: "Use your

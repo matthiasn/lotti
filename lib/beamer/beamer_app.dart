@@ -64,7 +64,6 @@ import 'package:lotti/features/recent_searches/ui/recent_search_opener.dart';
 import 'package:lotti/features/recent_searches/ui/recent_searches_section.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
-import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -80,6 +79,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -98,8 +98,8 @@ import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
-part 'beamer_app_routes_part.dart';
 part 'beamer_app_chrome_part.dart';
+part 'beamer_app_routes_part.dart';
 
 /// Check if the app is running inside Flatpak sandbox
 bool _isRunningInFlatpak() {

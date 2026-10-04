@@ -153,7 +153,7 @@ Known non-literal domain symbols (resolved explicitly during migration):
    `LogDomain` via a loop over `LogDomain.values` (keeps `log_slow_queries`).
 5. ✅ `lib/features/agents/state/agent_providers.dart` — `domainLogger` provider
    now wires **all** `LogDomain.values` from their flags (was 3 hard-coded).
-6. ✅ `lib/features/settings/ui/pages/advanced/logging_settings_page.dart` —
+6. ✅ `lib/features/system_health/ui/pages/logging_settings_page.dart` —
    master toggle + slow-query toggle + one switch per `LogDomain`
    (currently uses `domain.label`; see l10n step).
 

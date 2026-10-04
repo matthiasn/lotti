@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/tasks/util/time_range_utils.dart';
+import 'package:lotti/utils/time_range_utils.dart';
 
 /// Pure computations behind the Shutdown screen. The service loads the day's
 /// recorded time ([TimeBlock]s from the Actual lane), the tasks meant for it
