@@ -570,9 +570,11 @@ handles lighter jobs.
 The agents are a different matter. Their sweet spot right now is models of the
 size and capability of **DeepSeek V4.1 Flash** and **GLM 5.3 Flash**, both of
 which perform particularly well on Lotti's agent workloads. The models people
-typically run locally do not cut it yet: Qwen 3.8 27B, for example, scores
-below both, spends most of its output on reasoning that does not improve the
-answer, and is too slow for the day planner's 30-second budget, so it is [not a candidate for any agent route](docs/evaluations/lotti-gym-2026-09-21.md).
+typically run locally are not that far behind on correctness, but they are slow:
+Qwen 3.8 27B, for example, lands only a few points below them, yet is far slower
+even on cloud inference, occasionally stalls, and misses the day planner's
+30-second budget ([the evaluation](docs/evaluations/lotti-gym-2026-09-21.md)).
+On a personal machine that gap only widens.
 Local inference is also power-hungry: under sustained agent load on an M4 Max
 with 128 GB of RAM, the laptop is audible and the battery drains noticeably
 faster than during normal work.
@@ -596,6 +598,11 @@ with zero data retention. Image generation has no local path yet — cover art
 goes through Gemini or Alibaba. As personal hardware gets faster, models of
 that class are expected to move onto your own devices, until a cloud provider
 is a choice rather than a necessity.
+
+**Input on running Lotti locally is very welcome.** If you have a model,
+quantisation, runtime or hardware setup that keeps up with the agents, please
+share it in a [GitHub issue](https://github.com/matthiasn/lotti/issues) or on
+[Discord](https://discord.gg/uuSaa8NpY).
 
 ### Energy is a routing decision too
 
