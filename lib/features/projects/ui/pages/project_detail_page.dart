@@ -18,7 +18,6 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/get_it.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 

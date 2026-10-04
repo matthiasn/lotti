@@ -9,7 +9,6 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -20,20 +19,6 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-
-/// Provider that fetches projects for a category and auto-rebuilds on changes.
-final projectsForCategoryProvider = FutureProvider.autoDispose
-    .family<List<ProjectEntry>, String>((ref, categoryId) async {
-      final repository = ref.watch(projectRepositoryProvider);
-
-      // Rebuild when any project-related notification fires.
-      final sub = repository.updateStream
-          .where((ids) => ids.contains(projectNotification))
-          .listen((_) => ref.invalidateSelf());
-      ref.onDispose(sub.cancel);
-
-      return repository.getProjectsForCategory(categoryId);
-    });
 
 /// Provider that returns the latest agent-authored health metrics for a
 /// project, parsed from its most recent project-agent report.
@@ -61,21 +46,6 @@ final projectHealthMetricsProvider = FutureProvider.autoDispose
       if (report == null) return null;
 
       return projectHealthMetricsFromReport(report);
-    });
-
-/// Provider that fetches the project a task belongs to.
-final projectForTaskProvider = FutureProvider.autoDispose
-    .family<ProjectEntry?, String>((ref, taskId) async {
-      final repository = ref.watch(projectRepositoryProvider);
-
-      final sub = repository.updateStream
-          .where(
-            (ids) => ids.contains(taskId) || ids.contains(projectNotification),
-          )
-          .listen((_) => ref.invalidateSelf());
-      ref.onDispose(sub.cancel);
-
-      return repository.getProjectForTask(taskId);
     });
 
 /// Keep-alive filter controller for the top-level projects tab.

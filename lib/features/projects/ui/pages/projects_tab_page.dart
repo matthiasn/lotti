@@ -28,7 +28,6 @@ import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -42,6 +41,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Top-level Projects tab.

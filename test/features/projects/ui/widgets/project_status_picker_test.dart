@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fallbacks.dart';

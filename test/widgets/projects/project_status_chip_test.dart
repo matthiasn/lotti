@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/projects/project_status_chip.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   group('ProjectStatusChip', () {
