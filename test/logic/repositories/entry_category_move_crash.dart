@@ -78,7 +78,7 @@ void _registerDbTests() {
           put<JournalDb>(db);
           put<OutboxService>(mockOutboxService);
           put<NotificationService>(mockNotificationService);
-          put<VectorClockService>(VectorClockService());
+          put<VectorClockService>(buildVectorClockService());
           put<TimeService>(mockTimeService);
           put<EntitiesCacheService>(MockEntitiesCacheService());
           put<DomainLogger>(DomainLogger(loggingService: LoggingService()));
@@ -86,7 +86,7 @@ void _registerDbTests() {
             MetadataService(vectorClockService: getIt<VectorClockService>()),
           );
           put<GeolocationService>(MockGeolocationService());
-          put<PersistenceLogic>(PersistenceLogic());
+          put<PersistenceLogic>(buildPersistenceLogic());
         },
       );
       projects = ProjectRepository(
