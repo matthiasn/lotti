@@ -78,7 +78,7 @@
     "lib/features/goals/runtime/goal_runtime_maintenance.dart": 1,
     "lib/features/goals/service/goal_health_refresh_service.dart": 1,
     "lib/features/goals/ui/checkins/goal_checkin_timeline.dart": 1,
-    "lib/features/goals/ui/pages/goal_agent_detail_page.dart": 1,
+    "lib/features/goals/ui/pages/goal_agent_detail_page_cards_part.dart": 1,
     "lib/features/goals/ui/pages/unified_goals_page.dart": 2,
     "lib/features/habits/service/habit_auto_completion_notifier.dart": 2,
     "lib/features/habits/service/habit_auto_completion_service.dart": 4,
