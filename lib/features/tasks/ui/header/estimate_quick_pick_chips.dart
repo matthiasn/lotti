@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/chips/duration_quick_pick_chips.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/state/task_estimate_suggestions_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The estimate picker's one-tap row: the durations this user estimates in

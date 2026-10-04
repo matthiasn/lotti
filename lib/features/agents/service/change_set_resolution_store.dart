@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 

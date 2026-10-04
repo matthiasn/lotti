@@ -19,7 +19,7 @@ If permutation-invariance holds, the "log is the agent / convergent DAG" design 
 
 ## Inputs the kernel relies on (already in the codebase)
 
-- `lib/features/sync/vector_clock.dart` — `VectorClock` + `VclockStatus` (`equal`/`concurrent`/`a_gt_b`/`b_gt_a`), `compare`, element-wise-max `merge`. **Reused as-is.**
+- `lib/classes/vector_clock.dart` — `VectorClock` + `VclockStatus` (`equal`/`concurrent`/`a_gt_b`/`b_gt_a`), `compare`, element-wise-max `merge`. **Reused as-is.**
 - `AgentMessageEntity` (carries `vectorClock`, `prevMessageId`, `kind`, `id`) and `AgentLink.messagePrev` (child→parent edge) — the *future* event source. This PR does **not** read them directly; it works against an adapter view (below) and synthetic fixtures.
 
 ## The event view

@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// The instant every fixture observation is offset from.

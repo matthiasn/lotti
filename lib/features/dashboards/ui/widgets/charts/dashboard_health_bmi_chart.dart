@@ -2,7 +2,7 @@ import 'dart:core';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';

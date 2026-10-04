@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas, cascade_invocations
 
 import 'package:drift/drift.dart' show Value;
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 
 import 'outbox_service_test_harness.dart';

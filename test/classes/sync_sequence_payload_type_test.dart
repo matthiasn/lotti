@@ -1,0 +1,21 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+
+void main() {
+  group('SyncSequencePayloadType', () {
+    test('has expected values', () {
+      expect(
+        SyncSequencePayloadType.values,
+        [
+          SyncSequencePayloadType.journalEntity,
+          SyncSequencePayloadType.entryLink,
+          SyncSequencePayloadType.agentEntity,
+          SyncSequencePayloadType.agentLink,
+          SyncSequencePayloadType.notification,
+          SyncSequencePayloadType.notificationStateUpdate,
+          SyncSequencePayloadType.consumptionEvent,
+        ],
+      );
+    });
+  });
+}

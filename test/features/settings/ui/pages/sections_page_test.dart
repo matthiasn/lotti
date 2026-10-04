@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
-import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';

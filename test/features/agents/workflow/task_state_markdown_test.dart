@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 
 import '../test_utils.dart' show makeTestChecklistApproval;
 

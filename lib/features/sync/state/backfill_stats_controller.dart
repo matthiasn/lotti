@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
-import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 
 /// State for backfill stats and manual operations.

@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'agent_domain_entity.freezed.dart';
 part 'agent_domain_entity.g.dart';

@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+
 import 'ai_config_test_helpers.dart';
 
 void main() {

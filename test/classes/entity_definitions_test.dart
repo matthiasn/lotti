@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
+
 import 'entity_definitions_test_helpers.dart';
 
 void main() {

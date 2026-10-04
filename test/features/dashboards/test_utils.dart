@@ -1,7 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:research_package/model.dart';
 
 /// Creates a [QuantitativeEntry] for testing health data aggregation.

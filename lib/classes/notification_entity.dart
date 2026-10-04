@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 part 'notification_entity.freezed.dart';
 part 'notification_entity.g.dart';

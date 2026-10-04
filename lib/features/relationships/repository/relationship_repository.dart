@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 import 'package:lotti/get_it.dart';

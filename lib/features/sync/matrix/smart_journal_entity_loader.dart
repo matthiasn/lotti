@@ -5,14 +5,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
-import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/atomic_write.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';

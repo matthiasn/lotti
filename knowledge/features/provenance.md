@@ -9,7 +9,7 @@ generated: { by: claude-code/opus-5.5, at: 2026-09-27T10:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: canonical
-    resource: ../../lib/features/provenance/crypto/canonical_json.dart
+    resource: ../../lib/utils/canonical_json.dart
     title: canonicalJson / parseCanonicalJson
     last_modified: 2026-09-26
   - id: domain
@@ -47,7 +47,7 @@ sources:
 Phase 1 of record provenance: the primitives every later phase builds on. It is
 a pure library: no entry is signed or chained yet. The one caller outside the
 feature is GitHub pull request tracking, which reuses `canonicalJsonBytes` to
-fingerprint a pull request snapshot (`lib/features/github/domain/pull_request_order.dart`).
+fingerprint a pull request snapshot (`lib/classes/github/pull_request_order.dart`).
 The choices behind it are
 [ADR 0088](../../docs/adr/0088-provenance-crypto-primitives.md); what the later
 phases need from the rest of the codebase is the

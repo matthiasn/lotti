@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';

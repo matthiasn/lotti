@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -24,10 +25,9 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
 
 import '../test_data/test_data.dart';

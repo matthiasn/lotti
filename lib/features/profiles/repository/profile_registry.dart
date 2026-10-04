@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/profile_paths.dart';
-import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/atomic_write.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 

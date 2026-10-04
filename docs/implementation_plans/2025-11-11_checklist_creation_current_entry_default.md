@@ -186,7 +186,7 @@ Phase 5 — Polish, Docs, and Rollout
   - Add `complete_checklist_items` to `checklist_completion_functions.dart`
   - Conversation path in `lib/features/ai/functions/lotti_conversation_processor.dart`
   - Streamed tool handling in `lib/features/ai/repository/unified_ai_inference_repository.dart`
-- Optional: `AiInputLogEntryObject` add `id` in `lib/features/ai/model/ai_input.dart` to improve
+- Optional: `AiInputLogEntryObject` add `id` in `lib/classes/ai_input.dart` to improve
   back‑reference UX (requires build_runner regen) — can be deferred since `createdAt` +
   `entryType` + text/transcript is already present.
 

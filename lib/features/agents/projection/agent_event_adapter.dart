@@ -1,8 +1,8 @@
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Maps a storage-layer [AgentMessageKind] onto the kernel's coarser
 /// [AgentEventKind]. Exhaustive over the enum — a new message kind won't compile

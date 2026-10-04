@@ -1,6 +1,6 @@
 // Tests for outbox retention pruning (`lib/database/sync_db_outbox_prune.dart`).
 import 'package:glados/glados.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/database/outbox_status.dart';
 
 import 'sync_db_test_utils.dart';
 

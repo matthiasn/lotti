@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/notifications/model/notification_episode_id.dart';
 import 'package:lotti/features/notifications/producer/notification_episode_producer.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 

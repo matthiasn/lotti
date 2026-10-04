@@ -1,16 +1,16 @@
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_backfill_responder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_gap_materializer.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_gap_model.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_missing_notifier.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Records received entries and detects gaps in the sync sequence log — the

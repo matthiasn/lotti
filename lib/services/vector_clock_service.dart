@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/utils.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_keys.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:meta/meta.dart';
 

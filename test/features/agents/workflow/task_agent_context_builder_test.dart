@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 

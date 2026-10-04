@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';

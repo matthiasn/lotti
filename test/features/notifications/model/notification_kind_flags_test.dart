@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/notifications/model/notification_kind_flags.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/utils/consts.dart';
 
 void main() {

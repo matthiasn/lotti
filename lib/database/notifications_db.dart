@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/notification_merge.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/features/notifications/model/notification_merge.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'notifications_db.g.dart';
 

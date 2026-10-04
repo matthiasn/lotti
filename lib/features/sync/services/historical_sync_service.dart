@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider, outboxServiceProvider;

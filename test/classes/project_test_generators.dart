@@ -2,7 +2,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// Shared Glados generators for project-shaped entities and links —
 /// consumed by `journal_entities_test.dart` (the `JournalEntity.project`

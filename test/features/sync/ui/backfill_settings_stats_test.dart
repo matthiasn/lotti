@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';

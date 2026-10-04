@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';

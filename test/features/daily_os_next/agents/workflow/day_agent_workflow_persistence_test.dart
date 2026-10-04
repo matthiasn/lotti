@@ -1,5 +1,5 @@
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'day_agent_workflow_test_harness.dart';
 

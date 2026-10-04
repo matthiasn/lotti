@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_evolution.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/change_set_factories.dart';
 import '../test_data/entity_factories.dart';

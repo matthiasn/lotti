@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 

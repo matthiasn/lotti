@@ -5,6 +5,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_wake_inputs.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';

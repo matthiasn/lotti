@@ -1,7 +1,7 @@
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:uuid/uuid.dart';
 
 /// Shared test utilities for category-related tests.

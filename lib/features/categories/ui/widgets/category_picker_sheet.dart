@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:material_ui/material_ui.dart';

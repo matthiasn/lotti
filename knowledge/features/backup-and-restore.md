@@ -33,7 +33,7 @@ sources:
     title: ProfileSwitcher.runWithGenerationClosed
     last_modified: 2026-09-22
   - id: service-disposer
-    resource: ../../lib/services/service_disposer.dart
+    resource: ../../lib/service_disposer.dart
     title: ServiceDisposer failure reporting
     last_modified: 2026-09-22
   - id: bundle-header

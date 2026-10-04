@@ -1,6 +1,6 @@
+import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';

@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:lotti/classes/github/pull_request_order.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
-import 'package:lotti/features/github/domain/pull_request_order.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';

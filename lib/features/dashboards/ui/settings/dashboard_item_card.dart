@@ -1,6 +1,6 @@
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/aggregation_label.dart';

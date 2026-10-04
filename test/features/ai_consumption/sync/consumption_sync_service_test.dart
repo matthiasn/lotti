@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';

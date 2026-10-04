@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 

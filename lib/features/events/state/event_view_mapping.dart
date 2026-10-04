@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/utils/entry_tools.dart';
 
 String? _trimmedNote(JournalEntity entity) {
   final text = entity.entryText?.plainText.trim();

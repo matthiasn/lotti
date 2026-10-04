@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';

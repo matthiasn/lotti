@@ -1,5 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of validating a downloaded descriptor's vector clock against the

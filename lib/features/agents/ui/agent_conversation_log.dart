@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';

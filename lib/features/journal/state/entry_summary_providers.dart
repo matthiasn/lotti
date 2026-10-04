@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 
 /// The newest AI response of [type] linked to [entryId], or null.

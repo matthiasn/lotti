@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 
 void main() {

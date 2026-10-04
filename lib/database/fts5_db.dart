@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/entry_tools.dart';
 
 part 'fts5_db.g.dart';
 

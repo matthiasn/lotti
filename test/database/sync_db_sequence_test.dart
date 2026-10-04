@@ -6,9 +6,9 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
 import 'slow_query_logging_test_utils.dart';
 import 'sync_db_test_utils.dart';

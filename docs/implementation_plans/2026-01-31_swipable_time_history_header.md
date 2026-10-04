@@ -984,7 +984,7 @@ Currently, `JournalAudio` entries are **excluded** from time aggregation to avoi
 | **Existing Chart Controller**  | `lib/features/calendar/state/time_by_category_controller.dart`    |
 | **Database Queries**           | `lib/database/database.dart` (`sortedCalendarEntries`)            |
 | **Category Colors**            | `lib/services/entities_cache_service.dart`                        |
-| **Entry Duration Utility**     | `lib/features/journal/util/entry_tools.dart` (`entryDuration`)    |
+| **Entry Duration Utility**     | `lib/utils/entry_tools.dart` (`entryDuration`)    |
 | **Stream Chart Widget**        | `lib/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart` |
 | **CustomPainter Pattern**      | `lib/features/daily_os/ui/widgets/zigzag_fold_indicator.dart`     |
 | **Daily OS Page**              | `lib/features/daily_os/ui/pages/daily_os_page.dart`               |

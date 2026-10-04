@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 

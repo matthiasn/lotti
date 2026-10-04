@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+
 import 'inference_status_controller_test_helpers.dart';
 
 void main() {

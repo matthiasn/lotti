@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

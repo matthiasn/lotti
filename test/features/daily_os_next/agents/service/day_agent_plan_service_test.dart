@@ -9,6 +9,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;

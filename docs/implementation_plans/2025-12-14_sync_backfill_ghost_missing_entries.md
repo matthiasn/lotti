@@ -20,7 +20,7 @@ monotonic counter).
 ### Files Modified
 - `lib/database/sync_db.dart` - Schema v3 with `payload_type` column
 - `lib/database/sync_db.g.dart` - Generated code
-- `lib/features/sync/sequence/sync_sequence_payload_type.dart` - New enum
+- `lib/classes/sync_sequence_payload_type.dart` - New enum
 - `lib/features/sync/sequence/sync_sequence_log_service.dart` - Link-aware methods
 - `lib/features/sync/matrix/sync_event_processor.dart` - Records received EntryLink counters
 - `lib/features/sync/outbox/outbox_service.dart` - Records sent EntryLink counters

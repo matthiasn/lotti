@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Abstraction for loading journal entities and related attachments when

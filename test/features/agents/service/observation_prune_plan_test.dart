@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/service/observation_prune_plan.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   final cutoff = DateTime.utc(2026, 6);

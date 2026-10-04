@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -36,7 +37,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';

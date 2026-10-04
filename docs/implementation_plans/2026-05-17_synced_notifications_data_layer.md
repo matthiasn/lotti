@@ -221,7 +221,7 @@ Splitting the full notification from state-only updates keeps state flips small 
 
 State updates **do not merge in the outbox**. The existing journal-merge path (`outbox_service.dart:971-994`) preserves `coveredVectorClocks` so receivers can pre-mark superseded counters and avoid false gap detection. Replicating that for state updates (new `findPendingByXxx` query keyed on `(notificationId, payloadType=stateUpdate)`, plus a `coveredVectorClocks` field on `SyncNotificationStateUpdate`) is significant new infrastructure for marginal payload savings. Instead, each flip is its own outbox row; sequence-log gap recovery handles missed flips.
 
-### 2. `lib/features/sync/sequence/sync_sequence_payload_type.dart`
+### 2. `lib/classes/sync_sequence_payload_type.dart`
 
 Add `notification` and `notificationStateUpdate` enum cases so gap detection covers them. The 4 existing cases (`journalEntity`, `entryLink`, `agentEntity`, `agentLink`) are unchanged.
 

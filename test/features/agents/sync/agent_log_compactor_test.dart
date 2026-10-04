@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
