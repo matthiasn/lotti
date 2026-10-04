@@ -10,10 +10,10 @@ and nowhere else.**
 Everything you capture in Lotti is a memory: a voice note, a screenshot, a
 conversation, a photo from a birthday party, an hour of focused work, the
 journal entry you spoke into your phone last night. Lotti keeps those memories
-on your own devices, syncs them between those devices with end-to-end
-encryption, and never uploads them to a cloud. On top of that record sit
+on your own devices and syncs them between those devices with end-to-end
+encryption; no cloud ever holds a readable copy. On top of that record sit
 applications — tasks, relationships, goals, events, projects, a daily journal —
-each looked after by a personal AI agent that reads what you recorded and
+most of them looked after by a personal AI agent that reads what you recorded and
 proposes what to do next. Agents propose; you decide. Your memories are not
 rewritten behind your back, not even by the agents that work for you.
 
@@ -53,8 +53,10 @@ no analytics, and nothing uploaded to Lotti — you can confirm that by reading
 the source or watching the traffic.
 
 The record is *distributed*, not centralised: every device you pair is a full
-peer. A phone, a laptop and a desktop each carry the whole history, and losing
-one costs you nothing as long as another survives. Your data is a file you
+peer. Pairing gives a new device everything written from then on; once you send
+it your history from a device that has it, a phone, a laptop and a desktop each
+carry the whole record, and losing one costs you nothing as long as another
+survives. Your data is a file you
 already have, with a documented schema, so there is no export wizard and
 nothing to unlock.
 
@@ -77,7 +79,7 @@ flowchart LR
     end
     R{{"Matrix homeserver<br/>zero-trust relay<br/>(ciphertext only)"}}
     L1 -- "Megolm-encrypted events<br/>AES-256-CTR attachments" --> R
-    R -- "delivered only to<br/>verified devices" --> L2
+    R -- "ciphertext delivered;<br/>keys only to verified devices" --> L2
     L2 -- "the same, in reverse" --> R
     R --> L1
 ```
@@ -117,6 +119,10 @@ How it works:
   for you to resolve. Devices also track each other's counters and ask a peer
   to re-send anything missing.
 
+The full runtime picture — pairing, the sync log, backfill and failure handling —
+is in the [sync concept](knowledge/features/sync/overview.md) and
+[security and privacy](knowledge/architecture/security-and-privacy.md).
+
 ### 3. Memories stay unaltered, with clear provenance
 
 A system of record is worthless if it can be quietly edited. Lotti keeps *what
@@ -127,10 +133,18 @@ confirmed checklist change keeps an approval receipt, and the writes an agent
 makes without asking are logged in its audit trail.
 
 A small, named class of writes is pre-approved rather than proposed, because
-asking every time would add friction without telling you anything new:
-filling in the title and language of a task that has none, transcribing a
-recording, adding an AI summary or image analysis as a *new* entry beside your
-own, generating cover art, and the day planner's triage. That class is fixed by
+asking every time would add friction without telling you anything new. These
+are the complete set:
+
+- filling in the title and language of a task that has none;
+- transcribing a recording;
+- saving an AI summary or a generated prompt as a *new* entry beside your own;
+- image analysis, which appends its description to the image's text;
+- generating cover art for a task;
+- the day planner's triage (status, due date) and creating a task from a
+  phrase in your check-in.
+
+That class is fixed by
 [ADR 0102](docs/adr/0102-pre-approved-agent-changes.md) and can only grow by
 another decision record. Some things are human-only by construction: an event
 agent has no tool that can set an event's rating or cover photo.
@@ -168,9 +182,9 @@ agents on a well-equipped laptop today — see
 ## Applications on top of the record
 
 The storage layer is the product's foundation; the applications are what you
-use every day. Each one reads from the same record, and each can be given a
-persistent AI agent with its own report, memory, wake schedule and proposal
-history. Tasks and the journal are on by default; the other applications are
+use every day. Each one reads from the same record, and all of them except the
+journal can be given a persistent AI agent with its own report, memory, wake
+schedule and proposal history. Tasks and the journal are on by default; the other applications are
 **Sections** you switch on under Settings → Sections. Turning a section off
 only hides it — nothing you recorded is deleted.
 
@@ -434,11 +448,10 @@ flowchart LR
 
 The rule matters because of how it is enforced. Agent-authored content sits in
 a different file on disk and reaches the user database only through a code path
-that requires your approval, or through one of the pre-approved paths listed in
-[ADR 0102](docs/adr/0102-pre-approved-agent-changes.md): an empty task's title
-and language, transcription, AI summaries and image analysis added as new
-entries, cover art, and the day planner's triage. Every other change an agent
-wants to make to your record is a proposal you confirm or dismiss. Both
+that requires your approval, or through one of the pre-approved paths
+[listed above](#3-memories-stay-unaltered-with-clear-provenance) and fixed by
+[ADR 0102](docs/adr/0102-pre-approved-agent-changes.md). Every other change an
+agent wants to make to your record is a proposal you confirm or dismiss. Both
 databases sync between your devices the same way.
 
 ---
