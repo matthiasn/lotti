@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show WakeRunLogData;
+import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series_utils.dart';
 

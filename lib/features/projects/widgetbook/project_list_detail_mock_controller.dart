@@ -1,7 +1,7 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_data.dart';
 

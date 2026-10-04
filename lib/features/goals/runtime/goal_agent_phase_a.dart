@@ -10,7 +10,7 @@ import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/notification_producer.dart';
 import 'package:lotti/classes/nudge_models.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';

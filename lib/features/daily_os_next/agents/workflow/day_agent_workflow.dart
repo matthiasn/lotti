@@ -10,7 +10,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';

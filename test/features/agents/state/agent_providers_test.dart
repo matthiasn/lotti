@@ -18,9 +18,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/agents/agent_database.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -53,14 +53,14 @@ import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
         domainLoggerProvider,

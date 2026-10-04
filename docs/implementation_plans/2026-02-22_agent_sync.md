@@ -67,8 +67,8 @@ Add cross-device synchronization for agent entities and links via the existing M
 | `lib/features/sync/matrix/sync_event_processor.dart` | +`agentRepository` field, +2 handler cases |
 | `lib/features/sync/matrix/matrix_service.dart` | +2 sent type map entries |
 | `lib/features/sync/ui/view_models/outbox_list_item_view_model.dart` | +2 payload kind labels |
-| `lib/features/agents/database/agent_database.drift` | +2 named queries |
-| `lib/features/agents/database/agent_repository.dart` | +`getAllEntities()`, +`getAllLinks()` |
+| `lib/database/agents/agent_database.drift` | +2 named queries |
+| `lib/database/agents/agent_repository.dart` | +`getAllEntities()`, +`getAllLinks()` |
 | `lib/features/sync/models/sync_models.dart` | +2 enum values |
 | `lib/features/sync/repository/sync_maintenance_repository.dart` | +`AgentRepository` dep, +2 operations |
 | `lib/features/sync/state/sync_maintenance_controller.dart` | +2 steps |

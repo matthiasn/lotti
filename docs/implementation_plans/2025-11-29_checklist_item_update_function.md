@@ -544,7 +544,7 @@ User might be editing an item in the UI while AI is updating it.
 - `docs/implementation_plans/2025-11-06_checklist_multi_create_array_only_unification.md`
 - `docs/implementation_plans/2025-10-28_checklist_item_parsing_hardening.md`
 - `lib/features/ai/functions/checklist_completion_functions.dart`
-- `lib/features/tasks/repository/checklist_repository.dart`
+- `lib/logic/repositories/checklist_repository.dart`
 
 ## Status
 

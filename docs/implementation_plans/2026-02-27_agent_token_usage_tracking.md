@@ -105,7 +105,7 @@ const factory AgentDomainEntity.wakeTokenUsage({
 
 ### 1.3 Update `AgentDbConversions`
 
-**File**: `lib/features/agents/database/agent_db_conversions.dart`
+**File**: `lib/database/agents/agent_db_conversions.dart`
 
 Add `wakeTokenUsage` cases to all `map()` and `mapOrNull()` calls:
 - `entityType`: return `'wakeTokenUsage'`
@@ -127,7 +127,7 @@ Run `make build_runner`.
 
 ### 1.6 Add named query for fetching token usage entities
 
-**File**: `lib/features/agents/database/agent_database.drift`
+**File**: `lib/database/agents/agent_database.drift`
 
 ```sql
 getTokenUsageByAgentId: SELECT * FROM agent_entities
@@ -200,7 +200,7 @@ Plain class `AgentTokenUsageSummary` with `modelId`, `inputTokens`, `outputToken
 
 ### 3.2 Repository query method
 
-**File**: `lib/features/agents/database/agent_repository.dart`
+**File**: `lib/database/agents/agent_repository.dart`
 
 Add `getTokenUsageByAgent(agentId)` that fetches `wakeTokenUsage` entities and aggregates in Dart by `modelId`.
 
@@ -249,12 +249,12 @@ Add labels for token usage section.
 |------|--------|
 | `lib/features/ai/model/inference_usage.dart` | Add toJson/fromJson/equality |
 | `lib/classes/agents/agent_domain_entity.dart` | New `wakeTokenUsage` variant |
-| `lib/features/agents/database/agent_db_conversions.dart` | Add cases for new variant |
+| `lib/database/agents/agent_db_conversions.dart` | Add cases for new variant |
 | `lib/classes/agents/agent_constants.dart` | Add entity type string |
-| `lib/features/agents/database/agent_database.drift` | Add named query |
+| `lib/database/agents/agent_database.drift` | Add named query |
 | `lib/features/ai/conversation/conversation_repository.dart` | sendMessage returns InferenceUsage? |
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Create + persist usage entity |
-| `lib/features/agents/database/agent_repository.dart` | Query + aggregate method |
+| `lib/database/agents/agent_repository.dart` | Query + aggregate method |
 | `lib/features/agents/model/agent_token_usage.dart` | New: aggregation data model |
 | `lib/features/agents/state/agent_token_usage_providers.dart` | New: Riverpod provider |
 | `lib/features/agents/ui/agent_bookkeeping_section.dart` | New: UI widget |

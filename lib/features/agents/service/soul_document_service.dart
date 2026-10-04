@@ -1,5 +1,5 @@
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';

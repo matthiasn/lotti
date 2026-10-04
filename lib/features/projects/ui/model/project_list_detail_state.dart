@@ -1,4 +1,4 @@
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 
 /// UI state for the project list/detail layout.

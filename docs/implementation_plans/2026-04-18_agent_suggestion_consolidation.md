@@ -324,7 +324,7 @@ Migration strategy: Drift schema bump, new nullable columns, backfill `actor = u
 
 ### 4.3 Repository API additions
 
-`lib/features/agents/database/agent_repository.dart`:
+`lib/database/agents/agent_repository.dart`:
 
 ```dart
 /// Returns a single chronological ledger of every ChangeItem ever proposed
@@ -645,8 +645,8 @@ Follow `test/README.md` on `fakeAsync`, deterministic `DateTime(2026, 4, 18)`, n
 |---|---|
 | `lib/classes/agents/agent_enums.dart` | Add `retracted` to `ChangeItemStatus` / `ChangeDecisionVerdict`; add `DecisionActor` enum |
 | `lib/classes/agents/agent_domain_entity.dart` | Add `actor`, `reason` to `changeDecision` factory |
-| `lib/features/agents/database/agent_database.dart` | Schema bump + migration for new columns |
-| `lib/features/agents/database/agent_repository.dart` | Add `getProposalLedger`, `markItemRetracted`; add `ProposalLedger` / `LedgerEntry` types |
+| `lib/database/agents/agent_database.dart` | Schema bump + migration for new columns |
+| `lib/database/agents/agent_repository.dart` | Add `getProposalLedger`, `markItemRetracted`; add `ProposalLedger` / `LedgerEntry` types |
 | `lib/features/agents/service/change_set_confirmation_service.dart` | Populate `actor=user` on decision records |
 | `lib/features/agents/service/suggestion_retraction_service.dart` | NEW — implements retraction protocol |
 | `lib/features/agents/tools/agent_tool_registry.dart` | Register `retract_suggestions` in `TaskAgentToolNames` + `taskAgentTools` |

@@ -13,17 +13,17 @@ import 'package:lotti/classes/agents/agent_enums.dart'
         AgentTemplateKind,
         WakeReason;
 import 'package:lotti/classes/agents/agent_link.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
-import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-export 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart'
+export 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart'
     show ProjectAgentMutationCoordinator;
 
 /// Project-agent-specific lifecycle management.

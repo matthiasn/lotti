@@ -769,8 +769,8 @@ flowchart TD
 |-----------|----------------|
 | `test/features/agents/model/evolution_session_entity_test.dart` | Serialization roundtrip, status transitions |
 | `test/features/agents/model/evolution_note_entity_test.dart` | Serialization roundtrip, kind enum |
-| `test/features/agents/database/agent_repository_evolution_test.dart` | CRUD, soft-delete exclusion, cross-instance queries, wake run rating |
-| `test/features/agents/database/agent_database_test.dart` | Schema migration v1→v2 (user_rating, rated_at columns) |
+| `test/database/agents/agent_repository_evolution_test.dart` | CRUD, soft-delete exclusion, cross-instance queries, wake run rating |
+| `test/database/agents/agent_database_test.dart` | Schema migration v1→v2 (user_rating, rated_at columns) |
 
 ### 4.2 Unit Tests: Service Layer
 

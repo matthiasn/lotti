@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 
 /// Resolves which configured AI prompts are active for a given journal entity.
 ///

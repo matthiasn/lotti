@@ -6,8 +6,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';

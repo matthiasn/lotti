@@ -117,7 +117,7 @@ Move the day-processing outbox into a device-local Drift table.
 
 A new `DayProcessingDb` under
 `lib/features/daily_os_next/database/`. This matches how features own
-their storage here (`features/agents/database/agent_database.dart`,
+their storage here (`database/agents/agent_database.dart`,
 `features/ai_consumption/database/consumption_database.dart`,
 `features/ai/database/ai_config_db.dart`).
 

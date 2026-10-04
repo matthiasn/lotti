@@ -45,7 +45,7 @@ sources:
     title: Trusted approval stamping and execution guard
     last_modified: 2026-09-22
   - id: checklist-repository
-    resource: ../../../lib/features/tasks/repository/checklist_repository.dart
+    resource: ../../../lib/logic/repositories/checklist_repository.dart
     title: Field-time stamping on every checklist item write
     last_modified: 2026-09-22
   - id: proposal-builder

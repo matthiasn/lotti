@@ -21,7 +21,7 @@ sources:
     title: SyncDatabase
     last_modified: 2026-10-03
   - id: agent-db
-    resource: ../../lib/features/agents/database/agent_database.dart
+    resource: ../../lib/database/agents/agent_database.dart
     title: AgentDatabase
     last_modified: 2026-08-01
   - id: notifications-db

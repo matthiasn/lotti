@@ -66,7 +66,7 @@ and model-checked it. TLC found:
   unsaved edits; the status, priority, language and cover-art writers one
   field each.
 - **An agent tool compares on the stored row, inside the write.**
-  `writeTaskField` (`lib/features/journal/repository/task_field_write.dart`)
+  `writeTaskField` (`lib/logic/repositories/task_field_write.dart`)
   applies a tool's change only while its field on the stored row still reads
   what the tool's copy read, in the same transaction as the write, and joins
   the effect keys its copy records (ADR 0098). A moved field is reported as
@@ -89,7 +89,7 @@ and model-checked it. TLC found:
 Each is a design switch in the spec (`UiOnStored`, `AgentOnStored`,
 `AgentCas`, `UiRecordsStatus`, `ResolveJoinsHistory`); turning one off
 reproduces its counterexample. The conformance trace
-(`test/features/journal/repository/task_field_writes_model_conformance.dart`)
+(`test/logic/repositories/task_field_writes_model_conformance.dart`)
 drives the real writers, tools and resolution over a real journal database
 and pins the shortest trace each fix answers.
 

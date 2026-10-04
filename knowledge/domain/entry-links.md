@@ -29,7 +29,7 @@ sources:
     title: Link queries that exclude removed links
     last_modified: 2026-09-25
   - id: journal-repository
-    resource: ../../lib/features/journal/repository/journal_repository.dart
+    resource: ../../lib/logic/repositories/journal_repository.dart
     title: JournalRepository — updateLink, updateLinkType, removeLink and removeTypedLink
     last_modified: 2026-09-27
   - id: create-link
