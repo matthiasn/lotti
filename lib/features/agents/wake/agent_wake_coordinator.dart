@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 

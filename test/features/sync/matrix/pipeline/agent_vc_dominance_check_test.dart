@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/matrix/pipeline/agent_vc_dominance_check.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+
 import 'agent_vc_dominance_check_test_helpers.dart';
 
 void main() {

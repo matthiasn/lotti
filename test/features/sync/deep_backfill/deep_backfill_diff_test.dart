@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_diff.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 const _older = VectorClock({'a': 1});
 const _newer = VectorClock({'a': 2});

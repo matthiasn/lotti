@@ -8,10 +8,10 @@
 /// habits, so both can depend on them without depending on each other.
 library;
 
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 
 /// Calendar-date key of [instant]: its local date as midnight UTC.

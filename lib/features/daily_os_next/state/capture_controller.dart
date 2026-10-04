@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_ids.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';

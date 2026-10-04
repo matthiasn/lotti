@@ -7,13 +7,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/ratings/state/session_ended_controller.dart';
 import 'package:lotti/features/ratings/ui/pulsating_rate_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Shows an entry's elapsed time and the timer controls in the detail footer.

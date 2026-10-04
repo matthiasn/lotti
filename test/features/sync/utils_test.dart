@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/utils.dart';
+import 'package:lotti/services/vector_clock_keys.dart';
 
 void main() {
   group('sync utils constants', () {

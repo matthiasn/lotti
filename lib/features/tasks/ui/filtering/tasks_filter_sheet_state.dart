@@ -1,6 +1,5 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A project paired with its owning category for grouped filter presentation.

@@ -10,7 +10,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:material_ui/material_ui.dart';
 

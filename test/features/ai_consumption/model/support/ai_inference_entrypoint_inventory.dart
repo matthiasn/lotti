@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 
 /// Attribution guarantee enforced at a production inference entry point.
 enum AiAttributionCoverage {

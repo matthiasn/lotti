@@ -1,8 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Visual tone for the status badge. Mapped to a `DesignSystemBadgeTone`

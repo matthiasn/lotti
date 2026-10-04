@@ -1,10 +1,10 @@
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 
 /// The LLM edge of input-log compaction (ADR 0017): distills folded
 /// [RenderedSource]s into rolling summary prose with a one-shot generation

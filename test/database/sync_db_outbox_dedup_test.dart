@@ -3,8 +3,8 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:glados/glados.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
 import 'sync_db_test_utils.dart';
 

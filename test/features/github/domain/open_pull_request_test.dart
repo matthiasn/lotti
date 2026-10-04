@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/classes/github/github_repository.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/open_pull_request.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 void main() {
   const repository = GitHubRepository(owner: 'penguin', repo: 'colony');

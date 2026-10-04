@@ -6,9 +6,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,7 +17,6 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../mocks/mocks.dart';
 import 'schema_fixtures.dart';
-
 import 'test_utils.dart';
 
 void main() {

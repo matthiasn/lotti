@@ -38,7 +38,7 @@ Constraints:
    - `lib/features/sync/model/sync_message.dart`
 
 4. Vector-clock-style monotonic counters already exist (hostId -> counter map).
-   - `lib/features/sync/vector_clock.dart`
+   - `lib/classes/vector_clock.dart`
    - `lib/services/vector_clock_service.dart`
 
 5. Sequence-log-based gap/backfill and idempotent sync tracking already exist.

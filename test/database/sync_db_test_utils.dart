@@ -8,8 +8,8 @@ library;
 
 import 'package:drift/drift.dart';
 import 'package:glados/glados.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
 extension SyncDatabaseTestQueries on SyncDatabase {
   Future<List<OutboxItem>> get allOutboxItems => select(outbox).get();

@@ -1,6 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Renders a task's linked journal **log entries** into [RenderedSource]s for

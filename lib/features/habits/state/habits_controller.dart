@@ -5,7 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/habits/model/habit_completion_record.dart';
+import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';

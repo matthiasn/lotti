@@ -21,7 +21,6 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_but
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/logbook_filter_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -38,6 +37,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';

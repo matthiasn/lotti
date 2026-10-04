@@ -1,16 +1,9 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-const taskSummaryConst = 'TaskSummary';
-const imageAnalysisConst = 'ImageAnalysis';
-const audioTranscriptionConst = 'AudioTranscription';
-const checklistUpdatesConst = 'ChecklistUpdates';
-const promptGenerationConst = 'PromptGeneration';
-const imagePromptGenerationConst = 'ImagePromptGeneration';
-const imageGenerationConst = 'ImageGeneration';
-const audioSummaryConst = 'AudioSummary';
-const pullRequestSummaryConst = 'PullRequestSummary';
+// The display extension below belongs with the type, so callers get both.
+export 'package:lotti/classes/ai_response_type.dart';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -35,46 +28,6 @@ const whisperTranscriptionTimeoutSeconds =
 const httpStatusOk = 200;
 const httpStatusNotFound = 404;
 const httpStatusRequestTimeout = 408;
-
-enum AiResponseType {
-  @Deprecated(
-    'Legacy type superseded by the agent system. '
-    'Kept only for JSON/DB backwards-compatibility. '
-    'Remove once a DB migration drops persisted taskSummary rows.',
-  )
-  @JsonValue(taskSummaryConst)
-  taskSummary,
-  @JsonValue(imageAnalysisConst)
-  imageAnalysis,
-  @JsonValue(audioTranscriptionConst)
-  audioTranscription,
-  @Deprecated(
-    'Legacy type superseded by the agent system. '
-    'Kept only for JSON/DB backwards-compatibility. '
-    'Remove once a DB migration drops persisted checklistUpdates rows.',
-  )
-  @JsonValue(checklistUpdatesConst)
-  checklistUpdates,
-  @JsonValue(promptGenerationConst)
-  promptGeneration,
-  @JsonValue(imagePromptGenerationConst)
-  imagePromptGeneration,
-  @JsonValue(imageGenerationConst)
-  imageGeneration,
-
-  /// A three-tier summary of an audio recording, produced after
-  /// transcription and linked to the audio entry. Carries a one-liner and a
-  /// TLDR on `AiResponseData` alongside the full markdown body.
-  @JsonValue(audioSummaryConst)
-  audioSummary,
-
-  /// A short summary of a merged or closed GitHub pull request, linked to its
-  /// pull request entry and read as its TL;DR in task contexts. Its `prompt`
-  /// is the pull request content it summarises (`pullRequestSummaryInput`),
-  /// which is how a reader tells whether it still matches.
-  @JsonValue(pullRequestSummaryConst)
-  pullRequestSummary,
-}
 
 extension AiResponseTypeDisplay on AiResponseType {
   /// Returns the appropriate icon for this response type

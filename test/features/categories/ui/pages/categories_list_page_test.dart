@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';

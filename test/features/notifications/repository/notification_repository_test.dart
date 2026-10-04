@@ -2,11 +2,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/model/notification_episode_id.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';

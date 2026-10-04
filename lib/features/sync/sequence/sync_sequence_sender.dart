@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Records entries that THIS device sends, so it can answer backfill requests

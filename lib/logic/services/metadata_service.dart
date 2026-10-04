@@ -1,6 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';

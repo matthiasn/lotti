@@ -1,5 +1,5 @@
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';

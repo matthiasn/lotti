@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 
 part 'pull_request_data.freezed.dart';
 part 'pull_request_data.g.dart';

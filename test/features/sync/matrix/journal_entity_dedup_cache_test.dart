@@ -1,6 +1,6 @@
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 extension _AnyDedup on Any {
   /// Random VectorClock over a small fixed key alphabet so collisions and

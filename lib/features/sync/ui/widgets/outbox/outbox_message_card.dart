@@ -1,9 +1,9 @@
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.dart';
 import 'package:lotti/l10n/app_localizations.dart';

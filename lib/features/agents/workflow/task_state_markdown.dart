@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/classes/ai_input.dart';
 
 /// Renders the **current task state** as a compact markdown block for the
 /// agent prompt's volatile tail — replacing the indented-JSON header whose

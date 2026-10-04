@@ -7,10 +7,10 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/classes/github/github_repository.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
-import 'package:lotti/features/github/domain/github_repository.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 import '../github_fixtures.dart';
 

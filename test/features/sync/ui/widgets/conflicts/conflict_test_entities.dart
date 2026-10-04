@@ -1,7 +1,7 @@
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// Shared entity builders for the conflict-resolution unit tests (diff engine
 /// and merge assembler). Deterministic dates; only the parts that vary between

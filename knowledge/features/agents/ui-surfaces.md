@@ -39,7 +39,7 @@ None of these widgets owns business logic. They read from the providers in
 
 Agent markdown renders through `AgentMarkdownView`, which wires
 `handleMarkdownLinkTap`, `markdownLinkStyleSheet` and
-`buildFocusableMarkdownLink` from `utils/markdown_link_utils`. Links render as
+`buildFocusableMarkdownLink` from `widgets/markdown_link_utils`. Links render as
 focusable widgets rather than text spans, so a citation can be reached with Tab
 and activated with Enter. The shared tap handler beams app-local routes such as `/tasks/<id>` or
 `lotti://tasks/<id>` through `NavService`; only `https`, `http` and

@@ -102,7 +102,7 @@ not start in the future.
    follow-up correction) are all already supported by that flow.
 
 5. **Surface entry IDs to the agent via a dedicated prompt section.** The
-   existing `AiInputLogEntryObject` in `lib/features/ai/model/ai_input.dart`
+   existing `AiInputLogEntryObject` in `lib/classes/ai_input.dart`
    has no `id` field. Rather than mutate that model (touched by many
    non-agent paths), the workflow gains a new
    `_buildEditableTimeEntriesSection(...)` that mirrors

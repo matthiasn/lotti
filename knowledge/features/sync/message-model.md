@@ -13,7 +13,7 @@ sources:
     title: SyncMessage freezed union
     last_modified: 2026-08-10
   - id: payload-type
-    resource: ../../../lib/features/sync/sequence/sync_sequence_payload_type.dart
+    resource: ../../../lib/classes/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
     last_modified: 2026-07-05
   - id: apply

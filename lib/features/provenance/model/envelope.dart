@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
-import 'package:lotti/features/provenance/crypto/canonical_json.dart';
 import 'package:lotti/features/provenance/crypto/ed25519.dart';
 import 'package:lotti/features/provenance/crypto/hex.dart';
+import 'package:lotti/utils/canonical_json.dart';
 import 'package:meta/meta.dart';
 
 /// The envelope format this code writes and accepts.

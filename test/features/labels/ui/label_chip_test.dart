@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 

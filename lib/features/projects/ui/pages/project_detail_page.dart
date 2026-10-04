@@ -1,7 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
@@ -29,6 +28,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/device_datetime.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 

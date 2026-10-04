@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
 import 'package:mocktail/mocktail.dart';

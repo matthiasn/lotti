@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/habits/model/habit_completion_record.dart';
+import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 

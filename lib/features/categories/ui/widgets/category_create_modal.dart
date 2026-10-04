@@ -1,7 +1,7 @@
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Returns the width to pass to `flutter_colorpicker.ColorPicker` given

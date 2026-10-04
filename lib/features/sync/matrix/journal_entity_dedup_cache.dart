@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// LRU cache of recently-processed journal entity fingerprints, keyed by
 /// `entryId`. Used by `SyncEventProcessor` to short-circuit replays of the

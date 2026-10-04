@@ -40,7 +40,7 @@ import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_datetime.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 

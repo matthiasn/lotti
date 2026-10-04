@@ -68,7 +68,7 @@ This provides the AI with valuable context about the task's position in a hierar
 
 ### 1. New Data Model: `AiLinkedTaskContext`
 
-**File**: `lib/features/ai/model/ai_input.dart`
+**File**: `lib/classes/ai_input.dart`
 
 ```dart
 @freezed
@@ -199,7 +199,7 @@ Each linked task includes metadata (status, priority, time spent) and its latest
 
 | Step | File | Description |
 |------|------|-------------|
-| 1.1 | `lib/features/ai/model/ai_input.dart` | Add `AiLinkedTaskContext` freezed class |
+| 1.1 | `lib/classes/ai_input.dart` | Add `AiLinkedTaskContext` freezed class |
 | 1.2 | Run `build_runner` | Generate `.freezed.dart` and `.g.dart` files |
 | 1.3 | `lib/features/ai/repository/ai_input_repository.dart` | Add `buildLinkedFromContext()` method |
 | 1.4 | `lib/features/ai/repository/ai_input_repository.dart` | Add `buildLinkedToContext()` method |
@@ -367,7 +367,7 @@ This should be evaluated when prompt sizes consistently exceed ~10KB.
 
 | File | Status | Description |
 |------|--------|-------------|
-| `lib/features/ai/model/ai_input.dart` | ✅ Done | Added `AiLinkedTaskContext` class |
+| `lib/classes/ai_input.dart` | ✅ Done | Added `AiLinkedTaskContext` class |
 | `lib/features/ai/repository/ai_input_repository.dart` | ✅ Done | Added linked task context methods |
 | `lib/features/ai/helpers/prompt_builder_helper.dart` | ✅ Done | Added `{{linked_tasks}}` handler |
 | `lib/features/ai/util/preconfigured_prompts.dart` | ✅ Done | Updated 4 prompts with `{{linked_tasks}}` |

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

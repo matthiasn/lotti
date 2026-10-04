@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:lotti/features/backup_restore/domain/profile_backup_catalog.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
-import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/service_disposer.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 

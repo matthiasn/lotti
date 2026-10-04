@@ -2,7 +2,7 @@
 type: Feature Module
 title: Vector clocks and conflict resolution
 description: How causal order is represented, why coveredVectorClocks is separate from the clock itself, and what the user sees when two devices diverge.
-resource: ../../../lib/features/sync/vector_clock.dart
+resource: ../../../lib/classes/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:00:00Z }
@@ -17,7 +17,7 @@ sources:
     title: resolveReceivedAgentEntity — the receive of one agent entity, tombstone included
     last_modified: 2026-09-25
   - id: vector-clock
-    resource: ../../../lib/features/sync/vector_clock.dart
+    resource: ../../../lib/classes/vector_clock.dart
     title: VectorClock compare, compareCanonically, merge and canonicalKey
     last_modified: 2026-09-27
   - id: vc-service

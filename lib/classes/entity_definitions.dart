@@ -1,10 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/ai_input.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 part 'entity_definitions.freezed.dart';
 part 'entity_definitions.g.dart';

@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 

@@ -5,6 +5,8 @@ import 'package:drift/drift.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -17,8 +19,6 @@ import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Resends one record's current version, decoded from its `serialized`

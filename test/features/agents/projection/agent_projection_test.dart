@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'projection_test_fixtures.dart';
 

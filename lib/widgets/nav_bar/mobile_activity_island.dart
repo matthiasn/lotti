@@ -7,7 +7,6 @@ import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_chip_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/services/time_service.dart';
 // clock in the app ticks without changing width.
 import 'package:lotti/themes/theme_text_styles.dart'
     show numericBadgeFontFeatures;
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 import 'package:material_ui/material_ui.dart';
 

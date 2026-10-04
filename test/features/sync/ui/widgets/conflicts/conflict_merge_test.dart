@@ -6,10 +6,10 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'conflict_test_entities.dart';
 

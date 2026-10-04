@@ -1,5 +1,5 @@
-import 'package:lotti/features/github/domain/github_repository.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/classes/github/github_repository.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:meta/meta.dart';
 
 /// An open pull request as the picker lists it.

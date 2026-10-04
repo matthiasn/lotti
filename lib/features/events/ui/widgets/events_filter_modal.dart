@@ -1,5 +1,4 @@
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the Events filter on top of the shared design-system filter sheet —

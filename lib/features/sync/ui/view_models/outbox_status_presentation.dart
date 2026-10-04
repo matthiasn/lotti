@@ -1,4 +1,4 @@
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:meta/meta.dart';
 
 /// The plain-language status a single outbox row presents, decoupled from the

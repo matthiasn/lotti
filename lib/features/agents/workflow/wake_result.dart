@@ -1,4 +1,4 @@
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// A wake whose workflow reported failure through [WakeResult.error].
 ///

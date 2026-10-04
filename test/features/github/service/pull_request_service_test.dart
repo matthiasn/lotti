@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/github/github_repository.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
-import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/open_pull_request.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';

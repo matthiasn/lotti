@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -10,9 +9,9 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/window_service.dart';
