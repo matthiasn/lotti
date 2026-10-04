@@ -5,8 +5,8 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/classes/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:00:00Z }
-stale_after: 2026-12-27
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
+stale_after: 2027-01-04
 sources:
   - id: tla-relationship-lifecycle
     resource: ../../../specs/tla/RelationshipAgentLifecycle.tla
@@ -27,7 +27,7 @@ sources:
   - id: conflict-resolution
     resource: ../../../lib/features/sync/state/conflict_resolution_service.dart
     title: ConflictResolutionService
-    last_modified: 2026-06-20
+    last_modified: 2026-10-04
   - id: entry-diff
     resource: ../../../lib/features/sync/ui/widgets/conflicts/entry_field_diff.dart
     title: computeEntryDiff
@@ -99,7 +99,7 @@ sources:
   - id: link-edit
     resource: ../../../lib/logic/repositories/journal_repository.dart
     title: JournalRepository — updateLink, and removeLink / removeTypedLink as synced tombstones
-    last_modified: 2026-09-25
+    last_modified: 2026-10-04
   - id: link-tombstone
     resource: ../../../lib/logic/repositories/project_repository.dart
     title: ProjectRepository — the project-link tombstone and its revival
@@ -143,11 +143,11 @@ sources:
   - id: labels-repo
     resource: ../../../lib/features/labels/repository/labels_repository.dart
     title: LabelsRepository — label writes built on the stored entry
-    last_modified: 2026-09-25
+    last_modified: 2026-10-04
   - id: conflict-route
     resource: ../../../lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart
     title: ConflictDetailRoute — the local side, deletion included, one open version at a time
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
   - id: conflict-observer
     resource: ../../../lib/features/sync/state/conflict_notification_observer.dart
     title: ConflictNotificationObserver — one alert per new conflict row
@@ -433,6 +433,16 @@ remote)`, so the written entity dominates both clocks;
 `PersistenceLogic.updateJournalEntity` applies it — keeping the stored row's
 labels, a deleted one's included — and the write decision marks the row
 resolved, because the written clock covers the conflict's.
+
+The pair is the one the page read when it opened, so the write runs under a
+precondition, in its transaction, that the stored row (read with its
+deletion) is still that local side. A version this device stored while the
+user decided — the task agent setting a field — would otherwise be replaced
+by the merged clock without the page ever showing it. Refused, the service
+answers false and the page reads the local side again, shows the difference
+as it now is and says the entry changed meanwhile
+([ADR 0119](../../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md),
+`specs/tla/TaskFieldWrites.tla`, `ResolveOnStored`).
 
 Whichever side is kept, some fields are the union of both. A task keeps every
 applied change either side records (`appliedChangeEffects`, ADR 0098),

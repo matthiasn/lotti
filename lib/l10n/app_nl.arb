@@ -1936,6 +1936,7 @@
       }
     }
   },
+  "conflictEntryChangedTitle": "Het item is intussen gewijzigd — bekijk het verschil opnieuw",
   "conflictFieldBody": "Lichaam",
   "conflictFieldCategory": "Categorie",
   "conflictFieldDueDate": "Verloopdatum",

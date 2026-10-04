@@ -3886,6 +3886,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Kon resolutie niet toepassen';
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Het item is intussen gewijzigd — bekijk het verschil opnieuw';
+
+  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -147,7 +147,7 @@ void main() {
         verify(
           () => mockGeolocationService.addGeolocation(
             image.meta.id,
-            getIt<PersistenceLogic>().updateDbEntity,
+            getIt<PersistenceLogic>().updateEntity,
           ),
         ).called(1);
       },

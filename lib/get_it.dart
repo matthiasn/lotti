@@ -422,9 +422,7 @@ Future<void> registerSingletons({
     )
     ..registerSingleton<GeolocationService>(
       GeolocationService(
-        journalDb: journalDb,
         loggingService: domainLogger,
-        metadataService: getIt<MetadataService>(),
         deviceLocation: Platform.isWindows ? null : DeviceLocation(),
       ),
     )

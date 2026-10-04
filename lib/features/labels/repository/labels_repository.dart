@@ -243,10 +243,11 @@ class LabelsRepository {
   /// Adds [addedLabelIds] to an entry's metadata (union, no removals).
   ///
   /// For tasks, manually adding a label also unsuppresses it (removes it from
-  /// `aiSuppressedLabelIds`), reversing a prior rejection. Returns `true` on
-  /// success, `false` if the entry is missing or on error (logged), or `true`
-  /// for an empty input. This is the persist path used by the assignment
-  /// processor.
+  /// `aiSuppressedLabelIds`), reversing a prior rejection. The change is
+  /// built on the stored entry ([_writeOnStored]). Returns `true` on
+  /// success, `false` if the entry is missing, the write was refused, or on
+  /// error (logged), or `true` for an empty input. This is the persist path
+  /// used by the assignment processor.
   Future<bool?> addLabels({
     required String journalEntityId,
     required List<String> addedLabelIds,
@@ -256,36 +257,26 @@ class LabelsRepository {
     }
 
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final updatedMetadata = await _persistenceLogic.updateMetadata(
-        addLabelsToMeta(journalEntity.meta, addedLabelIds),
-      );
-
-      // Manual add implicitly unsuppresses corresponding labels on tasks
-      if (journalEntity is Task) {
-        final currentSuppressed =
-            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final nextSuppressed = _mergeSuppressed(
-          current: currentSuppressed,
-          remove: addedLabelIds.toSet(),
+      // Built on the entry as stored: a field set since the caller decided —
+      // a task's status, a checklist listed on it — is kept
+      // (`specs/tla/ChecklistMembership.tla`, MetaOnStored).
+      return await _writeOnStored(journalEntityId, (stored) async {
+        final updatedMetadata = await _persistenceLogic.updateMetadata(
+          addLabelsToMeta(stored.meta, addedLabelIds),
         );
-        final updatedEntity = journalEntity.copyWith(
+        if (stored is! Task) return stored.copyWith(meta: updatedMetadata);
+
+        // Manual add implicitly unsuppresses corresponding labels on tasks
+        return stored.copyWith(
           meta: updatedMetadata,
-          data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds: nextSuppressed,
+          data: stored.data.copyWith(
+            aiSuppressedLabelIds: _mergeSuppressed(
+              current: stored.data.aiSuppressedLabelIds ?? const <String>{},
+              remove: addedLabelIds.toSet(),
+            ),
           ),
         );
-        return await _persistenceLogic.updateDbEntity(updatedEntity);
-      }
-
-      return await _persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(meta: updatedMetadata),
-      );
+      });
     } catch (error, stackTrace) {
       _domainLogger.error(
         LogDomain.labels,

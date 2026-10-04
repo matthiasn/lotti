@@ -48,6 +48,7 @@ import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
+import 'task_meta_writers.dart';
 
 part 'checklist_membership_model_conformance.dart';
 part 'checklist_replication_model_conformance.dart';

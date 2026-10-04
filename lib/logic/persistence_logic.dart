@@ -315,6 +315,14 @@ class PersistenceLogic implements PersistenceLogicContract {
     dateTo: dateTo,
   );
 
+  /// Applies [change] to the stored entry and writes the result on that row
+  /// ([PersistenceUpdateOps.updateEntity]). Returns whether it is stored.
+  @override
+  Future<bool> updateEntity(
+    String journalEntityId,
+    JournalEntity? Function(JournalEntity stored) change,
+  ) => _updateOps.updateEntity(journalEntityId, change);
+
   /// Applies [change] to the stored task's data, and [entryText] when
   /// given ([PersistenceUpdateOps.updateTaskImpl]). Returns the task as
   /// stored afterwards, or `null` when it does not exist or the write failed.

@@ -452,8 +452,7 @@ void main() {
     when(
       () => persistenceLogic.updateDbEntity(
         any<JournalEntity>(),
-        linkedId: any<String?>(named: 'linkedId'),
-        enqueueSync: any<bool>(named: 'enqueueSync'),
+        precondition: any(named: 'precondition'),
       ),
     ).thenAnswer((invocation) async {
       capturedEntity = invocation.positionalArguments.first as JournalEntity;
@@ -494,8 +493,7 @@ void main() {
     when(
       () => persistenceLogic.updateDbEntity(
         any(),
-        linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'),
+        precondition: any(named: 'precondition'),
       ),
     ).thenThrow(Exception('db error'));
 
@@ -520,7 +518,10 @@ void main() {
     );
     Task? capturedTask;
     when(
-      () => persistenceLogic.updateDbEntity(any()),
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((invocation) {
       capturedTask = invocation.positionalArguments.first as Task;
       return Future<bool?>.error(expectedError);
@@ -556,8 +557,7 @@ void main() {
     when(
       () => persistenceLogic.updateDbEntity(
         any(),
-        linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'),
+        precondition: any(named: 'precondition'),
       ),
     ).thenAnswer((_) async => true);
 
@@ -567,6 +567,45 @@ void main() {
     );
 
     expect(original, equals(['existing']));
+  });
+
+  test('addLabels builds on the entry as stored: a version stored while '
+      'it wrote is built on again, its status and checklists kept', () async {
+    final task = buildTask(aiSuppressedLabelIds: {'new-label'});
+    // A checklist listed on the task after the call read it: a new version.
+    final since = task.copyWith(
+      meta: task.meta.copyWith(vectorClock: const VectorClock({'agent': 1})),
+      data: task.data.copyWith(checklistIds: const ['listed-since']),
+    );
+    var reads = 0;
+    when(() => journalDb.journalEntityById(task.meta.id)).thenAnswer(
+      (_) async => reads++ == 0 ? task : since,
+    );
+    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    final written = <Task>[];
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
+    ).thenAnswer((invocation) async {
+      written.add(invocation.positionalArguments.first as Task);
+      // The first write is refused: the row moved under it.
+      return written.length > 1;
+    });
+
+    final result = await repository.addLabels(
+      journalEntityId: task.meta.id,
+      addedLabelIds: const ['new-label'],
+    );
+
+    expect(result, isTrue);
+    expect(written, hasLength(2));
+    expect(written.last.data.checklistIds, ['listed-since']);
+    expect(written.last.meta.labelIds, ['new-label']);
+    expect(written.last.data.aiSuppressedLabelIds ?? const <String>{}, isEmpty);
   });
 
   test('setLabels handles empty list correctly', () async {

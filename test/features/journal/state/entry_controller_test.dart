@@ -341,6 +341,7 @@ void main() {
     registerFallbackValue(FakeEntryText());
     registerFallbackValue(FakeTaskData());
     registerFallbackValue((TaskData stored) => stored);
+    registerFallbackValue((JournalEntity stored) => stored);
     registerFallbackValue(FakeEventData());
     registerFallbackValue(const AsyncLoading<EntryState?>());
     registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
@@ -824,54 +825,109 @@ void main() {
       );
     });
 
-    test('toggle starred', () async {
+    /// Stubs `PersistenceLogic.updateEntity` to answer [stored] for every
+    /// entry the toggles write.
+    void stubUpdateEntity({bool stored = true}) {
       reset(mockPersistenceLogic);
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(entryId);
-      final notifier = container.read(testEntryProvider.notifier);
+      when(
+        () => mockPersistenceLogic.updateEntity(any(), any()),
+      ).thenAnswer((_) async => stored);
+    }
 
-      Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-        testTextEntry,
-        testTextEntry.meta.copyWith(starred: false),
-      );
-      when(testFn).thenAnswer((invocation) async => true);
-      await notifier.toggleStarred();
-      verify(testFn).called(1);
-    });
+    /// The one change a toggle handed `PersistenceLogic.updateEntity` for
+    /// [entryId], applied to [stored] — the entry as the write finds it,
+    /// which may differ from the copy the screen loaded.
+    JournalEntity? toggledOn(String entryId, JournalEntity stored) {
+      final change =
+          verify(
+                () => mockPersistenceLogic.updateEntity(entryId, captureAny()),
+              ).captured.single
+              as JournalEntity? Function(JournalEntity);
+      return change(stored);
+    }
 
-    test('toggle private', () async {
-      reset(mockPersistenceLogic);
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(entryId);
-      final notifier = container.read(testEntryProvider.notifier);
+    // Each toggle changes its own flag on the entry as stored, so a field
+    // set after the screen loaded it — a task's status by its agent, a
+    // checklist listed on it — is kept (`specs/tla/TaskFieldWrites.tla`,
+    // MetaOnStored). Each case flips the flag both ways.
+    final storedTask = testTask.copyWith(
+      data: testTask.data.copyWith(
+        checklistIds: const ['listed-since'],
+        estimate: const Duration(hours: 3),
+      ),
+    );
 
-      Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-        testTextEntry,
-        testTextEntry.meta.copyWith(private: true),
-      );
-      when(testFn).thenAnswer((invocation) async => true);
-      await notifier.togglePrivate();
-      verify(testFn).called(1);
-    });
+    for (final (name, toggle, read) in [
+      (
+        'starred',
+        (EntryController c) => c.toggleStarred(),
+        (Metadata meta) => meta.starred ?? false,
+      ),
+      (
+        'private',
+        (EntryController c) => c.togglePrivate(),
+        (Metadata meta) => meta.private ?? false,
+      ),
+      (
+        'flagged',
+        (EntryController c) => c.toggleFlagged(),
+        (Metadata meta) => meta.isFlagged,
+      ),
+    ]) {
+      test('toggling $name flips it on the entry as stored, keeping every '
+          'field set since the screen read it', () async {
+        stubUpdateEntity();
+        final container = makeProviderContainer();
+        await toggle(
+          container.read(entryControllerProvider(testTask.id).notifier),
+        );
+
+        final once = toggledOn(testTask.id, storedTask)! as Task;
+        expect(read(once.meta), !read(storedTask.meta));
+        expect(once.data, storedTask.data);
+        expect(
+          once.meta.copyWith(
+            starred: storedTask.meta.starred,
+            private: storedTask.meta.private,
+            flag: storedTask.meta.flag,
+          ),
+          storedTask.meta,
+        );
+
+        stubUpdateEntity();
+        await toggle(
+          container.read(entryControllerProvider(testTask.id).notifier),
+        );
+        final twice = toggledOn(testTask.id, once)!;
+        expect(read(twice.meta), read(storedTask.meta));
+      });
+    }
+
+    // The flag is cleared by writing `none`, *not* null — a reader that
+    // tests `flag != null` is therefore wrong, which is exactly how the `•••`
+    // menu's flag chip stayed lit after being switched off.
+    // `entry_toggle_chips_test.dart` pins the reader half.
+    test(
+      'toggling a flagged entry clears it to EntryFlag.none, not null',
+      () async {
+        stubUpdateEntity();
+        final container = makeProviderContainer();
+        await container
+            .read(entryControllerProvider(testTextEntry.meta.id).notifier)
+            .toggleFlagged();
+
+        final cleared = toggledOn(
+          testTextEntry.meta.id,
+          testTextEntry.copyWith(
+            meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+          ),
+        )!;
+        expect(cleared.meta.flag, EntryFlag.none);
+      },
+    );
 
     test('toggle private unlinks a task from a public project', () async {
-      reset(mockPersistenceLogic);
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTask,
-          testTask.meta.copyWith(private: true),
-        ),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockProjectRepository.getLinkedProjectForTask(testTask.id),
-      ).thenAnswer(
-        (_) async => makeTestProject(
-          id: 'project-public',
-          categoryId: testTask.meta.categoryId,
-        ),
-      );
+      stubUpdateEntity();
       when(
         () => mockProjectRepository.unlinkTaskFromProject(
           testTask.id,
@@ -883,6 +939,14 @@ void main() {
         entryControllerProvider(testTask.id).notifier,
       );
 
+      // The write finds the task, so the cleanup knows it is one.
+      when(
+        () => mockPersistenceLogic.updateEntity(testTask.id, any()),
+      ).thenAnswer((invocation) async {
+        (invocation.positionalArguments[1]
+            as JournalEntity? Function(JournalEntity))(testTask);
+        return true;
+      });
       await notifier.togglePrivate();
 
       verify(
@@ -893,15 +957,41 @@ void main() {
       ).called(1);
     });
 
+    test('toggle private leaves the projects of an entry that is not a task '
+        'alone', () async {
+      stubUpdateEntity();
+      when(
+        () => mockPersistenceLogic.updateEntity(testTextEntry.meta.id, any()),
+      ).thenAnswer((invocation) async {
+        (invocation.positionalArguments[1]
+            as JournalEntity? Function(JournalEntity))(testTextEntry);
+        return true;
+      });
+      final container = makeProviderContainer();
+
+      await container
+          .read(entryControllerProvider(testTextEntry.meta.id).notifier)
+          .togglePrivate();
+
+      verifyNever(
+        () => mockProjectRepository.unlinkTaskFromProject(
+          any(),
+          onlyIfPrivacyMismatched: any(named: 'onlyIfPrivacyMismatched'),
+        ),
+      );
+    });
+
     test(
       'privacy cleanup failure preserves the successful privacy write',
       () async {
+        stubUpdateEntity();
         when(
-          () => mockPersistenceLogic.updateJournalEntity(
-            testTask,
-            testTask.meta.copyWith(private: true),
-          ),
-        ).thenAnswer((_) async => true);
+          () => mockPersistenceLogic.updateEntity(testTask.id, any()),
+        ).thenAnswer((invocation) async {
+          (invocation.positionalArguments[1]
+              as JournalEntity? Function(JournalEntity))(testTask);
+          return true;
+        });
         when(
           () => mockProjectRepository.unlinkTaskFromProject(
             testTask.id,
@@ -913,12 +1003,10 @@ void main() {
           entryControllerProvider(testTask.id).notifier,
         );
         await expectLater(notifier.togglePrivate(), completes);
-        verify(
-          () => mockPersistenceLogic.updateJournalEntity(
-            testTask,
-            testTask.meta.copyWith(private: true),
-          ),
-        ).called(1);
+        expect(
+          toggledOn(testTask.id, testTask)!.meta.private,
+          isTrue,
+        );
         verify(
           () => mockProjectRepository.unlinkTaskFromProject(
             testTask.id,
@@ -929,13 +1017,7 @@ void main() {
     );
 
     test('failed privacy toggle keeps the existing project link', () async {
-      reset(mockPersistenceLogic);
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(
-          testTask,
-          testTask.meta.copyWith(private: true),
-        ),
-      ).thenAnswer((_) async => false);
+      stubUpdateEntity(stored: false);
       final container = makeProviderContainer();
       final notifier = container.read(
         entryControllerProvider(testTask.id).notifier,
@@ -952,122 +1034,6 @@ void main() {
           onlyIfPrivacyMismatched: true,
         ),
       );
-    });
-
-    test('toggle flagged', () async {
-      reset(mockPersistenceLogic);
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(entryId);
-      final notifier = container.read(testEntryProvider.notifier);
-
-      Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-        testTextEntry,
-        testTextEntry.meta.copyWith(flag: EntryFlag.import),
-      );
-      when(testFn).thenAnswer((invocation) async => true);
-      await notifier.toggleFlagged();
-      verify(testFn).called(1);
-    });
-
-    // The writer half of the `•••` menu's flag chip. Clearing the flag writes
-    // `EntryFlag.none`, *not* null — a reader that tests `flag != null` is
-    // therefore wrong, which is exactly how the chip stayed lit after being
-    // switched off. `entry_toggle_chips_test.dart` pins the reader half.
-    test(
-      'toggling a flagged entry clears it to EntryFlag.none, not null',
-      () async {
-        reset(mockPersistenceLogic);
-        final flagged = testTextEntry.copyWith(
-          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
-        );
-        when(
-          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-        ).thenAnswer((_) async => flagged);
-        when(
-          () => mockPersistenceLogic.updateJournalEntity(any(), any()),
-        ).thenAnswer((_) async => true);
-
-        final container = makeProviderContainer();
-        final notifier = container.read(
-          entryControllerProvider(testTextEntry.meta.id).notifier,
-        );
-
-        await notifier.toggleFlagged();
-
-        final captured =
-            verify(
-                  () => mockPersistenceLogic.updateJournalEntity(
-                    any(),
-                    captureAny(),
-                  ),
-                ).captured.single
-                as Metadata;
-        expect(captured.flag, EntryFlag.none);
-      },
-    );
-
-    // Both directions of the two boolean toggles, so the chips beside the flag
-    // are covered by contract rather than by the assumption that a bool cannot
-    // go wrong the way a three-valued enum did.
-    test('toggling an unstarred entry sets starred true', () async {
-      reset(mockPersistenceLogic);
-      final unstarred = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(starred: false),
-      );
-      when(
-        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-      ).thenAnswer((_) async => unstarred);
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
-      ).thenAnswer((_) async => true);
-
-      final container = makeProviderContainer();
-      final notifier = container.read(
-        entryControllerProvider(testTextEntry.meta.id).notifier,
-      );
-
-      await notifier.toggleStarred();
-
-      final captured =
-          verify(
-                () => mockPersistenceLogic.updateJournalEntity(
-                  any(),
-                  captureAny(),
-                ),
-              ).captured.single
-              as Metadata;
-      expect(captured.starred, isTrue);
-    });
-
-    test('toggling a private entry clears private to false', () async {
-      reset(mockPersistenceLogic);
-      final private = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(private: true),
-      );
-      when(
-        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-      ).thenAnswer((_) async => private);
-      when(
-        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
-      ).thenAnswer((_) async => true);
-
-      final container = makeProviderContainer();
-      final notifier = container.read(
-        entryControllerProvider(testTextEntry.meta.id).notifier,
-      );
-
-      await notifier.togglePrivate();
-
-      final captured =
-          verify(
-                () => mockPersistenceLogic.updateJournalEntity(
-                  any(),
-                  captureAny(),
-                ),
-              ).captured.single
-              as Metadata;
-      expect(captured.private, isFalse);
     });
 
     test('set dirty & save text', () async {

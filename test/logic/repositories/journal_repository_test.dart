@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -135,163 +133,85 @@ void main() {
       await tearDownTestGetIt();
     });
 
+    /// The one change handed `PersistenceLogic.updateEntity` for [id],
+    /// applied to [stored] — the entry as the write finds it, which may hold
+    /// fields set after the caller decided.
+    JournalEntity? changedOn(String id, JournalEntity stored) {
+      final change =
+          verify(
+                () => mockPersistenceLogic.updateEntity(id, captureAny()),
+              ).captured.single
+              as JournalEntity? Function(JournalEntity);
+      return change(stored);
+    }
+
+    /// [testTask] as stored once its agent set a status and a checklist was
+    /// listed on it, after the caller read it.
+    final storedSince = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'existing-category'),
+      data: testTask.data.copyWith(
+        checklistIds: const ['listed-since'],
+        estimate: const Duration(hours: 3),
+      ),
+    );
+
     group('updateCategoryId', () {
-      test('returns true when successfully updating category ID', () async {
-        // Arrange
-        const journalEntityId = 'test-id';
-        const categoryId = 'category-id';
-
-        final testEntity = testJournalEntry();
-
-        final updatedMeta = testEntity.meta.copyWith(
-          categoryId: categoryId,
-          updatedAt: DateTime(2024, 3, 15, 10, 30),
-        );
-
-        // Mock the journalEntityById call to return our test entity
+      setUp(() {
         when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => testEntity);
-
-        // Mock the updateMetadata call
-        when(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: false,
-          ),
-        ).thenAnswer((_) async => updatedMeta);
-
-        // Mock the updateDbEntity call
-        when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateEntity(any(), any()),
         ).thenAnswer((_) async => true);
-
-        // Act
-        final result = await repository.updateCategoryId(
-          journalEntityId,
-          categoryId: categoryId,
-        );
-
-        // Assert
-        expect(result, isTrue);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: false,
-          ),
-        ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
       });
 
-      test('returns false when journal entity not found', () async {
-        // Arrange
-        const journalEntityId = 'non-existent-id';
-        const categoryId = 'category-id';
-
-        // Mock the journalEntityById call to return null
-        when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => null);
-
-        // Act
+      test('sets the category on the entry as stored, keeping every field '
+          'set since (MetaOnStored)', () async {
         final result = await repository.updateCategoryId(
-          journalEntityId,
-          categoryId: categoryId,
+          testTask.id,
+          categoryId: 'category-id',
         );
 
-        // Assert
-        expect(result, isFalse);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verifyNever(
-          () => mockPersistenceLogic.updateMetadata(
-            any(),
-            categoryId: any(named: 'categoryId'),
-            clearCategoryId: any(named: 'clearCategoryId'),
-          ),
+        expect(result, isTrue);
+        final written = changedOn(testTask.id, storedSince)! as Task;
+        expect(written.meta.categoryId, 'category-id');
+        expect(written.data, storedSince.data);
+        expect(
+          written.meta.copyWith(categoryId: 'existing-category'),
+          storedSince.meta,
         );
-        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
       });
 
-      test('clears category ID when passed null', () async {
-        // Arrange
-        const journalEntityId = 'test-id';
-        const String? categoryId = null;
+      test('clears the category when passed null', () async {
+        await repository.updateCategoryId(testTask.id, categoryId: null);
 
-        final testEntity = testJournalEntry(
-          meta: testMeta(categoryId: 'existing-category'),
-        );
+        expect(changedOn(testTask.id, storedSince)!.meta.categoryId, isNull);
+      });
 
-        final updatedMeta = testEntity.meta.copyWith(
-          categoryId: null,
-          updatedAt: DateTime(2024, 3, 15, 10, 30),
-        );
-
-        // Mock the journalEntityById call to return our test entity
+      test('a write that is not stored is reported as a failure — callers '
+          'act on this boolean: a missing entry, or one refused', () async {
         when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => testEntity);
+          () => mockPersistenceLogic.updateEntity(any(), any()),
+        ).thenAnswer((_) async => false);
 
-        // Mock the updateMetadata call with clearCategoryId: true
-        when(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: true,
+        expect(
+          await repository.updateCategoryId(
+            testTask.id,
+            categoryId: 'category-id',
           ),
-        ).thenAnswer((_) async => updatedMeta);
-
-        // Mock the updateDbEntity call
-        when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
-        ).thenAnswer((_) async => true);
-
-        // Act
-        final result = await repository.updateCategoryId(
-          journalEntityId,
-          categoryId: categoryId,
+          isFalse,
         );
-
-        // Assert
-        expect(result, isTrue);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: true,
-          ),
-        ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
       });
 
       test('a thrown exception is logged and reported as a failed write — '
           'callers act on this boolean, so a swallowed failure would have '
           'them report success on an entity that never moved', () async {
-        // Arrange
-        const journalEntityId = 'test-id';
-        const categoryId = 'category-id';
-
-        // Mock the journalEntityById call to throw an exception
         when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
+          () => mockPersistenceLogic.updateEntity(any(), any()),
         ).thenThrow(Exception('Test exception'));
 
-        // Act
         final result = await repository.updateCategoryId(
-          journalEntityId,
-          categoryId: categoryId,
+          testTask.id,
+          categoryId: 'category-id',
         );
 
-        // Assert
         expect(result, isFalse);
         verify(
           () => mockDomainLogger.error(
@@ -301,42 +221,6 @@ void main() {
             subDomain: 'updateCategoryId',
           ),
         ).called(1);
-      });
-
-      test('a rejected write is reported as a failure — updateDbEntity '
-          'answers false when the vector-clock comparison loses to a '
-          'concurrent sync, and null when it swallowed an exception', () async {
-        const journalEntityId = 'test-id';
-        const categoryId = 'category-id';
-        final testEntity = testJournalEntry();
-
-        when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => testEntity);
-        when(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: false,
-          ),
-        ).thenAnswer(
-          (_) async => testEntity.meta.copyWith(categoryId: categoryId),
-        );
-
-        for (final rejected in <bool?>[false, null]) {
-          when(
-            () => mockPersistenceLogic.updateDbEntity(any()),
-          ).thenAnswer((_) async => rejected);
-
-          expect(
-            await repository.updateCategoryId(
-              journalEntityId,
-              categoryId: categoryId,
-            ),
-            isFalse,
-            reason: 'updateDbEntity returned $rejected',
-          );
-        }
       });
     });
 
@@ -900,130 +784,72 @@ void main() {
     });
 
     group('updateJournalEntityDate', () {
-      test('updates date and returns true on success', () async {
-        // Arrange
-        const journalEntityId = 'test-id';
-        final dateFrom = DateTime(2023);
-        final dateTo = DateTime(2023, 1, 2);
+      final dateFrom = DateTime(2023);
+      final dateTo = DateTime(2023, 1, 2);
 
-        final testEntity = testJournalEntry(
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2022),
-            dateTo: DateTime(2022),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
-        );
-
-        final updatedMeta = testEntity.meta.copyWith(
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          updatedAt: DateTime(2024, 3, 15, 10, 30),
-        );
-
-        // Mock the journalEntityById call
-        when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => testEntity);
-
-        // Mock the updateMetadata call
-        when(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-          ),
-        ).thenAnswer((_) async => updatedMeta);
-
-        // Mock the updateDbEntity call
-        when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
-        ).thenAnswer((_) async => true);
-
-        // Mock the TimeService updateCurrent call
+      setUp(() {
         when(() => mockTimeService.updateCurrent(any())).thenReturn(null);
+      });
 
-        // Act
+      test('sets the range on the entry as stored, keeping every field set '
+          'since, and hands the running timer that version', () async {
+        // The write applies the change to the stored entry and lands.
+        when(
+          () => mockPersistenceLogic.updateEntity(testTask.id, any()),
+        ).thenAnswer((invocation) async {
+          (invocation.positionalArguments[1]
+              as JournalEntity? Function(JournalEntity))(storedSince);
+          return true;
+        });
+
         final result = await repository.updateJournalEntityDate(
-          journalEntityId,
+          testTask.id,
           dateFrom: dateFrom,
           dateTo: dateTo,
         );
 
-        // Assert
         expect(result, isTrue);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
-          () => mockPersistenceLogic.updateMetadata(
-            testEntity.meta,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-          ),
-        ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
-        verify(() => mockTimeService.updateCurrent(any())).called(1);
+        final written = changedOn(testTask.id, storedSince)! as Task;
+        expect(written.meta.dateFrom, dateFrom);
+        expect(written.meta.dateTo, dateTo);
+        expect(written.data, storedSince.data);
+        final current =
+            verify(
+                  () => mockTimeService.updateCurrent(captureAny()),
+                ).captured.single
+                as JournalEntity;
+        expect(current.meta.dateTo, dateTo);
+        expect((current as Task).data.checklistIds, ['listed-since']);
       });
 
-      test('returns false when journal entity not found', () async {
-        // Arrange
-        const journalEntityId = 'non-existent-id';
-        final dateFrom = DateTime(2023);
-        final dateTo = DateTime(2023, 1, 2);
-
-        // Mock the journalEntityById call to return null
+      test('a write that is not stored is reported as a failure and leaves '
+          'the running timer alone', () async {
         when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).thenAnswer((_) async => null);
+          () => mockPersistenceLogic.updateEntity(any(), any()),
+        ).thenAnswer((_) async => false);
 
-        // Act
         final result = await repository.updateJournalEntityDate(
-          journalEntityId,
+          'non-existent-id',
           dateFrom: dateFrom,
           dateTo: dateTo,
         );
 
-        // Assert
         expect(result, isFalse);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verifyNever(
-          () => mockPersistenceLogic.updateMetadata(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-          ),
-        );
-        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+        verifyNever(() => mockTimeService.updateCurrent(any()));
       });
 
-      test('handles exceptions gracefully', () async {
-        // Arrange
-        const journalEntityId = 'test-id';
-        final dateFrom = DateTime(2023);
-        final dateTo = DateTime(2023, 1, 2);
-
-        // Mock the journalEntityById call to throw an exception
+      test('a thrown exception is logged and reported as a failure', () async {
         when(
-          () => mockJournalDb.journalEntityById(journalEntityId),
+          () => mockPersistenceLogic.updateEntity(any(), any()),
         ).thenThrow(Exception('Test exception'));
 
-        // Act
         final result = await repository.updateJournalEntityDate(
-          journalEntityId,
+          testTask.id,
           dateFrom: dateFrom,
           dateTo: dateTo,
         );
 
-        // Assert
-        expect(result, isTrue);
-
+        expect(result, isFalse);
         verify(
           () => mockDomainLogger.error(
             LogDomain.persistence,

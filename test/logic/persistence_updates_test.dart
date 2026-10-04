@@ -283,12 +283,14 @@ void main() {
   );
 
   test(
-    'addGeolocation persists through the facade updateDbEntity callback',
+    'addGeolocation persists through the facade updateEntity callback',
     () async {
       when(
         () => geolocationService.addGeolocation(any(), any()),
       ).thenReturn(null);
-      when(() => logic.updateDbEntity(any())).thenAnswer((_) async => true);
+      when(
+        () => logic.updateEntity(any(), any()),
+      ).thenAnswer((_) async => true);
 
       updates.addGeolocation('entry-1');
 
@@ -297,13 +299,15 @@ void main() {
                 () =>
                     geolocationService.addGeolocation('entry-1', captureAny()),
               ).captured.single
-              as EntityPersister;
-      // The persister handed to the geolocation service must be the facade's
-      // overridable updateDbEntity, not the collaborator's local method. Invoke
-      // it and assert the call lands on the facade.
-      final result = await captured(testTextEntry);
+              as EntityChange;
+      // The callback handed to the geolocation service must be the facade's
+      // overridable updateEntity, which builds the change on the stored row,
+      // not the collaborator's local method. Invoke it and assert the call
+      // lands on the facade.
+      JournalEntity? change(JournalEntity stored) => null;
+      final result = await captured('entry-1', change);
       expect(result, isTrue);
-      verify(() => logic.updateDbEntity(testTextEntry)).called(1);
+      verify(() => logic.updateEntity('entry-1', change)).called(1);
     },
   );
 }

@@ -60,6 +60,13 @@ abstract class PersistenceLogicContract {
     Future<bool> Function()? precondition,
   });
 
+  /// Applies [change] to the stored entry and writes the result on that row;
+  /// whether it is stored (`PersistenceUpdateOps.updateEntity`).
+  Future<bool> updateEntity(
+    String journalEntityId,
+    JournalEntity? Function(JournalEntity stored) change,
+  );
+
   void addGeolocation(String journalEntityId);
 
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard);

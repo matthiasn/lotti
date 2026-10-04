@@ -559,9 +559,7 @@ void main() {
         )
         ..registerSingleton<GeolocationService>(
           GeolocationService(
-            journalDb: journalDb,
             loggingService: getIt<DomainLogger>(),
-            metadataService: getIt<MetadataService>(),
             deviceLocation: mockDeviceLocation,
           ),
         )

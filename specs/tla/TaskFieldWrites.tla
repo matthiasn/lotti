@@ -39,11 +39,21 @@
 (*   Receive    sync lands another device's version: newer applies, older  *)
 (*              is dropped, concurrent becomes a conflict row              *)
 (*              (JournalDb.detectConflict)                                 *)
+(*   MetaWrite  a write that sets none of these fields but carries the     *)
+(*              task row: the star, flag and private toggles               *)
+(*              (EntryController), the category and date changes           *)
+(*              (JournalRepository.updateCategoryId,                       *)
+(*              updateJournalEntityDate), the geolocation added after      *)
+(*              creation (GeolocationService) and the agent's label        *)
+(*              assignment (LabelsRepository.addLabels), each through      *)
+(*              PersistenceLogic.updateEntity                              *)
 (*   Resolve    the user resolves a conflict on the conflict screen: keeps *)
 (*              one side, or combines them, picking each field the screen  *)
 (*              shows from either side (ConflictResolutionService,         *)
 (*              conflict_merge.dart, entry_field_diff.dart); a field it    *)
 (*              does not show follows the side kept                        *)
+(*   OpenPage   the conflict screen reads this device's side when it      *)
+(*              opens (ConflictDetailRoute), and resolves against it      *)
 (*                                                                         *)
 (* A field write is one transaction: with WriteOnStored the change is      *)
 (* applied to the stored row by writeOnStored, which rebuilds it whenever  *)
@@ -71,15 +81,28 @@ CONSTANTS
                           \* status history, as the agent's is
     ResolveJoinsHistory,  \* resolving a conflict keeps both sides' status
                           \* history
-    ShownFields           \* the fields the conflict screen shows as a
+    ShownFields,          \* the fields the conflict screen shows as a
                           \* difference and lets the user pick per field;
                           \* before ADR 0107 a task's status and priority
                           \* were not among them
+    MetaDevices,          \* devices whose metadata writers write the task
+    MetaOnStored,         \* a metadata write applies its change to the
+                          \* stored row; FALSE is the former toggles,
+                          \* category, date, geolocation and label writes,
+                          \* which wrote the row they had read a few awaits
+                          \* earlier, under a clock built on that copy's
+    StalePages,           \* the conflict screen resolves against the side
+                          \* it read when it opened
+    ResolveOnStored       \* a resolution applies only while the stored row
+                          \* is still the side the screen showed; FALSE is
+                          \* the former resolution, which wrote over
+                          \* whatever this device stored meanwhile
 
 ASSUME "status" \in Fields /\ AgentDevices \subseteq Devices /\ 0 \notin Vals
-ASSUME ShownFields \subseteq Fields
+ASSUME ShownFields \subseteq Fields /\ MetaDevices \subseteq Devices
 
 Writers == {<<d, "ui">> : d \in Devices} \cup {<<d, "agent">> : d \in AgentDevices}
+           \cup {<<d, "meta">> : d \in MetaDevices}
 Edits == 1..MaxWrites
 
 (* A version: its clock, its field values, and two ghosts.                 *)
@@ -104,11 +127,13 @@ VARIABLES
                \* they decided against
     silent,    \* ghost: fields a resolution settled without showing the
                \* user that the two sides differed
+    page,      \* the conflict screen per device: whether it is open, and
+               \* the side of this device it read when it opened
     writes,
     resolves
 
 vars == <<row, conf, snap, reading, ctr, net, all, moved, blind, silent,
-          writes, resolves>>
+          page, writes, resolves>>
 
 -----------------------------------------------------------------------------
 Leq(a, b) == \A d \in Devices : a[d] <= b[d]
@@ -123,6 +148,17 @@ Store(d, v) ==
     /\ net' = net \cup {v}
     /\ all' = all \cup {v}
 
+\* The write decision for a version device d wrote: newer applies, and
+\* concurrent becomes a conflict row.
+Land(d, v) ==
+    IF Leq(row[d].vc, v.vc)
+    THEN Store(d, v)
+    ELSE /\ conf' = [conf EXCEPT ![d] = @ \cup {v}]
+         /\ ctr' = [ctr EXCEPT ![d] = v.vc[d]]
+         /\ net' = net \cup {v}
+         /\ all' = all \cup {v}
+         /\ UNCHANGED row
+
 -----------------------------------------------------------------------------
 Init ==
     /\ row = [d \in Devices |-> Init0]
@@ -135,14 +171,15 @@ Init ==
     /\ moved = {}
     /\ blind = {}
     /\ silent = {}
+    /\ page = [d \in Devices |-> [open |-> FALSE, local |-> Init0]]
     /\ writes = 0
     /\ resolves = 0
 
 Read(w) ==
     /\ snap' = [snap EXCEPT ![w] = row[w[1]]]
     /\ reading' = [reading EXCEPT ![w] = TRUE]
-    /\ UNCHANGED <<row, conf, ctr, net, all, moved, blind, silent, writes,
-                   resolves>>
+    /\ UNCHANGED <<row, conf, ctr, net, all, moved, blind, silent, page,
+                   writes, resolves>>
 
 \* The version a write of field f to value x makes, as edit e by writer w.
 \* `base` is the copy the data comes from, `clock` the clock it extends.
@@ -171,7 +208,7 @@ UiWrite(d, f, x) ==
     /\ IF base.val[f] = x /\ UiOnStored
        THEN UNCHANGED <<row, conf, ctr, net, all>>   \* nothing to write
        ELSE Store(d, v)
-    /\ UNCHANGED <<snap, blind, silent, resolves>>
+    /\ UNCHANGED <<snap, blind, silent, page, resolves>>
 
 AgentWrite(d, f, x) ==
     LET w == <<d, "agent">>
@@ -200,14 +237,25 @@ AgentWrite(d, f, x) ==
             \* different value counts as unseen.
             /\ blind' = IF newer /\ s.val[f] # c.val[f]
                         THEN blind \cup {e} ELSE blind
-            /\ IF newer
-               THEN Store(d, v)
-               ELSE /\ conf' = [conf EXCEPT ![d] = @ \cup {v}]
-                    /\ ctr' = [ctr EXCEPT ![d] = v.vc[d]]
-                    /\ net' = net \cup {v}
-                    /\ all' = all \cup {v}
-                    /\ UNCHANGED row
-    /\ UNCHANGED <<snap, silent, resolves>>
+            /\ Land(d, v)
+    /\ UNCHANGED <<snap, silent, page, resolves>>
+
+\* A write that sets none of the modelled fields but carries the whole task
+\* row. With MetaOnStored its change is applied to the stored row
+\* (`PersistenceLogic.updateEntity`); without, it writes the copy it read,
+\* under a clock built on that copy's.
+MetaWrite(d) ==
+    LET w == <<d, "meta">>
+        base == IF MetaOnStored THEN row[d] ELSE snap[w]
+        v == [vc |-> Tick(base.vc, d), val |-> base.val, lin |-> base.lin,
+              hist |-> base.hist]
+    IN
+    /\ reading[w]
+    /\ writes < MaxWrites
+    /\ writes' = writes + 1
+    /\ reading' = [reading EXCEPT ![w] = FALSE]
+    /\ Land(d, v)
+    /\ UNCHANGED <<snap, moved, blind, silent, page, resolves>>
 
 Receive(d, m) ==
     LET s == row[d] IN
@@ -219,8 +267,21 @@ Receive(d, m) ==
             /\ conf' = [conf EXCEPT ![d] = {c \in @ : ~Leq(c.vc, m.vc)}]
        ELSE /\ conf' = [conf EXCEPT ![d] = @ \cup {m}]
             /\ UNCHANGED row
-    /\ UNCHANGED <<snap, reading, ctr, net, all, moved, blind, silent, writes,
-                   resolves>>
+    /\ UNCHANGED <<snap, reading, ctr, net, all, moved, blind, silent, page,
+                   writes, resolves>>
+
+\* The conflict screen opens on device d, or reads again: it holds this
+\* device's side as stored.
+OpenPage(d) ==
+    /\ StalePages
+    /\ conf[d] # {}
+    /\ page[d] # [open |-> TRUE, local |-> row[d]]
+    /\ page' = [page EXCEPT ![d] = [open |-> TRUE, local |-> row[d]]]
+    /\ UNCHANGED <<row, conf, snap, reading, ctr, net, all, moved, blind,
+                   silent, writes, resolves>>
+
+\* The side of this device a resolution is built on.
+Local(d) == IF StalePages THEN page[d].local ELSE row[d]
 
 \* The user keeps one side as the base (`keepRemote`) and, for every field
 \* the screen shows, picks a side (`pick`, TRUE for the other device's): a
@@ -229,7 +290,7 @@ Receive(d, m) ==
 \* the resolution settles it without the user having seen the difference.
 \* The version records both sides as seen: the user chose.
 Resolve(d, c, keepRemote, pick) ==
-    LET s == row[d]
+    LET s == Local(d)
         k == IF keepRemote THEN c ELSE s
         side(f) == IF f \in ShownFields
                    THEN IF pick[f] THEN c ELSE s
@@ -241,17 +302,25 @@ Resolve(d, c, keepRemote, pick) ==
                        ELSE k.hist]
     IN
     /\ c \in conf[d]
+    /\ StalePages => page[d].open
+    \* The precondition, checked in the write's transaction: the stored row
+    \* is still the side the screen showed. Refused, the screen reads the
+    \* row again (OpenPage).
+    /\ ResolveOnStored => s = row[d]
     /\ resolves < MaxResolves
     /\ resolves' = resolves + 1
     /\ silent' = silent \cup
         {f \in Fields \ ShownFields : s.val[f] # c.val[f]}
-    /\ Store(d, v)
+    /\ Land(d, v)
+    /\ page' = [page EXCEPT ![d].open = FALSE]
     /\ UNCHANGED <<snap, reading, moved, blind, writes>>
 
 Next ==
     \/ \E w \in Writers : ~reading[w] /\ Read(w)
     \/ \E d \in Devices, f \in Fields, x \in Vals : UiWrite(d, f, x)
     \/ \E d \in AgentDevices, f \in Fields, x \in Vals : AgentWrite(d, f, x)
+    \/ \E d \in MetaDevices : MetaWrite(d)
+    \/ \E d \in Devices : OpenPage(d)
     \/ \E d \in Devices, m \in net : Receive(d, m)
     \/ \E d \in Devices, c \in UNION {conf[x] : x \in Devices},
           k \in BOOLEAN, pick \in [ShownFields -> BOOLEAN] :
@@ -269,6 +338,7 @@ TypeOK ==
     /\ writes \in 0..MaxWrites /\ resolves \in 0..MaxResolves
     /\ moved \subseteq Edits /\ blind \subseteq Edits
     /\ silent \subseteq Fields
+    /\ \A d \in Devices : page[d].open \in BOOLEAN /\ page[d].local \in Version
 
 \* No stored version claims, by its clock, a version whose field edits it
 \* does not hold: every edit an older version knew is still known.

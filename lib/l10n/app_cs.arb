@@ -1714,6 +1714,7 @@
   "conflictDetailNotFoundTitle": "Konflikt nenalezen",
   "conflictDiffRecommended": "Doporučeno",
   "conflictDiffUnchanged": "{count, plural, =1{1 pole beze změny} few{{count} pole beze změny} other{{count} polí beze změny}}",
+  "conflictEntryChangedTitle": "Záznam se mezitím změnil — zkontroluj rozdíl znovu",
   "conflictFieldBody": "Text",
   "conflictFieldCategory": "kategorie",
   "conflictFieldDueDate": "datum splnění",

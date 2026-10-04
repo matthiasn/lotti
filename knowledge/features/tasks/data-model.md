@@ -5,7 +5,7 @@ description: What TaskData carries, the two boundaries it deliberately excludes,
 resource: ../../../lib/classes/task.dart
 tags: [tasks, domain, progress, estimates]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T22:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: task
@@ -23,11 +23,11 @@ sources:
   - id: update-task
     resource: ../../../lib/logic/persistence_update_ops.dart
     title: PersistenceUpdateOps.updateTaskImpl
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
   - id: field-spec
     resource: ../../../specs/tla/TaskFieldWrites.tla
     title: TaskFieldWrites TLA+ spec
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
 ---
 
 # `TaskData`
@@ -140,6 +140,13 @@ sequenceDiagram
 - **The checklist list has its own writer.** `checklistIds` is only ever
   written by `ChecklistRepository.updateTaskChecklistIds`; a field write keeps
   the stored list (see [checklists](checklists.md)).
+- **A write that sets no task field is a change of the stored entry too.**
+  The star, flag and private toggles, the category and date changes and the
+  geolocation added after creation hand `PersistenceLogic.updateEntity` a
+  change of the entry as stored, and the agent's `LabelsRepository.addLabels`
+  builds on it the same way, so none puts back a field, a checklist or a
+  label stored meanwhile
+  ([ADR 0119](../../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md)).
 
 `specs/tla/TaskFieldWrites.tla` model-checks this across two devices —
 `NoLostFieldEdit`, `HistoryComplete`, `NoBlindAgentWrite` — and

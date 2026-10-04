@@ -65,11 +65,29 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
     return _localEntryFuture!;
   }
 
-  Future<void> _resolve(Future<bool> Function() action) async {
+  /// Runs a resolution of [pair]. One refused because this device stored
+  /// another version of the entry since the page read it (the service's
+  /// precondition) is not applied: the page reads the local side again and
+  /// shows the difference as it now is, for the user to decide on.
+  Future<void> _resolve(
+    ConflictPair pair,
+    Future<bool> Function() action,
+  ) async {
     try {
       final applied = await action();
       if (!applied) {
+        final stored = await getIt<JournalDb>()
+            .journalEntityByIdIncludingDeleted(pair.local.id);
         if (!mounted) return;
+        if (stored != null &&
+            stored.meta.vectorClock != pair.local.meta.vectorClock) {
+          setState(() => _localEntryFuture = null);
+          context.showToast(
+            tone: DesignSystemToastTone.warning,
+            title: context.messages.conflictEntryChangedTitle,
+          );
+          return;
+        }
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: context.messages.conflictApplyFailedTitle,
@@ -142,7 +160,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
               diff: pair.diff,
               service: _service,
               pair: pair,
-              resolve: _resolve,
+              resolve: (action) => _resolve(pair, action),
             );
           },
         );

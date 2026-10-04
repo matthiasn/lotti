@@ -3938,6 +3938,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Rezoluția nu a putut fi aplicată';
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Intrarea s-a modificat între timp — verificați din nou diferența';
+
+  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

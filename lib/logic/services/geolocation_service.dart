@@ -2,16 +2,20 @@ import 'dart:async';
 
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/location.dart';
 
-/// Callback type for persisting a journal entity.
+/// Applies a change to the stored journal entity [journalEntityId] and writes
+/// the result on that row; whether the change is stored. `change` answers
+/// `null` when there is nothing to write (`PersistenceLogic.updateEntity`).
 ///
 /// This allows GeolocationService to delegate persistence to the caller,
 /// avoiding circular dependencies with PersistenceLogic.
-typedef EntityPersister = Future<bool?> Function(JournalEntity entity);
+typedef EntityChange =
+    Future<bool> Function(
+      String journalEntityId,
+      JournalEntity? Function(JournalEntity stored) change,
+    );
 
 /// Service responsible for adding geolocation data to journal entries.
 ///
@@ -24,15 +28,11 @@ typedef EntityPersister = Future<bool?> Function(JournalEntity entity);
 /// with PersistenceLogic.
 class GeolocationService {
   GeolocationService({
-    required this._journalDb,
     required this._loggingService,
-    required this._metadataService,
     this.deviceLocation,
   });
 
-  final JournalDb _journalDb;
   final DomainLogger _loggingService;
-  final MetadataService _metadataService;
 
   /// Optional device location provider. Null on platforms without location
   /// support (e.g., Windows).
@@ -48,26 +48,31 @@ class GeolocationService {
   /// await the result. Use this when you don't need to know when the
   /// geolocation has been added.
   ///
-  /// The [persister] callback is used to persist the updated entity. This
+  /// The [persist] callback writes the change on the stored entry. This
   /// allows the caller (typically PersistenceLogic) to handle persistence
   /// with all its side effects (sync, notifications, etc.).
-  void addGeolocation(String journalEntityId, EntityPersister persister) {
-    unawaited(addGeolocationAsync(journalEntityId, persister));
+  void addGeolocation(String journalEntityId, EntityChange persist) {
+    unawaited(addGeolocationAsync(journalEntityId, persist));
   }
 
   /// Adds geolocation to a journal entry asynchronously.
   ///
-  /// Returns the geolocation that was added, or null if:
+  /// Returns the geolocation the entry has afterwards — the one added, or
+  /// the one it already had — or null if:
   /// - Another geolocation add is already pending for this entry (race
   ///   condition prevention)
   /// - Location services are unavailable or returned no location
-  /// - The entry doesn't exist
-  /// - The entry already has a geolocation (to prevent overwriting)
+  /// - The entry doesn't exist, or the write failed
   ///
-  /// The [persister] callback is used to persist the updated entity.
+  /// The geolocation is set on the entry as stored when the write lands
+  /// ([persist]): the location fix takes a while, and a field written
+  /// meanwhile — a checklist listed on a task just created, its title, its
+  /// labels — is kept, not put back from a copy read before the fix
+  /// (`specs/tla/ChecklistMembership.tla`, MetaOnStored). Geolocation is
+  /// set once and never overwritten.
   Future<Geolocation?> addGeolocationAsync(
     String journalEntityId,
-    EntityPersister persister,
+    EntityChange persist,
   ) async {
     // Prevent concurrent geolocation additions for the same entity.
     // This avoids race conditions where multiple async calls could
@@ -93,21 +98,14 @@ class GeolocationService {
         return null;
       }
 
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      // Only add geolocation if the entry doesn't already have one.
-      // Geolocation should be set once at creation and never overwritten.
-      if (journalEntity != null && journalEntity.geolocation == null) {
-        final updatedMeta = await _metadataService.updateMetadata(
-          journalEntity.meta,
-        );
-        await persister(
-          journalEntity.copyWith(meta: updatedMeta, geolocation: geolocation),
-        );
-        return geolocation;
-      }
-
-      return journalEntity?.geolocation;
+      Geolocation? result;
+      final stored = await persist(journalEntityId, (stored) {
+        result = stored.geolocation ?? geolocation;
+        return stored.geolocation == null
+            ? stored.copyWith(geolocation: geolocation)
+            : null;
+      });
+      return stored ? result : null;
     } catch (exception, stackTrace) {
       _loggingService.error(
         LogDomain.location,

@@ -3910,6 +3910,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Não foi possível aplicar a resolução';
 
   @override
+  String get conflictEntryChangedTitle =>
+      'A entrada mudou entretanto — verifica a diferença novamente';
+
+  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

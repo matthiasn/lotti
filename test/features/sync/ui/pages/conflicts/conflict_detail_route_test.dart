@@ -81,7 +81,11 @@ class _Bench {
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
     when(
-      () => persistence.updateJournalEntity(any(), any()),
+      () => persistence.updateJournalEntity(
+        any(),
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((_) async => true);
 
     await setUpTestGetIt(
@@ -257,7 +261,11 @@ void main() {
       await _tap(tester, l10n.conflictPickerUseThisDevice);
 
       final captured = verify(
-        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+        () => bench.persistence.updateJournalEntity(
+          captureAny(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).captured;
       expect(_firstLineOf(captured.single as JournalEntity), 'Local title');
     });
@@ -273,7 +281,11 @@ void main() {
       await _tap(tester, l10n.conflictPickerUseFromSync);
 
       final captured = verify(
-        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+        () => bench.persistence.updateJournalEntity(
+          captureAny(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).captured;
       expect(_firstLineOf(captured.single as JournalEntity), 'Remote title');
     });
@@ -294,7 +306,11 @@ void main() {
 
       // Default combine starts from local, so the merged body is the local one.
       final captured = verify(
-        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+        () => bench.persistence.updateJournalEntity(
+          captureAny(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).captured;
       expect(_firstLineOf(captured.single as JournalEntity), 'Local title');
     });
@@ -306,7 +322,11 @@ void main() {
       final bench = await _Bench.create(localEntry: local, conflict: conflict);
       addTearDown(bench.dispose);
       when(
-        () => bench.persistence.updateJournalEntity(any(), any()),
+        () => bench.persistence.updateJournalEntity(
+          any(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).thenAnswer((_) => Future.error(Exception('network failure')));
       await _showConflict(tester, bench, conflict);
 
@@ -327,7 +347,11 @@ void main() {
       final bench = await _Bench.create(localEntry: local, conflict: conflict);
       addTearDown(bench.dispose);
       when(
-        () => bench.persistence.updateJournalEntity(any(), any()),
+        () => bench.persistence.updateJournalEntity(
+          any(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).thenAnswer((_) async => false);
       await _showConflict(tester, bench, conflict);
 
@@ -338,6 +362,45 @@ void main() {
       );
       expect(toast.tone, DesignSystemToastTone.error);
       expect(toast.title, l10n.conflictApplyFailedTitle);
+    });
+
+    // The resolution applies only over the local side shown
+    // (`specs/tla/TaskFieldWrites.tla`, ResolveOnStored): refused because
+    // this device stored another version since the page read it, the page
+    // reads it again and shows the difference as it now is.
+    testWidgets('a resolution refused because this device stored another '
+        'version meanwhile shows the difference again', (tester) async {
+      final local = _entry(title: 'Local title', clock: const {'a': 9});
+      final since = _entry(title: 'Edited since', clock: const {'a': 10});
+      final remote = _entry(title: 'Remote title', clock: const {'b': 13});
+      final conflict = _conflict(remote: remote);
+      final bench = await _Bench.create(localEntry: local, conflict: conflict);
+      addTearDown(bench.dispose);
+      when(
+        () => bench.persistence.updateJournalEntity(
+          any(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async {
+        when(
+          () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
+        ).thenAnswer((_) async => since);
+        return false;
+      });
+      await _showConflict(tester, bench, conflict);
+      expect(find.textContaining('Edited since'), findsNothing);
+
+      await _tap(tester, l10n.conflictPickerUseThisDevice);
+      await tester.pumpAndSettle();
+
+      final toast = tester.widget<DesignSystemToast>(
+        find.byType(DesignSystemToast),
+      );
+      expect(toast.tone, DesignSystemToastTone.warning);
+      expect(toast.title, l10n.conflictEntryChangedTitle);
+      expect(find.textContaining('Edited since'), findsWidgets);
+      expect(find.textContaining('Local title'), findsNothing);
     });
 
     // ADR 0083: an edit that arrives after this device deleted the entry is
@@ -362,7 +425,11 @@ void main() {
       await _tap(tester, l10n.conflictKeepEdited);
 
       final captured = verify(
-        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+        () => bench.persistence.updateJournalEntity(
+          captureAny(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).captured;
       final written = captured.single as JournalEntity;
       expect(_firstLineOf(written), 'Edited there');
@@ -412,7 +479,11 @@ void main() {
       await tester.pumpAndSettle();
       await _tap(tester, l10n.conflictPickerUseFromSync);
       final captured = verify(
-        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+        () => bench.persistence.updateJournalEntity(
+          captureAny(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).captured;
       return _firstLineOf(captured.single as JournalEntity);
     }
@@ -460,6 +531,7 @@ void main() {
                   () => bench.persistence.updateJournalEntity(
                     captureAny(),
                     any(),
+                    precondition: any(named: 'precondition'),
                   ),
                 ).captured.single
                 as JournalEntity;

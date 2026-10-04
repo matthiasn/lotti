@@ -2275,16 +2275,21 @@ through `updateTask` and the agent's `JournalRepository.updateJournalEntity`,
 both from that stale snapshot; and another device's item or checklist
 landing through `JournalDb.updateJournalEntity` under a dominating clock —
 either between steps or armed to land right after a writer's first or second
-read of the row, the model's read/commit split. After every step
+read of the row, the model's read/commit split. The task's metadata writers
+run through their real code (`task_meta_writers.dart`: the category and date
+changes, the geolocation, the agent's `addLabels`), with the agent's new
+checklist armed to land inside each one's read and write. After every step
 `NoDuplicates`, `NoLostItem`, `NoStrayItem` and `NoLostChecklist` must hold,
 and `getChecklistItemsForTask` must return exactly the items the ghost state
 lists. Writing the caller's `TaskData` in `updateTaskImpl` fails it in two
 steps (a checklist lands, then a task edit), building `updateChecklist` on a
 copy read before `writeOnStored` in two (an armed landing, then the agent's
-add), and writing the caller's task in `JournalRepository.updateJournalEntity`
-in two. A delete's write can be made to fail — the database throws on the
-next tombstone (`failDelete`) — inside an item's or a checklist's deletion,
-after which the app restarts and replays; answering true for it in
+add), writing the caller's task in `JournalRepository.updateJournalEntity`
+in two, and writing any metadata writer's copy (`MetaOnStored`) in two (the
+agent's checklist armed, then the write) — one pinned test per writer. A
+delete's write can be made to fail — the database throws on the next
+tombstone (`failDelete`) — inside an item's or a checklist's deletion, after
+which the app restarts and replays; answering true for it in
 `deleteJournalEntity` leaves the item or the checklist alive in four steps,
 one pinned test each.
 
@@ -3198,9 +3203,10 @@ copies of them (the `ChecklistController` and `ChecklistItemController`
 state, the `EntryController` task, and the order `ChecklistsWidget` keeps
 after a drag), refreshed by update notifications at any time; the screen's
 operations (add, reorder, move and check an item, delete an item across its
-undo window, delete a checklist, edit a task field, sort the checklists) and
+undo window, delete a checklist, edit a task field, sort the checklists,
+write the task's metadata — a toggle, its category, date or geolocation) and
 the agent's (`addItemToChecklist`, `createChecklist`, its item and task field
-tools) split at every read and write; versions of any row landing by sync;
+tools, its label assignment) split at every read and write; versions of any row landing by sync;
 and the app dying part-way through an operation, with the next start
 replaying what it recorded; and a delete's write failing, its operation kept
 for the next start. Two devices writing these rows at once are
@@ -3241,10 +3247,12 @@ each has a counterexample when set to `FALSE`:
 | `WidgetFollowsTask` | `ChecklistsWidget` rendered the order of the last drag until the user left the task | `PageShowsChecklists`, eight steps (`ChecklistMembershipThree`): the user sorts two checklists, a third syncs in and is stored on the task, and the page never shows it — the next drag saved that order and dropped it |
 | `IntentLog` | an operation that writes several rows — create an item and list it, move an item, delete an item across its undo window, create or delete a checklist — was lost half-way if the app died | `NoLostItem`, five steps (`ChecklistMembershipCrash`): the agent creates an item and the app dies before the checklist lists it — the item lives, listed nowhere |
 | `DeleteReportsFailure` | `JournalRepository.deleteJournalEntity` answered true whatever its tombstone write did, so an item or checklist deletion whose delete failed — it threw, or was refused — dropped its intent as done | `NoLostChecklist`, seven states (`ChecklistMembershipFailure`): a checklist syncs in, the user deletes it, the task stops listing it, and its delete fails — the checklist lives, listed nowhere, and nothing retries it. An item's deletion leaves the item alive and unlisted the same way |
+| `MetaOnStored` | a task write that sets no task field — the star, flag and private toggles, the category and date changes, the geolocation added after creation, the agent's `addLabels` — wrote the whole row it had read a few awaits earlier ([ADR 0119](../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md)) | `NoLostChecklist`, five steps (`ChecklistMembershipThree`): the agent's label assignment reads the task, a checklist is listed on it, and the label write puts the old list back. TLC lists it by sync; on the device the silent case is `createChecklist` listing it locally, because a synced version in that window is refused as concurrent instead |
 
 With every switch on, a row is changed, not replaced: the intent — add an
-id, remove one, show these in this order, set these fields — is applied to
-the stored row by `writeOnStored`, under a precondition checked in the
+id, remove one, show these in this order, set these fields, set this flag
+(`PersistenceLogic.updateEntity`) — is applied to the stored row by
+`writeOnStored`, under a precondition checked in the
 write's transaction that the row is still the version read, and built again
 when it is not, for as long as the row keeps moving. The spec's `commit` of
 a rebased write models exactly that. A multi-row operation records its intent
@@ -3276,7 +3284,11 @@ Assumptions the model states rather than checks:
 The fields of one task — status, priority, title, estimate, due date,
 language, cover — written by the task screen (`EntryController`), the task
 agent's field tools, the AI function handlers, the day agent's triage and
-another device, and a conflict between two devices resolved by the user.
+another device, and a conflict between two devices resolved by the user. The
+writers that set none of these fields but write the task row (the toggles,
+the category and date changes, the geolocation, the agent's labels) and a
+conflict screen that resolves against the side it read when it opened are in
+too.
 Every writer holds a copy it read earlier: the screen's state, refreshed by an
 update notification some time after the row changes, or the task a tool call
 began with. A write replaces the whole row, and the write decision keeps it
@@ -3309,6 +3321,7 @@ the `silent` ghost records it.
 | `TaskFieldWrites` | 2 | one device | 3 | 1 | 1,157,524 |
 | `TaskFieldWritesAgents` | 2 | both devices | 3 | 1 | 7,744,632 |
 | `TaskFieldWritesResolve` | 2 | one device | 3 | 2 | 5,932,172 |
+| `TaskFieldWritesStale` | 2 | one device, with a metadata writer and a conflict screen read on opening | 3 | 1 | 15,183,786 |
 
 Before resolutions picked per field (ADR 0107), four writes and two
 resolutions gave 63,121,759 distinct states and passed in ten minutes on
@@ -3327,6 +3340,8 @@ trace, so a run may print one or two more:
 | `UiRecordsStatus` | a status set from the task screen was not appended to `statusHistory`; the agent's status tool and the day agent's triage were | `HistoryComplete`, four states: the user sets a status |
 | `ResolveJoinsHistory` | resolving a conflict kept one side's `TaskData`, its status history included | `HistoryComplete`, seven states: both devices set a status, the second lands as a conflict, and the user keeps the other device's side — this device's status is no longer in the history |
 | `ShownFields` | the conflict screen modelled a task's title and metadata but not its status, priority, estimate or due date: a difference there was one "other details" line, and the field followed the side kept ([ADR 0107](../../docs/adr/0107-a-conflict-shows-every-task-field.md)) | `NoSilentFieldLoss`, seven states: the user sets the status on one device, the agent the priority on the other, the two versions meet as a conflict, and keeping either side settles a field whose difference the screen never showed |
+| `MetaOnStored` | a write that sets none of these fields — a toggle, the category or date, the geolocation, the agent's labels — wrote the whole row it had read, under a clock built on that copy's ([ADR 0119](../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md)) | `NoLostFieldEdit`, five states (`TaskFieldWritesStale`): a toggle reads the task, the user sets the status, and the toggle writes its copy — the status goes back |
+| `ResolveOnStored` | a resolution was built on the pair the conflict screen read when it opened, and written over whatever this device stored since | `NoLostFieldEdit`, ten states (`TaskFieldWritesStale`): both devices set a status and the versions conflict, the screen opens, the agent sets the priority, and keeping a side puts the priority back |
 
 With every switch on, a writer states the fields it sets as a change of the
 stored data (`PersistenceLogic.updateTask(change:)`), which `writeOnStored`
@@ -3339,7 +3354,11 @@ for every writer, and a resolution joins both sides' histories
 (`TaskDataOnStored.withHistoryOf`). The conflict screen shows a task's
 status (with a blocked or on-hold reason), priority, estimate and due date as
 fields of their own (`entry_field_diff.dart`), and "Combine" takes each from
-the side the user picks (`buildMergedEntity`).
+the side the user picks (`buildMergedEntity`). A metadata writer states its
+change of the stored entry (`PersistenceLogic.updateEntity`), and a
+resolution is written under a precondition that the stored row, read with its
+soft deletion, is still the local side the screen showed; refused, the screen
+reads that side again and shows the difference as it now is.
 
 The conformance trace is
 `test/logic/repositories/task_field_writes_model_conformance.dart`:
@@ -3360,6 +3379,14 @@ steps); and, with a task's status left out of the conflict diff, keeping a
 side settles a status the screen never showed (three steps). Every
 resolution — keep a side, or combine with per-field picks — first checks the
 real diff (`ConflictPair.diff`) shows every field the two sides differ in.
+The metadata writers run through their real code (`task_meta_writers.dart`)
+with a screen status write armed to land inside each one's read and write;
+writing the row they read instead of the stored one puts the status back in
+two steps, one pinned test per writer. The conflict screen can open some
+steps before the user decides (`openPage`, `resolvePage`), and a resolution
+must apply exactly while the stored row is still the side it showed: without
+the precondition, a pinned six-step trace (a status here, a title there, the
+screen opens, a priority here, keep this side) applies it over the priority.
 
 What the model leaves out:
 
@@ -3372,10 +3399,13 @@ What the model leaves out:
   which side changed what. The screen shows every field that differs and
   lets the user combine them; a task's language, cover art and inference
   profile remain "other details", following the side kept.
-- **Star, flag and private.** `EntryController.toggleStarred`,
-  `toggleFlagged` and `togglePrivate` read the stored row immediately
-  before writing its metadata, without a precondition; a version landing in
-  that window is not modelled.
+- **A conflict screen that follows the row.** A refused resolution makes the
+  screen read the local side again; while it stays open without the user
+  deciding, it does not.
+- **The writes after a metadata write.** A category change also writes each
+  linked entry and drops a project of another category, and the privacy
+  toggle unlinks a mismatched project, each as a write of its own; the app
+  dying between them is not modelled.
 - **Audio and image entries.** Transcripts and image analyses appended by
   the AI (`SkillInferenceRunner`, `UnifiedAiInferenceRepository`) write the
   entry they re-read, like the old task writers; they are not task fields.

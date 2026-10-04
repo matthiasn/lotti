@@ -3866,6 +3866,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Kunne ikke anvende opløsning';
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Indlægget er ændret i mellemtiden — tjek forskellen igen';
+
+  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

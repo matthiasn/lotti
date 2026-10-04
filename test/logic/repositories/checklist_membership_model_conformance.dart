@@ -11,7 +11,9 @@ part of 'checklist_repository_test.dart';
 // deletion (uiDelete) and a task field edit on the stored task
 // (uiTaskEdit). The agent adds items (agAdd), creates a checklist (agList),
 // renames an item (agCheck) and edits the task from a stale copy
-// (agTaskEdit). Sync lands newer versions from another device — between
+// (agTaskEdit). The task's metadata writers — its category, date,
+// geolocation and the agent's labels — write the task row too (uiMeta,
+// agLabels: runMetaWriter). Sync lands newer versions from another device — between
 // steps, or armed to land right after a writer has read the row it is about
 // to write, the interleaving the model splits every operation at; the agent,
 // as the other process on this device, can be armed the same way (its add or
@@ -50,6 +52,7 @@ enum _MembershipOp {
   armAgentChecklist,
   crash,
   failDelete,
+  metaWrite,
 }
 
 class _MembershipStep {
@@ -542,6 +545,11 @@ class _MembershipBench {
         await _crash(kind: arg % 5, progress: arg ~/ 5);
       case _MembershipOp.failDelete:
         await _failDelete(arg);
+      case _MembershipOp.metaWrite:
+        // A task write that sets no field of the model: the checklists the
+        // task lists stay as stored, whatever lands inside its read and
+        // write (MetaOnStored).
+        await runMetaWriter(arg, taskId, stored: db.peek);
     }
   }
 
@@ -949,6 +957,18 @@ void _registerChecklistMembershipConformance() {
           const _MembershipStep(_MembershipOp.agentAdd, 0),
           const _MembershipStep(_MembershipOp.snapshot, 0),
           _MembershipStep(_MembershipOp.failDelete, arg),
+        ]);
+      });
+    }
+
+    // The agent lists a new checklist on the task right after the writer
+    // read it: the write keeps it listed (NoLostChecklist).
+    for (var writer = 0; writer < metaWriterCount; writer++) {
+      test('${metaWriterName(writer)} write keeps a checklist listed inside '
+          'its read and write (NoLostChecklist, MetaOnStored)', () async {
+        await replay([
+          const _MembershipStep(_MembershipOp.armAgentChecklist, 0),
+          _MembershipStep(_MembershipOp.metaWrite, writer),
         ]);
       });
     }

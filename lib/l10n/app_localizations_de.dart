@@ -3901,6 +3901,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Konflikt konnte nicht angewendet werden';
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Der Eintrag hat sich inzwischen geändert — prüf den Unterschied noch einmal';
+
+  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

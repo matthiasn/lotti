@@ -18,6 +18,16 @@
 // open conflict by keeping either side (Resolve); with none open, the other
 // device first forks one.
 //
+// The metadata writers set none of these fields but write the task row
+// (MetaWrite): the category (JournalRepository.updateCategoryId), the date
+// (updateJournalEntityDate), the geolocation (GeolocationService) and the
+// agent's labels (LabelsRepository.addLabels). A status set from the screen
+// can be armed to land inside the next such writer's read and write
+// (armLocal). The conflict screen can read its pair
+// some steps before the user decides (openPage, resolvePage): the resolution
+// applies only while the stored row is still the local side it showed
+// (ResolveOnStored), and is otherwise refused with nothing written.
+//
 // After every step the trace checks what the model does:
 //   NoLostFieldEdit    every field holds the value the last write that won
 //                      set, whoever wrote it — no write puts back a value
@@ -27,6 +37,7 @@
 //   NoBlindAgentWrite  an agent tool sets its field only while the stored
 //                      value is the one its copy held, and reports every
 //                      other outcome as nothing applied
+// and after a metadata write that its own change is stored.
 
 import 'dart:convert';
 import 'dart:io';
@@ -69,6 +80,7 @@ import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
+import 'task_meta_writers.dart';
 
 enum _FieldOp {
   screenRead,
@@ -87,6 +99,10 @@ enum _FieldOp {
   resolveLocal,
   resolveRemote,
   resolveCombine,
+  metaWrite,
+  armLocal,
+  openPage,
+  resolvePage,
 }
 
 class _FieldStep {
@@ -185,6 +201,16 @@ class _FieldBench {
   Task? _screen;
   Task? _agent;
   late Task _remote;
+
+  /// The pair the conflict screen read when it opened, until the user
+  /// decides on it.
+  ConflictPair? _page;
+
+  /// The status armLocal sets inside the next metadata write, if any.
+  String? _armedStatus;
+
+  /// Resolutions refused because the screen's pair was stale.
+  int refusedResolutions = 0;
 
   /// Whether the other device wrote a version this device has not received.
   var _unsent = false;
@@ -322,6 +348,67 @@ class _FieldBench {
     if (didWrite) record();
   }
 
+  /// The screen sets status [value] on the stored task, through the write
+  /// EntryController makes, and the ghosts follow.
+  Future<void> _setStatusHere(String value) async {
+    final next = _status(value);
+    final written = await persistence.updateTask(
+      journalEntityId: taskId,
+      change: (stored) => stored.withStatus(next),
+    );
+    expect(written, isNotNull);
+    if (expected.status != value) known.add(next.id);
+    expected = (
+      status: value,
+      title: expected.title,
+      priority: expected.priority,
+    );
+  }
+
+  /// A metadata writer, through its real code ([runMetaWriter]): it sets
+  /// none of the modelled fields, whatever lands inside its read and write,
+  /// and its own change is stored (MetaWrite).
+  Future<void> _metaWrite(int arg) async {
+    final armed = _armedStatus;
+    _armedStatus = null;
+    if (armed != null) {
+      // Right after the writer's read of the task.
+      db.arm(taskId, 0, () => _setStatusHere(armed));
+    }
+    await runMetaWriter(arg, taskId, stored: db.peek);
+    db.disarm();
+  }
+
+  /// The user decides on the pair the conflict screen read when it opened:
+  /// applied only while the stored row is still its local side, and refused
+  /// with nothing written otherwise (ResolveOnStored).
+  Future<void> _resolvePage(int arg) async {
+    final page = _page;
+    _page = null;
+    if (page == null || (await _open()).isEmpty) return;
+    final before = await _stored();
+    final side = arg.isOdd ? ConflictSide.remote : ConflictSide.local;
+    final applied = await ConflictResolutionService(
+      persistenceLogic: persistence,
+    ).keepSide(page, side);
+    expect(
+      applied,
+      before.meta.vectorClock == page.local.meta.vectorClock,
+      reason:
+          'ResolveOnStored: a resolution applies exactly while the stored '
+          'row is the local side the screen showed',
+    );
+    if (!applied) {
+      expect(await _stored(), before, reason: 'a refused resolution');
+      refusedResolutions++;
+      return;
+    }
+    final local = page.local as Task;
+    final remote = page.remote as Task;
+    expected = _fieldsOf((side == ConflictSide.local ? local : remote).data);
+    known.addAll(_historyIds(local.data).union(_historyIds(remote.data)));
+  }
+
   Future<void> run(_FieldStep step) async {
     final arg = step.arg;
     switch (step.op) {
@@ -331,19 +418,9 @@ class _FieldBench {
         _agent = await _stored();
       case _FieldOp.screenStatus:
         final value = _statuses[arg % _statuses.length];
-        final next = _status(value);
-        await _screenWrite(
-          (copy) => copy.status.toDbString == value,
-          (stored) => stored.withStatus(next),
-          (written) {
-            if (expected.status != value) known.add(next.id);
-            expected = (
-              status: value,
-              title: expected.title,
-              priority: expected.priority,
-            );
-          },
-        );
+        final copy = _screen;
+        if (copy == null || copy.data.status.toDbString == value) return;
+        await _setStatusHere(value);
       case _FieldOp.screenTitle:
         final value = '${_titles[arg % _titles.length]} (screen $arg)';
         await _screenWrite(
@@ -444,6 +521,23 @@ class _FieldBench {
         await _resolve(ConflictSide.remote, arg);
       case _FieldOp.resolveCombine:
         await _resolve(ConflictSide.local, arg, combine: true);
+      case _FieldOp.metaWrite:
+        await _metaWrite(arg);
+      case _FieldOp.armLocal:
+        // A status set from the screen lands inside the next metadata
+        // writer's read and write.
+        _armedStatus = _statuses[arg % _statuses.length];
+      case _FieldOp.openPage:
+        if ((await _open()).isEmpty) await _fork(arg);
+        final open = await _open();
+        _page = open.isEmpty
+            ? null
+            : ConflictPair(
+                local: await _stored(),
+                remote: fromSerialized(open.last.serialized),
+              );
+      case _FieldOp.resolvePage:
+        await _resolvePage(arg);
     }
   }
 
@@ -602,7 +696,7 @@ void registerTaskFieldWritesConformance() {
       await settingsDb.close();
     });
 
-    Future<void> replay(List<_FieldStep> trace) async {
+    Future<_FieldBench> replay(List<_FieldStep> trace) async {
       final bench = _FieldBench(db..disarm());
       await bench.setUp();
       await bench.check(trace);
@@ -611,6 +705,7 @@ void registerTaskFieldWritesConformance() {
         await bench.check(trace);
       }
       db.disarm();
+      return bench;
     }
 
     // The shortest traces the three fixes answer, as glados shrank them with
@@ -640,6 +735,32 @@ void registerTaskFieldWritesConformance() {
         _FieldStep(_FieldOp.remoteWrite, 7),
         _FieldStep(_FieldOp.resolveRemote, 2),
       ]);
+    });
+
+    for (var writer = 0; writer < metaWriterCount; writer++) {
+      test(
+        '${metaWriterName(writer)} write never puts back a status set inside its read and '
+        'write (NoLostFieldEdit, MetaOnStored)',
+        () async {
+          await replay([
+            const _FieldStep(_FieldOp.armLocal, 2),
+            _FieldStep(_FieldOp.metaWrite, writer),
+          ]);
+        },
+      );
+    }
+
+    test('a resolution on a pair the screen read before this device stored '
+        'another version is refused (ResolveOnStored)', () async {
+      final bench = await replay(const [
+        _FieldStep(_FieldOp.screenStatus, 4),
+        _FieldStep(_FieldOp.remoteWrite, 7),
+        _FieldStep(_FieldOp.openPage, 0),
+        _FieldStep(_FieldOp.screenRead, 0),
+        _FieldStep(_FieldOp.screenPriority, 1),
+        _FieldStep(_FieldOp.resolvePage, 0),
+      ]);
+      expect(bench.refusedResolutions, 1);
     });
 
     test(

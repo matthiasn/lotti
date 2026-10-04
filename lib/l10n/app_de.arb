@@ -1707,6 +1707,7 @@
   "conflictDetailNotFoundTitle": "Konflikt nicht gefunden",
   "conflictDiffRecommended": "Empfohlen",
   "conflictDiffUnchanged": "{count, plural, =1{1 Feld unverändert} other{{count} Felder unverändert}}",
+  "conflictEntryChangedTitle": "Der Eintrag hat sich inzwischen geändert — prüf den Unterschied noch einmal",
   "conflictFieldBody": "Text",
   "conflictFieldCategory": "Kategorie",
   "conflictFieldDueDate": "Fälligkeitsdatum",
