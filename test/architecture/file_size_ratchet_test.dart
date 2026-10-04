@@ -24,21 +24,38 @@ bool isExempt(String path) =>
     path.endsWith('.gr.dart');
 
 /// The files in [sizes] that break the ratchet: one above [lineLimit] that
-/// [baseline] does not list, or one that grew past its baseline entry.
+/// [baseline] does not list, and any listed file whose size no longer matches
+/// its entry. A shrink fails too, so the change that shrinks a file also
+/// lowers its entry — otherwise the file could later regrow to the old cap.
 List<String> sizeViolations(
   Map<String, int> sizes,
   Map<String, int> baseline,
 ) => [
   for (final MapEntry(key: path, value: lines) in sizes.entries)
-    if (baseline[path] case final cap? when lines > cap)
-      _grew(path, cap, lines)
-    else if (!baseline.containsKey(path) && lines > lineLimit)
+    if (baseline[path] case final cap?)
+      if (lines > cap)
+        _grew(path, cap, lines)
+      else if (lines <= lineLimit)
+        _underLimit(path, cap, lines)
+      else if (lines < cap)
+        _shrank(path, cap, lines)
+      else
+        ...const <String>[]
+    else if (lines > lineLimit)
       _overLimit(path, lines),
 ];
 
 String _grew(String path, int cap, int lines) =>
     '$path: grew from $cap to $lines lines. It is held at its size until '
     'someone splits it; move the new code into a file of its own.';
+
+String _shrank(String path, int cap, int lines) =>
+    '$path: shrank from $cap to $lines lines. Lower its entry in '
+    '$_baselinePath to $lines so it cannot regrow.';
+
+String _underLimit(String path, int cap, int lines) =>
+    '$path: shrank from $cap to $lines lines, within the limit. Delete its '
+    'entry from $_baselinePath.';
 
 String _overLimit(String path, int lines) =>
     '$path: $lines lines, over the $lineLimit-line limit. Split it before it '
@@ -64,18 +81,27 @@ void main() {
       );
     });
 
-    test('a listed file may stay or shrink, never grow', () {
-      const baseline = {'lib/big.dart': 2000, 'lib/other.dart': 1500};
-      expect(
-        sizeViolations({
-          'lib/big.dart': 2000,
-          'lib/other.dart': 1200,
-        }, baseline),
-        isEmpty,
-      );
+    test('a listed file must match its entry exactly', () {
+      const baseline = {'lib/big.dart': 2000};
+      expect(sizeViolations({'lib/big.dart': 2000}, baseline), isEmpty);
       expect(
         sizeViolations({'lib/big.dart': 2001}, baseline),
         [contains('lib/big.dart: grew from 2000 to 2001 lines')],
+      );
+      // A shrink tightens the entry, so the file cannot regrow to 2,000.
+      expect(
+        sizeViolations({'lib/big.dart': 1200}, baseline),
+        [contains('Lower its entry in $_baselinePath to 1200')],
+      );
+    });
+
+    test('a listed file back within the limit leaves the baseline', () {
+      expect(
+        sizeViolations(
+          {'lib/big.dart': lineLimit},
+          const {'lib/big.dart': 2000},
+        ),
+        [contains('Delete its entry')],
       );
     });
 
