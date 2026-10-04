@@ -1,10 +1,8 @@
 import 'package:collection/collection.dart';
+import 'package:lotti/features/categories/domain/speech_dictionary_limits.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// Maximum length for individual dictionary terms.
-const int kMaxTermLength = 50;
 
 /// Warning threshold for number of terms (token budget concern).
 /// Raised from 30 to 500 to align with correction examples limit.

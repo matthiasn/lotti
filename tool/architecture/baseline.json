@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 110,
+  "_total": 105,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -38,7 +38,6 @@
     "lib/features/dashboards/ui/settings/dashboard_definition_page.dart": ["settings"],
     "lib/features/demo/seed/demo_seeder.dart": ["onboarding"],
     "lib/features/demo/ui/demo_ai_setup_sheet.dart": ["onboarding"],
-    "lib/features/design_system/components/headers/tab_section_header.dart": ["notifications","notifications:ui"],
     "lib/features/github/ui/track_pull_requests_item.dart": ["tasks"],
     "lib/features/habits/ui/pages/habit_editor_page.dart": ["goals"],
     "lib/features/habits/ui/sheets/habit_completion_sheet.dart": ["goals"],
@@ -52,7 +51,6 @@
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": ["relationships","tasks"],
     "lib/features/journal/ui/widgets/logbook_filter_modal.dart": ["tasks"],
     "lib/features/journal/ui/widgets/nested_ai_responses_widget.dart": ["tasks"],
-    "lib/features/knowledge_graph/state/task_graph_provider.dart": ["daily_os_next","daily_os_next:ui"],
     "lib/features/knowledge_graph/ui/entry_detail_sidebar.dart": ["tasks"],
     "lib/features/labels/ui/widgets/entry_labels_display.dart": ["journal"],
     "lib/features/labels/ui/widgets/label_selection_modal_utils.dart": ["tasks"],
@@ -63,7 +61,6 @@
     "lib/features/recent_searches/ui/recent_search_opener.dart": ["habits","journal","projects"],
     "lib/features/settings/routing/settings_routes.dart": ["daily_os_next","github","habits","onboarding","projects","system_health"],
     "lib/features/settings/ui/pages/advanced/maintenance_page.dart": ["onboarding"],
-    "lib/features/speech/services/speech_dictionary_service.dart": ["categories:ui"],
     "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": ["onboarding"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github","tasks","theming"],
     "lib/features/sync/repository/sync_maintenance_repository.dart": ["tasks"],

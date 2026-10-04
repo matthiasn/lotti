@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_feature_card.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
@@ -142,6 +143,7 @@ class EventsOverviewView extends StatelessWidget {
                 slivers: [
                   SliverToBoxAdapter(
                     child: TabSectionHeader(
+                      titleTrailing: const NotificationBell(),
                       title: context.messages.eventsPageTitle,
                       query: query,
                       searchHint: context.messages.eventsSearchHint,

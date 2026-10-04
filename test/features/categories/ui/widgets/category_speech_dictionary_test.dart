@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/categories/domain/speech_dictionary_limits.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:material_ui/material_ui.dart';
