@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
@@ -20,10 +20,19 @@ import 'package:material_ui/material_ui.dart';
 /// Closing unmounts chat so a hidden composer cannot consume another chat's
 /// recording result. Drafts and running requests remain controller-owned.
 class QueryCompanion extends ConsumerStatefulWidget {
-  const QueryCompanion({required this.scope, required this.child, super.key});
+  const QueryCompanion({
+    required this.scope,
+    required this.child,
+    required this.entryViewBuilder,
+    super.key,
+  });
 
   final QueryScope scope;
   final Widget child;
+
+  /// Builds the view of a source entry for the chat pane; see
+  /// `QueryChatPane.entryViewBuilder`.
+  final Widget Function(String entryId) entryViewBuilder;
 
   /// Reuses the existing chat and detail reading measures at the active text
   /// scale. Hosts use the same budget before deciding to hide their task list.
@@ -146,6 +155,7 @@ class _QueryCompanionState extends ConsumerState<QueryCompanion> {
                   storageBucket: _storage,
                   onToggleExpanded: onToggleExpanded,
                   expanded: expanded,
+                  entryViewBuilder: widget.entryViewBuilder,
                 ),
               ),
             );

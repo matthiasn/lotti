@@ -106,8 +106,8 @@ rank and holds every import in `lib/` to it; CI runs it in the analyze job, and
 flowchart BT
   Foundation["Foundation — lib/classes, database, logic, services, utils, providers, map<br/>imports no feature"]
   DS["design_system + shared UI — lib/widgets, themes, ui"]
-  Low["Lower features — categories, labels, ai_consumption, ai, journal …"]
-  Agents["agents — the runtime, above the AI layer it calls"]
+  Low["Lower features — categories, labels, ai_consumption, ai …"]
+  Agents["agents, then speech and journal — the runtime above the AI layer it calls, the logbook above both"]
   Sync["sync — above the features whose entities it carries"]
   High["Aggregators — settings, demo, tasks, projects, daily_os_next, onboarding …"]
   Shell["Shell — lib/beamer, pages, app_root, get_it*, main<br/>may import anything"]
@@ -153,6 +153,19 @@ To remove a break, move the shared type down — into the lower feature or into
 `lib/` — or invert the dependency through an interface the lower layer owns,
 as the agent-runtime registries do.
 
+**Debt counters.** Beside the layer order, CI holds six per-file counts to
+baselines that may only shrink — and that fail while they are *behind* the
+tree, so the change that removes a debt is the one that records it:
+
+| Count | Tool | Make target |
+|-------|------|-------------|
+| getIt lookups outside the composition root | `tool/di` | `make getit_check` |
+| `dart:developer` log calls outside `lib/services/` | `tool/logging` | `make developer_log_check` |
+| legacy icon references | `tool/icons` | `make icon_check` |
+| raw spacing, typography and colour values | `tool/design_tokens` | `make token_check` |
+| `unawaited(...)` fire-and-forget futures | `tool/async` | `make unawaited_check` |
+| lines in a file above 1,000 | `test/architecture/file_size_ratchet_test.dart` | — |
+
 The [GetIt/Riverpod split](bootstrap-and-di.md) — process-wide services in
 GetIt, scoped state in Riverpod — is held by a ratchet rather than by
 structure: `tool/di` keeps each file's count of service-locator lookups from
@@ -166,7 +179,7 @@ growing, so existing lookups are tolerated while new ones fail CI.
 | `lib/database/` | The primary store and shared connection plumbing |
 | `lib/classes/` | Freezed domain models shared across features |
 | `lib/services/` | Process-wide services registered in GetIt |
-| `lib/logic/` | Cross-feature write logic (`PersistenceLogic`, health import) |
+| `lib/logic/` | Cross-feature write logic (`PersistenceLogic`, health import) and the repositories every layer shares (`lib/logic/repositories/`: journal, checklists, projects) |
 | `lib/beamer/` | Router delegates, locations, app shell |
 | `lib/widgets/` | Shared widgets not owned by a feature |
 | `lib/themes/`, `lib/features/design_system/` | Theming and design tokens |

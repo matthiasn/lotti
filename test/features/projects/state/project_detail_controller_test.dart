@@ -6,8 +6,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 

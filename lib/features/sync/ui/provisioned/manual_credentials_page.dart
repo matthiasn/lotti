@@ -6,11 +6,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_in
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/matrix_credentials_input.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/sync_setup_entry.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';

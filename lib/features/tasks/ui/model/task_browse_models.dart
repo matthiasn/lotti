@@ -1,6 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
 /// The category of a section header in the browsable task list. Which kind a

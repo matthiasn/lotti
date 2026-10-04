@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as path;

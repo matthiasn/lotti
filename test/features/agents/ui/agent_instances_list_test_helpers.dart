@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 
 InstanceVm hVm({

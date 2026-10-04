@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 
 /// Stand-up a fresh `ProviderContainer` per test with the supplied

@@ -2,7 +2,7 @@
 type: Feature Module
 title: Agent persistence and sync
 description: The agent.sqlite entity and link model, bulk-read chunking, and exactly what leaves the device.
-resource: ../../../lib/features/agents/database/agent_database.dart
+resource: ../../../lib/database/agents/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-25T16:00:00Z }
@@ -17,15 +17,15 @@ sources:
     title: prepareAgentReportAttribution and finalizeCarrierlessAgentAttribution
     last_modified: 2026-08-07
   - id: db
-    resource: ../../../lib/features/agents/database/agent_database.dart
+    resource: ../../../lib/database/agents/agent_database.dart
     title: AgentDatabase
     last_modified: 2026-08-01
   - id: repo-core
-    resource: ../../../lib/features/agents/database/agent_repo_core.dart
+    resource: ../../../lib/database/agents/agent_repo_core.dart
     title: AgentRepoCore
     last_modified: 2026-08-01
   - id: repo-evolution
-    resource: ../../../lib/features/agents/database/agent_repo_evolution.dart
+    resource: ../../../lib/database/agents/agent_repo_evolution.dart
     title: AgentRepoEvolution — the due and pending scheduled-wake reads
     last_modified: 2026-09-25
   - id: goal-chat-reply-spec
@@ -33,7 +33,7 @@ sources:
     title: TLA+ model of who answers a goal chat message
     last_modified: 2026-09-25
   - id: link-slot
-    resource: ../../../lib/features/agents/model/agent_link_slot.dart
+    resource: ../../../lib/classes/agents/agent_link_slot.dart
     title: AgentLinkSlot — a template's soul or improver slot
     last_modified: 2026-09-27
   - id: adr-0099
@@ -41,27 +41,27 @@ sources:
     title: ADR 0099 — agent link slots rank every assignment
     last_modified: 2026-09-27
   - id: repo-links
-    resource: ../../../lib/features/agents/database/agent_repo_links.dart
+    resource: ../../../lib/database/agents/agent_repo_links.dart
     title: AgentRepoLinks
     last_modified: 2026-08-04
   - id: coalescer
-    resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
+    resource: ../../../lib/database/agents/agent_entity_by_id_coalescer.dart
     title: AgentEntityByIdCoalescer
     last_modified: 2026-08-01
   - id: ledger
-    resource: ../../../lib/features/agents/database/agent_proposal_ledger.dart
+    resource: ../../../lib/database/agents/agent_proposal_ledger.dart
     title: AgentProposalLedger
     last_modified: 2026-08-01
   - id: constants
-    resource: ../../../lib/features/agents/model/agent_constants.dart
+    resource: ../../../lib/classes/agents/agent_constants.dart
     title: AgentLinkTypes
     last_modified: 2026-07-24
   - id: entity-model
-    resource: ../../../lib/features/agents/model/agent_domain_entity.dart
+    resource: ../../../lib/classes/agents/agent_domain_entity.dart
     title: AgentDomainEntity
     last_modified: 2026-08-12
   - id: db-conversions
-    resource: ../../../lib/features/agents/database/agent_db_conversions.dart
+    resource: ../../../lib/database/agents/agent_db_conversions.dart
     title: AgentDbConversions
     last_modified: 2026-08-01
   - id: sync-service
@@ -80,11 +80,11 @@ sources:
     title: AgentRetentionPolicy
     last_modified: 2026-08-04
   - id: observation-prune-plan
-    resource: ../../../lib/features/agents/service/observation_prune_plan.dart
+    resource: ../../../lib/database/agents/observation_prune_plan.dart
     title: planObservationPrune
     last_modified: 2026-08-02
   - id: observation-retention
-    resource: ../../../lib/features/agents/database/agent_repo_observation_retention.dart
+    resource: ../../../lib/database/agents/agent_repo_observation_retention.dart
     title: AgentRepoObservationRetention
     last_modified: 2026-08-02
   - id: adr-0007

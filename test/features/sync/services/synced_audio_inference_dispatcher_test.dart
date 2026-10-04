@@ -2,16 +2,17 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_assignment.dart';
+import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
-import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';

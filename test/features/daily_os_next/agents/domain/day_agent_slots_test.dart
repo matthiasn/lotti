@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 
 void main() {

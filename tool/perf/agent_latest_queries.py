@@ -14,8 +14,8 @@ import tempfile
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SOURCE = ROOT / 'lib/features/agents/database/agent_repo_core.dart'
-DDL = (ROOT / 'lib/features/agents/database/agent_database.drift').read_text().split('CREATE TABLE agent_links')[0]
+SOURCE = ROOT / 'lib/database/agents/agent_repo_core.dart'
+DDL = (ROOT / 'lib/database/agents/agent_database.drift').read_text().split('CREATE TABLE agent_links')[0]
 OLD = '''SELECT id, agent_id, type, subtype, thread_id, created_at,
 updated_at, deleted_at, serialized, schema_version FROM (
 SELECT agent_entities.*, ROW_NUMBER() OVER (

@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart'
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart'
     show AgentTemplateKind, WakeReason;
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';

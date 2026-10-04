@@ -1,6 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -8,15 +13,10 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';

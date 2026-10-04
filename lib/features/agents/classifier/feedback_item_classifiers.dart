@@ -1,7 +1,6 @@
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show WakeRunLogData;
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 

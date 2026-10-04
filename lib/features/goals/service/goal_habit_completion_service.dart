@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/get_it.dart';

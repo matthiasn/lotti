@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// Pure selection + rendering helpers for durable planner knowledge
 /// (ADR 0022 Decisions 9–10). Kept free of I/O so the Head selection and the

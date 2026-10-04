@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 
 import 'qwen_local_eval_config.dart';
 

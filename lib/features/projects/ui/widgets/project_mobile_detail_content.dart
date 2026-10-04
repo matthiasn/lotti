@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';

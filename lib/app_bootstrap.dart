@@ -27,15 +27,17 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -212,6 +214,8 @@ Future<ProfileContext> bootstrapProfileServices(
     ..registerSingleton<SettingsDb>(SettingsDb())
     ..registerSingleton<WindowService>(
       WindowService(
+        // Stops a playing recording before the window closes.
+        playerDisposer: AudioPlayerController.disposeActivePlayer,
         beforeLogFlush: () async {
           lifecycleHolder.dispose();
           flushPendingFrameworkErrorSummaries();

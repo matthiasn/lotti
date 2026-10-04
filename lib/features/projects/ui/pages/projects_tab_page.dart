@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -22,8 +23,8 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
@@ -357,6 +358,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
               return Column(
                 children: [
                   TabSectionHeader(
+                    titleTrailing: const NotificationBell(),
                     searchFocusNode: searchFocusNode,
                     title: context.messages.navTabTitleProjects,
                     query: filter.textQuery,

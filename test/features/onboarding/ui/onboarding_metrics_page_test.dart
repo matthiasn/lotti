@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_test_reset_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';

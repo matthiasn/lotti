@@ -5,7 +5,7 @@
 /// `directives` field.
 library;
 
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 export 'package:lotti/features/agents/model/seeded_directive_content.dart';
 

@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 

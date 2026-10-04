@@ -62,7 +62,7 @@ flowchart TD
 **Deletion today.**
 
 - *Soft delete* (`JournalRepository.deleteJournalEntity`,
-  `lib/features/journal/repository/journal_repository.dart:177`) stamps
+  `lib/logic/repositories/journal_repository.dart:177`) stamps
   `deletedAt` through an ordinary versioned update. The tombstone syncs. Links
   are tombstoned the same way.
 - *Purge* (`purgeDeleted`, `lib/database/database_entity_ops.dart:450`) is
@@ -151,7 +151,7 @@ agent.sqlite, and retention deletes only derived agent residue.
 
 - `ChangeSetEntity` and `ChangeItem` (tool name, args, human summary, status,
   effect key, base value) hold proposals
-  (`lib/features/agents/model/agent_domain_entity.dart:707`).
+  (`lib/classes/agents/agent_domain_entity.dart:707`).
 - `ChangeDecisionEntity` records one verdict per item: confirmed, rejected,
   deferred or retracted.
 - Both sync through `AgentSyncService` and are model-checked: `ChangeSetConfirm`,
@@ -210,7 +210,7 @@ agent.sqlite, and retention deletes only derived agent residue.
 
 ## 5. What Matrix payloads carry
 
-- **The envelope.** `SyncMessage` (`lib/features/sync/model/sync_message.dart:73`)
+- **The envelope.** `SyncMessage` (`lib/classes/sync/sync_message.dart:73`)
   has 25 variants. The metadata goes as base64 JSON in an `m.text` event with
   Lotti's msgtype.
 - **Journal entities** are not inline. The entity JSON (the sidecar, gzipped)

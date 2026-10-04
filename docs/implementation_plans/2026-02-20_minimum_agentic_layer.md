@@ -993,20 +993,20 @@ lib/features/agents/
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
-1. ~~Create `lib/features/agents/model/agent_enums.dart` with all enums.~~ DONE
-2. ~~Create `lib/features/agents/model/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.~~ DONE
-3. ~~Create `lib/features/agents/model/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.~~ DONE
-4. ~~Create `lib/features/agents/model/agent_link.dart` with the `AgentLink` sealed union.~~ DONE
+1. ~~Create `lib/classes/agents/agent_enums.dart` with all enums.~~ DONE
+2. ~~Create `lib/classes/agents/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.~~ DONE
+3. ~~Create `lib/classes/agents/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.~~ DONE
+4. ~~Create `lib/classes/agents/agent_link.dart` with the `AgentLink` sealed union.~~ DONE
 5. ~~Create `lib/features/agents/model/agent_tool_call.dart` with `AgentToolCall` and `AgentToolResult`.~~ SKIPPED — tool call types handled inline by executor
 6. ~~Run build_runner to generate freezed/json code.~~ DONE
 7. ~~Write unit tests for serialization roundtrips (all variants).~~ DONE (46 tests)
 
 ### Phase 0A-2: Database Layer
 
-8. ~~Create `lib/features/agents/database/agent_database.drift` with all table definitions.~~ DONE
-9. ~~Create `lib/features/agents/database/agent_database.dart` (Drift database class).~~ DONE
-10. ~~Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.~~ DONE
-11. ~~Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.~~ DONE
+8. ~~Create `lib/database/agents/agent_database.drift` with all table definitions.~~ DONE
+9. ~~Create `lib/database/agents/agent_database.dart` (Drift database class).~~ DONE
+10. ~~Create `lib/database/agents/agent_db_conversions.dart` for type mapping.~~ DONE
+11. ~~Create `lib/database/agents/agent_repository.dart` with CRUD operations.~~ DONE
 12. ~~Register `AgentDatabase` in GetIt (app startup).~~ NOT NEEDED — agent feature uses Riverpod providers exclusively
 13. ~~Write repository tests (CRUD for each entity type, link operations, transaction support).~~ DONE (70 tests)
 

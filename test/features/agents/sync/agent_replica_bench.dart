@@ -1,11 +1,10 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show AgentDatabase;
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/database/agents/agent_database.dart' show AgentDatabase;
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 
 import '../agent_test_device.dart';
 

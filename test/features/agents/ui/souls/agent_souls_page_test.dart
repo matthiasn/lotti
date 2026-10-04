@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/agents/ui/souls/agent_souls_page.dart';

@@ -12,7 +12,7 @@ import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
+import 'package:lotti/logic/signals/health_data.dart';
 
 /// Calendar-date key of [instant]: its local date as midnight UTC.
 DateTime signalDayKey(DateTime instant) => GoalWindow.dayUtc(instant);

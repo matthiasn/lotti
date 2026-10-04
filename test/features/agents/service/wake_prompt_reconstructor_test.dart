@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';

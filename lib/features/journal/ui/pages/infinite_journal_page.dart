@@ -4,15 +4,16 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
@@ -21,12 +22,12 @@ import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -250,6 +251,7 @@ class _InfiniteJournalPageBodyState
             // The same titled header Tasks and Projects use, so the three
             // list panes read as one system.
             TabSectionHeader(
+              titleTrailing: const NotificationBell(),
               searchFocusNode: _searchFocusNode,
               title: context.messages.navTabTitleJournal,
               query: state.match,

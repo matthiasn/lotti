@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 

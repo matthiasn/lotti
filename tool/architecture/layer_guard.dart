@@ -32,9 +32,11 @@ import 'package:path/path.dart' as p;
 /// The order is the one that leaves the fewest upward imports in the tree it
 /// was introduced against, checked by hand where the domain has a clear
 /// answer: the design system and categories at the bottom, the agent runtime
-/// above the AI layer it calls, sync above the features whose entities it
-/// carries (features reach it through its outbox), and the aggregators —
-/// settings, demo, onboarding, Daily OS — near the top. Moving a feature is a
+/// above the AI layer it calls, the journal — the logbook surface, its
+/// repository now shared from `lib/logic` — above the speech and agent
+/// features it composes, sync above the features whose entities it carries
+/// (features reach it through its outbox), and the aggregators — settings,
+/// demo, onboarding, Daily OS — near the top. Moving a feature is a
 /// design decision, and shows up as one in review.
 const featureOrder = <String>[
   'provenance',
@@ -55,9 +57,9 @@ const featureOrder = <String>[
   'ai',
   'dashboards',
   'tts',
-  'journal',
   'agents',
   'speech',
+  'journal',
   'profiles',
   'knowledge_graph',
   'sync',

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -81,6 +82,8 @@ void main() {
       makeTestableWidgetNoScroll(
         QueryCompanion(
           scope: scope,
+          entryViewBuilder: (entryId) =>
+              EntryDetailsPage(itemId: entryId, showBackButton: false),
           child: Focus(
             focusNode: taskFocus,
             child: Semantics(

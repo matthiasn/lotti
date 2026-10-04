@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/domain/speech_dictionary_limits.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 
 /// Service for managing speech dictionary operations.
 ///

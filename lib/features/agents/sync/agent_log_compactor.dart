@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/memory/memory_links.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/projection/compaction_plan.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';

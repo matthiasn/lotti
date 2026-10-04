@@ -171,5 +171,5 @@ All 77 linked_tasks tests pass across 7 test files covering controller state, wi
 | `lib/features/tasks/ui/checklists/checklists_widget.dart` | Section header pattern followed |
 | `lib/features/journal/state/linked_entries_controller.dart` | Outgoing links controller (reused) |
 | `lib/features/journal/state/linked_from_entries_controller.dart` | Incoming links controller (reused) |
-| `lib/logic/create/create_entry.dart` | `createTask()` function for new linked task |
+| `lib/features/journal/create/create_entry.dart` | `createTask()` function for new linked task |
 | `lib/logic/persistence_logic.dart` | `createLink()` method for linking existing task |

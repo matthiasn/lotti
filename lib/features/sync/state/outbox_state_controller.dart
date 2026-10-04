@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:meta/meta.dart';

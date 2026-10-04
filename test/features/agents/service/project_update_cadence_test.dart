@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/service/project_update_cadence.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';

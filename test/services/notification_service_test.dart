@@ -6,10 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/notification_tap_handler.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -1304,11 +1304,13 @@ void main() {
       });
     }
 
-    test('by default a tap goes to the registered tap router', () async {
+    test('by default a tap goes to the registered tap handler', () async {
       _usePlatform(TargetPlatform.macOS);
       final router = MockNotificationTapRouter();
       when(() => router.handleTap(any())).thenAnswer((_) async {});
-      getIt.registerSingleton<NotificationTapRouter>(router);
+      // The composition root registers the router under the interface the
+      // service resolves.
+      getIt.registerSingleton<NotificationTapHandler>(router);
       await buildService();
 
       await deliverResponse(

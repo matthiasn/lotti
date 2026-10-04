@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show wakeOrchestratorProvider;
@@ -10,7 +11,6 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_listener.dart';

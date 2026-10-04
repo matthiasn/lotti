@@ -1,21 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart' as agent_model;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/agents/agent_db_conversions.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider, outboxServiceProvider;
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 

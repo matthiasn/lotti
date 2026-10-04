@@ -1,12 +1,12 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/proposal_ledger_status.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';

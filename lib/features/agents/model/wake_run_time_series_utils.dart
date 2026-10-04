@@ -1,5 +1,4 @@
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show WakeRunLogData;
+import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 

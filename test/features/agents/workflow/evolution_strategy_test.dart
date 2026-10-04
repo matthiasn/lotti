@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:mocktail/mocktail.dart';

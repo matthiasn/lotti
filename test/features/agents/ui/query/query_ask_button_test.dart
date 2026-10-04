@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';

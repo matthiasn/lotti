@@ -17,7 +17,7 @@ Add a "+" button to each Time Budget row on the Daily Operating System screen th
 
 ### Step 1: Extend `createTask` Function
 
-**File**: `lib/logic/create/create_entry.dart`
+**File**: `lib/features/journal/create/create_entry.dart`
 
 Modify the `createTask` function to accept an optional `due` parameter:
 
@@ -55,7 +55,7 @@ Future<Task?> createTask({
 #### 2a. Add required imports
 
 ```dart
-import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 ```
 
 #### 2b. Add `selectedDate` parameter to TimeBudgetCard
@@ -193,7 +193,7 @@ Tooltip(
 
 | File | Change |
 |------|--------|
-| `lib/logic/create/create_entry.dart` | Add `due` parameter to `createTask` |
+| `lib/features/journal/create/create_entry.dart` | Add `due` parameter to `createTask` |
 | `lib/features/daily_os/ui/widgets/time_budget_card.dart` | Add `selectedDate` param, add "+" button, add handler |
 | `lib/features/daily_os/ui/widgets/time_budget_list.dart` | Pass `selectedDate` to TimeBudgetCard |
 | `lib/l10n/app_en.arb` | Add tooltip localization key |

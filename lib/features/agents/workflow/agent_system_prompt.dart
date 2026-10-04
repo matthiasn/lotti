@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 
 /// Composes an agent's system prompt from its [scaffold] (the kind-specific role
 /// description) plus the assigned template version's directives and the optional

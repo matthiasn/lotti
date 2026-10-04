@@ -1,5 +1,6 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_assignment.dart';
+import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';

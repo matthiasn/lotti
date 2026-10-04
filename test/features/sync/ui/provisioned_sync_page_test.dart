@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';

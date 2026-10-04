@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';

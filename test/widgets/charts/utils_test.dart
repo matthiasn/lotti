@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show ExploreConfig, Glados, any;
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_ui/material_ui.dart';
 

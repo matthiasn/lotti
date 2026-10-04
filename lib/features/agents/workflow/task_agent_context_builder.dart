@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/service/attention_claim_maintenance_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -22,7 +23,6 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 

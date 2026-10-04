@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:matrix/matrix.dart';
 
 /// Streams the Matrix client's login-state transitions.

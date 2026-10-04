@@ -9,7 +9,7 @@ generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: secure-storage
-    resource: ../../lib/features/sync/secure_storage.dart
+    resource: ../../lib/services/secure_storage.dart
     title: SecureStorage
     last_modified: 2026-06-16
   - id: event-trust
@@ -197,7 +197,7 @@ export, not a tap.
 
 | Concern | File |
 |---------|------|
-| Keystore wrapper | [`lib/features/sync/secure_storage.dart`](../../lib/features/sync/secure_storage.dart) |
+| Keystore wrapper | [`lib/services/secure_storage.dart`](../../lib/services/secure_storage.dart) |
 | Matrix client creation | [`lib/features/sync/matrix/client.dart`](../../lib/features/sync/matrix/client.dart) |
 | Key verification | [`lib/features/sync/matrix/key_verification_runner.dart`](../../lib/features/sync/matrix/key_verification_runner.dart) |
 | Inbound sender trust | [`lib/features/sync/matrix/sync_event_trust.dart`](../../lib/features/sync/matrix/sync_event_trust.dart) |

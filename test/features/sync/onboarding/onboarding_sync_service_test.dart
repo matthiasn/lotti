@@ -4,8 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 
 void main() {

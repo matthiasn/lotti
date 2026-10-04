@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// Parses raw agent tool-call arguments into a JSON map.
 ///

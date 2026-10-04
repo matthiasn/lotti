@@ -1,5 +1,5 @@
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:material_ui/material_ui.dart';
 

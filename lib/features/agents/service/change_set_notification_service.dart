@@ -1,11 +1,11 @@
 import 'dart:ui' as ui;
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 

@@ -13,7 +13,7 @@ sources:
     title: Journal feature source
     last_modified: 2026-10-02
   - id: repo
-    resource: ../../../lib/features/journal/repository/journal_repository.dart
+    resource: ../../../lib/logic/repositories/journal_repository.dart
     title: JournalRepository facade
     last_modified: 2026-07-25
   - id: entities

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
@@ -35,7 +35,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -43,6 +42,8 @@ import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
+
+part 'query_chat_pane_rename_part.dart';
 
 /// Turns bare answer citations into local links without changing Markdown's
 /// code spans/blocks, existing links, or numeric reference definitions.
@@ -99,6 +100,7 @@ class QueryChatPane extends ConsumerStatefulWidget {
   const QueryChatPane({
     required this.scope,
     required this.onClose,
+    required this.entryViewBuilder,
     this.companion = false,
     this.storageBucket,
     this.onToggleExpanded,
@@ -111,6 +113,11 @@ class QueryChatPane extends ConsumerStatefulWidget {
   final PageStorageBucket? storageBucket;
   final VoidCallback? onToggleExpanded;
   final bool expanded;
+
+  /// Builds the view of a source entry that is neither a task nor a project
+  /// with a summary — the journal's entry details, which the hosting page
+  /// supplies so this pane does not import the journal feature above it.
+  final Widget Function(String entryId) entryViewBuilder;
   @override
   ConsumerState<QueryChatPane> createState() => _QueryChatPaneState();
 }
@@ -949,10 +956,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                               : (source! as ProjectEntry).data.title,
                           report: _sourceSummary,
                         )
-                      : EntryDetailsPage(
-                          itemId: source!.meta.id,
-                          showBackButton: false,
-                        ),
+                      : widget.entryViewBuilder(source!.meta.id),
                 ),
             ],
           ),
@@ -1755,106 +1759,6 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Owns the input until the modal route finishes its dismissal animation.
-class _QueryRenameDialog extends ConsumerStatefulWidget {
-  const _QueryRenameDialog({
-    required this.controller,
-    required this.chat,
-    required this.private,
-  });
-  final QueryChatController controller;
-  final QueryChatHistory chat;
-  final bool private;
-
-  @override
-  ConsumerState<_QueryRenameDialog> createState() => _QueryRenameDialogState();
-}
-
-class _QueryRenameDialogState extends ConsumerState<_QueryRenameDialog> {
-  late final _text = TextEditingController(text: widget.chat.title);
-  late bool _authoredPrivate = widget.private;
-
-  @override
-  void dispose() {
-    _text.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final data = ref.watch(queryChatDataProvider(widget.controller.key)).value;
-    final showPrivate = ref.watch(configFlagProvider('private')).value ?? false;
-    final lockdown = ref.watch(lockdownControllerProvider);
-    final access = data == null
-        ? null
-        : QueryAccessSnapshot(
-            showPrivate: showPrivate,
-            categories: data.access.categories,
-            entries: data.access.entries,
-            lockdown: lockdown,
-          );
-    final current = data?.projection.chats
-        .where((candidate) => candidate.id == widget.chat.id)
-        .firstOrNull;
-    final home = access?.entries[widget.controller.key.scope.id];
-    final homeVisible =
-        access != null &&
-        (widget.controller.key.scope.kind == QueryScopeKind.category
-            ? access.allowsCategory(widget.controller.key.scope.id)
-            : home != null && access.allowsEntry(home));
-    final visible =
-        homeVisible &&
-        current != null &&
-        (!(_authoredPrivate || current.private) || showPrivate) &&
-        current.events.every(
-          (event) => access.allowsEvent(event.data),
-        );
-    _authoredPrivate = _authoredPrivate || showPrivate;
-    if (!visible) {
-      // Remove the field before the modal's dismissal animation so
-      // neither the saved title nor newly typed text flashes on lock.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted && ModalRoute.of(context)?.isCurrent == true) {
-          _text.clear();
-          Navigator.of(context).pop();
-        }
-      });
-      return const SizedBox.shrink();
-    }
-    final tokens = context.designTokens;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DesignSystemTextInput(
-          controller: _text,
-          label: context.messages.queryRenameChat,
-          autofocus: true,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemModalActionBar(
-          primary: DesignSystemButton(
-            label: context.messages.saveButton,
-            fullWidth: true,
-            onPressed: () {
-              if (_text.text.trim().isNotEmpty &&
-                  _text.text.trim().length <= 120) {
-                Navigator.of(context).pop(_text.text.trim());
-              }
-            },
-          ),
-          secondary: [
-            DesignSystemButton(
-              label: context.messages.cancelButton,
-              onPressed: () => Navigator.of(context).pop(),
-              variant: DesignSystemButtonVariant.secondary,
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

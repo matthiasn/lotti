@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';

@@ -5,8 +5,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/tasks/repository/task_field_write.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/task_field_write.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Result of processing a priority update tool call.

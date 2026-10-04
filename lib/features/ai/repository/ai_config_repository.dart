@@ -3,14 +3,14 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
 
 /// Result object for cascade deletion operations
 class CascadeDeletionResult {

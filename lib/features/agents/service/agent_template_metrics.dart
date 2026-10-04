@@ -1,8 +1,7 @@
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show WakeRunLogData;
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';

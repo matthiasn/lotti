@@ -10,10 +10,10 @@ import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:material_ui/material_ui.dart';
 

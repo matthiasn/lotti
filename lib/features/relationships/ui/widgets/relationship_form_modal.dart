@@ -15,7 +15,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';

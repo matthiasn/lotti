@@ -1,4 +1,4 @@
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 
 /// Sink for a Daily OS onboarding event.
 ///

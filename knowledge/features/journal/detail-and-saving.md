@@ -29,7 +29,7 @@ sources:
     title: TimeService
     last_modified: 2026-09-28
   - id: running-timer-persistence
-    resource: ../../../lib/logic/running_timer_persistence.dart
+    resource: ../../../lib/features/journal/state/running_timer_persistence.dart
     title: Running timer persistence
     last_modified: 2026-09-28
 ---

@@ -61,7 +61,7 @@ sources:
     title: ProjectAgentService (creation, inference setup and announcement)
     last_modified: 2026-10-03
   - id: project-mutations
-    resource: ../../../lib/features/agents/service/project_agent_mutation_coordinator.dart
+    resource: ../../../lib/logic/repositories/project_agent_mutation_coordinator.dart
     title: Shared project category, provisioning, and retirement exclusion
     last_modified: 2026-09-05
   - id: event-service

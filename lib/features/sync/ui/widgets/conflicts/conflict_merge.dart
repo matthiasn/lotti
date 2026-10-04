@@ -1,9 +1,9 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/membership_list.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
-import 'package:lotti/features/tasks/model/membership_list.dart';
 
 /// Assembles the resolved [JournalEntity] for a conflict. Pure: callers feed it
 /// the two versions and the user's choices, and it returns the entity to write.

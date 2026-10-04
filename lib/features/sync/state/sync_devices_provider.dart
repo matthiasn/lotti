@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
-import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 
 /// Exposes every session on the sync account for the device-management UI,
 /// sourced from `MatrixService.getSyncDevices`. Refresh by invalidating —

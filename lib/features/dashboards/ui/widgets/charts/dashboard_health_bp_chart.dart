@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';

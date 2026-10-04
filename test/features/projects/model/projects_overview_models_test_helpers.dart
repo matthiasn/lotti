@@ -1,5 +1,5 @@
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 
 /// Generators for [ProjectsQuery] and [applyProjectsFilter] property tests.
 extension AnyProjectsModels on glados.Any {

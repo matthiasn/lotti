@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
-import 'package:lotti/providers/service_providers.dart';
 
 /// Whether this device has a usable sync configuration — logged in, with a
 /// sync room — for the surfaces that choose between the device roster and the

@@ -2,10 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

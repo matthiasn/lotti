@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';

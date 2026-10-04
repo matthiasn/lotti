@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';

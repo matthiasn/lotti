@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/ui/recent_search_opener.dart';

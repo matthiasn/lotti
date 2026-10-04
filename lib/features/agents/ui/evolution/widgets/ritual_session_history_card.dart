@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_helpers.dart';

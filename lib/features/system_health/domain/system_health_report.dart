@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/system_health/domain/log_digest.dart';
 import 'package:lotti/features/system_health/domain/system_health_range.dart';
 import 'package:lotti/services/logging_domains.dart';

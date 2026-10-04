@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';

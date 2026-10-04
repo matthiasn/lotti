@@ -12,6 +12,7 @@ import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_m
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';

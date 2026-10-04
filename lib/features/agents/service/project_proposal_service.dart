@@ -1,13 +1,13 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Removes a task, returning `true` once it is gone.

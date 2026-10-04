@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';

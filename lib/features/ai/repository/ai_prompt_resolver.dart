@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 
 /// Resolves which configured AI prompts are active for a given journal entity.
 ///

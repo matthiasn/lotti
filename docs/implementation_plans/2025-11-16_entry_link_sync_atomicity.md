@@ -35,7 +35,7 @@ Analysis of logs (`docs/sync/lotti-2025-11-16_desktop.log` and `docs/sync/lotti-
 
 ### Current Implementation
 
-**Sender Side** (`lib/logic/persistence_logic.dart:417-422`, `lib/features/journal/repository/journal_repository.dart:256-261`):
+**Sender Side** (`lib/logic/persistence_logic.dart:417-422`, `lib/logic/repositories/journal_repository.dart:256-261`):
 ```dart
 // Entry link created separately
 await outboxService.enqueueMessage(
@@ -71,7 +71,7 @@ Embed entry links directly in the `SyncJournalEntity` message to ensure atomic p
 
 #### 1. Update SyncMessage Model
 
-**File**: `lib/features/sync/model/sync_message.dart`
+**File**: `lib/classes/sync/sync_message.dart`
 
 Add optional `entryLinks` field to `SyncJournalEntity`:
 
@@ -364,7 +364,7 @@ Entry links will inherit the atomic processing guarantee from their parent journ
 - Log files: `docs/sync/lotti-2025-11-16_desktop.log`, `docs/sync/lotti-2025-11-16_mobile.log`
 - Voice note: User recording describing the issue
 - Code references:
-  - `lib/features/sync/model/sync_message.dart:14-35`
+  - `lib/classes/sync/sync_message.dart:14-35`
   - `lib/features/sync/matrix/sync_event_processor.dart:618-653`
   - `lib/features/sync/outbox/outbox_service.dart:328-337`
   - `lib/logic/persistence_logic.dart:417-422`
@@ -373,7 +373,7 @@ Entry links will inherit the atomic processing guarantee from their parent journ
 
 ### Changes Made (2025-11-16)
 
-#### 1. SyncMessage Model (`lib/features/sync/model/sync_message.dart:15-21`)
+#### 1. SyncMessage Model (`lib/classes/sync/sync_message.dart:15-21`)
 - Added optional `List<EntryLink>? entryLinks` field to `SyncJournalEntity`
 - Ran code generation with `dart run build_runner build --delete-conflicting-outputs`
 - No breaking changes - field is optional and backward compatible

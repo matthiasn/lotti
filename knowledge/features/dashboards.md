@@ -13,7 +13,7 @@ sources:
     title: Dashboards feature source
     last_modified: 2026-08-31
   - id: aggregation
-    resource: ../../lib/features/dashboards/state/health_data.dart
+    resource: ../../lib/logic/signals/health_data.dart
     title: Health aggregations — and which day a sample belongs to
     last_modified: 2026-08-18
 ---

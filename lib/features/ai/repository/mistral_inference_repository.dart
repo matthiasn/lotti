@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';

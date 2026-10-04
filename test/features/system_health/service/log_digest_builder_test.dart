@@ -259,7 +259,7 @@ void main() {
     test('the caller frame is the first below the transaction wrappers', () {
       const wrapper =
           '#8 AgentRepoCore.runInTransaction '
-          '(package:lotti/features/agents/database/agent_repo_core.dart:110:5)';
+          '(package:lotti/database/agents/agent_repo_core.dart:110:5)';
       const scope =
           '#9 VectorClockService.withVcScope '
           '(package:lotti/services/vector_clock_service.dart:309:5)';

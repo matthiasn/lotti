@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 
 /// Sealed result of a single connection probe. The connect form's

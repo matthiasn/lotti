@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/logic/signals/health_data.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 /// Loads the raw quantitative health entities of one `healthDataType` within a
 /// date range and keeps them fresh.

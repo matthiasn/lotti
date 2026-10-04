@@ -21,7 +21,7 @@ is the rationale and the citations behind it.
 definition nodes `CategoryDefinition`, `LabelDefinition`, `HabitDefinition`,
 `MeasurableDataType`, `DashboardDefinition` (`lib/classes/entity_definitions.dart`);
 plus AI-config nodes `AiConfigInferenceProvider`, `AiConfigModel`, `AiConfigPrompt`,
-`AiConfigInferenceProfile`, `AiConfigSkill` (`lib/features/ai/model/ai_config.dart`).
+`AiConfigInferenceProfile`, `AiConfigSkill` (`lib/classes/ai/ai_config.dart`).
 
 **Edge types.** The `linked_entries` table (`lib/database/database.drift`) stores a
 directional `from_id → to_id`, a `type`, a `hidden` soft-delete flag, timestamps,

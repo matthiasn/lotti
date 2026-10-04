@@ -1,0 +1,135 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/language_dropdown.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/speech_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list_item.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../mocks/mocks.dart';
+import '../../../../../../test_data/test_data.dart';
+import '../../../../../../widget_test_utils.dart';
+
+/// Records the language codes forwarded by the dropdown.
+class _LanguageRecordingEntryController extends FakeEntryController {
+  _LanguageRecordingEntryController(super._entity);
+
+  final List<String> setLanguageCalls = [];
+
+  @override
+  Future<void> setLanguage(String language) async {
+    setLanguageCalls.add(language);
+  }
+}
+
+void main() {
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // EntryController's constructor resolves EditorStateService eagerly.
+        getIt.registerSingleton<EditorStateService>(MockEditorStateService());
+      },
+    );
+  });
+
+  tearDown(tearDownTestGetIt);
+
+  Future<_LanguageRecordingEntryController> pumpModal(
+    WidgetTester tester, {
+    required JournalEntity entity,
+  }) async {
+    final controller = _LanguageRecordingEntryController(entity);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          entryControllerProvider(
+            entity.meta.id,
+          ).overrideWith(() => controller),
+        ],
+        child: makeTestableWidgetWithScaffold(
+          SpeechModalContent(entryId: entity.meta.id),
+        ),
+      ),
+    );
+    await tester.pump();
+    return controller;
+  }
+
+  group('SpeechModalContent', () {
+    testWidgets(
+      'renders the language dropdown and the transcript rows for an '
+      'audio entry',
+      (tester) async {
+        await pumpModal(tester, entity: testAudioEntryWithTranscripts);
+
+        // Language selector with its localized label and the dropdown.
+        expect(find.byType(LanguageDropdown), findsOneWidget);
+        expect(find.byType(DropdownButton<String>), findsOneWidget);
+
+        // One transcript row per stored transcript, showing its model name.
+        final transcripts = testAudioEntryWithTranscripts.data.transcripts!;
+        expect(
+          find.byType(TranscriptListItem),
+          findsNWidgets(transcripts.length),
+        );
+        final first = transcripts.first;
+        final context = tester.element(find.byType(TranscriptListItem).first);
+        expect(
+          find.text(
+            context.messages.transcriptLanguageLabel(
+              first.detectedLanguage.toUpperCase(),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            context.messages.transcriptModelLabel(first.library, first.model),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'selecting a language forwards the code to the entry controller',
+      (tester) async {
+        final controller = await pumpModal(
+          tester,
+          entity: testAudioEntryWithTranscripts,
+        );
+
+        await tester.tap(find.byType(DropdownButton<String>));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final context = tester.element(find.byType(LanguageDropdown));
+        final arabicLabel = SupportedLanguage.ar.localizedName(context);
+        await tester.tap(
+          find.text(arabicLabel).last,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(controller.setLanguageCalls, ['ar']);
+      },
+    );
+
+    testWidgets(
+      'collapses to nothing when the entry is not an audio entry',
+      (tester) async {
+        await pumpModal(tester, entity: testTextEntry);
+
+        expect(find.byType(TranscriptsList), findsOneWidget);
+        expect(find.byType(DropdownButton<String>), findsNothing);
+        expect(find.byType(TranscriptListItem), findsNothing);
+      },
+    );
+  });
+}

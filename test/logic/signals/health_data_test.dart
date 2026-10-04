@@ -1,0 +1,531 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/dashboard_health_config.dart';
+import 'package:lotti/classes/observation.dart';
+import 'package:lotti/logic/signals/health_data.dart';
+
+import '../../features/dashboards/test_utils.dart';
+import 'health_data_test_helpers.dart';
+
+void main() {
+  // Deterministic anchor date shared by example and Glados property tests.
+  final propertyBase = DateTime(2024, 3, 10);
+
+  group('aggregateNone', () {
+    test('returns one observation per quantitative entity', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 10),
+          value: 72.5,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16, 11),
+          value: 73.0,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+      ];
+
+      final result = aggregateNone(entities, 'HealthDataType.WEIGHT');
+
+      expect(result, hasLength(2));
+      expect(result[0].dateTime, DateTime(2024, 3, 15, 10));
+      expect(result[0].value, 72.5);
+      expect(result[1].dateTime, DateTime(2024, 3, 16, 11));
+      expect(result[1].value, 73.0);
+    });
+
+    test('multiplies by 100 for PERCENTAGE types', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15),
+          value: 0.25,
+          dataType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+        ),
+      ];
+
+      final result = aggregateNone(
+        entities,
+        'HealthDataType.BODY_FAT_PERCENTAGE',
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].value, 25.0);
+    });
+
+    test('does not multiply for non-PERCENTAGE types', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15),
+          value: 72.0,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+      ];
+
+      final result = aggregateNone(entities, 'HealthDataType.WEIGHT');
+
+      expect(result[0].value, 72.0);
+    });
+
+    test('ignores entities that are not quantitative samples', () {
+      final result = aggregateNone([
+        makeWorkoutEntry(
+          dateFrom: DateTime(2024, 3, 15, 6),
+          dateTo: DateTime(2024, 3, 15, 7),
+          workoutType: 'running',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 7),
+          value: 71,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+      ], 'HealthDataType.WEIGHT');
+
+      expect(result, hasLength(1));
+      expect(result.single.value, 71);
+    });
+
+    test('returns empty list for empty entities', () {
+      final result = aggregateNone([], 'HealthDataType.WEIGHT');
+      expect(result, isEmpty);
+    });
+  });
+
+  group('aggregateDailyMax', () {
+    test('takes max value per calendar day', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 8),
+          value: 5000,
+          dataType: 'cumulative_step_count',
+          id: 'a',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 18),
+          value: 12000,
+          dataType: 'cumulative_step_count',
+          id: 'b',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16, 20),
+          value: 8000,
+          dataType: 'cumulative_step_count',
+          id: 'c',
+        ),
+      ];
+
+      final result = aggregateDailyMax(entities);
+
+      expect(result, hasLength(2));
+
+      final day15 = result.firstWhere(
+        (o) => o.dateTime == DateTime(2024, 3, 15),
+      );
+      expect(day15.value, 12000);
+
+      final day16 = result.firstWhere(
+        (o) => o.dateTime == DateTime(2024, 3, 16),
+      );
+      expect(day16.value, 8000);
+    });
+
+    test('returns empty list for empty entities', () {
+      expect(aggregateDailyMax([]), isEmpty);
+    });
+  });
+
+  group('aggregateDailySum', () {
+    test('sums values per calendar day', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 8),
+          value: 30,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'a',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 9),
+          value: 20,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'b',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16, 10),
+          value: 45,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'c',
+        ),
+      ];
+
+      final result = aggregateDailySum(entities);
+
+      expect(result, hasLength(2));
+
+      final day15 = result.firstWhere(
+        (o) => o.dateTime == DateTime(2024, 3, 15),
+      );
+      expect(day15.value, 50);
+
+      final day16 = result.firstWhere(
+        (o) => o.dateTime == DateTime(2024, 3, 16),
+      );
+      expect(day16.value, 45);
+    });
+
+    test('returns empty list for empty entities', () {
+      expect(aggregateDailySum([]), isEmpty);
+    });
+  });
+
+  group('aggregateDailySumByEndDay', () {
+    // A night that begins before midnight is the whole point. Keyed on the
+    // start day it lands on two dates at once, so no bar is ever one night and
+    // — until the user goes to bed — today's bar is missing the pre-midnight
+    // head of last night entirely.
+    test('keeps a night that crosses midnight on the morning it ended', () {
+      final entities = [
+        // 23:12 → 00:00, the pre-midnight head of the night of the 15th.
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 23, 12),
+          dateTo: DateTime(2024, 3, 16),
+          value: 48,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'head',
+        ),
+        // 00:00 → 06:42, the rest of the same night.
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          dateTo: DateTime(2024, 3, 16, 6, 42),
+          value: 402,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'tail',
+        ),
+      ];
+
+      final result = aggregateDailySumByEndDay(entities);
+
+      expect(result, hasLength(1), reason: 'one night, one observation');
+      expect(result.single.dateTime, DateTime(2024, 3, 16));
+      expect(result.single.value, 450);
+    });
+
+    test('splits the same night across two days when keyed on the start', () {
+      // The defect this function exists to avoid, pinned so the two
+      // aggregations cannot silently converge.
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 23, 12),
+          dateTo: DateTime(2024, 3, 16),
+          value: 48,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'head',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          dateTo: DateTime(2024, 3, 16, 6, 42),
+          value: 402,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'tail',
+        ),
+      ];
+
+      final byStart = aggregateDailySum(entities);
+
+      expect(byStart, hasLength(2));
+      expect(
+        byStart.firstWhere((o) => o.dateTime == DateTime(2024, 3, 16)).value,
+        402,
+        reason: 'the night reads 48 minutes short until bedtime',
+      );
+    });
+
+    test('leaves a nap that starts and ends the same day alone', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16, 14),
+          dateTo: DateTime(2024, 3, 16, 14, 40),
+          value: 40,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'nap',
+        ),
+      ];
+
+      expect(
+        aggregateDailySumByEndDay(entities),
+        aggregateDailySum(entities),
+      );
+    });
+
+    test('returns empty list for empty entities', () {
+      expect(aggregateDailySumByEndDay([]), isEmpty);
+    });
+  });
+
+  group('transformToHours', () {
+    test('divides each value by 60', () {
+      final observations = [
+        Observation(DateTime(2024, 3, 15), 120),
+        Observation(DateTime(2024, 3, 16), 90),
+      ];
+
+      final result = transformToHours(observations);
+
+      expect(result, hasLength(2));
+      expect(result[0].value, 2.0);
+      expect(result[1].value, 1.5);
+    });
+
+    test('preserves date times', () {
+      final dt = DateTime(2024, 3, 15, 12);
+      final result = transformToHours([Observation(dt, 60)]);
+      expect(result[0].dateTime, dt);
+    });
+
+    test('returns empty list for empty input', () {
+      expect(transformToHours([]), isEmpty);
+    });
+
+    glados.Glados(
+      glados.any.minuteValues,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'multiplying each result back by 60 recovers the original values',
+      (minutes) {
+        final observations = [
+          for (var i = 0; i < minutes.length; i++)
+            Observation(propertyBase.add(Duration(days: i)), minutes[i]),
+        ];
+
+        final result = transformToHours(observations);
+
+        expect(result, hasLength(observations.length));
+        for (var i = 0; i < result.length; i++) {
+          // dateTime is preserved verbatim.
+          expect(result[i].dateTime, observations[i].dateTime);
+          // value / 60 * 60 round-trips back to the original minute value.
+          expect(
+            result[i].value * 60,
+            closeTo(observations[i].value, 1e-9),
+            reason: 'value $i must round-trip through hours conversion',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('aggregateByType', () {
+    test('routes to aggregateNone for none aggregation type', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 10),
+          value: 72.5,
+          dataType: 'HealthDataType.WEIGHT',
+        ),
+      ];
+
+      final result = aggregateByType(entities, 'HealthDataType.WEIGHT');
+
+      expect(result, hasLength(1));
+      expect(result[0].value, 72.5);
+    });
+
+    test('routes to aggregateDailySum for dailySum aggregation type', () {
+      // No shipped type sums per calendar day, so register one for the test.
+      const dataType = 'HealthDataType.KRILL_SORTED';
+      healthTypes[dataType] = HealthTypeConfig(
+        displayName: 'Krill sorted',
+        healthType: dataType,
+        chartType: HealthChartType.barChart,
+        aggregationType: HealthAggregationType.dailySum,
+        unit: 'kg',
+      );
+      addTearDown(() => healthTypes.remove(dataType));
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 8),
+          value: 30,
+          dataType: dataType,
+          id: 'morning',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 18),
+          value: 12,
+          dataType: dataType,
+          id: 'evening',
+        ),
+      ];
+
+      final result = aggregateByType(entities, dataType);
+
+      expect(result.map((o) => (o.dateTime, o.value)), [
+        (DateTime(2024, 3, 15), 42),
+      ]);
+    });
+
+    test('routes to aggregateDailyMax for dailyMax aggregation type', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 8),
+          value: 5000,
+          dataType: 'cumulative_step_count',
+          id: 'a',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 18),
+          value: 12000,
+          dataType: 'cumulative_step_count',
+          id: 'b',
+        ),
+      ];
+
+      final result = aggregateByType(entities, 'cumulative_step_count');
+
+      expect(result, hasLength(1));
+      expect(result[0].value, 12000);
+    });
+
+    test(
+      'routes to dailyTimeSum and transforms to hours',
+      () {
+        final entities = [
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 15),
+            value: 120,
+            dataType: 'HealthDataType.SLEEP_ASLEEP',
+          ),
+        ];
+
+        final result = aggregateByType(entities, 'HealthDataType.SLEEP_ASLEEP');
+
+        expect(result, hasLength(1));
+        expect(result[0].value, 2.0);
+      },
+    );
+
+    // The routing is what makes the end-day rule reach the chart; aggregating
+    // correctly and then routing sleep to the start-day sum would fix nothing.
+    test('routes every sleep type through the end-day sum', () {
+      for (final type in const [
+        'HealthDataType.SLEEP_ASLEEP',
+        'HealthDataType.SLEEP_LIGHT',
+        'HealthDataType.SLEEP_DEEP',
+        'HealthDataType.SLEEP_REM',
+        'HealthDataType.SLEEP_IN_BED',
+        'HealthDataType.SLEEP_AWAKE',
+      ]) {
+        final entities = [
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 15, 23, 30),
+            dateTo: DateTime(2024, 3, 16, 5, 30),
+            value: 360,
+            dataType: type,
+            id: 'n-$type',
+          ),
+        ];
+
+        final result = aggregateByType(entities, type);
+
+        expect(result, hasLength(1), reason: type);
+        expect(
+          result.single.dateTime,
+          DateTime(2024, 3, 16),
+          reason: '$type was attributed to the bedtime day',
+        );
+        expect(result.single.value, 6.0, reason: type);
+      }
+    });
+
+    test('returns empty list for unknown data type', () {
+      final result = aggregateByType([], 'UNKNOWN_TYPE');
+      expect(result, isEmpty);
+    });
+
+    test('returns empty for unknown type even with non-empty entities', () {
+      // No HealthTypeConfig resolves for the type, so the entities must be
+      // ignored entirely rather than routed through a default aggregation.
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15),
+          value: 10,
+          dataType: 'UNKNOWN_TYPE',
+          id: 'u0',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          value: 20,
+          dataType: 'UNKNOWN_TYPE',
+          id: 'u1',
+        ),
+      ];
+
+      final result = aggregateByType(entities, 'UNKNOWN_TYPE');
+      expect(result, isEmpty);
+    });
+  });
+
+  group('findExtreme', () {
+    test('returns 0 for empty observations', () {
+      expect(findExtreme([], (a, b) => a > b ? a : b), 0.0);
+    });
+
+    test('finds extreme using given function', () {
+      final obs = [
+        Observation(DateTime(2024, 3, 15), 10),
+        Observation(DateTime(2024, 3, 16), 5),
+        Observation(DateTime(2024, 3, 17), 20),
+      ];
+      // Use max
+      final result = findExtreme(obs, (a, b) => a > b ? a : b);
+      expect(result, 20);
+    });
+  });
+
+  group('findMin', () {
+    test('returns 0 for empty list', () {
+      expect(findMin([]), 0.0);
+    });
+
+    test('finds minimum value', () {
+      final obs = [
+        Observation(DateTime(2024, 3, 15), 10),
+        Observation(DateTime(2024, 3, 16), 3),
+        Observation(DateTime(2024, 3, 17), 7),
+      ];
+      expect(findMin(obs), 3);
+    });
+
+    test('works with single observation', () {
+      final obs = [Observation(DateTime(2024, 3, 15), 42)];
+      expect(findMin(obs), 42);
+    });
+  });
+
+  group('findMax', () {
+    test('returns 0 for empty list', () {
+      expect(findMax([]), 0.0);
+    });
+
+    test('finds maximum value', () {
+      final obs = [
+        Observation(DateTime(2024, 3, 15), 10),
+        Observation(DateTime(2024, 3, 16), 25),
+        Observation(DateTime(2024, 3, 17), 7),
+      ];
+      expect(findMax(obs), 25);
+    });
+
+    test('works with negative values', () {
+      final obs = [
+        Observation(DateTime(2024, 3, 15), -10),
+        Observation(DateTime(2024, 3, 16), -3),
+        Observation(DateTime(2024, 3, 17), -7),
+      ];
+      expect(findMax(obs), -3);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados property tests.
+  // -------------------------------------------------------------------------
+}

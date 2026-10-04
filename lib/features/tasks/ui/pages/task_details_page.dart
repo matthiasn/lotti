@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
@@ -456,6 +457,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   @override
   Widget build(BuildContext context) => QueryCompanion(
+    entryViewBuilder: (entryId) =>
+        EntryDetailsPage(itemId: entryId, showBackButton: false),
     scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
     child: _buildDetail(context),
   );

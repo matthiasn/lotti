@@ -9,9 +9,9 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The anytime check-in: one tap into the recorder, no typing required.

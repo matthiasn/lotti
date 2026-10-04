@@ -1,7 +1,7 @@
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 
 final hTestDate = DateTime(2024, 3, 15);

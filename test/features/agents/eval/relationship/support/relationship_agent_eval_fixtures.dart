@@ -23,6 +23,8 @@
 /// west of Greenwich and make the suite timezone-dependent.
 library;
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -30,8 +32,6 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 import 'package:mocktail/mocktail.dart';

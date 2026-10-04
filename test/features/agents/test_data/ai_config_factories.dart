@@ -1,5 +1,5 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_assignment.dart';
 
 // ── AI config factories (for inference provider resolution tests) ────────────
 

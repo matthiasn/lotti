@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 
 /// Type mapping between Drift rows (`ConsumptionEvent`) and the Freezed
 /// [AiConsumptionEvent] domain model.

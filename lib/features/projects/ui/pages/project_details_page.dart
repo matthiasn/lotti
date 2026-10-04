@@ -2,11 +2,11 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -16,8 +16,9 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -28,7 +29,7 @@ import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dar
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -91,6 +92,8 @@ class ProjectDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return QueryCompanion(
+      entryViewBuilder: (entryId) =>
+          EntryDetailsPage(itemId: entryId, showBackButton: false),
       scope: QueryScope(kind: QueryScopeKind.project, id: projectId),
       child: _buildDetail(context, ref),
     );

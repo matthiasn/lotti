@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 
 void main() {
   test('embedded speech defaults include its name and empty endpoint', () {

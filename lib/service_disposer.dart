@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get_it/get_it.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
@@ -20,7 +20,7 @@ import 'package:lotti/features/habits/service/habit_auto_completion_service.dart
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 
 /// Default deadline for best-effort cleanup. Dependency-sensitive drains opt
 /// out because timing out a Future does not stop it from using its stores.

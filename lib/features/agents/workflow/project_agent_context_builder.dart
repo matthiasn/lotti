@@ -1,18 +1,18 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Prompt/context assembly and payload-resolution collaborator of the

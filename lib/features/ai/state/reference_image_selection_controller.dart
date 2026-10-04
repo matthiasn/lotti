@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 part 'reference_image_selection_controller.freezed.dart';

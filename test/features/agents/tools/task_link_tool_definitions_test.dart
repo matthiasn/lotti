@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 
 void main() {
   group('task link tool definitions', () {

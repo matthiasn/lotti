@@ -6,12 +6,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_tap_handler.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/timezone.dart';
@@ -28,7 +28,7 @@ bool get _skipNotificationsOnCurrentPlatform =>
     defaultTargetPlatform == TargetPlatform.linux;
 
 /// The production tap handler: hands the payload to the registered
-/// [NotificationTapRouter].
+/// [NotificationTapHandler].
 ///
 /// Resolved at tap time rather than bound at construction. The service is
 /// registered lazily and ahead of the router, and `registerSingletons`
@@ -36,7 +36,7 @@ bool get _skipNotificationsOnCurrentPlatform =>
 /// router that is live *now*. A tap with nowhere to go is logged, never
 /// thrown: this runs inside the plugin's channel handler.
 void _routeTapThroughRegistry(String payload) {
-  if (!getIt.isRegistered<NotificationTapRouter>()) {
+  if (!getIt.isRegistered<NotificationTapHandler>()) {
     getIt<DomainLogger>().log(
       LogDomain.notifications,
       'a notification tap arrived before the tap router was registered',
@@ -45,7 +45,7 @@ void _routeTapThroughRegistry(String payload) {
     );
     return;
   }
-  unawaited(getIt<NotificationTapRouter>().handleTap(payload));
+  unawaited(getIt<NotificationTapHandler>().handleTap(payload));
 }
 
 /// Whether the platform has an app-icon badge Lotti drives.

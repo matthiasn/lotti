@@ -5,12 +5,12 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome

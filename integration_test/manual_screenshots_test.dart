@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
@@ -23,9 +23,8 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -38,7 +37,6 @@ import 'package:lotti/providers/service_providers.dart'
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,
-        matrixServiceProvider,
         outboxServiceProvider,
         syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -48,6 +46,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';

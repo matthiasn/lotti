@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

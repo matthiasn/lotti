@@ -1,5 +1,5 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';

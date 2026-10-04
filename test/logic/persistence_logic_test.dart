@@ -13,6 +13,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -22,22 +23,22 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/vector_clock_keys.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -2032,6 +2033,8 @@ void main() {
         ..registerSingleton<OutboxService>(outboxService)
         ..registerSingleton<Fts5Db>(fts5Db)
         ..registerSingleton<NotificationService>(notificationService)
+        // As the composition root registers it.
+        ..registerLazySingleton<ConfigFlagEffects>(buildConfigFlagEffects)
         ..registerSingleton<VectorClockService>(vectorClockService)
         ..registerSingleton<MetadataService>(
           MetadataService(vectorClockService: vectorClockService),

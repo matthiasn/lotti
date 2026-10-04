@@ -1113,7 +1113,7 @@
       "id": "workflow-transcription-review",
       "title": "Speech transcription review",
       "kind": "workflow",
-      "source": "lib/features/speech/ui/widgets/speech_modal/speech_modal.dart",
+      "source": "lib/features/journal/ui/widgets/entry_details/speech_modal/speech_modal.dart",
       "sourcePattern": "class SpeechModalContent",
       "locator": "Open recording transcript",
       "page": "plan-and-capture/recordings",

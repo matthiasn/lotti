@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_message_dag.dart';
 
 import '../test_data/entity_factories.dart';

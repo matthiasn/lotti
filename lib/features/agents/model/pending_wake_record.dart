@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 
 /// How a not-yet-run wake came to be scheduled.
 ///

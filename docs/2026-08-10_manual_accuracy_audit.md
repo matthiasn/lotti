@@ -42,7 +42,7 @@ right; where it names a thing or enumerates options, it has drifted.
 **Reality:** the dropdown renders `auto` plus **every** `SupportedLanguage`
 value — 42 languages, Arabic through Yoruba.
 
-- `lib/features/speech/ui/widgets/speech_modal/language_dropdown.dart:43-54`
+- `lib/features/journal/ui/widgets/entry_details/speech_modal/language_dropdown.dart:43-54`
   — `DropdownButton` items are the literal `auto` entry followed by
   `...SupportedLanguage.values.map(...)`.
 - `lib/classes/supported_language.dart:5-46` — 42 enum values.
@@ -431,7 +431,7 @@ who operates the server". State the prerequisite in the first paragraph.
 short table:
 
 The synced set is the `SyncMessage` union in
-`lib/features/sync/model/sync_message.dart`. Enumerating it is the only way to
+`lib/classes/sync/sync_message.dart`. Enumerating it is the only way to
 get this right, and it is considerably wider than "entries and definitions":
 
 | Syncs | Stays on the device |

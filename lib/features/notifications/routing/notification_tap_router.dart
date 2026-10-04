@@ -3,6 +3,7 @@ import 'package:lotti/features/notifications/model/notification_tap_payload.dart
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_tap_handler.dart';
 
 /// Turns a tapped OS notification into navigation.
 ///
@@ -15,7 +16,7 @@ import 'package:lotti/services/nav_service.dart';
 /// **Never throws.** The callback path runs inside the plugin's channel
 /// handler and the launch path runs inside bootstrap; neither is a place for
 /// an exception to surface, so a tap that cannot be routed is a logged miss.
-class NotificationTapRouter {
+class NotificationTapRouter implements NotificationTapHandler {
   NotificationTapRouter({
     required this._navService,
     required this._notificationRepository,
@@ -33,6 +34,7 @@ class NotificationTapRouter {
   /// it or, failing, prevent it. The beam waits for the config flags when
   /// they have not arrived yet — see [NavService.beamToNamedWhenReady] — so a
   /// cold-start tap into a flag-gated tab is not normalised away.
+  @override
   Future<void> handleTap(String? rawPayload) async {
     final payload = NotificationTapPayload.decode(rawPayload);
     if (payload == null) {

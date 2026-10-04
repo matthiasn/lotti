@@ -889,8 +889,8 @@ yet; some of that behavior is currently folded into `ProjectHealthHeader`.
 - `lib/database/database.drift` — Named queries (no schema migration needed)
 - `lib/database/conversions.dart` — Type mappings
 - `lib/classes/entity_definitions.dart` — Add `defaultProjectTemplateId` to CategoryDefinition
-- `lib/features/agents/model/agent_enums.dart` — Add `projectAgent` kind
-- `lib/features/agents/model/agent_domain_entity.dart` — Add `agent_project` link type
+- `lib/classes/agents/agent_enums.dart` — Add `projectAgent` kind
+- `lib/classes/agents/agent_domain_entity.dart` — Add `agent_project` link type
 - `lib/features/agents/tools/agent_tool_registry.dart` — Register project tools
 - `lib/features/agents/genui/evolution_catalog.dart` — Add weekly review widgets
 - `lib/features/agents/wake/wake_orchestrator.dart` — Route project agent wakes

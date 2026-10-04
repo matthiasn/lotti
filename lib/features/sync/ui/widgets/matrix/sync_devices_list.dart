@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_page.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Every session on the sync account: a header carrying the count, the

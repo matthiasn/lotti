@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/classes/audio_recorder_constants.dart';
 import 'package:lotti/get_it.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path/path.dart' as p;

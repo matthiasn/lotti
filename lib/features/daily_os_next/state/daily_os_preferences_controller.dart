@@ -5,17 +5,17 @@ import 'package:clock/clock.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/utils/daily_os_preferences_keys.dart';
 
-export 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
+export 'package:lotti/utils/daily_os_preferences_keys.dart';
 
 /// User-scoped Daily OS settings, persisted in [SettingsDb]: the greeting
 /// name, the set of category ids excluded from the day flow, and one-shot

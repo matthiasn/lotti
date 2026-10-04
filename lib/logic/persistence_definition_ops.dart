@@ -1,11 +1,10 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
-import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/services/db_notification.dart';
@@ -179,18 +178,11 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
 
   /// Makes a notification preference take effect the moment it is toggled,
   /// rather than at the next journal write or the next app start. The
-  /// consequences live in [NotificationPreferenceEffects], shared with the
-  /// sync apply path so a flag flipped on a peer reaches this device's alarms
-  /// as well.
+  /// consequences live in the registered [ConfigFlagEffects] — the
+  /// notifications feature's preference effects, shared with the sync apply
+  /// path so a flag flipped on a peer reaches this device's alarms as well.
   Future<void> _applyNotificationPreference(ConfigFlag flag) =>
-      NotificationPreferenceEffects(
-        journalDb: journalDb,
-        // ignore: unnecessary_lambdas
-        notificationService: () => getIt<NotificationService>(),
-        // ignore: unnecessary_lambdas
-        scheduler: () => getIt<NotificationScheduler>(),
-        logger: getIt<DomainLogger>(),
-      ).apply(flag);
+      getIt<ConfigFlagEffects>().apply(flag);
 
   Future<int> deleteDashboardDefinitionImpl(
     DashboardDefinition dashboard,

@@ -1,14 +1,14 @@
 import 'dart:async';
 
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/memory/memory_links.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';

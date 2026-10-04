@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart';

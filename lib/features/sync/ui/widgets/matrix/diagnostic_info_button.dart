@@ -7,8 +7,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 class DiagnosticInfoButton extends ConsumerWidget {

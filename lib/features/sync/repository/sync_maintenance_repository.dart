@@ -1,22 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
 

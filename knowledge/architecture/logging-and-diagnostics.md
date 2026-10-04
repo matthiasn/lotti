@@ -173,7 +173,8 @@ does no flag wiring of its own.
 output kept turning up. Outside `lib/services/`, where logging itself is
 implemented, `tool/logging/validate.dart` ratchets those calls per file
 against `tool/logging/baseline.json`: a file's count may fall, never rise, and
-a new file may not introduce one. CI runs it in the analyze workflow, and so
+a new file may not introduce one. A fall fails too until `--update-baseline`
+records it, so the baseline is never behind the tree. CI runs it in the analyze workflow, and so
 does `make developer_log_check`. It counts on the token stream, and resolves a
 `part` file through its library's import.
 

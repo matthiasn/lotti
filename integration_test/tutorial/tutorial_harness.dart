@@ -29,8 +29,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -38,9 +40,7 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -49,9 +49,8 @@ import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart'
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
@@ -66,7 +65,6 @@ import 'package:lotti/providers/service_providers.dart'
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,
-        matrixServiceProvider,
         outboxServiceProvider,
         syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -77,6 +75,8 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';

@@ -821,12 +821,12 @@ flowchart LR
 ### Phase 1: Data Model, Service & Seed Templates (PR ~1)
 
 **Files to create/modify**:
-- `lib/features/agents/model/agent_domain_entity.dart` — add 3 variants
-- `lib/features/agents/model/agent_link.dart` — add 1 variant
-- `lib/features/agents/model/agent_enums.dart` — add 2 enums
-- `lib/features/agents/database/agent_db_conversions.dart` — add type mappings
-- `lib/features/agents/database/agent_repository.dart` — add template queries
-- `lib/features/agents/database/agent_database.drift` — add `template_id` and `template_version_id` columns to `wake_run_log`
+- `lib/classes/agents/agent_domain_entity.dart` — add 3 variants
+- `lib/classes/agents/agent_link.dart` — add 1 variant
+- `lib/classes/agents/agent_enums.dart` — add 2 enums
+- `lib/database/agents/agent_db_conversions.dart` — add type mappings
+- `lib/database/agents/agent_repository.dart` — add template queries
+- `lib/database/agents/agent_database.drift` — add `template_id` and `template_version_id` columns to `wake_run_log`
 - `lib/features/agents/service/agent_template_service.dart` — new file (CRUD + versioning + seeding)
 - Seed data: Laura and Tom directives documents
 - Tests for all of the above

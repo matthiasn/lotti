@@ -1,7 +1,7 @@
-import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:meta/meta.dart';
 
 import '../../../mocks/mocks.dart';

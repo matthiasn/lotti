@@ -4,7 +4,6 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -44,15 +43,14 @@ Future<void> awaitClosingNoticeFrame() async {
 class WindowService with WidgetsBindingObserver implements WindowListener {
   WindowService({
     @visibleForTesting ExitCallback? exitOverride,
-    @visibleForTesting AsyncDisposer? playerDisposerOverride,
+    AsyncDisposer? playerDisposer,
     @visibleForTesting PlatformCheck? isMacOSOverride,
     AsyncDisposer? beforeLogFlush,
     @visibleForTesting bool skipWindowManagerSetup = false,
     @visibleForTesting AppPrefs? prefsOverride,
     @visibleForTesting AsyncDisposer? closingFrameOverride,
   }) : _exitFn = exitOverride ?? immediateExit,
-       _playerDisposer =
-           playerDisposerOverride ?? AudioPlayerController.disposeActivePlayer,
+       _playerDisposer = playerDisposer ?? (() async {}),
        _beforeLogFlush = beforeLogFlush ?? (() async {}),
        _isMacOS = isMacOSOverride ?? (() => isMacOS),
        _prefs = prefsOverride ?? makeSharedPrefsService(),

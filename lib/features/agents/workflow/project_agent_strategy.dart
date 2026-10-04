@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';

@@ -4,13 +4,14 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -19,15 +20,15 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -38,6 +39,7 @@ import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -326,6 +328,14 @@ void main() {
       same(detail),
     );
     expect(find.text(testProject.data.title), findsWidgets);
+    // The page hands the chat its entry view: journal's details, without a
+    // back button of its own.
+    final companion = tester.widget<QueryCompanion>(
+      find.byType(QueryCompanion),
+    );
+    final view = companion.entryViewBuilder('entry-1') as EntryDetailsPage;
+    expect(view.itemId, 'entry-1');
+    expect(view.showBackButton, isFalse);
   });
 
   testWidgets('project explorer opens only the selected project and returns', (

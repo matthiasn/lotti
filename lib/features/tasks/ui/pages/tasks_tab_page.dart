@@ -8,6 +8,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -23,15 +25,15 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
@@ -46,7 +48,6 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -54,6 +55,8 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
+
+part 'tasks_tab_page_chrome_part.dart';
 
 /// Signature for the create-task action invoked by the [TasksTabPage] FAB.
 typedef TasksTabCreateTaskCallback =
@@ -452,6 +455,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       mainAxisSize: MainAxisSize.min,
       children: [
         TabSectionHeader(
+          titleTrailing: const NotificationBell(),
           searchFocusNode: widget.searchFocusNode,
           title: context.messages.navTabTitleTasks,
           query: state.match,
@@ -1121,90 +1125,3 @@ MobileNavDockAction tasksTabDockAction(BuildContext context, WidgetRef ref) =>
       icon: LottiIcons.add,
       onPressed: () => unawaited(createTaskFromTaskListFilters(ref)),
     );
-
-/// End-aligned floating location that sits [bottomMargin] above the content
-/// edge instead of the framework's fixed [kFloatingActionButtonMargin].
-///
-/// Never closer to the edge than the system's own bottom inset allows — a
-/// tighter margin is a visual alignment, not a licence to sit under the home
-/// indicator.
-@immutable
-class _ActionBarAlignedFabLocation extends StandardFabLocation
-    with FabEndOffsetX, FabFloatOffsetY {
-  const _ActionBarAlignedFabLocation({required this.bottomMargin});
-
-  final double bottomMargin;
-
-  // Value equality, not identity: `build` constructs a fresh instance every
-  // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
-  // restarting the FAB transition (and its setState) on every rebuild of a
-  // page that rebuilds on every journal query result.
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ActionBarAlignedFabLocation &&
-          other.bottomMargin == bottomMargin;
-
-  @override
-  int get hashCode => bottomMargin.hashCode;
-
-  @override
-  double getOffsetY(
-    ScaffoldPrelayoutGeometry scaffoldGeometry,
-    double adjustment,
-  ) {
-    final standard = super.getOffsetY(scaffoldGeometry, adjustment);
-    final lowest =
-        scaffoldGeometry.contentBottom -
-        scaffoldGeometry.floatingActionButtonSize.height -
-        scaffoldGeometry.minViewPadding.bottom;
-    return math.min(
-      standard + (kFloatingActionButtonMargin - bottomMargin),
-      lowest,
-    );
-  }
-}
-
-/// Compact list-density toggle riding the trailing end of the tasks list's
-/// first section-header line ("P2 Medium · 5 tasks"), so switching between
-/// full cards and title-only rows costs the header no row of its own.
-///
-/// The glyph stays at the dense [IconSizes.m] tier, but the hit area keeps
-/// the full [TapTargets.minimum] floor — a glyph-only control has no label
-/// to borrow interaction area from. The section header compensates by
-/// tightening its own vertical padding while it hosts a trailing control
-/// (see `TaskBrowseListItem.sectionHeaderTrailing`), so the line's overall
-/// height barely moves.
-class _TaskListDensityToggle extends ConsumerWidget {
-  const _TaskListDensityToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final compact = ref.watch(taskListDensityControllerProvider);
-    return IconButton(
-      key: const Key('tasks_list_density_toggle'),
-      tooltip: compact
-          ? context.messages.tasksListExpandedModeTooltip
-          : context.messages.tasksListCompactModeTooltip,
-      onPressed: ref.read(taskListDensityControllerProvider.notifier).toggle,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: TapTargets.minimum,
-        minHeight: TapTargets.minimum,
-      ),
-      style: compact
-          ? IconButton.styleFrom(
-              backgroundColor: DesignSystemListPalette.activatedFill(tokens),
-            )
-          : null,
-      icon: Icon(
-        LottiIcons.viewRows,
-        size: IconSizes.m,
-        color: compact
-            ? tokens.colors.interactive.enabled
-            : tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}

@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 import '../test_utils.dart';
 

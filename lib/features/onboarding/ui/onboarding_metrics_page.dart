@@ -1,16 +1,16 @@
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_test_reset_service.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper that keeps the `SliverBoxAdapterPage` chrome and

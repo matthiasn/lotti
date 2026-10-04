@@ -3,14 +3,14 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -21,12 +21,14 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -258,6 +260,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      // The page hands the chat its entry view: journal's details, without a
+      // back button of its own.
+      final companion = tester.widget<QueryCompanion>(
+        find.byType(QueryCompanion),
+      );
+      final view = companion.entryViewBuilder('entry-1') as EntryDetailsPage;
+      expect(view.itemId, 'entry-1');
+      expect(view.showBackButton, isFalse);
       // Chat's entry is the agent card's header disc, not the app bar.
       expect(find.byType(QueryAskButton), findsNothing);
       final taskActions = tester.element(find.byType(TaskActionBar));

@@ -33,7 +33,7 @@ sources:
     title: TimeEntryUpdateHandler — one text/range edit for every time entry
     last_modified: 2026-09-22
   - id: retired-tools
-    resource: ../../../lib/features/agents/model/retired_tool_calls.dart
+    resource: ../../../lib/classes/agents/retired_tool_calls.dart
     title: upgradeRetiredTaskAgentToolCall — the retired running-timer tool
     last_modified: 2026-09-22
   - id: checklist-provenance
@@ -45,7 +45,7 @@ sources:
     title: Trusted approval stamping and execution guard
     last_modified: 2026-09-22
   - id: checklist-repository
-    resource: ../../../lib/features/tasks/repository/checklist_repository.dart
+    resource: ../../../lib/logic/repositories/checklist_repository.dart
     title: Field-time stamping on every checklist item write
     last_modified: 2026-09-22
   - id: proposal-builder
@@ -101,7 +101,7 @@ sources:
     title: ADR 0097 — Idempotent effects for every change-set tool
     last_modified: 2026-09-27
   - id: directed-relation
-    resource: ../../../lib/features/tasks/model/directed_relation.dart
+    resource: ../../../lib/classes/directed_relation.dart
     title: DirectedRelation
     last_modified: 2026-08-01
   - id: adr-0004
@@ -786,7 +786,7 @@ task and an existing task; `create_follow_up_task` accepts the same optional
 `relation` so a spoken "this task is blocked by a new task X" creates X and
 the canonical `blocks` edge in one confirmable proposal. The `relation` values
 are the eleven `DirectedRelation.wireName` values exposed by
-`relationshipDirectedOptions` (`lib/features/tasks/model/directed_relation.dart`),
+`relationshipDirectedOptions` (`lib/classes/directed_relation.dart`),
 read with the current task as subject. Inverse phrases swap `fromId`/`toId`
 before persisting, so the stored direction always matches the picker's (see
 [typed relationships](../tasks/relationships.md)).

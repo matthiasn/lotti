@@ -1,6 +1,6 @@
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';

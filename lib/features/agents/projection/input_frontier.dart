@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 
 /// Projects the agent's **active input frontier** (ADR 0020): the latest,

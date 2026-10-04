@@ -2,15 +2,15 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod/riverpod.dart';
 

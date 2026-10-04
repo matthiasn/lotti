@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:mocktail/mocktail.dart';

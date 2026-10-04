@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 

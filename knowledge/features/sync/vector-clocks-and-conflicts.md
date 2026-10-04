@@ -97,11 +97,11 @@ sources:
     title: TLA+ model of one entry link under several ids
     last_modified: 2026-09-27
   - id: link-edit
-    resource: ../../../lib/features/journal/repository/journal_repository.dart
+    resource: ../../../lib/logic/repositories/journal_repository.dart
     title: JournalRepository — updateLink, and removeLink / removeTypedLink as synced tombstones
     last_modified: 2026-09-25
   - id: link-tombstone
-    resource: ../../../lib/features/projects/repository/project_repository.dart
+    resource: ../../../lib/logic/repositories/project_repository.dart
     title: ProjectRepository — the project-link tombstone and its revival
     last_modified: 2026-09-25
   - id: link-revive

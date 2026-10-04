@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';

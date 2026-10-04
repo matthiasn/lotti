@@ -12,13 +12,13 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'
     show CompressFormat;
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/audio_recorder_constants.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/media/exif_data_extractor.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
@@ -43,7 +43,7 @@ typedef ImportedImage = ({String id, bool created});
 /// Returns null if [analysisTrigger] is null, otherwise returns a callback
 /// that triggers automatic image analysis in a fire-and-forget manner.
 void Function(JournalEntity)? createAnalysisCallback(
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
   String? linkedId,
 ) {
   if (analysisTrigger == null) return null;
@@ -116,7 +116,7 @@ Future<void> importImagesForPlatform(
   BuildContext context, {
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   if (isLinux || isWindows) {
     await importImagePickerFiles(
@@ -147,7 +147,7 @@ Future<void> importImageAssets(
   BuildContext context, {
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   final assets = await _pickAssets(context, maxAssets: 50);
   if (assets == null) return;
@@ -203,7 +203,7 @@ Future<ImportedImage?> _importAsset(
   AssetEntity asset, {
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   Geolocation? geolocation;
   final latLng = await asset.latlngAsync();
@@ -278,7 +278,7 @@ Future<ImportedImage?> _importAsset(
 Future<void> importImagePickerFiles({
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   final group = XTypeGroup(
     extensions: ImageImportConstants.supportedExtensions.toList(
@@ -310,7 +310,7 @@ Future<List<String>> importImageXFiles(
   List<XFile> files, {
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   final created = <String>[];
   for (final file in files) {
@@ -335,7 +335,7 @@ Future<ImportedImage?> _importXFile(
   XFile file, {
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
 }) async {
   try {
     final id = uuid.v1();
@@ -750,7 +750,7 @@ Future<ImportedImage?> importPastedImages({
   required String fileExtension,
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
   bool linkCollapsed = false,
 }) async {
   // Validate file size

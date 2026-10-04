@@ -1,7 +1,7 @@
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
 
 /// One current visibility view shared by retrieval, recall and presentation.

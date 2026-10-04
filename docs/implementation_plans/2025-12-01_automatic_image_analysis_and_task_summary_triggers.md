@@ -135,7 +135,7 @@ Menu import:   importImageAssets() → createImageEntry()
 **Key files:**
 
 - `lib/logic/image_import.dart` - Lines 48-133 (menu), 141-201 (drop), 405-452 (paste)
-- `lib/features/journal/repository/journal_repository.dart` - Lines 210-245
+- `lib/logic/repositories/journal_repository.dart` - Lines 210-245
 
 ### Automatic Prompt Triggering (Audio)
 
@@ -700,7 +700,7 @@ Test cases:
 ### Modified Files
 
 - `lib/logic/image_import.dart` - Add trigger parameter to import functions
-- `lib/features/journal/repository/journal_repository.dart` - Add optional callback
+- `lib/logic/repositories/journal_repository.dart` - Add optional callback
 - `lib/features/journal/state/image_paste_controller.dart` - Pass trigger
 - `lib/features/journal/ui/pages/entry_details_page.dart` - Pass trigger to drop handler
 - `lib/features/tasks/ui/pages/task_details_page.dart` - Pass trigger to drop handler

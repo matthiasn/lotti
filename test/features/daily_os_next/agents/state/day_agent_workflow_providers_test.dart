@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -16,9 +16,9 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/services/db_notification.dart';

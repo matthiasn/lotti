@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_assignment.dart';
+import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
-import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';

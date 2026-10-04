@@ -1,8 +1,8 @@
 // Test factories for proposal-ledger types — consistent with the other
 // `test_data/*_factories.dart` files (sensible defaults, named overrides).
 
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 
 /// Builds a [LedgerEntry] with sensible defaults.
 LedgerEntry makeLedgerEntry({
