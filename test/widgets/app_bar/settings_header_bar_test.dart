@@ -54,7 +54,7 @@ void main() {
   ) async {
     var backs = 0;
     await tester.pumpWidget(
-      makeTestableWidget2(
+      makeTestableWidgetNoScroll(
         Scaffold(
           body: SettingsHeaderBar(
             title: 'Detail',
