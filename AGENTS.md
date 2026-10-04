@@ -21,6 +21,7 @@
 ## Coding Style & Naming Conventions
 - Follow `analysis_options.yaml` (Very Good Analysis). 2‑space indent, prefer `const` and `final`.
 - Files: `lower_snake_case.dart`; types (classes/enums): `PascalCase`; members: `lowerCamelCase`.
+- Keep hand-written files in `lib/` at or below 1,000 lines. `test/architecture/file_size_ratchet_test.dart` fails on a new file above that, and holds the files already above it at their current size (`file_size_baseline.json`): put new code in a file of its own, and lower or delete an entry when a file shrinks.
 - Format before committing: `fvm dart format .`.
 - Do not modify generated code (`*.g.dart`, `*.freezed.dart`); regenerate via `make build_runner`.
 
