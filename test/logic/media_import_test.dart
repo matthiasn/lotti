@@ -9,9 +9,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
@@ -160,16 +160,11 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<AudioMetadataReader>()) {
-      getIt.unregister<AudioMetadataReader>();
-    }
-
     getIt
       ..registerSingleton<DomainLogger>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(tempDir)
-      ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
+      ..registerSingleton<Directory>(tempDir);
 
     when(
       () => mockLoggingService.error(
@@ -234,10 +229,25 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<AudioMetadataReader>()) {
-      getIt.unregister<AudioMetadataReader>();
-    }
   });
+
+  /// Routes [files] like a media drop, writing audio through the mocks.
+  Future<void> dropMedia(
+    List<XFile> files, {
+    required String linkedId,
+    String? categoryId,
+  }) => handleDroppedMediaFiles(
+    files,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    speechRepository: SpeechRepository(
+      persistenceLogic: mockPersistenceLogic,
+      journalDb: mockJournalDb,
+      domainLogger: mockLoggingService,
+    ),
+    domainLogger: mockLoggingService,
+    audioMetadataReader: (_) async => Duration.zero,
+  );
 
   Future<File> createTestFile(String filename, int sizeBytes) async {
     final file = File(path.join(tempDir.path, filename));
@@ -253,7 +263,7 @@ void main() {
       final imageFile = await createTestFile('test.jpg', 1024);
       final dropDetails = createDropDetails([XFile(imageFile.path)]);
 
-      await handleDroppedMediaFiles(
+      await dropMedia(
         dropDetails,
         linkedId: 'linked-123',
       );
@@ -275,7 +285,7 @@ void main() {
       await withTargetPlatform(
         TargetPlatform.macOS,
         () => withFakeImageCompressPlatform(
-          () => handleDroppedMediaFiles(
+          () => dropMedia(
             dropDetails,
             linkedId: 'linked-123',
           ),
@@ -303,7 +313,7 @@ void main() {
       await withTargetPlatform(
         TargetPlatform.linux,
         () => withFakeImageCompressPlatform(
-          () => handleDroppedMediaFiles(
+          () => dropMedia(
             dropDetails,
             linkedId: 'linked-123',
           ),
@@ -324,7 +334,7 @@ void main() {
       final audioFile = await createTestFile('test.m4a', 1024);
       final dropDetails = createDropDetails([XFile(audioFile.path)]);
 
-      await handleDroppedMediaFiles(
+      await dropMedia(
         dropDetails,
         linkedId: 'linked-123',
       );
@@ -347,7 +357,7 @@ void main() {
         XFile(audioFile.path),
       ]);
 
-      await handleDroppedMediaFiles(
+      await dropMedia(
         dropDetails,
         linkedId: 'linked-123',
       );
@@ -374,7 +384,7 @@ void main() {
       final textFile = await createTestFile('readme.txt', 100);
       final dropDetails = createDropDetails([XFile(textFile.path)]);
 
-      await handleDroppedMediaFiles(
+      await dropMedia(
         dropDetails,
         linkedId: 'linked-123',
       );
@@ -397,7 +407,7 @@ void main() {
         XFile(audioFile.path),
       ]);
 
-      await handleDroppedMediaFiles(
+      await dropMedia(
         dropDetails,
         linkedId: 'linked-123',
         categoryId: 'cat-456',
@@ -475,7 +485,7 @@ void main() {
       await withTargetPlatform(
         TargetPlatform.macOS,
         () => withFakeImageCompressPlatform(
-          () => handleDroppedMediaFiles(
+          () => dropMedia(
             createDropDetails(xFiles),
             linkedId: 'linked-generated',
             categoryId: 'category-generated',

@@ -235,7 +235,10 @@ down boot.
 (`() => getIt<NotificationService>()`) rather than a resolved instance, so
 start-up on Linux and Windows never initialises the platform plugin — which is
 what keeps a sandboxed build such as the Flatpak startable when plugin
-registration fails.
+registration fails. Its tap handler is `routeNotificationTap` in
+`lib/get_it_helpers.dart`, which resolves the tap router at tap time: the
+router is rebuilt for every profile generation, so a tap has to find the one
+that is live *now*.
 
 On the platforms Lotti notifies on, start-up *does* resolve it, deliberately:
 `routeNotificationLaunch` reads the launching notification right after

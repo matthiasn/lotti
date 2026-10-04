@@ -225,11 +225,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       );
 
       if (note != null) {
-        final journalAudio = await SpeechRepository.createAudioEntry(
-          note.copyWith(duration: duration),
-          linkedId: linkedSubjectId,
-          categoryId: categoryId,
-        );
+        final journalAudio = await ref
+            .read(speechRepositoryProvider)
+            .createAudioEntry(
+              note.copyWith(duration: duration),
+              linkedId: linkedSubjectId,
+              categoryId: categoryId,
+            );
         final entryId = journalAudio?.meta.id;
 
         // Trigger automatic prompts in the background via profile-driven automation

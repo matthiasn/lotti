@@ -244,3 +244,56 @@ PersistenceServices buildPersistenceServices() => PersistenceServices(
 /// The [PersistenceLogic] facade over [buildPersistenceServices].
 PersistenceLogic buildPersistenceLogic() =>
     PersistenceLogic(services: buildPersistenceServices());
+
+/// [LiveWorldServices] over getIt, which always holds the generation that is
+/// live right now — so each read follows a profile switch.
+final class GetItLiveWorldServices implements LiveWorldServices {
+  const GetItLiveWorldServices();
+
+  @override
+  ProfileContext? get profileContext =>
+      getIt.isRegistered<ProfileContext>() ? getIt<ProfileContext>() : null;
+
+  @override
+  JournalDb get journalDb => getIt<JournalDb>();
+
+  @override
+  AiConfigRepository get aiConfigs => getIt<AiConfigRepository>();
+
+  @override
+  Directory get root => getIt<Directory>();
+
+  @override
+  PersistenceLogic get persistence => getIt<PersistenceLogic>();
+
+  @override
+  Fts5Db? get fts => getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null;
+
+  @override
+  DomainLogger? get domainLogger =>
+      getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null;
+}
+
+/// The production notification tap handler: hands the payload to the
+/// registered [NotificationTapHandler].
+///
+/// Resolved at tap time rather than bound at construction. The notification
+/// service is registered lazily and ahead of the router, and
+/// `registerSingletons` rebuilds the router for every profile generation, so a
+/// tap has to find the router that is live *now*. A tap with nowhere to go is
+/// logged, never thrown: this runs inside the plugin's channel handler. During
+/// a profile switch the locator can be empty, logger included, and such a tap
+/// is dropped silently.
+void routeNotificationTap(String payload) {
+  if (!getIt.isRegistered<NotificationTapHandler>()) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().log(
+      LogDomain.notifications,
+      'a notification tap arrived before the tap router was registered',
+      subDomain: 'tap',
+      level: InsightLevel.warn,
+    );
+    return;
+  }
+  unawaited(getIt<NotificationTapHandler>().handleTap(payload));
+}

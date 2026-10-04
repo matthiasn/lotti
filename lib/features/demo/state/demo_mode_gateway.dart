@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,19 +8,18 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
+import 'package:lotti/features/demo/state/live_world_services.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/demo_world_creator.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -41,13 +39,14 @@ class DemoModeGateway {
   DemoModeGateway({
     required this.registry,
     required this.activate,
+    required this.world,
     DateTime Function()? clock,
     @visibleForTesting ProfileContext? Function()? profileContext,
     @visibleForTesting DemoSeedRunner? seedRunner,
     @visibleForTesting this.prepareCopyOverride,
     @visibleForTesting this.applyCopyOverride,
   }) : _clock = clock ?? DateTime.now,
-       _profileContext = profileContext ?? _activeProfileContext {
+       _profileContext = profileContext ?? (() => world.profileContext) {
     _seedRunner = seedRunner ?? _defaultSeedRunner;
   }
 
@@ -61,6 +60,10 @@ class DemoModeGateway {
   /// Switches the running app to a profile id — in production this is
   /// `ProfileSwitcher.switchTo`.
   final Future<void> Function(String profileId) activate;
+
+  /// The services of whichever world is active when they are read: the demo
+  /// world's before [activate] switches away from it, the real world's after.
+  final LiveWorldServices world;
 
   final DateTime Function() _clock;
   final ProfileContext? Function() _profileContext;
@@ -77,9 +80,6 @@ class DemoModeGateway {
   /// Test seam replacing the write into the real side in [exitWithCopy].
   @visibleForTesting
   final Future<int> Function(DemoCopyPlan plan)? applyCopyOverride;
-
-  static ProfileContext? _activeProfileContext() =>
-      getIt.isRegistered<ProfileContext>() ? getIt<ProfileContext>() : null;
 
   Future<void> _defaultSeedRunner(WorldHandle world, Locale locale) =>
       DemoSeeder(
@@ -238,15 +238,13 @@ class DemoModeGateway {
     try {
       return await (applyCopyOverride ?? _defaultApplyCopy)(plan);
     } catch (exception, stackTrace) {
-      // getIt already holds the REAL generation's services here.
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.general,
-          exception,
-          stackTrace: stackTrace,
-          subDomain: 'demoExitCopyApply',
-        );
-      }
+      // The live world is the REAL one by now.
+      world.domainLogger?.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'demoExitCopyApply',
+      );
       DemoCopyFailureNotices.instance.report();
       rethrow;
     }
@@ -259,19 +257,19 @@ class DemoModeGateway {
   ) => DemoDataCopier().prepare(
     selectedIds: selectedIds,
     selectedAiProviderIds: selectedAiConfigIds,
-    sourceDb: getIt<JournalDb>(),
-    sourceAiConfigs: getIt<AiConfigRepository>(),
-    sourceRoot: getIt<Directory>(),
+    sourceDb: world.journalDb,
+    sourceAiConfigs: world.aiConfigs,
+    sourceRoot: world.root,
   );
 
   /// Applies the plan against the ACTIVE (by now: real) generation.
   Future<int> _defaultApplyCopy(DemoCopyPlan plan) => DemoDataCopier().apply(
     plan,
-    persistence: getIt<PersistenceLogic>(),
-    targetJournalDb: getIt<JournalDb>(),
-    targetRoot: getIt<Directory>(),
-    targetAiConfigs: getIt<AiConfigRepository>(),
-    targetFts: getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
+    persistence: world.persistence,
+    targetJournalDb: world.journalDb,
+    targetRoot: world.root,
+    targetAiConfigs: world.aiConfigs,
+    targetFts: world.fts,
   );
 
   /// Whether [profile]'s world was seeded by the current seed content. A
@@ -329,19 +327,18 @@ class DemoModeGateway {
   ///
   /// Same predicate, different source: the active world's databases are
   /// already open in this service generation, so it reads them through
-  /// getIt instead of opening a SECOND [WorldHandle] onto the same SQLite
+  /// [world] instead of opening a SECOND [WorldHandle] onto the same SQLite
   /// files.
   Future<bool> _activeWorldHasUserWork(Profile profile) async {
     try {
       return await _hasUserWorkIn(
         profile: profile,
-        journalIds: getIt<JournalDb>().allNonDeletedJournalEntityIds,
+        journalIds: world.journalDb.allNonDeletedJournalEntityIds,
         journalEntities:
-            getIt<JournalDb>().getJournalEntitiesForIdsIncludingDeleted,
-        definitionFingerprints: () =>
-            _definitionFingerprints(getIt<JournalDb>()),
-        entryLinks: getIt<JournalDb>().linksForEntryIdsBidirectional,
-        inferenceProviders: () => getIt<AiConfigRepository>().getConfigsByType(
+            world.journalDb.getJournalEntitiesForIdsIncludingDeleted,
+        definitionFingerprints: () => _definitionFingerprints(world.journalDb),
+        entryLinks: world.journalDb.linksForEntryIdsBidirectional,
+        inferenceProviders: () => world.aiConfigs.getConfigsByType(
           AiConfigType.inferenceProvider,
         ),
       );
@@ -488,6 +485,7 @@ DemoModeGateway demoModeGatewayOf(BuildContext context) {
   return DemoModeGateway(
     registry: switcher.registry,
     activate: switcher.switchTo,
+    world: const GetItLiveWorldServices(),
   );
 }
 
@@ -499,6 +497,7 @@ DemoModeGateway? maybeDemoModeGatewayOf(BuildContext context) {
   return DemoModeGateway(
     registry: switcher.registry,
     activate: switcher.switchTo,
+    world: const GetItLiveWorldServices(),
   );
 }
 

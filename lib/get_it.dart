@@ -12,6 +12,7 @@ import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
@@ -33,6 +34,7 @@ import 'package:lotti/features/ai_consumption/service/transcript_attribution_coo
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/demo/state/live_world_services.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
@@ -171,7 +173,11 @@ Future<void> registerSingletons({
   await getIt<LoggingService>().listenToConfigFlag();
 
   _registerLazyServiceSafely<NotificationService>(
-    NotificationService.new,
+    () => NotificationService(
+      journalDb: getIt<JournalDb>(),
+      domainLogger: getIt<DomainLogger>(),
+      onNotificationTap: routeNotificationTap,
+    ),
     'NotificationService',
   );
   // Persistence applies a toggled flag's effects through this; see

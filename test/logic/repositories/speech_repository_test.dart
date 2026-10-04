@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -60,6 +58,7 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
   late MockDomainLogger mockDomainLogger;
+  late SpeechRepository repository;
 
   setUpAll(() {
     // Register fakes for any() matchers if needed for complex objects
@@ -72,17 +71,13 @@ void main() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockDomainLogger = MockDomainLogger();
 
-    final mocks = await setUpTestGetIt(
-      additionalSetup: () {
-        // setUpTestGetIt registers a real DomainLogger; swap it for a
-        // verifiable mock and add the PersistenceLogic mock these tests need.
-        getIt
-          ..unregister<DomainLogger>()
-          ..registerSingleton<DomainLogger>(mockDomainLogger)
-          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-      },
-    );
+    final mocks = await setUpTestGetIt();
     mockJournalDb = mocks.journalDb;
+    repository = SpeechRepository(
+      persistenceLogic: mockPersistenceLogic,
+      journalDb: mockJournalDb,
+      domainLogger: mockDomainLogger,
+    );
 
     // Default stub for logging to avoid errors in tests not focused on logging
     when(
@@ -131,7 +126,7 @@ void main() {
         _stubCreateDbEntity(mockPersistenceLogic);
 
         // Act
-        final result = await SpeechRepository.createAudioEntry(testAudioNote);
+        final result = await repository.createAudioEntry(testAudioNote);
 
         // Assert
         expect(result, isA<JournalAudio>());
@@ -149,7 +144,7 @@ void main() {
           _stubCreateDbEntity(mockPersistenceLogic);
 
           // Act
-          final result = await SpeechRepository.createAudioEntry(
+          final result = await repository.createAudioEntry(
             testAudioNote,
             linkedId: testLinkedId,
             categoryId: testCategoryId,
@@ -189,7 +184,7 @@ void main() {
           _stubCreateMetadata(mockPersistenceLogic, throws: exception);
 
           // Act
-          final result = await SpeechRepository.createAudioEntry(testAudioNote);
+          final result = await repository.createAudioEntry(testAudioNote);
 
           // Assert
           expect(result, isNull);
@@ -219,7 +214,7 @@ void main() {
           _stubCreateDbEntity(mockPersistenceLogic, throws: exception);
 
           // Act
-          final result = await SpeechRepository.createAudioEntry(testAudioNote);
+          final result = await repository.createAudioEntry(testAudioNote);
 
           // Assert
           expect(result, isNull);
@@ -244,7 +239,7 @@ void main() {
               returns: rejectedResult,
             );
 
-            final result = await SpeechRepository.createAudioEntry(
+            final result = await repository.createAudioEntry(
               testAudioNote,
             );
 
@@ -303,7 +298,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -335,7 +330,7 @@ void main() {
         ).thenAnswer((_) async => notAudioEntry);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -360,7 +355,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -387,7 +382,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -417,7 +412,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -453,7 +448,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        await SpeechRepository.updateLanguage(
+        await repository.updateLanguage(
           journalEntityId: testEntryId,
           language: newLanguage,
         );
@@ -542,7 +537,7 @@ void main() {
         ).thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
 
         // Act
-        final result = await SpeechRepository.removeAudioTranscript(
+        final result = await repository.removeAudioTranscript(
           journalEntityId: testEntryId,
           transcript: transcriptToRemove,
         );
@@ -574,7 +569,7 @@ void main() {
           ).thenAnswer((_) async => testJournalAudioEntryWithTranscripts);
 
           // Act
-          final result = await SpeechRepository.removeAudioTranscript(
+          final result = await repository.removeAudioTranscript(
             journalEntityId: testEntryId,
             transcript: nonExistingTranscript,
           );
@@ -604,7 +599,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         // Act
-        final result = await SpeechRepository.removeAudioTranscript(
+        final result = await repository.removeAudioTranscript(
           journalEntityId: testEntryId,
           transcript: transcriptToRemove,
         );
@@ -625,7 +620,7 @@ void main() {
         ).thenAnswer((_) async => notAudioEntry);
 
         // Act
-        final result = await SpeechRepository.removeAudioTranscript(
+        final result = await repository.removeAudioTranscript(
           journalEntityId: testEntryId,
           transcript: transcriptToRemove,
         );
@@ -653,7 +648,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        final result = await SpeechRepository.removeAudioTranscript(
+        final result = await repository.removeAudioTranscript(
           journalEntityId: testEntryId,
           transcript: transcriptToRemove,
         );
@@ -686,7 +681,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        final result = await SpeechRepository.removeAudioTranscript(
+        final result = await repository.removeAudioTranscript(
           journalEntityId: testEntryId,
           transcript: transcriptToRemove,
         );

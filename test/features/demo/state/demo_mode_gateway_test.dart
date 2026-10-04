@@ -10,7 +10,6 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -22,7 +21,6 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -41,6 +39,7 @@ void main() {
   late List<String> activated;
   late List<String> seededLocales;
   ProfileContext? activeContext;
+  late MockLiveWorldServices world;
 
   DemoModeGateway buildGateway({
     Future<DemoCopyPlan> Function(Set<String>, Set<String>)? prepareCopy,
@@ -48,6 +47,7 @@ void main() {
   }) {
     return DemoModeGateway(
       registry: registry,
+      world: world,
       activate: (id) async => activated.add(id),
       profileContext: () => activeContext,
       seedRunner: (world, locale) async {
@@ -79,6 +79,7 @@ void main() {
     activated = [];
     seededLocales = [];
     activeContext = null;
+    world = MockLiveWorldServices();
   });
 
   tearDown(() async {
@@ -398,18 +399,16 @@ void main() {
       await getIt.reset();
     });
 
-    /// Registers the demo world's storage as the ACTIVE generation's
-    /// services — what the gateway reads instead of opening a second
-    /// WorldHandle onto files this process already has open.
+    /// Makes the demo world's storage the LIVE generation's services — what
+    /// the gateway reads instead of opening a second WorldHandle onto files
+    /// this process already has open.
     WorldHandle activateGeneration(Profile demo) {
       final handle = WorldHandle.open(registry.rootFor(demo));
       addTearDown(handle.close);
       activeContext = guestContext(demo);
-      getIt
-        ..registerSingleton<JournalDb>(handle.journalDb)
-        ..registerSingleton<AiConfigRepository>(
-          AiConfigRepository(handle.aiConfigDb),
-        );
+      final aiConfigs = AiConfigRepository(handle.aiConfigDb);
+      when(() => world.journalDb).thenReturn(handle.journalDb);
+      when(() => world.aiConfigs).thenReturn(aiConfigs);
       return handle;
     }
 
@@ -626,7 +625,6 @@ void main() {
       // The fresh world is current, so a second pass decides against
       // reseeding and must not raise progress at all.
       final fresh = (await gateway.findDemoProfile())!;
-      await getIt.reset();
       activateGeneration(fresh);
       var startedAgain = 0;
       await gateway.refreshStaleDemoWorld(
@@ -683,6 +681,7 @@ void main() {
       // switcher: activation updates the registry's active marker.
       final gatewayWithMarker = DemoModeGateway(
         registry: registry,
+        world: world,
         activate: (id) async {
           activated.add(id);
           await registry.setActiveProfile(id);
@@ -765,6 +764,7 @@ void main() {
         final order = <String>[];
         final gateway = DemoModeGateway(
           registry: registry,
+          world: world,
           activate: (id) async => order.add('activate:$id'),
           profileContext: () => activeContext,
           seedRunner: (_, _) async {},
@@ -848,8 +848,7 @@ void main() {
       DemoCopyFailureNotices.instance.reset();
       addTearDown(DemoCopyFailureNotices.instance.reset);
       final logger = MockDomainLogger();
-      getIt.registerSingleton<DomainLogger>(logger);
-      addTearDown(getIt.reset);
+      when(() => world.domainLogger).thenReturn(logger);
       var notified = 0;
       void onNotice() => notified++;
       DemoCopyFailureNotices.instance.addListener(onNotice);
@@ -915,25 +914,26 @@ void main() {
       await getIt.reset();
     });
 
-    test('the default profile-context read resolves the active generation '
-        'from getIt', () async {
+    test('the default profile-context read resolves the live '
+        'generation', () async {
       final gateway = DemoModeGateway(
         registry: registry,
+        world: world,
         activate: (id) async => activated.add(id),
       );
       expect(
         gateway.isDemoActive,
         isFalse,
-        reason: 'no ProfileContext registered means the real world',
+        reason: 'no ProfileContext means the real world',
       );
 
       final demo = await registry.createGuestProfile(name: 'Demo');
-      getIt.registerSingleton<ProfileContext>(guestContext(demo));
+      when(() => world.profileContext).thenReturn(guestContext(demo));
 
       expect(
         gateway.isDemoActive,
         isTrue,
-        reason: 'a registered guest ProfileContext IS the demo generation',
+        reason: 'a guest ProfileContext IS the demo generation',
       );
     });
 
@@ -942,6 +942,7 @@ void main() {
       getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
       final gateway = DemoModeGateway(
         registry: registry,
+        world: world,
         activate: (id) async => activated.add(id),
         profileContext: () => activeContext,
         clock: () => DateTime(2026, 8, 5, 10),
@@ -958,9 +959,9 @@ void main() {
 
       // The seeded content really landed in THIS world's journal database,
       // localized through the French catalog.
-      final world = WorldHandle.open(registry.rootFor(profile));
-      addTearDown(world.close);
-      final hero = await world.journalDb.journalEntityById(
+      final seededWorld = WorldHandle.open(registry.rootFor(profile));
+      addTearDown(seededWorld.close);
+      final hero = await seededWorld.journalDb.journalEntityById(
         manualOrbitalHabitatTaskId,
       );
       final expectedTitle = demoSeedTextForLocale(const Locale('fr'))(
@@ -994,30 +995,27 @@ void main() {
       ).thenAnswer((_) async => true);
       when(() => fts.insertText(any())).thenAnswer((_) async {});
 
-      // The DEMO generation's services are the active getIt bindings.
-      getIt
-        ..registerSingleton<JournalDb>(demoHandle.journalDb)
-        ..registerSingleton<AiConfigRepository>(
-          AiConfigRepository(demoHandle.aiConfigDb),
-        )
-        ..registerSingleton<Directory>(demoRoot);
+      // The DEMO generation is live until the switch.
+      final demoAiConfigs = AiConfigRepository(demoHandle.aiConfigDb);
+      when(() => world.journalDb).thenReturn(demoHandle.journalDb);
+      when(() => world.aiConfigs).thenReturn(demoAiConfigs);
+      when(() => world.root).thenReturn(demoRoot);
       activeContext = guestContext(demoProfile);
 
       final gateway = DemoModeGateway(
         registry: registry,
+        world: world,
         activate: (id) async {
           activated.add(id);
           activeContext = null;
-          // The profile switch: rebind getIt to the REAL generation.
-          getIt
-            ..unregister<JournalDb>()
-            ..unregister<AiConfigRepository>()
-            ..unregister<Directory>()
-            ..registerSingleton<JournalDb>(MockJournalDb())
-            ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
-            ..registerSingleton<Directory>(realRoot)
-            ..registerSingleton<PersistenceLogic>(persistence)
-            ..registerSingleton<Fts5Db>(fts);
+          // The profile switch: the REAL generation is live from here on.
+          final realJournal = MockJournalDb();
+          final realAiConfigs = MockAiConfigRepository();
+          when(() => world.journalDb).thenReturn(realJournal);
+          when(() => world.aiConfigs).thenReturn(realAiConfigs);
+          when(() => world.root).thenReturn(realRoot);
+          when(() => world.persistence).thenReturn(persistence);
+          when(() => world.fts).thenReturn(fts);
         },
         profileContext: () => activeContext,
         seedRunner: (_, _) async {},
@@ -1069,6 +1067,8 @@ void main() {
 
       expect(viaOf!.registry, same(registry));
       expect(viaMaybe!.registry, same(registry));
+      expect(viaOf!.world, isA<GetItLiveWorldServices>());
+      expect(viaMaybe!.world, isA<GetItLiveWorldServices>());
 
       // The built gateway's activate hook IS the ambient switcher.
       await viaOf!.exitDemo();

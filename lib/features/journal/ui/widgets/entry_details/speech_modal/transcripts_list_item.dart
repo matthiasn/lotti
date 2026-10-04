@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -14,7 +15,7 @@ import 'package:material_ui/material_ui.dart';
 /// detected language, and model; expanding reveals the selectable transcript
 /// text. A reveal toggle exposes a delete action that removes this transcript
 /// from the entry via [SpeechRepository.removeAudioTranscript].
-class TranscriptListItem extends StatefulWidget {
+class TranscriptListItem extends ConsumerStatefulWidget {
   const TranscriptListItem(
     this.transcript, {
     required this.entryId,
@@ -28,10 +29,10 @@ class TranscriptListItem extends StatefulWidget {
   final AudioTranscript transcript;
 
   @override
-  State<TranscriptListItem> createState() => _TranscriptListItemState();
+  ConsumerState<TranscriptListItem> createState() => _TranscriptListItemState();
 }
 
-class _TranscriptListItemState extends State<TranscriptListItem> {
+class _TranscriptListItemState extends ConsumerState<TranscriptListItem> {
   final ExpansibleController _controller = ExpansibleController();
 
   bool show = false;
@@ -79,10 +80,12 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                   minHeight: tokens.spacing.step8,
                 ),
                 onPressed: () {
-                  SpeechRepository.removeAudioTranscript(
-                    journalEntityId: widget.entryId,
-                    transcript: widget.transcript,
-                  );
+                  ref
+                      .read(speechRepositoryProvider)
+                      .removeAudioTranscript(
+                        journalEntityId: widget.entryId,
+                        transcript: widget.transcript,
+                      );
                 },
                 icon: Icon(
                   LottiIcons.delete,

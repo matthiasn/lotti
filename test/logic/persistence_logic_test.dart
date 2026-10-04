@@ -1407,7 +1407,11 @@ void main() {
           duration: const Duration(seconds: 60),
         );
 
-        final audioEntry = await SpeechRepository.createAudioEntry(audioData);
+        final audioEntry = await SpeechRepository(
+          persistenceLogic: getIt<PersistenceLogic>(),
+          journalDb: getIt<JournalDb>(),
+          domainLogger: getIt<DomainLogger>(),
+        ).createAudioEntry(audioData);
 
         expect(audioEntry, isNotNull);
 

@@ -584,7 +584,13 @@ class TutorialAppHarness {
       // back where a real entity was expected — createAiResponseEntryImpl's
       // "Failed to persist" is this exact swallowed failure). Safe as a
       // plain instance: updateBadge() no-ops on Linux/Windows.
-      ..registerSingleton<NotificationService>(NotificationService());
+      ..registerSingleton<NotificationService>(
+        NotificationService(
+          journalDb: journalDb,
+          domainLogger: getIt<DomainLogger>(),
+          onNotificationTap: routeNotificationTap,
+        ),
+      );
 
     final persistenceLogic = getIt<PersistenceLogic>();
     final world = ManualDemoWorld.penguinLogistics(now: now);

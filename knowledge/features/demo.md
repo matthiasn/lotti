@@ -84,6 +84,15 @@ deliberately **not** in getIt (getIt is reset by the switch it drives); the
 UI builds it on demand from the ambient `ProfileSwitcherScope` via
 `demoModeGatewayOf`/`maybeDemoModeGatewayOf`.
 
+For the same reason it never holds a generation's services. It reads them
+through the
+[`LiveWorldServices`](../../lib/features/demo/state/live_world_services.dart)
+it is given, whose every getter answers for the world that is live at the
+moment of the read: the demo world's journal while it plans a copy-over, the
+real world's once `activate` has switched. The composition root implements it
+over getIt (`GetItLiveWorldServices` in `lib/get_it_helpers.dart`); tests stub
+it and swap the answers where the app would switch profiles.
+
 # The seed manifest is the boundary
 
 One seed run writes the Intergalactic Penguin Logistics fixture plus the

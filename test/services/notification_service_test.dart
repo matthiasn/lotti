@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -179,13 +178,6 @@ void main() {
           ..registerSingleton<DomainLogger>(domainLogger);
       },
     );
-    // Replace the helper's JournalDb with our stable shared instance so it is
-    // the one `_db` resolves to.
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    getIt.registerSingleton<JournalDb>(sharedDb);
-
     setNotificationsEnabled(enabled: false);
     setHabitRemindersEnabled(enabled: true);
     setTaskBadgeEnabled(enabled: true);
@@ -205,8 +197,11 @@ void main() {
     void Function(String payload)? onNotificationTap,
   }) async {
     final service = NotificationService(
+      journalDb: sharedDb,
+      domainLogger: domainLogger,
       timezoneLookup: () async => tz.local.name,
-      onNotificationTap: onNotificationTap,
+      // The production router unless a test captures taps itself.
+      onNotificationTap: onNotificationTap ?? routeNotificationTap,
     );
     await service.initialized;
     return service;
@@ -258,7 +253,7 @@ void main() {
     setUp(() => tz.setLocalLocation(tz.getLocation('Europe/Berlin')));
 
     test('returns a named location without logging', () {
-      final resolver = NotificationLocationResolver();
+      final resolver = NotificationLocationResolver(domainLogger);
 
       expect(resolver.resolve('Asia/Tokyo').name, 'Asia/Tokyo');
       verifyNever(
@@ -272,7 +267,7 @@ void main() {
     });
 
     test('logs each unresolved zone once and returns local', () {
-      final resolver = NotificationLocationResolver();
+      final resolver = NotificationLocationResolver(domainLogger);
 
       expect(resolver.resolve('CEST').name, 'Europe/Berlin');
       expect(resolver.resolve('CEST').name, 'Europe/Berlin');
@@ -499,6 +494,9 @@ void main() {
         // commits only when its body returns — so an exception escaping here
         // would abort the notification row itself.
         final service = NotificationService(
+          journalDb: sharedDb,
+          domainLogger: domainLogger,
+          onNotificationTap: (_) {},
           messages: () => throw StateError('no widgets binding'),
         );
         await service.initialized;
@@ -982,6 +980,9 @@ void main() {
     test('uses the device lookup independently of the process zone', () async {
       _usePlatform(TargetPlatform.iOS);
       final service = NotificationService(
+        journalDb: sharedDb,
+        domainLogger: domainLogger,
+        onNotificationTap: (_) {},
         timezoneLookup: () async => 'Asia/Tokyo',
       );
       await service.initialized;
@@ -1342,6 +1343,23 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('a tap while a profile switch has emptied the locator is dropped, '
+        'not thrown', () async {
+      // Mid-switch, `getIt.reset()` has removed the logger as well. Called
+      // directly: the plugin's channel handler would swallow a throw.
+      getIt.unregister<DomainLogger>();
+
+      expect(() => routeNotificationTap('/people/rel-1'), returnsNormally);
+      verifyNever(
+        () => domainLogger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      );
+    });
   });
 
   group('launchNotificationPayload', () {
@@ -1365,6 +1383,9 @@ void main() {
       _usePlatform(TargetPlatform.macOS);
       channel.launchDetails = launchedBy(payload: '/people/rel-1');
       final service = NotificationService(
+        journalDb: sharedDb,
+        domainLogger: domainLogger,
+        onNotificationTap: (_) {},
         timezoneLookup: () async => tz.local.name,
       );
 
@@ -1467,8 +1488,21 @@ void main() {
   group('scheduleHabitNotification', () {
     late MockNotificationService delegate;
 
+    /// The real service, with scheduleNotification forwarded to [delegate].
+    Future<NotificationService> buildHabitService() async {
+      final service = _ForwardingNotificationService(
+        delegate,
+        journalDb: sharedDb,
+        domainLogger: domainLogger,
+        onNotificationTap: (_) {},
+        timezoneLookup: () async => tz.local.name,
+      );
+      await service.initialized;
+      return service;
+    }
+
     setUp(() {
-      // scheduleHabitNotification delegates to getIt<NotificationService>().
+      // Observes what scheduleHabitNotification hands scheduleNotification.
       delegate = MockNotificationService();
       when(
         () => delegate.scheduleNotification(
@@ -1482,7 +1516,6 @@ void main() {
           deepLink: any(named: 'deepLink'),
         ),
       ).thenAnswer((_) async {});
-      getIt.registerSingleton<NotificationService>(delegate);
     });
 
     HabitDefinition habit({required HabitSchedule schedule}) => HabitDefinition(
@@ -1503,7 +1536,7 @@ void main() {
       () async {
         _usePlatform(TargetPlatform.macOS);
         setHabitRemindersEnabled(enabled: false);
-        final service = await buildService();
+        final service = await buildHabitService();
         channel.calls.clear();
 
         await service.scheduleHabitNotification(
@@ -1535,7 +1568,7 @@ void main() {
     );
 
     test('a habit without an alert time reads no preference', () async {
-      final service = await buildService();
+      final service = await buildHabitService();
 
       await service.scheduleHabitNotification(
         habit(schedule: const HabitSchedule.daily(requiredCompletions: 1)),
@@ -1567,7 +1600,7 @@ void main() {
           ),
         );
 
-        final service = await buildService();
+        final service = await buildHabitService();
         await withClock(
           Clock.fixed(DateTime(2024, 12, 30, 23, 59, 59, 999)),
           () async {
@@ -1624,7 +1657,7 @@ void main() {
         'next habit reminder from ${scenario.now} plus ${scenario.days} calendar days',
         () async {
           tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
-          final service = await buildService();
+          final service = await buildHabitService();
           final definition = habit(
             schedule: HabitSchedule.daily(
               requiredCompletions: 1,
@@ -1661,7 +1694,7 @@ void main() {
         schedule: const HabitSchedule.daily(requiredCompletions: 1),
       );
 
-      final service = await buildService();
+      final service = await buildHabitService();
       await service.scheduleHabitNotification(definition);
 
       verifyNever(
@@ -1683,7 +1716,7 @@ void main() {
           schedule: const HabitSchedule.weekly(requiredCompletions: 1),
         );
 
-        final service = await buildService();
+        final service = await buildHabitService();
         await service.scheduleHabitNotification(definition);
 
         verifyNever(
@@ -1699,4 +1732,39 @@ void main() {
       },
     );
   });
+}
+
+/// The real service whose [scheduleNotification] goes to [delegate], so a test
+/// sees exactly what `scheduleHabitNotification` asks for.
+class _ForwardingNotificationService extends NotificationService {
+  _ForwardingNotificationService(
+    this.delegate, {
+    required super.journalDb,
+    required super.domainLogger,
+    required super.onNotificationTap,
+    super.timezoneLookup,
+  });
+
+  final NotificationService delegate;
+
+  @override
+  Future<void> scheduleNotification({
+    required String title,
+    required String body,
+    required DateTime notifyAt,
+    required int notificationId,
+    required bool showOnMobile,
+    required bool showOnDesktop,
+    bool repeat = false,
+    String? deepLink,
+  }) => delegate.scheduleNotification(
+    title: title,
+    body: body,
+    notifyAt: notifyAt,
+    notificationId: notificationId,
+    showOnMobile: showOnMobile,
+    showOnDesktop: showOnDesktop,
+    repeat: repeat,
+    deepLink: deepLink,
+  );
 }

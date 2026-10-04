@@ -28,6 +28,8 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
 import 'package:material_ui/material_ui.dart';
@@ -295,6 +297,8 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
         onFiles: (files) => handleDroppedMediaFiles(
           files,
           linkedId: item.meta.id,
+          speechRepository: ref.read(speechRepositoryProvider),
+          domainLogger: ref.read(domainLoggerProvider),
           categoryId: item.meta.categoryId,
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
         ),

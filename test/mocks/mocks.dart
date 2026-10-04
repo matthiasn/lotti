@@ -120,6 +120,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/state/live_world_services.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -217,6 +218,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -685,6 +687,10 @@ MockJournalDb mockJournalDbWithSyncFlag({
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockSpeechRepository extends Mock implements SpeechRepository {}
+
+class MockLiveWorldServices extends Mock implements LiveWorldServices {}
 
 class MockHabitAutoCompletionService extends Mock
     implements HabitAutoCompletionService {}
