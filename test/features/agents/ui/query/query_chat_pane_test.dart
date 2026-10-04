@@ -186,6 +186,9 @@ void main() {
           scope: activeScope,
           onClose: () => closeCalls++,
           companion: companion,
+          // As the task and project pages build it.
+          entryViewBuilder: (entryId) =>
+              EntryDetailsPage(itemId: entryId, showBackButton: false),
         ),
         mediaQueryData: mediaQueryData,
         overrides: [

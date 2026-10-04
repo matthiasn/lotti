@@ -11,8 +11,8 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// CTA shown on the task details page when no agent is yet attached to the
@@ -98,11 +98,10 @@ Future<void> _createTaskAgent(
   WidgetRef ref,
   String taskId,
 ) async {
-  final entryStateResult = await ref.read(
-    entryControllerProvider(taskId).future,
-  );
-  final entryState = entryStateResult?.entry;
-  if (entryState == null || entryState is! Task) return;
+  final entryState = await ref
+      .read(journalDbProvider)
+      .journalEntityById(taskId);
+  if (entryState is! Task) return;
 
   final categoryId = entryState.meta.categoryId;
   final allowedCategoryIds = categoryId != null ? {categoryId} : <String>{};

@@ -1,5 +1,5 @@
-import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/language_dropdown.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Body of the per-audio-entry speech modal: stacks the transcription

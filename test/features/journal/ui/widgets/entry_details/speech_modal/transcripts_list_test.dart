@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../../mocks/mocks.dart';
-import '../../../../../widget_test_utils.dart';
+import '../../../../../../mocks/mocks.dart';
+import '../../../../../../widget_test_utils.dart';
 import 'test_utils.dart';
 
 // ---------------------------------------------------------------------------

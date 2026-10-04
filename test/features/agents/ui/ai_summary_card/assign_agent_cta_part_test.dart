@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -109,6 +110,9 @@ void main() {
               entryControllerProvider(
                 'task-001',
               ).overrideWith(_NullEntryController.new),
+              journalDbProvider.overrideWithValue(
+                _dbReturning('task-001', null),
+              ),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
               ),
@@ -165,6 +169,9 @@ void main() {
               entryControllerProvider(
                 testTask.meta.id,
               ).overrideWith(() => _TaskEntryController(testTask)),
+              journalDbProvider.overrideWithValue(
+                _dbReturning(testTask.meta.id, testTask),
+              ),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
               ),
@@ -221,6 +228,9 @@ void main() {
               entryControllerProvider(
                 testTask.meta.id,
               ).overrideWith(() => _TaskEntryController(testTask)),
+              journalDbProvider.overrideWithValue(
+                _dbReturning(testTask.meta.id, testTask),
+              ),
               agentTemplateServiceProvider.overrideWith(
                 (ref) => templateService,
               ),
@@ -415,6 +425,7 @@ class _SuccessPathHarness {
         entryControllerProvider(
           task.meta.id,
         ).overrideWith(() => _TaskEntryController(task)),
+        journalDbProvider.overrideWithValue(_dbReturning(task.meta.id, task)),
         agentTemplateServiceProvider.overrideWith((ref) => templateService),
         taskAgentServiceProvider.overrideWith((ref) => taskAgentService),
         inferenceProfileControllerProvider.overrideWith(
@@ -424,4 +435,12 @@ class _SuccessPathHarness {
       child: child ?? AiSummaryCard(taskId: task.meta.id),
     );
   }
+}
+
+/// The journal database the assign-agent CTA reads the task from: [entity]
+/// for [id].
+MockJournalDb _dbReturning(String id, JournalEntity? entity) {
+  final db = MockJournalDb();
+  when(() => db.journalEntityById(id)).thenAnswer((_) async => entity);
+  return db;
 }

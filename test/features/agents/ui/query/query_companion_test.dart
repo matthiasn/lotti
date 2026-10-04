@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -81,6 +82,8 @@ void main() {
       makeTestableWidgetNoScroll(
         QueryCompanion(
           scope: scope,
+          entryViewBuilder: (entryId) =>
+              EntryDetailsPage(itemId: entryId, showBackButton: false),
           child: Focus(
             focusNode: taskFocus,
             child: Semantics(

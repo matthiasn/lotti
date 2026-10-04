@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 114,
+  "_total": 110,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -8,8 +8,6 @@
     "lib/features/agents/state/agent_workflow_providers.dart": ["github"],
     "lib/features/agents/state/task_agent_model_providers.dart": ["relationships"],
     "lib/features/agents/ui/agent_report_section.dart": ["tasks"],
-    "lib/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart": ["journal"],
-    "lib/features/agents/ui/query/query_chat_pane.dart": ["journal"],
     "lib/features/agents/workflow/project_agent_strategy.dart": ["projects"],
     "lib/features/agents/workflow/task_agent_workflow.dart": ["github"],
     "lib/features/ai/helpers/profile_automation_resolver.dart": ["agents"],
@@ -67,8 +65,6 @@
     "lib/features/settings/ui/pages/advanced/maintenance_page.dart": ["onboarding"],
     "lib/features/speech/services/speech_dictionary_service.dart": ["categories:ui"],
     "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": ["onboarding"],
-    "lib/features/speech/ui/widgets/speech_modal/language_dropdown.dart": ["journal"],
-    "lib/features/speech/ui/widgets/speech_modal/transcripts_list.dart": ["journal"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github","tasks","theming"],
     "lib/features/sync/repository/sync_maintenance_repository.dart": ["tasks"],
     "lib/features/sync/ui/matrix_sync_maintenance_page.dart": ["settings"],
