@@ -32,6 +32,7 @@ void f() {
   unawaited(a());
   unawaited(Future<void>.value());
   service.unawaited(b());
+  service..unawaited(c());
   // unawaited(c());
   const s = 'unawaited(d())';
 }
