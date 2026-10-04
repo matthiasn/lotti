@@ -89,7 +89,7 @@ and model-checked it. TLC found:
 Each is a design switch in the spec (`UiOnStored`, `AgentOnStored`,
 `AgentCas`, `UiRecordsStatus`, `ResolveJoinsHistory`); turning one off
 reproduces its counterexample. The conformance trace
-(`test/features/tasks/repository/task_field_writes_model_conformance.dart`)
+(`test/features/journal/repository/task_field_writes_model_conformance.dart`)
 drives the real writers, tools and resolution over a real journal database
 and pins the shortest trace each fix answers.
 

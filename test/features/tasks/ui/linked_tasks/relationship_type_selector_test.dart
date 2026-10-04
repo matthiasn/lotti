@@ -67,7 +67,7 @@ void main() {
   });
 
   // Pure DirectedRelation/ExistingRelation semantics live in
-  // test/features/tasks/model/directed_relation_test.dart; this file covers
+  // test/classes/directed_relation_test.dart; this file covers
   // only the localized phrasing and the picker widget.
   group('directedRelationLabel', () {
     testWidgets('labels each option with its own directed phrase', (
