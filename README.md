@@ -2,7 +2,8 @@
 
 [![codecov](https://codecov.io/gh/matthiasn/lotti/graph/badge.svg?token=VB6FWvA1yW)](https://codecov.io/gh/matthiasn/lotti) [![Flathub Downloads](https://img.shields.io/flathub/downloads/com.matthiasn.lotti?style=flat&label=Flathub%20installs)](https://flathub.org/en/apps/com.matthiasn.lotti) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/matthiasn/lotti/total?label=GitHub%20Releases%20downloads)](https://github.com/matthiasn/lotti/releases) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-[Discord for support](https://discord.gg/uuSaa8NpY)
+Come say hi on [Discord](https://discord.gg/uuSaa8NpY) — questions, support,
+ideas, or just what you are using Lotti for.
 
 **A distributed system of record for your memories — kept on your devices,
 and nowhere else.**
@@ -749,7 +750,8 @@ agent runtime.
 
 ## Contributing
 
-Two things genuinely help, and one thing to know up front.
+The easiest way in is to say hi on [Discord](https://discord.gg/uuSaa8NpY).
+Beyond that, two things genuinely help, and one thing to know up front.
 
 **Welcome:**
 
