@@ -88,6 +88,7 @@ write failing) and one switch (`DeleteReportsFailure`) to `ChecklistMembership`
 without changing the other three configurations' counts. TLC found one bug
 and an audit of its callers one more (P2×2). Not included in the historical
 totals above.
+
 The task-writes follow-up ([#4681](https://github.com/matthiasn/lotti/pull/4681)) adds one configuration
 (`TaskFieldWritesStale`, 15,183,786 distinct states) and three switches
 (`MetaOnStored` in `ChecklistMembership` and `TaskFieldWrites`,
