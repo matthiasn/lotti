@@ -147,7 +147,6 @@
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": {"lookups": 2},
     "lib/features/journal/ui/widgets/list_cards/journal_card_habit_completion_content_state_part.dart": {"lookups": 4},
     "lib/features/journal/ui/widgets/task_category_filter.dart": {"lookups": 2},
-    "lib/features/journal/ui/widgets/time_recording_icon.dart": {"lookups": 1},
     "lib/features/knowledge_graph/state/task_graph_provider.dart": {"lookups": 2},
     "lib/features/labels/repository/labels_repository.dart": {"lookups": 2},
     "lib/features/labels/services/label_assignment_processor.dart": {"lookups": 4},
