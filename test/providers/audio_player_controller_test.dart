@@ -6,15 +6,15 @@ import 'dart:io';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/speech/model/audio_player_state.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
+import '../mocks/mocks.dart';
 
 class FakeStackTrace extends Fake implements StackTrace {}
 

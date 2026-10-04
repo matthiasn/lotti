@@ -21,7 +21,6 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -31,6 +30,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';

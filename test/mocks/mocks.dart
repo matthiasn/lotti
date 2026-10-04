@@ -169,7 +169,6 @@ import 'package:lotti/features/relationships/workflow/relationship_agent_workflo
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
@@ -221,6 +220,7 @@ import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
+import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';

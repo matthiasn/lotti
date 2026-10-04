@@ -3,7 +3,6 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
@@ -25,11 +24,13 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_repository_field.dart';
+import 'package:lotti/features/keyboard/ui/save_shortcut_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
+import 'package:lotti/widgets/form/agent_wake_cadence_field.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
@@ -116,37 +117,39 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildCreateMode(BuildContext context) {
-    return SettingsDetailScaffold(
-      title: context.messages.createCategoryTitle,
-      // Beam to the list URL rather than `Navigator.pop`. the desktop
-      // detail surface mounts the page inline (no Navigator route was
-      // pushed), so popping is a no-op there; on mobile the URL change
-      // still pops the detail page off the Beamer stack.
-      onBack: () => beamToNamed('/settings/categories'),
-      onSaveShortcut: _handleCreate,
-      saveShortcutEnabled: () => _nameController.text.trim().isNotEmpty,
-      actionBar: SettingsFormActionBar(
-        primaryLabel: context.messages.createButton,
-        onPrimary: _handleCreate,
-        // A nameless category can't be created — say so up front instead
-        // of scolding with a toast after the tap.
-        primaryEnabled: _nameController.text.trim().isNotEmpty,
-        secondaryLabel: context.messages.cancelButton,
-        onSecondary: () => beamToNamed('/settings/categories'),
-      ),
-      children: [
-        // Creation asks only for what `createCategory` persists: name,
-        // color, icon. Privacy/active/AI defaults are configured on the
-        // edit page afterwards — no disabled placeholder controls.
-        SettingsFormSection(
-          title: context.messages.basicSettings,
-          children: [
-            _buildNameField(),
-            _buildColorPicker(),
-            _buildIconPicker(),
-          ],
+    return SaveShortcutScope(
+      onSave: _handleCreate,
+      isEnabled: () => _nameController.text.trim().isNotEmpty,
+      child: SettingsDetailScaffold(
+        title: context.messages.createCategoryTitle,
+        // Beam to the list URL rather than `Navigator.pop`. the desktop
+        // detail surface mounts the page inline (no Navigator route was
+        // pushed), so popping is a no-op there; on mobile the URL change
+        // still pops the detail page off the Beamer stack.
+        onBack: () => beamToNamed('/settings/categories'),
+        actionBar: SettingsFormActionBar(
+          primaryLabel: context.messages.createButton,
+          onPrimary: _handleCreate,
+          // A nameless category can't be created — say so up front instead
+          // of scolding with a toast after the tap.
+          primaryEnabled: _nameController.text.trim().isNotEmpty,
+          secondaryLabel: context.messages.cancelButton,
+          onSecondary: () => beamToNamed('/settings/categories'),
         ),
-      ],
+        children: [
+          // Creation asks only for what `createCategory` persists: name,
+          // color, icon. Privacy/active/AI defaults are configured on the
+          // edit page afterwards — no disabled placeholder controls.
+          SettingsFormSection(
+            title: context.messages.basicSettings,
+            children: [
+              _buildNameField(),
+              _buildColorPicker(),
+              _buildIconPicker(),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -252,103 +255,107 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final saveEnabled =
         !state.isSaving && state.hasChanges && !state.hasInvalidInput;
 
-    return SettingsDetailScaffold(
-      title: context.messages.settingsCategoriesDetailsLabel,
-      onBack: () => beamToNamed('/settings/categories'),
-      onSaveShortcut: () {
+    return SaveShortcutScope(
+      onSave: () {
         if (saveEnabled) _handleSave();
       },
-      saveShortcutEnabled: () => saveEnabled,
-      actionBar: SettingsFormActionBar(
-        primaryLabel: context.messages.saveButton,
-        onPrimary: _handleSave,
-        primaryEnabled: saveEnabled,
-        secondaryLabel: context.messages.cancelButton,
-        onSecondary: () => beamToNamed('/settings/categories'),
-      ),
-      deleteLabel: context.messages.deleteButton,
-      onDelete: _showDeleteDialog,
-      deleteEnabled: !state.isSaving,
-      children: [
-        if (state.errorMessage != null)
-          ErrorStateWidget(
-            error: state.errorMessage!,
-            mode: ErrorDisplayMode.inline,
-          ),
-        if (state.isLoading && category == null)
-          const Center(
-            child: CircularProgressIndicator(),
-          )
-        else if (category != null) ...[
-          SettingsFormSection(
-            title: context.messages.basicSettings,
-            children: [
-              _buildNameField(),
-              _buildColorPicker(),
-              _buildIconPicker(category: category),
-            ],
-          ),
-          SettingsFormSection(
-            title: context.messages.habitSectionOptionsTitle,
-            children: [
-              _buildSwitchTiles(category),
-            ],
-          ),
-          SettingsFormSection(
-            title: context.messages.taskLanguageLabel,
-            description: context.messages.categoryDefaultLanguageDescription,
-            children: [
-              _buildLanguageDropdown(category),
-            ],
-          ),
-          SettingsFormSection(
-            title: context.messages.categoryAiDefaultsTitle,
-            description: context.messages.categoryAiDefaultsDescription,
-            children: [
-              _buildDefaultProfilePicker(category),
-              _buildAutomaticInferenceSwitch(category),
-              _buildDefaultTemplatePicker(category),
-              _buildAutomaticAgentWakesSwitch(category),
-              _buildAgentWakeCadencePicker(category),
-              if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
-                  false)
-                _buildDefaultEventTemplatePicker(category),
-            ],
-          ),
-          SettingsFormSection(
-            title: context.messages.categoryKnowledgeBriefSectionTitle,
-            description:
-                context.messages.categoryKnowledgeBriefSectionDescription,
-            children: [
-              _buildKnowledgeBrief(category),
-            ],
-          ),
-          // Only where pull requests can be tracked: the repository is what
-          // a task's picker lists, and it needs a token GitHub accepts.
-          if (ref.watch(gitHubTrackingAvailableProvider))
+      isEnabled: () => saveEnabled,
+      child: SettingsDetailScaffold(
+        title: context.messages.settingsCategoriesDetailsLabel,
+        onBack: () => beamToNamed('/settings/categories'),
+        actionBar: SettingsFormActionBar(
+          primaryLabel: context.messages.saveButton,
+          onPrimary: _handleSave,
+          primaryEnabled: saveEnabled,
+          secondaryLabel: context.messages.cancelButton,
+          onSecondary: () => beamToNamed('/settings/categories'),
+        ),
+        deleteLabel: context.messages.deleteButton,
+        onDelete: _showDeleteDialog,
+        deleteEnabled: !state.isSaving,
+        children: [
+          if (state.errorMessage != null)
+            ErrorStateWidget(
+              error: state.errorMessage!,
+              mode: ErrorDisplayMode.inline,
+            ),
+          if (state.isLoading && category == null)
+            const Center(
+              child: CircularProgressIndicator(),
+            )
+          else if (category != null) ...[
             SettingsFormSection(
-              title: context.messages.githubRepositorySectionTitle,
-              description: context.messages.githubRepositorySectionDescription,
+              title: context.messages.basicSettings,
               children: [
-                _buildGitHubRepository(category),
+                _buildNameField(),
+                _buildColorPicker(),
+                _buildIconPicker(category: category),
               ],
             ),
-          SettingsFormSection(
-            title: context.messages.speechDictionarySectionTitle,
-            description: context.messages.speechDictionarySectionDescription,
-            children: [
-              _buildSpeechDictionary(category),
-            ],
-          ),
-          SettingsFormSection(
-            title: context.messages.correctionExamplesSectionTitle,
-            description: context.messages.correctionExamplesSectionDescription,
-            children: [
-              _buildCorrectionExamples(category),
-            ],
-          ),
+            SettingsFormSection(
+              title: context.messages.habitSectionOptionsTitle,
+              children: [
+                _buildSwitchTiles(category),
+              ],
+            ),
+            SettingsFormSection(
+              title: context.messages.taskLanguageLabel,
+              description: context.messages.categoryDefaultLanguageDescription,
+              children: [
+                _buildLanguageDropdown(category),
+              ],
+            ),
+            SettingsFormSection(
+              title: context.messages.categoryAiDefaultsTitle,
+              description: context.messages.categoryAiDefaultsDescription,
+              children: [
+                _buildDefaultProfilePicker(category),
+                _buildAutomaticInferenceSwitch(category),
+                _buildDefaultTemplatePicker(category),
+                _buildAutomaticAgentWakesSwitch(category),
+                _buildAgentWakeCadencePicker(category),
+                if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
+                    false)
+                  _buildDefaultEventTemplatePicker(category),
+              ],
+            ),
+            SettingsFormSection(
+              title: context.messages.categoryKnowledgeBriefSectionTitle,
+              description:
+                  context.messages.categoryKnowledgeBriefSectionDescription,
+              children: [
+                _buildKnowledgeBrief(category),
+              ],
+            ),
+            // Only where pull requests can be tracked: the repository is what
+            // a task's picker lists, and it needs a token GitHub accepts.
+            if (ref.watch(gitHubTrackingAvailableProvider))
+              SettingsFormSection(
+                title: context.messages.githubRepositorySectionTitle,
+                description:
+                    context.messages.githubRepositorySectionDescription,
+                children: [
+                  _buildGitHubRepository(category),
+                ],
+              ),
+            SettingsFormSection(
+              title: context.messages.speechDictionarySectionTitle,
+              description: context.messages.speechDictionarySectionDescription,
+              children: [
+                _buildSpeechDictionary(category),
+              ],
+            ),
+            SettingsFormSection(
+              title: context.messages.correctionExamplesSectionTitle,
+              description:
+                  context.messages.correctionExamplesSectionDescription,
+              children: [
+                _buildCorrectionExamples(category),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

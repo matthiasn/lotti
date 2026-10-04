@@ -1,9 +1,7 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
-import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
@@ -71,79 +69,6 @@ void main() {
 
     await tester.tap(find.byIcon(LottiIcons.chevronLeft));
     expect(backed, isTrue);
-  });
-
-  for (final (platform, primaryKey) in [
-    (TargetPlatform.windows, LogicalKeyboardKey.control),
-    (TargetPlatform.macOS, LogicalKeyboardKey.meta),
-  ]) {
-    testWidgets('Primary+S invokes scoped save on ${platform.name}', (
-      tester,
-    ) async {
-      var saves = 0;
-      await pumpScaffold(
-        tester,
-        platform: platform,
-        scaffold: SettingsDetailScaffold(
-          title: 'Edit label',
-          onBack: () {},
-          onSaveShortcut: () => saves++,
-          children: const [
-            Focus(autofocus: true, child: SizedBox.shrink()),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final focusedContext = FocusManager.instance.primaryFocus!.context!;
-      final controller = AppCommandControllerProvider.of(focusedContext);
-      expect(
-        controller.isAvailable(focusedContext, AppCommandId.save),
-        isTrue,
-      );
-
-      await tester.sendKeyDownEvent(primaryKey);
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-      await tester.sendKeyUpEvent(primaryKey);
-      expect(saves, 1);
-    });
-  }
-
-  testWidgets('live save availability controls Primary+S', (
-    tester,
-  ) async {
-    var saves = 0;
-    var saveEnabled = false;
-    await pumpScaffold(
-      tester,
-      scaffold: SettingsDetailScaffold(
-        title: 'Edit label',
-        onBack: () {},
-        onSaveShortcut: () => saves++,
-        saveShortcutEnabled: () => saveEnabled,
-        children: const [
-          Focus(autofocus: true, child: SizedBox.shrink()),
-        ],
-      ),
-    );
-    await tester.pump();
-
-    final focusedContext = FocusManager.instance.primaryFocus!.context!;
-    final controller = AppCommandControllerProvider.of(focusedContext);
-    expect(controller.isAvailable(focusedContext, AppCommandId.save), isFalse);
-
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-    expect(saves, 0);
-
-    saveEnabled = true;
-    expect(controller.isAvailable(focusedContext, AppCommandId.save), isTrue);
-
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-    expect(saves, 1);
   });
 
   testWidgets('renders custom slivers when provided', (tester) async {

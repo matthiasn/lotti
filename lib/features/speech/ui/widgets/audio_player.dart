@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/model/audio_player_state.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 

@@ -177,7 +177,9 @@ progress, speed, pause position, and native player setup and cleanup. It
 subscribes to `media_kit` position, buffer and completion streams.
 
 Because it is app-wide, starting a recording pauses active playback rather than
-letting the two compete for the output device.
+letting the two compete for the output device. For the same reason it lives below
+the features, in `lib/providers/audio_player_controller.dart`: the agents' query
+audio plays through it as well as the speech cards.
 
 ## One player, one queue
 

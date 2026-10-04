@@ -1,9 +1,9 @@
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/tags/meta_tag.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Showcase chip rendering a category as a `CategoryTag`, with [colorHex]
