@@ -282,10 +282,6 @@ Map<String, Map<TokenCategory, int>> readBaseline(File file) {
 /// Serialises a baseline deterministically, leaving out zero counts.
 String encodeBaseline(Map<String, Map<TokenCategory, int>> counts) {
   final keys = counts.keys.toList()..sort();
-  final totals = {
-    for (final c in TokenCategory.values)
-      c.name: counts.values.fold(0, (s, m) => s + (m[c] ?? 0)),
-  };
   final buffer = StringBuffer()
     ..writeln('{')
     ..writeln(
@@ -294,7 +290,6 @@ String encodeBaseline(Map<String, Map<TokenCategory, int>> counts) {
       'tool/design_tokens/validate.dart --update-baseline. These numbers '
       'only ever go down.",',
     )
-    ..writeln('  "_total": ${jsonEncode(totals)},')
     ..writeln('  "files": {');
   for (var i = 0; i < keys.length; i++) {
     final m = counts[keys[i]]!;

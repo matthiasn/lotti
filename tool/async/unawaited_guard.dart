@@ -176,7 +176,6 @@ String encodeBaseline(Map<String, int> counts) {
       'entry: it may shrink, never grow, and a shrink is recorded with dart '
       'run tool/async/validate.dart --update-baseline.",',
     )
-    ..writeln('  "_total": ${counts.values.fold(0, (a, b) => a + b)},')
     ..writeln('  "files": {');
   for (var i = 0; i < keys.length; i++) {
     final comma = i == keys.length - 1 ? '' : ',';
