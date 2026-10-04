@@ -35,7 +35,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
@@ -99,6 +98,7 @@ class QueryChatPane extends ConsumerStatefulWidget {
   const QueryChatPane({
     required this.scope,
     required this.onClose,
+    required this.entryViewBuilder,
     this.companion = false,
     this.storageBucket,
     this.onToggleExpanded,
@@ -111,6 +111,11 @@ class QueryChatPane extends ConsumerStatefulWidget {
   final PageStorageBucket? storageBucket;
   final VoidCallback? onToggleExpanded;
   final bool expanded;
+
+  /// Builds the view of a source entry that is neither a task nor a project
+  /// with a summary — the journal's entry details, which the hosting page
+  /// supplies so this pane does not import the journal feature above it.
+  final Widget Function(String entryId) entryViewBuilder;
   @override
   ConsumerState<QueryChatPane> createState() => _QueryChatPaneState();
 }
@@ -949,10 +954,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                               : (source! as ProjectEntry).data.title,
                           report: _sourceSummary,
                         )
-                      : EntryDetailsPage(
-                          itemId: source!.meta.id,
-                          showBackButton: false,
-                        ),
+                      : widget.entryViewBuilder(source!.meta.id),
                 ),
             ],
           ),

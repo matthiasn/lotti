@@ -42,7 +42,7 @@ right; where it names a thing or enumerates options, it has drifted.
 **Reality:** the dropdown renders `auto` plus **every** `SupportedLanguage`
 value — 42 languages, Arabic through Yoruba.
 
-- `lib/features/speech/ui/widgets/speech_modal/language_dropdown.dart:43-54`
+- `lib/features/journal/ui/widgets/entry_details/speech_modal/language_dropdown.dart:43-54`
   — `DropdownButton` items are the literal `auto` entry followed by
   `...SupportedLanguage.values.map(...)`.
 - `lib/classes/supported_language.dart:5-46` — 42 enum values.

@@ -42,7 +42,7 @@ ignore:
   # runner, so their line coverage is structurally misleading.
   - "lib/services/notification_service.dart"
   - "lib/services/window_service.dart"
-  - "lib/widgets/misc/desktop_menu.dart"
+  - "lib/beamer/desktop_menu.dart"
   - "lib/utils/screenshots.dart"
   - "lib/utils/location.dart"
   - "lib/services/portals/portal_service.dart"

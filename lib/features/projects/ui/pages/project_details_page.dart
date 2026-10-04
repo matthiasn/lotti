@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/components/calendar_pickers/design_
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -91,6 +92,8 @@ class ProjectDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return QueryCompanion(
+      entryViewBuilder: (entryId) =>
+          EntryDetailsPage(itemId: entryId, showBackButton: false),
       scope: QueryScope(kind: QueryScopeKind.project, id: projectId),
       child: _buildDetail(context, ref),
     );

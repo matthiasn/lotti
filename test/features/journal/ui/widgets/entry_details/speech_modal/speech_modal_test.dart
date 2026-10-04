@@ -2,19 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
-import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/language_dropdown.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/speech_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../../helpers/fake_entry_controller.dart';
-import '../../../../../mocks/mocks.dart';
-import '../../../../../test_data/test_data.dart';
-import '../../../../../widget_test_utils.dart';
+import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../mocks/mocks.dart';
+import '../../../../../../test_data/test_data.dart';
+import '../../../../../../widget_test_utils.dart';
 
 /// Records the language codes forwarded by the dropdown.
 class _LanguageRecordingEntryController extends FakeEntryController {
