@@ -79,3 +79,7 @@ jobs:
       # are baselined, and the baseline may only shrink.
       - name: Check imports follow the layer order
         run: dart run tool/architecture/validate.dart
+      # Fire-and-forget futures lose their errors and their ordering; the
+      # per-file count of unawaited(...) may only shrink.
+      - name: Check unawaited futures only shrink
+        run: dart run tool/async/validate.dart

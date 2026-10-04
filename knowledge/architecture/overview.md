@@ -153,6 +153,18 @@ To remove a break, move the shared type down — into the lower feature or into
 `lib/` — or invert the dependency through an interface the lower layer owns,
 as the agent-runtime registries do.
 
+**Debt counters.** Beside the layer order, CI holds five per-file counts to
+baselines that may only shrink — and that fail while they are *behind* the
+tree, so the change that removes a debt is the one that records it:
+
+| Count | Tool | Make target |
+|-------|------|-------------|
+| getIt lookups outside the composition root | `tool/di` | `make getit_check` |
+| `dart:developer` log calls outside `lib/services/` | `tool/logging` | `make developer_log_check` |
+| legacy icon references | `tool/icons` | `make icon_check` |
+| `unawaited(...)` fire-and-forget futures | `tool/async` | `make unawaited_check` |
+| lines in a file above 1,000 | `test/architecture/file_size_ratchet_test.dart` | — |
+
 The [GetIt/Riverpod split](bootstrap-and-di.md) — process-wide services in
 GetIt, scoped state in Riverpod — is held by a ratchet rather than by
 structure: `tool/di` keeps each file's count of service-locator lookups from

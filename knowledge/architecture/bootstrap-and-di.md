@@ -111,7 +111,9 @@ analyze workflow, and `make getit_check` runs it locally. A file's count may fal
 or vanish but never rise, and a file absent from the baseline may not introduce
 any lookup. After migrating a file, `dart run tool/di/validate.dart
 --update-baseline` tightens the baseline. It refuses while any file is above its
-count, so the baseline cannot absorb growth.
+count, so the baseline cannot absorb growth — and the check itself fails while
+any file is *below* its count, so the change that removes a lookup is the one
+that records it.
 
 Each service has **one** provider. `aiConfigRepositoryProvider` used to be
 declared twice, once in `lib/providers/service_providers.dart` and once in

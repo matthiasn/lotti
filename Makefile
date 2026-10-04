@@ -100,6 +100,12 @@ token_check:
 layer_check:
 	$(DART_CMD) run tool/architecture/validate.dart
 
+# Checks that unawaited(...) in lib/ only shrinks, and that a shrink is recorded
+# with `dart run tool/async/validate.dart --update-baseline`.
+.PHONY: unawaited_check
+unawaited_check:
+	$(DART_CMD) run tool/async/validate.dart
+
 # Checks the unreleased release notes in changelog.d/ — one new file per pull
 # request instead of an edit to the top of CHANGELOG.md, which is what used to
 # leave every open PR conflicted the moment one of them merged. Also fails when
