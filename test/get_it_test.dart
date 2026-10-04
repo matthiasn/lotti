@@ -3,8 +3,11 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -252,6 +255,26 @@ void main() {
           subDomain: 'sequenceLogPopulation',
         ),
       ).called(1);
+    });
+  });
+
+  group('composition-root builders for the layer seams', () {
+    setUp(() {
+      getIt
+        ..registerSingleton<JournalDb>(MockJournalDb())
+        ..registerSingleton<AgentDatabase>(MockAgentDatabase())
+        ..registerSingleton<DomainLogger>(MockDomainLogger());
+    });
+
+    test('buildConfigFlagEffects is the notification preference effects', () {
+      expect(buildConfigFlagEffects(), isA<NotificationPreferenceEffects>());
+    });
+
+    test('buildRelationshipCascade is the relationship repository', () {
+      expect(
+        buildRelationshipCascade(JournalRepository(), MockPersistenceLogic()),
+        isA<RelationshipRepository>(),
+      );
     });
   });
 }

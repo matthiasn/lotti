@@ -12,9 +12,9 @@ import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/task_agent_assignment.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
@@ -413,7 +413,7 @@ Future<JournalEvent?> createEvent({String? linkedId, String? categoryId}) =>
 Future<JournalEntity?> createScreenshot({
   String? linkedId,
   String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
+  ImageAnalysisTrigger? analysisTrigger,
   Future<ImageData> Function() capture = takeScreenshot,
 }) async {
   final persistenceLogic = getIt<PersistenceLogic>();

@@ -24,6 +24,7 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -36,7 +37,6 @@ import 'package:lotti/providers/service_providers.dart'
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,
-        matrixServiceProvider,
         outboxServiceProvider,
         syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';

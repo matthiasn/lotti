@@ -37,6 +37,7 @@ import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
+import 'package:lotti/features/journal/state/running_timer_persistence.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/model/notification_kind_flags.dart';
@@ -85,12 +86,12 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_pers
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
-import 'package:lotti/logic/running_timer_persistence.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
@@ -104,6 +105,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/notification_tap_handler.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/startup_tasks.dart';
@@ -167,6 +169,9 @@ Future<void> registerSingletons({
     NotificationService.new,
     'NotificationService',
   );
+  // Persistence applies a toggled flag's effects through this; see
+  // ConfigFlagEffects.
+  getIt.registerLazySingleton<ConfigFlagEffects>(buildConfigFlagEffects);
 
   // Proactively surface newly detected sync conflicts via an OS banner so the
   // user doesn't have to discover them by browsing settings.
@@ -488,7 +493,9 @@ Future<void> registerSingletons({
         notificationRepository: notificationRepository,
         logger: domainLogger,
       ),
-    );
+    )
+    // The same router, under the interface NotificationService resolves.
+    ..registerSingleton<NotificationTapHandler>(getIt<NotificationTapRouter>());
 
   // Finish checklist operations the app died in the middle of — an item
   // created but not yet listed, a move or a deletion half done — from the
@@ -528,4 +535,15 @@ RelationshipCascade buildRelationshipCascade(
   persistenceLogic: persistenceLogic,
   // Over the registered agent store, as the project integrity guard builds it.
   agentRepository: AgentRepository(getIt<AgentDatabase>()),
+);
+
+/// The [ConfigFlagEffects] persistence applies when a flag is toggled: the
+/// notification preference effects, over the services registered now.
+ConfigFlagEffects buildConfigFlagEffects() => NotificationPreferenceEffects(
+  journalDb: getIt<JournalDb>(),
+  // ignore: unnecessary_lambdas
+  notificationService: () => getIt<NotificationService>(),
+  // ignore: unnecessary_lambdas
+  scheduler: () => getIt<NotificationScheduler>(),
+  logger: getIt<DomainLogger>(),
 );

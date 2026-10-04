@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 /// One observation per quantitative sample, unaggregated. Percentage types
 /// (health type contains `PERCENTAGE`) are scaled ×100 so e.g. body-fat plots

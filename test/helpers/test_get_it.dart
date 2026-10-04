@@ -3,6 +3,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -82,6 +83,7 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<RelationshipCascadeFactory>(buildRelationshipCascade)
+    ..registerLazySingleton<ConfigFlagEffects>(buildConfigFlagEffects)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingService>(loggingService)
     ..registerSingleton<DomainLogger>(domainLogger)

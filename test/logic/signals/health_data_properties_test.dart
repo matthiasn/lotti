@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
+import 'package:lotti/logic/signals/health_data.dart';
 
 import 'health_data_test_helpers.dart';
 

@@ -6,17 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/journal/state/running_timer_persistence.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/logic/running_timer_persistence.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../helpers/fallbacks.dart';
-import '../helpers/test_get_it.dart';
-import '../mocks/mocks.dart';
-import '../test_data/test_data.dart';
+import '../../../helpers/fallbacks.dart';
+import '../../../helpers/test_get_it.dart';
+import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   late MockPersistenceLogic persistenceLogic;

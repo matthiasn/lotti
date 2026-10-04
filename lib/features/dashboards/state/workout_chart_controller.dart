@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/workout_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
 /// Loads *all* workout entities in a date range (not filtered by type) and
 /// keeps them live; one instance backs every workout chart sharing the same

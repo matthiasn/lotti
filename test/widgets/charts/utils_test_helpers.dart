@@ -1,7 +1,7 @@
 import 'package:glados/glados.dart'
     show Any, CombinableAny, Generator, IntAnys, ListAnys;
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/classes/observation.dart';
 
 import '../../test_data/test_data.dart';
 

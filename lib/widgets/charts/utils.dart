@@ -3,27 +3,12 @@ import 'dart:core';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
-import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:material_ui/material_ui.dart';
-
-class Observation extends Equatable {
-  const Observation(this.dateTime, this.value);
-
-  final DateTime dateTime;
-  final num value;
-
-  @override
-  String toString() {
-    return '$dateTime $value';
-  }
-
-  @override
-  List<Object?> get props => [dateTime, value];
-}
 
 String ymdh(DateTime dt) {
   final beginningOfHour = DateTime(dt.year, dt.month, dt.day, dt.hour);
