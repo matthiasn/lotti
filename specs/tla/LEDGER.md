@@ -88,6 +88,7 @@ write failing) and one switch (`DeleteReportsFailure`) to `ChecklistMembership`
 without changing the other three configurations' counts. TLC found one bug
 and an audit of its callers one more (P2×2). Not included in the historical
 totals above.
+
 The link-edits follow-up ([#4686](https://github.com/matthiasn/lotti/pull/4686)) adds one configuration
 (`EntryLinkIdentityEdits`, 46,343 distinct states), one named property
 (`NoRevival`) and one switch (`EditOnStored`) to `EntryLinkIdentity` without
