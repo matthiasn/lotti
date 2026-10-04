@@ -2275,53 +2275,77 @@ void main() {
         expect(savedState?.shouldShowEditorToolBar, isFalse);
       });
 
-      test('save with stopRecording calls TimeService.stop', () async {
-        final localMockJournalRepository = MockJournalRepository();
-        final container = makeProviderContainer(
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(
-              localMockJournalRepository,
-            ),
-          ],
+      // The stop waits a moment after the save; a timer the user started
+      // on another entry in that moment keeps running.
+      for (final ownTimer in [true, false]) {
+        test(
+          ownTimer
+              ? "save with stopRecording stops this entry's timer"
+              : 'save with stopRecording leaves a timer started meanwhile on '
+                    'another entry running',
+          () async {
+            final localMockJournalRepository = MockJournalRepository();
+            final container = makeProviderContainer(
+              overrides: [
+                journalRepositoryProvider.overrideWithValue(
+                  localMockJournalRepository,
+                ),
+              ],
+            );
+            final notifier = container.read(
+              entryControllerProvider(entryId).notifier,
+            );
+            await container.read(entryControllerProvider(entryId).future);
+            notifier.setDirty(value: true);
+
+            when(
+              () => mockPersistenceLogic.updateJournalEntityText(
+                entryId,
+                any(),
+                any(),
+              ),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockEditorStateService.entryWasSaved(
+                id: entryId,
+                lastSaved: any(named: 'lastSaved'),
+                controller: notifier.controller,
+              ),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+            ).thenAnswer((_) async {});
+            when(mockTimeService.getCurrent).thenReturn(
+              ownTimer
+                  ? testTextEntry
+                  : testTextEntry.copyWith(
+                      meta: testTextEntry.meta.copyWith(id: 'another-timer'),
+                    ),
+            );
+
+            await notifier.save(stopRecording: true);
+            await container.pump();
+
+            if (ownTimer) {
+              // The save wrote the end with the text; the stop does not again.
+              verify(() => mockTimeService.stop(persistEnd: false)).called(1);
+            } else {
+              verifyNever(
+                () =>
+                    mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+              );
+            }
+
+            // The full post-save transition: dirty cleared and the editor
+            // toolbar hidden — not just the timer side effect.
+            final savedState = await container.read(
+              entryControllerProvider(entryId).future,
+            );
+            expect(savedState, isNot(isA<EntryStateDirty>()));
+            expect(savedState?.shouldShowEditorToolBar, isFalse);
+          },
         );
-        final notifier = container.read(
-          entryControllerProvider(entryId).notifier,
-        );
-        await container.read(entryControllerProvider(entryId).future);
-        notifier.setDirty(value: true);
-
-        when(
-          () => mockPersistenceLogic.updateJournalEntityText(
-            entryId,
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockEditorStateService.entryWasSaved(
-            id: entryId,
-            lastSaved: any(named: 'lastSaved'),
-            controller: notifier.controller,
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
-        ).thenAnswer((_) async {});
-
-        await notifier.save(stopRecording: true);
-        await container.pump();
-
-        // The save wrote the end with the text; the stop does not again.
-        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
-
-        // The full post-save transition: dirty cleared and the editor
-        // toolbar hidden — not just the timer side effect.
-        final savedState = await container.read(
-          entryControllerProvider(entryId).future,
-        );
-        expect(savedState, isNot(isA<EntryStateDirty>()));
-        expect(savedState?.shouldShowEditorToolBar, isFalse);
-      });
+      }
 
       for (final fromTask in [true, false]) {
         test(

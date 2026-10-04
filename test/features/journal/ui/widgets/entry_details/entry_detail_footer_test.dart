@@ -230,7 +230,9 @@ void main() {
         mockTimeService.getStream,
       ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([testEntry]));
 
-      // The save writes the end with the text; the stop does not again.
+      // The save writes the end with the text, then stops this entry's
+      // timer — the one running — without writing the end again.
+      when(mockTimeService.getCurrent).thenReturn(testEntry);
       Future<void> mockStopTimer() => mockTimeService.stop(persistEnd: false);
       when(mockStopTimer).thenAnswer((_) async {});
 

@@ -4145,3 +4145,7 @@ What the model leaves out:
   versions, which `JournalReplication` covers.
 - **The agent re-confirming its tool call** after a start that found a timer
   running: the entry exists, so the call reports it and starts nothing.
+- **The entry page's short delay.** Its stop saves the end, waits
+  `stopRecordingDelay`, then stops the timer — only if its own entry still
+  runs, so a timer started in that moment is left to write its own end. The
+  model takes the save and the stop as one step.

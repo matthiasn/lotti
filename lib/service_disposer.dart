@@ -84,8 +84,14 @@ class ServiceDisposer {
     // A running timer stops with the app, and its end is written first,
     // while the journal and the outbox are still open: otherwise the entry
     // keeps the end of its last autosave, and the time since is lost
-    // (`specs/tla/RunningTimer.tla`, ShutdownPersists).
-    await _disposeAsyncSafely<TimeService>((s) => s.stop(), 'TimeService');
+    // (`specs/tla/RunningTimer.tla`, ShutdownPersists). Drained, not timed
+    // out: a timeout would leave the write running against the stores
+    // closed below.
+    await _disposeAsyncSafely<TimeService>(
+      (s) => s.stop(),
+      'TimeService',
+      timeout: null,
+    );
 
     // Recovery can still enqueue a resend or a burn marker. Drain it before
     // closing the outbox and the stores whose durable intents it reconciles.

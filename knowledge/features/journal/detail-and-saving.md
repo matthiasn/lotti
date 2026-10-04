@@ -179,21 +179,15 @@ or sync set since the page loaded is kept (see
 
 # Every stop writes the end
 
-Whichever way a timer stops, its entry ends when it stopped
-(`specs/tla/RunningTimer.tla`, `NoLostTime`). `TimeService.stop` writes the
-end through the same `persistRunningTimerEnd` the autosave uses, so the
-sidebar's stop button, a profile switch and quitting the app
-(`ServiceDisposer`'s first step) keep the time tracked since the last
-autosave. A new timer stops the running one the same way. The entry page's
-stop saves the end with the editor's text itself and stops with
-`persistEnd: false`, as does deleting the running entry. Only a crash loses
-time, at most one autosave interval.
-
-The task agent's time-entry tool checks that no timer runs, then reads the
-task and writes its entry before it starts its own timer. It starts it with
-`startIfIdle`, which checks again in the same step, so a timer the user
-started in between keeps running; the tool reports its entry saved but not
-started (`NoStolenTimer`).
+Whichever way a timer stops, its entry ends when it stopped; only a crash
+loses time, at most one autosave interval. The decision, and why the agent's
+tool starts a timer only while none runs, is
+[ADR 0120](../../../docs/adr/0120-every-stop-writes-the-timers-end.md); the
+model is `specs/tla/RunningTimer.tla`. At runtime: `TimeService.stop` writes
+the end through the same `persistRunningTimerEnd` the autosave uses, so the
+sidebar, a profile switch and quitting (`ServiceDisposer`'s first step) go
+through it. The entry page's stop saves the end with the editor's text, then
+stops its own timer, if it still runs, with `persistEnd: false`.
 
 ```mermaid
 stateDiagram-v2
