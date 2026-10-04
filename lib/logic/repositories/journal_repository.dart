@@ -213,7 +213,7 @@ class JournalRepository {
         await _clearImageReferences(journalEntityId, persistenceLogic);
       }
 
-      final deleted = await writeOnStored(
+      final written = await writeOnStored(
         journalDb: journalDb,
         persistenceLogic: persistenceLogic,
         id: journalEntityId,
@@ -224,6 +224,15 @@ class JournalRepository {
           ),
         ),
       );
+      // A write reported as failed can have committed: `updateDbEntity`
+      // answers null too when work after the commit throws (the search
+      // index, the badge). The stored row decides.
+      final deleted =
+          written ||
+          (await journalDb.journalEntityByIdIncludingDeleted(
+                journalEntityId,
+              ))?.meta.deletedAt !=
+              null;
       if (!deleted) return false;
 
       // Stop timer if the deleted entry is currently running

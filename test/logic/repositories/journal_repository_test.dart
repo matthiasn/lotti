@@ -498,12 +498,58 @@ void main() {
             ),
           ).thenAnswer((_) => outcome);
           when(() => mockTimeService.getCurrent()).thenReturn(entry);
+          // The stored row is still live: nothing was deleted.
+          when(
+            () => mockJournalDb.journalEntityByIdIncludingDeleted(entry.id),
+          ).thenAnswer((_) async => entry);
 
           expect(await repository.deleteJournalEntity(entry.id), isFalse);
           verifyNever(() => mockTimeService.stop());
           verifyNever(() => mockNotificationService.updateBadge());
         });
       }
+
+      test('a tombstone that committed although work after the write threw '
+          'is reported as deleted', () async {
+        // updateDbEntity answers null too when the search index or the
+        // badge throws after the row was written.
+        final entry = testJournalEntry();
+        when(
+          () => mockJournalDb.journalEntityById(entry.id),
+        ).thenAnswer((_) async => entry);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.first as Metadata,
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entry.id),
+        ).thenAnswer(
+          (_) async => entry.copyWith(
+            meta: entry.meta.copyWith(deletedAt: DateTime(2024, 3, 15, 11)),
+          ),
+        );
+        when(() => mockTimeService.getCurrent()).thenReturn(entry);
+        when(
+          () => mockTimeService.stop(),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
+
+        expect(await repository.deleteJournalEntity(entry.id), isTrue);
+        verify(() => mockTimeService.stop()).called(1);
+      });
 
       test('the tombstone is built on the entry as stored: a version stored '
           'while it was written is built on again', () async {
