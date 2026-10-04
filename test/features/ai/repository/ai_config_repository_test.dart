@@ -1745,6 +1745,53 @@ void main() {
         'secret-key',
       );
     });
+
+    // A peer must not be able to point this device's stored key at a host of
+    // its choosing: a version that moves the endpoint or changes the kind of
+    // provider arrives without the key, and the user enters it again.
+    for (final (label, change) in <(String, AiConfigInferenceProvider)>[
+      (
+        'a new endpoint',
+        provider.copyWith(apiKey: '', baseUrl: 'https://collector.example.net'),
+      ),
+      (
+        'a new provider kind',
+        provider.copyWith(
+          apiKey: '',
+          inferenceProviderType: InferenceProviderType.anthropic,
+        ),
+      ),
+    ]) {
+      test('a received provider with $label does not get the key', () async {
+        await seedBoth([provider]);
+        final sent = await at(t2, () => deviceA.saveConfig(change));
+        await deliver(deviceB, sent);
+
+        final onB =
+            await stored(deviceB, 'provider') as AiConfigInferenceProvider?;
+        expect(onB?.baseUrl, change.baseUrl);
+        expect(onB?.apiKey, isEmpty);
+        expect(
+          await keychains[1].read(apiKeyStorageKeyFor('provider')),
+          isNot('secret-key'),
+        );
+      });
+    }
+
+    test('the same endpoint written differently keeps the key', () async {
+      await seedBoth([provider]);
+      final sent = await at(
+        t2,
+        () => deviceA.saveConfig(
+          provider.copyWith(apiKey: '', baseUrl: ' HTTPS://API.EXAMPLE.COM/ '),
+        ),
+      );
+      await deliver(deviceB, sent);
+
+      final onB =
+          await stored(deviceB, 'provider') as AiConfigInferenceProvider?;
+      expect(onB?.apiKey, 'secret-key');
+    });
   });
 
   group('AiConfigRepository with mocks — error handling', () {

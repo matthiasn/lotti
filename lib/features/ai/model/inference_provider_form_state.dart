@@ -56,30 +56,35 @@ class DescriptionValue extends FormzInput<String, ProviderFormError> {
   }
 }
 
+/// Whether [value] is usable as an inference provider's base URL: exactly the
+/// `http` or `https` scheme, a host, and no credentials in the URL — a base URL
+/// is stored, shown and synced, so a password in it would travel with it.
+///
+/// Plain `http` stays allowed: self-hosted servers on a LAN name (`ollama.lan`,
+/// a single-label host) cannot be told apart from public ones by spelling. A
+/// synced change of endpoint never inherits this device's API key, so a
+/// remote device cannot point a stored key at a host of its choosing
+/// (`AiConfigRepository`).
+bool isWellFormedInferenceBaseUrl(String value) {
+  final uri = Uri.tryParse(value.trim());
+  return uri != null &&
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty;
+}
+
 /// The provider's API base URL. Optional (empty is valid); when set it must
-/// parse to an absolute http/https URI.
+/// satisfy [isWellFormedInferenceBaseUrl].
 class BaseUrl extends FormzInput<String, ProviderFormError> {
   const BaseUrl.pure([super.value = '']) : super.pure();
   const BaseUrl.dirty([super.value = '']) : super.dirty();
 
   @override
   ProviderFormError? validator(String value) {
-    // Empty URLs are valid (field is optional)
-    if (value.isEmpty) {
-      return null;
-    }
-
-    // Simple URL validation
-    try {
-      final uri = Uri.parse(value);
-      if (!uri.isAbsolute ||
-          (!uri.scheme.startsWith('http') && !uri.scheme.startsWith('https'))) {
-        return ProviderFormError.invalidUrl;
-      }
-      return null;
-    } catch (_) {
-      return ProviderFormError.invalidUrl;
-    }
+    if (value.isEmpty) return null;
+    return isWellFormedInferenceBaseUrl(value)
+        ? null
+        : ProviderFormError.invalidUrl;
   }
 }
 
@@ -119,13 +124,15 @@ class InferenceProviderFormState with FormzMixin {
 
   /// Materializes the form into an [AiConfigInferenceProvider]. Generates a
   /// fresh UUID when [id] is null (new provider) and stamps `createdAt` to now.
+  /// The base URL is stored trimmed, as [isWellFormedInferenceBaseUrl] judged
+  /// it: clients append paths to it verbatim.
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
     return AiConfig.inferenceProvider(
       id: id ?? uuid.v1(),
       name: name.value,
       apiKey: apiKey.value,
-      baseUrl: baseUrl.value,
+      baseUrl: baseUrl.value.trim(),
       description: description.value,
       createdAt: DateTime.now(),
       inferenceProviderType: inferenceProviderType,

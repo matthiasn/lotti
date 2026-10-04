@@ -244,9 +244,12 @@ checks this against is `specs/tla/AiConfigReplication.tla`.
   is stored, so a send that throws leaves the model live and the message
   unprocessed. When sync delivers the same message again, the cleanup runs
   again, whether or not the message changes a row.
-- **A received provider without a key keeps the receiver's key.** An empty key
-  on the wire means the sender's keychain read came back empty, not that the
-  user removed it. A provider's deletion does remove it.
+- **A received provider without a key keeps the receiver's key** — while it
+  still points at the same endpoint. An empty key on the wire means the
+  sender's keychain read came back empty, not that the user removed it. A
+  revision that changes the base URL (compared without surrounding space,
+  trailing slashes or scheme/host case) or the provider kind does not inherit
+  the key, and a provider's deletion removes it.
 
 ```mermaid
 sequenceDiagram

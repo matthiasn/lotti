@@ -168,16 +168,35 @@ class AiConfigRepository {
     );
   }
 
-  /// A received live provider without a key, holding the key stored here.
+  /// A received live provider without a key, holding the key stored here —
+  /// but only while it still points where that key was entered for.
+  ///
+  /// A version that changes the provider's endpoint or kind arrives without
+  /// this device's key, so a peer cannot redirect a stored key to a host of
+  /// its choosing; the user enters the key again for the new endpoint.
   static AiConfig _withKeptApiKey(AiConfig incoming, AiConfig? existing) {
     if (incoming is AiConfigInferenceProvider &&
         incoming.deletedAt == null &&
         incoming.apiKey.isEmpty &&
         existing is AiConfigInferenceProvider &&
-        existing.apiKey.isNotEmpty) {
+        existing.apiKey.isNotEmpty &&
+        incoming.inferenceProviderType == existing.inferenceProviderType &&
+        _sameEndpoint(incoming.baseUrl, existing.baseUrl)) {
       return incoming.copyWith(apiKey: existing.apiKey);
     }
     return incoming;
+  }
+
+  /// Whether two base URLs name the same endpoint, ignoring surrounding space,
+  /// trailing slashes and the case of the scheme and host.
+  static bool _sameEndpoint(String a, String b) {
+    String normalized(String url) {
+      final trimmed = url.trim().replaceFirst(RegExp(r'/+$'), '');
+      final uri = Uri.tryParse(trimmed);
+      return uri == null ? trimmed : uri.normalizePath().toString();
+    }
+
+    return normalized(a) == normalized(b);
   }
 
   /// Deletes, and sends the deletion of, every live model of [providerId]
