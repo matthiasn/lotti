@@ -1,5 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';

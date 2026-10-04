@@ -21,7 +21,7 @@ sources:
     title: Migration ratchet baseline
     last_modified: 2026-08-19
   - id: category-glyphs
-    resource: ../../../lib/features/categories/domain/category_icon_data.dart
+    resource: ../../../lib/widgets/category_icon_data.dart
     title: A domain pictogram map
     last_modified: 2026-08-19
   - id: filled

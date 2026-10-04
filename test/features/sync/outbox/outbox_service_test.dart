@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas, cascade_invocations
 
+import 'package:lotti/database/outbox_status.dart';
+
 import 'outbox_service_test_harness.dart';
 
 void main() {

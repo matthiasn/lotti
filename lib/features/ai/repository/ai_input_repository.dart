@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,12 +12,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/categories/domain/category_knowledge_brief.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
@@ -26,6 +25,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Repository for preparing AI input data from journal entities.

@@ -109,7 +109,7 @@ failures. See v3 plan for the actual fix using POSIX `_exit()` via FFI.
 1. **`lib/services/window_service.dart`**: In `_handleClose()`, replace
    `await Future<void>.delayed(ffiDrainGracePeriod)` +
    `await windowManager.destroy()` with `exit(0)`.
-2. **`lib/services/service_disposer.dart`**: Remove the
+2. **`lib/service_disposer.dart`**: Remove the
    `ffiDrainGracePeriod` constant (no longer used).
 3. **Update tests** to verify the new shutdown behavior.
 4. **Update CHANGELOG** and metainfo.
@@ -117,7 +117,7 @@ failures. See v3 plan for the actual fix using POSIX `_exit()` via FFI.
 ## Files changed
 
 - `lib/services/window_service.dart`
-- `lib/services/service_disposer.dart`
+- `lib/service_disposer.dart`
 - `test/services/window_service_test.dart`
 - `CHANGELOG.md`
 - `flatpak/com.matthiasn.lotti.metainfo.xml`

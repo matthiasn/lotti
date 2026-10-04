@@ -1,0 +1,301 @@
+import 'package:lotti/classes/category_icon/category_icon_names.dart';
+import 'package:lotti/services/dev_logger.dart';
+
+export 'package:lotti/classes/category_icon/category_icon_names.dart';
+
+/// Constants for CategoryIcon functionality.
+///
+/// This class provides reusable constants for sizing, spacing, and configuration
+/// of category icon-related widgets to ensure consistent styling throughout the app.
+abstract final class CategoryIconConstants {
+  /// Default icon size multiplier for category display
+  static const double iconSizeMultiplier = 0.56;
+
+  /// Default text size multiplier for category display
+  static const double textSizeMultiplier = 0.4;
+
+  /// Default border width for category icon display
+  static const double borderWidth = 2;
+
+  /// Default icon size for icon picker grid
+  static const double pickerIconSize = 28;
+
+  /// Number of columns in icon picker grid
+  static const int pickerGridColumns = 4;
+
+  /// Spacing between grid items
+  static const double pickerGridSpacing = 12;
+
+  /// Width : height ratio of a picker grid tile. Below 1 so tiles are taller
+  /// than wide: on narrow phones the dialog shrinks under [pickerMaxWidth]
+  /// and a square tile (~57pt at 375pt screens) cannot fit the icon plus a
+  /// two-line label without overflowing.
+  static const double pickerTileAspectRatio = 0.85;
+
+  /// Icon picker dialog max width
+  static const double pickerMaxWidth = 400;
+
+  /// Icon picker text size
+  static const double pickerTextSize = 10;
+
+  /// Default category icon display size
+  static const double defaultIconSize = 43.2;
+
+  /// Icon sizes for different contexts - Single source of truth
+  /// Large icons for prominent displays (category details, large cards)
+  static const double iconSizeLarge = 38.4;
+
+  /// Medium icons for list items, cards with text (task definition)
+  static const double iconSizeMedium = 35.2;
+
+  /// Small icons for compact lists, inline displays (journal entries)
+  static const double iconSizeSmall = 24;
+
+  /// Extra small icons for dense interfaces
+  static const double iconSizeExtraSmall = 16;
+
+  /// Alpha values and other constants
+  static const double selectedBackgroundAlpha = 0.15;
+  static const double fallbackIconAlpha = 51;
+  static const double fallbackIconSizeMultiplier = 0.6;
+  static const double luminanceThreshold = 0.5;
+
+  /// Border width in picker (same for selected and unselected to prevent breathing)
+  static const double pickerBorderWidth = 2;
+
+  /// Default padding for icon picker
+  static const double pickerPadding = 16;
+
+  /// Spacing between icon and text in picker
+  static const double iconTextSpacing = 4;
+
+  /// Modal and UI layout constants
+  /// Maximum height ratio for create modal
+  static const double modalMaxHeightRatio = 0.85;
+
+  /// Standard border radius for UI elements
+  static const double borderRadius = 12;
+
+  /// Small border radius for color picker
+  static const double colorPickerBorderRadius = 10;
+
+  /// Upper clamp on the `flutter_colorpicker` saturation/value square
+  /// — matches the package's own default (`colorPickerWidth = 300`) so
+  /// wide modals don't get a disproportionately huge picker. There is
+  /// no lower clamp on purpose: with `portraitOnly: true` the whole
+  /// picker is exactly this wide, so enforcing a minimum bigger than
+  /// the available width would just re-introduce horizontal overflow
+  /// on extremely narrow surfaces (split-views, narrow test rigs).
+  static const double colorPickerMaxSquareWidth = 300;
+
+  /// Standard section spacing
+  static const double sectionSpacing = 16;
+
+  /// Small section spacing (also used for button spacing)
+  static const double smallSectionSpacing = 8;
+
+  /// Icon preview size in forms
+  static const double iconPreviewSize = iconSizeMedium;
+
+  /// Standard icon size for buttons and UI elements
+  static const double standardIconSize = 28;
+
+  /// Small arrow icon size
+  static const double arrowIconSize = 16;
+}
+
+/// String constants for CategoryIcon functionality.
+///
+/// This class provides reusable string constants to avoid hardcoded strings
+/// throughout the category icon implementation, improving maintainability and localization.
+/// Non-localizable string constants for category icons. All user-visible
+/// icon-picker copy lives in the l10n catalog (`categoryIcon*` keys).
+abstract final class CategoryIconStrings {
+  /// Default fallback character when category name is empty
+  static const String fallbackCharacter = '?';
+
+  /// Warning message prefix for invalid icon names (log output)
+  // Used by CategoryIcon.fromJson below; DCM fails to connect the
+  // static constant read in this file.
+  // ignore: unused-code
+  static const String invalidIconWarning =
+      'Warning: Invalid CategoryIcon name: ';
+}
+
+/// Enum representing all available category icons in Lotti.
+///
+/// These icons cover the main use cases for life tracking, habits, and tasks.
+/// Each enum value maps to a specific Material Design icon and has a human-readable
+/// display name for use in the UI.
+///
+/// The icons are organized into logical groups:
+/// - Health & Wellness: fitness, medical, nutrition, etc.
+/// - Work & Productivity: tasks, meetings, work-related activities
+/// - Personal Development: learning, reading, social activities
+/// - Utility & Tracking: money, travel, technology-related
+enum CategoryIcon {
+  // Health & Wellness
+  fitness,
+  running,
+  swimming,
+  yoga,
+  nutrition,
+  water,
+  dining,
+  medical,
+  medication,
+  heartHealth,
+  heartPulse,
+  sleep,
+  bedtime,
+  mood,
+  mindfulness,
+  mentalHealth,
+
+  // Work & Productivity
+  checklist,
+  assignment,
+  clipboard,
+  work,
+  meeting,
+  laptop,
+  home,
+  cleaning,
+  chores,
+  shopping,
+  groceries,
+  store,
+  commute,
+  car,
+  transit,
+
+  // Personal Development
+  reading,
+  writing,
+  journal,
+  school,
+  brain,
+  learning,
+  people,
+  relationships,
+  social,
+  baby,
+  gaming,
+  music,
+  art,
+  photography,
+
+  // Utility & Tracking
+  wallet,
+  money,
+  savings,
+  location,
+  travel,
+  airplane,
+  schedule,
+  calendar,
+  timer,
+  phone,
+  computer,
+  connectivity,
+
+  // Nature & Outdoors
+  cycling,
+  hiking,
+  camping,
+  pets,
+  garden,
+
+  // Food & Drink
+  cooking,
+  coffee,
+
+  // Communication
+  email,
+  chat,
+  videoCall,
+
+  // Entertainment
+  movie,
+  podcast,
+  theater,
+
+  // Creative & Skills
+  coding,
+  crafts,
+  dance,
+
+  // Household & Maintenance
+  laundry,
+  repair,
+
+  // Finance & Career
+  banking,
+  investment,
+  receipt,
+
+  // Events & Celebrations
+  celebration,
+  gift,
+  cake,
+
+  // Education & Knowledge
+  language,
+  science,
+  presentation,
+
+  // Spiritual & Well-being
+  prayer,
+  gratitude,
+
+  // Self-care & Wellness
+  spa,
+  stretching,
+
+  // Weather & Nature
+  weather,
+  nature,
+
+  // Volunteering
+  volunteer,
+  recycling,
+}
+
+/// Lookup, display name and serialisation for [CategoryIcon]. Its glyph is
+/// `CategoryIconGlyph.iconData` in `lib/widgets/category_icon_data.dart`.
+extension CategoryIconExtension on CategoryIcon {
+  /// Static map for O(1) lookup of CategoryIcon by name
+  /// Initialized once to avoid repeated iteration through enum values
+  static final Map<String, CategoryIcon> _byName = Map.fromEntries(
+    CategoryIcon.values.map((e) => MapEntry(e.name, e)),
+  );
+
+  /// Human-readable display name for the icon
+  String get displayName => categoryIconDisplayNames[this]!;
+
+  /// Convert CategoryIcon to string for serialization
+  String toJson() => name;
+
+  /// Convert string to CategoryIcon for deserialization
+  /// Returns null if [json] is null, empty, or not a valid CategoryIcon name
+  /// Uses O(1) map lookup for efficient performance
+  static CategoryIcon? fromJson(String? json) {
+    if (json == null || json.trim().isEmpty) return null;
+
+    final trimmedJson = json.trim();
+    final icon = _byName[trimmedJson];
+
+    if (icon == null) {
+      // Log the error in debug mode for troubleshooting
+      assert(() {
+        DevLogger.warning(
+          name: 'CategoryIcon',
+          message: '${CategoryIconStrings.invalidIconWarning}"$trimmedJson"',
+        );
+        return true;
+      }(), 'Invalid CategoryIcon name: "$trimmedJson"');
+    }
+
+    return icon;
+  }
+}

@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 
 void main() {

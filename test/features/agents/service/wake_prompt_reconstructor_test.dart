@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -12,7 +13,6 @@ import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 

@@ -3,11 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/provenance/crypto/canonical_json.dart';
 import 'package:lotti/features/provenance/crypto/ed25519.dart';
 import 'package:lotti/features/provenance/crypto/hex.dart';
 import 'package:lotti/features/provenance/envelope_crypto.dart';
 import 'package:lotti/features/provenance/model/envelope.dart';
+import 'package:lotti/utils/canonical_json.dart';
 
 import 'envelope_fixtures.dart';
 

@@ -153,7 +153,7 @@ flowchart TD
 ## Related
 
 - `docs/daily_os_ai_runtime_architecture.md` (§8, Thread G)
-- `lib/features/sync/vector_clock.dart`
+- `lib/classes/vector_clock.dart`
 - `lib/features/agents/README.md` (Wake Orchestration: vector-clock self-suppression)
 - Kleppmann, "How to do distributed locking"
 - ADR 0001, ADR 0016, ADR 0017, ADR 0019

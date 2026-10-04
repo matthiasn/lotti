@@ -4,11 +4,11 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/sync_sequence_head_tracker.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
 import '../../../database/sync_db_test_utils.dart';
 import '../../../mocks/mocks.dart';

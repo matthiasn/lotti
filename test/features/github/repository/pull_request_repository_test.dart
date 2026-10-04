@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';

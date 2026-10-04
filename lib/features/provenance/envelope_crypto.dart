@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:lotti/features/provenance/crypto/canonical_json.dart';
 import 'package:lotti/features/provenance/crypto/domain_hash.dart';
 import 'package:lotti/features/provenance/crypto/ed25519.dart';
 import 'package:lotti/features/provenance/crypto/hex.dart';
 import 'package:lotti/features/provenance/model/envelope.dart';
+import 'package:lotti/utils/canonical_json.dart';
 
 /// A device's id: the fingerprint of its Ed25519 public key.
 String deviceIdFor(List<int> publicKey) {

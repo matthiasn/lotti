@@ -5,8 +5,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 
 part 'category_details_controller.freezed.dart';

@@ -33,6 +33,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';

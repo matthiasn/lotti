@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';

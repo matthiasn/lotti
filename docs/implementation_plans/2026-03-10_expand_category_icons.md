@@ -119,7 +119,7 @@ but users frequently create categories for which no fitting icon exists:
 
 ## Files to Modify
 
-### 1. `lib/features/categories/domain/category_icon.dart`
+### 1. `lib/classes/category_icon/category_icon.dart`
 **The main file. All changes concentrate here.**
 
 - **Enum values** (lines 137–202): Add 35 new values organized in new groups after the
@@ -131,7 +131,7 @@ but users frequently create categories for which no fitting icon exists:
 - **`suggestFromName` keyword mappings** (lines 510–572): Add ~60 new keyword entries for
   the new icons.
 
-### 2. `test/features/categories/domain/category_icon_test.dart`
+### 2. `test/classes/category_icon/category_icon_test.dart`
 **Update existing tests, add new ones.**
 
 - The `'should return correct IconData for all enum values'` test already iterates all
@@ -181,7 +181,7 @@ but users frequently create categories for which no fitting icon exists:
 3. Run `dart-mcp.dart_format` to normalize formatting.
 4. Update tests: spot-checks + keyword mapping tests.
 5. Run targeted tests: `dart-mcp.run_tests` on
-   `test/features/categories/domain/category_icon_test.dart` and
+   `test/classes/category_icon/category_icon_test.dart` and
    `test/features/categories/ui/widgets/category_icon_picker_test.dart`.
 6. Update CHANGELOG.md and metainfo.xml.
 7. Update the categories feature README if it mentions icon count.

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';

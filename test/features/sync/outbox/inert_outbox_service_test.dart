@@ -1,9 +1,9 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   late InertOutboxService service;

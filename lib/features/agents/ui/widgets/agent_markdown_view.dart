@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' as legacy;
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Renders agent-authored markdown using the same typography and surface

@@ -1,5 +1,5 @@
+import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/l10n/app_localizations.dart';

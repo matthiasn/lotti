@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
     as db;
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 
 /// Blob-plus-projection conversions for AI attribution domain records.
 class AttributionDbConversions {

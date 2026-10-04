@@ -1,8 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/wake/wake_suppression_tracker.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 enum _GeneratedSuppressionTokenSlot { first, second, third, unrelated }
 

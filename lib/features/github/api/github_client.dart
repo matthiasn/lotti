@@ -4,11 +4,11 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/github/github_repository.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/pull_request_mapper.dart';
-import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/open_pull_request.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 /// Why a GitHub call failed.
 enum GitHubFailureKind {

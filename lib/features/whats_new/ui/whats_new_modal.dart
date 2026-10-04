@@ -9,7 +9,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_hero_banner.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';

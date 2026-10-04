@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 /// Persistence boundary for the outbound sync queue.

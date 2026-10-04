@@ -1,3 +1,4 @@
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     show AgentDatabase;
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 

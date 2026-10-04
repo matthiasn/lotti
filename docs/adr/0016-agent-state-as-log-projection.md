@@ -76,5 +76,5 @@ flowchart LR
 
 - `docs/daily_os_ai_runtime_architecture.md` (§4, Move 1)
 - `lib/features/agents/README.md` (Memory Model)
-- `lib/features/sync/vector_clock.dart`
+- `lib/classes/vector_clock.dart`
 - ADR 0001, ADR 0017, ADR 0018

@@ -6,6 +6,8 @@ import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,7 +16,6 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -23,7 +24,6 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
-import '../test_utils.dart';
 import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();

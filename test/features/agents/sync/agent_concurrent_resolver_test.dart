@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../agent_test_device.dart';

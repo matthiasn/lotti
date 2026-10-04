@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
 // ---------------------------------------------------------------------------
 // Glados helpers — top-level so they are accessible inside main()

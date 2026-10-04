@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 
 import 'support/ai_inference_entrypoint_inventory.dart';
 

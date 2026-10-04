@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Dequeue-time coalescing of an entity's outbox rows (ADR 0086).
 ///

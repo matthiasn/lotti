@@ -1,5 +1,5 @@
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 
 enum GeneratedInferenceIdSlot { primary, secondary }

@@ -1,6 +1,6 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 // ---------------------------------------------------------------------------
 // Glados generator helpers for Metadata.

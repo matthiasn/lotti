@@ -1,7 +1,8 @@
-import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Modal dialog for selecting category icons from the available set.

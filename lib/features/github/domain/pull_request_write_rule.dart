@@ -1,6 +1,6 @@
+import 'package:lotti/classes/github/pull_request_order.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
-import 'package:lotti/features/github/domain/pull_request_order.dart';
 
 /// How old a stored stamp may grow before an unchanged observation is
 /// written anyway, so the entry's age stays honest on other devices.

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';

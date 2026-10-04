@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/notifications/model/notification_inbox_projection.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 class _GeneratedInboxSpec {
   const _GeneratedInboxSpec({

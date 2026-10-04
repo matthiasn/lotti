@@ -4,7 +4,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/utils/entry_tools.dart';
 
 const _fallbackActualCategory = DayAgentCategory(
   id: 'uncategorized',

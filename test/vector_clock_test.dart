@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 // Fixed, deterministic node IDs — VectorClock treats these purely as opaque map
 // keys, so concrete literals keep the tests reproducible (the previous

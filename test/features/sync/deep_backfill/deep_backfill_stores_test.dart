@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -18,8 +20,6 @@ import 'package:lotti/features/ai_consumption/database/consumption_database.dart
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_stores.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

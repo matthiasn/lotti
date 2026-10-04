@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 
 import '../pull_request_fixtures.dart';

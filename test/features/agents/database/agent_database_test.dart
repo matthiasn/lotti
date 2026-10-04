@@ -6,12 +6,12 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show QueryRow, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
 

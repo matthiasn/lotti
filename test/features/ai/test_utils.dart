@@ -28,6 +28,7 @@ export 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
     show aiConfigByTypeControllerProvider;
 export 'package:lotti/l10n/app_localizations.dart';
 export 'package:material_ui/material_ui.dart' show GlobalMaterialLocalizations;
+
 // Re-export MockAiConfigRepository from central mocks for existing consumers
 export '../../mocks/mocks.dart' show MockAiConfigRepository;
 

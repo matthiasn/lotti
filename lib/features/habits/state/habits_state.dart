@@ -4,7 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/habits/model/habit_completion_record.dart';
+import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';

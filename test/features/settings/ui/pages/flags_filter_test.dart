@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/settings/domain/config_flag_placement.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 

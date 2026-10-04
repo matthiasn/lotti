@@ -316,7 +316,7 @@
     "lib/services/window_service.dart": {"lookups": 3, "isRegistered": 1},
     "lib/utils/file_utils.dart": {"lookups": 2, "isRegistered": 1},
     "lib/utils/location.dart": {"lookups": 4},
-    "lib/utils/markdown_link_utils.dart": {"lookups": 1, "isRegistered": 1},
+    "lib/widgets/markdown_link_utils.dart": {"lookups": 1, "isRegistered": 1},
     "lib/utils/screenshots.dart": {"lookups": 3},
     "lib/widgets/app_bar/settings_header_bar.dart": {"lookups": 1},
     "lib/widgets/app_bar/title_app_bar.dart": {"lookups": 1},

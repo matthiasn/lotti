@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Number of distinct authoring hosts the generators draw from. Small enough
 /// that `(hostId, id)` tiebreaks are exercised, large enough for variety.

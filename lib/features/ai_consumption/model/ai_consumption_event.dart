@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'ai_consumption_event.freezed.dart';
 part 'ai_consumption_event.g.dart';

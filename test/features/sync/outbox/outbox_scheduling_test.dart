@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../../ai_consumption/test_utils.dart';
 

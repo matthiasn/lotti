@@ -1,6 +1,6 @@
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'constants.dart';
 

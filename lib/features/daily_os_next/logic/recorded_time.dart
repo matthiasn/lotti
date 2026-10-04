@@ -2,7 +2,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/utils/entry_tools.dart';
 
 /// Shared recorded-time resolution for Daily OS consumers.
 ///

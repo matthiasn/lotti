@@ -1,5 +1,5 @@
+import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/habits/model/habit_completion_record.dart';
 
 /// Projects an existing `HabitCompletionEntry` fixture onto the lean
 /// [HabitCompletionRecord] the habits reads now return.

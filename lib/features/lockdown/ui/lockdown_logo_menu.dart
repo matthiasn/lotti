@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon_data.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable key prefix for the per-category rows of the logo menu; the full
