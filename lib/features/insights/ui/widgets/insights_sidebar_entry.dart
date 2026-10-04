@@ -1,7 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -13,7 +14,7 @@ import 'package:material_ui/material_ui.dart';
 /// [NavService.desktopShowTimeAnalysis] (written by `CalendarLocation`, so
 /// the URL stays the single source of truth) and opens the full-screen
 /// analytics surface at `/calendar/time`.
-class InsightsSidebarEntry extends StatelessWidget {
+class InsightsSidebarEntry extends ConsumerWidget {
   const InsightsSidebarEntry({
     this.wrapInSurface = true,
     super.key,
@@ -22,9 +23,9 @@ class InsightsSidebarEntry extends StatelessWidget {
   final bool wrapInSurface;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final entry = ValueListenableBuilder<bool>(
-      valueListenable: getIt<NavService>().desktopShowTimeAnalysis,
+      valueListenable: ref.watch(navServiceProvider).desktopShowTimeAnalysis,
       builder: (context, active, _) {
         return SidebarSubsectionAction(
           label: context.messages.insightsTimeAnalysisTitle,

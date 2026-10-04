@@ -1,9 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
@@ -45,7 +46,7 @@ typedef _KindRow = ({
 /// makes the change take effect at once. A kind's rows keep landing in the
 /// bell whatever its switch says: the preference decides whether the OS is
 /// told, not whether Lotti remembers.
-class NotificationSettingsBody extends StatelessWidget {
+class NotificationSettingsBody extends ConsumerWidget {
   const NotificationSettingsBody({super.key});
 
   /// The kinds, in the order the page lists them. The badge row is last and
@@ -103,7 +104,7 @@ class NotificationSettingsBody extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final noteStyle = tokens.typography.styles.body.bodySmall.copyWith(
@@ -111,7 +112,7 @@ class NotificationSettingsBody extends StatelessWidget {
     );
 
     return StreamBuilder<Set<ConfigFlag>>(
-      stream: getIt<JournalDb>().watchConfigFlags(),
+      stream: ref.watch(journalDbProvider).watchConfigFlags(),
       builder: (context, snapshot) {
         final flags = <String, ConfigFlag>{
           for (final flag in snapshot.data ?? <ConfigFlag>{}) flag.name: flag,
@@ -134,9 +135,11 @@ class NotificationSettingsBody extends StatelessWidget {
           icon: icon,
           value: flag.status,
           enabled: enabled,
-          onChanged: (status) => getIt<PersistenceLogic>().setConfigFlag(
-            flag.copyWith(status: status),
-          ),
+          onChanged: (status) => ref
+              .read(persistenceLogicProvider)
+              .setConfigFlag(
+                flag.copyWith(status: status),
+              ),
         );
 
         final kindRows = [

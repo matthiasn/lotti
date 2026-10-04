@@ -1,4 +1,4 @@
-import 'package:lotti/database/maintenance.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
@@ -8,8 +8,8 @@ import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
@@ -45,20 +45,21 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
 /// Hovering a row fades the hairlines bracketing it, matching the
 /// Advanced → Maintenance list this page mirrors — see
 /// [HoverDividerIndex].
-class MatrixSyncMaintenanceBody extends StatefulWidget {
+class MatrixSyncMaintenanceBody extends ConsumerStatefulWidget {
   const MatrixSyncMaintenanceBody({super.key});
 
   @override
-  State<MatrixSyncMaintenanceBody> createState() =>
+  ConsumerState<MatrixSyncMaintenanceBody> createState() =>
       _MatrixSyncMaintenanceBodyState();
 }
 
-class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
+class _MatrixSyncMaintenanceBodyState
+    extends ConsumerState<MatrixSyncMaintenanceBody>
     with HoverDividerIndex<MatrixSyncMaintenanceBody> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final maintenance = getIt<Maintenance>();
+    final maintenance = ref.watch(maintenanceProvider);
 
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[

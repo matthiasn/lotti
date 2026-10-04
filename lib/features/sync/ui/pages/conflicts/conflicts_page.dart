@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_list_item.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -23,14 +24,14 @@ class ConflictsBody extends StatelessWidget {
   Widget build(BuildContext context) => const ConflictsPage(showTitle: false);
 }
 
-class ConflictsPage extends StatefulWidget {
+class ConflictsPage extends ConsumerStatefulWidget {
   const ConflictsPage({this.showTitle = true, super.key});
 
   /// See [SyncListScaffold.showTitle].
   final bool showTitle;
 
   @override
-  State<ConflictsPage> createState() => _ConflictsPageState();
+  ConsumerState<ConflictsPage> createState() => _ConflictsPageState();
 }
 
 /// The detail route of one conflict row: its entry, and which of the entry's
@@ -42,8 +43,8 @@ String conflictDetailPath(Conflict conflict) => Uri(
       : {'version': conflict.versionKey},
 ).toString();
 
-class _ConflictsPageState extends State<ConflictsPage> {
-  final JournalDb _db = getIt<JournalDb>();
+class _ConflictsPageState extends ConsumerState<ConflictsPage> {
+  late final JournalDb _db = ref.read(journalDbProvider);
 
   late final Stream<List<Conflict>> _stream = _watchAllConflicts();
 

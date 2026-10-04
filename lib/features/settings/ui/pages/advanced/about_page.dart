@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:lotti/database/database.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -30,14 +30,14 @@ class AboutPage extends StatelessWidget {
 /// Content body for the About page: gradient header with the app
 /// name + tagline, version info, and entry/task counts. Extracted
 /// from [AboutPage] so the desktop detail pane can host it.
-class AboutBody extends StatefulWidget {
+class AboutBody extends ConsumerStatefulWidget {
   const AboutBody({super.key});
 
   @override
-  State<AboutBody> createState() => _AboutBodyState();
+  ConsumerState<AboutBody> createState() => _AboutBodyState();
 }
 
-class _AboutBodyState extends State<AboutBody> {
+class _AboutBodyState extends ConsumerState<AboutBody> {
   String version = '';
   String buildNumber = '';
 
@@ -70,7 +70,7 @@ class _AboutBodyState extends State<AboutBody> {
     }
 
     return FutureBuilder<int>(
-      future: getIt<JournalDb>().getJournalCount(),
+      future: ref.watch(journalDbProvider).getJournalCount(),
       builder: (context, snapshot) {
         final content = Container(
           decoration: BoxDecoration(

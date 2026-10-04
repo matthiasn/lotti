@@ -1,6 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/time_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -10,7 +10,7 @@ import 'package:material_ui/material_ui.dart';
 /// Listens to `TimeService` and compares the active recording's linked task
 /// id against [taskId]; renders a small error-coloured [ColorIcon] (with the
 /// given [padding]) when they match and an empty box otherwise.
-class TimeRecordingIcon extends StatelessWidget {
+class TimeRecordingIcon extends ConsumerWidget {
   const TimeRecordingIcon({
     required this.taskId,
     this.padding = EdgeInsets.zero,
@@ -21,8 +21,8 @@ class TimeRecordingIcon extends StatelessWidget {
   final EdgeInsets padding;
 
   @override
-  Widget build(BuildContext context) {
-    final timeService = getIt<TimeService>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final timeService = ref.watch(timeServiceProvider);
 
     return StreamBuilder<String?>(
       initialData: timeService.linkedFrom?.meta.id,

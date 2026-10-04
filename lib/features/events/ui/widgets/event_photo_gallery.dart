@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/util/image_export_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:material_ui/material_ui.dart';
@@ -227,7 +227,7 @@ Future<void> openEventPhotoViewer(
 /// With [onSetCover] wired, the chrome carries a "Set cover" pill for the
 /// photo in view — the place to say "this one" while looking at it — which
 /// reads "Cover", inert, on the photo that already is.
-class EventPhotoGalleryViewer extends StatefulWidget {
+class EventPhotoGalleryViewer extends ConsumerStatefulWidget {
   const EventPhotoGalleryViewer({
     required this.photos,
     this.initialIndex = 0,
@@ -246,11 +246,12 @@ class EventPhotoGalleryViewer extends StatefulWidget {
   final Future<bool> Function(String id)? onSetCover;
 
   @override
-  State<EventPhotoGalleryViewer> createState() =>
+  ConsumerState<EventPhotoGalleryViewer> createState() =>
       _EventPhotoGalleryViewerState();
 }
 
-class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
+class _EventPhotoGalleryViewerState
+    extends ConsumerState<EventPhotoGalleryViewer> {
   late final PageController _controller = PageController(
     initialPage: widget.initialIndex,
   );
@@ -284,12 +285,14 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
     try {
       stored = await widget.onSetCover!(id);
     } on Object catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'event_photo_gallery',
-        subDomain: 'setCover',
-        stackTrace: stackTrace,
-      );
+      ref
+          .read(loggingServiceProvider)
+          .captureException(
+            error,
+            domain: 'event_photo_gallery',
+            subDomain: 'setCover',
+            stackTrace: stackTrace,
+          );
     }
     if (stored || !mounted) return;
     setState(() => _coverId = previous);

@@ -18,7 +18,9 @@ final Provider<WhatsNewService> whatsNewServiceProvider =
       name: 'whatsNewServiceProvider',
     );
 WhatsNewService whatsNewService(Ref ref) {
-  final service = WhatsNewService();
+  final service = WhatsNewService(
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
   ref.onDispose(service.close);
   return service;
 }

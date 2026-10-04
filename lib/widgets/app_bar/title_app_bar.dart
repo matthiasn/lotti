@@ -1,6 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -67,7 +67,7 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class BackWidget extends StatelessWidget {
+class BackWidget extends ConsumerWidget {
   const BackWidget({
     super.key,
     this.onPressed,
@@ -83,9 +83,9 @@ class BackWidget extends StatelessWidget {
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final action = enabled
-        ? onPressed ?? () => getIt<NavService>().beamBack()
+        ? onPressed ?? () => ref.read(navServiceProvider).beamBack()
         : null;
     final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
 
