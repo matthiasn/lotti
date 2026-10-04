@@ -28,7 +28,8 @@
 (*   Restore     a writer that reads the deletion and brings the entry     *)
 (*               back on its clock (RelationshipToolDispatcher)            *)
 (*   Snapshot    a screen holding the entry it read (the entry editor)     *)
-(*   LabelWrite  LabelsRepository.setLabels and suppressLabelOnTask        *)
+(*   LabelWrite  LabelsRepository.updateLabels (formerly setLabels) and    *)
+(*               suppressLabelOnTask                                       *)
 (*   Resolve     ConflictResolutionService.keepSide / combine and the      *)
 (*               delete-versus-edit choice, for one open version against  *)
 (*               the row: VectorClock.merge of both sides plus this        *)
@@ -73,7 +74,7 @@ CONSTANTS
     Stale,        \* may a local write build on an entry read earlier?
     Resolves,     \* may the user resolve an open conflict?
     Restores,     \* may a writer bring a deleted entry back?
-    Labels,       \* label writes: setLabels and suppressLabelOnTask
+    Labels,       \* label writes: updateLabels and suppressLabelOnTask
     NullBase,     \* the entry predates clocks, and a late copy is in flight
     Lossy,        \* may a delivery be lost and recovered by backfill?
     Purges,       \* may a device purge its deleted rows?

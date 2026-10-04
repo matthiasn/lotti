@@ -910,9 +910,9 @@ void main() {
 
           expect(result, isFalse);
           verifyNever(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
           );
         },
@@ -975,11 +975,15 @@ void main() {
           ).thenAnswer((_) async => labelB);
           // Stub addLabels so the repository call in the success path completes.
           when(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: task.id,
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (call) async => {
+              ...call.namedArguments[#labelIds]! as List<String>,
+            },
+          );
 
           final result = await repository.processToolCalls(
             toolCalls: [
@@ -998,9 +1002,9 @@ void main() {
           // The success path (lines 1246-1247) must have called addLabels with
           // both validated label IDs.
           final captured = verify(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: task.id,
-              addedLabelIds: captureAny(named: 'addedLabelIds'),
+              labelIds: captureAny(named: 'labelIds'),
             ),
           ).captured;
           final assignedIds = captured.single as List<String>;
@@ -1051,9 +1055,9 @@ void main() {
         ),
       );
       verifyNever(
-        () => mockLabelsRepository.addLabels(
+        () => mockLabelsRepository.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       );
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
@@ -1109,9 +1113,9 @@ void main() {
           // The short-circuit must NOT persist anything: processAssignment is
           // skipped, so addLabels is never invoked.
           verifyNever(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
           );
         },

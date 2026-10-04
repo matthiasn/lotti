@@ -19,15 +19,16 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// A multi-select [EntityPickerSheet] (the same picker categories use), scoped
 /// to the entry's category but unioned with already-assigned labels so
-/// out-of-category labels can still be removed. Applying commits the staged set
-/// via [LabelsRepository.setLabels]; dismissing discards it.
+/// out-of-category labels can still be removed. Applying commits the difference
+/// between the staged set and the labels it opened with via
+/// [LabelsRepository.updateLabels]; dismissing discards it.
 abstract final class LabelSelectionModalUtils {
   /// Opens the modal label picker for [entryId], seeded with [initialLabelIds]
   /// and scoped to [categoryId].
   ///
   /// The picker offers category-scoped (plus already-assigned) labels and an
   /// inline "create label" affordance. Selections are staged in a local
-  /// [ValueNotifier] and only committed via [LabelsRepository.setLabels] when
+  /// [ValueNotifier] and only committed via [LabelsRepository.updateLabels] when
   /// the apply footer is tapped; the staged set is always disposed.
   static Future<void> openLabelSelector({
     required BuildContext context,
@@ -41,8 +42,11 @@ abstract final class LabelSelectionModalUtils {
         context: context,
         title: context.messages.settingsLabelsTitle,
         padding: EdgeInsets.zero,
-        stickyActionBarBuilder: (_) =>
-            _LabelApplyFooter(staged: staged, entryId: entryId),
+        stickyActionBarBuilder: (_) => _LabelApplyFooter(
+          staged: staged,
+          shown: initialLabelIds.toSet(),
+          entryId: entryId,
+        ),
         builder: (_) => _LabelPickerBody(
           initialLabelIds: initialLabelIds,
           categoryId: categoryId,
@@ -147,9 +151,17 @@ PickerItem _labelPickerItem(
 }
 
 class _LabelApplyFooter extends ConsumerWidget {
-  const _LabelApplyFooter({required this.staged, required this.entryId});
+  const _LabelApplyFooter({
+    required this.staged,
+    required this.shown,
+    required this.entryId,
+  });
 
   final ValueNotifier<Set<String>> staged;
+
+  /// The labels the picker opened with: what the user added and removed is
+  /// the difference to [staged], applied to the entry as stored.
+  final Set<String> shown;
   final String entryId;
 
   @override
@@ -162,9 +174,12 @@ class _LabelApplyFooter extends ConsumerWidget {
         final navigator = Navigator.of(context);
         final messages = context.messages;
         final repository = ref.read(labelsRepositoryProvider);
-        final ok = await repository.setLabels(
+        // Only the user's edit: a label another writer put on while the
+        // picker was open stays (`specs/tla/TaskLabels.tla`, PickerDelta).
+        final ok = await repository.updateLabels(
           journalEntityId: entryId,
-          labelIds: staged.value.toList(),
+          added: staged.value.difference(shown),
+          removed: shown.difference(staged.value),
         );
         if (!context.mounted) {
           return;

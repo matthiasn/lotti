@@ -488,9 +488,9 @@ void main() {
         expect(result.success, isTrue);
         // Labels are NOT executed immediately — they are deferred.
         verifyNever(
-          () => mockLabelsRepository.addLabels(
+          () => mockLabelsRepository.assignLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
+            labelIds: any(named: 'labelIds'),
           ),
         );
         verifyDeferredToolResponse(mockConversationManager);

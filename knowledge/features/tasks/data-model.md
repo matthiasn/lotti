@@ -143,7 +143,7 @@ sequenceDiagram
 - **A write that sets no task field is a change of the stored entry too.**
   The star, flag and private toggles, the category and date changes and the
   geolocation added after creation hand `PersistenceLogic.updateEntity` a
-  change of the entry as stored, and the agent's `LabelsRepository.addLabels`
+  change of the entry as stored, and the agent's `LabelsRepository.assignLabels`
   builds on it the same way, so none puts back a field, a checklist or a
   label stored meanwhile
   ([ADR 0119](../../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md)).

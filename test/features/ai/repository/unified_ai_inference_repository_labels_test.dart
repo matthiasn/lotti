@@ -152,9 +152,9 @@ void main() {
 
     // l2 and l3 should be assigned; lX filtered as invalid
     verify(
-      () => mockLabelsRepo.addLabels(
+      () => mockLabelsRepo.assignLabels(
         journalEntityId: task.id,
-        addedLabelIds: any(named: 'addedLabelIds'),
+        labelIds: any(named: 'labelIds'),
       ),
     ).called(1);
   });
@@ -220,9 +220,9 @@ void main() {
 
       // Expect only in-scope selected top-3 by rank with out-of-scope removed
       final captured = verify(
-        () => mockLabelsRepo.addLabels(
+        () => mockLabelsRepo.assignLabels(
           journalEntityId: task.id,
-          addedLabelIds: captureAny(named: 'addedLabelIds'),
+          labelIds: captureAny(named: 'labelIds'),
         ),
       ).captured;
       expect(captured, isNotEmpty);

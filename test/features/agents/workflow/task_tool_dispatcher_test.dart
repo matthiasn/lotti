@@ -1393,11 +1393,15 @@ void main() {
             () => mockJournalDb.getAllLabelDefinitions(),
           ).thenAnswer((_) async => [_makeLabelDef('label-a')]);
           when(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (call) async => {
+              ...call.namedArguments[#labelIds]! as List<String>,
+            },
+          );
 
           final result = await dispatcher.dispatch(
             'assign_task_labels',
@@ -1576,11 +1580,15 @@ void main() {
           ).thenAnswer((_) async => labelDef);
 
           when(
-            () => mockLabelsRepository.addLabels(
+            () => mockLabelsRepository.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (call) async => {
+              ...call.namedArguments[#labelIds]! as List<String>,
+            },
+          );
 
           final result = await dispatcher.dispatch(
             'assign_task_label',

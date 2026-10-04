@@ -2192,9 +2192,10 @@ void main() {
       testWidgets('tapping opens labels modal', (tester) async {
         final entry = textEntryWithLabels(['label-1']);
         when(
-          () => repository.setLabels(
+          () => repository.updateLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            labelIds: any(named: 'labelIds'),
+            added: any(named: 'added'),
+            removed: any(named: 'removed'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -2295,9 +2296,10 @@ void main() {
       testWidgets('apply button saves labels and closes modal', (tester) async {
         final entry = textEntryWithLabels(const []);
         when(
-          () => repository.setLabels(
+          () => repository.updateLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            labelIds: any(named: 'labelIds'),
+            added: any(named: 'added'),
+            removed: any(named: 'removed'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -2320,9 +2322,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         verify(
-          () => repository.setLabels(
+          () => repository.updateLabels(
             journalEntityId: 'entry-123',
-            labelIds: any(named: 'labelIds'),
+            added: any(named: 'added'),
+            removed: any(named: 'removed'),
           ),
         ).called(1);
 
@@ -2332,9 +2335,10 @@ void main() {
       testWidgets('shows error snackbar when apply fails', (tester) async {
         final entry = textEntryWithLabels(const []);
         when(
-          () => repository.setLabels(
+          () => repository.updateLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            labelIds: any(named: 'labelIds'),
+            added: any(named: 'added'),
+            removed: any(named: 'removed'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -2365,9 +2369,10 @@ void main() {
       testWidgets('search filters labels', (tester) async {
         final entry = textEntryWithLabels(const []);
         when(
-          () => repository.setLabels(
+          () => repository.updateLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            labelIds: any(named: 'labelIds'),
+            added: any(named: 'added'),
+            removed: any(named: 'removed'),
           ),
         ).thenAnswer((_) async => true);
 
