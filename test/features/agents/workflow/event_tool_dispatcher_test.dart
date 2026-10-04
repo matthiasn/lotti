@@ -439,6 +439,34 @@ void main() {
       });
     }
 
+    test('a task found from an earlier run whose link cannot be written '
+        'fails retryably', () async {
+      when(
+        () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+          derivedId,
+        ]),
+      ).thenAnswer((_) async => {derivedId: createdTask});
+      when(
+        () => mockJournalDb.journalEntityById(derivedId),
+      ).thenAnswer((_) async => createdTask);
+      when(
+        () => mockPersistenceLogic.createLink(fromId: eventId, toId: derivedId),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.linksBetween(
+          eventId,
+          derivedId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => const []);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isFalse);
+      expect(result.errorMessage, 'Follow-up task link failed');
+    });
+
     test('still fails when the write fails and no task exists', () async {
       stubCreate(null);
 

@@ -1159,7 +1159,8 @@ its effect. The first is harmless since the tools became idempotent per item
 
 The second is closed by recording the dispatch. `ChangeDispatchIntents`
 writes a device-local settings row naming the set and the item before the
-claim, and removes it once the outcome is written or the claim is lost. At
+claim, and removes it once the outcome is written; a call that loses the
+claim leaves it to the one that won, which recorded the same item. At
 the next start, agent initialization calls `resumeInterrupted` on the task,
 project and event agents' confirmation services: a recorded item still
 `confirmed` is dispatched again with its stored arguments and effect key —

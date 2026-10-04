@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
+import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -291,13 +292,13 @@ class FollowUpTaskHandler {
       final fromId = endpoints?.fromId ?? sourceTaskId;
       final toId = endpoints?.toId ?? newTaskId;
       final linkType = relation?.type ?? EntryLinkType.basic;
-      final linked =
-          await _persistenceLogic.createLink(
-            fromId: fromId,
-            toId: toId,
-            linkType: linkType,
-          ) ||
-          await _isLinked(fromId, toId, linkType);
+      final linked = await ensureLink(
+        persistenceLogic: _persistenceLogic,
+        journalDb: _journalDb,
+        fromId: fromId,
+        toId: toId,
+        linkType: linkType,
+      );
       if (!linked) {
         warnings.add(_linkFailureWarning(relation));
       }
@@ -326,17 +327,6 @@ class FollowUpTaskHandler {
       warnings: warnings,
     );
   }
-
-  /// Whether a live link of [linkType] runs from [fromId] to [toId].
-  Future<bool> _isLinked(
-    String fromId,
-    String toId,
-    EntryLinkType linkType,
-  ) async => (await _journalDb.linksBetween(
-    fromId,
-    toId,
-    type: entryLinkTypeDbName(linkType),
-  )).any((link) => link.deletedAt == null);
 
   /// The warning for a failed source↔new-task link.
   ///
@@ -400,8 +390,10 @@ class FollowUpTaskHandler {
 
     try {
       // A task already in a project — filed there by an earlier application
-      // of this change, or by the user since — stays where it is.
-      if (await repo.getProjectForTask(newTaskId) != null) return;
+      // of this change, or by the user since — stays where it is. The lookup
+      // is unfiltered by privacy: a private project hidden from view still
+      // holds the task.
+      if (await repo.getLinkedProjectForTask(newTaskId) != null) return;
       final inherited = await repo.inheritProjectFromTask(
         sourceTaskId: sourceTaskId,
         newTaskId: newTaskId,

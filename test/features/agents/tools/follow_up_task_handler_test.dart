@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/glados_generators.dart';
+import '../../projects/test_utils.dart' show makeTestProject;
 
 enum _GeneratedFollowUpDueDateShape {
   absent,
@@ -1488,13 +1489,51 @@ void main() {
         mockProjectRepo = MockProjectRepository();
         // The new task is in no project yet; a test stubs its source's.
         when(
-          () => mockProjectRepo.getProjectForTask(any()),
+          () => mockProjectRepo.getLinkedProjectForTask(any()),
         ).thenAnswer((_) async => null);
         handlerWithProject = FollowUpTaskHandler(
           persistenceLogic: mockPersistenceLogic,
           journalDb: mockJournalDb,
           domainLogger: mockDomainLogger,
           projectRepository: mockProjectRepo,
+        );
+      });
+
+      // A task found from an earlier run that the user has filed in a
+      // private project since, while private entries are hidden: the
+      // filtered lookup does not see that project, and inheriting the
+      // source's would move the task out of it.
+      test('a task found in a hidden private project stays there', () async {
+        const effect = ChangeEffect(key: 'set-1:0');
+        final taskId = effect.entityId('task');
+        final found = makeNewTask(taskId);
+        stubSourceTaskLookup(makeSourceTask());
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([taskId]),
+        ).thenAnswer((_) async => {taskId: found});
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => found);
+        stubLinkCreation();
+        when(
+          () => mockProjectRepo.getProjectForTask(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProjectRepo.getLinkedProjectForTask(taskId),
+        ).thenAnswer((_) async => makeTestProject(id: 'private-project'));
+
+        final result = await handlerWithProject.handle(
+          sourceTaskId,
+          {'title': 'Follow-Up Task'},
+          effect: effect,
+        );
+
+        expect(result.success, isTrue);
+        verifyNever(
+          () => mockProjectRepo.inheritProjectFromTask(
+            sourceTaskId: any(named: 'sourceTaskId'),
+            newTaskId: any(named: 'newTaskId'),
+          ),
         );
       });
 

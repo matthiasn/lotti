@@ -1248,8 +1248,13 @@ void main() {
               () => mockJournalDb.journalEntityById(derivedId),
             ).thenAnswer((_) async => makeTestTask(id: derivedId));
           }
+          // Filed elsewhere in a private project while private entries are
+          // hidden: the filtered lookup does not see it, the link does.
           when(
             () => mockProjectRepository.getProjectForTask(derivedId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProjectRepository.getLinkedProjectForTask(derivedId),
           ).thenAnswer((_) async => filedElsewhere ? project : null);
           when(
             () => mockProjectRepository.linkTaskToProject(
@@ -1288,6 +1293,34 @@ void main() {
         });
       }
 
+      test('create_task finding its task, whose project link fails, '
+          'succeeds and says so', () async {
+        stubCreated(created: true);
+        when(
+          () => mockJournalDb.journalEntityById(derivedId),
+        ).thenAnswer((_) async => makeTestTask(id: derivedId));
+        when(
+          () => mockProjectRepository.getLinkedProjectForTask(derivedId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProjectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: derivedId,
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.createTask,
+          effect.addTo({'title': 'Write docs'}),
+          projectId,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        expect(result.errorMessage, 'failed to link the task to the project');
+        expect(result.output, contains('Warning'));
+      });
+
       // The earlier application can also have stopped before the task's
       // agent: the run again assigns the agent the category names, and a
       // task that has one keeps it.
@@ -1299,7 +1332,7 @@ void main() {
             () => mockJournalDb.journalEntityById(derivedId),
           ).thenAnswer((_) async => makeTestTask(id: derivedId));
           when(
-            () => mockProjectRepository.getProjectForTask(derivedId),
+            () => mockProjectRepository.getLinkedProjectForTask(derivedId),
           ).thenAnswer((_) async => project);
           when(
             () => mockEntitiesCacheService.getCategoryById('cat-001'),

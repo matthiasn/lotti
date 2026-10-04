@@ -3272,37 +3272,43 @@ void main() {
         },
       );
 
-      test('a confirmation that loses its claim clears its record', () async {
+      test('a confirmation that loses its claim leaves the record to the '
+          'one that won it', () async {
         final changeSet = makeChangeSetWith();
         persistUpsertedChangeSets(changeSet);
-        // The first read sees the item pending; by the claim's read another
-        // confirmation has taken it.
-        var reads = 0;
-        when(() => mockRepository.getEntity(changeSet.id)).thenAnswer(
-          (_) async => ++reads == 1
-              ? changeSet
-              : changeSet.copyWith(
-                  items: [
-                    changeSet.items[0].copyWith(
-                      status: ChangeItemStatus.confirmed,
-                    ),
-                    changeSet.items[1],
-                  ],
-                ),
-        );
+        final running = Completer<void>();
+        final release = Completer<ToolExecutionResult>();
         var dispatches = 0;
-        final service = recording((toolName, args, taskId) async {
+        final service = recording((toolName, args, taskId) {
           dispatches++;
-          return applied(toolName, args, taskId);
+          running.complete();
+          return release.future;
         });
 
-        final result = await withClock(
+        // Two confirmations of the item, both reading it pending: one claims
+        // it and runs its tool, the other loses the claim.
+        final results = withClock(
           testClock,
-          () => service.confirmItem(changeSet, 0),
+          () => Future.wait([
+            service.confirmItem(changeSet, 0),
+            service.confirmItem(changeSet, 0),
+          ]),
         );
+        await running.future;
+        await pumpEventQueue();
 
-        expect(result.errorMessage, 'Concurrent change set update detected');
-        expect(dispatches, 0);
+        // The winner's tool is still running: its dispatch stays recorded.
+        expect(await intents.pending(), hasLength(1));
+
+        release.complete(
+          const ToolExecutionResult(success: true, output: 'Applied'),
+        );
+        final [first, second] = await results;
+        expect(
+          [first.errorMessage, second.errorMessage],
+          contains('Concurrent change set update detected'),
+        );
+        expect(dispatches, 1);
         expect(await intents.pending(), isEmpty);
       });
 

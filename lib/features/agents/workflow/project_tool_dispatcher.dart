@@ -335,7 +335,9 @@ class ProjectToolDispatcher {
     final warnings = <String>[];
     final task = await journalDb.journalEntityById(taskId);
     if (task is Task) {
-      if (await projectRepository.getProjectForTask(taskId) == null &&
+      // Unfiltered by privacy: a task filed in a private project while
+      // private entries are hidden is still filed there.
+      if (await projectRepository.getLinkedProjectForTask(taskId) == null &&
           !await projectRepository.linkTaskToProject(
             projectId: projectId,
             taskId: taskId,

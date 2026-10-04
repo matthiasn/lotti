@@ -219,7 +219,10 @@ class ChangeSetConfirmationService {
       args: identical(resolvedArgs, item.args) ? null : resolvedArgs,
     );
     if (claim == null) {
-      await _clearIntent(intentKey);
+      // The record names the item, not this call: the confirmation that won
+      // the claim recorded it too and clears it once its outcome is written.
+      // A claim lost to another device leaves it to the next start, which
+      // drops it or finishes that device's dispatch here, idempotently.
       return const ToolExecutionResult(
         success: false,
         output: 'Change item is no longer pending',

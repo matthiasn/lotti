@@ -36,9 +36,10 @@ agent — in five or six states.
 
 - **A dispatch is recorded before its claim.** `ChangeDispatchIntents`
   writes a device-local settings row naming the set and the item before the
-  claim, and clears it once the outcome is written, or when the claim is
-  lost. The record never syncs: another device that dispatches the item does
-  so under its own claim.
+  claim, and clears it once the outcome is written. A call that loses the
+  claim leaves the row alone: it names the item, and the call that won wrote
+  it too. The record never syncs: another device that dispatches the item
+  does so under its own claim.
 - **The next start resumes what is still confirmed.** Agent initialization
   calls `resumeInterrupted` on the task, project and event agents'
   confirmation services, after the runtime is restored. A recorded dispatch
@@ -52,6 +53,11 @@ agent — in five or six states.
   Each write is a no-op where it landed: a link takes its triple's derived
   id, and the project and agent are written only where there is none. A
   task filed in another project since, or deleted since, is left as it is.
+- **A repair that cannot land fails.** A relink that writes no row is
+  checked against the stored links; when none is live, the event and
+  time-entry tools fail retryably instead of reporting the item applied. A
+  task's project is looked up unfiltered by privacy, so one filed in a
+  hidden private project is not moved.
 - **A chat set's dispatch is not resumed.** It carries the approval the user
   gave in the chat, which only that confirmation can attach.
 

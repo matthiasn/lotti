@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
+import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -158,8 +159,9 @@ class EventToolDispatcher {
   /// can have stopped between them — the app died — so a live task is linked
   /// to the event where it is not; the link takes its triple's derived id, so
   /// one that landed is not written twice
-  /// (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A task deleted
-  /// since stays deleted.
+  /// (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A link that cannot
+  /// be made live fails the dispatch, retryably, so the item is not taken for
+  /// applied. A task deleted since stays deleted.
   Future<ToolExecutionResult?> _createdBefore(
     ChangeEffect? effect,
     String title,
@@ -169,8 +171,18 @@ class EventToolDispatcher {
       return null;
     }
     final taskId = effect.entityId(_taskRole);
-    if (await journalDb.journalEntityById(taskId) != null) {
-      await persistenceLogic.createLink(fromId: eventId, toId: taskId);
+    if (await journalDb.journalEntityById(taskId) != null &&
+        !await ensureLink(
+          persistenceLogic: persistenceLogic,
+          journalDb: journalDb,
+          fromId: eventId,
+          toId: taskId,
+        )) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: follow-up task $taskId exists but could not be linked',
+        errorMessage: 'Follow-up task link failed',
+      );
     }
     return ToolExecutionResult(
       success: true,
