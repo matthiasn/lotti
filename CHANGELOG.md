@@ -4,6 +4,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.42]
+
+### Changed
+
+- **Task assistants now update at most once an hour by default, and you choose
+  how often.** An assistant with automatic updates on used to start a full run
+  about two minutes after every change to its task — a ticked checklist item, a
+  saved note, a changed label — which adds up over a working day. It now waits
+  up to an hour and takes everything that changed in one run. What you'd want
+  reflected straight away still is: a finished recording updates at once, so do
+  stopping a timer and marking the task done, and an image is taken in within a
+  minute. Pick a different pace for one task under its automatic-updates switch,
+  for a whole category on its settings page, or as the default for this device
+  in AI settings: about 2 minutes after a change, at most hourly, or only after
+  recordings. The more specific choice wins, and a category's choice also
+  reaches the tasks already in it.
+- **Open pull requests get a checklist item to merge them.** The task agent
+  could already suggest checking an item off once an open pull request did
+  the work, which left nothing tracking whether that pull request ever
+  landed, so a task could be closed while its work sat unmerged. It now also
+  suggests a "merge" item for each open pull request linked to the task, and
+  suggests checking that item only once GitHub reports the pull request
+  merged.
+- **The GitHub pull request screens look and read better.** Each pull
+  request leads with a glyph for its state — merged in green, closed in
+  red — and the "Link a pull request" picker shows how many lines each open
+  pull request adds and removes. A summary's one-liner shows in the teal of
+  agent-written text on a line of its own, and the details read as one calm
+  page: the title, then the summary card, then the description.
+- **Linking a pull request shows what is happening.** The one you picked
+  stays highlighted with progress beside it while the others step back, and
+  a pasted link is linked from the button inside the field. Refreshing a
+  pull request moved into its ⋮ menu.
+
+### Fixed
+
+- **Starring a task or changing its category could undo what the agent had
+  just done.** Starring, flagging or making a task private, changing its
+  category or date, the location added to a new task and the agent assigning
+  a label each saved the copy of the task they had read a moment earlier, so
+  a status the agent set or a checklist added in that moment was put back
+  without a conflict. Each now changes only its own field on the task as it
+  is stored.
+- **Resolving a sync conflict could undo a change made while the conflict
+  screen was open.** The resolution was built from the versions the screen
+  showed when it opened. If the entry changes on this device meanwhile, the
+  resolution is no longer applied over it: the screen shows the difference
+  again and says the entry changed.
+- **A delete that could not be saved looked done.** When deleting a
+  checklist item, a checklist or an entry failed to save — the database
+  refused or could not write it — the app carried on as if it had worked: the
+  checklist item or checklist stayed in the journal but disappeared from its
+  task, and nothing tried again; an entry's page closed though the entry was
+  still there. A failed checklist deletion is now finished the next time the
+  app starts, and a failed entry deletion keeps the page open and says so.
+- **A suggestion for a deleted task could never be cleared.** When you deleted
+  a task while its agent's suggestions were still open, confirming one failed
+  and put it back as open, so it kept counting in the notification bell. A
+  suggestion for a deleted task is now withdrawn when you confirm it.
+- **Small loading spinners no longer draw as a filled disc**, for example
+  while a pull request is being linked.
+
+### Security
+
+- **Android backups no longer include your sync encryption keys.** Your journal
+  is still backed up, but the Matrix sync store and Lotti's secure storage are
+  left out of Google backups and phone-to-phone transfers. After restoring onto
+  a new phone, you sign in to sync again and verify it as a new device.
+- **An AI provider's key no longer follows a changed address from another
+  device.** If a provider's server address or type is changed on one of your
+  devices, your other devices now ask for its key again instead of sending the
+  key they hold to the new address.
+- **Provider addresses with an embedded password, no host, or an
+  unrecognised scheme are rejected** when you save a provider.
+- **"Show in Finder / Files / File Explorer" and Share refuse a synced photo or
+  recording whose path leads outside Lotti's documents folder**, as the other
+  places that open such files already did.
+- **Events received before the newer device-trust check, but not yet applied,
+  are fetched again and checked** when you update from an older version,
+  instead of being applied as they were.
+
 ## [1.1.41]
 
 ### Added
