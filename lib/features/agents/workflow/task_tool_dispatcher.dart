@@ -106,11 +106,25 @@ class TaskToolDispatcher {
     // in memory would add complexity with risk of stale state.
     final storedTask = await journalDb.journalEntityById(taskId);
     if (storedTask is! Task) {
-      return ToolExecutionResult(
-        success: false,
-        output: 'Task $taskId not found or is not a Task entity',
-        errorMessage: 'Task lookup failed',
-      );
+      // A task deleted since the proposal was made can never take it, here
+      // or on any device: the failure is final, so the item is retracted
+      // instead of going back to pending, where every confirmation would
+      // fail again and the suggestion would stay counted forever.
+      final deleted =
+          storedTask == null &&
+          await journalDb.journalEntityByIdIncludingDeleted(taskId) is Task;
+      return deleted
+          ? ToolExecutionResult(
+              success: false,
+              output: 'Task $taskId was deleted',
+              errorMessage: 'Task deleted',
+              nonRetryable: true,
+            )
+          : ToolExecutionResult(
+              success: false,
+              output: 'Task $taskId not found or is not a Task entity',
+              errorMessage: 'Task lookup failed',
+            );
     }
 
     // A field proposal applies once. The tool records the change's effect key

@@ -449,9 +449,12 @@ void main() {
 
   group('TaskToolDispatcher', () {
     group('dispatch — task lookup', () {
-      test('returns failure when task entity is not found', () async {
+      test('returns a retryable failure when the task is not found', () async {
         when(
           () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(taskId),
         ).thenAnswer((_) async => null);
 
         final result = await dispatcher.dispatch(
@@ -463,6 +466,36 @@ void main() {
         expect(result.success, isFalse);
         expect(result.output, contains('not found'));
         expect(result.errorMessage, 'Task lookup failed');
+        expect(result.nonRetryable, isFalse);
+      });
+
+      // A suggestion for a task deleted since can never apply: the failure
+      // is final, so the confirmation retracts the item instead of putting
+      // it back to pending.
+      test('returns a final failure when the task was deleted', () async {
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(taskId),
+        ).thenAnswer(
+          (_) async {
+            final task = _makeTestTask(taskId);
+            return task.copyWith(
+              meta: task.meta.copyWith(deletedAt: DateTime(2026, 3, 17)),
+            );
+          },
+        );
+
+        final result = await dispatcher.dispatch(
+          'set_task_title',
+          {'title': 'New Title'},
+          taskId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Task deleted');
+        expect(result.nonRetryable, isTrue);
       });
 
       test('returns failure for unknown tool name', () async {
