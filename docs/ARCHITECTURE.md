@@ -160,7 +160,7 @@ Lotti uses OS‑backed secure storage via `flutter_secure_storage`:
 - Windows: Credential Locker (DPAPI)
 - Linux: Secret Service (libsecret; via GNOME Keyring/KWallet depending on environment)
 
-Secrets stored in secure storage include AI provider API keys and tokens, and sync credentials (e.g., Matrix access tokens).
+Secrets stored in secure storage include AI provider API keys, the GitHub token, and the sync login config (homeserver, user, password). The live Matrix session is not among them: the access token, refresh token and Olm identity sit in the Matrix SDK's unencrypted SQLite database (see [security and privacy](../knowledge/architecture/security-and-privacy.md#secrets)).
 
 ### Data at Rest (Databases)
 - Current state: SQLite databases (Drift) are stored unencrypted
