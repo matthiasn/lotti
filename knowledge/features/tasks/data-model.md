@@ -17,7 +17,7 @@ sources:
     title: TaskProgressRepository
     last_modified: 2026-07-12
   - id: field-write
-    resource: ../../../lib/features/tasks/repository/task_field_write.dart
+    resource: ../../../lib/features/journal/repository/task_field_write.dart
     title: writeTaskField
     last_modified: 2026-09-27
   - id: update-task
@@ -125,7 +125,7 @@ sequenceDiagram
   cover art — and `EntryController.save` only the title, estimate and due
   date it is given, and the body only while the editor holds unsaved edits.
 - **An agent tool** writes through `writeTaskField`
-  (`lib/features/tasks/repository/task_field_write.dart`): its change applies
+  (`lib/features/journal/repository/task_field_write.dart`): its change applies
   only while the field on the stored row still reads what the tool's copy
   read, in the same write, so the agent never sets a field over a value it
   did not decide against. A moved field is reported as nothing applied. The

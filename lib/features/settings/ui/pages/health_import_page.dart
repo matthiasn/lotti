@@ -13,13 +13,13 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/health_import_controller.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 
 /// Manual health-data import screen.
 ///

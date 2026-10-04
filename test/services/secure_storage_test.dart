@@ -1,8 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/services/secure_storage.dart';
 
-import '../../helpers/package_info.dart';
+import '../helpers/package_info.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

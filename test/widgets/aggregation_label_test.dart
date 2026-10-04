@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/widgets/aggregation_label.dart';
 
 void main() {
   group('aggregationTypeLabel', () {

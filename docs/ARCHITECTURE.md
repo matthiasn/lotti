@@ -169,7 +169,7 @@ Secrets stored in secure storage include AI provider API keys and tokens, and sy
 
 ### Backups
 - Secret backup/restore is delegated to the OS keystore.
-- On iOS and macOS, Lotti stores secrets **non‑synchronizable**: `SecureStorage` (`lib/features/sync/secure_storage.dart`) passes only `accountName` to `IOSOptions`/`MacOsOptions`, and `flutter_secure_storage` defaults `synchronizable` to `false`. API keys and Matrix credentials therefore stay on the device and are **not** copied to iCloud Keychain. Enabling iCloud sync for them would require setting `synchronizable: true` explicitly.
+- On iOS and macOS, Lotti stores secrets **non‑synchronizable**: `SecureStorage` (`lib/services/secure_storage.dart`) passes only `accountName` to `IOSOptions`/`MacOsOptions`, and `flutter_secure_storage` defaults `synchronizable` to `false`. API keys and Matrix credentials therefore stay on the device and are **not** copied to iCloud Keychain. Enabling iCloud sync for them would require setting `synchronizable: true` explicitly.
 - Consequence: reinstalling or moving to a new device does not carry secrets across — they are re-entered, or arrive through device pairing.
 
 ### References (platform APIs/libraries)

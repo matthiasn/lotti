@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/g_counter.dart';
+import 'package:lotti/classes/g_counter.dart';
 
 /// Number of distinct hosts the generators draw from — small enough that hosts
 /// collide (exercising within-host max) yet varied enough to exercise the join.
