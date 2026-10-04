@@ -88,9 +88,12 @@ import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/persistence_services.dart';
+import 'package:lotti/logic/repositories/category_move_intents.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
@@ -501,6 +504,25 @@ Future<void> registerSingletons({
   // created but not yet listed, a move or a deletion half done — from the
   // intents they recorded (ADR 0089). Tracked, so a profile switch waits.
   getIt<StartupTasks>().track(ChecklistRepository().replayMembershipIntents());
+
+  // Finish category moves the app died in the middle of — an entry moved,
+  // but not yet its linked entries, its checklists or its project link
+  // (ADR 0122). Tracked, so a profile switch waits.
+  getIt<StartupTasks>().track(
+    EntryCategoryMove(
+      journalRepository: JournalRepository(),
+      journalDb: getIt<JournalDb>(),
+      projectRepository: ProjectRepository(
+        journalDb: getIt<JournalDb>(),
+        entitiesCacheService: getIt<EntitiesCacheService>(),
+        persistenceLogic: getIt<PersistenceLogic>(),
+        updateNotifications: getIt<UpdateNotifications>(),
+        vectorClockService: getIt<VectorClockService>(),
+      ),
+      intents: CategoryMoveIntents(settingsDb: getIt<SettingsDb>()),
+      domainLogger: getIt<DomainLogger>(),
+    ).replay(),
+  );
 
   // Awaited here, before `runApp`, so the app's first frame is already on the
   // screen the previous session was left on rather than flashing Tasks first.

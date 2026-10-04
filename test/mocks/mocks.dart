@@ -212,6 +212,7 @@ import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
@@ -1492,6 +1493,8 @@ class MockOnboardingCaptureToTaskService extends Mock
     implements OnboardingCaptureToTaskService {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockEntryCategoryMove extends Mock implements EntryCategoryMove {}
 
 /// The stored row of one task behind a [MockJournalRepository] stubbed with
 /// [stubTaskRow].

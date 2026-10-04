@@ -3270,6 +3270,55 @@ the GitHub list itself — a pull request closed between listing and picking
 still links, as a pasted URL would; and the snapshot each entry carries,
 which `PullRequestSnapshot` models.
 
+## `TaskCategoryMove` — a task's category move, across a crash
+
+Every row carries its category: the task, the entries linked from it
+(timers, recordings, images, linked tasks), its checklists and their items.
+A task's project must be in its category. A move is several writes, in
+order: the task, each linked entry, each checklist with its items, and last
+the unlink of a project left in the old category. The app can die between
+any two. The decision is
+[ADR 0122](../../docs/adr/0122-a-category-move-is-finished-after-a-crash.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Consistent` | invariant | once no move is in flight, everything that belongs to the task is in its category, and so is its project, if it is in one |
+
+| Configuration | Categories | Crashes | Distinct states |
+|---------------|-----------:|--------:|----------------:|
+| `TaskCategoryMove` | 3 | 2 | 202 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `MoveIntent` | `EntryController.updateCategoryId` recorded nothing, so a move the app died in was never finished | `Consistent`, five states: the task moves, the app dies, and the next start leaves its linked entry, its checklist and its project link in the old category |
+| `ChecklistsFollow` | the cascade moved only the entries linked from the task; checklists are not linked through `EntryLink` | `Consistent`, with no crash at all: the task, its entry and its project link move, and its checklist stays behind |
+
+With both switches on, `EntryCategoryMove.move` records the move
+(`CategoryMoveIntents`, a device-local settings row) before its first write
+and removes the record after the last. `EntryCategoryMove.replay` runs at
+startup: a recorded move whose entry holds the recorded category is
+finished, skipping each write that landed, and any other record is dropped.
+A checklist another task shows, or an item another task's checklist lists,
+stays where it is.
+
+`test/logic/repositories/entry_category_move_test.dart` drives the real code.
+The mocked repositories cover each step. A move whose linked entry's write
+never returns is finished by a fresh instance's replay. Over a real
+in-memory `JournalDb`, a task with a project, a linked time entry and a
+checklist moves whole, both directly and when only its record and the
+task's write had landed before the crash. Each fails with its fix reverted.
+
+What the model leaves out:
+
+- **Two moves of one task at once.** A second move replaces the first's
+  record; the replay finishes the later one, and the writes of both are
+  idempotent, but their interleaving is not modelled.
+- **Another device.** Its own moves arrive as synced rows; the replay guard
+  (the entry must hold the recorded category) keeps a replay from undoing
+  one, which the model checks only on this device.
+- **The task agent's scope.** Its `allowedCategoryIds` does not follow the
+  task (ADR 0122).
+
 ## `ChecklistMembership` — which checklists a task shows, and which items
 
 A task's checklists and a checklist's items are stored as whole id lists on
