@@ -214,11 +214,13 @@ class ProjectToolDispatcher {
       );
     }
 
-    if (await _createdBefore(effect, title) case final existing?) {
+    final categoryId = project.meta.categoryId;
+
+    if (await _createdBefore(effect, title, projectId, categoryId)
+        case final existing?) {
       return existing;
     }
 
-    final categoryId = project.meta.categoryId;
     final category = entitiesCacheService.getCategoryById(categoryId);
     final entryText = EntryText(
       plainText: args['description'] is String
@@ -249,7 +251,8 @@ class ProjectToolDispatcher {
     if (task == null) {
       // The insert refuses an id that exists: the other device's task can
       // have arrived between the check above and the write.
-      if (await _createdBefore(effect, title) case final existing?) {
+      if (await _createdBefore(effect, title, projectId, categoryId)
+          case final existing?) {
         return existing;
       }
       return const ToolExecutionResult(
@@ -309,21 +312,52 @@ class ProjectToolDispatcher {
   static const _taskRole = 'task';
 
   /// The result for a task an earlier application of [effect] created, or
-  /// `null` when there is none (or no effect). Its project link and agent
-  /// were written by that application, so nothing more is done here — a
-  /// link written again would race the creator's own on its way here.
+  /// `null` when there is none (or no effect).
+  ///
+  /// That application can have stopped after the task — the app died before
+  /// its project link or agent were written — or run on another device. So
+  /// a live task that is in no project is linked to [projectId], and one
+  /// without an agent gets its agent (`specs/tla/ChangeDispatchRecovery.tla`,
+  /// TailOnRerun). The link takes the id derived from its triple, so it
+  /// converges with the creator's own; a task filed elsewhere since, or
+  /// deleted, is left as it is, and a link that fails is reported, never
+  /// rolled back over the existing task.
   Future<ToolExecutionResult?> _createdBefore(
     ChangeEffect? effect,
     String title,
+    String projectId,
+    String? categoryId,
   ) async {
     if (effect == null || !await effect.created(journalDb, _taskRole)) {
       return null;
     }
     final taskId = effect.entityId(_taskRole);
+    final warnings = <String>[];
+    final task = await journalDb.journalEntityById(taskId);
+    if (task is Task) {
+      // Unfiltered by privacy: a task filed in a private project while
+      // private entries are hidden is still filed there.
+      if (await projectRepository.getLinkedProjectForTask(taskId) == null &&
+          !await projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: taskId,
+          )) {
+        warnings.add('failed to link the task to the project');
+      }
+      await _tryAutoAssignTaskAgent(
+        task,
+        categoryId: categoryId,
+        warnings: warnings,
+      );
+    }
+    final warningMessage = warnings.isEmpty ? null : warnings.join('; ');
     return ToolExecutionResult(
       success: true,
-      output: 'Task "$title" already exists ($taskId)',
+      output: warningMessage == null
+          ? 'Task "$title" already exists ($taskId)'
+          : 'Task "$title" already exists ($taskId). Warning: $warningMessage',
       mutatedEntityId: taskId,
+      errorMessage: warningMessage,
     );
   }
 
@@ -362,6 +396,9 @@ class ProjectToolDispatcher {
     if (category == null || templateId == null) return;
 
     try {
+      // A task that has its agent — assigned by an earlier application of
+      // this change — keeps it.
+      if (await service.getTaskAgentForTask(task.meta.id) != null) return;
       await service.createTaskAgent(
         taskId: task.meta.id,
         templateId: templateId,

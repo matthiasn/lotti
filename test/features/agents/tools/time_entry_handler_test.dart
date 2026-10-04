@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -960,6 +961,64 @@ void main() {
         );
       },
     );
+
+    // An earlier application wrote the entry and died before its link: the
+    // run again links it, and a link that cannot be made live fails the
+    // dispatch so the item is not taken for applied
+    // (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun).
+    for (final linkLive in [true, false]) {
+      test('an entry found from an earlier run, '
+          '${linkLive ? 'linked' : 'whose link cannot be written'}, '
+          '${linkLive ? 'succeeds' : 'fails retryably'}', () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+        stubCreated([true]);
+        when(
+          () => mockJournalDb.journalEntityById(derivedId),
+        ).thenAnswer((_) async => makeJournalEntry(derivedId));
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: sourceTaskId,
+            toId: derivedId,
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockJournalDb.linksBetween(
+            sourceTaskId,
+            derivedId,
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            if (linkLive)
+              EntryLink.basic(
+                id: 'link',
+                fromId: sourceTaskId,
+                toId: derivedId,
+                createdAt: testNow,
+                updatedAt: testNow,
+                vectorClock: null,
+              ),
+          ],
+        );
+
+        final result = await withClock(
+          Clock.fixed(testNow),
+          () => handler.handle(sourceTaskId, {
+            'summary': 'Session',
+            'startTime': '2026-03-17T14:00:00',
+            'endTime': '2026-03-17T15:00:00',
+          }, effect: effect),
+        );
+
+        expect(result.success, linkLive);
+        expect(result.nonRetryable, isFalse);
+        if (!linkLive) {
+          expect(result.errorMessage, 'Time entry link failed');
+        }
+      });
+    }
 
     test(
       "succeeds when the other device's entry lands between the check and "

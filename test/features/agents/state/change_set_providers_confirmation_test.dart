@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -15,7 +17,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show domainLoggerProvider, journalDbProvider;
+    show domainLoggerProvider, journalDbProvider, settingsDbProvider;
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -86,6 +88,53 @@ void main() {
       final service = container.read(changeSetConfirmationServiceProvider);
 
       expect(service, isA<ChangeSetConfirmationService>());
+    });
+
+    // Each agent's confirmations record their dispatches in the app's
+    // settings database, under their own scope, and resume them from there
+    // (`specs/tla/ChangeDispatchRecovery.tla`, DispatchIntent).
+    test("the task, project and event agents' confirmations resume the "
+        'dispatches recorded under their own scope', () async {
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      addTearDown(settingsDb.close);
+      final mockSyncService = MockAgentSyncService();
+      when(() => mockSyncService.repository).thenReturn(mockRepository);
+      // The recorded sets are gone: each record is dropped once read.
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          settingsDbProvider.overrideWithValue(settingsDb),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+          journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
+          checklistRepositoryProvider.overrideWithValue(
+            MockChecklistRepository(),
+          ),
+          labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          projectRepositoryProvider.overrideWithValue(MockProjectRepository()),
+        ]),
+      );
+      addTearDown(container.dispose);
+
+      for (final (scope, provider) in [
+        (taskDispatchScope, changeSetConfirmationServiceProvider),
+        (projectDispatchScope, projectChangeSetConfirmationServiceProvider),
+        (eventDispatchScope, eventChangeSetConfirmationServiceProvider),
+      ]) {
+        final intents = ChangeDispatchIntents(
+          scope: scope,
+          settingsDb: () => settingsDb,
+        );
+        await intents.record((changeSetId: 'set-$scope', itemIndex: 0));
+
+        await container.read(provider).resumeInterrupted();
+
+        expect(await intents.pending(), isEmpty, reason: scope);
+        verify(() => mockRepository.getEntity('set-$scope')).called(1);
+      }
     });
 
     test(

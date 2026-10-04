@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
+import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/util/agent_datetime_utils.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -143,7 +144,8 @@ class TimeEntryHandler {
       }
     }
 
-    if (await _createdBefore(effect) case final ToolExecutionResult existing) {
+    if (await _createdBefore(effect, sourceTaskId)
+        case final ToolExecutionResult existing) {
       return existing;
     }
 
@@ -192,7 +194,7 @@ class TimeEntryHandler {
     if (saved != true) {
       // The insert refuses an id that exists: the other device's entry can
       // have arrived between the check above and the write.
-      if (await _createdBefore(effect)
+      if (await _createdBefore(effect, sourceTaskId)
           case final ToolExecutionResult existing) {
         return existing;
       }
@@ -279,15 +281,38 @@ class TimeEntryHandler {
 
   /// The result for an entry an earlier application of [effect] created, or
   /// `null` when there is none (or no effect).
-  Future<ToolExecutionResult?> _createdBefore(ChangeEffect? effect) async {
+  ///
+  /// The entry and its link to [sourceTaskId] are two writes, and the app
+  /// can die between them: a live entry is linked again, a no-op where the
+  /// link landed (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A
+  /// link that cannot be made live fails the dispatch, retryably, so the
+  /// item is not taken for applied. A timer is not started again — the
+  /// session it was for is over.
+  Future<ToolExecutionResult?> _createdBefore(
+    ChangeEffect? effect,
+    String sourceTaskId,
+  ) async {
     if (effect == null || !await effect.created(_journalDb, _entryRole)) {
       return null;
     }
     final entryId = effect.entityId(_entryRole);
+    if (await _journalDb.journalEntityById(entryId) != null &&
+        !await ensureLink(
+          persistenceLogic: _persistenceLogic,
+          journalDb: _journalDb,
+          fromId: sourceTaskId,
+          toId: entryId,
+        )) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: time entry $entryId exists but could not be linked',
+        errorMessage: 'Time entry link failed',
+      );
+    }
     _domainLogger?.log(
       LogDomain.agentWorkflow,
       'Time entry ${DomainLogger.sanitizeId(entryId)} already created by '
-      'this change — nothing to apply',
+      'this change — linked to its task where it was not',
       subDomain: _sub,
     );
     return ToolExecutionResult(

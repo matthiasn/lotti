@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/project_proposal_service.dart';
@@ -140,6 +141,10 @@ final eventChangeSetConfirmationServiceProvider =
         ).dispatch,
         labelsRepository: ref.watch(labelsRepositoryProvider),
         domainLogger: logger,
+        dispatchIntents: ChangeDispatchIntents(
+          scope: eventDispatchScope,
+          settingsDb: () => ref.read(settingsDbProvider),
+        ),
       );
     });
 
@@ -235,8 +240,21 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
     labelsRepository: labelsRepository,
     domainLogger: logger,
     onChangeSetResolved: notificationService?.syncAfterUserDecision,
+    dispatchIntents: ChangeDispatchIntents(
+      scope: taskDispatchScope,
+      settingsDb: () => ref.read(settingsDbProvider),
+    ),
   );
 }
+
+/// The [ChangeDispatchIntents] scope of the task agents' confirmations.
+const taskDispatchScope = 'task';
+
+/// The [ChangeDispatchIntents] scope of the project agents' confirmations.
+const projectDispatchScope = 'project';
+
+/// The [ChangeDispatchIntents] scope of the event agents' confirmations.
+const eventDispatchScope = 'event';
 
 /// Shared journal handlers for approved task-agent and task-chat proposals.
 TaskToolDispatcher taskToolDispatcher(Ref ref) => TaskToolDispatcher(
@@ -270,6 +288,10 @@ final projectChangeSetConfirmationServiceProvider =
         ).dispatch,
         labelsRepository: labelsRepository,
         domainLogger: logger,
+        dispatchIntents: ChangeDispatchIntents(
+          scope: projectDispatchScope,
+          settingsDb: () => ref.read(settingsDbProvider),
+        ),
         onConfirmedDecision:
             ({
               required changeSet,

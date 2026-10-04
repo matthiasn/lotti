@@ -63,7 +63,19 @@ sources:
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
+  - id: dispatch-intents
+    resource: ../../../lib/features/agents/service/change_dispatch_intents.dart
+    title: ChangeDispatchIntents — confirmations in flight, resumed at the next start
+    last_modified: 2026-10-04
+  - id: change-dispatch-recovery-spec
+    resource: ../../../specs/tla/ChangeDispatchRecovery.tla
+    title: ChangeDispatchRecovery — a confirmed change applied whole, across a crash
+    last_modified: 2026-10-04
+  - id: adr-0121
+    resource: ../../../docs/adr/0121-a-confirmed-change-is-finished-after-a-crash.md
+    title: ADR 0121 — A confirmed change is finished after a crash
+    last_modified: 2026-10-04
   - id: resolution-store
     resource: ../../../lib/features/agents/service/change_set_resolution_store.dart
     title: Shared confirmation state, one-item transitions and chat-deletion fence
@@ -1074,6 +1086,7 @@ sequenceDiagram
   participant Confirm as ChangeSetConfirmationService
   participant Dispatch as TaskToolDispatcher
   participant Journal as Journal DB
+  participant Intents as ChangeDispatchIntents
   participant Inbox as ChangeSetNotificationService
 
   loop each turn that queued a proposal
@@ -1085,9 +1098,11 @@ sequenceDiagram
   User->>Card: confirm, reject, or Confirm all
   Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set
+  Confirm->>Intents: record the dispatch, device-local
   Confirm->>Store: claim item, pending to confirmed, and persist ChangeDecisionEntity, in one transaction
   alt item no longer pending
     Store-->>Confirm: claim lost, nothing written or dispatched
+    Confirm->>Intents: clear the record
   end
   Confirm->>Dispatch: dispatch confirmed tool
   Dispatch->>Journal: apply mutation
@@ -1100,6 +1115,7 @@ sequenceDiagram
   else retryable failure
     Confirm->>Store: revert item to pending
   end
+  Confirm->>Intents: clear the record, the outcome written
   Confirm->>Inbox: sync seeded task-suggestion notification
 ```
 
@@ -1135,10 +1151,25 @@ suppression and the migration cascade run only for a rejection that happened.
 `specs/tla/ChangeSetConfirm.tla` model-checks these rules (`AtMostOnceApply`,
 `RejectedMeansNotApplied`, `ConfirmedMeansApplied`), and a Glados trace in the
 service's suite drives the real service through generated interleavings of
-the same shape. Two cases remain open by design, and the spec's README names
-them: a tool that throws *after* its effect landed is reverted to `pending` and
-can be applied again on retry, and a crash between the claim and the dispatch
-leaves the item `confirmed` without its effect.
+the same shape. That spec keeps two residuals, which its README names: a
+tool that throws *after* its effect landed is reverted to `pending`, and a
+crash between the claim and the dispatch leaves the item `confirmed` without
+its effect. The first is harmless since the tools became idempotent per item
+(below): a retry applies nothing twice.
+
+The second is closed by recording the dispatch. `ChangeDispatchIntents`
+writes a device-local settings row naming the set and the item before the
+claim, and removes it once the outcome is written; a call that loses the
+claim leaves it to the one that won, which recorded the same item. At
+the next start, agent initialization calls `resumeInterrupted` on the task,
+project and event agents' confirmation services: a recorded item still
+`confirmed` is dispatched again with its stored arguments and effect key —
+the post-confirm hook is not run again — and any other record is dropped. A
+resume that throws keeps its record for the next start and never holds
+initialization back. A chat set's dispatch carries the user's approval and
+is not recorded. `specs/tla/ChangeDispatchRecovery.tla` checks that an item
+shown confirmed, with nothing in flight, has its whole effect
+(`ConfirmedMeansComplete`); the decision is ADR 0121.
 
 ## The whole set, and every device showing it
 
@@ -1197,7 +1228,9 @@ flowchart TD
   Dispatch --> Kind{tool}
   Kind -->|creates an entity| Derived["id = uuidV5 of change-effect:key:role"]
   Derived --> Exists{"id already in the journal, deleted included?"}
-  Exists -->|yes| Noop[success, nothing written, same id reported]
+  Exists -->|yes, live| Tail["write what hangs off it where missing: link, project, agent"]
+  Tail --> Noop[success, same id reported]
+  Exists -->|yes, deleted| Noop
   Exists -->|no| Create[create under the derived id]
   Create -->|insert refused: the other device's entity arrived| Noop
   Kind -->|sets a task field| Mark{"task records the key in appliedChangeEffects?"}
@@ -1233,7 +1266,12 @@ flowchart TD
   and the project agent's `create_task` (whose failed project link rolls the
   task back and retracts the item: the derived id is spent). An entity
   deleted since counts as created: a late application must not bring back
-  what the user removed. The first checklist
+  what the user removed. A live one may be missing what its creator wrote
+  after it — the app died in between, on this device or the other — so the
+  tool writes those rows where they are missing: the follow-up task's link,
+  project and agent, the project agent's task's project link and agent, the
+  event follow-up's and the time entry's link. A task filed in another
+  project since stays there (ADR 0121). The first checklist
   is the exception, since items need somewhere to go:
   `ChecklistRepository.derivedChecklistFor` reuses a live one under the
   derived id — listing it on the task, whose update can arrive after the

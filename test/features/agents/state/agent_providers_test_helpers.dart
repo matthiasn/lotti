@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -70,6 +71,9 @@ class InitProviderBench {
     required this.mockSoulDocumentService,
     required this.mockSyncService,
     required this.mockOutboxService,
+    required this.mockTaskConfirmations,
+    required this.mockProjectConfirmations,
+    required this.mockEventConfirmations,
   });
 
   /// Creates a fully-stubbed bench.  Calls [setUpTestGetIt] internally, so
@@ -97,6 +101,9 @@ class InitProviderBench {
       mockSoulDocumentService: MockSoulDocumentService(),
       mockSyncService: MockAgentSyncService(),
       mockOutboxService: MockOutboxService(),
+      mockTaskConfirmations: MockChangeSetConfirmationService(),
+      mockProjectConfirmations: MockChangeSetConfirmationService(),
+      mockEventConfirmations: MockChangeSetConfirmationService(),
     ).._stubDefaults();
     return bench;
   }
@@ -125,6 +132,12 @@ class InitProviderBench {
 
   /// Receives the wake coordinator's broadcasts.
   final MockOutboxService mockOutboxService;
+
+  /// The task, project and event agents' confirmations, whose interrupted
+  /// dispatches initialization resumes.
+  final MockChangeSetConfirmationService mockTaskConfirmations;
+  final MockChangeSetConfirmationService mockProjectConfirmations;
+  final MockChangeSetConfirmationService mockEventConfirmations;
 
   void _stubDefaults() {
     when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
@@ -158,6 +171,9 @@ class InitProviderBench {
     when(mockScheduledWakeManager.stop).thenReturn(null);
     when(mockProjectActivityMonitor.start).thenReturn(null);
     when(mockProjectActivityMonitor.stop).thenAnswer((_) async {});
+    when(mockTaskConfirmations.resumeInterrupted).thenAnswer((_) async {});
+    when(mockProjectConfirmations.resumeInterrupted).thenAnswer((_) async {});
+    when(mockEventConfirmations.resumeInterrupted).thenAnswer((_) async {});
     // Profile seeding stubs.
     when(
       () => mockAiConfigRepo.getConfigById(any()),
@@ -208,6 +224,15 @@ class InitProviderBench {
               (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
         ),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
+        changeSetConfirmationServiceProvider.overrideWithValue(
+          mockTaskConfirmations,
+        ),
+        projectChangeSetConfirmationServiceProvider.overrideWithValue(
+          mockProjectConfirmations,
+        ),
+        eventChangeSetConfirmationServiceProvider.overrideWithValue(
+          mockEventConfirmations,
+        ),
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         soulDocumentServiceProvider.overrideWithValue(
           mockSoulDocumentService,

@@ -373,8 +373,68 @@ Two cases are known residuals rather than checked properties. Adding
 `"failsAfterEffect"` to `Faults` — a tool that throws after its effect landed,
 which the service reverts to `pending` — breaks `AtMostOnceApply` on retry, and
 checking `ConfirmedMeansApplied` with a crash breaks it when the process dies
-between the claim and the dispatch. Closing either needs an `applying` status
-that sync and the UI understand, or tools that are idempotent per decision id.
+between the claim and the dispatch. The tools have since become idempotent per
+item (ADR 0075), so a retried dispatch applies nothing twice, and a dispatch
+the process died in is resumed at the next start — `ChangeDispatchRecovery`,
+below, checks that; this model keeps both residuals as they were.
+
+## `ChangeDispatchRecovery` — a confirmed change applied whole, across a crash
+
+`ChangeSetConfirm` treats a dispatch as one step. A create-style tool is
+several writes: `create_follow_up_task` writes the task, then its link to the
+source task, the source's project and the new task's agent; the project
+agent's `create_task` writes the task, its project link and its agent; the
+event agent's follow-up and `create_time_entry` write their entity and one
+link. The app can die between any two of them, and another device that has
+not synced can dispatch the same item (ADR 0075). The spec follows one item
+through the claim, the tool's writes in order, crashes, the next start and
+the other device's dispatch. The decision is
+[ADR 0121](../../docs/adr/0121-a-confirmed-change-is-finished-after-a-crash.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `ConfirmedMeansComplete` | invariant | once nothing is in flight, an item shown confirmed has its whole effect: the entity and every row that hangs off it |
+| `AtMostOnceCreate` | invariant | however often the effect is dispatched, its entity is created once |
+
+| Configuration | Writes after the entity | Crashes | Other device's dispatches | Distinct states |
+|---------------|------------------------:|--------:|--------------------------:|----------------:|
+| `ChangeDispatchRecovery` | 3 | 2 | 1 | 46 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `DispatchIntent` | the confirmation recorded nothing before its claim, and only a `pending` item can be confirmed: a dispatch the app died in was never run again | `ConfirmedMeansComplete`, five states: the item is claimed, the task is written, the app dies, and the next start leaves the task without its link, project and agent |
+| `TailOnRerun` | a tool that found its entity already created reported success and wrote nothing more (`_createdBefore`) | `ConfirmedMeansComplete`, six states: the app dies after the task, the next start resumes the dispatch, and it finds the task and finishes without the rest |
+
+With both switches on, `ChangeDispatchIntents` records the dispatch in the
+settings database before the claim and clears it once the outcome is
+written; agent initialization calls `resumeInterrupted` on the task, project
+and event agents' confirmation services, which dispatches every recorded
+item still `confirmed` again and drops the rest. A tool that finds its
+entity writes what is missing: the follow-up task's link, project and agent,
+the project agent's task's project link and agent, the event follow-up's and
+the time entry's link. Each of those writes is a no-op where it landed — a
+link takes its triple's derived id, a project or agent is written only where
+there is none — so the other device's dispatch completes the item as well.
+
+The tests drive the real code. In the service's suite, a first service's
+tool never returns — the app died in it — and a second service over the same
+in-memory `SettingsDb` and stored set resumes the dispatch with the same
+arguments and effect key, once. `task_tool_dispatcher_idempotency.dart`
+writes the derived task, project task or time entry the way an interrupted
+first run left it, in a real in-memory `JournalDb`, and dispatches again:
+the link, the project and the entry's link appear, once, and a task the user
+filed elsewhere since stays there. Each fails with its fix reverted.
+
+What the model leaves out:
+
+- **Several items.** Each item has its own record and its own effect key;
+  their dispatches are independent.
+- **The confirmed-decision hook.** A resumed dispatch has no decision in
+  hand and does not run it.
+- **Chat sets, goals and relationships.** A chat set's dispatch carries the
+  user's approval and is not resumed; a goal revision is one transaction; a
+  relationship task's confirmation mints an undo receipt and records
+  nothing, so a crash between its task and its link is not repaired.
 
 ## `ChangeSetLifecycle` — a whole change set, across devices
 

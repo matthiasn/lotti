@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
+import 'package:lotti/features/agents/tools/ensure_link.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -86,7 +87,7 @@ class EventToolDispatcher {
       );
     }
 
-    if (await _createdBefore(effect, title)
+    if (await _createdBefore(effect, title, eventId)
         case final ToolExecutionResult existing) {
       return existing;
     }
@@ -122,7 +123,7 @@ class EventToolDispatcher {
     if (task == null) {
       // The insert refuses an id that exists: the other device's task can
       // have arrived between the check above and the write.
-      if (await _createdBefore(effect, title)
+      if (await _createdBefore(effect, title, eventId)
           case final ToolExecutionResult existing) {
         return existing;
       }
@@ -153,14 +154,36 @@ class EventToolDispatcher {
   /// The result for a task an earlier application of [effect] created —
   /// here, on another device, or deleted since — or `null` when there is
   /// none (or no effect).
+  ///
+  /// The task and its link to [eventId] are two writes, and that application
+  /// can have stopped between them — the app died — so a live task is linked
+  /// to the event where it is not; the link takes its triple's derived id, so
+  /// one that landed is not written twice
+  /// (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A link that cannot
+  /// be made live fails the dispatch, retryably, so the item is not taken for
+  /// applied. A task deleted since stays deleted.
   Future<ToolExecutionResult?> _createdBefore(
     ChangeEffect? effect,
     String title,
+    String eventId,
   ) async {
     if (effect == null || !await effect.created(journalDb, _taskRole)) {
       return null;
     }
     final taskId = effect.entityId(_taskRole);
+    if (await journalDb.journalEntityById(taskId) != null &&
+        !await ensureLink(
+          persistenceLogic: persistenceLogic,
+          journalDb: journalDb,
+          fromId: eventId,
+          toId: taskId,
+        )) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: follow-up task $taskId exists but could not be linked',
+        errorMessage: 'Follow-up task link failed',
+      );
+    }
     return ToolExecutionResult(
       success: true,
       output: 'Follow-up task "$title" already exists ($taskId)',

@@ -25,6 +25,7 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -708,6 +709,32 @@ Future<void> agentInitialization(Ref ref) async {
           stackTrace: stackTrace,
         );
     rethrow;
+  }
+
+  // Confirmed changes whose dispatch a previous process died in: each is
+  // dispatched again and completes what the earlier run left
+  // (`specs/tla/ChangeDispatchRecovery.tla`). A failure leaves the recorded
+  // dispatches for the next start, and never holds the agents back.
+  for (final resume in <Future<void> Function()>[
+    () => ref.read(changeSetConfirmationServiceProvider).resumeInterrupted(),
+    () => ref
+        .read(projectChangeSetConfirmationServiceProvider)
+        .resumeInterrupted(),
+    () =>
+        ref.read(eventChangeSetConfirmationServiceProvider).resumeInterrupted(),
+  ]) {
+    try {
+      await resume();
+    } catch (error, stackTrace) {
+      ref
+          .read(domainLoggerProvider)
+          .error(
+            LogDomain.agentRuntime,
+            error,
+            message: 'interrupted change dispatches not resumed',
+            stackTrace: stackTrace,
+          );
+    }
   }
 
   // 6. Forget the derived rows past the retention policy. Last, and
