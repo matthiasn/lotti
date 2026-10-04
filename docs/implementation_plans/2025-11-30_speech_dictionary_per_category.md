@@ -16,7 +16,7 @@
   `PromptBuilderHelper`
 - Categories (`CategoryDefinition`) are synced via `SyncMessage.entityDefinition()` (last-write-wins,
   no vector clock conflict resolution currently)
-- Category details page (`lib/features/categories/ui/pages/category_details_page.dart`) already has
+- Category details page (`lib/features/settings/ui/pages/categories/category_details_page.dart`) already has
   sections for AI model settings, automatic prompts, etc.
 - Text editing uses Flutter Quill; no custom context menus currently exist in the codebase
 - Transcript display uses `SelectableText` in `transcripts_list_item.dart`
@@ -109,7 +109,7 @@ Terms: ["macOS", "Kirkjubæjarklaustur", "Sigurðsson", "Claude Code"]
 
 ### 3. Category Settings UI
 
-**File: `lib/features/categories/ui/pages/category_details_page.dart`**
+**File: `lib/features/settings/ui/pages/categories/category_details_page.dart`**
 
 - Add new `LottiFormSection` for "Speech Dictionary"
 - Placed after "Automatic Prompts" section
@@ -279,7 +279,7 @@ document.
 - `lib/classes/entity_definitions.dart` - Added `speechDictionary` field
 - `lib/features/ai/util/preconfigured_prompts.dart` - Added `{{speech_dictionary}}` placeholder
 - `lib/features/ai/helpers/prompt_builder_helper.dart` - Handle placeholder injection
-- `lib/features/categories/ui/pages/category_details_page.dart` - Added speech dictionary section
+- `lib/features/settings/ui/pages/categories/category_details_page.dart` - Added speech dictionary section
 - `lib/features/categories/state/category_details_controller.dart` - State management
 - `lib/features/journal/ui/widgets/editor/editor_widget.dart` - Custom context menu with "Add to Dictionary"
 - `lib/l10n/app_en.arb` - Added l10n strings (labels, hints, success/error messages)
@@ -297,4 +297,4 @@ document.
 
 - `test/features/speech/ui/widgets/recording/audio_recording_modal_test.dart` - Added `speechDictionary` to FakeCategoryDefinition
 - `test/features/speech/ui/widgets/recording/audio_recording_modal_coverage_test.dart` - Added `speechDictionary` to FakeCategoryDefinition
-- `test/features/categories/ui/pages/category_details_page_test.dart` - Fixed widget count expectations
+- `test/features/settings/ui/pages/categories/category_details_page_test.dart` - Fixed widget count expectations

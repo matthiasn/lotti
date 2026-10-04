@@ -134,7 +134,7 @@ Files:
 
 1) EntryTypeFilter gating tests
 
-- Extend `test/widgets/search/entry_type_filter_test.dart`:
+- Extend `test/features/journal/ui/widgets/entry_type_filter_test.dart`:
   - Assert Event chip hidden when events flag off (existing).
   - Add tests for Habits off → no `Habit` chip.
   - Add tests for Dashboards off → no `Measured`, `Health`, `Survey`, or `Workout` chips.

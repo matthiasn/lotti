@@ -516,7 +516,7 @@ When creating or updating items, apply these corrections when you see matching p
 
 ### 4. Category Settings UI
 
-**File: `lib/features/categories/ui/pages/category_details_page.dart`**
+**File: `lib/features/settings/ui/pages/categories/category_details_page.dart`**
 
 Add import at top of file:
 
@@ -1090,7 +1090,7 @@ analyzer, formatter, and relevant tests after each step.
 - `lib/features/tasks/state/checklist_item_controller.dart` - Integrate capture with `unawaited()` and snackbar
 - `lib/features/ai/util/preconfigured_prompts.dart` - Add placeholder to USER message (checklist + audio)
 - `lib/features/ai/helpers/prompt_builder_helper.dart` - Handle placeholder in `buildPromptWithData`
-- `lib/features/categories/ui/pages/category_details_page.dart` - Add section
+- `lib/features/settings/ui/pages/categories/category_details_page.dart` - Add section
 - `lib/features/categories/state/category_details_controller.dart` - State management
 - `lib/features/categories/ui/widgets/category_speech_dictionary.dart` - Update warning threshold 30→500
 - `lib/l10n/app_en.arb` - English strings (including snackbar message)

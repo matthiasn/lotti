@@ -215,7 +215,7 @@ appears in the domain log files.
 | `lib/services/domain_logging.dart` | DomainLogger class with PII scrubbing |
 | `lib/features/system_health/ui/pages/logging_settings_page.dart` | Domain toggle UI |
 | `test/services/domain_logging_test.dart` | Unit tests for DomainLogger + sanitization |
-| `test/features/settings/ui/pages/advanced/logging_settings_page_test.dart` | Widget tests |
+| `test/features/system_health/ui/pages/logging_settings_page_test.dart` | Widget tests |
 
 ### Modified Files
 

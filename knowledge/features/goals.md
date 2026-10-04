@@ -125,7 +125,7 @@ sources:
     title: Goal metric day-series maths, shared by the cards and the sheet
     last_modified: 2026-08-31
   - id: goal-routes
-    resource: ../../lib/features/goals/ui/goal_routes.dart
+    resource: ../../lib/utils/goal_routes.dart
     title: goal route helpers — every goal page path under /goals
     last_modified: 2026-08-18
   - id: measurable-capture

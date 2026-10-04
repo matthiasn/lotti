@@ -8,7 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_type_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
+import 'package:lotti/features/journal/ui/widgets/task_category_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';

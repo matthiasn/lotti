@@ -183,7 +183,7 @@ graph TB
 ## Step 2: Remove Automatic Prompts Section from Category Details
 
 **Files to modify:**
-- `lib/features/categories/ui/pages/category_details_page.dart` — Remove the "Automatic Prompts" `LottiFormSection` block and `_buildAutomaticPromptSettings()` / `_buildAutomaticPromptConfig()` methods, and the `_dummyAutomaticPromptChanged` callback
+- `lib/features/settings/ui/pages/categories/category_details_page.dart` — Remove the "Automatic Prompts" `LottiFormSection` block and `_buildAutomaticPromptSettings()` / `_buildAutomaticPromptConfig()` methods, and the `_dummyAutomaticPromptChanged` callback
 - `lib/features/categories/ui/widgets/category_automatic_prompts.dart` — Delete file (unused after removal)
 - Remove import of `category_automatic_prompts.dart` from category_details_page
 
@@ -324,7 +324,7 @@ Rename to `hasAvailableAiActionsProvider` (or keep name but update logic):
 |------|--------|
 | `lib/features/speech/helpers/automatic_prompt_trigger.dart` | Remove legacy fallback path |
 | `lib/features/ai/helpers/automatic_image_analysis_trigger.dart` | Remove legacy fallback path |
-| `lib/features/categories/ui/pages/category_details_page.dart` | Remove Automatic Prompts section |
+| `lib/features/settings/ui/pages/categories/category_details_page.dart` | Remove Automatic Prompts section |
 | `lib/features/categories/ui/widgets/category_automatic_prompts.dart` | Delete file |
 | `lib/features/ai/services/skill_inference_runner.dart` | Add status updates, new skill methods |
 | `lib/features/ai/state/consts.dart` | Add SkillType → AiResponseType mapping |
@@ -344,7 +344,7 @@ Rename to `hasAvailableAiActionsProvider` (or keep name but update logic):
    - `test/features/ai/helpers/automatic_image_analysis_trigger_test.dart`
    - `test/features/ai/ui/unified_ai_popup_menu_test.dart`
    - `test/features/ai/services/skill_inference_runner_test.dart`
-   - `test/features/categories/ui/pages/category_details_page_test.dart`
+   - `test/features/settings/ui/pages/categories/category_details_page_test.dart`
    - `test/features/categories/ui/widgets/category_automatic_prompts_test.dart`
 4. **New tests**: Add tests for:
    - `availableSkillsForEntityProvider` filtering logic

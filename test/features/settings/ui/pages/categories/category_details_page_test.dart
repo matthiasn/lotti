@@ -10,7 +10,6 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_knowledge_brief.dart';
@@ -23,6 +22,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
@@ -34,9 +34,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../mocks/mocks.dart';
-import '../../../../test_helper.dart';
-import '../../test_utils.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../test_helper.dart';
+import '../../../../categories/test_utils.dart';
 
 /// Finds the glass pill in the action bar by its (localized) label.
 Finder pillFinder(String label) => find.byWidgetPredicate(

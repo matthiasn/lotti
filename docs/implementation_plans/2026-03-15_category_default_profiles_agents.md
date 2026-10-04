@@ -221,7 +221,7 @@ classDiagram
 
 | File | Change | Status |
 |------|--------|--------|
-| `lib/features/categories/ui/pages/category_details_page.dart` | Added "AI Defaults" section with Profile picker and Template picker | Done |
+| `lib/features/settings/ui/pages/categories/category_details_page.dart` | Added "AI Defaults" section with Profile picker and Template picker | Done |
 | `lib/features/categories/state/category_details_controller.dart` | Added `setDefaultProfileId()` and `setDefaultTemplateId()` methods, wired into `_hasChanges()` | Done |
 | `lib/features/agents/ui/template_selector.dart` | New file: template selection modal (modeled after `ProfileSelector`) | Done |
 | `lib/features/agents/ui/profile_selector.dart` | Added optional `hintText` parameter for context-specific hint text | Done |
@@ -332,7 +332,7 @@ classDiagram
 - `lib/features/ai/state/profile_automation_providers.dart`
 - `lib/features/ai/util/profile_resolver.dart`
 - `lib/features/categories/state/category_details_controller.dart`
-- `lib/features/categories/ui/pages/category_details_page.dart`
+- `lib/features/settings/ui/pages/categories/category_details_page.dart`
 - `lib/features/daily_os/ui/widgets/time_budget_card.dart`
 - `lib/features/journal/ui/pages/infinite_journal_page.dart`
 - `lib/features/journal/ui/widgets/create/create_entry_items.dart`

@@ -44,7 +44,6 @@ import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -4593,5 +4592,14 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  group('check-in rail', () {
+    test('the rail is dropped before it can squeeze the dashboard', () {
+      // The rail only earns its width when the dashboard still has a usable
+      // measure beside it.
+      expect(kGoalTimelineRailWidth, greaterThan(0));
+      expect(kGoalTimelineRailFoldWidth, greaterThan(kGoalTimelineRailWidth));
+    });
   });
 }
