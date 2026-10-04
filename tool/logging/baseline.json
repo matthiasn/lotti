@@ -132,7 +132,7 @@
     "lib/features/relationships/ui/widgets/person_avatar_sheet.dart": 1,
     "lib/features/relationships/ui/widgets/person_photo_card.dart": 2,
     "lib/features/relationships/ui/widgets/person_reminders_pill.dart": 1,
-    "lib/features/relationships/ui/widgets/relationship_briefing_card.dart": 2,
+    "lib/features/relationships/ui/widgets/relationship_briefing_card_relationship_briefing_card_state_part.dart": 2,
     "lib/features/relationships/ui/widgets/relationship_form_modal.dart": 1,
     "lib/features/relationships/ui/widgets/relationship_suggestions_band.dart": 2,
     "lib/features/relationships/workflow/relationship_agent_strategy.dart": 1,
