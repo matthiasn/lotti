@@ -78,6 +78,13 @@ icon_check:
 getit_check:
 	$(DART_CMD) run tool/di/validate.dart
 
+# Checks that dart:developer log calls outside lib/services/ only shrink:
+# DomainLogger is the reviewed channel. After moving a file's calls over,
+# tighten the baseline with `dart run tool/logging/validate.dart --update-baseline`.
+.PHONY: developer_log_check
+developer_log_check:
+	$(DART_CMD) run tool/logging/validate.dart
+
 # Checks the unreleased release notes in changelog.d/ — one new file per pull
 # request instead of an edit to the top of CHANGELOG.md, which is what used to
 # leave every open PR conflicted the moment one of them merged. Also fails when

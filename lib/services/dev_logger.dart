@@ -1,5 +1,7 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/utils/platform.dart';
+
 /// Centralized development logging utility with configurable output.
 ///
 /// This class provides a single point of control for debug logging throughout
@@ -29,8 +31,10 @@ abstract final class DevLogger {
   /// Set this to true in test setup to silence debug output.
   static bool suppressOutput = false;
 
-  /// Captured log messages. Logs are always added here regardless of
-  /// [suppressOutput], allowing tests to verify logging behavior.
+  /// Captured log messages, under `flutter test` only, regardless of
+  /// [suppressOutput], so tests can verify logging behavior. Outside tests
+  /// nothing is kept: a process that logs for days must not grow without
+  /// bound, nor hold every message it ever wrote.
   // Read extensively by tests outside DCM's `lib`-only usage graph.
   // ignore: unused-code
   static final List<String> capturedLogs = [];
@@ -62,7 +66,7 @@ abstract final class DevLogger {
     if (stackTrace != null) {
       fullMessage.write(' | stackTrace: $stackTrace');
     }
-    capturedLogs.add(fullMessage.toString());
+    if (isTestEnv) capturedLogs.add(fullMessage.toString());
 
     if (!suppressOutput) {
       developer.log(

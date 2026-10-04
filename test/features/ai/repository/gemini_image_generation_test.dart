@@ -496,11 +496,22 @@ void main() {
             provider: _provider(),
           ),
           throwsA(
-            isA<ImageGenerationException>().having(
-              (e) => e.providerReason,
-              'providerReason',
-              'INVALID_ARGUMENT: Unsupported model',
-            ),
+            isA<ImageGenerationException>()
+                .having(
+                  (e) => e.providerReason,
+                  'providerReason',
+                  'INVALID_ARGUMENT: Unsupported model',
+                )
+                // The logged message carries the body's size, not the body:
+                // an error body can echo the request.
+                .having(
+                  (e) => e.message,
+                  'message',
+                  allOf(
+                    isNot(contains('Unsupported')),
+                    contains('body ${client.body.length} chars'),
+                  ),
+                ),
           ),
         );
       },

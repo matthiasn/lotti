@@ -64,3 +64,8 @@ jobs:
       # count may fall, never rise, and a new file starts at zero.
       - name: Check getIt stays in the composition root
         run: dart run tool/di/validate.dart
+      # DomainLogger is the reviewed channel; dart:developer beside it is how
+      # prompts and model output reached logs. Ratcheted per file, outside
+      # lib/services/ where logging itself is implemented.
+      - name: Check dart:developer logging only shrinks
+        run: dart run tool/logging/validate.dart
