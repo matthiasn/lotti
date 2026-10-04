@@ -43,6 +43,9 @@ class JournalRepository {
   /// this repository. The composition root registers the factory, so every
   /// edit of a person stays on the relationship repository's single write
   /// path without this layer importing it.
+  /// The journal the link methods read and write.
+  JournalDb get _journalDb => getIt<JournalDb>();
+
   RelationshipCascade _relationships(PersistenceLogic persistenceLogic) =>
       getIt<RelationshipCascadeFactory>()(this, persistenceLogic);
 
@@ -494,7 +497,7 @@ class JournalRepository {
     EntryLink link, {
     Future<bool> Function()? precondition,
   }) async {
-    final journalDb = getIt<JournalDb>();
+    final journalDb = _journalDb;
     final existing = await journalDb.entryLinkById(link.id);
 
     if (existing != null && !_hasChange(existing, link)) {
@@ -598,7 +601,7 @@ class JournalRepository {
     required String toId,
     String? type,
   }) async {
-    final links = await getIt<JournalDb>().linksBetween(
+    final links = await _journalDb.linksBetween(
       fromId,
       toId,
       type: type,
@@ -610,6 +613,41 @@ class JournalRepository {
       if (await updateLink(tombstone)) removed++;
     }
     return removed;
+  }
+
+  /// Applies [change] to the stored link [linkId] — a flag such as `hidden`
+  /// or `collapsed` — and writes the result ([updateLink]) only while the
+  /// link is still stored as it was read; one stored meanwhile is built on
+  /// again, for as long as the row keeps moving.
+  ///
+  /// A card's copy of a link can predate its removal, here or on another
+  /// device: written as it was, the edit would be the newest version of the
+  /// link and bring it back everywhere. A link that is removed, or gone, is
+  /// therefore left alone (`specs/tla/EntryLinkIdentity.tla`, EditOnStored).
+  ///
+  /// Returns whether the change is stored: `true` when [change] leaves the
+  /// link as it is, `false` when the link is removed or gone, or the write
+  /// was refused with the row unchanged.
+  Future<bool> changeLink(
+    String linkId,
+    EntryLink Function(EntryLink stored) change,
+  ) async {
+    final db = _journalDb;
+    EntryLink? previous;
+    while (true) {
+      final stored = await db.entryLinkById(linkId);
+      if (stored == null || stored.deletedAt != null) return false;
+      if (stored == previous) return false;
+      previous = stored;
+      final changed = change(stored);
+      if (changed == stored) return true;
+      if (await updateLink(
+        changed,
+        precondition: () async => await db.entryLinkById(linkId) == stored,
+      )) {
+        return true;
+      }
+    }
   }
 
   /// Retypes and/or flips the direction of an existing typed relationship
@@ -638,7 +676,7 @@ class JournalRepository {
     required EntryLinkType newType,
     required bool swapDirection,
   }) async {
-    final db = getIt<JournalDb>();
+    final db = _journalDb;
     final existing = await db.entryLinkById(linkId);
     if (existing == null) return false;
 
@@ -689,7 +727,7 @@ class JournalRepository {
   Future<List<JournalEntity>> getLinkedToEntities({
     required String linkedTo,
   }) async {
-    final db = getIt<JournalDb>();
+    final db = _journalDb;
     final items = await db.getLinkedToEntities(linkedTo);
     return items.map(fromDbEntity).toList();
   }
@@ -699,7 +737,7 @@ class JournalRepository {
   Future<List<JournalEntity>> getLinkedEntities({
     required String linkedTo,
   }) async {
-    return getIt<JournalDb>().getLinkedEntities(linkedTo);
+    return _journalDb.getLinkedEntities(linkedTo);
   }
 
   /// Returns all JournalImage entries linked to the given task.
@@ -721,7 +759,7 @@ class JournalRepository {
   }) async {
     final linksByToId = <String, EntryLink>{};
 
-    final res = await getIt<JournalDb>()
+    final res = await _journalDb
         .linksFromId(linkedFrom, includeHidden ? [false, true] : [false])
         .get();
 
@@ -736,7 +774,7 @@ class JournalRepository {
 
     // sort by the (editable) date from, descending, to allow for changing the
     // start date of the linked entries and get the list reordered accordingly
-    final sortedToIds = await getIt<JournalDb>()
+    final sortedToIds = await _journalDb
         .getJournalEntityIdsSortedByDateFromDesc(
           linksByToId.keys.toList(growable: false),
         );
@@ -752,7 +790,7 @@ class JournalRepository {
     Set<String> ids, {
     required Set<String> linkTypes,
   }) {
-    return getIt<JournalDb>().typedLinksForTaskIds(ids, types: linkTypes);
+    return _journalDb.typedLinksForTaskIds(ids, types: linkTypes);
   }
 
   /// Bulk-fetch entities by id, including tombstoned (soft-deleted) ones.

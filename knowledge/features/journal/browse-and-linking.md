@@ -5,7 +5,7 @@ description: One page controller shared by two tabs, two search modes, post-filt
 resource: ../../../lib/features/journal/state/journal_page_controller.dart
 tags: [journal, search, pagination, linked-entries, focus]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: page-controller
@@ -15,7 +15,7 @@ sources:
   - id: linked
     resource: ../../../lib/features/journal/state/linked_entries_controller.dart
     title: LinkedEntriesController
-    last_modified: 2026-08-01
+    last_modified: 2026-10-04
   - id: db-queries
     resource: ../../../lib/database/database_task_queries.dart
     title: Task query paths
@@ -126,6 +126,12 @@ Runtime details that matter:
 
 - Outgoing links are fetched from `JournalRepository.getLinksFromId(...)`, and
   hidden links can be included or excluded without changing the rest of the page.
+- **Hiding or collapsing a link changes the link as stored, never the card's
+  copy** (`JournalRepository.changeLink`). A card can render a link that has
+  since been removed, here or on another device; written from the copy, the
+  toggle was the link's newest version and brought it back everywhere. A
+  removed link is now left alone, and a flag another device set in between is
+  kept (`specs/tla/EntryLinkIdentity.tla`, `EditOnStored`).
 - The Filter & Sort modal can narrow the outgoing list to **flagged entries only**
   (`meta.flag == EntryFlag.import`). The check runs **per row** against the
   watched entry, so flagging or unflagging updates the filtered list reactively.

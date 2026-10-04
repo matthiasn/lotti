@@ -89,6 +89,12 @@ without changing the other three configurations' counts. TLC found one bug
 and an audit of its callers one more (P2×2). Not included in the historical
 totals above.
 
+The link-edits follow-up ([#4686](https://github.com/matthiasn/lotti/pull/4686)) adds one configuration
+(`EntryLinkIdentityEdits`, 46,343 distinct states), one named property
+(`NoRevival`) and one switch (`EditOnStored`) to `EntryLinkIdentity` without
+changing its other three configurations' counts. TLC found one bug (P1). Not
+included in the historical totals above.
+
 The `RunningTimer` model ([#4685](https://github.com/matthiasn/lotti/pull/4685)) adds one spec, one configuration, three named
 properties and 81,204 distinct states. TLC reproduced all three bugs it came
 with (P1×2, P2), each through its switch. Not included in the historical
@@ -306,6 +312,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4684](https://github.com/matthiasn/lotti/pull/4684) | pending | tasks | — | 1 | 2 (1) | P2×2 | — | `JournalRepository.deleteJournalEntity` answered true whatever its tombstone write did. A checklist item or checklist deletion whose delete failed dropped its recorded intent as done, so the item or checklist stayed alive, listed nowhere, and nothing retried it (`DeleteReportsFailure = FALSE`: `NoLostChecklist`, seven states); the entry page closed on an entry that was still there. The delete now writes on the stored row and reports what it did; the operation keeps its intent for the next start, and the page stays and says the delete failed |
 | [#4681](https://github.com/matthiasn/lotti/pull/4681) | pending | tasks, sync | — | 1 | 5 (5) | P1×3 P2×2 | [0119](../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md) | The task writes ADRs 0089 and 0103 left: the star, flag and private toggles, the category and date changes, the geolocation added after creation and the agent's label assignment each wrote the whole row it had read a few awaits earlier, so a status the agent set or a checklist `createChecklist` listed meanwhile was put back (`MetaOnStored = FALSE`: `NoLostChecklist` in five steps, `NoLostFieldEdit` in five states). The conflict screen resolved against the pair it read on opening and overwrote a field the agent set while it was open (`ResolveOnStored = FALSE`: ten states). Every task write is now a change of the stored entry (`PersistenceLogic.updateEntity`), and a resolution applies only over the side it showed |
 | [#4685](https://github.com/matthiasn/lotti/pull/4685) | pending | tasks, agents | `RunningTimer` | 1 | 3 (3) | P1×2 P2 | [0120](../../docs/adr/0120-every-stop-writes-the-timers-end.md) | `TimeService.stop` only cleared memory, so stopping a timer from the desktop sidebar, switching profiles or quitting the app left its entry at the last five-minute autosave, losing the time since (`StopPersists`, `ShutdownPersists`: `NoLostTime`, five states each). The agent's time-entry tool checked for a running timer, awaited three reads and writes, then started its own over a timer the user had started meanwhile (`AgentStartAtomic`: `NoStolenTimer`, five states). Every stop now writes the end, shutdown stops the timer first, and the tool starts only an idle timer |
+| [#4686](https://github.com/matthiasn/lotti/pull/4686) | pending | journal, sync | — | 1 | 1 (1) | P1 | — | A linked entry's hide and collapse toggles wrote the card's copy of the link through `updateLink`, whose version always wins: a link removed since the card rendered it — here or on another device — came back on every device (`EditOnStored = FALSE`: `NoRevival`, five states), and a flag set elsewhere in between was put back. Toggles now change the link as stored (`JournalRepository.changeLink`) and leave a removed link alone |
 
 ## Sync follow-up evidence, 2026-09-26
 
@@ -648,6 +655,7 @@ The P0 and P1 bugs:
 | [#4685](https://github.com/matthiasn/lotti/pull/4685) | P1 | yes | Stopping a timer from the desktop sidebar or switching profiles lost the time tracked since its last autosave, up to five minutes each time |
 | [#4685](https://github.com/matthiasn/lotti/pull/4685) | P1 | yes | Quitting the app with a timer running lost the time tracked since its last autosave |
 | [#4685](https://github.com/matthiasn/lotti/pull/4685) | P2 | yes | The agent's time-entry tool replaced a timer the user started while it prepared its own |
+| [#4686](https://github.com/matthiasn/lotti/pull/4686) | P1 | yes | Hiding or collapsing a linked entry whose link had been removed meanwhile brought the link back on every device |
 
 </details>
 

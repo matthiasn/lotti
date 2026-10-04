@@ -4157,6 +4157,90 @@ void main() {
         expect(edited.collapsed, isTrue);
       },
     );
+
+    // A card's toggle edits the link as stored (`changeLink`), never the
+    // copy it rendered (`specs/tla/EntryLinkIdentity.tla`, EditOnStored).
+    EntryLink storedLink({bool collapsed = false, DateTime? deletedAt}) =>
+        EntryLink.basic(
+          id: 'card-link',
+          fromId: 'task-id',
+          toId: 'note-id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'device-a': 1}),
+          collapsed: collapsed,
+          deletedAt: deletedAt,
+        );
+
+    test('changeLink sets its flag on the link as stored, keeping a flag '
+        'another writer set since the card rendered it', () async {
+      final rendered = storedLink();
+      expect(await db.upsertEntryLink(rendered), 1);
+      // Another device collapses the link after the card rendered it.
+      expect(
+        await db.upsertEntryLink(
+          rendered.copyWith(
+            collapsed: true,
+            vectorClock: const VectorClock({'device-a': 2}),
+          ),
+        ),
+        1,
+      );
+
+      expect(
+        await JournalRepository().changeLink(
+          'card-link',
+          (stored) => stored.copyWith(hidden: true),
+        ),
+        isTrue,
+      );
+
+      final written = (await db.entryLinkById('card-link'))!;
+      expect(written.hidden, isTrue);
+      expect(written.collapsed, isTrue);
+    });
+
+    test('changeLink leaves a link removed since the card rendered it '
+        'removed, and says so', () async {
+      expect(await db.upsertEntryLink(storedLink()), 1);
+      final removal = storedLink(deletedAt: DateTime(2024, 3, 16)).copyWith(
+        vectorClock: const VectorClock({'device-a': 2}),
+        updatedAt: DateTime(2024, 3, 16),
+        hidden: true,
+      );
+      expect(await db.upsertEntryLink(removal), 1);
+
+      expect(
+        await JournalRepository().changeLink(
+          'card-link',
+          (stored) => stored.copyWith(collapsed: true),
+        ),
+        isFalse,
+      );
+      expect(await db.entryLinkById('card-link'), removal);
+      verifyNever(() => outboxService.enqueueMessage(any()));
+    });
+
+    test('changeLink writes nothing when its change leaves the link as it '
+        'is, and nothing for a link that does not exist', () async {
+      expect(await db.upsertEntryLink(storedLink(collapsed: true)), 1);
+
+      expect(
+        await JournalRepository().changeLink(
+          'card-link',
+          (stored) => stored.copyWith(collapsed: true),
+        ),
+        isTrue,
+      );
+      expect(
+        await JournalRepository().changeLink(
+          'no-such-link',
+          (stored) => stored.copyWith(collapsed: true),
+        ),
+        isFalse,
+      );
+      verifyNever(() => outboxService.enqueueMessage(any()));
+    });
   });
 
   group('link removal', () {

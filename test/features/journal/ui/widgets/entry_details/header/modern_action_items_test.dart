@@ -776,8 +776,8 @@ void main() {
       await tester.tap(find.byType(DsActionRow));
       await tester.pump();
 
-      expect(controller.updateLinkCalls, hasLength(1));
-      expect(controller.updateLinkCalls.first.hidden, isTrue);
+      expect(controller.setLinkHiddenCalls, hasLength(1));
+      expect(controller.setLinkHiddenCalls.first.hidden, isTrue);
     });
   });
 
@@ -2875,7 +2875,7 @@ class _RemoveLinkTrackingController extends LinkedEntriesController {
   Future<List<EntryLink>> build() async => [];
 
   @override
-  Future<void> updateLink(EntryLink link) async {}
+  Future<void> setLinkHidden(String linkId, {required bool hidden}) async {}
 
   @override
   Future<void> removeLink({required String toId}) async {

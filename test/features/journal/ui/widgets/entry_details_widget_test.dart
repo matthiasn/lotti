@@ -269,6 +269,20 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
   );
 }
 
+/// The link a collapse toggle wrote, from what one `changeLink` call
+/// [captured] — its id and its change — applied to that link as stored.
+EntryLink _changedLink(List<dynamic> captured) =>
+    (captured[1] as EntryLink Function(EntryLink))(
+      EntryLink.basic(
+        id: captured[0] as String,
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      ),
+    );
+
 void main() {
   group('EntryDetailsWidget Highlight Tests', () {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -2389,7 +2403,8 @@ void main() {
   group('EntryDetailsContent coverage – auto-scroll on expand', () {
     setUpAll(() {
       setFakeDocumentsPath();
-      // EntryLink fallback for mocktail any() on updateLink(EntryLink).
+      // Fallbacks for mocktail any() on changeLink(String, change).
+      registerFallbackValue((EntryLink stored) => stored);
       registerFallbackValue(
         EntryLink.basic(
           id: 'fallback-link',
@@ -2417,7 +2432,7 @@ void main() {
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         // Collapsed link so tapping the chevron expands (isExpanding=true).
@@ -2494,12 +2509,12 @@ void main() {
         toggle!();
         await tester.pump();
 
-        // updateLink is called with collapsed flipped to false.
+        // changeLink sets collapsed to false on the stored link.
         final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
+          () => mockJournalRepository.changeLink(captureAny(), captureAny()),
         ).captured;
-        expect(captured, hasLength(1));
-        expect((captured.first as EntryLink).collapsed, isFalse);
+        expect(captured, hasLength(2));
+        expect(_changedLink(captured).collapsed, isFalse);
 
         final offsetBeforeDelay = scrollController.position.pixels;
         expect(offsetBeforeDelay, 300);
@@ -2531,7 +2546,7 @@ void main() {
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         final collapsedLink = EntryLink.basic(
@@ -2586,7 +2601,7 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).called(1);
 
         // Run the delayed branch: card top (0) is not above current offset (0),
@@ -2615,6 +2630,7 @@ void main() {
   group('EntryDetailsContent coverage – optimistic collapse override', () {
     setUpAll(() {
       setFakeDocumentsPath();
+      registerFallbackValue((EntryLink stored) => stored);
       registerFallbackValue(
         EntryLink.basic(
           id: 'fallback-link',
@@ -2643,7 +2659,7 @@ void main() {
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         final collapsedLink = EntryLink.basic(
@@ -2688,10 +2704,10 @@ void main() {
         // and the flip was persisted exactly once.
         expect(sizeFactor(tester), 1.0);
         final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
+          () => mockJournalRepository.changeLink(captureAny(), captureAny()),
         ).captured;
-        expect(captured, hasLength(1));
-        expect((captured.first as EntryLink).collapsed, isFalse);
+        expect(captured, hasLength(2));
+        expect(_changedLink(captured).collapsed, isFalse);
 
         await tester.pumpAndSettle();
       },
@@ -2702,7 +2718,7 @@ void main() {
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         // Expanded link (collapsed defaults to false).
@@ -2747,10 +2763,10 @@ void main() {
         // expanded, and the flip was persisted exactly once.
         expect(sizeFactor(tester), 0.0);
         final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
+          () => mockJournalRepository.changeLink(captureAny(), captureAny()),
         ).captured;
-        expect(captured, hasLength(1));
-        expect((captured.first as EntryLink).collapsed, isTrue);
+        expect(captured, hasLength(2));
+        expect(_changedLink(captured).collapsed, isTrue);
 
         await tester.pumpAndSettle();
       },
@@ -2762,7 +2778,7 @@ void main() {
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         EntryLink linkWith({required bool collapsed}) => EntryLink.basic(
@@ -2838,6 +2854,7 @@ void main() {
 
     setUpAll(() {
       setFakeDocumentsPath();
+      registerFallbackValue((EntryLink stored) => stored);
       registerFallbackValue(
         EntryLink.basic(
           id: 'fallback',
@@ -3314,12 +3331,12 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
 
-      testWidgets('tapping chevron calls updateLink with collapsed true', (
+      testWidgets('tapping chevron sets collapsed true on the stored link', (
         tester,
       ) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         when(
@@ -3349,10 +3366,10 @@ void main() {
         await tester.pump();
 
         final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
+          () => mockJournalRepository.changeLink(captureAny(), captureAny()),
         ).captured;
-        expect(captured, hasLength(1));
-        final updatedLink = captured.first as EntryLink;
+        expect(captured, hasLength(2));
+        final updatedLink = _changedLink(captured);
         expect(updatedLink.collapsed, isTrue);
 
         await tester.pumpAndSettle();
@@ -4020,7 +4037,7 @@ void main() {
             () => mockJournalRepository.getLinksFromId(testImageEntry.meta.id),
           ).thenAnswer((_) async => <EntryLink>[]);
           when(
-            () => mockJournalRepository.updateLink(any()),
+            () => mockJournalRepository.changeLink(any(), any()),
           ).thenAnswer((_) async => true);
 
           await tester.pumpWidget(
@@ -4059,11 +4076,12 @@ void main() {
           // past it so no timer outlives the tree.
           await tester.pump(AppTheme.collapseAnimationDuration);
 
-          final persisted =
-              verify(
-                    () => mockJournalRepository.updateLink(captureAny()),
-                  ).captured.single
-                  as EntryLink;
+          final persisted = _changedLink(
+            verify(
+              () =>
+                  mockJournalRepository.changeLink(captureAny(), captureAny()),
+            ).captured,
+          );
           expect(persisted.collapsed, isFalse);
         },
       );
@@ -4253,12 +4271,12 @@ void main() {
         expect(header.onToggleCollapse, isNotNull);
       });
 
-      testWidgets('tapping chevron calls updateLink with collapsed true', (
+      testWidgets('tapping chevron sets collapsed true on the stored link', (
         tester,
       ) async {
         final mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenAnswer((_) async => true);
 
         final testLinkTapCollapse = EntryLink.basic(
@@ -4297,12 +4315,12 @@ void main() {
         await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
 
-        // Verify updateLink was called with collapsed: true
+        // Verify changeLink set collapsed: true
         final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
+          () => mockJournalRepository.changeLink(captureAny(), captureAny()),
         ).captured;
-        expect(captured, hasLength(1));
-        final updatedLink = captured.first as EntryLink;
+        expect(captured, hasLength(2));
+        final updatedLink = _changedLink(captured);
         expect(updatedLink.collapsed, isTrue);
         expect(updatedLink.id, 'link-tap-collapse');
 
@@ -4311,11 +4329,11 @@ void main() {
       });
 
       testWidgets(
-        'tapping chevron on collapsed entry calls updateLink with collapsed false',
+        'tapping chevron on collapsed entry sets collapsed false on the stored link',
         (tester) async {
           final mockJournalRepository = MockJournalRepository();
           when(
-            () => mockJournalRepository.updateLink(any()),
+            () => mockJournalRepository.changeLink(any(), any()),
           ).thenAnswer((_) async => true);
 
           final testLinkTapExpand = EntryLink.basic(
@@ -4355,12 +4373,12 @@ void main() {
           await tester.tap(find.byIcon(LottiIcons.expand));
           await tester.pump();
 
-          // Verify updateLink was called with collapsed: false
+          // Verify changeLink set collapsed: false
           final captured = verify(
-            () => mockJournalRepository.updateLink(captureAny()),
+            () => mockJournalRepository.changeLink(captureAny(), captureAny()),
           ).captured;
-          expect(captured, hasLength(1));
-          final updatedLink = captured.first as EntryLink;
+          expect(captured, hasLength(2));
+          final updatedLink = _changedLink(captured);
           expect(updatedLink.collapsed, isFalse);
 
           // Drain the Future.delayed timer from the auto-scroll logic
@@ -4408,14 +4426,14 @@ void main() {
     });
 
     group('collapse toggle error handling', () {
-      testWidgets('catches exception from updateLink and logs it', (
+      testWidgets('catches exception from changeLink and logs it', (
         tester,
       ) async {
         final mockJournalRepository = MockJournalRepository();
         final mockLoggingService = MockDomainLogger();
 
         when(
-          () => mockJournalRepository.updateLink(any()),
+          () => mockJournalRepository.changeLink(any(), any()),
         ).thenThrow(Exception('db write failed'));
 
         when(
@@ -4463,7 +4481,7 @@ void main() {
         );
         await tester.pump();
 
-        // Tap the collapse chevron — updateLink will throw synchronously,
+        // Tap the collapse chevron — changeLink will throw synchronously,
         // so a single frame is enough for the catch path to run.
         await tester.tap(find.byIcon(LottiIcons.expand));
         await tester.pump();
