@@ -13,14 +13,18 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
+import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -308,6 +312,17 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     nudgeBannerSourcesProvider.overrideWithValue(
       [activeGoalNudgesProvider, activeRelationshipNudgesProvider],
     ),
+    // Dashboards show the habits feature's completion card for a habit.
+    dashboardHabitChartBuilderProvider.overrideWithValue(
+      ({required habitId, required rangeStart, required rangeEnd}) =>
+          HabitCompletionCard(
+            habitId: habitId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+    ),
+    // The demo world's real-AI nudge intercepts the AI action.
+    aiActionInterceptorProvider.overrideWithValue(interceptForRealAiSetup),
     promptLogWrapRenderersProvider.overrideWithValue(
       dayPromptLogWrapRenderers,
     ),

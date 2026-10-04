@@ -8,9 +8,9 @@ import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/seed/demo_world_ai.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 
 /// Populates a freshly created demo world with the Intergalactic Penguin
 /// Logistics content plus the tutorial "first mission".

@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -136,13 +136,8 @@ void main() {
     });
 
     testWidgets(
-      'builds DashboardHabitsChart for a habit item with propagated range',
+      'builds the habit chart slot for a habit item with propagated range',
       (tester) async {
-        // getHabitById returns null so the inner HabitCompletionCard collapses
-        // to SizedBox.shrink(), letting us assert on the DashboardWidget's own
-        // wiring of the habit item without the habit controller/repository.
-        when(() => mockCache.getHabitById(any())).thenReturn(null);
-
         final dashboard = DashboardDefinition(
           id: 'habit-dash',
           name: 'Habit Dashboard',
@@ -170,15 +165,18 @@ void main() {
               dashboardByIdProvider(
                 'habit-dash',
               ).overrideWith((ref) => dashboard),
+              dashboardHabitChartBuilderProvider.overrideWithValue(
+                _FakeHabitChart.new,
+              ),
             ],
           ),
         );
         await tester.pump();
 
-        // The habit case (lines 70-74) built a DashboardHabitsChart and
-        // forwarded the habit id plus the dashboard's date range to it.
-        final chart = tester.widget<DashboardHabitsChart>(
-          find.byType(DashboardHabitsChart),
+        // The habit case hands the habit id plus the dashboard's date range
+        // to whatever chart the composition root wired into the slot.
+        final chart = tester.widget<_FakeHabitChart>(
+          find.byType(_FakeHabitChart),
         );
         expect(chart.habitId, 'habit-123');
         expect(chart.rangeStart, rangeStart);
@@ -186,12 +184,49 @@ void main() {
       },
     );
 
+    testWidgets('renders an empty habit item while the slot is unwired', (
+      tester,
+    ) async {
+      final dashboard = DashboardDefinition(
+        id: 'habit-dash',
+        name: 'Habit Dashboard',
+        description: 'desc',
+        items: const [DashboardItem.habitChart(habitId: 'habit-123')],
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        private: false,
+        version: '',
+        lastReviewed: DateTime(2024, 3, 15),
+        active: true,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DashboardWidget(
+            dashboardId: 'habit-dash',
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          overrides: [
+            dashboardByIdProvider(
+              'habit-dash',
+            ).overrideWith((ref) => dashboard),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final item = tester.widget<KeyedSubtree>(
+        find.byKey(const ValueKey('habit:habit-123')),
+      );
+      expect(item.child, isA<SizedBox>());
+    });
+
     testWidgets(
       'keys charts by item identity, not range, so stale data cannot cross '
       'items',
       (tester) async {
-        when(() => mockCache.getHabitById(any())).thenReturn(null);
-
         DashboardDefinition twoHabits() => DashboardDefinition(
           id: 'k-dash',
           name: 'K',
@@ -220,14 +255,27 @@ void main() {
               dashboardByIdProvider(
                 'k-dash',
               ).overrideWith((ref) => twoHabits()),
+              dashboardHabitChartBuilderProvider.overrideWithValue(
+                _FakeHabitChart.new,
+              ),
             ],
           ),
         );
 
-        Set<Key?> habitChartKeys() => tester
-            .widgetList<DashboardHabitsChart>(find.byType(DashboardHabitsChart))
-            .map((c) => c.key)
-            .toSet();
+        // The identity key sits on the subtree wrapping each slot chart.
+        Set<Key?> habitChartKeys() => {
+          for (final element in find.byType(_FakeHabitChart).evaluate())
+            tester
+                .widget<KeyedSubtree>(
+                  find
+                      .ancestor(
+                        of: find.byWidget(element.widget),
+                        matching: find.byType(KeyedSubtree),
+                      )
+                      .first,
+                )
+                .key,
+        };
 
         await pumpAt(rangeStart);
         await tester.pump();
@@ -251,4 +299,20 @@ void main() {
       },
     );
   });
+}
+
+/// Stands in for the habits feature's chart in the habit chart slot.
+class _FakeHabitChart extends StatelessWidget {
+  const _FakeHabitChart({
+    required this.habitId,
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
+
+  final String habitId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  Widget build(BuildContext context) => Text('habit chart $habitId');
 }

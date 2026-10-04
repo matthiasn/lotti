@@ -330,9 +330,10 @@ AI in the demo starts as scenery. The gate
 `demoRealAiAvailableProvider` — true once any non-manifest inference
 provider exists — and `shouldNudgeForRealAi`, which short-circuits to false
 outside the demo. The AI trigger surface (`unified_ai_popup_menu.dart`)
-consults it before opening the skills modal: in the demo with no real
-provider, the tap is intercepted by
-[`DemoAiSetupSheet`](../../lib/features/demo/ui/demo_ai_setup_sheet.dart) —
+asks the AI feature's `aiActionInterceptorProvider` before opening the skills
+modal; the composition root wires it to `interceptForRealAiSetup`, so in the
+demo with no real provider the tap is intercepted by
+[`DemoAiSetupSheet`](../../lib/features/onboarding/ui/demo_ai_setup_sheet.dart) —
 the *same* connect + API-key panels onboarding uses, writing through the
 active (demo) generation's `AiConfigRepository` into the demo's own
 `ai_config.sqlite` — and on success the intercepted action retries. A

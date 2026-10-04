@@ -15,13 +15,13 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

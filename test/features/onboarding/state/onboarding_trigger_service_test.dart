@@ -15,6 +15,7 @@ import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';

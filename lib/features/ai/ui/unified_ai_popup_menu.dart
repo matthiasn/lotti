@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
-import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
-import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -66,24 +65,19 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
         ref: ref,
       );
 
-      // In the demo world every seeded AI provider is a fictional fixture
-      // that can never answer. Intercept the tap BEFORE any skill fires and
-      // offer the guided real-AI setup instead of a doomed request; once a
-      // real provider exists (or outside the demo) the tap passes straight
-      // through. The seam lives here — at the single user-facing trigger
-      // for on-demand inference — not in the inference engine.
+      // The interceptor sees the tap BEFORE any skill fires: the demo world
+      // offers its guided real-AI setup there instead of a doomed request.
+      // The seam lives here — at the single user-facing trigger for
+      // on-demand inference — not in the inference engine.
       Future<void> onTapAsync() async {
-        final container = ProviderScope.containerOf(context, listen: false);
-        if (await shouldNudgeForRealAi(container)) {
-          if (!context.mounted) return;
-          await DemoAiSetupSheet.show(
-            context,
-            // Retry the intercepted action: with a real provider now
-            // configured the gate passes and the skills modal opens.
-            onConfigured: () {
-              if (context.mounted) unawaited(openModal());
-            },
-          );
+        final intercept = ref.read(aiActionInterceptorProvider);
+        if (intercept != null &&
+            await intercept(
+              context,
+              retry: () {
+                if (context.mounted) unawaited(openModal());
+              },
+            )) {
           return;
         }
         if (!context.mounted) return;

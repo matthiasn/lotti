@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/ai/demo_real_ai_wiring.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -30,6 +32,23 @@ import 'package:material_ui/material_ui.dart';
 /// Presented like `OnboardingWelcomeModal`: a transparent full-screen route
 /// with a dim barrier, because the reused panels were designed for that
 /// canvas (their own backdrop, keyboard room for the key step).
+/// The demo world's AI action interceptor (`AiActionInterceptor`).
+///
+/// Every seeded AI provider in the demo is a fictional fixture that can never
+/// answer, so while no real provider is configured the tap opens
+/// [DemoAiSetupSheet] instead, and [retry] re-runs it once one is. Outside
+/// the demo, or once a real provider exists, the tap passes through.
+Future<bool> interceptForRealAiSetup(
+  BuildContext context, {
+  required VoidCallback retry,
+}) async {
+  final container = ProviderScope.containerOf(context, listen: false);
+  if (!await shouldNudgeForRealAi(container)) return false;
+  if (!context.mounted) return true;
+  await DemoAiSetupSheet.show(context, onConfigured: retry);
+  return true;
+}
+
 class DemoAiSetupSheet {
   // Uninstantiable namespace — only the static [show] is ever used.
   DemoAiSetupSheet._(); // coverage:ignore-line

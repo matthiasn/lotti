@@ -20,13 +20,17 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -205,7 +209,7 @@ void main() {
         // the settings, persistence, nav, time and vector-clock services are
         // registered in both). Which providers those are is asserted in the
         // 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(19));
+        expect(buildProviderOverrides(context), hasLength(21));
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
@@ -278,7 +282,26 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(20));
+      expect(buildProviderOverrides(context), hasLength(22));
+
+      // The slots and seams lower features declare resolve to the higher
+      // features' implementations.
+      final wired = ProviderContainer(
+        overrides: buildProviderOverrides(context),
+      );
+      addTearDown(wired.dispose);
+      expect(
+        wired.read(dashboardHabitChartBuilderProvider)!(
+          habitId: 'habit',
+          rangeStart: DateTime(2026),
+          rangeEnd: DateTime(2026, 2),
+        ),
+        isA<HabitCompletionCard>(),
+      );
+      expect(
+        wired.read(aiActionInterceptorProvider),
+        same(interceptForRealAiSetup),
+      );
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.
