@@ -87,6 +87,8 @@ The failed-delete follow-up ([#4684](https://github.com/matthiasn/lotti/pull/468
 write failing) and one switch (`DeleteReportsFailure`) to `ChecklistMembership`
 without changing the other three configurations' counts. TLC found one bug
 and an audit of its callers one more (P2×2). Not included in the historical
+totals above.
+
 The `RunningTimer` model ([#4685](https://github.com/matthiasn/lotti/pull/4685)) adds one spec, one configuration, three named
 properties and 81,204 distinct states. TLC reproduced all three bugs it came
 with (P1×2, P2), each through its switch. Not included in the historical
