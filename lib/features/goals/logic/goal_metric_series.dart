@@ -1,7 +1,7 @@
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/observation.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 

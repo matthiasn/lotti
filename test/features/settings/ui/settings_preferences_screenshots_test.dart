@@ -32,7 +32,6 @@ import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart'
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
-import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
@@ -43,6 +42,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

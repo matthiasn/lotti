@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 
 void main() {
   test('supported goal health types use journal storage identifiers', () {

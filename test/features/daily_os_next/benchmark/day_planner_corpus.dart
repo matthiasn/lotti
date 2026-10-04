@@ -8,7 +8,7 @@ import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:meta/meta.dart';
 

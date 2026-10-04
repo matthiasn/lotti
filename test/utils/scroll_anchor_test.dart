@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/tasks/util/scroll_anchor.dart';
+import 'package:lotti/utils/scroll_anchor.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {

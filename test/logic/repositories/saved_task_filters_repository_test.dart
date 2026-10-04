@@ -8,15 +8,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../helpers/fallbacks.dart';
-import '../../../../mocks/mocks.dart';
-import '../../../../widget_test_utils.dart';
+import '../../helpers/fallbacks.dart';
+import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 const _filterA = TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'});
 const _filterB = TasksFilter(

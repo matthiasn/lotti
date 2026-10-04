@@ -69,7 +69,6 @@ jobs:
               - 'test/features/journal/**'
               - 'lib/beamer/**'
               - 'lib/features/ai/repository/**'
-              - 'lib/features/tasks/state/saved_filters/**'
               - 'lib/features/user_activity/**'
               - 'integration_test/home_integration_test.dart'
               - 'integration_test/tutorial/tutorial_harness.dart'

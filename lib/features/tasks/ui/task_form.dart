@@ -11,7 +11,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
-import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
+import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Composes the task detail form for the task identified by [taskId].

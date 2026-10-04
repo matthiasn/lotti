@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/sharded_embedding_store.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/profile_paths.dart';

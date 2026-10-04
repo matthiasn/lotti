@@ -17,12 +17,12 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dar
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
-import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

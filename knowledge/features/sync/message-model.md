@@ -29,7 +29,7 @@ sources:
     title: Saved task filter delivery and convergence
     last_modified: 2026-09-26
   - id: saved-filter-repository
-    resource: ../../../lib/features/tasks/state/saved_filters/saved_task_filters_repository.dart
+    resource: ../../../lib/logic/repositories/saved_task_filters_repository.dart
     title: SavedTaskFiltersRepository ledger, order and tombstones
     last_modified: 2026-09-26
   - id: attachment-index

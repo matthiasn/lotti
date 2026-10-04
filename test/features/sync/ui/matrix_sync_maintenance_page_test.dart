@@ -5,7 +5,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

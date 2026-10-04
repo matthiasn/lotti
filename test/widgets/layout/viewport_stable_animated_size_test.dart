@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
+import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   test('task scroll scope notifies dependants only for a new controller', () {

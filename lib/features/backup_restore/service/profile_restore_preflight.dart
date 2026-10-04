@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dar
 import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:lotti/features/backup_restore/service/profile_backup_bundle_codec.dart';
 import 'package:lotti/features/backup_restore/service/profile_root_swap.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;

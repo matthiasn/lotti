@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_progress_state.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/tasks/model/task_progress_state.dart';
-import 'package:lotti/features/tasks/util/time_range_utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/time_range_utils.dart';
 import 'package:meta/meta.dart';
 
 /// Keep-alive provider exposing the singleton [TaskProgressRepository].

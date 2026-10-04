@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/features/habits/state/habit_editor_providers.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';

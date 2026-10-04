@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -42,7 +42,6 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_re
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
-import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -53,6 +52,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/transcript_term_corrector.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';

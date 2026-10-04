@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/features/ai_consumption/database/consumption_database.dart
 import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dart';
 import 'package:lotti/features/backup_restore/service/closed_sqlite_file.dart';
 import 'package:lotti/features/backup_restore/service/profile_restore_preflight.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';

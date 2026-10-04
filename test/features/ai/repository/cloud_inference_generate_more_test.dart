@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'

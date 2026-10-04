@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/features/goals/logic/goal_metric_series.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 
 void main() {

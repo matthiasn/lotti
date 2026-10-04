@@ -11,9 +11,9 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_
 import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Header for a generic health chart card: the configured health type's display

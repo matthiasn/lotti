@@ -2,7 +2,7 @@
 type: Feature Module
 title: Day processing outbox
 description: A device-local job table with viewer-relative claim priority, atomic claiming, fenced mutations, and a one-off migration off the file store.
-resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
+resource: ../../../lib/database/day_processing_db.drift
 tags: [daily-os, outbox, jobs, durability, adr-0044]
 status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-24T09:00:00Z }
@@ -17,7 +17,7 @@ sources:
     title: ADR 0070 — Model-checked digest recovery and processing jobs
     last_modified: 2026-09-24
   - id: schema
-    resource: ../../../lib/features/daily_os_next/database/day_processing_db.drift
+    resource: ../../../lib/database/day_processing_db.drift
     title: Outbox schema and indexes
     last_modified: 2026-07-25
   - id: repo

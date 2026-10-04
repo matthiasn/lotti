@@ -1,10 +1,10 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';

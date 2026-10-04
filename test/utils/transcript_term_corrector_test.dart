@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
+import 'package:lotti/utils/transcript_term_corrector.dart';
 
 void main() {
   group('correctTranscriptTerms', () {

@@ -41,7 +41,6 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.d
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
-import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -56,6 +55,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';

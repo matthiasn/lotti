@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/utils/settings_urls.dart';
 
 /// Back affordance shared by the AI-settings detail pages
 /// (`AiProviderDetailPage`, `InferenceModelEditPage`,

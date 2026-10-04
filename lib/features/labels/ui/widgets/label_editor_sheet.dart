@@ -4,7 +4,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/get_it.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/label_color_presets.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 

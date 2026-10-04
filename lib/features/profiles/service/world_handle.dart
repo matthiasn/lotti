@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
-import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 
 /// A complete set of storage handles rooted at [root], independent of the
 /// active getIt generation. Used to populate a world BEFORE switching the

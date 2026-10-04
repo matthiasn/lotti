@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
-import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
+import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

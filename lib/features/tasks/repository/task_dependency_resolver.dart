@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/tasks/repository/blocks_cycles.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/utils/day_agent_capture_helpers.dart';
 import 'package:meta/meta.dart';
 
 /// One blocker of a task, as resolved by [TaskDependencyResolver].

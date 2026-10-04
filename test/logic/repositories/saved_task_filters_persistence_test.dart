@@ -6,10 +6,10 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../mocks/mocks.dart';
+import '../../mocks/mocks.dart';
 
 const _sampleFilter = TasksFilter(
   selectedCategoryIds: {'cat-1'},

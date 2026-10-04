@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_toggle_list.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
+import 'package:lotti/widgets/settings/settings_toggle_list.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   late List<(String, bool)> changes;

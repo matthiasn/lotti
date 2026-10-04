@@ -1,8 +1,8 @@
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_toggle_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/widgets/settings/settings_toggle_list.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The bordered, rounded card of config-flag toggle rows.

@@ -54,13 +54,13 @@ import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
-import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/daily_os_preferences_keys.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 

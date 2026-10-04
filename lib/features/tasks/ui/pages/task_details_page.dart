@@ -27,13 +27,13 @@ import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
-import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
-import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/utils/scroll_anchor.dart';
+import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
 import 'package:material_ui/material_ui.dart';
 

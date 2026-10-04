@@ -3,9 +3,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/label_color_presets.dart';
 import 'package:material_ui/material_ui.dart';
 
 const _sentinel = Object();

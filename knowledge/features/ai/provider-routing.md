@@ -25,7 +25,7 @@ sources:
     title: Melious request shaping and response parsing
     last_modified: 2026-09-12
   - id: term-corrector
-    resource: ../../../lib/features/speech/helpers/transcript_term_corrector.dart
+    resource: ../../../lib/utils/transcript_term_corrector.dart
     title: Post-transcription correction against known terms
     last_modified: 2026-09-19
   - id: router
@@ -508,7 +508,7 @@ Recognition bias is therefore not something every route can offer, and a
 caller that knows which names a recording should contain corrects the result
 instead. `SkillInferenceRunner.runTranscription(knownTerms:)` puts those terms
 ahead of the category dictionary in whatever the provider receives, then runs
-[`correctTranscriptTerms`](../../../lib/features/speech/helpers/transcript_term_corrector.dart)
+[`correctTranscriptTerms`](../../../lib/utils/transcript_term_corrector.dart)
 over the finished text against both lists: a capitalised word that sounds the
 same (Kölner Phonetik) and is spelled almost the same becomes the known term,
 unless it is itself known, is an everyday German or English word (a capital at

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   group('SettingsIcon', () {

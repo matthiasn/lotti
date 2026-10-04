@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'

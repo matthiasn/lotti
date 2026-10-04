@@ -2,7 +2,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One row of a [SettingsToggleList]: an icon, a title, a wrapping

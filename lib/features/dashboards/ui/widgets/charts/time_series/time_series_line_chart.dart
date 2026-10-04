@@ -4,8 +4,8 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/observation.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_ui/material_ui.dart';
 

@@ -23,7 +23,6 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -34,6 +33,7 @@ import 'package:lotti/features/daily_os_next/logic/shutdown_facts.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// Why no tomorrow note could be written.
 enum TomorrowNoteFailure {

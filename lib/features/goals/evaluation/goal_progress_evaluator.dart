@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 
 /// Pure fold of a [GoalCriterion] tree over a [GoalSignalWindow].

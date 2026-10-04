@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 

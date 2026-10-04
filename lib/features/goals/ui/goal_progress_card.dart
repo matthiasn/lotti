@@ -6,13 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_health_data_types.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -23,12 +23,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/logic/goal_metric_series.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
@@ -37,8 +37,8 @@ import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:material_ui/material_ui.dart';
 
-part 'goal_progress_card_dimensions_part.dart';
 part 'goal_progress_card_days_part.dart';
+part 'goal_progress_card_dimensions_part.dart';
 part 'goal_progress_card_series_part.dart';
 
 /// Formats an aggregate for display at a precision the number can actually

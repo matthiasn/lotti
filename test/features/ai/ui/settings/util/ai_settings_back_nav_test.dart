@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/settings_urls.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Helper that wraps [child] in a [MaterialApp] + an outer route so that

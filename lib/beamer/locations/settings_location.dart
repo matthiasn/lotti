@@ -1,9 +1,9 @@
 import 'package:beamer/beamer.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/settings_urls.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Every `/settings/**` URL, built from the settings route registry

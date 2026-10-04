@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
-import 'package:lotti/features/tasks/util/scroll_anchor.dart';
+import 'package:lotti/utils/scroll_anchor.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A task-details scroll controller that preserves visible content while an

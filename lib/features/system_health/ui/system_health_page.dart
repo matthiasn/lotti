@@ -16,7 +16,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/system_health/domain/system_health_range.dart';
 import 'package:lotti/features/system_health/domain/system_health_report.dart';
@@ -25,6 +24,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 

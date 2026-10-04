@@ -6,11 +6,11 @@ import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_ui/material_ui.dart';
 

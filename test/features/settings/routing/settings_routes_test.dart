@@ -26,7 +26,6 @@ import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/domain/settings_tree_data.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_root_page.dart';
@@ -51,6 +50,7 @@ import 'package:lotti/features/system_health/ui/system_health_page.dart';
 import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
+import 'package:lotti/utils/settings_urls.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';

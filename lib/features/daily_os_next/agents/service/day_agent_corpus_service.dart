@@ -4,10 +4,10 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
+import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// FTS corpus matching + corpus-snapshot logic for the day-agent capture
 /// flow. The capture service keeps thin delegators so mocks of the service

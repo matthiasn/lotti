@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/labels/constants/label_color_presets.dart';
+import 'package:lotti/utils/label_color_presets.dart';
 
 void main() {
   group('labelColorPresets', () {

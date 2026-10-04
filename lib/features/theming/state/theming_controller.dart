@@ -8,7 +8,6 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Scheme name sent in [SyncMessage.themingSelection] when none is stored.

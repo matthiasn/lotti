@@ -4,11 +4,11 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:uuid/uuid.dart';

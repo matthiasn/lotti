@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/widgets/charts/time_series_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../../widget_test_utils.dart';

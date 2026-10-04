@@ -2,11 +2,11 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/settings_urls.dart';
 
 /// Signature for the bridge's "navigate the app" hook. Injected by
 /// the widget so tests can substitute a plain function spy without

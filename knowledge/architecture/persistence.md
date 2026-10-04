@@ -33,7 +33,7 @@ sources:
     title: ConsumptionDatabase
     last_modified: 2026-07-21
   - id: day-processing-db
-    resource: ../../lib/features/daily_os_next/database/day_processing_db.dart
+    resource: ../../lib/database/day_processing_db.dart
     title: DayProcessingDb
     last_modified: 2026-07-25
   - id: notifications

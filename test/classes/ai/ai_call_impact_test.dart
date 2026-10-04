@@ -2,7 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/classes/ai/ai_call_impact.dart';
 
 void main() {
   group('MeliousCallImpact.fromResponseJson', () {
