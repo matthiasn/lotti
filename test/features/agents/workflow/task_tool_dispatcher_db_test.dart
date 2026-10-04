@@ -290,6 +290,30 @@ void main() {
       final stored = await journalDb.journalEntityById(checklistItemId);
       expect((stored! as ChecklistItem).data.isChecked, isFalse);
     });
+
+    // The user deletes the task while a suggestion for it is pending: the
+    // suggestion can never apply, so its failure is final and the
+    // confirmation retracts it instead of reopening it.
+    test('a suggestion for a task deleted since fails for good, writing '
+        'nothing', () async {
+      expect(
+        await JournalRepository().deleteJournalEntity(task.meta.id),
+        isTrue,
+      );
+
+      final result = await dispatcher.dispatch(
+        TaskAgentToolNames.setTaskTitle,
+        {'title': 'Rotate the signing key'},
+        task.meta.id,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isTrue);
+      final stored = await journalDb.journalEntityByIdIncludingDeleted(
+        task.meta.id,
+      );
+      expect((stored! as Task).data.title, 'Rotate signing certificate');
+    });
   });
 
   _registerIdempotency(

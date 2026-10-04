@@ -5,8 +5,8 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T22:00:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
+stale_after: 2027-01-04
 sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
@@ -87,7 +87,7 @@ sources:
   - id: task-tool-dispatcher
     resource: ../../../lib/features/agents/workflow/task_tool_dispatcher.dart
     title: TaskToolDispatcher — the applied record and the compare-and-set before any handler runs
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
   - id: adr-0075
     resource: ../../../docs/adr/0075-idempotent-change-set-tools.md
     title: ADR 0075 — Idempotent change-set tools
@@ -1110,9 +1110,11 @@ failed decision write rolls the claim back; a caller that finds the item no
 longer pending stops without dispatching — then dispatch, revert
 retryable failures to `pending`, and auto-retract deterministic failures the
 dispatcher marks non-retryable. This includes an `update_time_entry` whose
-arguments alone can never apply and version-fenced goal revisions whose base
-version is stale or whose legacy contract cannot be applied safely. Nothing is
-special-cased by tool name.
+arguments alone can never apply, version-fenced goal revisions whose base
+version is stale or whose legacy contract cannot be applied safely, and any
+task tool whose task was deleted since the proposal — `TaskToolDispatcher`
+tells a deleted task from a missing one by its tombstone, and only the
+deleted one is final. Nothing is special-cased by tool name.
 
 `AgentSyncService.runInTransaction` can throw after commit when the sync
 outbox flush fails. `_claimDecision` checks whether this caller's newly minted
