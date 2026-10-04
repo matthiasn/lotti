@@ -1,5 +1,18 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-04
+* **Addition**: [Backend services](architecture/backend-services.md) — the
+  three kinds of service under `services/`, which the app depends on, which CI
+  builds or tests, and the AI-proxy, credits and dashboard proof of concept
+  that has no app caller, no CI and no deployment record.
+* **Update**: [System overview](architecture/overview.md) — the intended
+  dependency directions, the four the architecture test enforces, and how far
+  the tree is from the rest; the GetIt/Riverpod split described as the ratchet
+  it is.
+* **Update**: [Provider routing](features/ai/provider-routing.md) — reasoning
+  and thinking on every provider besides Gemini, recorded as deliberate
+  per-provider policy.
+
 ## 2026-10-03
 * **Addition**: [Daily OS Shutdown](features/daily_os_next/shutdown.md) —
   closing a day from measured facts (recorded time, the plan, session

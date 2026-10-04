@@ -1,13 +1,25 @@
 ---
 type: Feature Module
 title: Provider routing
-description: The routing table behind CloudInferenceRepository, per-provider catalogs and quirks, the audio transcoding pipeline, Gemini thinking modes, and local HTTP transcription.
+description: The routing table behind CloudInferenceRepository, per-provider catalogs and quirks, the audio transcoding pipeline, Gemini thinking modes, reasoning on the other providers, and local HTTP transcription.
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
-tags: [ai, providers, routing, audio, gemini]
+tags: [ai, providers, routing, audio, gemini, reasoning, thinking]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T01:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-10-04T12:00:00Z }
 stale_after: 2026-12-19
 sources:
+  - id: ollama-client
+    resource: ../../../lib/features/ai/repository/ollama_api_client.dart
+    title: Ollama chat client and its thinking switch
+    last_modified: 2026-10-03
+  - id: mistral
+    resource: ../../../lib/features/ai/repository/mistral_inference_repository.dart
+    title: Mistral request shaping
+    last_modified: 2026-10-03
+  - id: unified-repo
+    resource: ../../../lib/features/ai/repository/unified_ai_inference_repository.dart
+    title: Prompt execution and its reasoning temperature
+    last_modified: 2026-10-03
   - id: melious
     resource: ../../../lib/features/ai/repository/melious_inference_repository.dart
     title: Melious request shaping and response parsing
@@ -444,6 +456,34 @@ path. Gemini audio requests set `reasoning_effort` **only** when the provider is
 Gemini and the model is a Gemini-3 variant, defaulting to `low` unless a
 per-invocation mode is passed. Non-Gemini providers and non-Gemini-3 models leave
 reasoning effort unset.
+
+# Reasoning on the other providers
+
+There is no app-wide reasoning setting. Each provider's API accepts a different
+field, or none, so each repository decides on its own, and **that is deliberate
+policy, not drift waiting to be unified**: a shared knob would have to either
+send fields some APIs reject or silently mean different things per provider.
+Gemini, above, is the only provider with a user-facing control.
+
+| Provider | What is sent | Where |
+|----------|--------------|-------|
+| Gemini | `thinkingConfig` on every native request; `reasoning_effort` on the audio and image paths for Gemini 3 only | Section above |
+| Ollama | `think: true` for model ids starting with `gemma4`, nothing otherwise; the separate `thinking` field comes back wrapped in `<think>` tags so the shared parser can split it out | `OllamaApiClient.shouldEnableThinking` |
+| Melious | The caller's effort unchanged, except for `qwen3.8-27b` and `qwen3.8-max`, which reject a request without one: those get `low` when the caller set nothing and `medium` in place of `high` | `MeliousInferenceRepository.resolveReasoningEffort` |
+| Mistral | Nothing: `reasoningEffort` is accepted for interface compatibility and dropped, since the chat-completions API does not document it | `MistralInferenceRepository` |
+| OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent | `CloudInferenceGenerate` |
+| oMLX | Nothing per request; the catalog only flags reasoning-capable models | Catalog section above |
+
+On the pass-through providers the effort is whatever the call site asks for, and
+only three call sites ask: the goal check-in compactor, the goal check-in digest
+and the GitHub pull-request summary, all for `minimal`, to keep short
+summarisation cheap. Everything else sends no effort and gets the provider's
+default.
+
+A model row's `isReasoningModel` flag, combined with a prompt's `useReasoning`,
+changes only the temperature in `UnifiedAiInferenceRepository` — `1.0` instead
+of `0.6`, because OpenAI's reasoning models reject any other value. It sends no
+effort of its own.
 
 # Speech dictionaries
 

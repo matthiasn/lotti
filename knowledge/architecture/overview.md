@@ -5,7 +5,7 @@ description: What Lotti is, how the codebase is layered, and which concept to re
 resource: ../../lib
 tags: [architecture, overview, entry-point]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T22:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: lib
@@ -16,6 +16,10 @@ sources:
     resource: ../../pubspec.yaml
     title: Dependency manifest
     last_modified: 2026-07-26
+  - id: import-direction
+    resource: ../../test/architecture/feature_import_direction_test.dart
+    title: Feature import direction test
+    last_modified: 2026-10-03
   - id: adr-index
     resource: ../../docs/adr/README.md
     title: Architecture decision records
@@ -69,10 +73,64 @@ flowchart TD
   Features --> Data
 ```
 
-The layering is a convention, not an enforced boundary: a feature may reach the
-database directly, and many do. What is enforced by structure is the
-[GetIt/Riverpod split](bootstrap-and-di.md) — process-wide services in GetIt,
-scoped state in Riverpod, never the reverse.
+## Intended dependency directions
+
+The arrows are the intended direction of imports: the shell and shared widgets
+depend on features, features on cross-feature logic and persistence, and logic
+on persistence. Two consequences follow, and both are the target rather than
+the state of the tree:
+
+- **The lower layers do not import features.** `lib/classes`, `lib/database`,
+  `lib/services`, `lib/logic` and `lib/utils` hold what features share; a type
+  that one of them needs from a feature belongs below the feature instead.
+- **Features depend on each other only through a seam.** Where one feature has
+  to drive another, a registry or interface in the lower feature is filled by
+  the higher one at startup — the agent-runtime registries in
+  [bootstrap and DI](bootstrap-and-di.md) are the pattern — rather than one
+  importing the other's internals.
+
+A feature reaching the database directly, skipping the logic layer, is allowed
+and common. The arrows forbid upward imports, not shortcuts downward.
+
+## What is enforced
+
+Only a few directions are checked, by
+`test/architecture/feature_import_direction_test.dart`:
+
+| Rule | Why |
+|------|-----|
+| `features/agents` does not import `features/daily_os_next` | The agent runtime is generic; Daily OS registers itself into it |
+| `lib/classes` does not import `features/agents` or `features/daily_os_next` | The shared models must not pull in the runtimes built on them |
+| Nothing imports `features/settings_v2` | It was folded into `features/settings` and must not return as a second home |
+| `features/settings/{domain,state}` do not import `features/settings/{routing,ui}` | The route registry imports every settings page, so the tree would depend on all of them |
+
+The test checks direct imports only. A transitive check was tried and
+rejected: almost everything reaches almost everything through
+`nav_service → beamer → app_root`, so it would have flagged dozens of paths
+that no single import can fix.
+
+Everything else is unenforced, and the tree does not yet match the intent.
+Counting files outside `lib/features/` that import a feature (generated files
+excluded):
+
+| Directory | Files importing a feature |
+|-----------|---------------------------|
+| `lib/widgets` | 49 of 87 |
+| `lib/logic` | 14 of 36 |
+| `lib/beamer` | 11 of 14 — expected: the shell sits above features |
+| `lib/classes` | 5 of 40 — sync, AI consumption and categories types among them |
+| `lib/database` | 5 of 42 — `database.dart` and `sync_db.dart` import sync, habits and GitHub |
+| `lib/services` | 5 of 26 |
+| `lib/utils` | 2 of 30 |
+
+Treat these as debt: move a shared type down rather than adding another upward
+import, and extend the architecture test when a direction is clean enough to
+lock.
+
+The [GetIt/Riverpod split](bootstrap-and-di.md) — process-wide services in
+GetIt, scoped state in Riverpod — is held by a ratchet rather than by
+structure: `tool/di` keeps each file's count of service-locator lookups from
+growing, so existing lookups are tolerated while new ones fail CI.
 
 # The source tree
 
@@ -107,7 +165,7 @@ concept tree:
   on the agent runtime, with per-day agents and durable draft/refine jobs.
 
 Architectural decisions behind these are recorded as ADRs in
-[`docs/adr/`](../../docs/adr) — 44 of them at the time of writing. Concepts here
+[`docs/adr/`](../../docs/adr), listed in its README. Concepts here
 cite the ADRs they implement, rather than restating them: an ADR is a decision
 at a point in time, while a concept describes what runs today.
 
