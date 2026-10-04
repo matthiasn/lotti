@@ -1,35 +1,21 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/agents/query_chat_models.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/query/query_chat_controller.dart';
-import 'package:lotti/features/agents/query/query_chat_projection.dart';
-import 'package:lotti/features/agents/query/query_chat_providers.dart';
-import 'package:lotti/features/agents/query/query_source_access.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:material_ui/material_ui.dart';
+part of 'query_chat_pane.dart';
 
 /// Owns the input until the modal route finishes its dismissal animation.
-class QueryRenameDialog extends ConsumerStatefulWidget {
-  const QueryRenameDialog({
+class _QueryRenameDialog extends ConsumerStatefulWidget {
+  const _QueryRenameDialog({
     required this.controller,
     required this.chat,
     required this.private,
-    super.key,
   });
   final QueryChatController controller;
   final QueryChatHistory chat;
   final bool private;
 
   @override
-  ConsumerState<QueryRenameDialog> createState() => _QueryRenameDialogState();
+  ConsumerState<_QueryRenameDialog> createState() => _QueryRenameDialogState();
 }
 
-class _QueryRenameDialogState extends ConsumerState<QueryRenameDialog> {
+class _QueryRenameDialogState extends ConsumerState<_QueryRenameDialog> {
   late final _text = TextEditingController(text: widget.chat.title);
   late bool _authoredPrivate = widget.private;
 
