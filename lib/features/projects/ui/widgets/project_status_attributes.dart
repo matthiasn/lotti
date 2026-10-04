@@ -1,6 +1,6 @@
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/file_utils.dart';

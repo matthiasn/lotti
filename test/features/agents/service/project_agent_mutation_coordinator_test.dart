@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
+import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
 
 void main() {
   test('serializes one project while allowing another to progress', () async {

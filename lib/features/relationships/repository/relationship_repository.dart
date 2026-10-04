@@ -8,14 +8,15 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -49,7 +50,7 @@ bool isCheckInEntryKind(JournalEntity entity) =>
 /// uses the existing linked-entries machinery) and the denormalized
 /// `CheckInData.relationshipId` (so `affectedIds` emits a precise wake token
 /// and the `subtype` column supports indexed check-in queries).
-class RelationshipRepository {
+class RelationshipRepository implements RelationshipCascade {
   RelationshipRepository({
     required this._journalDb,
     required this._journalRepository,
@@ -632,6 +633,7 @@ class RelationshipRepository {
   /// an edited person, so a crop that came out of a gesture with a rounding
   /// slip is corrected once here rather than defended against at every size
   /// the avatar is later drawn at.
+  @override
   Future<bool> updateRelationship(RelationshipEntry relationship) async {
     final stored = await getRelationshipByIdUnfiltered(relationship.id);
     final updatedMeta = await _persistenceLogic.updateMetadata(
@@ -737,6 +739,7 @@ class RelationshipRepository {
   /// the call: the relationship is already gone, so no live query reaches it
   /// and reporting failure would send the caller back to a page that no
   /// longer resolves.
+  @override
   Future<bool> deleteRelationship(String relationshipId) async {
     final relationship = await getRelationshipByIdUnfiltered(relationshipId);
     if (relationship == null) return false;

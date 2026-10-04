@@ -54,7 +54,7 @@ Audio Entry Detail → "Generate Cover Art" → ReferenceImageSelectionStep → 
 ### Phase 1: Data Model & Repository
 
 #### 1.1 Query Task's Linked Images
-**File:** `lib/features/journal/repository/journal_repository.dart`
+**File:** `lib/logic/repositories/journal_repository.dart`
 
 Add method to get JournalImage entries linked to a task:
 ```dart
@@ -284,7 +284,7 @@ Future<GeneratedImage> generateImage({
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -851,7 +851,7 @@ Generate an image that would make someone immediately recognize and remember thi
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `lib/features/journal/repository/journal_repository.dart` | Add `getLinkedImagesForTask()` |
+| `lib/logic/repositories/journal_repository.dart` | Add `getLinkedImagesForTask()` |
 | `lib/features/ai/repository/gemini_utils.dart` | Add reference images to request body |
 | `lib/features/ai/repository/gemini_inference_repository.dart` | Pass reference images parameter |
 | `lib/features/ai/repository/cloud_inference_repository.dart` | Pass reference images parameter |

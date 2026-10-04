@@ -6,7 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:mocktail/mocktail.dart';

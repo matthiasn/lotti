@@ -17,7 +17,7 @@ sources:
     title: TaskProgressRepository
     last_modified: 2026-07-12
   - id: field-write
-    resource: ../../../lib/features/journal/repository/task_field_write.dart
+    resource: ../../../lib/logic/repositories/task_field_write.dart
     title: writeTaskField
     last_modified: 2026-09-27
   - id: update-task
@@ -125,7 +125,7 @@ sequenceDiagram
   cover art — and `EntryController.save` only the title, estimate and due
   date it is given, and the body only while the editor holds unsaved edits.
 - **An agent tool** writes through `writeTaskField`
-  (`lib/features/journal/repository/task_field_write.dart`): its change applies
+  (`lib/logic/repositories/task_field_write.dart`): its change applies
   only while the field on the stored row still reads what the tool's copy
   read, in the same write, so the agent never sets a field over a value it
   did not decide against. A moved field is reported as nothing applied. The
@@ -143,7 +143,7 @@ sequenceDiagram
 
 `specs/tla/TaskFieldWrites.tla` model-checks this across two devices —
 `NoLostFieldEdit`, `HistoryComplete`, `NoBlindAgentWrite` — and
-`test/features/journal/repository/task_field_writes_model_conformance.dart`
+`test/logic/repositories/task_field_writes_model_conformance.dart`
 drives the real writers against it. Setting the same field twice keeps the
 newest write, and two devices writing before they sync still raise a
 conflict the user resolves — the conflict screen shows every task field that

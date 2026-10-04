@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
-import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
+import 'package:lotti/database/agents/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:mocktail/mocktail.dart';

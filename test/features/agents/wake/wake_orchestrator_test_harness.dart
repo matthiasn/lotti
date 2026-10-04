@@ -21,7 +21,7 @@ export 'package:lotti/classes/agents/agent_config.dart';
 export 'package:lotti/classes/agents/agent_domain_entity.dart';
 export 'package:lotti/classes/agents/agent_enums.dart';
 export 'package:lotti/classes/vector_clock.dart';
-export 'package:lotti/features/agents/database/agent_database.dart';
+export 'package:lotti/database/agents/agent_database.dart';
 export 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 export 'package:lotti/features/agents/wake/wake_queue.dart';
 export 'package:lotti/features/agents/wake/wake_runner.dart';

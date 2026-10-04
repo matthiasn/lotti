@@ -21,7 +21,7 @@ This plan covers the missing top-level tab integration work that sits on top of 
 The codebase already contains several pieces we should build on:
 
 - `enableProjectsFlag` already exists and is initialized in the DB.
-- Project CRUD, linking, and detail editing already exist in `lib/features/projects/repository/project_repository.dart` and `lib/features/projects/state/project_detail_controller.dart`.
+- Project CRUD, linking, and detail editing already exist in `lib/logic/repositories/project_repository.dart` and `lib/features/projects/state/project_detail_controller.dart`.
 - Settings routes already exist for project creation/detail under `lib/beamer/locations/settings_location.dart`.
 - Widgetbook already contains project list/detail UI components under `lib/features/projects/ui/widgets/` and `lib/features/projects/widgetbook/`.
 - The app shell currently gates major tabs in `lib/beamer/beamer_app.dart` and `lib/services/nav_service.dart` by listening directly to config-flag streams from `JournalDb`.
@@ -620,7 +620,7 @@ That is why step 3 is correctly a separate task.
 
 ### Projects feature
 
-- `lib/features/projects/repository/project_repository.dart`
+- `lib/logic/repositories/project_repository.dart`
 - `lib/features/projects/state/project_providers.dart` or new state files
 - `lib/features/projects/ui/pages/projects_tab_page.dart` (new)
 - `lib/features/projects/ui/widgets/project_list_pane.dart`

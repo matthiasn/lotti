@@ -95,7 +95,7 @@ uses this path for sibling-task context, so the performance pattern is proven.
 
 Relevant code:
 
-- [lib/features/agents/database/agent_repository.dart](/Users/mn/github/lotti3/lib/features/agents/database/agent_repository.dart)
+- [lib/database/agents/agent_repository.dart](/Users/mn/github/lotti3/lib/database/agents/agent_repository.dart)
 - [lib/features/ai/repository/ai_input_repository.dart](/Users/mn/github/lotti3/lib/features/ai/repository/ai_input_repository.dart)
 
 ### Figma / design context
@@ -182,7 +182,7 @@ Planned changes:
 Expected touched files:
 
 - [lib/classes/agents/agent_domain_entity.dart](/Users/mn/github/lotti3/lib/classes/agents/agent_domain_entity.dart)
-- [lib/features/agents/database/agent_db_conversions.dart](/Users/mn/github/lotti3/lib/features/agents/database/agent_db_conversions.dart) if migration helpers or tests need adjustment
+- [lib/database/agents/agent_db_conversions.dart](/Users/mn/github/lotti3/lib/database/agents/agent_db_conversions.dart) if migration helpers or tests need adjustment
 - generated files via `build_runner`
 
 ### 3. Reuse the bulk report fetch in project detail
@@ -284,7 +284,7 @@ Likely files:
 - [test/features/agents/workflow/task_agent_strategy_test.dart](/Users/mn/github/lotti3/test/features/agents/workflow/task_agent_strategy_test.dart)
 - [test/features/agents/workflow/task_agent_workflow_test.dart](/Users/mn/github/lotti3/test/features/agents/workflow/task_agent_workflow_test.dart)
 - [test/classes/agents/agent_domain_entity_test.dart](/Users/mn/github/lotti3/test/classes/agents/agent_domain_entity_test.dart)
-- [test/features/agents/database/agent_db_conversions_test.dart](/Users/mn/github/lotti3/test/features/agents/database/agent_db_conversions_test.dart)
+- [test/database/agents/agent_db_conversions_test.dart](/Users/mn/github/lotti3/test/database/agents/agent_db_conversions_test.dart)
 
 ### Project detail/provider coverage
 

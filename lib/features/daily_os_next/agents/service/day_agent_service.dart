@@ -14,7 +14,7 @@ import 'package:lotti/classes/agents/agent_enums.dart'
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';

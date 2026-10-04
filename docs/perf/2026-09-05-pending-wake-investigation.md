@@ -148,8 +148,8 @@ summary measurements. Python's standard library is sufficient.
 ```python
 import datetime, json, pathlib, sqlite3, statistics, tempfile, time
 root = pathlib.Path.cwd()
-schema = (root / 'lib/features/agents/database/agent_database.drift').read_text().split('CREATE TABLE agent_links')[0]
-source = (root / 'lib/features/agents/database/agent_database.dart').read_text()
+schema = (root / 'lib/database/agents/agent_database.drift').read_text().split('CREATE TABLE agent_links')[0]
+source = (root / 'lib/database/agents/agent_database.dart').read_text()
 def query(method):
     return source.split('Selectable<AgentEntity> ' + method + '(')[1].split("r'''", 1)[1].split("'''", 1)[0]
 queries = {'pending': query('getPendingScheduledWakeRecords'), 'due': query('getDueScheduledWakeRecords')}
