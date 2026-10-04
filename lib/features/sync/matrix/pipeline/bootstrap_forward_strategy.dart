@@ -123,7 +123,9 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     );
     try {
       timeline.cancelSubscriptions();
-    } catch (_) {}
+    } catch (_) {
+      // Teardown of an abandoned timeline; a failed cancel leaves nothing to retry.
+    }
     return const BootstrapResult(
       totalPages: 0,
       totalEvents: 0,
@@ -337,7 +339,9 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   } finally {
     try {
       timeline.cancelSubscriptions();
-    } catch (_) {}
+    } catch (_) {
+      // Teardown of an abandoned timeline; a failed cancel leaves nothing to retry.
+    }
   }
 
   return BootstrapResult(

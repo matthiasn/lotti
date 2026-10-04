@@ -8,6 +8,8 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/ui/app_fonts.dart';
@@ -289,11 +291,21 @@ class _AudioRecordingModalContentState
 
     setState(() => _terminalActionInProgress = true);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
+    // Captured now: the widget may be gone by the time the stop fails.
+    final logger = ref.read(domainLoggerProvider);
 
     String? createdId;
     try {
       createdId = await controller.stop();
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      // The user sees the failure below; the log keeps its cause.
+      logger.error(
+        LogDomain.speech,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'AudioRecordingModal.stop',
+      );
+    }
 
     if (!mounted) return;
 

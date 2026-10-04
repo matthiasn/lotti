@@ -124,7 +124,9 @@ class DailyOsOnboardingSessionController
         reason: reason,
         valueBucket: valueBucket,
       );
-    } catch (_) {}
+    } catch (_) {
+      // Onboarding telemetry is best effort and must not interrupt the walkthrough.
+    }
   }
 }
 

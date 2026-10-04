@@ -19,7 +19,9 @@ Map<String, dynamic> parseAgentToolArguments(String raw) {
   try {
     final decoded = jsonDecode(trimmed);
     if (decoded is Map<String, dynamic>) return decoded;
-  } catch (_) {}
+  } catch (_) {
+    // Not JSON as it stands; the repairs below try again.
+  }
 
   // Handle markdown-wrapped JSON. Guard the decode so a malformed fence falls
   // through to the sanitized exception below rather than letting jsonDecode

@@ -31,7 +31,9 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -1194,6 +1196,51 @@ void main() {
     });
 
     group('Record Button Coverage', () {
+      testWidgets('a failed stop is shown and its cause logged', (
+        tester,
+      ) async {
+        stubCategory();
+        final logger = MockDomainLogger();
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            domainLoggerProvider.overrideWithValue(logger),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  progress: const Duration(seconds: 5),
+                  vu: 80,
+                  dBFS: -20,
+                  showIndicator: false,
+                  modalVisible: true,
+                ),
+                onStopCalled: () => throw StateError('recorder lost'),
+              ),
+            ),
+          ],
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 250));
+
+        await tester.tap(find.text('Stop'));
+        await tester.pump();
+
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(AudioRecordingModalContent)),
+        )!;
+        expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'AudioRecordingModal.stop',
+          ),
+        ).called(1);
+      });
+
       testWidgets('should call record when record button is tapped', (
         tester,
       ) async {
