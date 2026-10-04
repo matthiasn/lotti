@@ -4,7 +4,8 @@
 * **Addition**: [Backend services](architecture/backend-services.md) — the
   three kinds of service under `services/`, which the app depends on, which CI
   builds or tests, and the AI-proxy, credits and dashboard proof of concept
-  that has no app caller, no CI and no deployment record.
+  that is reachable only as an optional generic provider, with no CI and no
+  deployment record.
 * **Update**: [System overview](architecture/overview.md) — the intended
   dependency directions, the four the architecture test enforces, and how far
   the tree is from the rest; the GetIt/Riverpod split described as the ratchet

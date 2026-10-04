@@ -36,7 +36,7 @@ them and whether anything keeps them working:
 |-------|-------------|-------------------|-----------------------|
 | **Local inference servers** the user installs beside the app | `whisper_server`, `voxtral-local` | Yes, as optional providers at a default `localhost` URL | Released as binaries by `python-services-release.yml` on a version tag |
 | **Sync account provisioning** run by whoever hosts the homeserver | `matrix-provisioning-service`, `matrix-admin`, `shared` | Indirectly: the app redeems the bundles it issues, and never calls it over HTTP | Tested on every push touching them by `matrix-admin-ci.yml` |
-| **Hosted-AI billing proof of concept** | `ai-proxy-service`, `credits-service`, `dashboard` | No | No |
+| **Hosted-AI billing proof of concept** | `ai-proxy-service`, `credits-service`, `dashboard` | No: the proxy is reachable as an optional generic OpenAI-compatible provider, and nothing requires it | No |
 
 `qwen/` is not a service: it is a README recipe for running a Qwen model locally
 with `mlx_vlm`.
@@ -53,13 +53,14 @@ flowchart LR
     Admin["matrix-admin SPA"]
     Synapse["Synapse"]
   end
-  subgraph PoC["Proof of concept — not wired to the app"]
+  subgraph PoC["Proof of concept — optional, unmaintained"]
     Proxy["ai-proxy-service<br/>Gemini forwarder"]
     Credits["credits-service<br/>TigerBeetle ledger"]
     Dash["dashboard"]
   end
   App -->|OpenAI-compatible transcription| Whisper
   App -->|OpenAI-compatible transcription| Voxtral
+  App -.->|only if a generic provider<br/>points at it| Proxy
   Admin --> Prov
   Prov -->|creates accounts| Synapse
   Prov -.->|one-time credential bundle,<br/>handed over out of band| App
@@ -98,10 +99,12 @@ describes how to deploy the proxy and the credits service.
 
 What the repository shows about them:
 
-- **No app caller.** The only trace in `lib/` is the default base URL of the
-  generic OpenAI-compatible provider, `http://localhost:8002/v1`, named
-  "AI Proxy (local)" — the proxy's local port. A user who never points a
-  provider there never reaches it.
+- **An optional integration, not a dependency.** The app reaches the proxy
+  only through the generic OpenAI-compatible provider: adding one fills in the
+  default base URL `http://localhost:8002/v1`, named "AI Proxy (local)" — the
+  proxy's local port — and chat completions then go there like to any other
+  OpenAI-compatible endpoint. Nothing in the app is specific to the proxy, and
+  the credits service and dashboard are not reached at all.
 - **No CI.** No workflow, Makefile target or Buildkite step builds, tests or
   deploys any of the three. Their recent commits are dependency bumps.
 - **No deployment record.** Nothing in the repository says whether an instance

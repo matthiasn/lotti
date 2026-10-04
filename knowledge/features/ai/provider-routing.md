@@ -471,8 +471,7 @@ Gemini, above, is the only provider with a user-facing control.
 | Ollama | `think: true` for model ids starting with `gemma4`, nothing otherwise; the separate `thinking` field comes back wrapped in `<think>` tags so the shared parser can split it out | `OllamaApiClient.shouldEnableThinking` |
 | Melious | The caller's effort unchanged, except for `qwen3.8-27b` and `qwen3.8-max`, which reject a request without one: those get `low` when the caller set nothing and `medium` in place of `high` | `MeliousInferenceRepository.resolveReasoningEffort` |
 | Mistral | Nothing: `reasoningEffort` is accepted for interface compatibility and dropped, since the chat-completions API does not document it | `MistralInferenceRepository` |
-| OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent | `CloudInferenceGenerate` |
-| oMLX | Nothing per request; the catalog only flags reasoning-capable models | Catalog section above |
+| OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, oMLX, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent, and oMLX's catalog only flags which models reason | `CloudInferenceGenerate` |
 
 On the pass-through providers the effort is whatever the call site asks for, and
 only three call sites ask: the goal check-in compactor, the goal check-in digest
