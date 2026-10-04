@@ -4,7 +4,6 @@
     "lib/beamer/beamer_app.dart": 1644,
     "lib/classes/agents/agent_domain_entity.dart": 1502,
     "lib/features/agents/wake/wake_orchestrator.dart": 1316,
-    "lib/features/agents/workflow/task_agent_execute.dart": 1132,
     "lib/features/ai/services/skill_inference_runner.dart": 1776,
     "lib/features/goals/ui/pages/create_goal_agent_page.dart": 1143,
     "lib/features/goals/workflow/goal_agent_workflow.dart": 1609,

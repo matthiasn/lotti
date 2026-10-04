@@ -79,6 +79,8 @@ import 'package:uuid/uuid.dart';
 export 'package:lotti/features/agents/workflow/wake_result.dart';
 
 part 'task_agent_execute.dart';
+part 'task_agent_execute_report.dart';
+part 'task_agent_execute_setup.dart';
 part 'task_agent_persistence_helpers.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
