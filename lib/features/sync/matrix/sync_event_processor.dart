@@ -70,6 +70,7 @@ export 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 export 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 
 part 'sync_event_processor_agent_handlers.dart';
+part 'sync_event_processor_agent_reconciliation.dart';
 part 'sync_event_processor_apply.dart';
 part 'sync_event_processor_consumption_handlers.dart';
 part 'sync_event_processor_deep_backfill.dart';
