@@ -12,8 +12,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
-import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
-import 'package:lotti/get_it.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -34,7 +32,6 @@ void main() {
     await setUpTestGetIt();
     broadcaster = MockSyncNodeProfileBroadcaster();
     when(() => broadcaster.broadcastIfChanged()).thenAnswer((_) async => true);
-    getIt.registerSingleton<SyncNodeProfileBroadcaster>(broadcaster);
     models = MockSherpaModelRepository();
     configs = MockAiConfigRepository();
     when(() => models.models).thenReturn(sherpaModels);
@@ -71,6 +68,9 @@ void main() {
         overrides: [
           sherpaModelRepositoryProvider.overrideWithValue(models),
           aiConfigRepositoryProvider.overrideWithValue(configs),
+          localNodeCapabilitiesChangedProvider.overrideWithValue(
+            broadcaster.broadcastIfChanged,
+          ),
         ],
       ),
     );

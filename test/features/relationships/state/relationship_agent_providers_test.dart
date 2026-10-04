@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -600,6 +601,10 @@ void main() {
     }) {
       final c = ProviderContainer(
         overrides: withServiceOverrides([
+          // The registration the composition root makes for this kind.
+          agentResolvedSetupResolversProvider.overrideWithValue({
+            AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
+          }),
           templateForAgentProvider.overrideWith((ref, id) async => null),
           aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
           agentRepositoryProvider.overrideWithValue(agentRepository),
@@ -845,5 +850,29 @@ void main() {
         expect(await maintenance.inferenceIsConfigured!(identity()), isFalse);
       },
     );
+  });
+
+  group('resolveRelationshipAgentSetup', () {
+    test('resolves through the relationship agent setup provider', () async {
+      const expected = ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+      );
+      final requested = <String>[];
+      final probe = FutureProvider.family<ResolvedAgentSetup?, String>(
+        resolveRelationshipAgentSetup,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          relationshipAgentResolvedSetupProvider.overrideWith((ref, id) async {
+            requested.add(id);
+            return expected;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(await container.read(probe('agent-1').future), same(expected));
+      expect(requested, ['agent-1']);
+    });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_assignment.dart';
@@ -7,8 +8,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
@@ -33,10 +32,10 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(
             MockAiConfigRepository(),
           ),
-          subjectAgentResolverProvider.overrideWithValue(
-            MockSubjectAgentResolver(),
+          automationSubjectAgentLookupProvider.overrideWithValue(
+            MockSubjectAgentResolver().call,
           ),
-          agentTemplateServiceProvider.overrideWithValue(
+          automationTemplateLookupProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -73,10 +72,10 @@ void main() {
           overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(configs),
             sherpaModelRepositoryProvider.overrideWithValue(models),
-            subjectAgentResolverProvider.overrideWithValue(
-              MockSubjectAgentResolver(),
+            automationSubjectAgentLookupProvider.overrideWithValue(
+              MockSubjectAgentResolver().call,
             ),
-            agentTemplateServiceProvider.overrideWithValue(
+            automationTemplateLookupProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -119,10 +118,10 @@ void main() {
         final scoped = ProviderContainer(
           overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-            subjectAgentResolverProvider.overrideWithValue(
-              MockSubjectAgentResolver(),
+            automationSubjectAgentLookupProvider.overrideWithValue(
+              MockSubjectAgentResolver().call,
             ),
-            agentTemplateServiceProvider.overrideWithValue(
+            automationTemplateLookupProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -163,10 +162,10 @@ void main() {
         final scoped = ProviderContainer(
           overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-            subjectAgentResolverProvider.overrideWithValue(
-              mockSubjectAgentResolver,
+            automationSubjectAgentLookupProvider.overrideWithValue(
+              mockSubjectAgentResolver.call,
             ),
-            agentTemplateServiceProvider.overrideWithValue(
+            automationTemplateLookupProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -275,10 +274,10 @@ void main() {
       final container = ProviderContainer(
         overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          subjectAgentResolverProvider.overrideWithValue(
-            mockSubjectAgentResolver,
+          automationSubjectAgentLookupProvider.overrideWithValue(
+            mockSubjectAgentResolver.call,
           ),
-          agentTemplateServiceProvider.overrideWithValue(
+          automationTemplateLookupProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -419,10 +418,10 @@ void main() {
       final container = ProviderContainer(
         overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          subjectAgentResolverProvider.overrideWithValue(
-            MockSubjectAgentResolver(),
+          automationSubjectAgentLookupProvider.overrideWithValue(
+            MockSubjectAgentResolver().call,
           ),
-          agentTemplateServiceProvider.overrideWithValue(
+          automationTemplateLookupProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -735,5 +734,32 @@ void main() {
         expect(await availableFor(null), isFalse);
       });
     });
+  });
+
+  group('automation ports', () {
+    for (final (name, provider) in [
+      (
+        'automationSubjectAgentLookupProvider',
+        automationSubjectAgentLookupProvider,
+      ),
+      ('automationTemplateLookupProvider', automationTemplateLookupProvider),
+    ]) {
+      test('$name throws until the composition root wires it', () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final reader = container.read;
+
+        expect(
+          () => reader(provider),
+          throwsA(
+            isA<ProviderException>().having(
+              (e) => e.exception,
+              'exception',
+              isA<UnimplementedError>(),
+            ),
+          ),
+        );
+      });
+    }
   });
 }

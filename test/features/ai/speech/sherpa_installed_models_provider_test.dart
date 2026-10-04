@@ -165,4 +165,14 @@ void main() {
       verify(() => models.isAvailable('base')).called(2);
     },
   );
+
+  test('localNodeCapabilitiesChangedProvider is a no-op until wired', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await expectLater(
+      container.read(localNodeCapabilitiesChangedProvider)(),
+      completes,
+    );
+  });
 }

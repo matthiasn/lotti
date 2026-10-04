@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart'
+    show AgentTemplateVersionLookup;
 
 export 'package:lotti/classes/agents/agent_template_ids.dart';
 
@@ -72,7 +74,7 @@ const kDefaultAgentTemplateModelId = 'models/gemini-3-flash-preview';
 /// ([AgentTemplateCrud], [AgentTemplateMetrics], [AgentTemplateSeeding]) and
 /// delegates every public method to the one that owns it. Metrics and seeding
 /// share the CRUD collaborator for template reads and version writes.
-class AgentTemplateService {
+class AgentTemplateService implements AgentTemplateVersionLookup {
   AgentTemplateService({
     required this.repository,
     required this.syncService,
@@ -161,10 +163,12 @@ class AgentTemplateService {
   Future<List<AgentTemplateEntity>> listTemplates() => _crud.listTemplates();
 
   /// Fetch the active version for a template.
+  @override
   Future<AgentTemplateVersionEntity?> getActiveVersion(String templateId) =>
       _crud.getActiveVersion(templateId);
 
   /// Resolve the template assigned to an agent via a templateAssignment link.
+  @override
   Future<AgentTemplateEntity?> getTemplateForAgent(String agentId) =>
       _crud.getTemplateForAgent(agentId);
 

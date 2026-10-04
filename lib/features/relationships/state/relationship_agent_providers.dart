@@ -149,6 +149,14 @@ relationshipAgentResolvedSetupProvider = FutureProvider.autoDispose
           );
     }, name: 'relationshipAgentResolvedSetupProvider');
 
+/// The relationships contribution to `agentResolvedSetupResolversProvider`:
+/// a relationship agent resolves its person, category and Settings defaults,
+/// not a template.
+Future<ResolvedAgentSetup?> resolveRelationshipAgentSetup(
+  Ref ref,
+  String agentId,
+) => ref.watch(relationshipAgentResolvedSetupProvider(agentId).future);
+
 /// Phase B — the lease-elected LLM tier (briefing, banner, chat).
 final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
   (ref) => RelationshipAgentWorkflow(

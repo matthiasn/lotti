@@ -1,11 +1,25 @@
 import 'dart:developer' as developer;
 
-import 'package:lotti/features/agents/service/agent_template_service.dart';
-import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 
 const _logTag = 'ProfileAutomationResolver';
+
+/// The agent assigned to a subject (a task, a project, a person), or null.
+typedef AutomationSubjectAgentLookup =
+    Future<AgentIdentityEntity?> Function(String subjectId);
+
+/// The template lookups profile resolution needs. The agents feature's
+/// `AgentTemplateService` implements it, so this resolver reads templates
+/// without depending on that feature.
+abstract interface class AgentTemplateVersionLookup {
+  /// The template assigned to [agentId], or null.
+  Future<AgentTemplateEntity?> getTemplateForAgent(String agentId);
+
+  /// The active version of the template [templateId], or null.
+  Future<AgentTemplateVersionEntity?> getActiveVersion(String templateId);
+}
 
 /// Callback that returns the `profileId` stored on a subject entity, or
 /// `null`.
@@ -57,8 +71,8 @@ class ProfileAutomationResolver {
     this._subjectCategoryLookup,
   });
 
-  final SubjectAgentLookup _subjectAgentLookup;
-  final AgentTemplateService _templateService;
+  final AutomationSubjectAgentLookup _subjectAgentLookup;
+  final AgentTemplateVersionLookup _templateService;
   final ProfileResolver _profileResolver;
   final SubjectProfileLookup? _subjectProfileLookup;
   final CategoryProfileLookup? _categoryProfileLookup;

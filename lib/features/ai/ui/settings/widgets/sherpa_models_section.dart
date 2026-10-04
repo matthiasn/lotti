@@ -16,8 +16,6 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -278,7 +276,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
   Future<void> _modelsChanged(ProviderContainer container) async {
     try {
       container.invalidate(sherpaInstalledModelIdsProvider);
-      await getIt<SyncNodeProfileBroadcaster>().broadcastIfChanged();
+      await container.read(localNodeCapabilitiesChangedProvider)();
     } catch (error, stackTrace) {
       // A sync failure does not undo a successful local file operation.
       developer.log(

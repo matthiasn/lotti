@@ -1,19 +1,11 @@
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/ai/model/pull_request_context_source.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 
-/// Who reads a rendered pull request section.
-enum PullRequestContextAudience {
-  /// The coding prompt: it may see a stale pull request's last known state,
-  /// labelled as such, because nothing is proposed from it.
-  codingPrompt,
-
-  /// The task agent's wake: it sees a pull request's state only when it is
-  /// current, because what it reads can become a checklist suggestion
-  /// (`SuggestRequiresRefresh` in `specs/tla/PullRequestSnapshot.tla`).
-  taskAgent,
-}
+export 'package:lotti/features/ai/model/pull_request_context_source.dart'
+    show PullRequestContextAudience;
 
 /// How much of an open pull request's description a context carries.
 const pullRequestDescriptionLimit = 4000;

@@ -16,12 +16,16 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
@@ -313,6 +317,21 @@ void main() {
       expect(
         wired.read(journalDetailSlotsProvider),
         same(appJournalDetailSlots),
+      );
+
+      // The ports the AI feature declares resolve to the agents and sync
+      // implementations the composition root wires.
+      expect(
+        wired.read(automationTemplateLookupProvider),
+        isA<AgentTemplateService>(),
+      );
+      expect(
+        wired.read(automationSubjectAgentLookupProvider),
+        isA<AutomationSubjectAgentLookup>(),
+      );
+      await expectLater(
+        wired.read(localNodeCapabilitiesChangedProvider)(),
+        completes,
       );
 
       // The startup node-profile broadcast reaches the outbox: real sync

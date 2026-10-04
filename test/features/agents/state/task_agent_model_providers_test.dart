@@ -7,13 +7,13 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -173,18 +173,22 @@ void main() {
   );
 
   test(
-    'relationship setup delegates without requiring a task template',
+    'a kind with a registered resolver resolves without a task template',
     () async {
       final identity = makeTestIdentity(kind: AgentKinds.relationshipAgent);
       const expected = ResolvedAgentSetup(
         status: AgentSetupResolutionStatus.disabled,
       );
+      final resolvedFor = <String>[];
       final container = ProviderContainer(
         overrides: [
           agentIdentityProvider.overrideWith((ref, id) async => identity),
-          relationshipAgentResolvedSetupProvider.overrideWith(
-            (ref, id) async => expected,
-          ),
+          agentResolvedSetupResolversProvider.overrideWithValue({
+            AgentKinds.relationshipAgent: (ref, agentId) async {
+              resolvedFor.add(agentId);
+              return expected;
+            },
+          }),
           templateForAgentProvider.overrideWith((ref, id) async => null),
         ],
       );
@@ -193,8 +197,24 @@ void main() {
         await container.read(taskAgentResolvedSetupProvider('agent').future),
         same(expected),
       );
+      expect(resolvedFor, ['agent']);
     },
   );
+
+  test('a kind without a registered resolver needs its template', () async {
+    final identity = makeTestIdentity(kind: AgentKinds.relationshipAgent);
+    final container = ProviderContainer(
+      overrides: [
+        agentIdentityProvider.overrideWith((ref, id) async => identity),
+        templateForAgentProvider.overrideWith((ref, id) async => null),
+      ],
+    );
+    addTearDown(container.dispose);
+    expect(
+      await container.read(taskAgentResolvedSetupProvider('agent').future),
+      isNull,
+    );
+  });
 
   test('resolved setup delegates complete agent context to resolver', () async {
     final identity = makeTestIdentity();
