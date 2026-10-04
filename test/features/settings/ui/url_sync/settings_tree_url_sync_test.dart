@@ -197,11 +197,11 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: MaterialApp.router(
               routerDelegate: delegate,
               routeInformationParser: BeamerParser(),
             ),
-            overrides: getItServiceOverrides(),
           ),
         );
         await tester.pump();

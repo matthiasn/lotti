@@ -150,7 +150,7 @@ class _GeneratedSkillRunnerBench {
     final loggingService = MockDomainLogger();
     final promptBuilderHelper = MockPromptBuilderHelper();
     final taskSummaryResolver = MockTaskSummaryResolver();
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
 
     late final Ref capturedRef;
     final refProvider = Provider<void>((ref) {

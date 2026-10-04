@@ -340,12 +340,12 @@ class _SkillInferenceTestSetup {
       ).thenAnswer((_) async => '');
 
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           pullRequestContextServiceProvider.overrideWithValue(
             mockPullRequestContext,
           ),
-        ],
+        ]),
       );
 
       // Capture a live Ref from a simple provider so we can pass it to the

@@ -612,9 +612,9 @@ void _registerTaskLinkGraphConformance() {
           expect(resolved['t1']!.single.toJson()['cycle'], isTrue);
           expect(resolved['t2']!.single.toJson()['cycle'], isTrue);
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               journalRepositoryProvider.overrideWithValue(device.journal),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
           final page = await container.read(

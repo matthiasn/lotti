@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 
 /// Glados generators for the pane-width property tests.
@@ -52,7 +53,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
       dayViewPanelHiddenKey: dayViewPanelHidden,
     },
   );
-  return ProviderContainer();
+  return ProviderContainer(overrides: getItServiceOverrides());
 }
 
 /// Triggers provider read and drains pending microtasks so the async
@@ -104,7 +105,7 @@ Future<PaneWidths> hHydrateWith({
       dayViewPanelHiddenKey: dayViewPanelHidden,
     },
   );
-  final container = ProviderContainer();
+  final container = ProviderContainer(overrides: getItServiceOverrides());
   try {
     return await hAwaitHydration(container);
   } finally {

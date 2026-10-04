@@ -32,13 +32,13 @@ void main() {
   }) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: getItServiceOverrides(),
         child: _Host(
           child: CelebrationPlaygroundPage(
             variant: variant,
             previewSampleTitles: previewSampleTitles,
           ),
         ),
-        overrides: getItServiceOverrides(),
       ),
     );
     return ProviderScope.containerOf(

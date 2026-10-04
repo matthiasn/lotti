@@ -170,7 +170,7 @@ Widget _wrap(
   if (container != null) {
     return UncontrolledProviderScope(container: container, child: app);
   }
-  return ProviderScope(child: app, overrides: getItServiceOverrides());
+  return ProviderScope(overrides: getItServiceOverrides(), child: app);
 }
 
 void main() {

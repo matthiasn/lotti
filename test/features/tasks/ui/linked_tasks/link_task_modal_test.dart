@@ -308,6 +308,7 @@ void main() {
     testWidgets('renders title "Link existing task"', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -322,7 +323,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -337,6 +337,7 @@ void main() {
     testWidgets('renders search field with hint', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -351,7 +352,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -412,6 +412,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -426,7 +427,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -455,6 +455,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -469,7 +470,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -499,6 +499,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -518,7 +519,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -604,6 +604,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -618,7 +619,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -640,6 +640,7 @@ void main() {
       // Default mock returns empty list
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -654,7 +655,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -685,6 +685,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: WidgetTestBench(
               child: Builder(
                 builder: (context) => ElevatedButton(
@@ -699,7 +700,6 @@ void main() {
                 ),
               ),
             ),
-            overrides: getItServiceOverrides(),
           ),
         );
 
@@ -742,6 +742,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -756,7 +757,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -821,6 +821,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -835,7 +836,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -882,6 +882,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -896,7 +897,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1311,6 +1311,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -1325,7 +1326,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1359,6 +1359,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -1373,7 +1374,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1402,6 +1402,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -1416,7 +1417,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1450,6 +1450,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -1464,7 +1465,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1503,6 +1503,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -1517,7 +1518,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 

@@ -153,14 +153,14 @@ class _ChatBench {
   /// the runner — the real goal router — and a failed result fails the run.
   WakeExecutor _executor(WakeDevice device) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         goalChatHistoryServiceProvider.overrideWithValue(
           GoalChatHistoryService(device.replica.repository),
         ),
         goalAgentWorkflowProvider.overrideWithValue(
           _ScriptedGoalWorkflow(device, running),
         ),
-      ],
+      ]),
     );
     _containers.add(container);
     return (agentId, runKey, triggers, threadId) async {

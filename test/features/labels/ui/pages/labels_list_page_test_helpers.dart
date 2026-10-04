@@ -4,6 +4,7 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget hBuildPage({
@@ -11,10 +12,10 @@ Widget hBuildPage({
   Map<String, int> usageCounts = const {},
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       labelsStreamProvider.overrideWith((ref) => Stream.value(labels)),
       labelUsageStatsProvider.overrideWith((ref) => Stream.value(usageCounts)),
-    ],
+    ]),
     child: makeTestableWidgetWithScaffold(const LabelsListPage()),
   );
 }

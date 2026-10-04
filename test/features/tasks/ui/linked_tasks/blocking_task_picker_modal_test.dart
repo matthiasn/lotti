@@ -72,6 +72,7 @@ void main() {
       final completer = Completer<Task?>();
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: WidgetTestBench(
             child: Builder(
               builder: (context) => ElevatedButton(
@@ -87,7 +88,6 @@ void main() {
               ),
             ),
           ),
-          overrides: getItServiceOverrides(),
         ),
       );
 
