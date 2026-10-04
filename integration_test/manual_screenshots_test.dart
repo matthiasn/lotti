@@ -31,13 +31,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show
-        journalDbProvider,
-        loggingServiceProvider,
-        maintenanceProvider,
-        outboxServiceProvider,
-        syncDatabaseProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -360,6 +354,11 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     outboxServiceProvider.overrideWithValue(harness.outboxService),
     shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
     syncDatabaseProvider.overrideWithValue(harness.syncDatabase),
+    settingsDbProvider.overrideWithValue(getIt<SettingsDb>()),
+    persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
+    navServiceProvider.overrideWithValue(getIt<NavService>()),
+    timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
   ];
 }
 

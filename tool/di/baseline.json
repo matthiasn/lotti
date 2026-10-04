@@ -1,6 +1,6 @@
 {
   "_comment": "getIt lookups and isRegistered checks outside the composition root, still to be migrated to providers or constructor arguments. Regenerate with: dart run tool/di/validate.dart --update-baseline. These numbers only ever go down.",
-  "_total": {"lookups": 651, "isRegistered": 163},
+  "_total": {"lookups": 651, "isRegistered": 161},
   "files": {
     "lib/app_root.dart": {"lookups": 1},
     "lib/beamer/beamer_app.dart": {"lookups": 2, "isRegistered": 1},
@@ -141,7 +141,6 @@
     "lib/features/journal/ui/create/entry_creation_service.dart": {"lookups": 1},
     "lib/features/journal/ui/pages/entry_details_page.dart": {"lookups": 1},
     "lib/features/journal/ui/pages/infinite_journal_page.dart": {"lookups": 2},
-    "lib/features/journal/ui/pages/journal_root_page.dart": {"isRegistered": 2},
     "lib/features/journal/ui/widgets/entry_details/habit_summary.dart": {"lookups": 2},
     "lib/features/journal/ui/widgets/entry_details/header/modern_advanced_action_items.dart": {"lookups": 2},
     "lib/features/journal/ui/widgets/entry_details/header/modern_media_action_items.dart": {"lookups": 1, "isRegistered": 1},
