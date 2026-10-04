@@ -126,7 +126,7 @@ function expertPrompt(e) {
     '',
     SHOT_BLOCK + FILE_BLOCK,
     '',
-    'TASK: Critique the surface through your lens. Give a grumpy 1-10 score, the genuine strengths, and concrete issues (severity + evidence + a specific, actionable, design-system-token-respecting fix). Then your top priorities — the few changes that would move the needle most. Return ONLY the structured object; be concrete, cite screenshots/files, do not pad.',
+    'TASK: Critique the surface through your lens. Give a grumpy 1-10 score, the genuine strengths, and concrete issues (severity + evidence + a specific, actionable, design-system-token-respecting fix). Then your top priorities — the few changes that would move the needle most. Be concrete, cite screenshots/files, do not pad.',
   ].join('\n')
 }
 
@@ -140,7 +140,7 @@ function personaPrompt(p) {
     '',
     SHOT_BLOCK,
     '',
-    'TASK: As this person, try to accomplish the core job on this surface. Where do you succeed, hesitate, or give up? Give a verdict (would-use / would-struggle / would-abandon), a 1-10 score for how well this serves YOU specifically, and your blockers / frictions / delights with a short first-person narrative grounded in what you actually see. Return ONLY the structured object.',
+    'TASK: As this person, try to accomplish the core job on this surface. Where do you succeed, hesitate, or give up? Give a verdict (would-use / would-struggle / would-abandon), a 1-10 score for how well this serves YOU specifically, and your blockers / frictions / delights with a short first-person narrative grounded in what you actually see.',
   ].join('\n')
 }
 

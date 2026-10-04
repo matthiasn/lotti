@@ -23,7 +23,7 @@ the user explicitly asks to keep it.
 - Previewing a UI change for design review.
 
 For "is this change actually wired up / does it behave correctly", prefer the
-`verify` skill (runs the real app). This skill is about *appearance*.
+`run` skill (launches the real app). This skill is about *appearance*.
 
 ## The harness
 
@@ -62,8 +62,10 @@ For "is this change actually wired up / does it behave correctly", prefer the
    ```
    Images land in `test/screenshots/` (the `outputDir`, next to the test).
 
-4. **View and share.** Read the PNGs to inspect them; send them to the user
-   with `SendUserFile`.
+4. **View and share.** Read the PNGs to inspect them and give the user their
+   paths. For a PR's before/after pair, stage and publish them per
+   `knowledge/conventions/screenshots.md` before the cleanup step deletes
+   them.
 
 5. **Clean up** — this is mandatory unless the user asks to keep anything:
    ```sh
