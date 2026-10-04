@@ -36,6 +36,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.trailingIcon,
     this.emphasizeTrailingIcon = false,
     this.trailingIconBusy = false,
+    this.trailingIconBusyLabel,
     this.onTrailingIconTap,
     this.trailingIconTooltip,
     this.trailingIconKey,
@@ -76,6 +77,10 @@ class DesignSystemTextInput extends StatefulWidget {
   /// The trailing action is running: a spinner takes the glyph's place in
   /// the same slot, and the action is inert until it finishes.
   final bool trailingIconBusy;
+
+  /// What a screen reader announces while [trailingIconBusy]: the action it
+  /// replaced is gone from the traversal, so the progress says itself.
+  final String? trailingIconBusyLabel;
   final VoidCallback? onTrailingIconTap;
 
   /// Accessible name and tooltip for the actionable [trailingIcon].
@@ -321,7 +326,18 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
         padding: EdgeInsetsDirectional.only(end: tokens.spacing.step2),
         child: SizedBox.square(
           dimension: spec.fieldHeight - tokens.spacing.step2 * 2,
-          child: Center(child: DesignSystemSpinner(size: spec.iconSize)),
+          child: Center(
+            // One node carries both the label and the live region, so the
+            // label is what gets announced.
+            child: Semantics(
+              container: true,
+              liveRegion: true,
+              label: widget.trailingIconBusyLabel,
+              child: ExcludeSemantics(
+                child: DesignSystemSpinner(size: spec.iconSize),
+              ),
+            ),
+          ),
         ),
       );
     }

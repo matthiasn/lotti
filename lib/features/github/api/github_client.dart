@@ -81,6 +81,10 @@ class GitHubClient {
   final _cache = <Uri, _CachedResponse>{};
   DateTime? _blockedUntil;
 
+  /// GraphQL's own block: it has limits of its own, apart from REST's, so
+  /// an exhausted size query must never stop a link or a refresh.
+  DateTime? _graphQlBlockedUntil;
+
   /// The login [token] belongs to: `GET /user`. Used to check a token
   /// before it is saved.
   Future<String> fetchViewerLogin(String token) async {
@@ -284,7 +288,8 @@ class GitHubClient {
     http.Request request, {
     _CachedResponse? cached,
   }) async {
-    final blockedUntil = _blockedUntil;
+    final graphQl = request.url.path == '/graphql';
+    final blockedUntil = graphQl ? _graphQlBlockedUntil : _blockedUntil;
     if (blockedUntil != null && clock.now().isBefore(blockedUntil)) {
       throw GitHubException(
         GitHubFailureKind.rateLimited,
@@ -331,7 +336,11 @@ class GitHubClient {
         if (retryAt == null) {
           throw const GitHubException(GitHubFailureKind.forbidden);
         }
-        _blockedUntil = retryAt;
+        if (graphQl) {
+          _graphQlBlockedUntil = retryAt;
+        } else {
+          _blockedUntil = retryAt;
+        }
         throw GitHubException(GitHubFailureKind.rateLimited, retryAt: retryAt);
       case 404 || 301 || 302 || 307 || 308:
         throw const GitHubException(GitHubFailureKind.notFound);

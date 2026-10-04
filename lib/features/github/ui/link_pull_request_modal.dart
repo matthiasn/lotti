@@ -194,6 +194,7 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           trailingIcon: pasted ? LottiIcons.link : null,
           emphasizeTrailingIcon: pasted && _linking == null,
           trailingIconBusy: pastedLinking,
+          trailingIconBusyLabel: messages.githubPickerLinking,
           onTrailingIconTap: pasted && _linking == null ? _linkPasted : null,
           trailingIconTooltip: messages.githubLinkButton,
           trailingIconKey: LinkPullRequestKeys.linkButton,

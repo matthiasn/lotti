@@ -520,4 +520,163 @@ void main() {
     expect(await client.fetchViewerLogin(token), 'pingu');
     expect(requests.single.url.path, '/user');
   });
+
+  group('fetchOpenPullRequestSizes', () {
+    const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
+
+    Map<String, dynamic> sizes(List<Object?> nodes) => {
+      'data': {
+        'repository': {
+          'pullRequests': {'nodes': nodes},
+        },
+      },
+    };
+
+    test(
+      'posts one GraphQL query for the repository, with the token, and reads '
+      'the sizes by number',
+      () async {
+        final client = clientWith(
+          (_) => json(
+            sizes([
+              {'number': 214, 'additions': 86, 'deletions': 12},
+              {'number': 212, 'additions': 1144, 'deletions': 105},
+            ]),
+          ),
+        );
+
+        final result = await client.fetchOpenPullRequestSizes(
+          repository,
+          token: token,
+        );
+
+        expect(result, {
+          214: (additions: 86, deletions: 12),
+          212: (additions: 1144, deletions: 105),
+        });
+        final request = requests.single;
+        expect(request.method, 'POST');
+        expect(request.url, Uri.https('api.github.com', '/graphql'));
+        expect(request.headers['Authorization'], 'Bearer $token');
+        expect(request.followRedirects, isFalse);
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['variables'], {'owner': 'penguin', 'name': 'colony'});
+        expect(body['query'], contains('additions deletions'));
+      },
+    );
+
+    test('a node GitHub could not resolve is skipped', () async {
+      final client = clientWith(
+        (_) => json(
+          sizes([
+            null,
+            {'number': 9, 'additions': 1, 'deletions': 0},
+          ]),
+        ),
+      );
+
+      expect(
+        await client.fetchOpenPullRequestSizes(repository, token: token),
+        {9: (additions: 1, deletions: 0)},
+      );
+    });
+
+    test(
+      'a GraphQL error, answered with a 200 and no data, is an invalid '
+      'response',
+      () async {
+        final client = clientWith(
+          (_) => json({
+            'data': null,
+            'errors': [
+              {'type': 'FORBIDDEN'},
+            ],
+          }),
+        );
+
+        expect(
+          await failureOf(
+            client.fetchOpenPullRequestSizes(repository, token: token),
+          ),
+          GitHubFailureKind.invalidResponse,
+        );
+      },
+    );
+
+    test('a post is never answered from the cache', () async {
+      final client = clientWith(
+        (_) => json(sizes([]), headers: {'etag': '"same"'}),
+      );
+
+      await client.fetchOpenPullRequestSizes(repository, token: token);
+      await client.fetchOpenPullRequestSizes(repository, token: token);
+
+      expect(requests, hasLength(2));
+      expect(requests.last.headers, isNot(contains('If-None-Match')));
+    });
+
+    test(
+      'an exhausted GraphQL limit blocks GraphQL only: REST links and '
+      'refreshes keep calling',
+      () async {
+        final reset = now.add(const Duration(minutes: 30));
+        final client = clientWith(
+          (request) => request.url.path == '/graphql'
+              ? json(
+                  {'message': 'API rate limit exceeded'},
+                  status: 403,
+                  headers: {
+                    'x-ratelimit-remaining': '0',
+                    'x-ratelimit-reset':
+                        '${reset.millisecondsSinceEpoch ~/ 1000}',
+                  },
+                )
+              : json({'login': 'pingu'}),
+        );
+
+        await withClock(Clock.fixed(now), () async {
+          expect(
+            await failureOf(
+              client.fetchOpenPullRequestSizes(repository, token: token),
+            ),
+            GitHubFailureKind.rateLimited,
+          );
+          expect(await client.fetchViewerLogin(token), 'pingu');
+          // GraphQL itself waits for its reset, without asking GitHub.
+          expect(
+            await failureOf(
+              client.fetchOpenPullRequestSizes(repository, token: token),
+            ),
+            GitHubFailureKind.rateLimited,
+          );
+        });
+        expect(requests.map((r) => r.url.path), ['/graphql', '/user']);
+      },
+    );
+
+    test('an exhausted REST limit does not block the size query', () async {
+      final reset = now.add(const Duration(minutes: 30));
+      final client = clientWith(
+        (request) => request.url.path == '/graphql'
+            ? json(sizes([]))
+            : json(
+                {'message': 'API rate limit exceeded'},
+                status: 403,
+                headers: {
+                  'x-ratelimit-remaining': '0',
+                  'x-ratelimit-reset':
+                      '${reset.millisecondsSinceEpoch ~/ 1000}',
+                },
+              ),
+      );
+
+      await withClock(Clock.fixed(now), () async {
+        await failureOf(client.fetchViewerLogin(token));
+        expect(
+          await client.fetchOpenPullRequestSizes(repository, token: token),
+          isEmpty,
+        );
+      });
+    });
+  });
 }

@@ -797,6 +797,35 @@ void main() {
     );
 
     testWidgets(
+      'a row given its own radius rounds its state fill, inside a grouped '
+      'list too',
+      (tester) async {
+        const itemKey = Key('rounded-hover-item');
+        final radius = BorderRadius.circular(dsTokensLight.radii.m);
+
+        await _pumpListItem(
+          tester,
+          DesignSystemGroupedListCorners(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(dsTokensLight.radii.l),
+            ),
+            child: DesignSystemListItem(
+              key: itemKey,
+              title: 'Hovered inset row',
+              borderRadius: radius,
+              forcedState: DesignSystemListItemVisualState.hover,
+              onTap: () {},
+            ),
+          ),
+        );
+
+        final decoration = _inkDecoration(tester, itemKey);
+        expect(decoration.borderRadius, radius);
+        expect(decoration.color, dsTokensLight.colors.surface.hover);
+      },
+    );
+
+    testWidgets(
       'focus border stays square outside a grouped list',
       (tester) async {
         const itemKey = Key('ungrouped-focused-item');

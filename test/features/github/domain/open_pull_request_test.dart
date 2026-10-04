@@ -50,4 +50,42 @@ void main() {
       );
     });
   }
+
+  group('openPullRequestSizesFrom', () {
+    test(
+      'reads each node by number, skipping one GitHub could not resolve or '
+      'that lacks a count',
+      () {
+        expect(
+          openPullRequestSizesFrom({
+            'data': {
+              'repository': {
+                'pullRequests': {
+                  'nodes': [
+                    {'number': 1, 'additions': 10, 'deletions': 2},
+                    null,
+                    {'number': 2, 'additions': 5},
+                  ],
+                },
+              },
+            },
+          }),
+          {1: (additions: 10, deletions: 2)},
+        );
+      },
+    );
+
+    test('a response without the list is not one', () {
+      expect(
+        () => openPullRequestSizesFrom({'data': null, 'errors': <Object>[]}),
+        throwsFormatException,
+      );
+      expect(
+        () => openPullRequestSizesFrom({
+          'data': {'repository': null},
+        }),
+        throwsFormatException,
+      );
+    });
+  });
 }

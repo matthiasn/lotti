@@ -107,11 +107,10 @@ class TaskPullRequestsSection extends ConsumerWidget {
                 // Inset, so each row's rounded hover fill floats inside the
                 // card's edge instead of running square into it.
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.spacing.step2,
-                    0,
-                    tokens.spacing.step2,
-                    tokens.spacing.step2,
+                  padding: EdgeInsets.only(
+                    left: tokens.spacing.step2,
+                    right: tokens.spacing.step2,
+                    bottom: tokens.spacing.step2,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

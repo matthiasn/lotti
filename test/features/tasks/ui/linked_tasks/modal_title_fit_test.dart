@@ -24,7 +24,7 @@ void main() {
   const locales = ['en', 'de', 'fr', 'es', 'ro', 'cs'];
 
   /// Strings must fit unscaled. Beyond that the shared modal title is bounded
-  /// to one line with an ellipsis (ModalUtils._modalTitle), so a large text
+  /// to one line with an ellipsis (ModalUtils.modalTitle), so a large text
   /// scale degrades predictably instead of reflowing or clipping the bar —
   /// which is the defect this guard exists for. Asserted separately below.
   const textScales = [1.0];
@@ -37,7 +37,7 @@ void main() {
       'lib/widgets/modal/modal_utils.dart',
     ).readAsStringSync();
     final title = source.substring(
-      source.indexOf('static Widget _modalTitle'),
+      source.indexOf('static Widget modalTitle('),
       source.indexOf('static DsTokens _tokens'),
     );
     expect(title, contains('maxLines: 1'));

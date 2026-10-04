@@ -277,6 +277,51 @@ void main() {
         semantics.dispose();
       });
 
+      testWidgets(
+        'a quiet title keeps the shared type and route semantics in the '
+        'medium ink',
+        (tester) async {
+          late DsTokens tokens;
+          final semantics = tester.ensureSemantics();
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              Builder(
+                builder: (context) {
+                  tokens = context.designTokens;
+                  return Column(
+                    children: [
+                      ModalUtils.modalTitle(context, 'penguin/colony'),
+                      ModalUtils.modalTitle(
+                        context,
+                        'penguin/igloo',
+                        quiet: true,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          );
+
+          final loud = tester.widget<Text>(find.text('penguin/colony'));
+          final quiet = tester.widget<Text>(find.text('penguin/igloo'));
+          expect(loud.style!.color, tokens.colors.text.highEmphasis);
+          expect(quiet.style!.color, tokens.colors.text.mediumEmphasis);
+          expect(quiet.style!.fontSize, loud.style!.fontSize);
+          expect(quiet.style!.fontWeight, loud.style!.fontWeight);
+          expect(
+            tester.getSemantics(find.bySemanticsLabel('penguin/igloo')),
+            matchesSemantics(
+              label: 'penguin/igloo',
+              isHeader: true,
+              namesRoute: true,
+              scopesRoute: true,
+            ),
+          );
+          semantics.dispose();
+        },
+      );
+
       testWidgets('creates page with back button that fires onTapBack', (
         tester,
       ) async {
