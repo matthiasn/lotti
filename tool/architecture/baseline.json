@@ -5,9 +5,6 @@
     "lib/features/ai/services/skill_inference_runner.dart": ["github"],
     "lib/features/ai/state/skill_trigger_providers.dart": ["journal"],
     "lib/features/categories/state/categories_list_controller.dart": ["lockdown"],
-    "lib/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart": ["onboarding"],
-    "lib/features/habits/ui/sheets/habit_completion_sheet.dart": ["goals"],
-    "lib/features/journal/state/entry_controller.dart": ["daily_os_next"],
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": ["relationships","tasks"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github"]
   }

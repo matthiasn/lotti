@@ -421,7 +421,10 @@ The completion sheet is also where a habit reaches its goals' reflections:
 for every active goal whose spec names the habit
 (`goalsWatchingHabitProvider`), it offers *Reflect on this day in ‹goal›*,
 opening that goal's reflection sheet for the day being recorded — a
-backfilled day judges that day, not today.
+backfilled day judges that day, not today. Goals depend on habits, so the
+sheet does not build these actions itself: it reads them from the
+`habitReflectionsProvider` slot, which the composition root wires to the
+goals feature's `goalHabitReflections`.
 
 # The completion sheet shows the habit's own signals
 

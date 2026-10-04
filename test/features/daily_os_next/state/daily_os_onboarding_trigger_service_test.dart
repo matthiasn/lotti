@@ -240,7 +240,7 @@ void main() {
           // The general FTUE welcome's own gate, resolved directly so this
           // test does not re-plumb the welcome's dependencies.
           if (!useRealWelcomeGate)
-            shouldAutoShowOnboardingProvider.overrideWith(
+            welcomeOnboardingOwedProvider.overrideWith(
               (ref) async => welcomeStillOwed,
             ),
         ]),

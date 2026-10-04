@@ -8,6 +8,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -24,14 +25,20 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_task_title_sync.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
+import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
+import 'package:lotti/features/journal/state/task_title_hooks.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -315,6 +322,19 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     // silently falls back to the task-agent workflow.
     // The profile pinning picker lists the devices sync knows.
     pairedSyncNodesProvider.overrideWith(knownSyncNodes),
+    // The Daily OS walkthrough waits behind the general welcome.
+    welcomeOnboardingOwedProvider.overrideWith(
+      (ref) => ref.watch(shouldAutoShowOnboardingProvider.future),
+    ),
+    // A habit's completion sheet offers the watching goals' reflections.
+    habitReflectionsProvider.overrideWithValue(goalHabitReflections),
+    // A renamed task renames its Daily OS planned blocks, where the agent
+    // store exists.
+    taskTitleChangedHooksProvider.overrideWith(
+      (ref) => [
+        if (getIt.isRegistered<AgentDatabase>()) dailyOsTaskTitleSync(ref),
+      ],
+    ),
     agentWakeRunnersProvider.overrideWith(
       (ref) => {
         ...ref.watch(dayAgentWakeRunnersProvider),

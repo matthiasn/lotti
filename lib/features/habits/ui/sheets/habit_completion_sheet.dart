@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
@@ -10,10 +8,7 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
-import 'package:lotti/features/goals/state/goal_assessment_state.dart';
-import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
-import 'package:lotti/features/goals/state/goal_progress_view.dart';
-import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
+import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
@@ -144,40 +139,6 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     _startReset = !forToday;
   }
 
-  /// Opens the day's reflection for one of the goals watching this habit.
-  ///
-  /// The reflection is the goal's: it needs the goal's spec, its progress
-  /// view (the sheet lists every dimension's evidence) and its history (so a
-  /// judged day reopens showing what was recorded). The habit sheet only
-  /// contributes the day — the one the user picked here, so reflecting on a
-  /// backfilled day judges that day, not today.
-  Future<void> _reflect(GoalHabitWatcher watcher) async {
-    final agentId = watcher.identity.agentId;
-    // A projection that reaches back to the picked day: the authored window
-    // alone stops short of a backfilled day, and the reflection sheet would
-    // then present that day's evidence as absent and invite a verdict on
-    // nothing. Never shorter than a week, so a recent day keeps the goal's
-    // usual picture around it.
-    final progress = await ref.read(
-      goalAgentProgressViewForSpanProvider((
-        agentId: agentId,
-        historyDays: reflectionSpanDays(from: _started, today: clock.now()),
-      )).future,
-    );
-    final assessments = await ref.read(
-      goalAssessmentHistoryProvider(agentId).future,
-    );
-    if (!mounted || progress == null) return;
-    showGoalDayAssessmentSheet(
-      context,
-      agentId: agentId,
-      spec: watcher.spec,
-      progress: progress,
-      assessments: assessments,
-      day: _started,
-    );
-  }
-
   Future<void> _save() async {
     // Validate before the sheet goes: a form that fails stays on screen
     // with its errors painted, rather than closing with nothing written.
@@ -302,21 +263,16 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
                   onMoreMeasurable: _captureMeasurable,
                 ),
             ],
-      reflections: [
-        for (final watcher
-            in ref.watch(goalsWatchingHabitProvider(widget.habitId)).value ??
-                const <GoalHabitWatcher>[])
-          DesignSystemButton(
-            key: ValueKey('habit-reflect-${watcher.identity.agentId}'),
-            label: context.messages.habitReflectInGoal(
-              watcher.spec.title,
-            ),
-            leadingIcon: LottiIcons.note,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.dense,
-            onPressed: () => _reflect(watcher),
-          ),
-      ],
+      reflections:
+          ref
+              .watch(habitReflectionsProvider)
+              ?.call(
+                ref,
+                context,
+                habitId: widget.habitId,
+                day: () => _started,
+              ) ??
+          const <Widget>[],
       onOutcomeChanged: (value) => setState(() {
         _outcome = value;
         _outcomeChosen = true;
@@ -674,14 +630,4 @@ class HabitDescription extends StatelessWidget {
       ),
     );
   }
-}
-
-/// How many days of history a reflection opened for [from] needs so that
-/// the day itself is inside the projection: the days back to today plus the
-/// day, never fewer than seven.
-int reflectionSpanDays({required DateTime from, required DateTime today}) {
-  final back = DateUtils.dateOnly(
-    today,
-  ).difference(DateUtils.dateOnly(from)).inDays;
-  return math.max(7, back + 1);
 }

@@ -18,17 +18,16 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/task_title_hooks.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -3584,24 +3583,12 @@ void main() {
     test(
       'syncs Daily OS planned block title when task title changes',
       () async {
-        final agentDb = AgentDatabase(inMemoryDatabase: true);
-        getIt.registerSingleton<AgentDatabase>(agentDb);
-        addTearDown(() async {
-          if (getIt.isRegistered<AgentDatabase>()) {
-            getIt.unregister<AgentDatabase>();
-          }
-          await agentDb.close();
-        });
-        final planService = MockDayAgentPlanService();
-        when(
-          () => planService.syncTaskTitle(
-            taskId: any(named: 'taskId'),
-            title: any(named: 'title'),
-          ),
-        ).thenAnswer((_) async => 1);
+        final synced = <(String, String)>[];
         final container = makeProviderContainer(
           overrides: [
-            dayAgentPlanServiceProvider.overrideWithValue(planService),
+            taskTitleChangedHooksProvider.overrideWithValue([
+              (taskId, title) async => synced.add((taskId, title)),
+            ]),
           ],
         );
         final entryId = testTask.meta.id;
@@ -3634,34 +3621,20 @@ void main() {
 
         await notifier.save(title: 'Renamed for Daily OS');
 
-        verify(
-          () => planService.syncTaskTitle(
-            taskId: entryId,
-            title: 'Renamed for Daily OS',
-          ),
-        ).called(1);
+        expect(synced, [(entryId, 'Renamed for Daily OS')]);
       },
     );
 
     test('task save still completes when Daily OS title sync fails', () async {
-      final agentDb = AgentDatabase(inMemoryDatabase: true);
-      getIt.registerSingleton<AgentDatabase>(agentDb);
-      addTearDown(() async {
-        if (getIt.isRegistered<AgentDatabase>()) {
-          getIt.unregister<AgentDatabase>();
-        }
-        await agentDb.close();
-      });
-      final planService = MockDayAgentPlanService();
-      when(
-        () => planService.syncTaskTitle(
-          taskId: any(named: 'taskId'),
-          title: any(named: 'title'),
-        ),
-      ).thenThrow(StateError('sync failed'));
+      final attempted = <(String, String)>[];
       final container = makeProviderContainer(
         overrides: [
-          dayAgentPlanServiceProvider.overrideWithValue(planService),
+          taskTitleChangedHooksProvider.overrideWithValue([
+            (taskId, title) async {
+              attempted.add((taskId, title));
+              throw StateError('sync failed');
+            },
+          ]),
         ],
       );
       final entryId = testTask.meta.id;
@@ -3697,12 +3670,7 @@ void main() {
           change: any(named: 'change'),
         ),
       ).called(1);
-      verify(
-        () => planService.syncTaskTitle(
-          taskId: entryId,
-          title: 'Sync failure still saves',
-        ),
-      ).called(1);
+      expect(attempted, [(entryId, 'Sync failure still saves')]);
     });
 
     test('saves task with dueDate', () async {
