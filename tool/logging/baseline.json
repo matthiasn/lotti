@@ -1,6 +1,5 @@
 {
   "_comment": "dart:developer log calls outside lib/services/, still to move to DomainLogger. Regenerate with: dart run tool/logging/validate.dart --update-baseline. This number only ever goes down.",
-  "_total": 518,
   "files": {
     "lib/features/agents/genui/genui_event_handler.dart": 5,
     "lib/features/agents/service/agent_service.dart": 7,

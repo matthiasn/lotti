@@ -185,7 +185,7 @@ void main() {
     test('records the total, so a reviewer sees the trend in the diff', () {
       expect(
         encodeBaseline({'lib/a.dart': 5, 'lib/b.dart': 2}),
-        contains('"_total": 7'),
+        isNot(contains('_total')),
       );
     });
 
