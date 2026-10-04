@@ -71,7 +71,8 @@
     "lib/features/ai/repository/gemini_multiturn_inference.dart": 2,
     "lib/features/ai/repository/gemini_stream_sender.dart": 2,
     "lib/features/ai/repository/gemini_utils.dart": 1,
-    "lib/features/ai/repository/melious_inference_repository.dart": 7,
+    "lib/features/ai/repository/melious_inference_catalog.dart": 6,
+    "lib/features/ai/repository/melious_inference_repository.dart": 1,
     "lib/features/ai/repository/mistral_inference_repository.dart": 6,
     "lib/features/ai/repository/mistral_ocr_repository.dart": 1,
     "lib/features/ai/repository/mistral_transcription_repository.dart": 9,
@@ -112,6 +113,7 @@
     "lib/features/daily_os_next/ui/pages/daily_os_settings_page.dart": 1,
     "lib/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart": 1,
     "lib/features/goals/workflow/goal_agent_strategy.dart": 1,
+    "lib/features/journal/create/create_entry.dart": 9,
     "lib/features/journal/state/entry_controller.dart": 4,
     "lib/features/nudges/ui/nudge_banner_actions.dart": 1,
     "lib/features/onboarding/services/onboarding_capture_to_task_service.dart": 2,
@@ -124,7 +126,8 @@
     "lib/features/relationships/service/relationship_agent_service.dart": 1,
     "lib/features/relationships/service/relationship_proposal_service.dart": 3,
     "lib/features/relationships/ui/pages/relationship_details_page.dart": 1,
-    "lib/features/relationships/ui/widgets/check_in_capture_sheet.dart": 4,
+    "lib/features/relationships/ui/widgets/check_in_capture_sheet.dart": 3,
+    "lib/features/relationships/ui/widgets/check_in_capture_sheet_form_part.dart": 1,
     "lib/features/relationships/ui/widgets/linked_tasks_card.dart": 3,
     "lib/features/relationships/ui/widgets/person_avatar_sheet.dart": 1,
     "lib/features/relationships/ui/widgets/person_photo_card.dart": 2,
@@ -136,7 +139,6 @@
     "lib/features/relationships/workflow/relationship_tool_dispatcher.dart": 1,
     "lib/features/tasks/state/checklist_controller.dart": 2,
     "lib/features/tasks/state/checklist_item_controller.dart": 2,
-    "lib/features/tasks/ui/pages/tasks_tab_page.dart": 1,
-    "lib/features/journal/create/create_entry.dart": 9
+    "lib/features/tasks/ui/pages/tasks_tab_page.dart": 1
   }
 }
