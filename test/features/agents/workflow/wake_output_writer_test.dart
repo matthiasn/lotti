@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';

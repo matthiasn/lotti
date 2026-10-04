@@ -1,6 +1,6 @@
 import 'package:glados/glados.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 
 extension _AnyDirectedRelation on Any {
   Generator<DirectedRelation> get directedRelation =>

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';

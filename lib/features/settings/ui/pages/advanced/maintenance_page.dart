@@ -15,7 +15,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_animation_gallery_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
@@ -26,6 +25,7 @@ import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome

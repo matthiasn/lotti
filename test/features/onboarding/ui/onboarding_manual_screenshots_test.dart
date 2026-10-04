@@ -19,6 +19,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -28,7 +29,6 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';

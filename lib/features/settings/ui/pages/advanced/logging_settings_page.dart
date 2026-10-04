@@ -4,13 +4,13 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile wrapper — keeps the existing `SliverBoxAdapterPage` chrome (title,

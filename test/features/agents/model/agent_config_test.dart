@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/sync/g_counter.dart';
 
 /// Anchors generated `DateTime?` slot fields to a fixed base so the round-trip
 /// is deterministic; the per-field day offset varies which calendar day each

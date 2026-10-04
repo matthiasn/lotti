@@ -3,7 +3,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/tasks/model/membership_list.dart';
+import 'package:lotti/classes/membership_list.dart';
 
 /// Membership ids drawn from a small pool, so generated lists overlap.
 List<String> _ids(List<int> seeds) => [for (final seed in seeds) 'id-$seed'];

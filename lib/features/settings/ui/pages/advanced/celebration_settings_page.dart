@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_preview_stage.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_style_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';

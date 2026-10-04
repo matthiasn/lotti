@@ -30,7 +30,7 @@ sources:
     resource: ../../lib/classes/entity_definitions.dart
     title: CategoryDefinition — where a repository is assigned
   - id: secure-storage
-    resource: ../../lib/features/sync/secure_storage.dart
+    resource: ../../lib/services/secure_storage.dart
     title: SecureStorage — the device keystore the token lives in
   - id: skill-prompt
     resource: ../../lib/features/ai/helpers/skill_prompt_builder.dart

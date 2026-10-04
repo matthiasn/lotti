@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';

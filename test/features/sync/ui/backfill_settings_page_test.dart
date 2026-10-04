@@ -9,7 +9,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';

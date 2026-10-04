@@ -54,7 +54,7 @@ the app dying mid-operation — and model-checked it. TLC found:
 
 - **Rows are changed, not replaced.** A writer states its intent — add an
   id, remove one, show these in this order
-  (`lib/features/tasks/model/membership_list.dart`), set these fields of an
+  (`lib/classes/membership_list.dart`), set these fields of an
   item — and the change is applied to the row as stored. `inVisibleOrder`
   keeps an id the screen never saw rather than dropping it.
 - **The change is written on the stored row.** `writeOnStored`

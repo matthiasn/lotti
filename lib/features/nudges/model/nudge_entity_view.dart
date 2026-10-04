@@ -1,6 +1,6 @@
+import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/sync/g_counter.dart';
 
 /// Sentinel distinguishing "not passed" from "explicitly null" in
 /// [NudgeEntityView.copyWith] — the same trick freezed uses, needed here

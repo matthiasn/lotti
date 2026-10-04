@@ -5,9 +5,9 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/pages/definitions_list_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// All habit definitions (active and inactive) for the settings list.

@@ -88,7 +88,7 @@ For pages with segmented controls, extract them from the page body and pass as `
 ## References
 
 - `lib/widgets/app_bar/sliver_title_bar.dart`, `lib/widgets/app_bar/title_app_bar.dart`
-- `lib/features/settings/ui/pages/sliver_box_adapter_page.dart`
+- `lib/widgets/pages/sliver_box_adapter_page.dart`
 - `lib/features/sync/ui/widgets/sync_list_scaffold.dart`
 - `agents.md` — repository-wide collaboration/process guidance
 - Existing implementation plans from 2025-10-23 and 2025-10-24 for structure and rigor

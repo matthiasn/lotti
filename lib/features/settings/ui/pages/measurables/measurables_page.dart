@@ -5,12 +5,12 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:lotti/widgets/pages/definitions_list_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// All measurable data types for the settings list. Co-located with its

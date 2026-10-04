@@ -7,11 +7,11 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
+import 'package:lotti/database/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 
-import '../../../database/test_utils.dart';
-import '../../../mocks/mocks.dart';
+import '../mocks/mocks.dart';
+import 'test_utils.dart';
 
 // readShownChecklistItems over a real in-memory JournalDb: the items a
 // checklist shows are the live ones whose back-link names it, found through
