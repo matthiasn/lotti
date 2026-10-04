@@ -579,7 +579,12 @@ vanishing from the context.
 - **Checklist suggestions** need no new tool: the section tells the agent to
   propose checking an item through the deferred `update_checklist_items` when
   a current pull request shows it done, naming the pull request in the
-  reason; the user confirms each one as a change set.
+  reason; the user confirms each one as a change set. An open pull request
+  may back a check, but its work has not landed, so the section also tells
+  the agent to keep a checklist item to merge each open pull request —
+  proposed through `add_multiple_checklist_items` when missing, checked only
+  once the pull request is merged — so the task cannot close on work that
+  never reached the base branch.
 - **The next prompt and alignment.** Each coding prompt is built from the
   refreshed pull requests and the checklist as they stand, so it covers what
   remains and names mismatches. Recording which items a prompt targeted, to
