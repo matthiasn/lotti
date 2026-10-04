@@ -351,10 +351,7 @@ class _ChecklistContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final counts = ref
         .watch(
-          checklistCompletionControllerProvider((
-            id: checklist.meta.id,
-            taskId: null,
-          )),
+          journalChecklistCountsProvider(checklist.meta.id),
         )
         .value;
 

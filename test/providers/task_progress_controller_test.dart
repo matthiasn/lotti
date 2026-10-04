@@ -6,17 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_progress_state.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
+import 'package:lotti/providers/task_progress_controller.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/time_range_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../helpers/service_overrides.dart';
-import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
+import '../helpers/service_overrides.dart';
+import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
 
 // This matches the signature of the getter linkedFrom in TimeService
 // Create a fake TaskProgressState for registerFallbackValue

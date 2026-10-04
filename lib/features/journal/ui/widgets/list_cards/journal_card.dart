@@ -9,14 +9,11 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/journal/state/journal_card_ports.dart';
+import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/relationships/state/relationships_providers.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
-import 'package:lotti/features/tasks/ui/linked_duration.dart';
-import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -28,6 +25,8 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
+import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'journal_card_habit_completion_content_state_part.dart';
@@ -220,7 +219,7 @@ class _EntryCardContent extends StatelessWidget {
         title: Consumer(
           builder: (context, ref, _) {
             final name = ref
-                .watch(relationshipNameProvider(c.data.relationshipId))
+                .watch(journalRelationshipNameProvider(c.data.relationshipId))
                 .value;
             return _titleText(
               context,

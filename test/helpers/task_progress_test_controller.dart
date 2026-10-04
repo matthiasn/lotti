@@ -1,5 +1,5 @@
 import 'package:lotti/classes/task_progress_state.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/providers/task_progress_controller.dart';
 
 class TestTaskProgressController extends TaskProgressController {
   TestTaskProgressController({

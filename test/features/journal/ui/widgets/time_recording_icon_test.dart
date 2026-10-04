@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
-import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
-import '../../../test_data/test_data.dart';
-import '../../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   late MockTimeService mockTimeService;
