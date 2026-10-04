@@ -5,13 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_tap_handler.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/timezone.dart';
@@ -21,32 +18,9 @@ abstract final class NotificationConstants {
   static const String defaultActionName = 'Open notification';
 }
 
-final JournalDb _db = getIt<JournalDb>();
-
 bool get _skipNotificationsOnCurrentPlatform =>
     defaultTargetPlatform == TargetPlatform.windows ||
     defaultTargetPlatform == TargetPlatform.linux;
-
-/// The production tap handler: hands the payload to the registered
-/// [NotificationTapHandler].
-///
-/// Resolved at tap time rather than bound at construction. The service is
-/// registered lazily and ahead of the router, and `registerSingletons`
-/// rebuilds the router for every profile generation, so a tap has to find the
-/// router that is live *now*. A tap with nowhere to go is logged, never
-/// thrown: this runs inside the plugin's channel handler.
-void _routeTapThroughRegistry(String payload) {
-  if (!getIt.isRegistered<NotificationTapHandler>()) {
-    getIt<DomainLogger>().log(
-      LogDomain.notifications,
-      'a notification tap arrived before the tap router was registered',
-      subDomain: 'tap',
-      level: InsightLevel.warn,
-    );
-    return;
-  }
-  unawaited(getIt<NotificationTapHandler>().handleTap(payload));
-}
 
 /// Whether the platform has an app-icon badge Lotti drives.
 ///
@@ -117,6 +91,9 @@ const _silentDarwinInitialization = DarwinInitializationSettings(
 /// Resolves notification timezones while suppressing duplicate diagnostics for
 /// persistent invalid zone strings.
 class NotificationLocationResolver {
+  NotificationLocationResolver(this._domainLogger);
+
+  final DomainLogger _domainLogger;
   final Set<String> _loggedUnresolvedTimezones = {};
 
   Location resolve(String timezone) {
@@ -124,7 +101,7 @@ class NotificationLocationResolver {
       return getLocation(timezone);
     } catch (exception, stackTrace) {
       if (_loggedUnresolvedTimezones.add(timezone)) {
-        getIt<DomainLogger>().error(
+        _domainLogger.error(
           LogDomain.notifications,
           exception,
           stackTrace: stackTrace,
@@ -138,14 +115,18 @@ class NotificationLocationResolver {
 
 class NotificationService {
   NotificationService({
+    required this._journalDb,
+    required this._domainLogger,
+    required this._onNotificationTap,
     AppLocalizations Function()? messages,
     Future<String> Function()? timezoneLookup,
-    void Function(String payload)? onNotificationTap,
   }) : _messages = messages ?? deviceMessages,
-       _timezoneLookup = timezoneLookup ?? getLocalTimezone,
-       _onNotificationTap = onNotificationTap ?? _routeTapThroughRegistry {
+       _timezoneLookup = timezoneLookup ?? getLocalTimezone {
     initialized = _initializePlugin();
   }
+
+  final JournalDb _journalDb;
+  final DomainLogger _domainLogger;
 
   /// Whether Lotti drives OS notifications on this platform at all.
   ///
@@ -166,14 +147,15 @@ class NotificationService {
   /// Receives the payload of a tapped notification while the app is running.
   ///
   /// Called with the payload exactly as it was handed to the plugin, so the
-  /// receiver decodes it; see `NotificationTapPayload`.
+  /// receiver decodes it; see `NotificationTapPayload`. The composition root
+  /// routes it to whichever tap router is live at tap time.
   final void Function(String payload) _onNotificationTap;
 
   int badgeCount = 0;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  final NotificationLocationResolver _locationResolver =
-      NotificationLocationResolver();
+  late final NotificationLocationResolver _locationResolver =
+      NotificationLocationResolver(_domainLogger);
 
   /// Localized copy for the Android notification channel, which is
   /// user-visible in system settings.
@@ -237,7 +219,7 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationResponse,
       );
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _domainLogger.error(
         LogDomain.notifications,
         exception,
         stackTrace: stackTrace,
@@ -330,7 +312,7 @@ class NotificationService {
     if (_skipNotificationsOnCurrentPlatform) {
       return false;
     }
-    return _db.getConfigFlag(enableNotificationsFlag);
+    return _journalDb.getConfigFlag(enableNotificationsFlag);
   }
 
   /// Requests alert + badge permission from the OS, at most once per process.
@@ -358,7 +340,7 @@ class NotificationService {
       await _requestPlatformPermissions();
     } catch (exception, stackTrace) {
       _permissionRequest = null;
-      getIt<DomainLogger>().error(
+      _domainLogger.error(
         LogDomain.notifications,
         exception,
         stackTrace: stackTrace,
@@ -441,14 +423,12 @@ class NotificationService {
     try {
       return _messages();
     } catch (exception, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.notifications,
-          exception,
-          stackTrace: stackTrace,
-          subDomain: 'resolveChannelMessages',
-        );
-      }
+      _domainLogger.error(
+        LogDomain.notifications,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'resolveChannelMessages',
+      );
       return AppLocalizationsEn();
     }
   }
@@ -513,14 +493,14 @@ class NotificationService {
     // The badge has its own switch beneath the master one; either off means
     // the icon shows nothing.
     if (!await _notificationsAllowed() ||
-        !await _db.getConfigFlag(showTaskBadgeFlag)) {
+        !await _journalDb.getConfigFlag(showTaskBadgeFlag)) {
       await _clearBadge();
       return;
     }
 
     await _requestPermissions();
 
-    final count = await _db.getWipCount();
+    final count = await _journalDb.getWipCount();
 
     if (count == badgeCount) {
       return;
@@ -612,7 +592,7 @@ class NotificationService {
     );
 
     if (alertAtTime != null) {
-      if (!await _db.getConfigFlag(notifyHabitRemindersFlag)) {
+      if (!await _journalDb.getConfigFlag(notifyHabitRemindersFlag)) {
         // Habit reminders are switched off: drop the alarm this habit may
         // still hold rather than let it fire once more.
         await cancelNotification(habitDefinition.id.hashCode);
@@ -643,7 +623,7 @@ class NotificationService {
         );
       }
 
-      await getIt<NotificationService>().scheduleNotification(
+      await scheduleNotification(
         title: habitDefinition.name,
         body: habitDefinition.description,
         showOnMobile: true,

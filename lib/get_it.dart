@@ -12,6 +12,7 @@ import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
@@ -172,7 +173,11 @@ Future<void> registerSingletons({
   await getIt<LoggingService>().listenToConfigFlag();
 
   _registerLazyServiceSafely<NotificationService>(
-    NotificationService.new,
+    () => NotificationService(
+      journalDb: getIt<JournalDb>(),
+      domainLogger: getIt<DomainLogger>(),
+      onNotificationTap: routeNotificationTap,
+    ),
     'NotificationService',
   );
   // Persistence applies a toggled flag's effects through this; see

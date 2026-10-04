@@ -272,3 +272,24 @@ final class GetItLiveWorldServices implements LiveWorldServices {
   DomainLogger? get domainLogger =>
       getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null;
 }
+
+/// The production notification tap handler: hands the payload to the
+/// registered [NotificationTapHandler].
+///
+/// Resolved at tap time rather than bound at construction. The notification
+/// service is registered lazily and ahead of the router, and
+/// `registerSingletons` rebuilds the router for every profile generation, so a
+/// tap has to find the router that is live *now*. A tap with nowhere to go is
+/// logged, never thrown: this runs inside the plugin's channel handler.
+void routeNotificationTap(String payload) {
+  if (!getIt.isRegistered<NotificationTapHandler>()) {
+    getIt<DomainLogger>().log(
+      LogDomain.notifications,
+      'a notification tap arrived before the tap router was registered',
+      subDomain: 'tap',
+      level: InsightLevel.warn,
+    );
+    return;
+  }
+  unawaited(getIt<NotificationTapHandler>().handleTap(payload));
+}

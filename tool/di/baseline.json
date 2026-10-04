@@ -240,7 +240,6 @@
     "lib/services/logging_service.dart": {"lookups": 2},
     "lib/services/nav_service.dart": {"lookups": 3, "isRegistered": 1},
     "lib/services/nav_service_nav_state_snapshot_part.dart": {"lookups": 2},
-    "lib/services/notification_service.dart": {"lookups": 8, "isRegistered": 2},
     "lib/services/portals/portal_service.dart": {"lookups": 2, "isRegistered": 2},
     "lib/services/portals/screenshot_portal_service.dart": {"lookups": 4},
     "lib/services/startup_tasks.dart": {"lookups": 1, "isRegistered": 1},
