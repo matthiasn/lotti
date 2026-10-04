@@ -65,6 +65,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggestion for a deleted task is now withdrawn when you confirm it.
 - **Small loading spinners no longer draw as a filled disc**, for example
   while a pull request is being linked.
+- **Stopping a timer from the sidebar lost up to five minutes of tracked
+  time.** The timer's entry is saved every five minutes while it runs, and
+  stopping it from the desktop sidebar, switching profiles or quitting the app
+  left the entry where that last save had put it. Every way of stopping a
+  timer now saves its end, and quitting the app stops a running timer and
+  saves it first.
+- **The task agent could stop a timer you had just started.** When the agent
+  started a timer for a task while you started one yourself, its timer
+  replaced yours. It now leaves a running timer alone and says that its own
+  time entry was saved but not started.
+- **Deleting a task left its timer running.** A timer kept counting for a
+  task you had deleted. Deleting the task now stops its timer and keeps the
+  time tracked until then.
+- **Hiding or collapsing a linked entry could bring back a link you had
+  removed.** The hide and collapse toggles saved the link as the card had last
+  shown it, and that save always won: a link removed meanwhile — on this
+  device or another — came back everywhere, and a hidden or collapsed state
+  set on another device in between was undone. The toggles now change only
+  their own setting on the link as it is stored, and leave a removed link
+  removed.
+- **Moving a task to another category could leave half of it behind.**
+  Changing a task's category also moves its timers, recordings and linked
+  tasks, and takes it out of a project in the old category. If the app quit
+  or crashed partway through, the task was left in the new category with
+  everything else still in the old one, and it stayed in the old project. The
+  app now finishes an interrupted move the next time it starts.
+- **A task's checklists kept their old category when the task moved.** New
+  checklist items took the old category too. Checklists and their items now
+  move with the task, unless another task also shows them.
+- **A follow-up task confirmed just before the app closed could lose its
+  link, project and agent.** Confirming an agent's suggested follow-up task
+  creates the task, then links it to the task it came from, files it in that
+  task's project and assigns it an agent. If the app quit or crashed in
+  between, the suggestion showed as confirmed but the task stood on its own,
+  and confirming it on another device did not repair it. The app now
+  finishes an interrupted confirmation the next time it starts, and a task
+  that already exists gets whatever it is missing. The same applies to tasks
+  created for a project or an event, and to time entries an agent records.
 
 ### Security
 
