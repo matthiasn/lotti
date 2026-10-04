@@ -34,6 +34,7 @@ void main() {
     registerFallbackValue(ref);
     registerFallbackValue(<PullRequestRef>[]);
     registerFallbackValue(prSnapshot());
+    registerFallbackValue(const GitHubRepository(owner: 'o', repo: 'r'));
   });
 
   setUp(() {
@@ -377,6 +378,55 @@ void main() {
         GitHubFailureKind.noToken,
       );
       verifyZeroInteractions(client);
+    });
+  });
+
+  group('openPullRequestSizes', () {
+    const repository_ = GitHubRepository(owner: 'matthiasn', repo: 'lotti');
+
+    test(
+      'reads the sizes with the stored token, which GitHub accepted',
+      () async {
+        when(
+          () => client.fetchOpenPullRequestSizes(repository_, token: token),
+        ).thenAnswer((_) async => {7: (additions: 3, deletions: 1)});
+
+        expect(await service.openPullRequestSizes(repository_), {
+          7: (additions: 3, deletions: 1),
+        });
+        expect(verdicts, [(token, true)]);
+      },
+    );
+
+    test(
+      'a failure is no sizes, not a failure of the picker; a 401 still '
+      'rejects the token',
+      () async {
+        when(
+          () => client.fetchOpenPullRequestSizes(repository_, token: token),
+        ).thenThrow(const GitHubException(GitHubFailureKind.unauthorized));
+
+        expect(await service.openPullRequestSizes(repository_), isEmpty);
+        expect(verdicts, [(token, false)]);
+
+        when(
+          () => client.fetchOpenPullRequestSizes(repository_, token: token),
+        ).thenThrow(const GitHubException(GitHubFailureKind.invalidResponse));
+        expect(await service.openPullRequestSizes(repository_), isEmpty);
+        expect(verdicts, [(token, false)], reason: 'says nothing of the token');
+      },
+    );
+
+    test('without a token GitHub is not asked', () async {
+      when(tokens.readToken).thenAnswer((_) async => null);
+
+      expect(await service.openPullRequestSizes(repository_), isEmpty);
+      verifyNever(
+        () => client.fetchOpenPullRequestSizes(
+          any(),
+          token: any(named: 'token'),
+        ),
+      );
     });
   });
 

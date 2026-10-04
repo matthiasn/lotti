@@ -3207,7 +3207,7 @@
   "githubSummaryFailed": "Opsummeringen kunne ikke skrives. Prøv igen.",
   "githubSummaryHeading": "Kort fortalt",
   "githubSummaryNoModel": "Der er ingen model sat op til denne opgaves agent, så intet kan skrive opsummeringen.",
-  "githubSummaryOnNextRefresh": "En opsummering skrives, næste gang denne pull request opdateres.",
+  "githubSummaryOnNextRefresh": "En opsummering skrives, næste gang denne pull request opdateres, eller opsummer den nu.",
   "githubTokenHide": "Skjul token",
   "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.",
   "githubTokenLabel": "Personligt adgangstoken",

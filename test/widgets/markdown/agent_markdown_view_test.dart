@@ -179,6 +179,36 @@ void main() {
     });
 
     testWidgets(
+      'subordinate headings stay at the body size, set apart by weight, so '
+      'they never outrank the label above them',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const AgentMarkdownView(
+              '# H1\n## H2\n### H3',
+              subordinateHeadings: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentMarkdownView));
+        final tokens = context.designTokens;
+        final body = tokens.typography.styles.body.bodySmall;
+        final markdownTheme = _resolvedMarkdownTheme(tester);
+
+        for (final heading in [
+          markdownTheme.h1,
+          markdownTheme.h2,
+          markdownTheme.h3,
+        ]) {
+          expect(heading?.fontSize, body.fontSize);
+          expect(heading?.fontWeight, tokens.typography.weight.semiBold);
+        }
+      },
+    );
+
+    testWidgets(
       'maps heading styles to the design system heading/subtitle tokens',
       (tester) async {
         await _pumpView(tester, '# H1\n## H2\n### H3');

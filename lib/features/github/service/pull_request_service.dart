@@ -230,6 +230,24 @@ class PullRequestService {
     );
   }
 
+  /// The size of the open pull requests of [repository], by number, for
+  /// the picker to show beside each. Best effort: empty when it cannot be
+  /// read, and the picker lists the pull requests without it.
+  Future<Map<int, PullRequestSize>> openPullRequestSizes(
+    GitHubRepository repository,
+  ) async {
+    final token = await _tokens.readToken();
+    if (token == null || token.isEmpty) return const {};
+    try {
+      return await _withToken(
+        token,
+        () => _github.fetchOpenPullRequestSizes(repository, token: token),
+      );
+    } on GitHubException {
+      return const {};
+    }
+  }
+
   /// Reads [entry]'s pull request from GitHub and stores the observation if
   /// it changed (`Persist` in `specs/tla/PullRequestSnapshot.tla`).
   Future<PullRequestRefresh> refresh(PullRequestEntry entry) async {

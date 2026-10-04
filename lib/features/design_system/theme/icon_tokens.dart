@@ -618,6 +618,22 @@ abstract final class LottiIcons {
   /// One branch becoming two.
   static const IconData split = LucideIcons.split;
 
+  // ── Pull requests ───────────────────────────────────────────────────────────
+  //
+  // One glyph per state, so the state reads by shape as well as by ink.
+
+  /// A pull request still open for review.
+  static const IconData pullRequest = LucideIcons.gitPullRequest;
+
+  /// A pull request opened as a draft, not yet asking for review.
+  static const IconData pullRequestDraft = LucideIcons.gitPullRequestDraft;
+
+  /// A pull request merged into its base branch.
+  static const IconData pullRequestMerged = LucideIcons.gitMerge;
+
+  /// A pull request closed without merging.
+  static const IconData pullRequestClosed = LucideIcons.gitPullRequestClosed;
+
   /// Send outward to another app or person.
   static const IconData share = LucideIcons.share;
 

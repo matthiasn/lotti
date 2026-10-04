@@ -6912,7 +6912,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'En sammanfattning skrivs nästa gång den här pull requesten uppdateras.';
+      'En sammanfattning skrivs nästa gång den här pull requesten uppdateras, eller sammanfatta den nu.';
 
   @override
   String get githubTokenHide => 'Dölj token';

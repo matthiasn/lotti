@@ -2,6 +2,7 @@ import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -37,6 +38,87 @@ void main() {
   );
 
   group('DesignSystemTextInput', () {
+    testWidgets(
+      'a rounded field seats its emphasized action inside the border, '
+      'concentric with its corners',
+      (tester) async {
+        await _pumpInput(
+          tester,
+          DesignSystemTextInput(
+            emphasizeTrailingIcon: true,
+            trailingIcon: LottiIcons.link,
+            trailingIconTooltip: 'Link',
+            onTrailingIconTap: () {},
+          ),
+        );
+        final tokens = tester
+            .element(find.byType(DesignSystemTextInput))
+            .designTokens;
+        final style = tester.widget<IconButton>(find.byType(IconButton)).style!;
+        final seated = tokens.spacing.step9 - tokens.spacing.step2 * 2;
+
+        expect(style.fixedSize!.resolve({}), Size.square(seated));
+        expect(
+          (style.shape!.resolve({})! as RoundedRectangleBorder).borderRadius,
+          BorderRadius.circular(tokens.radii.l - tokens.spacing.step2),
+        );
+        expect(
+          tester.getRect(find.byType(IconButton)).right,
+          lessThan(tester.getRect(find.byType(TextField)).right),
+          reason: 'inset from the field edge, not flush against its border',
+        );
+      },
+    );
+
+    testWidgets('a pill composer keeps its round send action', (tester) async {
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          shape: DesignSystemTextInputShape.pill,
+          emphasizeTrailingIcon: true,
+          trailingIcon: LottiIcons.send,
+          trailingIconTooltip: 'Send',
+          onTrailingIconTap: () {},
+        ),
+      );
+      final style = tester.widget<IconButton>(find.byType(IconButton)).style!;
+
+      expect(style.fixedSize, isNull);
+      expect(style.shape, isNull);
+    });
+
+    testWidgets(
+      'a busy action gives way to a spinner in its place that announces '
+      'itself',
+      (tester) async {
+        var taps = 0;
+        final semantics = tester.ensureSemantics();
+        await _pumpInput(
+          tester,
+          DesignSystemTextInput(
+            emphasizeTrailingIcon: true,
+            trailingIcon: LottiIcons.link,
+            trailingIconTooltip: 'Link',
+            trailingIconBusy: true,
+            trailingIconBusyLabel: 'Linking pull request',
+            onTrailingIconTap: () => taps++,
+          ),
+        );
+
+        expect(find.byType(IconButton), findsNothing);
+        expect(find.byType(DesignSystemSpinner), findsOneWidget);
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Linking pull request')),
+          matchesSemantics(
+            label: 'Linking pull request',
+            isLiveRegion: true,
+          ),
+        );
+        expect(taps, 0);
+        semantics.dispose();
+      },
+    );
+
     testWidgets(
       'pill composition keeps editing and uses the conversation surface',
       (tester) async {

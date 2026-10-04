@@ -7010,7 +7010,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'Un résumé sera rédigé à la prochaine actualisation de cette pull request.';
+      'Un résumé sera rédigé à la prochaine actualisation de cette pull request, ou résume-la maintenant.';
 
   @override
   String get githubTokenHide => 'Masquer le jeton';

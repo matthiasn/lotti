@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/github/github_repository.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
@@ -39,6 +41,7 @@ void main() {
     GitHubRepository? repo,
     Future<OpenPullRequestsResult> Function()? listing,
     Map<String, String> visibleTitles = const {},
+    Map<int, PullRequestSize> sizes = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -58,6 +61,9 @@ void main() {
                 listing?.call() ??
                 Future.value(const OpenPullRequestsListed([])),
           ),
+          openPullRequestSizesProvider(
+            repository,
+          ).overrideWith((ref) async => sizes),
           pullRequestHolderTitleProvider.overrideWith(
             (ref, id) => Stream.value(visibleTitles[id]),
           ),
@@ -87,18 +93,40 @@ void main() {
     ),
   ).thenAnswer((_) async => result);
 
-  testWidgets('Link stays disabled until something is pasted', (tester) async {
-    await open(tester);
+  testWidgets(
+    'the Link action appears in the field once something is pasted, and '
+    'stays inert while that links',
+    (tester) async {
+      final pending = Completer<PullRequestLinkResult>();
+      when(
+        () => service.linkPasted(
+          taskId: taskId,
+          input: any(named: 'input'),
+        ),
+      ).thenAnswer((_) => pending.future);
+      await open(tester);
 
-    expect(
-      tester
-          .widget<DesignSystemButton>(
-            find.byKey(LinkPullRequestKeys.linkButton),
-          )
-          .onPressed,
-      isNull,
-    );
-  });
+      // Nothing to link yet: no action waiting disabled under the list.
+      expect(find.byKey(LinkPullRequestKeys.linkButton), findsNothing);
+
+      await submit(tester, url);
+      // The action gives way to progress in its own slot: nothing to tap a
+      // second time.
+      expect(find.text('Linking pull request'), findsOneWidget);
+      expect(find.byKey(LinkPullRequestKeys.linkButton), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(LinkPullRequestKeys.urlField),
+          matching: find.byType(DesignSystemSpinner),
+        ),
+        findsOneWidget,
+      );
+
+      verify(() => service.linkPasted(taskId: taskId, input: url)).called(1);
+      pending.complete(const PullRequestLinkNotStored());
+      await tester.pump();
+    },
+  );
 
   testWidgets('submitting from the keyboard links the pasted text', (
     tester,
@@ -192,7 +220,11 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('#12 Waddle 12'), findsOneWidget);
-        expect(find.textContaining('@pingu · Draft'), findsOneWidget);
+        // A draft says so first, as a linked pull request's state does.
+        expect(
+          find.textContaining('Draft ·\u00A0@pingu', findRichText: true),
+          findsOneWidget,
+        );
 
         await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
         await tester.pump();
@@ -395,20 +427,128 @@ void main() {
       final pending = Completer<OpenPullRequestsResult>();
       await open(tester, repo: repository, listing: () => pending.future);
 
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      // Rows in outline, not a spinner: the list's shape arrives first.
+      expect(find.byType(DesignSystemSkeleton), findsWidgets);
+      expect(
+        find.bySemanticsLabel('Loading open pull requests'),
+        findsOneWidget,
+      );
       pending.complete(const OpenPullRequestsListed([]));
       await tester.pump();
     });
-  });
 
-  testWidgets('Cancel closes without linking', (tester) async {
-    await open(tester);
+    testWidgets('a pull request shows its size once it is known', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        repo: repository,
+        listing: () async => OpenPullRequestsListed([openPr(12), openPr(15)]),
+        sizes: const {12: (additions: 86, deletions: 12)},
+      );
+      await tester.pump();
 
-    await tester.tap(find.byKey(LinkPullRequestKeys.cancelButton));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+      // As a screen reader hears it: the size's spoken label stands in for
+      // its signs. #15's size is not known: its line ends at its age.
+      expect(
+        find.textContaining('86 lines added, 12 removed', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('lines added', findRichText: true),
+        findsOneWidget,
+      );
+    });
 
-    expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
-    verifyZeroInteractions(service);
+    testWidgets(
+      'the row being linked keeps its strength and shows progress, while '
+      'the others step back',
+      (tester) async {
+        final ref12 = openPr(12).ref;
+        when(
+          () => service.link(taskId: taskId, ref: ref12),
+        ).thenAnswer((_) => Completer<PullRequestLinkResult>().future);
+        await open(
+          tester,
+          repo: repository,
+          listing: () async => OpenPullRequestsListed([openPr(12), openPr(15)]),
+        );
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.openPullRequest(12)));
+        await tester.pump();
+
+        DesignSystemListItem row(int number) => tester.widget(
+          find.byKey(LinkPullRequestKeys.openPullRequest(number)),
+        );
+        expect(row(12).activated, isTrue);
+        expect(row(12).onTap, isNotNull, reason: 'not faded as disabled');
+        expect(row(15).onTap, isNull);
+        expect(
+          find.descendant(
+            of: find.byKey(LinkPullRequestKeys.openPullRequest(12)),
+            matching: find.byType(DesignSystemSpinner),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'while what was pasted links, every row steps back instead of looking '
+      'live',
+      (tester) async {
+        when(
+          () => service.linkPasted(
+            taskId: taskId,
+            input: any(named: 'input'),
+          ),
+        ).thenAnswer((_) => Completer<PullRequestLinkResult>().future);
+        await open(
+          tester,
+          repo: repository,
+          listing: () async => OpenPullRequestsListed([openPr(12), openPr(15)]),
+        );
+
+        await submit(tester, url);
+
+        for (final number in [12, 15]) {
+          final row = tester.widget<DesignSystemListItem>(
+            find.byKey(LinkPullRequestKeys.openPullRequest(number)),
+          );
+          expect(row.onTap, isNull, reason: '#$number');
+          expect(row.activated, isFalse, reason: '#$number');
+        }
+      },
+    );
+
+    testWidgets('hovering a row lights the link glyph that says a tap links', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        repo: repository,
+        listing: () async => OpenPullRequestsListed([openPr(12), openPr(15)]),
+      );
+      Color? glyph(int number) => tester
+          .widget<Icon>(
+            find.descendant(
+              of: find.byKey(LinkPullRequestKeys.openPullRequest(number)),
+              matching: find.byIcon(LottiIcons.link),
+            ),
+          )
+          .color;
+      final resting = glyph(12);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(
+        tester.getCenter(find.byKey(LinkPullRequestKeys.openPullRequest(12))),
+      );
+      await tester.pump();
+
+      expect(glyph(12), isNot(resting));
+      expect(glyph(15), resting);
+    });
   });
 }

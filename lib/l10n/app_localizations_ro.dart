@@ -7021,7 +7021,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'Un rezumat va fi scris la următoarea actualizare a acestui pull request.';
+      'Un rezumat va fi scris la următoarea actualizare a acestui pull request sau îl puteți rezuma acum.';
 
   @override
   String get githubTokenHide => 'Ascundeți tokenul';

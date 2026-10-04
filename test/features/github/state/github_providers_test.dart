@@ -1673,6 +1673,19 @@ void main() {
       );
     });
 
+    test('the picker sizes are what the service reads', () async {
+      when(
+        () => service.openPullRequestSizes(repository),
+      ).thenAnswer((_) async => {7: (additions: 3, deletions: 1)});
+
+      expect(
+        await pickerContainer().read(
+          openPullRequestSizesProvider(repository).future,
+        ),
+        {7: (additions: 3, deletions: 1)},
+      );
+    });
+
     test(
       'holders are read again when a link or a pull request entry changes, '
       'so a double assignment synced in shows up',

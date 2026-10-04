@@ -32,8 +32,10 @@ class DesignSystemSpinner extends StatefulWidget {
   final double size;
 
   /// The ring's stroke. Null keys it on [size]: the emphasis border width
-  /// for a glyph-sized spinner, the wide default for the standalone one —
-  /// so call sites never reach for a spacing step as a stroke.
+  /// for a glyph-sized spinner — anything up to [IconSizes.xl] — and the wide
+  /// default for the standalone one, so call sites never reach for a spacing
+  /// step as a stroke. The wide stroke on a glyph-sized ring left almost no
+  /// hole: an 18pt spinner drew as a filled disc with a wedge cut out.
   final double? strokeWidth;
   final String? semanticsLabel;
 
@@ -41,7 +43,7 @@ class DesignSystemSpinner extends StatefulWidget {
 
   double get effectiveStrokeWidth =>
       strokeWidth ??
-      (size <= IconSizes.s ? BorderWidths.emphasis : _standaloneStroke);
+      (size <= IconSizes.xl ? BorderWidths.emphasis : _standaloneStroke);
 
   @override
   State<DesignSystemSpinner> createState() => _DesignSystemSpinnerState();

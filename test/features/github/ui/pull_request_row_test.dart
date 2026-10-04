@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
@@ -62,6 +66,68 @@ void main() {
       },
     );
 
+    test(
+      'closed reads in the error ink, merged in the success ink, open '
+      'neutral',
+      () {
+        PullRequestTone toneOf(PullRequestStatus status) =>
+            pullRequestStatusParts(
+              messages,
+              snapshot: prSnapshot(status: status),
+              failure: null,
+              now: now,
+            ).first.$2;
+
+        expect(toneOf(PullRequestStatus.closed), PullRequestTone.bad);
+        expect(toneOf(PullRequestStatus.merged), PullRequestTone.good);
+        expect(toneOf(PullRequestStatus.open), PullRequestTone.neutral);
+      },
+    );
+
+    group('openPullRequestParts', () {
+      final opened = OpenPullRequest(
+        ref: const PullRequestRef(owner: 'penguin', repo: 'colony', number: 9),
+        title: 'Waddle',
+        createdAt: now.subtract(const Duration(hours: 5)),
+        authorLogin: 'pingu',
+        draft: true,
+      );
+
+      test(
+        'a draft says so first, then its author, its age and, once known, '
+        'its size',
+        () {
+          expect(
+            openPullRequestParts(
+              messages,
+              pr: opened,
+              now: now,
+              size: (additions: 86, deletions: 12),
+            ),
+            [
+              ('Draft', PullRequestTone.neutral),
+              ('@pingu', PullRequestTone.neutral),
+              ('5 h ago', PullRequestTone.neutral),
+              ('+86', PullRequestTone.added),
+              ('−12', PullRequestTone.removed),
+            ],
+          );
+        },
+      );
+
+      test('without a size, an author or a draft, only the age is left', () {
+        final plain = OpenPullRequest(
+          ref: opened.ref,
+          title: opened.title,
+          createdAt: opened.createdAt,
+        );
+
+        expect(openPullRequestParts(messages, pr: plain, now: now), [
+          ('5 h ago', PullRequestTone.neutral),
+        ]);
+      });
+    });
+
     test('tones back up the words: good, attention and bad', () {
       final parts = pullRequestStatusParts(
         messages,
@@ -77,9 +143,9 @@ void main() {
       expect(parts, [
         ('Open', PullRequestTone.neutral),
         ('3 min ago', PullRequestTone.neutral),
-        ('Checks passing', PullRequestTone.good),
+        ('Checks passing', PullRequestTone.neutral),
         ('Behind base branch', PullRequestTone.attention),
-        ('Approved', PullRequestTone.good),
+        ('Approved', PullRequestTone.neutral),
       ]);
     });
 
@@ -160,9 +226,9 @@ void main() {
           [
             ('Open', PullRequestTone.neutral),
             ('3 min ago', PullRequestTone.neutral),
-            ('Checks passing', PullRequestTone.good),
+            ('Checks passing', PullRequestTone.neutral),
             ('Blocked by branch rules', PullRequestTone.attention),
-            ('Approved', PullRequestTone.good),
+            ('Approved', PullRequestTone.neutral),
           ],
         );
         // No checks reported and no review asked for explain nothing either.
@@ -402,6 +468,53 @@ void main() {
     }
 
     testWidgets(
+      'Refresh from the menu shows its progress in the menu slot, and the '
+      'menu offers no second refresh meanwhile',
+      (tester) async {
+        final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+        final pending = Completer<PullRequestRefresh>();
+        when(() => service.refresh(entry)).thenAnswer((_) => pending.future);
+        final menu = find.byKey(ValueKey('pull-request-menu-${entry.id}'));
+
+        await withClock(Clock.fixed(now), () async {
+          await pump(tester, entry);
+          final before = tester.getRect(menu);
+
+          await tester.tap(menu);
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Refresh pull request'));
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(
+            find.descendant(
+              of: menu,
+              matching: find.byKey(const Key('pull-request-refreshing')),
+            ),
+            findsOneWidget,
+          );
+          expect(tester.getRect(menu), before, reason: 'the row never reflows');
+
+          await tester.tap(menu);
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          final refreshItem = tester.widget<PopupMenuItem<String>>(
+            find.ancestor(
+              of: find.text('Refresh pull request'),
+              matching: find.byType(PopupMenuItem<String>),
+            ),
+          );
+          expect(refreshItem.enabled, isFalse);
+
+          pending.complete(PullRequestRefreshed(entry.data.snapshot!));
+          await tester.tapAt(Offset.zero);
+          await tester.pump(const Duration(seconds: 1));
+        });
+        verify(() => service.refresh(entry)).called(1);
+      },
+    );
+
+    testWidgets(
       'shows number, title and status, and leaves a fresh pull request alone',
       (tester) async {
         final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
@@ -489,10 +602,14 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await pump(tester, entry);
+          // Refresh lives in the row's menu.
           await tester.tap(
-            find.byKey(ValueKey('pull-request-refresh-${entry.id}')),
+            find.byKey(ValueKey('pull-request-menu-${entry.id}')),
           );
           await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Refresh pull request'));
+          await tester.pump(const Duration(seconds: 1));
           await tester.pump();
         });
 
@@ -522,7 +639,7 @@ void main() {
         );
 
         final flagged = find.textContaining(
-          'Also linked to another task · Open',
+          'Also linked to another task ·\u00A0Open',
           findRichText: true,
         );
         expect(flagged, findsOneWidget);
@@ -547,7 +664,7 @@ void main() {
 
         expect(
           find.textContaining(
-            'Also linked to “Teach the chicks” · Open',
+            'Also linked to “Teach the chicks” ·\u00A0Open',
             findRichText: true,
           ),
           findsOneWidget,
@@ -619,7 +736,10 @@ void main() {
         expect(
           line,
           'Tracks pull requests on tasks.\n'
-          'Open · 3 min ago · +444 −221 · Checks running',
+          // Each dot bound to the part it introduces, and the size to
+          // itself: a wrapping line never ends on a dot or splits the size.
+          // The size ends the first line; checks and reviews start the next.
+          'Open ·\u00A03 min ago ·\u00A0+444\u00A0−221\nChecks running',
         );
         expect(
           find.textContaining(
@@ -640,7 +760,7 @@ void main() {
           .widgetList<RichText>(find.byType(RichText))
           .map((r) => r.text.toPlainText(includeSemanticsLabels: false))
           .firstWhere((text) => text.contains('Open'));
-      expect(line, 'Open · 3 min ago · Checks running');
+      expect(line, 'Open ·\u00A03 min ago ·\u00A0Checks running');
     });
 
     testWidgets('the menu opens the pull request on GitHub', (tester) async {
@@ -678,7 +798,7 @@ void main() {
       });
 
       expect(find.byType(PullRequestDetails), findsOneWidget);
-      expect(find.text('matthiasn/lotti#42'), findsOneWidget);
+      expect(find.text('matthiasn/lotti'), findsOneWidget);
     });
 
     testWidgets(

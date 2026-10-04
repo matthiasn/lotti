@@ -8,6 +8,38 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemSpinner', () {
+    test(
+      'a glyph-sized ring takes the thin stroke, up to xl; a larger one the '
+      'standalone stroke',
+      () {
+        // An 18pt ring at the standalone stroke left almost no hole: it drew
+        // as a filled disc with a wedge cut out.
+        for (final size in [
+          IconSizes.s,
+          IconSizes.m,
+          IconSizes.l,
+          IconSizes.xl,
+        ]) {
+          expect(
+            DesignSystemSpinner(size: size).effectiveStrokeWidth,
+            BorderWidths.emphasis,
+            reason: '$size',
+          );
+        }
+        expect(
+          const DesignSystemSpinner(size: IconSizes.xxl).effectiveStrokeWidth,
+          greaterThan(BorderWidths.emphasis),
+        );
+        expect(
+          const DesignSystemSpinner(
+            size: IconSizes.m,
+            strokeWidth: 4,
+          ).effectiveStrokeWidth,
+          4,
+        );
+      },
+    );
+
     testWidgets('renders at default size with track style', (tester) async {
       const spinnerKey = Key('default-spinner');
 

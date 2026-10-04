@@ -64,7 +64,15 @@ class ModalUtils {
 
   /// A modal route name and heading share one semantic node so assistive
   /// technology announces the destination when a Wolt sheet takes focus.
-  static Widget _modalTitle(BuildContext context, String title) {
+  ///
+  /// [quiet] sets it in the medium-emphasis ink, same type: for a bar that
+  /// names where the content lives — a pull request's `owner/repo#42` — above
+  /// a body that opens with the item's own, stronger heading.
+  static Widget modalTitle(
+    BuildContext context,
+    String title, {
+    bool quiet = false,
+  }) {
     final tokens = _tokens(context);
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step2),
@@ -83,7 +91,11 @@ class ModalUtils {
           // the route's semantics above still announce the full title.
           child: Text(
             title,
-            style: modalTitleStyle(context),
+            style: quiet
+                ? modalTitleStyle(
+                    context,
+                  ).copyWith(color: tokens.colors.text.mediumEmphasis)
+                : modalTitleStyle(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -149,7 +161,7 @@ class ModalUtils {
       navBarHeight: navBarHeight ?? tokens.spacing.step10,
       hasTopBarLayer: hasTopBarLayer,
       topBarTitle:
-          titleWidget ?? (title != null ? _modalTitle(context, title) : null),
+          titleWidget ?? (title != null ? modalTitle(context, title) : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? _navigationButton(
@@ -305,7 +317,7 @@ class ModalUtils {
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? tokens.spacing.step10,
       topBarTitle:
-          titleWidget ?? (title != null ? _modalTitle(context, title) : null),
+          titleWidget ?? (title != null ? modalTitle(context, title) : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? _navigationButton(

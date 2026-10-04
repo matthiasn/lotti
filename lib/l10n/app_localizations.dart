@@ -11726,7 +11726,7 @@ abstract class AppLocalizations {
   /// Shown under the empty TL;DR in a pull request's details when a summary will be written automatically.
   ///
   /// In en, this message translates to:
-  /// **'A summary is written the next time this pull request is refreshed.'**
+  /// **'A summary is written the next time this pull request is refreshed, or summarize it now.'**
   String get githubSummaryOnNextRefresh;
 
   /// No description provided for @githubTokenHide.

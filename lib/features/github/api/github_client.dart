@@ -53,14 +53,15 @@ class GitHubException implements Exception {
       'GitHubException(${kind.name}${retryAt == null ? '' : ', $retryAt'})';
 }
 
-/// The GitHub REST API, authenticated with the user's token.
+/// The GitHub REST API, authenticated with the user's token — and one
+/// GraphQL query, for the sizes the REST list of pull requests leaves out.
 ///
 /// It talks to `https://api.github.com` and nothing else: the host is a
 /// constant and redirects are not followed, so no response can send the
 /// token to another host. Pull request web pages are never fetched.
 ///
-/// Reads send `If-None-Match` with the last `ETag` of the same URL, kept in
-/// memory: a 304 costs no rate limit and reuses the cached body. Once rate
+/// REST reads send `If-None-Match` with the last `ETag` of the same URL, kept
+/// in memory: a 304 costs no rate limit and reuses the cached body. Once rate
 /// limited, the client refuses calls until the limit resets instead of
 /// spending requests GitHub will refuse anyway.
 class GitHubClient {
@@ -79,6 +80,10 @@ class GitHubClient {
   final http.Client _http;
   final _cache = <Uri, _CachedResponse>{};
   DateTime? _blockedUntil;
+
+  /// GraphQL's own block: it has limits of its own, apart from REST's, so
+  /// an exhausted size query must never stop a link or a refresh.
+  DateTime? _graphQlBlockedUntil;
 
   /// The login [token] belongs to: `GET /user`. Used to check a token
   /// before it is saved.
@@ -155,6 +160,36 @@ class GitHubClient {
     }
   }
 
+  /// The size of each of the newest open pull requests of [repository], by
+  /// number: one GraphQL query, because the REST list carries no sizes and
+  /// reading each pull request would cost a request per row. Covers the
+  /// newest [pageSize]; older ones show no size.
+  Future<Map<int, PullRequestSize>> fetchOpenPullRequestSizes(
+    GitHubRepository repository, {
+    required String token,
+  }) async {
+    final response = await _post(
+      '/graphql',
+      token: token,
+      body: {
+        'query': _openPullRequestSizesQuery,
+        'variables': {'owner': repository.owner, 'name': repository.repo},
+      },
+    );
+    try {
+      return openPullRequestSizesFrom(response.json);
+    } on FormatException {
+      throw const GitHubException(GitHubFailureKind.invalidResponse);
+    }
+  }
+
+  static const _openPullRequestSizesQuery =
+      r'query($owner: String!, $name: String!) { '
+      r'repository(owner: $owner, name: $name) { '
+      'pullRequests(states: OPEN, first: $pageSize, '
+      'orderBy: {field: CREATED_AT, direction: DESC}) { '
+      'nodes { number additions deletions } } } }';
+
   void close() => _http.close();
 
   /// The check runs at [path], or null when GitHub refuses them to the
@@ -216,26 +251,52 @@ class GitHubClient {
     String path, {
     required String token,
     Map<String, String>? query,
+  }) {
+    final uri = Uri.https(host, path, query);
+    final cached = _cache[uri];
+    final request = _request('GET', uri, token: token);
+    if (cached != null) request.headers['If-None-Match'] = cached.etag;
+    return _send(request, cached: cached);
+  }
+
+  /// [body] as JSON to [path]. Never cached: only the GraphQL endpoint is
+  /// posted to, and only to read.
+  Future<_Response> _post(
+    String path, {
+    required String token,
+    required Object body,
+  }) {
+    final request = _request('POST', Uri.https(host, path), token: token)
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode(body);
+    return _send(request);
+  }
+
+  http.Request _request(String method, Uri uri, {required String token}) =>
+      http.Request(method, uri)
+        ..followRedirects = false
+        ..headers.addAll({
+          'Accept': 'application/vnd.github+json',
+          'Authorization': 'Bearer $token',
+          'User-Agent': 'Lotti',
+          'X-GitHub-Api-Version': '2022-11-28',
+        });
+
+  /// Sends [request] and maps the response; a GET's [cached] answer stands
+  /// in for a 304, and a GET's fresh `ETag` is remembered.
+  Future<_Response> _send(
+    http.Request request, {
+    _CachedResponse? cached,
   }) async {
-    final blockedUntil = _blockedUntil;
+    final graphQl = request.url.path == '/graphql';
+    final blockedUntil = graphQl ? _graphQlBlockedUntil : _blockedUntil;
     if (blockedUntil != null && clock.now().isBefore(blockedUntil)) {
       throw GitHubException(
         GitHubFailureKind.rateLimited,
         retryAt: blockedUntil,
       );
     }
-    final uri = Uri.https(host, path, query);
-    final cached = _cache[uri];
-    final request = http.Request('GET', uri)
-      ..followRedirects = false
-      ..headers.addAll({
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer $token',
-        'User-Agent': 'Lotti',
-        'X-GitHub-Api-Version': '2022-11-28',
-        if (cached != null) 'If-None-Match': cached.etag,
-      });
-
+    final uri = request.url;
     final http.Response response;
     try {
       response = await http.Response.fromStream(
@@ -261,7 +322,9 @@ class GitHubClient {
           throw const GitHubException(GitHubFailureKind.invalidResponse);
         }
         final etag = response.headers['etag'];
-        if (etag != null) _remember(uri, _CachedResponse(etag, json));
+        if (etag != null && request.method == 'GET') {
+          _remember(uri, _CachedResponse(etag, json));
+        }
         return _Response(json, date);
       case 304 when cached != null:
         _remember(uri, cached);
@@ -273,7 +336,11 @@ class GitHubClient {
         if (retryAt == null) {
           throw const GitHubException(GitHubFailureKind.forbidden);
         }
-        _blockedUntil = retryAt;
+        if (graphQl) {
+          _graphQlBlockedUntil = retryAt;
+        } else {
+          _blockedUntil = retryAt;
+        }
         throw GitHubException(GitHubFailureKind.rateLimited, retryAt: retryAt);
       case 404 || 301 || 302 || 307 || 308:
         throw const GitHubException(GitHubFailureKind.notFound);

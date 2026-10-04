@@ -3206,7 +3206,7 @@
   "githubSummaryFailed": "Não foi possível escrever o resumo. Tente de novo.",
   "githubSummaryHeading": "Em resumo",
   "githubSummaryNoModel": "Não há nenhum modelo configurado para o agente desta tarefa, então nada pode escrever o resumo.",
-  "githubSummaryOnNextRefresh": "Um resumo será escrito na próxima vez que este pull request for atualizado.",
+  "githubSummaryOnNextRefresh": "Um resumo será escrito na próxima vez que este pull request for atualizado, ou resume-o agora.",
   "githubTokenHide": "Ocultar token",
   "githubTokenIntro": "O Lotti lê as pull requests que você vincula às tarefas com seu próprio token de acesso pessoal. Crie um token fine-grained para os repositórios em que você trabalha, com acesso somente leitura a \"Pull requests\" e \"Commit statuses\". O GitHub não deixa esse token ler os check runs de um repositório privado, então ali a CI pode ficar incompleta; um token clássico com o escopo \"repo\" consegue lê-los.",
   "githubTokenLabel": "Token de acesso pessoal",

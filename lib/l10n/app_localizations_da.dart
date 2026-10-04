@@ -6902,7 +6902,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'En opsummering skrives, næste gang denne pull request opdateres.';
+      'En opsummering skrives, næste gang denne pull request opdateres, eller opsummer den nu.';
 
   @override
   String get githubTokenHide => 'Skjul token';

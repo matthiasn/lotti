@@ -6871,7 +6871,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'A summary is written the next time this pull request is refreshed.';
+      'A summary is written the next time this pull request is refreshed, or summarize it now.';
 
   @override
   String get githubTokenHide => 'Hide token';

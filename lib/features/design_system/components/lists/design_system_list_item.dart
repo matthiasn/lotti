@@ -53,6 +53,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.activatedBackgroundColor,
     this.hoverBackgroundColor,
     this.pressedBackgroundColor,
+    this.borderRadius,
     this.onTap,
     this.focusNode,
     this.onHoverChanged,
@@ -109,6 +110,12 @@ class DesignSystemListItem extends StatefulWidget {
   final Color? activatedBackgroundColor;
   final Color? hoverBackgroundColor;
   final Color? pressedBackgroundColor;
+
+  /// Rounds the state fill and the focus border. For a row inset in its own
+  /// container, whose hover fill would otherwise end in square corners a
+  /// few points inside a rounded edge. Null keeps the grouped list's
+  /// corners, or square ones outside a group.
+  final BorderRadius? borderRadius;
   final VoidCallback? onTap;
   final FocusNode? focusNode;
 
@@ -203,7 +210,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
           child: Ink(
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: groupCorners,
+              borderRadius: widget.borderRadius ?? groupCorners,
               border: Border.all(
                 color: focused
                     ? tokens.colors.interactive.enabled

@@ -40,7 +40,7 @@ sources:
     title: TaskAgentContextBuilder — the task-agent wake context
   - id: client
     resource: ../../lib/features/github/api/github_client.dart
-    title: GitHubClient — REST reads, server stamps, typed failures, rate-limit block, ETags
+    title: GitHubClient — REST reads, one GraphQL size query, server stamps, typed failures, rate-limit block, ETags
   - id: repository
     resource: ../../lib/features/github/repository/pull_request_repository.dart
     title: PullRequestRepository — link, unlink, and persistObservation through writeOnStored
@@ -163,7 +163,7 @@ hold: nothing relies on it to find the newer state.
 
 ```mermaid
 sequenceDiagram
-    participant C as Caller (context build or refresh button)
+    participant C as Caller (context build or Refresh)
     participant S as PullRequestService
     participant G as GitHubClient
     participant R as PullRequestRepository
@@ -273,13 +273,20 @@ the refresh is the app's, the unlink is the user's.
   `https://api.github.com` and nowhere else: the base URL is a constant and
   redirects are not followed, so a redirect cannot carry the token to another
   host. Web pages are never fetched; private repositories need the API.
+- Everything is a REST read but one: the picker's sizes. The REST list of
+  pull requests carries no `additions`/`deletions`, and reading each pull
+  request would cost a request per row, so `fetchOpenPullRequestSizes` posts
+  one GraphQL query to `/graphql` for the newest hundred open pull requests'
+  sizes. It is never cached, and it is best effort: the service answers an
+  empty map on any failure (`openPullRequestSizes`), and the picker lists
+  without sizes.
 - Failures are typed: `offline` (socket, timeout), `unauthorized` (401),
   `forbidden` (403 without an exhausted limit — a missing scope or SSO),
   `rateLimited(resetAt)` (403 or 429 with `x-ratelimit-remaining: 0` or
   `retry-after`), `notFound` (404, which is also what a private repository
   answers without access), and `server` (5xx).
 - A rate-limited device stops calling until the reset time; a context build
-  never waits for it. Reads send `If-None-Match` with the last `ETag`, kept on
+  never waits for it. REST reads send `If-None-Match` with the last `ETag`, kept on
   the device: a 304 costs no rate limit and means the snapshot is unchanged.
 - A 403 on the check runs alone — the fine-grained token on a private
   repository — is not a failed refresh: the rest of the pull request is read,
@@ -462,14 +469,22 @@ turned on again.
 `TaskPullRequestsSection` shows the task's pull requests in their own card,
 directly after its linked tasks, once the task tracks pull requests or while
 one is linked (`taskShowsPullRequestsProvider`, next section). Each row
-carries the
-number and title, the one-liner of its summary once one is written
-(`pullRequestSummaryProvider`), then a status line in a fixed order: the
+leads with its state's glyph (`PullRequestGlyph`: open and draft neutral,
+merged in the success ink, closed in the error ink, each its own shape, so the
+state reads without its colour), then carries the number — in the quiet ink
+of metadata — and title, the one-liner of its summary once one is written
+(`pullRequestSummaryProvider`), in the teal of agent-written text on a line
+of its own, then a status line in a fixed order: the
 state, **how long it has been in that state** — second, so a narrow row that
 wraps or runs out of room never cuts the age off — its size as `+444 −221`,
 added in the success ink and removed in the error ink, read as one part and
 spoken as "444 lines added, 221 removed", then checks, what keeps it from
-merging, and reviews. The age is GitHub's, as GitHub shows it: an open pull request's
+merging, and reviews. The size ends the line's first row; what follows it
+starts a second, and a line that still wraps breaks before a separator,
+never after one. Colour marks what needs a look — closed, failing or
+running checks, conflicts, a branch behind, changes or a review requested —
+plus merged and the size; passing checks and an approval read neutral, so a
+healthy row is not a row of hues. The age is GitHub's, as GitHub shows it: an open pull request's
 reads from `createdAt`, a merged one's from `mergedAt`, a closed one's from
 `closedAt` (`pullRequestStateTime`), never from when it was linked or last
 read, so pull requests linked together still show their own ages. Past a
@@ -498,7 +513,13 @@ carries "+". Both open the link modal: a field for a pasted URL, and below it
 the open pull requests of the task's repository that no task holds, newest
 first — GitHub is asked for them by creation, and the list is sorted again
 after the held ones are left out, by opening time and then number — each
-with its author, whether it is a draft and how long ago it was opened. Tapping one links it; a pasted URL links on Link. Either
+with whether it is a draft, its author, how long ago it was opened and,
+once known, its size (`openPullRequestSizesProvider`, read apart from the
+list, so the list never waits for it). Tapping one links it at once — its
+trailing link glyph says so — the row tinted, with progress in that glyph's
+slot, while every other row steps back; a pasted URL links from the action
+the field shows once it holds something, or Enter, the action giving way to
+progress in place. Either
 way the pull request is read from GitHub and linked only if that read
 succeeded — a typo, a repository the token cannot see, or a pull request
 this task holds stays in the modal with the reason, and one another task
@@ -513,8 +534,9 @@ left unloaded. "Open on GitHub" stays in reach in the modal's action bar
 however long the description runs, and in the row's menu beside Unlink.
 
 Opening a task refreshes every pull request whose snapshot is older than five
-minutes, once; each row also has its own refresh button, whose failure is
-told in a toast. A refresh that GitHub answers but that need not be written
+minutes, once; each row's menu also offers Refresh, whose progress takes
+the menu's own slot, so the row never reflows, and whose failure is told in
+a toast. A refresh that GitHub answers but that need not be written
 still updates what the row shows. The task's linked-entries history leaves
 pull request entries out: they have their own card.
 
@@ -525,7 +547,7 @@ stateDiagram-v2
     Fetching --> Observed: read succeeds and the observation is the newest
     Fetching --> Linked: read fails before any snapshot
     Fetching --> Observed: read fails, the snapshot stays as of its stamp
-    Observed --> Fetching: context build or refresh button
+    Observed --> Fetching: context build or Refresh
     Observed --> Observed: a newer observation syncs in
     Linked --> Unlinked: user unlinks
     Observed --> Unlinked: user unlinks
