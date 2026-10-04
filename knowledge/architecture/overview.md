@@ -153,7 +153,7 @@ To remove a break, move the shared type down — into the lower feature or into
 `lib/` — or invert the dependency through an interface the lower layer owns,
 as the agent-runtime registries do.
 
-**Debt counters.** Beside the layer order, CI holds five per-file counts to
+**Debt counters.** Beside the layer order, CI holds six per-file counts to
 baselines that may only shrink — and that fail while they are *behind* the
 tree, so the change that removes a debt is the one that records it:
 
@@ -162,6 +162,7 @@ tree, so the change that removes a debt is the one that records it:
 | getIt lookups outside the composition root | `tool/di` | `make getit_check` |
 | `dart:developer` log calls outside `lib/services/` | `tool/logging` | `make developer_log_check` |
 | legacy icon references | `tool/icons` | `make icon_check` |
+| raw spacing, typography and colour values | `tool/design_tokens` | `make token_check` |
 | `unawaited(...)` fire-and-forget futures | `tool/async` | `make unawaited_check` |
 | lines in a file above 1,000 | `test/architecture/file_size_ratchet_test.dart` | — |
 

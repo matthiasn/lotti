@@ -62,6 +62,31 @@ void main(List<String> args) {
     exit(1);
   }
 
+  // Self-tightening: a file below its entry in any category fails until the
+  // baseline records it, so the change that migrates a value locks it in.
+  if (!updating) {
+    final baseline = readBaseline(baselineFile);
+    final behind = [
+      for (final MapEntry(key: path, value: was) in baseline.entries)
+        if (TokenCategory.values.any(
+          (c) => (result.counts[path]?[c] ?? 0) < (was[c] ?? 0),
+        ))
+          path,
+    ]..sort();
+    if (behind.isNotEmpty) {
+      stderr
+        ..writeln(
+          'design-token check failed — the baseline is behind the tree:\n',
+        )
+        ..writeln(behind.map((p) => '  $p').join('\n'))
+        ..writeln(
+          '\nTighten the baseline: dart run tool/design_tokens/validate.dart '
+          '--update-baseline',
+        );
+      exit(1);
+    }
+  }
+
   if (updating) baselineFile.writeAsStringSync(encodeBaseline(result.counts));
   final totals = TokenCategory.values
       .map((c) => '${c.name} ${result.total(c)}')
