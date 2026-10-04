@@ -4519,4 +4519,130 @@ void main() {
       });
     });
   });
+
+  group('checklist slots', () {
+    setUpAll(setFakeDocumentsPath);
+    setUp(_registerEntryDetailsMocks);
+    tearDown(tearDownTestGetIt);
+
+    final now = DateTime(2026, 5, 12);
+    Metadata meta(String id) => Metadata(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now,
+    );
+
+    Future<void> pump(
+      WidgetTester tester,
+      JournalEntity entry, {
+      required JournalDetailSlots slots,
+      JournalEntity? linkedFrom,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            overrides: withServiceOverrides([
+              entryControllerProvider(
+                entry.meta.id,
+              ).overrideWith(() => _FakeEntryController(entry)),
+              resolvedOutgoingLinkedEntriesProvider(
+                entry.meta.id,
+              ).overrideWithValue(const []),
+              journalDetailSlotsProvider.overrideWithValue(slots),
+            ]),
+            child: EntryDetailsWidget(
+              itemId: entry.meta.id,
+              showAiEntry: true,
+              linkedFrom: linkedFrom,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a checklist shows the checklist slot for its own task', (
+      tester,
+    ) async {
+      final calls = <({String checklistId, String taskId})>[];
+      await pump(
+        tester,
+        Checklist(
+          meta: meta('checklist-1'),
+          data: const ChecklistData(
+            title: 'Packing',
+            linkedChecklistItems: [],
+            linkedTasks: ['task-1'],
+          ),
+        ),
+        slots: JournalDetailSlots(
+          checklistBody: ({required checklistId, required taskId}) {
+            calls.add((checklistId: checklistId, taskId: taskId));
+            return const Text('checklist slot');
+          },
+        ),
+      );
+
+      expect(find.text('checklist slot'), findsOneWidget);
+      expect(calls.last, (checklistId: 'checklist-1', taskId: 'task-1'));
+    });
+
+    testWidgets(
+      'a checklist item shows the item slot under the task it is opened from',
+      (tester) async {
+        final calls = <({String itemId, String checklistId, String taskId})>[];
+        await pump(
+          tester,
+          ChecklistItem(
+            meta: meta('item-1'),
+            data: const ChecklistItemData(
+              title: 'Passport',
+              isChecked: false,
+              linkedChecklists: ['checklist-1'],
+            ),
+          ),
+          linkedFrom: testTask,
+          slots: JournalDetailSlots(
+            checklistItemBody:
+                ({required itemId, required checklistId, required taskId}) {
+                  calls.add((
+                    itemId: itemId,
+                    checklistId: checklistId,
+                    taskId: taskId,
+                  ));
+                  return const Text('item slot');
+                },
+          ),
+        );
+
+        expect(find.text('item slot'), findsOneWidget);
+        expect(calls.last, (
+          itemId: 'item-1',
+          checklistId: 'checklist-1',
+          taskId: testTask.meta.id,
+        ));
+      },
+    );
+
+    testWidgets('a checklist renders nothing while its slot is unwired', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        Checklist(
+          meta: meta('checklist-2'),
+          data: const ChecklistData(
+            title: 'Unwired',
+            linkedChecklistItems: [],
+            linkedTasks: ['task-2'],
+          ),
+        ),
+        slots: const JournalDetailSlots(),
+      );
+
+      expect(find.text('Unwired'), findsNothing);
+    });
+  });
 }
