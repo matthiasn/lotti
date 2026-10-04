@@ -2733,6 +2733,9 @@ void main() {
         ProviderScope(
           overrides: withServiceOverrides([
             entryControllerProvider('e4').overrideWith(() => controller),
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(false),
+            ),
           ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,

@@ -25,21 +25,34 @@ final _generated = Expando<bool>('getItServiceOverride');
 /// and an unregistered service fails the same way a getIt lookup did.
 List<Override> getItServiceOverrides() => [
   for (final override in <Override>[
-    journalDbProvider.overrideWith((ref) => getIt<JournalDb>()),
-    settingsDbProvider.overrideWith((ref) => getIt<SettingsDb>()),
-    persistenceLogicProvider.overrideWith((ref) => getIt<PersistenceLogic>()),
-    navServiceProvider.overrideWith((ref) => getIt<NavService>()),
-    timeServiceProvider.overrideWith((ref) => getIt<TimeService>()),
-    vectorClockServiceProvider.overrideWith(
-      (ref) => getIt<VectorClockService>(),
+    journalDbProvider.overrideWith((ref) => _fromGetIt<JournalDb>()),
+    settingsDbProvider.overrideWith((ref) => _fromGetIt<SettingsDb>()),
+    persistenceLogicProvider.overrideWith(
+      (ref) => _fromGetIt<PersistenceLogic>(),
     ),
-    loggingServiceProvider.overrideWith((ref) => getIt<LoggingService>()),
-    outboxServiceProvider.overrideWith((ref) => getIt<OutboxService>()),
-    maintenanceProvider.overrideWith((ref) => getIt<Maintenance>()),
-    syncDatabaseProvider.overrideWith((ref) => getIt<SyncDatabase>()),
+    navServiceProvider.overrideWith((ref) => _fromGetIt<NavService>()),
+    timeServiceProvider.overrideWith((ref) => _fromGetIt<TimeService>()),
+    vectorClockServiceProvider.overrideWith(
+      (ref) => _fromGetIt<VectorClockService>(),
+    ),
+    loggingServiceProvider.overrideWith((ref) => _fromGetIt<LoggingService>()),
+    outboxServiceProvider.overrideWith((ref) => _fromGetIt<OutboxService>()),
+    maintenanceProvider.overrideWith((ref) => _fromGetIt<Maintenance>()),
+    syncDatabaseProvider.overrideWith((ref) => _fromGetIt<SyncDatabase>()),
   ])
     _mark(override),
 ];
+
+/// The registered [T], or the same [UnimplementedError] the provider's own
+/// default throws. An `Error` — unlike get_it's lookup failure — is not
+/// retried by Riverpod, so a test that never needed the service leaves no
+/// retry timer pending.
+T _fromGetIt<T extends Object>() {
+  if (!getIt.isRegistered<T>()) {
+    throw UnimplementedError('$T is not registered in getIt for this test.');
+  }
+  return getIt<T>();
+}
 
 Override _mark(Override override) {
   _generated[override] = true;
