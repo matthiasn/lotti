@@ -280,13 +280,15 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     profileContextProvider.overrideWithValue(context),
     if (context.capabilities.syncEnabled) ...[
       matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
-      // Sync stores another device's agents and gates leased project slots;
-      // the agent runtime declares both seams, sync fills them.
+      // Sync gates leased project slots; the agent runtime declares the
+      // seam, sync fills it.
+      syncLeaseGateProvider.overrideWith(buildSyncLeaseGate),
+    ],
+    // Sync stores another device's agents wherever its event processor runs.
+    if (getIt.isRegistered<SyncEventProcessor>())
       agentSyncAttachmentProvider.overrideWithValue(
         SyncEventProcessorAgentAttachment(getIt<SyncEventProcessor>()),
       ),
-      syncLeaseGateProvider.overrideWith(buildSyncLeaseGate),
-    ],
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
