@@ -114,6 +114,18 @@ void main() {
       );
     });
 
+    test('every configured URI of a conditional import counts', () {
+      expect(
+        violationsIn(
+          'lib/features/ai/a.dart',
+          "import 'package:lotti/features/ai/stub.dart'\n"
+              "    if (dart.library.io) 'package:lotti/features/agents/impl.dart'\n"
+              "    if (dart.library.js_interop) 'package:lotti/features/sync/web.dart';",
+        ),
+        {'agents', 'sync'},
+      );
+    });
+
     test('the shell may import anything', () {
       expect(
         violationsIn(

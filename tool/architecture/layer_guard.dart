@@ -163,15 +163,21 @@ int? rankOf(String path) {
   return null;
 }
 
-/// The `lib/`-relative paths [source] imports or exports from this package.
+/// The `lib/`-relative paths [source] imports or exports from this package,
+/// including every URI behind a configuration (`if (dart.library.io) '…'`),
+/// since any one of them may be the import a platform compiles.
 List<String> lottiImports(String source) {
   final unit = parseString(content: source, throwIfDiagnostics: false).unit;
   return [
     for (final directive in unit.directives)
       if (directive is NamespaceDirective)
-        if (directive.uri.stringValue case final uri?
-            when uri.startsWith('package:lotti/'))
-          'lib/${uri.substring('package:lotti/'.length)}',
+        for (final uri in [
+          directive.uri.stringValue,
+          for (final configuration in directive.configurations)
+            configuration.uri.stringValue,
+        ])
+          if (uri != null && uri.startsWith('package:lotti/'))
+            'lib/${uri.substring('package:lotti/'.length)}',
   ];
 }
 
