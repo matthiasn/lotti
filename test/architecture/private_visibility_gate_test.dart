@@ -109,7 +109,7 @@ const _ungatedDeclarations = <String, String>{
       "the agent maintenance pass's view of every person, private ones "
       'included, so a display preference cannot decide who is tracked '
       '(ADR 0111); no row content is shown',
-  'lib/logic/create/create_entry.dart:_softDeleteFailedProjectTask':
+  'lib/features/journal/create/create_entry.dart:_softDeleteFailedProjectTask':
       'verifies by id that the task it just wrote is tombstoned; no row '
       'content is shown',
   // Numbers, not rows.

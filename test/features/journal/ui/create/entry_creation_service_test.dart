@@ -13,13 +13,13 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -40,12 +40,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
-import '../../features/agents/test_utils.dart';
-import '../../helpers/fallbacks.dart';
-import '../../helpers/path_provider.dart';
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../widget_test_utils.dart';
+import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/path_provider.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
