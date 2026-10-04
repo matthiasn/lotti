@@ -894,7 +894,7 @@ yet; some of that behavior is currently folded into `ProjectHealthHeader`.
 - `lib/features/agents/tools/agent_tool_registry.dart` — Register project tools
 - `lib/features/agents/genui/evolution_catalog.dart` — Add weekly review widgets
 - `lib/features/agents/wake/wake_orchestrator.dart` — Route project agent wakes
-- `lib/features/categories/ui/pages/category_details_page.dart` — Add Projects section
+- `lib/features/settings/ui/pages/categories/category_details_page.dart` — Add Projects section
 - `lib/features/tasks/ui/pages/task_details_page.dart` — Add Project picker
 - `lib/beamer/beamer_app.dart` — Register new location
 - All files with exhaustive `JournalEntity` switches (search for `.map(` or `switch` on entity)

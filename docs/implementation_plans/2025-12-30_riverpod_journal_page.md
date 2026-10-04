@@ -372,7 +372,7 @@ For this migration, **Option B** is safer - maintain internal stream subscriptio
 |------|---------|
 | `lib/features/journal/ui/pages/infinite_journal_page.dart:75` | BlocProvider → ProviderScope with scoped override |
 | `lib/widgets/app_bar/journal_sliver_appbar.dart:22` | BlocBuilder → Consumer, read scope |
-| `lib/features/tasks/ui/filtering/task_category_filter.dart` | BlocBuilder → Consumer, read scope |
+| `lib/features/journal/ui/widgets/task_category_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_status_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_priority_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_label_filter.dart` | BlocBuilder → Consumer, read scope |

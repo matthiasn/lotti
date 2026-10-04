@@ -104,7 +104,7 @@ The unified Goals tab (the Habits + Goal Agents merge) sits in the slot
 directly before Habits; while its flag is off nothing changes, and while it
 is on it coexists with the Habits tab. It is the sole host of the goal
 detail, chat and wizard pages, all under `/goals/...` paths built by the
-helpers in `lib/features/goals/ui/goal_routes.dart`. (The never-released
+helpers in `lib/utils/goal_routes.dart`. (The never-released
 Goal Agents tab that previously hosted the same pages under `/agents/...`
 behind `enable_agents_page` was removed once the unified surface landed;
 the flag row is deleted from existing installs via `retiredConfigFlags`.)

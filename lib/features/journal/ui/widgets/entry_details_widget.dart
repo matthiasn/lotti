@@ -24,11 +24,11 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_borders.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/util/audio_entry_one_liner.dart';
-import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';

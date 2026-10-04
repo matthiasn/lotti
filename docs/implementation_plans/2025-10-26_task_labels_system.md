@@ -281,7 +281,7 @@ Future<void> addLabeled(JournalEntity journalEntity) async {
   - Example: `SELECT * FROM journal WHERE id IN (SELECT journal_id FROM labeled WHERE label_id IN :label_ids)`
   - Add tests to verify N+1 regression prevention
 - ✅ UI: Label filter section in Tasks filter drawer
-  - Multi-select chips (similar to category filter at `lib/features/tasks/ui/filtering/task_category_filter.dart`)
+  - Multi-select chips (similar to category filter at `lib/features/journal/ui/widgets/task_category_filter.dart`)
   - "All" / "Unassigned" / individual labels
   - Show active filters count
   - Implicit OR logic: selecting multiple labels shows tasks with ANY of the selected labels (no explicit mode selector in v1)

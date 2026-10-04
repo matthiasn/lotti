@@ -633,3 +633,33 @@ class _GoalBannerShellReturnCountdownState
     );
   }
 }
+
+/// Width of the desktop check-in rail.
+const double kGoalTimelineRailWidth = 360;
+
+/// Below this much room for the DASHBOARD beside it, the rail is dropped and
+/// the phone treatment runs inside the single column instead — the same fold
+/// guard the chat drawer applies.
+const double kGoalTimelineRailFoldWidth = 640;
+
+/// The desktop check-in rail: its own scroll axis beside the dashboard, so a
+/// long history never drags the cards with it.
+class _CheckInRail extends StatelessWidget {
+  const _CheckInRail({required this.card});
+
+  final Widget card;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        0,
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+      ),
+      child: card,
+    );
+  }
+}

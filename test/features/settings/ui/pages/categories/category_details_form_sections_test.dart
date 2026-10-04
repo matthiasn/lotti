@@ -11,10 +11,10 @@ import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
+import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -23,11 +23,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../mocks/mocks.dart';
-import '../../../../test_helper.dart';
-import '../../../agents/test_utils.dart';
-import '../../../github/github_token_status.dart';
-import '../../test_utils.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../test_helper.dart';
+import '../../../../agents/test_utils.dart';
+import '../../../../categories/test_utils.dart';
+import '../../../../github/github_token_status.dart';
 
 /// Tests for the event-agent default-template picker built by
 /// `category_details_form_sections.dart`'s `_buildDefaultEventTemplatePicker`.

@@ -9,9 +9,9 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 

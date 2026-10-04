@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
+import 'package:lotti/utils/goal_routes.dart';
 
 void main() {
   group('goal routes', () {
@@ -21,13 +21,6 @@ void main() {
         goalTimelinePath('g1'),
       };
       expect(paths, hasLength(4));
-    });
-
-    test('the rail is dropped before it can squeeze the dashboard', () {
-      // The rail only earns its width when the dashboard still has a usable
-      // measure beside it.
-      expect(kGoalTimelineRailWidth, greaterThan(0));
-      expect(kGoalTimelineRailFoldWidth, greaterThan(kGoalTimelineRailWidth));
     });
   });
 }

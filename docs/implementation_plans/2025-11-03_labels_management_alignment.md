@@ -51,7 +51,7 @@ No data model or sync changes are needed; this is a UI/UX refactor grounded in t
   - Contains all editing UI (name, description, color picker with presets, applicable categories via modal, privacy, actions).
 - Categories list: `lib/features/categories/ui/pages/categories_list_page.dart`
   - Uses `ModernBaseCard` + `ListTile`; whole card navigates to details; trailing chevron.
-- Category details: `lib/features/categories/ui/pages/category_details_page.dart`
+- Category details: `lib/features/settings/ui/pages/categories/category_details_page.dart`
   - SliverAppBar with top-right Save + bottom `FormBottomBar` (duplicate save). Rich multi‑section form.
 - Bottom bar widget: `lib/widgets/ui/form_bottom_bar.dart` (spacing can be tight vs delete icon).
 - Routing: `lib/beamer/locations/settings_location.dart` (labels currently only list route; categories have list + create + details).
@@ -408,7 +408,7 @@ return CallbackShortcuts(
 ## Appendix: File‑by‑file changes (sketch)
 
 - UPDATE `lib/widgets/ui/form_bottom_bar.dart` (SafeArea + padding)
-- UPDATE `lib/features/categories/ui/pages/category_details_page.dart` (remove top Save)
+- UPDATE `lib/features/settings/ui/pages/categories/category_details_page.dart` (remove top Save)
 - ADD `lib/features/labels/ui/pages/label_details_page.dart` (transplant editor content)
 - UPDATE `lib/features/labels/ui/pages/labels_list_page.dart` (ModernBaseCard + full‑tile navigation; remove popup menu)
 - UPDATE `lib/beamer/locations/settings_location.dart` (labels create/edit routes)

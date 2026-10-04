@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
+import 'package:lotti/features/journal/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';

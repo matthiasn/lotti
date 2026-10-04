@@ -38,7 +38,6 @@ import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_off_track_alert_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
@@ -59,6 +58,7 @@ import 'package:lotti/services/db_notification.dart'
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/goal_routes.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
 /// in the owning feature; `features/agents` never imports goals).

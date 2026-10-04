@@ -97,7 +97,7 @@ dots. The Figma shows ~16 preset colors in a horizontal wrap.
 
 ## Phase 3 — Edit Category Page
 
-**File:** `lib/features/categories/ui/pages/category_details_page.dart`
+**File:** `lib/features/settings/ui/pages/categories/category_details_page.dart`
 
 ### Design changes (from Figma)
 
@@ -147,7 +147,7 @@ dots. The Figma shows ~16 preset colors in a horizontal wrap.
 
 ## Phase 4 — Add Category Page
 
-**File:** `lib/features/categories/ui/pages/category_details_page.dart` (create mode)
+**File:** `lib/features/settings/ui/pages/categories/category_details_page.dart` (create mode)
 
 ### Design changes (from Figma)
 

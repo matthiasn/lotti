@@ -36,7 +36,6 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -48,6 +47,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -1059,28 +1059,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                 ),
         ),
       ),
-    );
-  }
-}
-
-/// The desktop check-in rail: its own scroll axis beside the dashboard, so a
-/// long history never drags the cards with it.
-class _CheckInRail extends StatelessWidget {
-  const _CheckInRail({required this.card});
-
-  final Widget card;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        0,
-        tokens.spacing.step5,
-        tokens.spacing.step6,
-        tokens.spacing.step5,
-      ),
-      child: card,
     );
   }
 }

@@ -76,7 +76,7 @@ Entry.meta.labelIds (List<String>)
 - Handles privacy filtering (respects `showPrivateEntries`)
 - Compact design for list views vs expanded for detail views
 
-**Location**: `lib/features/labels/ui/widgets/entry_labels_display.dart`
+**Location**: `lib/features/journal/ui/widgets/entry_labels_display.dart`
 
 **Design decisions**:
 - **Edit button style**: Pencil icon similar to `TaskLabelsWrapper`
@@ -201,7 +201,7 @@ extension LabelTestHelpers on WidgetTester {
 
 | Path | Description |
 |------|-------------|
-| `lib/features/labels/ui/widgets/entry_labels_display.dart` | Reusable labels display widget |
+| `lib/features/journal/ui/widgets/entry_labels_display.dart` | Reusable labels display widget |
 | `lib/features/labels/ui/widgets/label_selection_modal.dart` | Generalized modal wrapper |
 | `test/features/labels/ui/entry_labels_display_test.dart` | Display widget tests |
 | `test/features/labels/ui/label_selection_modal_test.dart` | Modal tests |

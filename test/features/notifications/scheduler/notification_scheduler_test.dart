@@ -3,9 +3,9 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/notifications_db.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/notifications/model/notification_tap_payload.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
