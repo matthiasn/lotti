@@ -18,8 +18,8 @@ import 'package:uuid/uuid.dart';
 
 final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
   return LabelsRepository(
-    getIt<PersistenceLogic>(),
-    getIt<JournalDb>(),
+    ref.read(persistenceLogicProvider),
+    ref.read(journalDbProvider),
     getIt<EntitiesCacheService>(),
     ref.watch(domainLoggerProvider),
     getIt<UpdateNotifications>(),

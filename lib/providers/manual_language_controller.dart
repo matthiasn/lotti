@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// SettingsDb key for the optional app and external-manual language override.
@@ -127,9 +128,11 @@ class ManualLanguageController extends AsyncNotifier<ManualLanguage?> {
     if (!getIt.isRegistered<SettingsDb>()) return null;
 
     try {
-      final stored = await getIt<SettingsDb>().itemByKey(
-        manualLanguageSettingsKey,
-      );
+      final stored = await ref
+          .read(settingsDbProvider)
+          .itemByKey(
+            manualLanguageSettingsKey,
+          );
       return _userChanged
           ? state.value
           : ManualLanguage.fromStoredValue(stored);
@@ -145,7 +148,7 @@ class ManualLanguageController extends AsyncNotifier<ManualLanguage?> {
     state = AsyncData(override);
 
     if (!getIt.isRegistered<SettingsDb>()) return;
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     if (override == null) {
       await settingsDb.removeSettingsItem(manualLanguageSettingsKey);
       return;

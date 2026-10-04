@@ -10,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -57,7 +58,7 @@ void main() {
         (_) async => task,
       );
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -75,7 +76,7 @@ void main() {
         (_) async => null,
       );
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -95,7 +96,7 @@ void main() {
         (_) async => nonTaskEntity,
       );
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -126,7 +127,7 @@ void main() {
           return callCount == 1 ? originalTask : updatedTask;
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         // First read: returns original.
@@ -175,7 +176,7 @@ void main() {
         return task;
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       await container.read(taskLiveDataProvider(taskId).future);

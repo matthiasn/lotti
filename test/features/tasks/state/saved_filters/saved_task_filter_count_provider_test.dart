@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -76,6 +77,7 @@ ProviderContainer _buildContainer({
 }) {
   return ProviderContainer(
     overrides: [
+      ...getItServiceOverrides(),
       savedTaskFiltersControllerProvider.overrideWith(
         () => _StubController(seed),
       ),
@@ -306,7 +308,7 @@ void main() {
             ..unregister<AgentDatabase>();
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final repo = container.read(savedTaskFilterCountRepositoryProvider);
@@ -322,6 +324,7 @@ void main() {
     }) {
       return ProviderContainer(
         overrides: [
+          ...getItServiceOverrides(),
           journalPageControllerProvider(
             true,
           ).overrideWith(() => FakeJournalPageController(pageState)),
@@ -451,6 +454,7 @@ void main() {
       final repo = _FakeRepo(const [124]);
       final container = ProviderContainer(
         overrides: [
+          ...getItServiceOverrides(),
           savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
         ],
       );
@@ -474,6 +478,7 @@ void main() {
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
           ],
         )..listen(allTasksTotalCountProvider, (_, _) {});
@@ -503,6 +508,7 @@ void main() {
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
           ],
         )..listen(allTasksTotalCountProvider, (_, _) {});

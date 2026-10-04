@@ -5,7 +5,6 @@ import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
@@ -71,7 +70,7 @@ final StreamProvider<bool> enableTooltipsProvider =
       name: 'enableTooltipsProvider',
     );
 Stream<bool> enableTooltips(Ref ref) {
-  final db = getIt<JournalDb>();
+  final db = ref.read(journalDbProvider);
   return db.watchConfigFlag(enableTooltipFlag);
 }
 
@@ -149,7 +148,7 @@ class ThemingController extends Notifier<ThemingState> {
   }
 
   Future<void> _loadThemeMode() async {
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     final themeModeStr = await settingsDb.itemByKey(themeModeKey);
 
     final themeMode = themeModeStr != null
@@ -178,15 +177,17 @@ class ThemingController extends Notifier<ThemingState> {
           return;
         }
         try {
-          await getIt<OutboxService>().enqueueMessage(
-            SyncMessage.themingSelection(
-              lightThemeName: saved.values[lightSchemeNameKey]!,
-              darkThemeName: saved.values[darkSchemeNameKey]!,
-              themeMode: saved.values[themeModeKey]!,
-              updatedAt: saved.updatedAt,
-              status: SyncEntryStatus.update,
-            ),
-          );
+          await ref
+              .read(outboxServiceProvider)
+              .enqueueMessage(
+                SyncMessage.themingSelection(
+                  lightThemeName: saved.values[lightSchemeNameKey]!,
+                  darkThemeName: saved.values[darkSchemeNameKey]!,
+                  themeMode: saved.values[themeModeKey]!,
+                  updatedAt: saved.updatedAt,
+                  status: SyncEntryStatus.update,
+                ),
+              );
         } catch (e, st) {
           _logger.error(
             LogDomain.theming,
@@ -214,15 +215,17 @@ class ThemingController extends Notifier<ThemingState> {
 
   Future<void> _persistThemeMode(ThemeMode mode, int timestamp) async {
     try {
-      final saved = await getIt<SettingsDb>().saveLocalSettingsGroup(
-        {themeModeKey: EnumToString.convertToString(mode)},
-        stampKey: themePrefsUpdatedAtKey,
-        timestamp: timestamp,
-        retainedDefaults: {
-          lightSchemeNameKey: kLegacyDefaultThemeName,
-          darkSchemeNameKey: kLegacyDefaultThemeName,
-        },
-      );
+      final saved = await ref
+          .read(settingsDbProvider)
+          .saveLocalSettingsGroup(
+            {themeModeKey: EnumToString.convertToString(mode)},
+            stampKey: themePrefsUpdatedAtKey,
+            timestamp: timestamp,
+            retainedDefaults: {
+              lightSchemeNameKey: kLegacyDefaultThemeName,
+              darkSchemeNameKey: kLegacyDefaultThemeName,
+            },
+          );
       if (ref.mounted) _enqueueSyncMessage(saved);
     } catch (error, stackTrace) {
       _logger.error(

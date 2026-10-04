@@ -12,6 +12,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -78,6 +79,7 @@ void main() {
         ),
         mediaQueryData: MediaQueryData(size: size),
         overrides: [
+          ...getItServiceOverrides(),
           measurableDataTypesStreamProvider.overrideWith(
             (ref) => Stream.value(const []),
           ),
@@ -191,6 +193,7 @@ void main() {
           ),
           mediaQueryData: const MediaQueryData(size: size),
           overrides: [
+            ...getItServiceOverrides(),
             measurableDataTypesStreamProvider.overrideWith(
               (ref) => Stream.value(const []),
             ),

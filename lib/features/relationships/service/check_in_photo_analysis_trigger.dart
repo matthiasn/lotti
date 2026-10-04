@@ -3,7 +3,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -88,7 +87,7 @@ final checkInPhotoAnalysisTriggerProvider =
         ref: ref,
         loggingService: ref.watch(domainLoggerProvider),
         relationships: ref.watch(relationshipRepositoryProvider),
-        journalDb: getIt<JournalDb>(),
+        journalDb: ref.read(journalDbProvider),
       ),
       name: 'checkInPhotoAnalysisTriggerProvider',
     );

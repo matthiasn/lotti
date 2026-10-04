@@ -22,6 +22,7 @@ import 'package:lotti/features/profiles/service/demo_world_creator.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Seeds a freshly created demo world. Injectable so gateway tests can
@@ -506,6 +507,6 @@ DemoModeGateway? maybeDemoModeGatewayOf(BuildContext context) {
 /// matches for the tasks empty-state demo CTA.
 final demoJournalEmptyProvider = FutureProvider<bool>((ref) async {
   if (!getIt.isRegistered<JournalDb>()) return false;
-  final count = await getIt<JournalDb>().countAllJournalEntries();
+  final count = await ref.read(journalDbProvider).countAllJournalEntries();
   return count == 0;
 });

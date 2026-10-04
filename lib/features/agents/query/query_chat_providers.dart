@@ -34,7 +34,6 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Experimental scoped chat is hidden until explicitly enabled.
@@ -65,7 +64,7 @@ final queryActionContextReaderProvider = Provider<QueryActionContextReader>((
   return (taskId, relatedIds) => loader.load(
     taskId,
     relatedIds: relatedIds,
-    runningTimerId: getIt<TimeService>().getCurrent()?.meta.id,
+    runningTimerId: ref.read(timeServiceProvider).getCurrent()?.meta.id,
   );
 });
 

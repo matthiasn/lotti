@@ -17,7 +17,7 @@ import 'package:lotti/features/habits/ui/pages/habit_editor_launcher.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -231,16 +231,18 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
       unawaited(HapticFeedback.lightImpact());
     }
     final now = DateTime.now();
-    final saved = await getIt<PersistenceLogic>().createHabitCompletionEntry(
-      data: HabitCompletionData(
-        habitId: habitDefinition.id,
-        dateFrom: now,
-        dateTo: now,
-        completionType: completionType,
-      ),
-      comment: '',
-      habitDefinition: habitDefinition,
-    );
+    final saved = await ref
+        .read(persistenceLogicProvider)
+        .createHabitCompletionEntry(
+          data: HabitCompletionData(
+            habitId: habitDefinition.id,
+            dateFrom: now,
+            dateTo: now,
+            completionType: completionType,
+          ),
+          comment: '',
+          habitDefinition: habitDefinition,
+        );
     if (!mounted) return;
     if (saved == null) {
       // The write didn't commit (PersistenceLogic logs the cause and returns

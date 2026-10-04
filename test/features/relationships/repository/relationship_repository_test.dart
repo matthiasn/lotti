@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../database/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../agents/test_data/entity_factories.dart';
@@ -1534,6 +1535,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          ...getItServiceOverrides(),
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
         ],
       );

@@ -34,6 +34,7 @@ import 'package:lotti/widgets/cards/task_detail_section_card.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -297,6 +298,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
+          ...getItServiceOverrides(),
           entryControllerProvider(testTask.id).overrideWith(
             () => MockEntryController(mockEntry: taskWithIds),
           ),
@@ -398,6 +400,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...getItServiceOverrides(),
             entryControllerProvider(mockTask.id).overrideWith(
               () => controller,
             ),
@@ -497,6 +500,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...getItServiceOverrides(),
             entryControllerProvider(firstTask.id).overrideWith(
               () => MockEntryController(mockEntry: firstTask),
             ),
@@ -592,6 +596,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              ...getItServiceOverrides(),
               entryControllerProvider('task1').overrideWith(
                 () => MockEntryController(mockEntry: mockTask),
               ),
@@ -648,6 +653,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...getItServiceOverrides(),
             entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: null),
             ),
@@ -686,6 +692,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...getItServiceOverrides(),
             entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: journalEntry),
             ),
@@ -751,6 +758,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...getItServiceOverrides(),
             entryControllerProvider('task1').overrideWith(
               () => controller,
             ),
@@ -874,6 +882,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              ...getItServiceOverrides(),
               entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
@@ -944,6 +953,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              ...getItServiceOverrides(),
               entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
@@ -1036,6 +1046,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              ...getItServiceOverrides(),
               entryControllerProvider('task1').overrideWith(() => controller),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,

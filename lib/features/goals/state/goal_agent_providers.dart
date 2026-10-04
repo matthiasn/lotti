@@ -51,8 +51,7 @@ import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart'
     show UpdateNotifications, agentNotification;
 import 'package:lotti/services/domain_logging.dart';
@@ -67,7 +66,7 @@ final goalSignalReaderProvider = Provider<GoalSignalReader>(
   (ref) => GoalSignalReader(
     journalDb: ref.watch(journalDbProvider),
     timeService: getIt.isRegistered<TimeService>()
-        ? getIt<TimeService>()
+        ? ref.read(timeServiceProvider)
         : null,
   ),
   name: 'goalSignalReaderProvider',
@@ -119,8 +118,8 @@ final goalRepositoryProvider = Provider<GoalRepository?>((ref) {
     return null;
   }
   return GoalRepository(
-    journalDb: getIt<JournalDb>(),
-    persistenceLogic: getIt<PersistenceLogic>(),
+    journalDb: ref.read(journalDbProvider),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     metadataService: getIt<MetadataService>(),
   );
 }, name: 'goalRepositoryProvider');

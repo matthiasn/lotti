@@ -11,7 +11,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -48,8 +47,8 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -528,7 +527,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       bottom: false,
       child: ValueListenableBuilder<String?>(
         valueListenable: isDesktopLayout(context)
-            ? getIt<NavService>().desktopSelectedTaskId
+            ? ref.read(navServiceProvider).desktopSelectedTaskId
             : _noSelectionNotifier,
         builder: (context, activeTaskId, _) => LayoutBuilder(
           builder: (context, constraints) => Column(
@@ -727,8 +726,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             selectedTaskId: activeTaskId,
                                             hoveredTaskIdNotifier:
                                                 _hoveredTaskIdNotifier,
-                                            onTap: () =>
-                                                getIt<NavService>().beamToNamed(
+                                            onTap: () => ref
+                                                .read(navServiceProvider)
+                                                .beamToNamed(
                                                   '/tasks/${item.meta.id}',
                                                 ),
                                           ),
@@ -768,7 +768,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
 // ignore: specify_nonobvious_property_types
 final _visibleProjectsTitleProvider =
     FutureProvider.autoDispose<Map<String, String>>((ref) async {
-      final projects = await getIt<JournalDb>().getVisibleProjects();
+      final projects = await ref.read(journalDbProvider).getVisibleProjects();
       return <String, String>{
         for (final project in projects) project.meta.id: project.data.title,
       };
@@ -1093,7 +1093,7 @@ Future<void> _defaultCreateTaskPressed(
   // after the page appeared. It is a local write, and it is a no-op for a
   // category with no default template.
   await autoAssignCategoryAgentWith(agentService, task);
-  getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
+  ref.read(navServiceProvider).beamToNamed('/tasks/${task.meta.id}');
 }
 
 /// Creates a task from the task list's *current* filters and opens it.

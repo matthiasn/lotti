@@ -15,6 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -124,6 +125,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -200,6 +202,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -259,6 +262,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -306,6 +310,7 @@ void main() {
       test('does nothing when title is null', () async {
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -353,6 +358,7 @@ void main() {
       test('stamps checkedBy: user and checkedAt on check', () async {
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -422,6 +428,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -469,6 +476,7 @@ void main() {
         () async {
           final container = ProviderContainer(
             overrides: [
+              ...getItServiceOverrides(),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
@@ -535,6 +543,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -590,6 +599,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -655,6 +665,7 @@ void main() {
 
           final container = ProviderContainer(
             overrides: [
+              ...getItServiceOverrides(),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
@@ -704,6 +715,7 @@ void main() {
 
           final container = ProviderContainer(
             overrides: [
+              ...getItServiceOverrides(),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
@@ -754,6 +766,7 @@ void main() {
       Future<(ProviderContainer, ChecklistItemController)> load() async {
         final container = ProviderContainer(
           overrides: [
+            ...getItServiceOverrides(),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),

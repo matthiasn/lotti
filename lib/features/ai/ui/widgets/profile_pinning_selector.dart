@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -17,7 +18,7 @@ import 'package:material_ui/material_ui.dart';
 final localVectorClockHostIdProvider = FutureProvider<String?>(
   (ref) async {
     if (!getIt.isRegistered<VectorClockService>()) return null;
-    return getIt<VectorClockService>().getHost();
+    return ref.read(vectorClockServiceProvider).getHost();
   },
 );
 

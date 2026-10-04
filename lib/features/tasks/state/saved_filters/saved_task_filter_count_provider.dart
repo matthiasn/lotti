@@ -5,13 +5,13 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -25,7 +25,7 @@ savedTaskFilterCountRepositoryProvider =
     );
 SavedTaskFilterCountRepository savedTaskFilterCountRepository(Ref ref) {
   return SavedTaskFilterCountRepository(
-    db: getIt<JournalDb>(),
+    db: ref.read(journalDbProvider),
     cache: getIt<EntitiesCacheService>(),
     agentRepository: AgentRepository(getIt<AgentDatabase>()),
   );

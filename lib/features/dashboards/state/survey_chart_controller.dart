@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
@@ -39,7 +40,7 @@ class SurveyChartDataController extends AsyncNotifier<List<JournalEntity>> {
   DateTime get rangeStart => _providerArgs.rangeStart;
   DateTime get rangeEnd => _providerArgs.rangeEnd;
 
-  final JournalDb _journalDb = getIt<JournalDb>();
+  JournalDb get _journalDb => ref.read(journalDbProvider);
 
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();

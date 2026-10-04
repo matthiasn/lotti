@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart'
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import 'sequence_log_populate_controller_test_helpers.dart';
 
@@ -152,7 +153,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<AgentDatabase>(mockAgentDb);
 
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {
@@ -307,7 +308,7 @@ void main() {
       'state aligned with the populate sequence',
       (scenario) async {
         container.dispose();
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
           (_) => Stream.fromIterable([]),

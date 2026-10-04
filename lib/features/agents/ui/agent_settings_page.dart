@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/tabs/design_system_tab.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -79,7 +80,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
     super.initState();
     _localFallback = widget.initialTab ?? AgentSettingsTab.templates;
     if (getIt.isRegistered<NavService>()) {
-      _navService = getIt<NavService>();
+      _navService = ref.read(navServiceProvider);
     }
   }
 

@@ -10,6 +10,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
@@ -36,6 +37,7 @@ void main() {
       makeTestableWidgetNoScroll(
         child,
         overrides: [
+          ...getItServiceOverrides(),
           measurableDataTypesStreamProvider.overrideWith(
             (ref) => loading
                 ? const Stream<List<MeasurableDataType>>.empty()

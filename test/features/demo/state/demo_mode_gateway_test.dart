@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -1084,7 +1085,7 @@ void main() {
       final db = MockJournalDb();
       when(db.countAllJournalEntries).thenAnswer((_) async => 0);
       getIt.registerSingleton<JournalDb>(db);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(await container.read(demoJournalEmptyProvider.future), isTrue);
@@ -1094,14 +1095,14 @@ void main() {
       final db = MockJournalDb();
       when(db.countAllJournalEntries).thenAnswer((_) async => 7);
       getIt.registerSingleton<JournalDb>(db);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(await container.read(demoJournalEmptyProvider.future), isFalse);
     });
 
     test('false when no JournalDb is registered', () async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       expect(await container.read(demoJournalEmptyProvider.future), isFalse);
     });

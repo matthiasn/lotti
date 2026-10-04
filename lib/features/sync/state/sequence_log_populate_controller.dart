@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/agents/agent_database.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 final sequenceLogPopulateControllerProvider =
     NotifierProvider<SequenceLogPopulateController, SequenceLogPopulateState>(
@@ -99,7 +99,7 @@ class SequenceLogPopulateController extends Notifier<SequenceLogPopulateState> {
 
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
-      final journalDb = getIt<JournalDb>();
+      final journalDb = ref.read(journalDbProvider);
       final agentDb = getIt<AgentDatabase>();
 
       // Phase 1: Populate from journal entries (0.0–0.25)

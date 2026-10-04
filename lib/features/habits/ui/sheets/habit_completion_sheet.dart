@@ -23,9 +23,9 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -190,16 +190,18 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       widget.habitId,
     );
-    await getIt<PersistenceLogic>().createHabitCompletionEntry(
-      data: HabitCompletionData(
-        habitId: widget.habitId,
-        dateTo: !_startReset ? clock.now() : _started,
-        dateFrom: _started,
-        completionType: _outcome,
-      ),
-      comment: formData['comment'] as String,
-      habitDefinition: habitDefinition,
-    );
+    await ref
+        .read(persistenceLogicProvider)
+        .createHabitCompletionEntry(
+          data: HabitCompletionData(
+            habitId: widget.habitId,
+            dateTo: !_startReset ? clock.now() : _started,
+            dateFrom: _started,
+            completionType: _outcome,
+          ),
+          comment: formData['comment'] as String,
+          habitDefinition: habitDefinition,
+        );
   }
 
   /// The "other value" path: the full capture flow, whose saved entry then
@@ -229,16 +231,18 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     MeasurableQuickValue value,
   ) async {
     final now = clock.now();
-    final saved = await getIt<PersistenceLogic>().createMeasurementEntry(
-      data: MeasurementData(
-        dateFrom: now,
-        dateTo: now,
-        value: value.value,
-        choiceId: value.choiceId,
-        dataTypeId: dataType.id,
-      ),
-      private: dataType.private ?? false,
-    );
+    final saved = await ref
+        .read(persistenceLogicProvider)
+        .createMeasurementEntry(
+          data: MeasurementData(
+            dateFrom: now,
+            dateTo: now,
+            value: value.value,
+            choiceId: value.choiceId,
+            dataTypeId: dataType.id,
+          ),
+          private: dataType.private ?? false,
+        );
     if (!mounted) return;
     if (saved == null) {
       // The write failed (persistence logs it); the chip must not read as

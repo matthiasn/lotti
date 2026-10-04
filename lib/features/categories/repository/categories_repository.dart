@@ -6,6 +6,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -16,8 +17,8 @@ import 'package:uuid/uuid.dart';
 /// can be overridden with a fake repository in tests.
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository(
-    getIt<PersistenceLogic>(),
-    getIt<JournalDb>(),
+    ref.read(persistenceLogicProvider),
+    ref.read(journalDbProvider),
     getIt<EntitiesCacheService>(),
     getIt<UpdateNotifications>(),
   );

@@ -16,7 +16,6 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -24,7 +23,7 @@ final Provider<RelationshipToolDispatcher> relationshipToolDispatcherProvider =
     Provider(
       (ref) => RelationshipToolDispatcher(
         relationshipRepository: ref.watch(relationshipRepositoryProvider),
-        persistenceLogic: getIt<PersistenceLogic>(),
+        persistenceLogic: ref.read(persistenceLogicProvider),
         entitiesCacheService: getIt<EntitiesCacheService>(),
         taskAgentService: ref.watch(taskAgentServiceProvider),
         journalDb: ref.watch(journalDbProvider),

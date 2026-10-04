@@ -25,6 +25,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import 'helpers/journal_controller_test_setup.dart';
 

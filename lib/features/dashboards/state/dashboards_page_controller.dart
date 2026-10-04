@@ -3,9 +3,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -13,7 +13,7 @@ import 'package:lotti/services/notification_stream.dart';
 /// Stream provider for all active dashboards from database.
 final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
-      final db = getIt<JournalDb>();
+      final db = ref.read(journalDbProvider);
       return notificationDrivenStream(
         notifications: getIt<UpdateNotifications>(),
         notificationKeys: {dashboardsNotification, privateToggleNotification},
@@ -46,7 +46,7 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
 /// filter picker never lists a category the demo is hiding.
 final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
-      final db = getIt<JournalDb>();
+      final db = ref.read(journalDbProvider);
       final lockdown = ref.watch(lockdownControllerProvider);
       return notificationDrivenStream(
         notifications: getIt<UpdateNotifications>(),

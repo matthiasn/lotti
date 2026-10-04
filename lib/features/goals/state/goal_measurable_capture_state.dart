@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_measurable_capture_service.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 @immutable
 class GoalMeasurableCaptureDecision {
@@ -32,8 +30,8 @@ final goalMeasurableCaptureServiceProvider =
     Provider<GoalMeasurableCaptureService>(
       (ref) => GoalMeasurableCaptureService(
         ref.watch(agentSyncServiceProvider),
-        getIt<PersistenceLogic>(),
-        getIt<JournalDb>(),
+        ref.read(persistenceLogicProvider),
+        ref.read(journalDbProvider),
       ),
       name: 'goalMeasurableCaptureServiceProvider',
     );

@@ -10,7 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Extra scroll space so the last card clears the bottom navigation bar.
@@ -133,7 +133,9 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
         ),
         Expanded(
           child: ValueListenableBuilder<String?>(
-            valueListenable: getIt<NavService>().desktopSelectedDashboardId,
+            valueListenable: ref
+                .read(navServiceProvider)
+                .desktopSelectedDashboardId,
             builder: (context, selectedDashboardId, _) {
               if (selectedDashboardId != null) {
                 return DashboardPage(dashboardId: selectedDashboardId);

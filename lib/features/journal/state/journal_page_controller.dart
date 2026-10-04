@@ -6,9 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
@@ -17,6 +15,7 @@ import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -134,8 +133,8 @@ class JournalPageController extends Notifier<JournalPageState>
   @override
   JournalPageState build() {
     // Initialize services
-    final db = getIt<JournalDb>();
-    final settingsDb = getIt<SettingsDb>();
+    final db = ref.read(journalDbProvider);
+    final settingsDb = ref.read(settingsDbProvider);
     final fts5Db = getIt<Fts5Db>();
     final updateNotifications = getIt<UpdateNotifications>();
     final entitiesCacheService = getIt<EntitiesCacheService>();
@@ -156,7 +155,7 @@ class JournalPageController extends Notifier<JournalPageState>
     // controller starts visible if its tab is the active one when
     // build() runs (the page provider is keepAlive, so the first build
     // typically coincides with the tab being shown).
-    final navService = getIt<NavService>();
+    final navService = ref.read(navServiceProvider);
     _isVisible = navService.index == _myTabIndex(navService);
     _navIndexSubscription = navService.getIndexStream().listen(
       _handleNavIndex,
@@ -430,7 +429,7 @@ class JournalPageController extends Notifier<JournalPageState>
   void _handleNavIndex(int newIndex) {
     if (!ref.mounted) return;
 
-    final isVisible = newIndex == _myTabIndex(getIt<NavService>());
+    final isVisible = newIndex == _myTabIndex(ref.read(navServiceProvider));
     if (!_isVisible && isVisible && _needsRefreshOnVisible) {
       _needsRefreshOnVisible = false;
       unawaited(refreshQuery(preserveVisibleItems: true));

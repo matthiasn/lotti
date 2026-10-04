@@ -19,6 +19,7 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/hover_divider_harness.dart';
@@ -56,6 +57,7 @@ void main() {
       makeTestableWidgetNoScroll(
         child,
         overrides: [
+          ...getItServiceOverrides(),
           allDashboardsStreamProvider.overrideWith(
             (ref) => loading
                 ? const Stream<List<DashboardDefinition>>.empty()
@@ -438,7 +440,7 @@ void main() {
             : [testDashboardConfig, inactive];
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final emitted = <List<DashboardDefinition>>[];
       container.listen(

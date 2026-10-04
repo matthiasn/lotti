@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -111,6 +112,7 @@ void main() {
 
     container = ProviderContainer(
       overrides: [
+        ...getItServiceOverrides(),
         profileAutomationServiceProvider.overrideWithValue(automation),
         skillInferenceRunnerProvider.overrideWithValue(runner),
         relationshipRepositoryProvider.overrideWithValue(relationships),

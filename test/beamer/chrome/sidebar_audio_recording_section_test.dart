@@ -10,6 +10,7 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -114,6 +115,7 @@ void main() {
       makeTestableWidgetWithScaffold(
         const SidebarAudioRecordingSection(),
         overrides: [
+          ...getItServiceOverrides(),
           audioRecorderControllerProvider.overrideWith(() {
             return controller = _FakeAudioRecorderController(state);
           }),
@@ -248,6 +250,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           const SidebarAudioRecordingSection(),
           overrides: [
+            ...getItServiceOverrides(),
             audioRecorderControllerProvider.overrideWith(() {
               return controller = _FakeAudioRecorderController(state);
             }),

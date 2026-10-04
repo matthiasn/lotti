@@ -6,9 +6,9 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
@@ -373,13 +373,15 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<DomainLogger>().log(
-          LogDomain.ai,
-          'Undo provider deletion failed: ${provider.name} (${provider.id}), '
-          '${result.deletedModels.length} models, error: $error',
-          subDomain: 'DELETE_SERVICE',
-          level: InsightLevel.warn,
-        );
+        ref
+            .read(domainLoggerProvider)
+            .log(
+              LogDomain.ai,
+              'Undo provider deletion failed: ${provider.name} (${provider.id}), '
+              '${result.deletedModels.length} models, error: $error',
+              subDomain: 'DELETE_SERVICE',
+              level: InsightLevel.warn,
+            );
       } catch (_) {
         // LoggingService not available (e.g., in tests) - ignore
       }
@@ -405,13 +407,15 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<DomainLogger>().log(
-          LogDomain.ai,
-          'Undo config deletion failed: ${config.name} (${config.id}), '
-          'type: ${config.runtimeType}, error: $error',
-          subDomain: 'DELETE_SERVICE',
-          level: InsightLevel.warn,
-        );
+        ref
+            .read(domainLoggerProvider)
+            .log(
+              LogDomain.ai,
+              'Undo config deletion failed: ${config.name} (${config.id}), '
+              'type: ${config.runtimeType}, error: $error',
+              subDomain: 'DELETE_SERVICE',
+              level: InsightLevel.warn,
+            );
       } catch (_) {
         // LoggingService not available (e.g., in tests) - ignore
       }

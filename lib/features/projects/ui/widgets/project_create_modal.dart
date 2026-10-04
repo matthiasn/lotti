@@ -24,8 +24,8 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -117,11 +117,13 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
 
     try {
       final now = DateTime.now();
-      final meta = await getIt<PersistenceLogic>().createMetadata(
-        dateFrom: now,
-        dateTo: now,
-        categoryId: categoryId,
-      );
+      final meta = await ref
+          .read(persistenceLogicProvider)
+          .createMetadata(
+            dateFrom: now,
+            dateTo: now,
+            categoryId: categoryId,
+          );
 
       final project =
           JournalEntity.project(

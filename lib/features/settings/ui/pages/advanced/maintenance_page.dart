@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -66,7 +66,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final maintenance = getIt<Maintenance>();
+    final maintenance = ref.read(maintenanceProvider);
 
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[

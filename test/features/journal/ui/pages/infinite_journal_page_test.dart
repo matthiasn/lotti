@@ -44,6 +44,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
@@ -210,7 +211,10 @@ void main() {
       ).thenAnswer((_) async => entity);
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const InfiniteJournalPage()),
+        makeTestableWidgetWithScaffold(
+          const InfiniteJournalPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await pumpWithDelay(tester);
     }
@@ -391,6 +395,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const InfiniteJournalPage(),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -437,6 +442,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const InfiniteJournalPage(),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -489,6 +495,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const InfiniteJournalPage(),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -523,6 +530,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const InfiniteJournalPage(),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -568,6 +576,7 @@ void main() {
         makeTestableWidgetNoScroll(
           const InfiniteJournalPage(),
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,
@@ -674,6 +683,7 @@ void main() {
         makeTestableWidgetNoScroll(
           const InfiniteJournalPage(),
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,
@@ -819,6 +829,7 @@ void main() {
         makeTestableWidgetNoScroll(
           const InfiniteJournalPage(),
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,
@@ -864,6 +875,7 @@ void main() {
             // and the page floats no button to read the category from.
             mediaQueryData: desktopLayoutMediaQueryData,
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
                 false,
@@ -912,6 +924,7 @@ void main() {
             const InfiniteJournalPage(),
             mediaQueryData: desktopLayoutMediaQueryData,
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
                 false,
@@ -955,6 +968,7 @@ void main() {
             const InfiniteJournalPage(),
             mediaQueryData: mediaQueryData,
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
                 false,
@@ -1049,6 +1063,7 @@ void main() {
               },
             ),
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(false),
               journalPageControllerProvider(
                 false,
@@ -1090,6 +1105,7 @@ void main() {
                 },
               ),
               overrides: [
+                ...getItServiceOverrides(),
                 journalPageScopeProvider.overrideWithValue(false),
                 journalPageControllerProvider(
                   false,
@@ -1141,6 +1157,7 @@ void main() {
             ),
           ),
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,
@@ -1213,6 +1230,7 @@ void main() {
         makeTestableWidgetNoScroll(
           const InfiniteJournalPage(),
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,

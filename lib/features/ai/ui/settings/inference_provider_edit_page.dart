@@ -400,7 +400,7 @@ class _InferenceProviderEditPageState
       } catch (error, stackTrace) {
         // Forward the failure to the app's LoggingService so production
         // surfaces it in the insight stream (the rest of the AI feature
-        // already routes its `catch` arms through `getIt<LoggingService>()`
+        // already routes its `catch` arms through `ref.read(loggingServiceProvider)`
         // — see `AiConfigDeleteService._performUndo`). Wrapped in its own
         // try/catch so a missing LoggingService registration in tests
         // does not mask the user-facing toast below.

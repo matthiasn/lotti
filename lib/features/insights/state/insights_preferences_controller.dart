@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// SettingsDb key for the focus-category selection (JSON string list).
 const insightsFocusCategoryIdsSettingsKey = 'INSIGHTS_FOCUS_CATEGORY_IDS';
@@ -46,9 +47,11 @@ class InsightsPreferencesController extends Notifier<InsightsPreferences> {
 
   Future<void> _load() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
-    final raw = await getIt<SettingsDb>().itemByKey(
-      insightsFocusCategoryIdsSettingsKey,
-    );
+    final raw = await ref
+        .read(settingsDbProvider)
+        .itemByKey(
+          insightsFocusCategoryIdsSettingsKey,
+        );
     if (!ref.mounted || _edited) return;
     state = InsightsPreferences(focusCategoryIds: _decode(raw));
   }
@@ -69,10 +72,12 @@ class InsightsPreferencesController extends Notifier<InsightsPreferences> {
   void _save(Set<String> ids) {
     if (!getIt.isRegistered<SettingsDb>()) return;
     unawaited(
-      getIt<SettingsDb>().saveSettingsItem(
-        insightsFocusCategoryIdsSettingsKey,
-        jsonEncode(ids.toList()..sort()),
-      ),
+      ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            insightsFocusCategoryIdsSettingsKey,
+            jsonEncode(ids.toList()..sort()),
+          ),
     );
   }
 

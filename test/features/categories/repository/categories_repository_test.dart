@@ -15,6 +15,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -692,7 +693,7 @@ void main() {
           ..unregister<UpdateNotifications>()
           ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final repo = container.read(categoryRepositoryProvider);

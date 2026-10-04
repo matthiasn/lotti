@@ -16,6 +16,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -84,7 +85,10 @@ void main() {
         );
       });
       final container = ProviderContainer(
-        overrides: [agentSyncServiceProvider.overrideWithValue(syncService)],
+        overrides: [
+          ...getItServiceOverrides(),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -175,6 +179,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        ...getItServiceOverrides(),
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',
@@ -232,6 +237,7 @@ void main() {
     );
     final container = ProviderContainer(
       overrides: [
+        ...getItServiceOverrides(),
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',

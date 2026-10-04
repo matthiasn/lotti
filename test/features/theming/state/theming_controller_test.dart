@@ -19,6 +19,7 @@ import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -106,7 +107,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {
@@ -196,7 +197,7 @@ void main() {
           verifyNever(() => outboxService.enqueueMessage(any()));
           verifyNever(() => replacementOutbox.enqueueMessage(any()));
           // Teardown owns this replacement container, not the disposed profile.
-          container = ProviderContainer();
+          container = ProviderContainer(overrides: getItServiceOverrides());
         }, initialTime: DateTime(2026));
       });
 

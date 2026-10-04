@@ -9,7 +9,7 @@ import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -68,7 +68,7 @@ class HabitsController extends Notifier<HabitsState> {
   int _lastNavIndex = -1;
 
   late HabitsRepository _repository;
-  late final NavService _navService = getIt<NavService>();
+  late final NavService _navService = ref.read(navServiceProvider);
   late DateTime Function() _now;
 
   @override

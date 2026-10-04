@@ -5,7 +5,7 @@ import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// The explicit device-wide fallback for otherwise unconfigured inference.
 final defaultInferenceProfileControllerProvider =
@@ -56,7 +56,7 @@ class AiRuntimeSettingsController extends Notifier<AiRuntimeSettings> {
   /// must not overwrite them.
   final _userChangedKeys = <String>{};
 
-  SettingsDb get _settingsDb => getIt<SettingsDb>();
+  SettingsDb get _settingsDb => ref.read(settingsDbProvider);
 
   @override
   AiRuntimeSettings build() {

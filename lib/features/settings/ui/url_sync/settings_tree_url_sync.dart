@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/settings_urls.dart';
 
@@ -84,7 +84,7 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
   @override
   void initState() {
     super.initState();
-    _navService = getIt<NavService>();
+    _navService = ref.read(navServiceProvider);
     _navService.desktopSelectedSettingsRoute.addListener(_onRouteChanged);
     // Seed from whatever is already in the route notifier — handles
     // the deep-link-on-mount case where the path is already set

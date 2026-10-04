@@ -8,7 +8,6 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 
@@ -129,7 +128,7 @@ final goalHabitCompletionServiceProvider = Provider<GoalHabitCompletionService>(
   (ref) => GoalHabitCompletionService(
     agentRepository: ref.watch(agentRepositoryProvider),
     journalDb: ref.watch(journalDbProvider),
-    persistenceLogic: getIt<PersistenceLogic>(),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
   ),
   name: 'goalHabitCompletionServiceProvider',

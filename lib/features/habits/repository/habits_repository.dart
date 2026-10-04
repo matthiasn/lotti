@@ -4,6 +4,7 @@ import 'package:lotti/classes/habit_completion_record.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 
@@ -134,7 +135,7 @@ final habitsRepositoryProvider = Provider<HabitsRepository>(
 );
 HabitsRepository habitsRepository(Ref ref) {
   return HabitsRepositoryImpl(
-    journalDb: getIt<JournalDb>(),
+    journalDb: ref.read(journalDbProvider),
     updateNotifications: getIt<UpdateNotifications>(),
   );
 }

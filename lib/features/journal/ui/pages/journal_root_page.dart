@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -80,11 +81,14 @@ class JournalRootPage extends ConsumerWidget {
           detailPane: ColoredBox(
             color: dsPageSurface(context),
             child: ValueListenableBuilder<String?>(
-              valueListenable: getIt<NavService>().desktopSelectedEntryId,
+              valueListenable: ref
+                  .read(navServiceProvider)
+                  .desktopSelectedEntryId,
               builder: (context, selectedEntryId, _) {
                 return ValueListenableBuilder<String?>(
-                  valueListenable:
-                      getIt<NavService>().desktopSelectedEntryLinkedFromId,
+                  valueListenable: ref
+                      .read(navServiceProvider)
+                      .desktopSelectedEntryLinkedFromId,
                   builder: (context, linkedFromId, _) {
                     final child = selectedEntryId != null
                         ? EntryDetailsPage(
@@ -180,14 +184,20 @@ class _AutoSelectNewestEntryState
   void initState() {
     super.initState();
     // Re-fill when the selection is cleared (e.g. a bare /journal beam).
-    getIt<NavService>().desktopSelectedEntryId.addListener(_maybeSelect);
+    ref
+        .read(navServiceProvider)
+        .desktopSelectedEntryId
+        .addListener(_maybeSelect);
   }
 
   @override
   void dispose() {
     _pagingController?.removeListener(_maybeSelect);
     if (getIt.isRegistered<NavService>()) {
-      getIt<NavService>().desktopSelectedEntryId.removeListener(_maybeSelect);
+      ref
+          .read(navServiceProvider)
+          .desktopSelectedEntryId
+          .removeListener(_maybeSelect);
     }
     super.dispose();
   }
@@ -211,7 +221,7 @@ class _AutoSelectNewestEntryState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _selectionCallbackPending = false;
       if (!mounted || !getIt.isRegistered<NavService>()) return;
-      final navService = getIt<NavService>();
+      final navService = ref.read(navServiceProvider);
       if (navService.desktopSelectedEntryId.value != null) return;
       final items = _pagingController?.items;
       if (items == null) return;

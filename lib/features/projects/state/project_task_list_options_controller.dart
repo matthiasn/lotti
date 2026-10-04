@@ -44,9 +44,11 @@ class ProjectTaskListOptionsController
     if (!getIt.isRegistered<SettingsDb>()) return;
     final String? raw;
     try {
-      raw = await getIt<SettingsDb>().itemByKey(
-        projectTaskListOptionsSettingsKey(projectId),
-      );
+      raw = await ref
+          .read(settingsDbProvider)
+          .itemByKey(
+            projectTaskListOptionsSettingsKey(projectId),
+          );
     } catch (error, stackTrace) {
       _report('load', error, stackTrace);
       return;
@@ -75,10 +77,12 @@ class ProjectTaskListOptionsController
   Future<void> _persist(ProjectTaskListOptions options) async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     try {
-      await getIt<SettingsDb>().saveSettingsItem(
-        projectTaskListOptionsSettingsKey(projectId),
-        jsonEncode(options.toJson()),
-      );
+      await ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            projectTaskListOptionsSettingsKey(projectId),
+            jsonEncode(options.toJson()),
+          );
     } catch (error, stackTrace) {
       _report('persist', error, stackTrace);
     }

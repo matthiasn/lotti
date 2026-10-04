@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/observation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -57,7 +58,7 @@ class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
   MeasurableDataTypeController(this._id);
 
   final String _id;
-  final JournalDb _journalDb = getIt<JournalDb>();
+  JournalDb get _journalDb => ref.read(journalDbProvider);
 
   String get id => _id;
 
@@ -126,7 +127,7 @@ class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
   MeasurableChartDataController(this._params);
 
   final MeasurableChartDataParams _params;
-  final JournalDb _journalDb = getIt<JournalDb>();
+  JournalDb get _journalDb => ref.read(journalDbProvider);
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 

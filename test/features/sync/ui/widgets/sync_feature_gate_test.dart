@@ -10,6 +10,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -103,6 +104,7 @@ void main() {
               child: Text('Sync Content'),
             ),
             overrides: [
+              ...getItServiceOverrides(),
               profileContextProvider.overrideWithValue(
                 ProfileContext.forProfile(
                   profile: Profile(

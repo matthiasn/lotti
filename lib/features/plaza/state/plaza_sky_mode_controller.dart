@@ -35,7 +35,9 @@ class PlazaSkyModeController extends Notifier<PlazaSkyMode> {
     if (!getIt.isRegistered<SettingsDb>()) return;
     final String? raw;
     try {
-      raw = await getIt<SettingsDb>().itemByKey(plazaSkyModeSettingsKey);
+      raw = await ref
+          .read(settingsDbProvider)
+          .itemByKey(plazaSkyModeSettingsKey);
     } catch (error, stackTrace) {
       _report('load', error, stackTrace);
       return;
@@ -56,10 +58,12 @@ class PlazaSkyModeController extends Notifier<PlazaSkyMode> {
   Future<void> _persist(PlazaSkyMode mode) async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     try {
-      await getIt<SettingsDb>().saveSettingsItem(
-        plazaSkyModeSettingsKey,
-        mode.name,
-      );
+      await ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            plazaSkyModeSettingsKey,
+            mode.name,
+          );
     } catch (error, stackTrace) {
       _report('persist', error, stackTrace);
     }

@@ -19,6 +19,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -153,7 +154,7 @@ void main() {
       () => mockJournalDb.getAllLabelDefinitions(),
     ).thenAnswer((_) async => []);
 
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {
@@ -542,7 +543,7 @@ void main() {
       // `very_good test` run if this test failed before tearDown).
       getIt.unregister<EmbeddingStore>();
       container.dispose();
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       await controller().backfillCategories({_testCategoryId});
 

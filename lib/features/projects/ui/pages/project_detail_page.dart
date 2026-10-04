@@ -24,6 +24,7 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -148,13 +149,15 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     if (discardChanges) _discardPendingChanges();
     final returnPath = widget.returnPath;
     if (returnPath != null && getIt.isRegistered<NavService>()) {
-      getIt<NavService>().beamToNamed(returnPath);
+      ref.read(navServiceProvider).beamToNamed(returnPath);
       return;
     }
 
     final categoryId = widget.categoryId;
     if (categoryId != null && getIt.isRegistered<NavService>()) {
-      getIt<NavService>().beamToNamed('/settings/categories/$categoryId');
+      ref
+          .read(navServiceProvider)
+          .beamToNamed('/settings/categories/$categoryId');
       return;
     }
 
@@ -165,7 +168,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     }
 
     if (getIt.isRegistered<NavService>()) {
-      final navService = getIt<NavService>();
+      final navService = ref.read(navServiceProvider);
       if (navService.currentPath.startsWith('/settings/projects')) {
         navService.beamBack();
       }

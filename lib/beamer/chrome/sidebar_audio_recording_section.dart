@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -17,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 final FutureProviderFamily<JournalEntity?, String>
 sidebarAudioRecordingLinkedEntryProvider = FutureProvider.autoDispose
     .family<JournalEntity?, String>((ref, id) {
-      return getIt<JournalDb>().journalEntityById(id);
+      return ref.read(journalDbProvider).journalEntityById(id);
     });
 
 bool sidebarAudioRecordingHasVisibleContent(WidgetRef ref) {

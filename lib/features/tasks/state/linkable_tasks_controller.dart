@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 
 /// Whether any task other than the one being viewed exists to be linked to.
 ///
@@ -73,12 +72,14 @@ class LinkableTasksController extends AsyncNotifier<bool> {
       // looking at over a transient query failure — the next write refreshes
       // it anyway. Reported so the failure is not silent.
       if (!ref.mounted || generation != _generation) return;
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'LinkableTasksController',
-        subDomain: 'refresh',
-        stackTrace: stackTrace,
-      );
+      ref
+          .read(loggingServiceProvider)
+          .captureException(
+            error,
+            domain: 'LinkableTasksController',
+            subDomain: 'refresh',
+            stackTrace: stackTrace,
+          );
     }
   }
 
@@ -90,12 +91,14 @@ class LinkableTasksController extends AsyncNotifier<bool> {
     // Two rows, not a count: the current task is itself a candidate row, so a
     // limit of one cannot distinguish "only this task" from "this task and
     // others".
-    final tasks = await getIt<JournalDb>().getTasks(
-      starredStatuses: const [false, true],
-      taskStatuses: allTaskStatuses,
-      categoryIds: categoryIds,
-      limit: 2,
-    );
+    final tasks = await ref
+        .read(journalDbProvider)
+        .getTasks(
+          starredStatuses: const [false, true],
+          taskStatuses: allTaskStatuses,
+          categoryIds: categoryIds,
+          limit: 2,
+        );
     return tasks.any((task) => task is Task && task.meta.id != taskId);
   }
 }
