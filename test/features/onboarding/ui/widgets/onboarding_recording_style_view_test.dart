@@ -4,8 +4,8 @@ import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_view.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:material_ui/material_ui.dart';
 

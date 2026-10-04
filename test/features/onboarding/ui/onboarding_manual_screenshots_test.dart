@@ -29,7 +29,6 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
@@ -37,6 +36,7 @@ import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';

@@ -6,12 +6,12 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_type_filter.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/widgets/search/entry_type_filter.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_utils/fake_journal_page_controller.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Default state for config-flag tests where no call tracking is needed.
 const hDefaultState = JournalPageState(

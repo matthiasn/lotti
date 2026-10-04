@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/media/file_image_size.dart';
-import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 

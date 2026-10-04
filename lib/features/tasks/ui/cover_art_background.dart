@@ -3,8 +3,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 

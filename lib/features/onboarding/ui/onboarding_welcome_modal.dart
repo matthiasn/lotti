@@ -12,7 +12,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
@@ -23,6 +22,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';

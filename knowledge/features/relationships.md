@@ -61,7 +61,7 @@ sources:
     title: PersonaAvatar — the four faces of a person
     last_modified: 2026-09-09
   - id: image-resolver
-    resource: ../../lib/widgets/media/journal_image_resolver.dart
+    resource: ../../lib/features/journal/ui/widgets/journal_image_resolver.dart
     title: JournalImageResolver — file, stand-in or nothing, and when that changes
     last_modified: 2026-09-09
   - id: avatar-actions

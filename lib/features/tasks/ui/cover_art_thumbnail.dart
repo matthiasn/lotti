@@ -1,4 +1,4 @@
-import 'package:lotti/widgets/media/journal_image_resolver.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 

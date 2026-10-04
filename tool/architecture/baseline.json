@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 63,
+  "_total": 47,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -24,7 +24,6 @@
     "lib/features/categories/state/categories_list_controller.dart": ["lockdown"],
     "lib/features/categories/ui/pages/category_details_page.dart": ["agents","ai","github"],
     "lib/features/categories/ui/widgets/category_selection_icon_button.dart": ["journal"],
-    "lib/features/daily_os_next/state/daily_os_onboarding_session_controller.dart": ["onboarding"],
     "lib/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart": ["onboarding"],
     "lib/features/demo/seed/demo_seeder.dart": ["onboarding"],
     "lib/features/demo/ui/demo_ai_setup_sheet.dart": ["onboarding"],
@@ -39,23 +38,12 @@
     "lib/features/knowledge_graph/ui/entry_detail_sidebar.dart": ["tasks"],
     "lib/features/labels/ui/widgets/entry_labels_display.dart": ["journal"],
     "lib/features/notifications/ui/widgets/notification_bell.dart": ["goals"],
-    "lib/features/ratings/ui/rating_summary.dart": ["journal"],
-    "lib/features/recent_searches/ui/recent_search_opener.dart": ["habits","journal","projects"],
-    "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": ["onboarding"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github"],
     "lib/features/tasks/ui/header/desktop_task_header_connector.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_pickers.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_section.dart": ["projects"],
     "lib/features/tasks/ui/widgets/task_showcase_chips.dart": ["projects"],
     "lib/widgets/charts/habits/dashboard_habits_chart.dart": ["habits"],
-    "lib/widgets/charts/habits/habit_chart_stats.dart": ["habits"],
-    "lib/widgets/charts/habits/habit_completion_rate_chart.dart": ["habits"],
-    "lib/widgets/create/suggest_measurement.dart": ["dashboards"],
-    "lib/widgets/media/journal_image_resolver.dart": ["journal"],
-    "lib/widgets/misc/sidebar_activity_summary.dart": ["agents","speech"],
-    "lib/widgets/misc/sidebar_audio_recording_section.dart": ["speech"],
-    "lib/widgets/nav_bar/mobile_activity_island.dart": ["journal","speech"],
-    "lib/widgets/search/entry_type_filter.dart": ["journal"],
     "lib/widgets/settings/settings_detail_scaffold.dart": ["keyboard"]
   }
 }

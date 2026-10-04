@@ -7,11 +7,11 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_type_filter.dart';
 import 'package:lotti/features/journal/ui/widgets/logbook_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

@@ -119,7 +119,7 @@ Note: HabitsCubit is NOT registered in GetIt - it's created directly in the Bloc
 | `lib/features/habits/ui/widgets/habit_streaks.dart` | BlocBuilder for streak display |
 | `lib/features/habits/ui/widgets/habits_filter.dart` | BlocBuilder + context.read for category filter |
 | `lib/features/habits/ui/widgets/habits_search.dart` | BlocBuilder + context.read for search |
-| `lib/widgets/charts/habits/habit_completion_rate_chart.dart` | BlocBuilder + context.read for chart |
+| `lib/features/habits/ui/charts/habit_completion_rate_chart.dart` | BlocBuilder + context.read for chart |
 
 ### Existing Tests
 
@@ -442,7 +442,7 @@ class HabitsSearchWidget extends ConsumerWidget {
 
 #### 3g. HabitCompletionRateChart
 
-**File:** `lib/widgets/charts/habits/habit_completion_rate_chart.dart`
+**File:** `lib/features/habits/ui/charts/habit_completion_rate_chart.dart`
 
 Convert to `ConsumerWidget`:
 
@@ -535,7 +535,7 @@ test('buildPages builds HabitsTabPage', () {
 | `lib/features/habits/ui/widgets/habit_streaks.dart` | BlocBuilder → ConsumerWidget |
 | `lib/features/habits/ui/widgets/habits_filter.dart` | BlocBuilder → ConsumerWidget + Consumer |
 | `lib/features/habits/ui/widgets/habits_search.dart` | BlocBuilder → ConsumerWidget |
-| `lib/widgets/charts/habits/habit_completion_rate_chart.dart` | BlocBuilder → ConsumerWidget |
+| `lib/features/habits/ui/charts/habit_completion_rate_chart.dart` | BlocBuilder → ConsumerWidget |
 | `test/features/habits/ui/pages/habits_tab_page_test.dart` | BlocProvider → ProviderScope |
 | `test/beamer/locations/habits_location_test.dart` | Update expectations |
 
@@ -666,7 +666,7 @@ void main() {
 - `lib/features/habits/ui/widgets/habits_filter.dart` - ConsumerWidget with Consumer for modal
 - `lib/features/habits/ui/widgets/habits_search.dart` - ConsumerWidget
 - `lib/features/habits/ui/widgets/status_segmented_control.dart` - Updated import
-- `lib/widgets/charts/habits/habit_completion_rate_chart.dart` - ConsumerWidget
+- `lib/features/habits/ui/charts/habit_completion_rate_chart.dart` - ConsumerWidget
 - `test/features/habits/ui/pages/habits_tab_page_test.dart` - Riverpod overrides
 - `test/beamer/locations/habits_location_test.dart` - Updated expectations
 

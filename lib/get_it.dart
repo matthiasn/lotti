@@ -47,7 +47,6 @@ import 'package:lotti/features/notifications/routing/notification_launch_routing
 import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -89,6 +88,7 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';

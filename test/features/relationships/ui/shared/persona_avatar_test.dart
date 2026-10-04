@@ -7,13 +7,13 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/thumbhash.dart';
-import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:material_ui/material_ui.dart';
 

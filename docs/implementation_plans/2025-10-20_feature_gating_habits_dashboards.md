@@ -61,7 +61,7 @@ Config flags used:
 
 Files:
 
-- lib/widgets/search/entry_type_filter.dart
+- lib/features/journal/ui/widgets/entry_type_filter.dart
 - lib/features/journal/utils/entry_type_gating.dart (new)
 
 3) JournalPageCubit: enforce gating at query time
@@ -178,7 +178,7 @@ General
 ## Files to Modify / Add
 
 - New: `lib/features/journal/utils/entry_type_gating.dart`.
-- Modify: `lib/widgets/search/entry_type_filter.dart` (gating + localization + stable loading).
+- Modify: `lib/features/journal/ui/widgets/entry_type_filter.dart` (gating + localization + stable loading).
 - Modify: `lib/blocs/journal/journal_page_cubit.dart` (intersect allowed types before query;
   subscribe to flags).
 - Modify: `lib/features/settings/ui/pages/settings_page.dart` (gate cards via flags; convert to

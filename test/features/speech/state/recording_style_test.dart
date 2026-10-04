@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 
 import 'recording_style_test_utils.dart';
 

@@ -10,8 +10,8 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_utils/fake_journal_page_controller.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import 'entry_type_filter_test_helpers.dart';
 
 void main() {

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Holds the single active Daily OS onboarding walkthrough session, or `null`

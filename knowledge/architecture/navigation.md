@@ -17,7 +17,7 @@ sources:
     title: MyBeamerApp and AppScreen
     last_modified: 2026-10-02
   - id: activity-island
-    resource: ../../lib/widgets/nav_bar/mobile_activity_island.dart
+    resource: ../../lib/beamer/chrome/mobile_activity_island.dart
     title: The activity island floating above the mobile navigation
     last_modified: 2026-09-15
   - id: contact-support-row
@@ -694,7 +694,7 @@ with the slide. With animations disabled the panel jumps instead of sliding.
 
 While a time recording and/or an audio recording runs somewhere other than
 the page on screen, the mobile shell floats one glass capsule —
-[`MobileActivityIsland`](../../lib/widgets/nav_bar/mobile_activity_island.dart)
+[`MobileActivityIsland`](../../lib/beamer/chrome/mobile_activity_island.dart)
 — `spacing.step3` above the launcher. A running timer is a red dot
 (`alert.error`) and its elapsed time; a live recording is the level orb and its
 elapsed time; both at once share the capsule with a hairline between them.
@@ -937,7 +937,7 @@ Two rules hold it together:
 | The two-stroke menu mark | [`lib/features/design_system/components/navigation/ds_menu_glyph.dart`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart) |
 | The sidebar both form factors host | [`lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart) |
 | Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart) |
-| Activity summary above Settings (desktop rail and drawer) | [`lib/widgets/misc/sidebar_activity_summary.dart`](../../lib/widgets/misc/sidebar_activity_summary.dart) |
+| Activity summary above Settings (desktop rail and drawer) | [`lib/beamer/chrome/sidebar_activity_summary.dart`](../../lib/beamer/chrome/sidebar_activity_summary.dart) |
 | Recents list in the drawer | [`lib/features/recent_searches/`](../../lib/features/recent_searches) |
 | Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |

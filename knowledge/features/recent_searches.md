@@ -208,4 +208,4 @@ nothing stored does the section render nothing at all, heading included.
 | Settings-backed store | [`state/recent_searches_repository.dart`](../../lib/features/recent_searches/state/recent_searches_repository.dart) |
 | Loading, settle timers, writes | [`state/recent_searches_controller.dart`](../../lib/features/recent_searches/state/recent_searches_controller.dart) |
 | The Recents section | [`ui/recent_searches_section.dart`](../../lib/features/recent_searches/ui/recent_searches_section.dart) |
-| Running a search again | [`ui/recent_search_opener.dart`](../../lib/features/recent_searches/ui/recent_search_opener.dart) |
+| Running a search again | [`ui/recent_search_opener.dart`](../../lib/beamer/recent_search_opener.dart) |

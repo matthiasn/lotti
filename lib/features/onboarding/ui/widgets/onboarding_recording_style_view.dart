@@ -1,8 +1,8 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/recording_style_picker.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The "pick your recording look" step: the user chooses between two themed

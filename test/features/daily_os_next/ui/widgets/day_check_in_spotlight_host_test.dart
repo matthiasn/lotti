@@ -5,8 +5,8 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_c
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

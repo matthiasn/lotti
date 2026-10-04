@@ -7,11 +7,11 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/media/file_image_size.dart';
-import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 

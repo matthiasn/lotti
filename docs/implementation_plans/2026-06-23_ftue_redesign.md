@@ -31,7 +31,7 @@ backdrop, which loops beautifully but **snaps at the loop seam**.
 
 ## Work items
 
-- **A. Preference** — `lib/features/onboarding/state/recording_style.dart`:
+- **A. Preference** — `lib/features/speech/state/recording_style.dart`:
   `enum RecordingStyle { analogue, modern }` + `recordingStyleProvider`
   (`AsyncNotifier`) backed by `AppPrefs` (key `recording_visual_style`, default `modern`).
 - **B. Picker** — `OnboardingRecordingStyleView` + host: both pairs as selectable preview
