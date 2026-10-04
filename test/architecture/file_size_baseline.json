@@ -22,7 +22,7 @@
     "lib/features/goals/state/goal_progress_view.dart": 1169,
     "lib/features/goals/ui/pages/create_goal_agent_page.dart": 1542,
     "lib/features/goals/ui/pages/goal_agent_detail_page.dart": 1086,
-    "lib/features/goals/workflow/goal_agent_workflow.dart": 1920,
+    "lib/features/goals/workflow/goal_agent_workflow.dart": 1609,
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": 1222,
     "lib/features/knowledge_graph/ui/node_inspector_panel.dart": 1033,
     "lib/features/onboarding/ui/widgets/neural_constellation.dart": 1172,

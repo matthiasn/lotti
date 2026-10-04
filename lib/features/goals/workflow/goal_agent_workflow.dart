@@ -60,6 +60,8 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 part 'goal_agent_workflow_turns.dart';
+part 'goal_agent_workflow_wake.dart';
+part 'goal_agent_workflow_requests.dart';
 
 /// Backward-compatible name used throughout the workflow and its tests.
 const Duration goalAdLifetime = nudgeBannerLifetime;
@@ -264,25 +266,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
       previousAssistantMessage: previousAssistantMessage,
     );
 
-    final head = await _repository.getEntity(goalSpecHeadId(agentId));
-    if (head is! GoalSpecHeadEntity) {
-      return pendingUserMessage == null
-          ? const WakeResult(success: true)
-          : const WakeResult(
-              success: false,
-              error: 'goal chat cannot run without a goal spec head',
-            );
-    }
-    var version = await _repository.getEntity(head.versionId);
-    if (version is! GoalSpecVersionEntity) {
-      return WakeResult(
-        success: false,
-        error:
-            'goal spec head ${DomainLogger.sanitizeId(head.versionId)} '
-            'points at nothing',
-      );
-    }
-
     // A late-processed escalation (offline device, poll across midnight)
     // must evaluate the period that armed it, not the day it happens to
     // run on — the wake record is period-scoped for exactly this reason.
@@ -291,118 +274,26 @@ class GoalAgentWorkflow with AgentErrorLogging {
     );
     final overdueEscalation = _isPastPeriod(escalationPeriod, now);
     final reference = _escalationReference(escalationPeriod, now);
-    // A delayed escalation may outlive a spec revision: the period's
-    // register row records the version that actually armed the wake, and
-    // judging the old period against new criteria would publish an
-    // unrelated status. Fall back to the head when that version is gone.
-    if (escalationPeriod != null) {
-      final register = await _repository.getEntity(
-        goalProgressId(agentId, escalationPeriod),
-      );
-      if (register is GoalProgressEntity &&
-          register.specVersionId != version.id) {
-        final armed = await _repository.getEntity(register.specVersionId);
-        if (armed is GoalSpecVersionEntity) version = armed;
-      }
-    }
-    // Disconnected same-ordinal approvals can leave TWO active version
-    // rows while the head names only one. A wake resolved onto the
-    // non-head active version would pay for inference the transactional
-    // fence then discards — no-op here, before any message or model
-    // spend. (Superseded versions pass: the stale-escalation path is
-    // deliberate and report-only.)
-    if (version.status == GoalSpecVersionStatus.active &&
-        version.id != head.versionId) {
-      return const WakeResult(success: true);
-    }
-    // Derive and persist take their turn with every other Phase A run of
-    // this goal on this device (GoalAgentPhaseA.runExclusive).
-    // A register that moved under the derivation is derived again. One
-    // still moving after that ends the wake like a fenced write: a report
-    // must describe the snapshot that was committed, and the next Phase A
-    // tick re-escalates a report that no longer matches the day.
-    final evaluatedVersion = version;
-    final (derivation, persisted) = await GoalAgentPhaseA.runExclusive(
-      agentId,
-      () async {
-        late GoalWakeDerivation derivation;
-        var outcome = GoalPersistOutcome.stale;
-        for (
-          var attempt = 0;
-          attempt < goalPersistAttempts && outcome == GoalPersistOutcome.stale;
-          attempt++
-        ) {
-          derivation = await _phaseA.deriveWakeFacts(
-            agentId: agentId,
-            version: evaluatedVersion,
-            now: reference,
-            timeEntryEvidenceStart: agentIdentity.createdAt,
-            timeEntryEndExclusive: overdueEscalation
-                ? _periodEndExclusive(escalationPeriod!)
-                : null,
-          );
-          outcome = reportRefresh
-              ? await _phaseA.persistDerivation(
-                  agentId: agentId,
-                  derivation: derivation,
-                  now: now,
-                )
-              : GoalPersistOutcome.persisted;
-        }
-        return (derivation, outcome == GoalPersistOutcome.persisted);
-      },
+    final (:version, :exit) = await _resolveWakeSpec(
+      agentId: agentId,
+      escalationPeriod: escalationPeriod,
+      interactive: pendingUserMessage != null,
     );
-    if (!persisted) return const WakeResult(success: true);
-    // Phase A persisted the transition's register row BEFORE arming this
-    // wake, so re-deriving sees the new status as previousStatus and the
-    // transition vanishes. The wake record carries the PRE-transition
-    // status as a baseline token (same-day double transitions make the
-    // prior-day row an insufficient reconstruction); the prior day is the
-    // fallback for wakes armed before the token existed.
-    final baselineName = goalEscalationBaselineFromTriggerTokens(
-      triggerTokens,
+    if (version == null) return exit!;
+    final derived = await _deriveForWake(
+      agentIdentity: agentIdentity,
+      version: version,
+      triggerTokens: triggerTokens,
+      now: now,
+      reference: reference,
+      escalationPeriod: escalationPeriod,
+      overdueEscalation: overdueEscalation,
+      reportRefresh: reportRefresh,
     );
-    final baseline = GoalTrackStatus.values
-        .where((status) => status.name == baselineName)
-        .firstOrNull;
-    final facts = GoalWakeFacts(
-      trackStatus: derivation.facts.trackStatus,
-      previousStatus:
-          baseline ??
-          (reportRefresh
-              ? derivation.facts.previousStatus
-              : derivation.priors.firstOrNull?.trackStatus),
-      evaluation: derivation.facts.evaluation,
-      shortTermAttainment: derivation.facts.shortTermAttainment,
-      quantitativeObservationsByType:
-          derivation.facts.quantitativeObservationsByType,
-      categoryTimeSessionsByCategory:
-          derivation.facts.categoryTimeSessionsByCategory,
-      labelTimeEntriesByCriterion: derivation.facts.labelTimeEntriesByCriterion,
-      categoryTimeEvidenceStart: derivation.facts.categoryTimeEvidenceStart,
-      categoryTimeEvidenceEnd: derivation.facts.categoryTimeEvidenceEnd,
-      labelTimeEvidenceStart: derivation.facts.labelTimeEvidenceStart,
-      labelTimeEvidenceEnd: derivation.facts.labelTimeEvidenceEnd,
-      hasActiveCategoryTimer: derivation.facts.hasActiveCategoryTimer,
-      hasActiveLabelTimer: derivation.facts.hasActiveLabelTimer,
-    );
+    if (derived == null) return const WakeResult(success: true);
+    final (:derivation, :facts) = derived;
 
-    // Spec-scoped like the persistence snapshot: an old-spec fresh
-    // active must not convince _adRequired that the current goal is
-    // covered, and an old-spec retired row must not be offered for
-    // rerun. Dismissals pass — the quiet window binds the goal.
-    final nudges =
-        (await _repository.getEntitiesByAgentId(
-              agentId,
-              type: AgentEntityTypes.goalNudge,
-            ))
-            .whereType<GoalNudgeEntity>()
-            .where(
-              (n) =>
-                  n.deletedAt == null &&
-                  _specScopedRow(n, (version! as GoalSpecVersionEntity).id),
-            )
-            .toList();
+    final nudges = await _specScopedNudges(agentId, version.id);
     final resolved = await _resolveModel(agentIdentity);
     if (resolved == null) {
       // The escalation record is already consumed and Phase A will not
@@ -465,43 +356,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reference: reference,
     );
 
-    final renderedFacts = _factsRenderer.render(
+    final factsBlock = await _composeFactsBlock(
       version: version,
       facts: facts,
-      priorRegisters: derivation.priors,
+      derivation: derivation,
       nudges: nudges,
-      evaluationReference: reference,
+      reference: reference,
       observations: observations,
-      unansweredUserMessages: [?pendingUserMessage],
-      recentDialogue: [
-        for (final entry in recentDialogue)
-          GoalChatHistoryService.toJson(entry),
-      ],
+      pendingUserMessage: pendingUserMessage,
+      recentDialogue: recentDialogue,
       userVoice: userVoice,
-      criterionNames: await _criterionNames(version.criteria),
+      reportRefresh: reportRefresh,
+      userRequestedReport: userRequestedReport,
+      userRequestedAd: userRequestedAd,
     );
-    var factsBlock = pendingUserMessage == null
-        ? renderedFacts
-        : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
-    if (reportRefresh) {
-      factsBlock =
-          '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER WATCHED '
-          'EVIDENCE CHANGED. Update the standing report from the '
-          'authoritative FACTS.';
-    }
-    if (userRequestedReport) {
-      factsBlock =
-          '$factsBlock\n\nUSER EXPLICITLY ASKED FOR THE STANDING REPORT TO '
-          'CHANGE. Call update_goal_report in this turn with the full '
-          'rewritten report honouring their instruction; replying without it '
-          'leaves the report they complained about untouched.';
-    }
-    if (userRequestedAd) {
-      factsBlock =
-          '$factsBlock\n\nUSER EXPLICITLY REQUESTED A NEW BANNER AD. This '
-          'request overrides dismissal cooldown. Create the replacement now; '
-          'do not claim that cooldown is system-wide or immutable.';
-    }
 
     if (pendingUserMessage == null) {
       await _persistUserMessage(
@@ -513,80 +381,29 @@ class GoalAgentWorkflow with AgentErrorLogging {
       );
     }
 
-    // The ids retire/rerun may legally reference: exactly what the FACTS
-    // block offered (active ads + the reusable library).
-    final activeAdIds = {
-      for (final n in nudges.where((n) => n.status == NudgeStatus.active)) n.id,
-    };
-    final knownAdIds = {
-      ...activeAdIds,
-      for (final n in _factsRenderer.reusableTopRated(nudges)) n.id,
-    };
-    final strategy = GoalAgentStrategy(
-      syncService: _syncService,
+    final strategy = _goalStrategy(
       agentId: agentId,
       threadId: threadId,
       runKey: runKey,
-      knownAdIds: knownAdIds,
-      activeAdIds: activeAdIds,
-      allowedCurrentActionCriterionIds: overdueEscalation
-          ? const {}
-          : _factsRenderer.healthLoggingNeededCriterionIds(
-              criteria: version.criteria,
-              facts: facts,
-              evaluationReference: reference,
-            ),
-      // The deterministic status is authoritative: a report claiming
-      // anything else is rejected in-conversation.
-      expectedStatus: facts.trackStatus,
-      expectedRollingAggregates: goalRollingAggregateStrings(
-        version.criteria,
-        facts.evaluation.results,
-      ),
+      nudges: nudges,
+      version: version,
+      facts: facts,
+      reference: reference,
+      overdueEscalation: overdueEscalation,
     );
 
     final allTools = [
       for (final tool in goalAgentTools) tool.toChatCompletionTool(),
     ];
-
-    // A tool that is not on the wire cannot be called. The deterministic tier
-    // already decides whether a banner is permitted (`automaticGoalAdEligible`
-    // plus the dismissal cooldown), so on a scheduled wake that has ruled one
-    // out the ad tools are simply withheld rather than offered and forbidden
-    // in prose. Ad over-creation was the single largest failure mode across
-    // every evaluated model, and prompt wording could only trade it against
-    // skipping ads policy requires — withholding removes the choice.
-    //
-    // The P5 override is keyed on the DETERMINISTIC request detector, not on
-    // "a message exists". Merely being spoken to is not a request for a
-    // banner, and treating it as one left the ad tools on the wire for every
-    // dialogue turn — the largest remaining failure class across every
-    // evaluated model, and one whose calls persistence discards anyway.
-    //
-    // `userRequestedAd` is the same signal `interactiveAdRequested` already
-    // gates persistence on, so withholding here cannot refuse a banner the
-    // wake would have kept: it only stops paying to author one that the
-    // transaction would drop.
-    final adToolsPermitted =
-        userRequestedAd ||
-        (_adsEligible(facts, derivation.priors) &&
-            !_factsRenderer.dismissalCooldownActive(nudges, now));
-    // The same reasoning for `reply_to_user`. On a wake with no message
-    // waiting, persistence reads only plain final prose and ignores the
-    // reply tool entirely, so every such call was paid for and thrown away —
-    // and a model that took the offer posted an unsolicited status update the
-    // contract calls nagging. Withholding it makes that impossible instead of
-    // merely discouraged.
-    final replyPermitted = pendingUserMessage != null;
-    final tools = [
-      for (final tool in allTools)
-        if ((adToolsPermitted ||
-                (tool.function.name != GoalAgentToolNames.createGoalAd &&
-                    tool.function.name != GoalAgentToolNames.rerunGoalAd)) &&
-            (replyPermitted ||
-                tool.function.name != GoalAgentToolNames.replyToUser))
-          tool,
-    ];
+    final tools = _wakeTools(
+      allTools: allTools,
+      facts: facts,
+      derivation: derivation,
+      nudges: nudges,
+      now: now,
+      userRequestedAd: userRequestedAd,
+      pendingUserMessage: pendingUserMessage,
+    );
     final inferenceRepo = CloudInferenceWrapper(
       cloudRepository: _cloudInferenceRepository,
       geminiThinkingMode: resolved.geminiThinkingMode,
@@ -1732,134 +1549,6 @@ List<String> goalRollingAggregateStrings(
         if (result.sampleCount > 0)
           '${roundGoalAggregate(result.actual, against: result.target)}',
   ];
-}
-
-bool isExplicitGoalAdReplacementRequest(
-  String? message, {
-  String? previousAssistantMessage,
-}) {
-  if (message == null) return false;
-  final normalized = message.toLowerCase().trim();
-  if (_isShortGoalAdAffirmation(normalized) &&
-      _offersGoalBanner(previousAssistantMessage)) {
-    return true;
-  }
-  final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
-  if (!mentionsAd) return false;
-  final declinesReplacement = RegExp(
-    r"\b(?:don't|dont|do not|never)\s+"
-    r'(?:want|need|replace|show|give|make|create|serve)\b',
-  ).hasMatch(normalized);
-  if (declinesReplacement) return false;
-  final isVisibilityRequest = RegExp(
-    r'\b(?:snooze|hide|dismiss|remove|stop|pause)\b',
-  ).hasMatch(normalized);
-  if (isVisibilityRequest) return false;
-  final directReplacementVerb = RegExp(
-    r'\b(?:new|another|replacement|replace|create|make|give|serve)\b',
-  ).hasMatch(normalized);
-  final qualifiedRequest = RegExp(
-    r'\b(?:show|want|need)\b.*\b(?:new|another|replacement)\b',
-  ).hasMatch(normalized);
-  final requestsBanner = RegExp(
-    r'\b(?:want|need)\b[^.!?]{0,80}\b(?:banner|ad|advert)\b|'
-    r'\bshow\s+me\b[^.!?]{0,60}\b(?:banner|ad|advert)\b',
-  ).hasMatch(normalized);
-  final reportsMissingBanner = RegExp(
-    r'\b(?:see|have|got)\s+no\s+(?:banner|ad|advert)\b|'
-    r'\b(?:banner|ad|advert)\s+(?:is\s+)?(?:missing|not\s+(?:showing|visible))\b|'
-    r"\bwhere(?:'s|\s+is)\s+(?:my\s+|the\s+)?(?:banner|ad|advert)\b",
-  ).hasMatch(normalized);
-  return directReplacementVerb ||
-      qualifiedRequest ||
-      requestsBanner ||
-      reportsMissingBanner;
-}
-
-/// True when a chat message asks for the STANDING REPORT itself to change —
-/// shorter, restructured, sectioned, less repetitive — rather than asking a
-/// question about the goal.
-///
-/// The report is a stored artifact: a reply alone leaves the user reading the
-/// same text they complained about. Like the ad heuristic this is an English
-/// fast path that forces a forgotten tool call; the language-independent
-/// carrier is the model choosing `update_goal_report` itself, which the
-/// system prompt asks for explicitly.
-bool isExplicitGoalReportUpdateRequest(
-  String? message, {
-  String? previousAssistantMessage,
-}) {
-  if (message == null) return false;
-  final normalized = message.toLowerCase().trim();
-  // "Yes, please" after the agent offers to rewrite the report is the same
-  // request in its most common form; the offer is the only place the subject
-  // is named, exactly as the banner path treats an affirmation.
-  if (_isShortGoalAdAffirmation(normalized) &&
-      _offersGoalReportRewrite(previousAssistantMessage)) {
-    return true;
-  }
-  final mentionsReport = RegExp(
-    r'\b(?:report|summary|write[-\s]?up)\b',
-  ).hasMatch(normalized);
-  if (!mentionsReport) return false;
-  // A question ABOUT the report is not a request to rewrite it. Leading
-  // interrogatives only: "can/could/would you shorten it" are requests, and
-  // they are deliberately not in this set.
-  final asksAboutReport = RegExp(
-    r'^(?:how|what|why|when|where|which|who)\b',
-  ).hasMatch(normalized);
-  if (asksAboutReport) return false;
-  // Negation binds loosely in real messages — "don't want you to change the
-  // report", "please don't make the report shorter" — so any negation ahead
-  // of a change word within the same clause declines the rewrite. Forcing a
-  // rewrite against an explicit refusal overwrites a report the user asked
-  // to keep, which is worse than missing an implicit request.
-  final declinesChange = RegExp(
-    r"\b(?:don't|dont|do not|never|no\s+need\s+to|rather\s+not|"
-    r'stop|leave|keep)\b[^.!?]{0,60}\b(?:change|update|rewrite|rewriting|'
-    'restructure|touch|shorten|shorter|concise|condense|trim|tighten|'
-    r'split|format|structure|improve|less|make|alone|as\s+is)\b',
-  ).hasMatch(normalized);
-  if (declinesChange) return false;
-  return RegExp(
-    r'\b(?:rewrite|rewrote|restructure|reorganise|reorganize|shorten|shorter|'
-    'concise|condense|trim|tighten|split|bullets?|sections?|format|structure|'
-    r'update|refresh|change|improve|less)\b|'
-    r'\bwall\s+of\s+text\b|'
-    r'\bbreak\s+(?:it|this|that|the\s+report)?\s*up\b',
-  ).hasMatch(normalized);
-}
-
-/// Whether the agent's previous visible reply OFFERED to rewrite the standing
-/// report, which is what makes a bare "yes" a rewrite request.
-bool _offersGoalReportRewrite(String? message) {
-  if (message == null) return false;
-  final normalized = message.toLowerCase();
-  if (!RegExp(r'\b(?:report|summary|write[-\s]?up)\b').hasMatch(normalized)) {
-    return false;
-  }
-  return RegExp(
-    r"\b(?:if\s+you(?:'d|\s+would)?\s+(?:like|want)|want\s+me\s+to|"
-    r'would\s+you\s+like|shall\s+i|should\s+i|say\s+the\s+word|'
-    r'i\s+can\s+(?:rewrite|restructure|shorten|split|reformat)|'
-    r'let\s+me\s+(?:rewrite|restructure|shorten|split|reformat))\b',
-  ).hasMatch(normalized);
-}
-
-bool _isShortGoalAdAffirmation(String message) => RegExp(
-  r'^(?:yes|yep|yeah|sure|ok|okay|please|do\s+it|go\s+ahead|make\s+it\s+happen)'
-  r'(?:[,.]?\s+(?:please|now))?[.!]*$',
-).hasMatch(message);
-
-bool _offersGoalBanner(String? message) {
-  if (message == null) return false;
-  final normalized = message.toLowerCase();
-  if (!RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized)) return false;
-  return RegExp(
-    r"\b(?:if\s+you(?:'d|\s+would)?\s+(?:like|want)|want\s+me\s+to|"
-    r'would\s+you\s+like|shall\s+i|should\s+i|say\s+the\s+word|'
-    r'ask\s+me|tell\s+me)\b',
-  ).hasMatch(normalized);
 }
 
 /// Near-duplicate dedupe key over the banner copy: the same words with
