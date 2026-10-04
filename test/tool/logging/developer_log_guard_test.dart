@@ -163,6 +163,6 @@ void f(Logger other) {
 
     expect(readBaseline(file), counts);
     expect(encodeBaseline(readBaseline(file)), encoded);
-    expect(encoded, contains('"_total": 5'));
+    expect(encoded, isNot(contains('_total')));
   });
 }

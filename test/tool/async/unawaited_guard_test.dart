@@ -118,6 +118,6 @@ void f() {
       ..writeAsStringSync(encodeBaseline({'lib/b.dart': 2, 'lib/a.dart': 1}));
 
     expect(readBaseline(file), {'lib/a.dart': 1, 'lib/b.dart': 2});
-    expect(file.readAsStringSync(), contains('"_total": 3'));
+    expect(file.readAsStringSync(), isNot(contains('_total')));
   });
 }

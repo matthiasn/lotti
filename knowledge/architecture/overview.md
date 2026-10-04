@@ -130,7 +130,7 @@ Two kinds of import break it:
   `ui`, `widgets`, `pages`, `routing`, `view(s)` or `widgetbook` directories.
 
 The imports that already broke the order are listed in
-`tool/architecture/baseline.json`, whose `_total` is the number left to fix.
+`tool/architecture/baseline.json`; `make layer_check` prints the number left to fix.
 A new break fails CI, and so does a listed one that no longer occurs, until
 `--update-baseline` drops it — so the list only ever shrinks, and the change
 that removes an import records it. A feature directory missing from the order
