@@ -572,3 +572,190 @@ List<Task> _penguinExpansionTasks({
     ),
   ];
 }
+
+/// The original nine penguin tasks, in the positions the manual relies on.
+List<Task> _penguinOriginalTasks({
+  required DemoSeedText t,
+  required DemoDates dates,
+  required _TaskBuilder task,
+  required TaskStatus agendaStatus,
+  required TaskStatus cargoStatus,
+  required TaskStatus feederStatus,
+  required TaskStatus orbitalStatus,
+  required TaskStatus passengerStatus,
+}) {
+  return [
+    task(
+      id: manualRollCallTaskId,
+      title: t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+      description: t(
+        'Count every expedition penguin, check the tiny oxygen packs, '
+            'and record any suspiciously formal salutes.',
+        'Zähle alle Expeditionspinguine, prüfe die winzigen Sauerstoffpacks '
+            'und notiere verdächtig förmliche Grüße.',
+      ),
+      status: agendaStatus,
+      priority: TaskPriority.p2Medium,
+      due: dates.today(9),
+      coverArtId: manualRollCallCoverImageId,
+      labelIds: const [manualDemoProjectLabelId],
+      estimate: const Duration(minutes: 30),
+    ),
+    task(
+      id: manualOrbitalHabitatTaskId,
+      title: t(
+        'Inspect orbital penguin habitat',
+        'Pinguin-Habitat im Orbit inspizieren',
+      ),
+      description: t(
+        'Inspect pressure seals, confirm all 37 emperor penguins are '
+            'present, and route the sardine cargo pods before the live '
+            'Project Waddle demonstration.',
+        'Prüfe die Druckdichtungen, bestätige alle 37 Kaiserpinguine und '
+            'route die Sardinen-Frachtkapseln vor der Live-Demo von '
+            'Project Waddle.',
+      ),
+      status: orbitalStatus,
+      priority: TaskPriority.p1High,
+      due: dates.today(12),
+      coverArtId: manualHabitatCoverImageId,
+      labelIds: const [
+        manualDemoProjectLabelId,
+        manualDemoCriticalLabelId,
+      ],
+      estimate: const Duration(hours: 2),
+      checklistIds: [manualHabitatChecklistId],
+    ),
+    task(
+      id: manualLaunchReviewTaskId,
+      title: t(
+        'Project Waddle launch review',
+        'Startprüfung für Project Waddle',
+      ),
+      description: t(
+        'Review the ice-pad trajectory, confirm the snack manifest, '
+            'and make sure Mission Control has removed the fish-shaped '
+            'cursor from the launch display.',
+        'Prüfe die Flugbahn vom Eisstartplatz, bestätige die Snackliste '
+            'und stelle sicher, dass die Missionskontrolle den '
+            'fischförmigen Mauszeiger entfernt hat.',
+      ),
+      status: agendaStatus,
+      priority: TaskPriority.p1High,
+      due: dates.today(12),
+      coverArtId: manualLaunchReviewCoverImageId,
+      labelIds: const [manualDemoProjectLabelId],
+      estimate: const Duration(minutes: 45),
+    ),
+    task(
+      id: manualLunchTaskId,
+      title: t(
+        'Lunch (coffee is not a vegetable)',
+        'Mittagessen (Kaffee ist kein Gemüse)',
+      ),
+      description: t(
+        'Eat something recognizable as food before the robot '
+            'nutritionist files another orbital wellness incident.',
+        'Iss etwas, das als Essen erkennbar ist, bevor der '
+            'Roboter-Ernährungsberater den nächsten orbitalen '
+            'Gesundheitsvorfall meldet.',
+      ),
+      status: agendaStatus,
+      priority: TaskPriority.p3Low,
+      due: dates.today(13),
+      coverArtId: manualLunchCoverImageId,
+      labelIds: const [],
+      estimate: const Duration(hours: 1),
+    ),
+    task(
+      id: manualSardineFuturesTaskId,
+      title: t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
+      description: t(
+        "Lock the colony's Q3 sardine price before the Europa exchange "
+            'discovers why the emergency fish ceiling is shaped like a '
+            'penguin.',
+        'Sichere den Sardinenpreis der Kolonie für Q3, bevor die Europa-Börse '
+            'entdeckt, warum der Notfall-Fischdeckel wie ein Pinguin aussieht.',
+      ),
+      status: agendaStatus,
+      priority: TaskPriority.p1High,
+      due: dates.today(14, 30),
+      coverArtId: manualSardineFuturesCoverImageId,
+      labelIds: const [manualDemoProjectLabelId],
+      estimate: const Duration(hours: 1, minutes: 30),
+    ),
+    task(
+      id: manualFishFeederTaskId,
+      title: t(
+        'Recalibrate the zero-gravity fish feeder',
+        'Schwerelosen Fischfütterer neu kalibrieren',
+      ),
+      description: t(
+        'Run the low-orbit sardine test and stop the feeder from '
+            'launching lunch toward Mission Control.',
+        'Führe den Sardinentest im niedrigen Orbit aus und hindere den '
+            'Fütterer daran, das Mittagessen zur Missionskontrolle zu schießen.',
+      ),
+      status: feederStatus,
+      priority: TaskPriority.p0Urgent,
+      due: dates.today(15),
+      coverArtId: manualFishFeederCoverImageId,
+      labelIds: const [manualDemoCriticalLabelId],
+      estimate: const Duration(hours: 1, minutes: 30),
+    ),
+    task(
+      id: manualSardineCargoTaskId,
+      title: t(
+        'Confirm the interplanetary sardine cargo pods',
+        'Interplanetare Sardinen-Frachtkapseln bestätigen',
+      ),
+      description: t(
+        'Reconcile the cold-chain manifest with the colony dashboard '
+            'before the next supply shuttle leaves Europa.',
+        'Gleiche die Kühlketten-Frachtliste mit dem Kolonie-Dashboard ab, '
+            'bevor das nächste Versorgungsshuttle Europa verlässt.',
+      ),
+      status: cargoStatus,
+      priority: TaskPriority.p2Medium,
+      due: dates.tomorrow(9),
+      coverArtId: manualSardineCargoCoverImageId,
+      labelIds: const [manualDemoProjectLabelId],
+      estimate: const Duration(minutes: 45),
+    ),
+    task(
+      id: manualPenguinPassengerTaskId,
+      title: t(
+        'Ask Legal whether a penguin is a passenger',
+        'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
+      ),
+      description: t(
+        'Resolve whether Sir Flaps-a-Lot needs a boarding pass or a '
+            'cargo declaration before launch.',
+        'Kläre, ob Sir Flatterviel vor dem Start eine Bordkarte oder eine '
+            'Frachtdeklaration braucht.',
+      ),
+      status: passengerStatus,
+      priority: TaskPriority.p3Low,
+      due: dates.nextMonday(16),
+      coverArtId: manualPenguinPassengerCoverImageId,
+      labelIds: const [manualDemoProjectLabelId],
+      estimate: const Duration(minutes: 30),
+    ),
+    task(
+      id: manualHeadsetWalkTaskId,
+      title: t('Walk without a headset', 'Spaziergang ohne Headset'),
+      description: t(
+        'Take one quiet lap around the orbital ice garden without '
+            'turning it into a briefing, podcast, or emergency call.',
+        'Dreh eine ruhige Runde durch den orbitalen Eisgarten, ohne daraus '
+            'ein Briefing, einen Podcast oder einen Notruf zu machen.',
+      ),
+      status: agendaStatus,
+      priority: TaskPriority.p3Low,
+      due: dates.today(18),
+      coverArtId: manualHeadsetWalkCoverImageId,
+      labelIds: const [],
+      estimate: const Duration(minutes: 30),
+    ),
+  ];
+}

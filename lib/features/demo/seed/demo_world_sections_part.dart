@@ -485,3 +485,83 @@ List<HabitDefinition> _penguinHabits({
     ),
   ];
 }
+
+typedef _CompletionBuilder =
+    HabitCompletionEntry Function({
+      required String habitId,
+      required int daysAgo,
+      required HabitCompletionType type,
+      required int hour,
+      String categoryId,
+    });
+
+/// The habits' lived-in history: a near-unbroken roll call with one
+/// skipped day, a patchier seal walk with a genuine failure, both stopping
+/// short of today so the demo opens with something left to tick off.
+List<HabitCompletionEntry> _penguinHabitCompletions({
+  required _CompletionBuilder completion,
+}) {
+  return <HabitCompletionEntry>[
+    for (var day = _habitHistoryDays; day >= 1; day--)
+      if (day != 5)
+        completion(
+          habitId: manualRollCallHabitId,
+          daysAgo: day,
+          type: day == 9
+              ? HabitCompletionType.skip
+              : (HabitCompletionType.success),
+          hour: 6,
+        ),
+    for (var day = _habitHistoryDays; day >= 1; day--)
+      if (day % 3 != 0)
+        completion(
+          habitId: manualHabitatSealsHabitId,
+          daysAgo: day,
+          type: day == 4
+              ? HabitCompletionType.fail
+              : (HabitCompletionType.success),
+          hour: 7,
+        ),
+    for (var day = _habitHistoryDays; day >= 1; day--)
+      if (day % 7 != 0)
+        completion(
+          habitId: demoColdChainTelemetryHabitId,
+          daysAgo: day,
+          type: day == 11
+              ? HabitCompletionType.skip
+              : HabitCompletionType.success,
+          hour: 7,
+          categoryId: demoLogisticsCategoryId,
+        ),
+    for (var day = _habitHistoryDays; day >= 1; day--)
+      if (day % 4 != 0)
+        completion(
+          habitId: demoOutboundManifestHabitId,
+          daysAgo: day,
+          type: day == 13
+              ? HabitCompletionType.fail
+              : HabitCompletionType.success,
+          hour: 8,
+          categoryId: demoLogisticsCategoryId,
+        ),
+    for (var day = _habitHistoryDays; day >= 1; day--)
+      if (day % 5 != 0)
+        completion(
+          habitId: demoShiftHandoffHabitId,
+          daysAgo: day,
+          type: day == 6
+              ? HabitCompletionType.skip
+              : HabitCompletionType.success,
+          hour: 17,
+        ),
+    for (final day in const [27, 25, 22, 20, 18, 15, 13, 11, 8, 6, 4, 2])
+      completion(
+        habitId: demoFlipperMobilityHabitId,
+        daysAgo: day,
+        type: day == 13
+            ? HabitCompletionType.skip
+            : HabitCompletionType.success,
+        hour: 18,
+      ),
+  ];
+}
