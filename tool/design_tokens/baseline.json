@@ -1,6 +1,5 @@
 {
   "_comment": "Raw spacing, typography and colour values outside the design-system token definitions. Regenerate with: dart run tool/design_tokens/validate.dart --update-baseline. These numbers only ever go down.",
-  "_total": {"spacing":841,"typography":183,"color":583},
   "files": {
     "lib/beamer/chrome/sidebar_audio_recording_section.dart": {"spacing":1},
     "lib/classes/event_status.dart": {"color":8},

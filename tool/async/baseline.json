@@ -1,6 +1,5 @@
 {
   "_comment": "unawaited(...) calls in lib/. Each file must match its entry: it may shrink, never grow, and a shrink is recorded with dart run tool/async/validate.dart --update-baseline.",
-  "_total": 578,
   "files": {
     "lib/beamer/beamer_app.dart": 4,
     "lib/beamer/chrome/mobile_activity_island.dart": 2,

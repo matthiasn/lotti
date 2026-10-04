@@ -291,7 +291,6 @@ Map<String, Set<String>> readBaseline(File file) {
 /// Serialises a baseline deterministically.
 String encodeBaseline(Map<String, Set<String>> current) {
   final keys = current.keys.toList()..sort();
-  final total = current.values.fold(0, (sum, s) => sum + s.length);
   final buffer = StringBuffer()
     ..writeln('{')
     ..writeln(
@@ -302,7 +301,6 @@ String encodeBaseline(Map<String, Set<String>> current) {
       'tool/architecture/validate.dart --update-baseline. It only ever '
       'shrinks.",',
     )
-    ..writeln('  "_total": $total,')
     ..writeln('  "files": {');
   for (var i = 0; i < keys.length; i++) {
     final values = current[keys[i]]!.toList()..sort();

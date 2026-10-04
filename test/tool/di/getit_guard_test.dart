@@ -231,7 +231,7 @@ final s = 'getIt<C>()';
 
       expect(encoded, contains('"lib/a.dart": {"lookups": 3}'));
       expect(encoded, contains('"lib/z.dart": {"isRegistered": 2}'));
-      expect(encoded, contains('"_total": {"lookups": 3, "isRegistered": 2}'));
+      expect(encoded, isNot(contains('_total')));
       expect(
         encoded.indexOf('lib/a.dart'),
         lessThan(encoded.indexOf('lib/z.dart')),
