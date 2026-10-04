@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 
 import '../../test_utils.dart';

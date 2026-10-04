@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/features/agents/database/agent_database.dart'
-    show WakeRunLogData;
+import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
 
 part 'wake_run_time_series.freezed.dart';
 

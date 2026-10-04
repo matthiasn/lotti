@@ -13,7 +13,7 @@ import 'package:lotti/classes/agents/agent_enums.dart'
         WakeInitiator,
         WakeReason;
 import 'package:lotti/classes/agents/agent_link.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';

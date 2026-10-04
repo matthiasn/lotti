@@ -1,0 +1,385 @@
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart' as model;
+import 'package:lotti/classes/agents/proposal_ledger.dart';
+import 'package:lotti/database/agents/agent_database.dart';
+import 'package:lotti/database/agents/agent_db_conversions.dart';
+import 'package:lotti/database/agents/agent_proposal_ledger.dart';
+import 'package:lotti/database/agents/agent_repo_core.dart';
+import 'package:lotti/database/agents/agent_repository.dart'
+    show AgentRepository;
+
+/// Evolution-session, scheduled-wake, change-set, and link-discovery queries of
+/// [AgentRepository]. Collaborator extracted from the former
+/// `_AgentRepoEvolution` mixin; the repository keeps thin delegators so mocks
+/// keep intercepting.
+///
+/// Depends on [AgentRepoCore] for entity hydration and on
+/// [AgentProposalLedger] for the heavy proposal-ledger assembly exposed via
+/// [getProposalLedger].
+class AgentRepoEvolution {
+  AgentRepoEvolution(this._db, this._core, this._ledger);
+
+  final AgentDatabase _db;
+  final AgentRepoCore _core;
+  final AgentProposalLedger _ledger;
+
+  /// Agent states whose self-scheduled `scheduledWakeAt` is at or before [now],
+  /// i.e. the state-level scheduled wakes the manager should enqueue. For the
+  /// separate workspace-scoped wake records see [getPendingScheduledWakeRecords].
+  Future<List<AgentStateEntity>> getDueScheduledAgentStates(
+    DateTime now,
+  ) async {
+    final rows = await _db
+        .getDueScheduledAgentStates(now.toIso8601String())
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentStateEntity>()
+        .toList();
+  }
+
+  /// Fetch pending [ScheduledWakeEntity] records whose `scheduledAt` is at or
+  /// before [now] (ADR 0022 Decision 12).
+  ///
+  /// Unlike [getDueScheduledAgentStates] these carry an explicit workspace key
+  /// and trigger tokens, so a day-scoped wake (e.g. the morning pre-warm)
+  /// restores with full day context instead of riding the single, clobberable
+  /// `AgentStateEntity.scheduledWakeAt`.
+  ///
+  /// `scheduledAt` is stored as it was written: in UTC with a `Z` for a record
+  /// built from a UTC instant — a chat recovery, an escalation, a relationship
+  /// reminder — and as local wall time for the rest. The two forms do not
+  /// order as strings: compared with a local `now`, a UTC record was due hours
+  /// early east of Greenwich and hours late west of it, so a goal chat's
+  /// recovery fired on sight and a second device answered the message beside
+  /// the one it was typed on (`specs/tla/GoalChatReply.tla`,
+  /// `AtMostOneReply`). The query narrows by a bound neither form of a due
+  /// record can pass — [now] in UTC plus the widest zone offset — and the
+  /// instant decides here.
+  Future<List<ScheduledWakeEntity>> getDueScheduledWakeRecords(
+    DateTime now,
+  ) async {
+    final bound = now.toUtc().add(_widestZoneOffset).toIso8601String();
+    final rows = await _db.getDueScheduledWakeRecords(bound).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ScheduledWakeEntity>()
+        .where((record) => !record.scheduledAt.isAfter(now))
+        .toList();
+  }
+
+  /// The furthest any local wall clock runs from UTC (UTC+14).
+  static const _widestZoneOffset = Duration(hours: 14);
+
+  /// Fetch all still-pending [ScheduledWakeEntity] records regardless of when
+  /// they fire, ordered by `scheduledAt`.
+  ///
+  /// Unlike [getDueScheduledWakeRecords] (which bounds on `scheduledAt <= now`
+  /// to fire wakes), this surfaces future records too — it backs the
+  /// Settings → Agents → Pending Wakes diagnostic list, where the planner's
+  /// outstanding day pre-warms must be visible before they come due.
+  Future<List<ScheduledWakeEntity>> getPendingScheduledWakeRecords() async {
+    final rows = await _db.getPendingScheduledWakeRecords().get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ScheduledWakeEntity>()
+        .toList();
+  }
+
+  /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
+  ///
+  /// Returns all agents regardless of their lifecycle state.
+  /// Cached between identity writes — see
+  /// [AgentRepoCore.cachedAgentIdentities] for why.
+  Future<List<AgentIdentityEntity>> getAllAgentIdentities() {
+    return _core.cachedAgentIdentities(() async {
+      final rows = await _db.getAllAgentIdentities().get();
+      return rows
+          .map(AgentDbConversions.fromEntityRow)
+          .whereType<AgentIdentityEntity>()
+          .toList();
+    });
+  }
+
+  /// Fetch agent identities filtered by [lifecycle], newest first.
+  ///
+  /// Served from the cached identity list ([getAllAgentIdentities]) and
+  /// filtered in Dart. Every before-scan maintenance hook and several
+  /// providers ask for the active agents on every wake pass; as a SQL
+  /// predicate this was the second most expensive statement in the slow-query
+  /// log by call count while the cache already held the same rows. Lifecycle
+  /// is part of the identity entity, so an identity write invalidates the
+  /// cache and a lifecycle change is visible on the next call.
+  Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
+    AgentLifecycle lifecycle,
+  ) async {
+    final identities = await getAllAgentIdentities();
+    return identities
+        .where((identity) => identity.lifecycle == lifecycle)
+        .toList(growable: false);
+  }
+
+  /// Fetch agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null, ordered by `created_at` ascending.
+  ///
+  /// Used by the backfill maintenance step to stamp vector clocks on entities
+  /// created before the clock-stamping fix. Includes tombstones so that
+  /// deletes are also propagated to other devices.
+  Future<List<AgentDomainEntity>> getEntitiesWithNullVectorClock() async {
+    final rows = await _db.getAgentEntitiesWithNullVectorClock().get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Count agent entities (including soft-deleted) whose serialized
+  /// `vectorClock` is null.
+  Future<int> countEntitiesWithNullVectorClock() {
+    return _db.countAgentEntitiesWithNullVectorClock().getSingle();
+  }
+
+  /// Fetches agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end), paginated.
+  Future<List<AgentDomainEntity>> getEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) async {
+    final rows = await _db
+        .getAgentEntitiesInInterval(start, end, limit, offset)
+        .get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
+  /// Fetches undecoded agent rows for item-isolated historical sync.
+  ///
+  /// Keeping decoding out of the page query lets the sync sweep retain and
+  /// retry one malformed row without aborting every later row in the page.
+  Future<List<AgentEntity>> getEntityRowsInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) {
+    return _db.getAgentEntitiesInInterval(start, end, limit, offset).get();
+  }
+
+  /// Counts agent entities (including soft-deleted) updated in the
+  /// half-open interval [start, end).
+  Future<int> countEntitiesInInterval({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _db.countAgentEntitiesInInterval(start, end).getSingle();
+  }
+
+  /// Counts agent entities of [type] across all agents, including
+  /// soft-deleted ones.
+  ///
+  /// The count includes tombstones: under ADR 0032 day plans are written by
+  /// whichever identity owns the day, so eligibility gates that ask "has a
+  /// plan EVER existed" must not key on a single agent id.
+  Future<int> countEntitiesByType({required String type}) {
+    return _db.countAgentEntitiesByType(type).getSingle();
+  }
+
+  // ── Evolution queries ──────────────────────────────────────────────────────
+
+  /// Fetch the N most recent reports from all instances assigned to
+  /// [templateId] via `template_assignment` links.
+  Future<List<AgentReportEntity>> getRecentReportsByTemplate(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows = await _db.getRecentReportsByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentReportEntity>()
+        .toList();
+  }
+
+  /// Fetch the N most recent observation messages from all instances assigned
+  /// to [templateId] via `template_assignment` links.
+  Future<List<AgentMessageEntity>> getRecentObservationsByTemplate(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows = await _db
+        .getRecentObservationsByTemplate(templateId, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentMessageEntity>()
+        .toList();
+  }
+
+  /// Fetch evolution sessions for [templateId], newest-first.
+  Future<List<EvolutionSessionEntity>> getEvolutionSessions(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows = await _db
+        .getEvolutionSessionsByTemplate(templateId, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionSessionEntity>()
+        .toList();
+  }
+
+  /// Fetch all evolution sessions across all non-deleted templates,
+  /// newest-first.
+  ///
+  /// Uses an INNER JOIN against `agent_entities` (type = 'agentTemplate') to
+  /// exclude orphan sessions whose parent template has been soft-deleted.
+  Future<List<EvolutionSessionEntity>> getAllEvolutionSessions() async {
+    final rows = await _db.getAllEvolutionSessions().get();
+    return rows
+        .map((r) => AgentDbConversions.fromEntityRow(r.es))
+        .whereType<EvolutionSessionEntity>()
+        .toList();
+  }
+
+  /// Fetch persisted evolution session recaps for [templateId], newest-first.
+  Future<List<EvolutionSessionRecapEntity>> getEvolutionSessionRecaps(
+    String templateId, {
+    int limit = 50,
+  }) async {
+    final rows = await _db
+        .getAgentEntitiesByType(
+          templateId,
+          AgentEntityTypes.evolutionSessionRecap,
+          limit,
+        )
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionSessionRecapEntity>()
+        .toList();
+  }
+
+  /// Fetch evolution notes for [templateId], newest-first.
+  Future<List<EvolutionNoteEntity>> getEvolutionNotes(
+    String templateId, {
+    int limit = 50,
+  }) async {
+    final rows = await _db.getEvolutionNotesByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionNoteEntity>()
+        .toList();
+  }
+
+  /// Count entities changed since [since] for instances of [templateId].
+  ///
+  /// Returns 0 if [since] is `null` (no previous acknowledgement).
+  Future<int> countChangedSinceForTemplate(
+    String templateId,
+    DateTime? since,
+  ) async {
+    if (since == null) return 0;
+    return _db
+        .countEntitiesChangedSinceForTemplate(templateId, since)
+        .getSingle();
+  }
+
+  // ── Change set queries ──────────────────────────────────────────────────────
+
+  /// Fetch pending or partially-resolved change sets for [agentId],
+  /// optionally filtered by [taskId].
+  ///
+  /// The persisted field is historically named `taskId`, but stores the target
+  /// entity ID for both task-scoped and project-scoped proposals.
+  ///
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is backed by
+  /// an expression index over the serialized payload so task-scoped suggestion
+  /// views do not need to over-fetch broad per-agent change-set history.
+  Future<List<ChangeSetEntity>> getPendingChangeSets(
+    String agentId, {
+    String? taskId,
+    int limit = 20,
+  }) async {
+    final rows = taskId == null
+        ? await _db.getPendingChangeSetsForAgent(agentId, limit).get()
+        : await _db
+              .getPendingChangeSetsForAgentAndTask(agentId, taskId, limit)
+              .get();
+    final results = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeSetEntity>()
+        .toList();
+    return results;
+  }
+
+  /// The newest decisions on [agentId]'s proposals for [taskId], newest
+  /// first, capped at [limit] — the ledger's resolved history.
+  Future<List<ChangeDecisionEntity>> getChangeDecisions(
+    String agentId, {
+    required String taskId,
+    int limit = 50,
+  }) async {
+    final rows = await _db
+        .getChangeDecisionsForAgentAndTask(agentId, taskId, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+  }
+
+  /// Build a [ProposalLedger] for [taskId] under [agentId]. See
+  /// [AgentProposalLedger.getProposalLedger].
+  Future<ProposalLedger> getProposalLedger(
+    String agentId, {
+    required String taskId,
+    int changeSetFetchLimit = 200,
+    int resolvedLimit = 50,
+  }) => _ledger.getProposalLedger(
+    agentId,
+    taskId: taskId,
+    changeSetFetchLimit: changeSetFetchLimit,
+    resolvedLimit: resolvedLimit,
+  );
+
+  /// Fetch change decisions across all instances of [templateId] created on
+  /// or after [since].
+  ///
+  /// Uses a JOIN between `agent_links` (template_assignment) and
+  /// `agent_entities` (changeDecision) to retrieve decisions in a single query,
+  /// avoiding per-agent N+1 lookups. The [since] filter is applied in SQL.
+  Future<List<ChangeDecisionEntity>> getRecentDecisionsForTemplate(
+    String templateId, {
+    required DateTime since,
+    int limit = 500,
+  }) async {
+    final rows = await _db
+        .getRecentDecisionsByTemplate(templateId, since, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+  }
+
+  // ── Link CRUD ──────────────────────────────────────────────────────────────
+
+  /// Fetch a single live link by its [id], or `null` if there is none or it
+  /// is soft-deleted.
+  Future<model.AgentLink?> getLinkById(String id) async {
+    final rows = await _db.getAgentLinkById(id).get();
+    if (rows.isEmpty) return null;
+    return AgentDbConversions.fromLinkRow(rows.first);
+  }
+
+  /// Fetch the stored version of link [id], a tombstone included, or `null`
+  /// when there is no row. What sync orders versions against: a tombstone is
+  /// a version like any other, and reading it as no row would let a late
+  /// copy of the live link replace it (ADR 0081).
+  Future<model.AgentLink?> getLinkByIdIncludingDeleted(String id) async {
+    final row = await (_db.select(
+      _db.agentLinks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    return row == null ? null : AgentDbConversions.fromLinkRow(row);
+  }
+}

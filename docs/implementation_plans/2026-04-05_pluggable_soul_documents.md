@@ -547,8 +547,8 @@ apply identically.
 - `lib/classes/agents/agent_enums.dart`
 - `lib/classes/agents/agent_domain_entity.dart`
 - `lib/classes/agents/agent_link.dart`
-- `lib/features/agents/database/agent_database.drift`
-- `lib/features/agents/database/agent_repository.dart`
+- `lib/database/agents/agent_database.drift`
+- `lib/database/agents/agent_repository.dart`
 - New test files mirroring the above
 
 ### Phase 2: Soul Document Service & Seeding ✅
@@ -637,7 +637,7 @@ flowchart TD
 - `lib/features/agents/workflow/task_agent_workflow.dart`
 - `lib/features/agents/workflow/project_agent_workflow.dart`
 - `lib/classes/agents/agent_domain_entity.dart` (token usage fields)
-- `lib/features/agents/database/agent_database.drift` (wake run log columns)
+- `lib/database/agents/agent_database.drift` (wake run log columns)
 - Existing test files for both workflows
 
 ### Phase 4: Unified Evolution — Soul Tool & Context ✅

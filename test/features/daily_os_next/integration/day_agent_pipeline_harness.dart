@@ -9,10 +9,9 @@ import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/database/agent_database.dart'
-    hide AgentLink;
-import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/database/agents/agent_database.dart' hide AgentLink;
+import 'package:lotti/database/agents/agent_db_conversions.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';

@@ -40,7 +40,7 @@
     "lib/features/sync/backfill/backfill_response_handler.dart": 1183,
     "lib/features/sync/matrix/sync_event_processor_agent_handlers.dart": 1023,
     "lib/features/sync/ui/provisioned/add_device_page.dart": 1065,
-    "lib/features/tasks/repository/checklist_repository.dart": 1127,
+    "lib/logic/repositories/checklist_repository.dart": 1127,
     "lib/features/tasks/ui/pages/tasks_tab_page.dart": 1210,
     "lib/pages/create/create_measurement_dialog.dart": 1104,
     "lib/services/nav_service.dart": 1031

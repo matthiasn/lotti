@@ -7,8 +7,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 

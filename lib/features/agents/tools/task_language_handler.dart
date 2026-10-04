@@ -3,8 +3,8 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/journal/repository/task_field_write.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/task_field_write.dart';
 
 /// Result of processing a task language update.
 class TaskLanguageResult {

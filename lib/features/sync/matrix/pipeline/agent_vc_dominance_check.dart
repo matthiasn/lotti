@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/database/agents/agent_database.dart';
 
 /// Decides whether the local copy of an agent entity / link already
 /// carries a vector clock equal to or newer than the one advertised

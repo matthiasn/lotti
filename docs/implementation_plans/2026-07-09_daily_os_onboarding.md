@@ -372,9 +372,9 @@ flowchart TD
 **Existing production files likely touched:**
 
 - `lib/beamer/beamer_app.dart`
-- `lib/features/agents/database/agent_database.drift`
-- `lib/features/agents/database/agent_repo_core.dart`
-- `lib/features/agents/database/agent_repository.dart`
+- `lib/database/agents/agent_database.drift`
+- `lib/database/agents/agent_repo_core.dart`
+- `lib/database/agents/agent_repository.dart`
 - `lib/features/daily_os_next/state/drafting_controller.dart`
 - `lib/features/daily_os_next/ui/pages/daily_os_next_root.dart`
 - `lib/features/daily_os_next/ui/pages/day_page.dart`

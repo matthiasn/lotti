@@ -1,8 +1,8 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 
 /// What one of the avatar sheet's actions came to.
 enum PersonPhotoOutcome {

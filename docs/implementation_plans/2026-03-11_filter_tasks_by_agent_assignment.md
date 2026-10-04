@@ -58,7 +58,7 @@ if (agentAssignmentFilter != all) {
 
 ### Step 2: Add query method to `AgentRepository`
 
-**File**: `lib/features/agents/database/agent_repository.dart`
+**File**: `lib/database/agents/agent_repository.dart`
 
 - Add method:
   ```dart
@@ -69,7 +69,7 @@ if (agentAssignmentFilter != all) {
   }
   ```
 
-**File**: `lib/features/agents/database/agent_database.drift`
+**File**: `lib/database/agents/agent_database.drift`
 
 - Add named query:
   ```sql
@@ -156,7 +156,7 @@ if (agentAssignmentFilter != all) {
 - Unit test that `_runQuery` correctly filters tasks based on agent assignment
 - Test persistence round-trip of `agentAssignmentFilter`
 
-**File**: `test/features/agents/database/agent_repository_test.dart`
+**File**: `test/database/agents/agent_repository_test.dart`
 
 - Test `getTaskIdsWithAgentLink()` returns correct IDs
 
@@ -165,8 +165,8 @@ if (agentAssignmentFilter != all) {
 | File | Change |
 |------|--------|
 | `lib/classes/journal_page_state.dart` | Add enum + fields |
-| `lib/features/agents/database/agent_database.drift` | Add named query |
-| `lib/features/agents/database/agent_repository.dart` | Add `getTaskIdsWithAgentLink()` |
+| `lib/database/agents/agent_database.drift` | Add named query |
+| `lib/database/agents/agent_repository.dart` | Add `getTaskIdsWithAgentLink()` |
 | `lib/features/journal/state/journal_page_controller.dart` | Filter logic + persistence |
 | `lib/features/tasks/ui/filtering/task_agent_filter.dart` | **New** widget |
 | `lib/features/tasks/ui/filtering/task_filter_content.dart` | Add widget to layout |

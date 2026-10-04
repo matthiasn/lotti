@@ -1,6 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 
 /// Presentation model for a project record displayed in the project

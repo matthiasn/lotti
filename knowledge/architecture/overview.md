@@ -166,7 +166,7 @@ growing, so existing lookups are tolerated while new ones fail CI.
 | `lib/database/` | The primary store and shared connection plumbing |
 | `lib/classes/` | Freezed domain models shared across features |
 | `lib/services/` | Process-wide services registered in GetIt |
-| `lib/logic/` | Cross-feature write logic (`PersistenceLogic`, health import) |
+| `lib/logic/` | Cross-feature write logic (`PersistenceLogic`, health import) and the repositories every layer shares (`lib/logic/repositories/`: journal, checklists, projects) |
 | `lib/beamer/` | Router delegates, locations, app shell |
 | `lib/widgets/` | Shared widgets not owned by a feature |
 | `lib/themes/`, `lib/features/design_system/` | Theming and design tokens |

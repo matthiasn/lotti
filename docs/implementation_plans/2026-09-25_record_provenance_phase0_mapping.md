@@ -62,7 +62,7 @@ flowchart TD
 **Deletion today.**
 
 - *Soft delete* (`JournalRepository.deleteJournalEntity`,
-  `lib/features/journal/repository/journal_repository.dart:177`) stamps
+  `lib/logic/repositories/journal_repository.dart:177`) stamps
   `deletedAt` through an ordinary versioned update. The tombstone syncs. Links
   are tombstoned the same way.
 - *Purge* (`purgeDeleted`, `lib/database/database_entity_ops.dart:450`) is

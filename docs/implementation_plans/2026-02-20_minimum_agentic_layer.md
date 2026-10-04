@@ -1003,10 +1003,10 @@ lib/features/agents/
 
 ### Phase 0A-2: Database Layer
 
-8. ~~Create `lib/features/agents/database/agent_database.drift` with all table definitions.~~ DONE
-9. ~~Create `lib/features/agents/database/agent_database.dart` (Drift database class).~~ DONE
-10. ~~Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.~~ DONE
-11. ~~Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.~~ DONE
+8. ~~Create `lib/database/agents/agent_database.drift` with all table definitions.~~ DONE
+9. ~~Create `lib/database/agents/agent_database.dart` (Drift database class).~~ DONE
+10. ~~Create `lib/database/agents/agent_db_conversions.dart` for type mapping.~~ DONE
+11. ~~Create `lib/database/agents/agent_repository.dart` with CRUD operations.~~ DONE
 12. ~~Register `AgentDatabase` in GetIt (app startup).~~ NOT NEEDED — agent feature uses Riverpod providers exclusively
 13. ~~Write repository tests (CRUD for each entity type, link operations, transaction support).~~ DONE (70 tests)
 

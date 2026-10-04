@@ -2,9 +2,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 
 /// The two concurrent versions of a conflicted entry. [local] is the version
 /// currently in the journal; [remote] is the incoming version deserialized

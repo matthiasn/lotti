@@ -233,7 +233,7 @@ This phase is deliberately limited to prompt engineering and data wiring:
 
 ### Recommended File Changes
 
-#### 1. `lib/features/agents/database/agent_repository.dart`
+#### 1. `lib/database/agents/agent_repository.dart`
 
 Add a small, repository-level helper for project-agent report lookup.
 
@@ -300,7 +300,7 @@ Changes:
 
 Update:
 
-- `test/features/agents/database/agent_repository_test.dart`
+- `test/database/agents/agent_repository_test.dart`
 - `test/features/ai/repository/ai_input_repository_test.dart`
 - `test/features/agents/workflow/task_agent_workflow_test.dart`
 
@@ -394,7 +394,7 @@ If product prefers "latest created" instead of "latest touched", that decision s
 
 ### Recommended File Changes
 
-#### 1. `lib/features/agents/database/agent_repository.dart`
+#### 1. `lib/database/agents/agent_repository.dart`
 
 Add a batch helper for task-agent report lookup by task IDs.
 
@@ -534,7 +534,7 @@ Changes:
 
 Update:
 
-- `test/features/agents/database/agent_repository_test.dart`
+- `test/database/agents/agent_repository_test.dart`
 - `test/features/ai/repository/ai_input_repository_test.dart`
 - `test/features/agents/tools/agent_tool_registry_test.dart`
 - `test/features/agents/workflow/task_agent_strategy_test.dart`

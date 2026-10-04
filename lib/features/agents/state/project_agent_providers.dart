@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 
-export 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart'
+export 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart'
     show projectAgentMutationCoordinatorProvider;
 
 /// The project-agent-specific service.

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:get_it/get_it.dart';
 import 'package:health/health.dart';
+import 'package:lotti/database/agents/agent_database.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -13,7 +15,6 @@ import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
@@ -48,6 +49,7 @@ import 'package:lotti/features/notifications/scheduler/notification_startup_reco
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -79,13 +81,15 @@ import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/logic/running_timer_persistence.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -143,6 +147,9 @@ Future<void> registerSingletons({
     )
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
+    // The journal layer's delete path cascades into people through this; see
+    // RelationshipCascade.
+    ..registerSingleton<RelationshipCascadeFactory>(buildRelationshipCascade)
     ..registerSingleton<ConsumptionDatabase>(ConsumptionDatabase())
     ..registerSingleton<NotificationsDb>(NotificationsDb())
     ..registerSingleton<EditorDb>(EditorDb())
@@ -509,3 +516,16 @@ Future<void> registerSingletons({
 }
 
 String? _noMatrixUserId() => null;
+
+/// The [RelationshipCascade] the journal repository's delete path writes
+/// people through: the relationship repository over the registered stores.
+RelationshipCascade buildRelationshipCascade(
+  JournalRepository journalRepository,
+  PersistenceLogic persistenceLogic,
+) => RelationshipRepository(
+  journalDb: getIt<JournalDb>(),
+  journalRepository: journalRepository,
+  persistenceLogic: persistenceLogic,
+  // Over the registered agent store, as the project integrity guard builds it.
+  agentRepository: AgentRepository(getIt<AgentDatabase>()),
+);

@@ -70,7 +70,7 @@
   false `missingBase` entries.
 - All layers that invoke `updateJournalEntity` (listed via `rg`) must be updated:
   - `lib/logic/persistence_logic.dart`
-  - `lib/features/journal/repository/journal_repository.dart`
+  - `lib/logic/repositories/journal_repository.dart`
   - `lib/features/sync/matrix/sync_event_processor.dart`
   - Various feature modules/tests enumerated earlier (e.g., `test/database/database_test.dart`,
     `test/features/journal/state/entry_controller_test.dart`, AI repos).

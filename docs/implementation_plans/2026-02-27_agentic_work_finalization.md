@@ -415,7 +415,7 @@ After initial implementation, several UX and reliability issues were identified 
 
 **Changes**:
 - Added `WakeRunStatus.abandoned` enum value (`lib/classes/agents/agent_enums.dart`)
-- Added `AgentRepository.abandonOrphanedWakeRuns()` method (`lib/features/agents/database/agent_repository.dart`)
+- Added `AgentRepository.abandonOrphanedWakeRuns()` method (`lib/database/agents/agent_repository.dart`)
 - Call on startup in `agentInitialization` provider (`lib/features/agents/state/agent_providers.dart`)
 - Updated test mocks to stub the new method
 
