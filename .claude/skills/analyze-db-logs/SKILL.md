@@ -162,7 +162,7 @@ same `STACK:` head, all reporting nearly identical elapsed times.
 family fanning out single-id reads. Each call queues through the read
 pool independently.
 
-**Recurring offenders fixed in this branch**:
+**Recurring offenders already fixed in this codebase**:
 - `taskLiveDataProvider` (FutureProvider.family per task) → solved by
   `JournalDb._coalesceEntityById` (microtask-coalesced bulk fetch).
 - `LinkedAiResponsesController._fetch` → switched from `Future.wait` to
@@ -283,7 +283,7 @@ normally. With `readPool: N`, drift calls `beforeOpen` on every
 connection, so any repair work done there runs `1 + N` times per
 launch.
 
-**Lessons from this branch**:
+**Lessons already applied in this codebase**:
 - Per-launch `ANALYZE` was removed — stats persist in `sqlite_stat1`
   and the v42 migration runs `ANALYZE` once on upgrade.
 - The self-heal `CREATE INDEX IF NOT EXISTS` block was removed

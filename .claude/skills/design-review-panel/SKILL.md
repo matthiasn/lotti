@@ -63,7 +63,7 @@ One agent per craft dimension. Default lenses (adapt to the surface):
 - **Interaction / task-flow** — taps-to-goal, affordances, dead-ends, the
   "1-tap to the common case" promise.
 
-### User-persona panel (optional — pass `includePersonas: true`)
+### User-persona panel (on by default — pass `includePersonas: false` to skip)
 Different cognitive styles stress the surface as real users:
 - **ADHD / clutter-sensitive** — needs "what now" instant; abandons noise.
 - **Power user** — counts seconds, allergic to wasted space/steps.

@@ -9,7 +9,7 @@
 - Localization: `lib/l10n/*.arb` with `missing_translations.txt` for gaps.
 
 ## Build, Test, and Development Commands
-- Install deps: `make deps` (uses FVM on macOS if available).
+- Install deps: `make deps` (runs through FVM when `fvm` is installed).
 - Static analysis: `make analyze` (Very Good Analysis rules).
 - Unit tests + coverage: `make test` • HTML report: `make coverage`.
 - Code generation: `make build_runner` • Watch mode: `make watch`.
@@ -59,12 +59,12 @@
 - For runtime/Flutter app introspection, request a DTD URI from the user and connect via `dart-mcp.connect_dart_tooling_daemon`.
 - Follow the planning and preamble conventions:
   - Send a brief preamble before grouped tool calls.
-  - Maintain a concise step-by-step plan using `update_plan` for multi-step work.
+  - Keep a concise plan in your agent's planning tool for multi-step work.
 - Test-first workflow when adding/fixing tests:
   - Run `dart-mcp.analyze_files` to catch lints quickly.
   - Run `fvm dart format .` to normalize diffs. Do not use `dart-mcp.dart_format`.
   - Run targeted tests (single file or folder) via `dart-mcp.run_tests` before broad runs.
-  - Iterate until the targeted tests pass, then run the full suite as needed.
+  - Iterate until the targeted tests pass; CI runs the full suite.
 - Do not edit generated files (`*.g.dart`, `*.freezed.dart`); run `dart-mcp.pub` + `make build_runner` (or `dart run build_runner`) via MCP when regeneration is required.
 - Favor `rg` for searches and read files in chunks (≤250 lines) when using shell reads.
 
@@ -118,7 +118,7 @@ Rules for `knowledge/`:
 - Whenever touching any function, consider its docstring and if it needs updating
 - Only report completion after code compiles and all tests pass; verify via analyze and test via the dart-mcp server.
 - Invest in making tests work; avoid deleting or abandoning failing tests prematurely.
-- When old and new feature versions coexist, create no dependencies from the new code to the old.
+- When old and new feature versions coexist, create no dependencies from the new code to the old — the old code is meant to be removed once the new one reaches parity.
 - Uphold high standards: DRY where sensible, proper modularity, and strong testability.
 - Use `fvm` for all `flutter` commands.
 
@@ -134,7 +134,7 @@ Rules for `knowledge/`:
 - Access localized strings via `context.messages.labelName` (import `app_localizations_context.dart`).
 - After adding labels, run `make l10n` to generate the Dart files.
 - Run `make sort_arb_files` to keep arb files consistently sorted.
-- **NEVER edit the generated `lib/l10n/app_localizations_*.dart` files directly** — always edit the `.arb` source files and regenerate.
+- Edit the `.arb` sources and regenerate; `lib/l10n/app_localizations_*.dart` is generated output.
 - **Use the informal register** in every translation, with Romanian as the one deliberate exception. Which pronouns that means per language is in the concept linked above.
 
 ## Implementation discipline
@@ -157,10 +157,6 @@ and what is enforced at construction rather than by review.
   frequently.
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
-- Write meaningful tests that actually assert on valuable information. Refrain from adding BS
-  assertions such as finding a row or whatnot. Focus on useful information.
-  [knowledge/conventions/testing.md](knowledge/conventions/testing.md) has the
-  specifics — the infrastructure rules, the quality bar and the async rules.
 - Aim for full coverage of every code path.
 - Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
   tests.
@@ -179,13 +175,7 @@ and what is enforced at construction rather than by review.
   tag — is [.agents/skills/release/SKILL.md](.agents/skills/release/SKILL.md). It is the only
   change permitted to touch those three files.
 - Update the documentation we touch such that it matches reality in the codebase, not only
-  for what we touch but in its entirety. See "Documentation" below for which file gets what.
-- In most cases we prefer one test file for one implementation file.
-- Don't report that you've successfully implemented anything unless you've actually verified that the code compiles and tests succeed. Do not be overly confident without checking.
-- When writing tests, do not give up too easily and delete what doesn't work right away, instead put some more thought into getting the tests to work.
-- When rewriting a feature and instructed to leave both in place, do not create ANY dependencies on the old code, as the goal will usually be to remove the old code once the new code has feature parity, or surpasses it.
-- Aim for high engineering standards, such as honoring the DRY principle where sensible, proper modularity, and good testability. Your goal is to create code that people would and should be proud of.
-- Do no ever report that you're done with anything when not all tests pass. They must, as no PR can be merged when there are failing tests.
+  for what we touch but in its entirety. See "Documentation" above for which file gets what.
 - Use fvm when running any flutter command
 - Read test/README.md on every session start and keep it up to date when gaining relevant new information
 - Do not hoard code. We do not keep unused code around. Also, this is no library, there are no known mysterious callers for whom we would keep any code around.

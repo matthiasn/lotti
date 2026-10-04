@@ -97,8 +97,8 @@ resolution.
      fix or a stated reason for declining
 
    **Pushing requires authorization.** Commits, rebases and pushes need
-   explicit user or orchestrator approval (AGENTS.md, "Security &
-   Configuration"). Being asked to *address review comments* authorizes the
+   explicit user or orchestrator approval (AGENTS.md, "Issue Tracking").
+   Being asked to *address review comments* authorizes the
    code changes, not the push — confirm before the first push of a session,
    and never force-push a branch you did not create in this session.
    `--force-with-lease` guards against clobbering a concurrent update; it is
@@ -156,9 +156,9 @@ resolution.
    is never collected lets the summary be written before it finishes. Capture
    the output, check the status, and `wait` for the poller before reporting.
 
-   Cross-check the total against `gh pr checks <n>` before declaring green:
-   the honest failure mode here was a poller that exited on its first
-   iteration and reported "settled" while 15 checks were still queued.
+   Cross-check the total against `gh pr checks <n>` before declaring green —
+   a poller that exits on its first iteration otherwise reports "settled"
+   while checks are still queued.
 
    Run that in the background (`run_in_background: true`, or `… &` with the
    PID kept) so replying to comments proceeds concurrently rather than
@@ -199,7 +199,7 @@ resolution.
 
 ## Guidelines
 
-- Address ALL comments — do not skip any.
+- Address every comment.
 - Make real code fixes, not just reply text.
 - Run the analyzer and formatter after all fixes.
 - Run affected tests to verify fixes.
