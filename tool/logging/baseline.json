@@ -139,6 +139,6 @@
     "lib/features/relationships/workflow/relationship_tool_dispatcher.dart": 1,
     "lib/features/tasks/state/checklist_controller.dart": 2,
     "lib/features/tasks/state/checklist_item_controller.dart": 2,
-    "lib/features/tasks/ui/pages/tasks_tab_page.dart": 1
+    "lib/features/tasks/ui/pages/tasks_tab_page_active_filters_part.dart": 1
   }
 }

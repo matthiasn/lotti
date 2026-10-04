@@ -2,7 +2,7 @@
   "_comment": "getIt lookups and isRegistered checks outside the composition root, still to be migrated to providers or constructor arguments. Regenerate with: dart run tool/di/validate.dart --update-baseline. These numbers only ever go down.",
   "files": {
     "lib/app_root.dart": {"lookups": 1},
-    "lib/beamer/beamer_app.dart": {"lookups": 2, "isRegistered": 1},
+    "lib/beamer/beamer_app_root_part.dart": {"lookups": 2, "isRegistered": 1},
     "lib/beamer/locations/calendar_location.dart": {"lookups": 1, "isRegistered": 1},
     "lib/beamer/locations/dashboards_location.dart": {"lookups": 1},
     "lib/beamer/locations/journal_location.dart": {"lookups": 2, "isRegistered": 1},
@@ -236,7 +236,8 @@
     "lib/features/tasks/ui/header/task_meta_section.dart": {"lookups": 2},
     "lib/features/tasks/ui/linked_tasks/task_search_picker_body.dart": {"lookups": 3},
     "lib/features/tasks/ui/pages/task_details_page.dart": {"lookups": 1},
-    "lib/features/tasks/ui/pages/tasks_tab_page.dart": {"lookups": 3},
+    "lib/features/tasks/ui/pages/tasks_tab_page.dart": {"lookups": 2},
+    "lib/features/tasks/ui/pages/tasks_tab_page_active_filters_part.dart": {"lookups": 1},
     "lib/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart": {"isRegistered": 1},
     "lib/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart": {"lookups": 2},
     "lib/features/tasks/ui/time_recording_icon.dart": {"lookups": 1},
