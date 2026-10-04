@@ -569,8 +569,8 @@ connects to:
 
 - [Ollama](https://ollama.com) and [oMLX](https://github.com/jundot/omlx) (MLX
   on Apple Silicon), which have their own provider types in Lotti's settings;
-- anything else that serves an OpenAI-compatible API, through the generic
-  OpenAI-compatible provider: Python-based servers such as
+- anything else that serves an OpenAI-compatible API, through the
+  *OpenAI Compatible* provider: Python-based servers such as
   [vLLM](https://github.com/vllm-project/vllm),
   [SGLang](https://github.com/sgl-project/sglang) and
   [mlx-lm](https://github.com/ml-explore/mlx-lm), as well as
