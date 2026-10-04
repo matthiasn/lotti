@@ -8,9 +8,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -24,12 +24,12 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../features/agents/test_utils.dart';
-import '../../helpers/fallbacks.dart';
-import '../../helpers/path_provider.dart';
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../widget_test_utils.dart';
+import '../../../helpers/fallbacks.dart';
+import '../../../helpers/path_provider.dart';
+import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
+import '../../agents/test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

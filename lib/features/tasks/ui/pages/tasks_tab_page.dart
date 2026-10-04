@@ -25,6 +25,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -46,7 +47,6 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';

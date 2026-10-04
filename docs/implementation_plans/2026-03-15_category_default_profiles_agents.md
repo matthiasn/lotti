@@ -231,8 +231,8 @@ classDiagram
 
 | File | Change | Status |
 |------|--------|--------|
-| `lib/logic/create/create_entry.dart` | `createTask()`: looks up category via `EntitiesCacheService`, passes `defaultProfileId` to `TaskData.profileId` | Done |
-| `lib/logic/create/create_entry.dart` | New `autoAssignCategoryAgent()`: looks up `defaultTemplateId`, creates agent via `TaskAgentService` with `awaitContent: true` | Done |
+| `lib/features/journal/create/create_entry.dart` | `createTask()`: looks up category via `EntitiesCacheService`, passes `defaultProfileId` to `TaskData.profileId` | Done |
+| `lib/features/journal/create/create_entry.dart` | New `autoAssignCategoryAgent()`: looks up `defaultTemplateId`, creates agent via `TaskAgentService` with `awaitContent: true` | Done |
 | Call sites (4 files) | Added `unawaited(autoAssignCategoryAgent(ref, task))` to all widget-context task creation sites | Done |
 
 **Call sites updated:**
@@ -337,14 +337,14 @@ classDiagram
 - `lib/features/journal/ui/pages/infinite_journal_page.dart`
 - `lib/features/journal/ui/widgets/create/create_entry_items.dart`
 - `lib/features/tasks/ui/linked_tasks/linked_tasks_header.dart`
-- `lib/logic/create/create_entry.dart`
+- `lib/features/journal/create/create_entry.dart`
 
 ### Modified Test Files
 - `test/features/ai/helpers/profile_automation_resolver_test.dart`
 - `test/features/ai/util/profile_resolver_test.dart`
 - `test/features/daily_os/ui/widgets/time_budget_card_test.dart`
 - `test/features/journal/ui/widgets/create/modern_create_entry_items_test.dart`
-- `test/logic/create/create_entry_test.dart`
+- `test/features/journal/create/create_entry_test.dart`
 
 ### Modified L10n Files
 - `lib/l10n/app_en.arb`, `app_de.arb`, `app_fr.arb`, `app_es.arb`, `app_cs.arb`, `app_ro.arb`

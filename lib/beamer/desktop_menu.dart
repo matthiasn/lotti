@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_catalog.dart';
 import 'package:lotti/features/keyboard/domain/app_command_text.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 

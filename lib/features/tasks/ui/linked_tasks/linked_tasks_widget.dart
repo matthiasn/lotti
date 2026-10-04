@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -22,7 +23,6 @@ import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';

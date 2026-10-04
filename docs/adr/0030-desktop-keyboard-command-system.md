@@ -91,5 +91,5 @@ Dashboards, Journal, Events, and Settings. Disabled destinations leave gaps.
   [`2026-07-15_desktop_keyboard_command_system.md`](../implementation_plans/2026-07-15_desktop_keyboard_command_system.md)
 - Flutter focus and shortcut primitives are pinned by the repository's FVM
   Flutter SDK.
-- Existing native menu adapter: `lib/widgets/misc/desktop_menu.dart`.
+- Existing native menu adapter: `lib/beamer/desktop_menu.dart`.
 - Existing activity gate: `lib/features/user_activity/state/`.

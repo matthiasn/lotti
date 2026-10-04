@@ -106,8 +106,8 @@ rank and holds every import in `lib/` to it; CI runs it in the analyze job, and
 flowchart BT
   Foundation["Foundation — lib/classes, database, logic, services, utils, providers, map<br/>imports no feature"]
   DS["design_system + shared UI — lib/widgets, themes, ui"]
-  Low["Lower features — categories, labels, ai_consumption, ai, journal …"]
-  Agents["agents — the runtime, above the AI layer it calls"]
+  Low["Lower features — categories, labels, ai_consumption, ai …"]
+  Agents["agents, then speech and journal — the runtime above the AI layer it calls, the logbook above both"]
   Sync["sync — above the features whose entities it carries"]
   High["Aggregators — settings, demo, tasks, projects, daily_os_next, onboarding …"]
   Shell["Shell — lib/beamer, pages, app_root, get_it*, main<br/>may import anything"]

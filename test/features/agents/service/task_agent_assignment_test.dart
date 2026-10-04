@@ -2,12 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/logic/create/task_agent_assignment.dart';
+import 'package:lotti/features/agents/service/task_agent_assignment.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../features/agents/test_utils.dart';
-import '../../features/categories/test_utils.dart';
-import '../../mocks/mocks.dart';
+import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
+import '../test_utils.dart';
 
 void main() {
   late MockTaskAgentService mockService;

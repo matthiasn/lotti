@@ -24,11 +24,11 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -2147,7 +2147,7 @@ void main() {
     // (createTextEntry, importImageAssets, createScreenshot) that require file system
     // access and complex mocking. The callbacks are tested indirectly:
     // 1. Widget structure tests verify onTap exists (lines 115, 144, 180, 209, 239, 278)
-    // 2. Unit tests in test/logic/create/create_entry_test.dart achieve 91.7% coverage
+    // 2. Unit tests in test/features/journal/create/create_entry_test.dart achieve 91.7% coverage
     //    of the actual business logic functions called by these callbacks
     // 3. Navigation tests above demonstrate onTap execution for CreateTaskItem/CreateEventItem
 

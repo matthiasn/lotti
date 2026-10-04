@@ -10,9 +10,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
@@ -28,11 +28,11 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../helpers/entity_factories.dart';
-import '../../helpers/fallbacks.dart';
-import '../../helpers/path_provider.dart';
-import '../../mocks/mocks.dart';
-import '../../widget_test_utils.dart';
+import '../../../helpers/entity_factories.dart';
+import '../../../helpers/fallbacks.dart';
+import '../../../helpers/path_provider.dart';
+import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
   _RejectingTaskCleanupPersistenceLogic({this.commitBeforeFailure = false});
