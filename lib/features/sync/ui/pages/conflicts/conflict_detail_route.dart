@@ -40,7 +40,10 @@ class ConflictDetailRoute extends StatefulWidget {
 }
 
 class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
-  final ConflictResolutionService _service = ConflictResolutionService();
+  final JournalDb _db = getIt<JournalDb>();
+  late final ConflictResolutionService _service = ConflictResolutionService(
+    journalDb: _db,
+  );
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
 
@@ -58,7 +61,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
     final key = '${conflict.id}/${conflict.versionKey}';
     if (_futureKey != key || _localEntryFuture == null) {
       _futureKey = key;
-      _localEntryFuture = getIt<JournalDb>().journalEntityByIdIncludingDeleted(
+      _localEntryFuture = _db.journalEntityByIdIncludingDeleted(
         conflict.id,
       );
     }
@@ -76,8 +79,9 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
     try {
       final applied = await action();
       if (!applied) {
-        final stored = await getIt<JournalDb>()
-            .journalEntityByIdIncludingDeleted(pair.local.id);
+        final stored = await _db.journalEntityByIdIncludingDeleted(
+          pair.local.id,
+        );
         if (!mounted) return;
         if (stored != null &&
             stored.meta.vectorClock != pair.local.meta.vectorClock) {
@@ -113,7 +117,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   @override
   Widget build(BuildContext context) {
-    final db = getIt<JournalDb>();
+    final db = _db;
     return StreamBuilder<List<Conflict>>(
       stream: db.watchConflictById(widget.conflictId),
       builder: (context, snapshot) {

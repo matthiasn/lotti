@@ -42,12 +42,11 @@ class ConflictPair {
 /// resolution answers false, and the screen reads the local side again.
 class ConflictResolutionService {
   ConflictResolutionService({
+    required this._journalDb,
     PersistenceLogic? persistenceLogic,
     ChecklistRepository? checklistRepository,
-    JournalDb? journalDb,
   }) : _persistence = persistenceLogic ?? getIt<PersistenceLogic>(),
-       _checklistRepositoryOverride = checklistRepository,
-       _journalDb = journalDb ?? getIt<JournalDb>();
+       _checklistRepositoryOverride = checklistRepository;
 
   final PersistenceLogic _persistence;
   final JournalDb _journalDb;

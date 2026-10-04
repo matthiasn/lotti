@@ -389,6 +389,7 @@ class _FieldBench {
     final before = await _stored();
     final side = arg.isOdd ? ConflictSide.remote : ConflictSide.local;
     final applied = await ConflictResolutionService(
+      journalDb: db,
       persistenceLogic: persistence,
     ).keepSide(page, side);
     expect(
@@ -584,7 +585,10 @@ class _FieldBench {
         expect(shown, contains(field), reason: 'NoSilentFieldLoss: $field');
       }
     }
-    final service = ConflictResolutionService(persistenceLogic: persistence);
+    final service = ConflictResolutionService(
+      journalDb: db,
+      persistenceLogic: persistence,
+    );
     if (!combine) {
       expect(await service.keepSide(pair, side), isTrue);
       expected = _fieldsOf((side == ConflictSide.local ? local : remote).data);
