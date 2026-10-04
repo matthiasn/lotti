@@ -64,7 +64,7 @@ const factory AgentDomainEntity.parsedItem({
 }) = ParsedItemEntity;
 ```
 
-These graduate the matching UI-side enums (`ParsedItemKind`, `ParsedItemConfidence`) from `daily_os_next/logic/day_agent_models.dart` to `features/agents/model/agent_enums.dart` so the agent layer and the UI share one definition.
+These graduate the matching UI-side enums (`ParsedItemKind`, `ParsedItemConfidence`) from `daily_os_next/logic/day_agent_models.dart` to `classes/agents/agent_enums.dart` so the agent layer and the UI share one definition.
 
 `agent_links` gets two new type tags: `capture_to_parsed_item` (one capture → many items) and `parsed_item_to_task` (one item → 0..1 task, mutable via `link_capture_phrase_to_task` / `break_capture_link`).
 

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/classifier/feedback_text_classifier.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 
 void main() {
   group('classifyTextSentiment', () {

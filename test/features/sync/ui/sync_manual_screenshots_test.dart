@@ -25,6 +25,8 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/database/database.dart';
@@ -39,8 +41,6 @@ import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.da
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';

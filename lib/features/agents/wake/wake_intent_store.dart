@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// A wake that is owed to an agent: a queued job, or the run it started,

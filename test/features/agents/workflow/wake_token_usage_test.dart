@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';

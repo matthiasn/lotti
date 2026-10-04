@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// Truncates a [DateTime] to midnight of the same day.
 DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);

@@ -8,11 +8,11 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 

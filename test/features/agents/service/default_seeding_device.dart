@@ -1,10 +1,10 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 
 import '../agent_test_device.dart';
 

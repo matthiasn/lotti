@@ -1,5 +1,5 @@
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 
 import '../../../test_data/test_data.dart';

@@ -8,9 +8,9 @@
 /// one artifact, so they cannot drift.
 library;
 
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —

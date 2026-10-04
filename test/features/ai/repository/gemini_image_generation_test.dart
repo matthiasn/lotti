@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';

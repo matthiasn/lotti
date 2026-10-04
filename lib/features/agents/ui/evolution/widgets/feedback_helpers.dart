@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Returns the localized label for a [FeedbackCategory].

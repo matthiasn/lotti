@@ -35,7 +35,7 @@ This enables the task to carry a profile reference independently of any agent, m
 
 ### 2.3 AgentStateEntity — New Field
 
-**File**: `lib/features/agents/model/agent_domain_entity.dart`
+**File**: `lib/classes/agents/agent_domain_entity.dart`
 
 Added to `AgentStateEntity`:
 ```dart
@@ -214,7 +214,7 @@ classDiagram
 |------|--------|--------|
 | `lib/classes/entity_definitions.dart` | Added `defaultProfileId`, `defaultTemplateId` to `CategoryDefinition` | Done |
 | `lib/classes/task.dart` | Added `profileId` to `TaskData` | Done |
-| `lib/features/agents/model/agent_domain_entity.dart` | Added `awaitingContent` to `AgentStateEntity` | Done |
+| `lib/classes/agents/agent_domain_entity.dart` | Added `awaitingContent` to `AgentStateEntity` | Done |
 | `make build_runner` | Regenerated freezed/json code | Done |
 
 ### Step 2: Category UI — Profile & Template Pickers ✅
@@ -323,7 +323,7 @@ classDiagram
 ### Modified Production Files
 - `lib/classes/entity_definitions.dart`
 - `lib/classes/task.dart`
-- `lib/features/agents/model/agent_domain_entity.dart`
+- `lib/classes/agents/agent_domain_entity.dart`
 - `lib/features/agents/service/task_agent_service.dart`
 - `lib/features/agents/state/agent_providers.dart`
 - `lib/features/agents/ui/profile_selector.dart`

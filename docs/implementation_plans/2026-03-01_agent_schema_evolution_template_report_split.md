@@ -573,7 +573,7 @@ gantt
 
 | File | Change |
 |------|--------|
-| `lib/features/agents/model/agent_domain_entity.dart` | Add `generalDirective` + `reportDirective` (keep `directives`); add nullable `tldr` to `AgentReportEntity` |
+| `lib/classes/agents/agent_domain_entity.dart` | Add `generalDirective` + `reportDirective` (keep `directives`); add nullable `tldr` to `AgentReportEntity` |
 | `lib/features/agents/model/agent_domain_entity.freezed.dart` | Regenerated |
 | `lib/features/agents/model/agent_domain_entity.g.dart` | Regenerated |
 

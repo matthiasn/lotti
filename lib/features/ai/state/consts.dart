@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 // The display extension below belongs with the type, so callers get both.
+export 'package:lotti/classes/ai/skill_type.dart';
 export 'package:lotti/classes/ai_response_type.dart';
 
 // Ollama API constants
@@ -80,33 +81,4 @@ extension AiResponseTypeDisplay on AiResponseType {
   bool get isPromptGenerationType =>
       this == AiResponseType.promptGeneration ||
       this == AiResponseType.imagePromptGeneration;
-}
-
-enum SkillType {
-  transcription,
-  imageAnalysis,
-  imageGeneration,
-  promptGeneration,
-  imagePromptGeneration,
-  audioSummary,
-}
-
-/// Maps each [SkillType] to its corresponding [AiResponseType] so the
-/// inference status system (Siri waveform animation) can track skill runs.
-extension SkillTypeToResponseType on SkillType {
-  AiResponseType get toResponseType => switch (this) {
-    SkillType.transcription => AiResponseType.audioTranscription,
-    SkillType.imageAnalysis => AiResponseType.imageAnalysis,
-    SkillType.imageGeneration => AiResponseType.imageGeneration,
-    SkillType.promptGeneration => AiResponseType.promptGeneration,
-    SkillType.imagePromptGeneration => AiResponseType.imagePromptGeneration,
-    SkillType.audioSummary => AiResponseType.audioSummary,
-  };
-}
-
-enum ContextPolicy {
-  none,
-  dictionaryOnly,
-  taskSummary,
-  fullTask,
 }

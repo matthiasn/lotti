@@ -154,7 +154,7 @@ Same `(sourceTaskId, canonicalized key)` → same placeholder → same fingerpri
 
 ### Phase 2: ChangeItem `groupId` Support
 
-**File:** `lib/features/agents/model/change_set.dart`
+**File:** `lib/classes/agents/change_set.dart`
 
 Add optional `String? groupId` to `ChangeItem` so related items (create + migrate) can be grouped in the UI. Run `make build_runner` after.
 
@@ -307,7 +307,7 @@ The flat list rendering works correctly — it just doesn't visually group relat
 | File | Action |
 |------|--------|
 | `lib/features/agents/tools/agent_tool_registry.dart` | Modify — add tool names + definitions |
-| `lib/features/agents/model/change_set.dart` | Modify — add `groupId` field |
+| `lib/classes/agents/change_set.dart` | Modify — add `groupId` field |
 | `lib/features/agents/workflow/change_set_builder.dart` | Modify — singularization, deterministic placeholder, targetTaskId injection, groupId |
 | `lib/features/agents/tools/follow_up_task_handler.dart` | **New** — task creation handler |
 | `lib/features/agents/tools/checklist_migration_handler.dart` | **New** — item migration handler |

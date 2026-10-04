@@ -1,11 +1,11 @@
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 
 import '../agent_test_device.dart';
 import 'wake_orchestrator_test_harness.dart';

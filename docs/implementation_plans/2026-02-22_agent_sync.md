@@ -62,7 +62,7 @@ Add cross-device synchronization for agent entities and links via the existing M
 
 | File | Change |
 |------|--------|
-| `lib/features/sync/model/sync_message.dart` | +2 variants |
+| `lib/classes/sync/sync_message.dart` | +2 variants |
 | `lib/features/sync/outbox/outbox_service.dart` | +2 switch cases, +2 helpers |
 | `lib/features/sync/matrix/sync_event_processor.dart` | +`agentRepository` field, +2 handler cases |
 | `lib/features/sync/matrix/matrix_service.dart` | +2 sent type map entries |
@@ -84,7 +84,7 @@ Add cross-device synchronization for agent entities and links via the existing M
 
 | File | Tests |
 |------|-------|
-| `test/features/sync/model/sync_message_agent_test.dart` | 14 tests: serialization round-trips for all entity/link variants, null vectorClock |
+| `test/classes/sync/sync_message_agent_test.dart` | 14 tests: serialization round-trips for all entity/link variants, null vectorClock |
 | `test/features/agents/sync/agent_sync_service_test.dart` | 20 tests: all write paths, fromSync flag, error paths, all entity/link variants |
 
 ## Updated Test Files

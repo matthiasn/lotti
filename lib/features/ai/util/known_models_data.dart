@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 

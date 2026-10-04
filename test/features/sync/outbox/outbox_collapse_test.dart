@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_collapse.dart';
 
 var _nextId = 0;

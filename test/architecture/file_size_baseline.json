@@ -2,7 +2,7 @@
   "_comment": "Dart files in lib/ allowed above the 1,000-line limit, each held at its current size. A file may shrink, never grow: lower its entry when it does, and delete the entry once it is at or below the limit.",
   "files": {
     "lib/beamer/beamer_app.dart": 2041,
-    "lib/features/agents/model/agent_domain_entity.dart": 1502,
+    "lib/classes/agents/agent_domain_entity.dart": 1502,
     "lib/features/agents/sync/agent_concurrent_resolver.dart": 1176,
     "lib/features/agents/ui/agent_automation_row.dart": 1270,
     "lib/features/agents/ui/ai_summary_card/proposal_row_part.dart": 1026,

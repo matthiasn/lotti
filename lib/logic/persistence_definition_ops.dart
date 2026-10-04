@@ -1,10 +1,10 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;

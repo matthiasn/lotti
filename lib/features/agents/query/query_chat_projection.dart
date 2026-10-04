@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 
 /// A chat's durable projection. Drafts, scroll positions and running requests
 /// belong to device-local controllers, not this synced history.

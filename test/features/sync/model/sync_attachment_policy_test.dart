@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 
 void main() {
   group('shouldSendJournalAttachments', () {

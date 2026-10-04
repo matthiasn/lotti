@@ -210,7 +210,7 @@ void main() {
       final uris = _lottiUris('''
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 export 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
   import 'package:lotti/classes/day_plan.dart';
 import "package:lotti/classes/double_quoted.dart";
@@ -236,7 +236,7 @@ final s = "import 'package:lotti/not/an/import.dart'";
 ''', path: 'lib/features/agents/fixture.dart');
 
       expect(uris, <String>[
-        'features/agents/model/agent_constants.dart',
+        'classes/agents/agent_constants.dart',
         'features/daily_os_next/agents/domain/day_agent_slots.dart',
         'classes/day_plan.dart',
         // `prefer_single_quotes` would reject a double-quoted directive in this

@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:meta/meta.dart';
 
 part 'agent_database.g.dart';

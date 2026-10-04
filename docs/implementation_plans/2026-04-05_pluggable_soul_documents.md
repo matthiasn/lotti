@@ -544,9 +544,9 @@ apply identically.
    - Head pointer update semantics
 
 **Files touched:**
-- `lib/features/agents/model/agent_enums.dart`
-- `lib/features/agents/model/agent_domain_entity.dart`
-- `lib/features/agents/model/agent_link.dart`
+- `lib/classes/agents/agent_enums.dart`
+- `lib/classes/agents/agent_domain_entity.dart`
+- `lib/classes/agents/agent_link.dart`
 - `lib/features/agents/database/agent_database.drift`
 - `lib/features/agents/database/agent_repository.dart`
 - New test files mirroring the above
@@ -636,7 +636,7 @@ flowchart TD
 **Files touched:**
 - `lib/features/agents/workflow/task_agent_workflow.dart`
 - `lib/features/agents/workflow/project_agent_workflow.dart`
-- `lib/features/agents/model/agent_domain_entity.dart` (token usage fields)
+- `lib/classes/agents/agent_domain_entity.dart` (token usage fields)
 - `lib/features/agents/database/agent_database.drift` (wake run log columns)
 - Existing test files for both workflows
 
@@ -677,7 +677,7 @@ both skills and personality in a single conversation.
 - `lib/features/agents/workflow/evolution_context_builder.dart`
 - `lib/features/agents/workflow/template_evolution_workflow.dart`
 - `lib/features/agents/model/seeded_directives.dart`
-- `lib/features/agents/model/agent_enums.dart`
+- `lib/classes/agents/agent_enums.dart`
 - Existing and new test files
 
 ### Phase 5: UI & Settings ✅

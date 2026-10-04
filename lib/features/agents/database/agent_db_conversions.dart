@@ -1,10 +1,11 @@
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart' as model;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
 
 /// Type mapping layer between Drift DB rows and Freezed models for the agent
 /// domain.

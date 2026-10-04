@@ -1,6 +1,6 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
 // Re-exported so the many Daily OS call sites that reach for these through
 // the slot helpers keep working; they now live beside dayPlanId so the agent

@@ -12,7 +12,7 @@
 /// - OpenAI: Advanced language and multimodal models
 library;
 
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/util/known_models_data.dart';
 
 export 'package:lotti/features/ai/util/known_models_data.dart';

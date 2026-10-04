@@ -359,7 +359,7 @@ For this migration, **Option B** is safer - maintain internal stream subscriptio
 | `lib/features/journal/state/journal_page_scope.dart` | Scoped provider for `showTasks` (plain Provider, no codegen) |
 | `lib/features/journal/state/journal_page_controller.dart` | New Riverpod controller |
 | `lib/features/journal/state/journal_page_controller.g.dart` | Generated (build_runner) |
-| `lib/features/journal/state/journal_page_state.dart` | State class and enums |
+| `lib/classes/journal_page_state.dart` | State class and enums |
 | `lib/features/journal/state/journal_page_state.freezed.dart` | Generated (build_runner) |
 | `lib/features/journal/state/journal_page_state.g.dart` | Generated (build_runner) |
 | `test/features/journal/state/journal_page_controller_test.dart` | Comprehensive unit tests |
@@ -394,7 +394,7 @@ For this migration, **Option B** is safer - maintain internal stream subscriptio
 
 | File | Changes |
 |------|---------|
-| `lib/features/calendar/state/calendar_category_visibility_controller.dart:4` | Update import from `blocs/journal/journal_page_state.dart` to `features/journal/state/journal_page_state.dart` |
+| `lib/features/calendar/state/calendar_category_visibility_controller.dart:4` | Update import from `blocs/journal/journal_page_state.dart` to `classes/journal_page_state.dart` |
 
 #### Documentation
 
@@ -512,7 +512,7 @@ final journalPageScopeProvider = Provider<bool>((ref) {
 
 ### Step 3: Create Journal Page State Model
 
-**File:** `lib/features/journal/state/journal_page_state.dart`
+**File:** `lib/classes/journal_page_state.dart`
 
 ```dart
 import 'package:flutter/foundation.dart';
@@ -598,7 +598,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/get_it.dart';
@@ -724,7 +724,7 @@ class JournalPageController extends _$JournalPageController {
 
 2. **Create new state files**
    - `lib/features/journal/state/journal_page_scope.dart`
-   - `lib/features/journal/state/journal_page_state.dart`
+   - `lib/classes/journal_page_state.dart`
    - Move enums, state classes, and `TasksFilter` from old location
 
 3. **Create Riverpod controller**

@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:matrix/matrix.dart';

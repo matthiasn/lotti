@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/dev_logger.dart';
 
 /// Persists the ordered list of [SavedTaskFilter]s as a single JSON blob in

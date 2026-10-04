@@ -231,5 +231,5 @@ sequenceDiagram
 - ADR 0016: Agent State as Log Projection.
 - ADR 0018: Convergent Multi-Device Execution.
 - ADR 0020: Agent Input Capture.
-- `lib/features/agents/model/attention_negotiation.dart`
-- `lib/features/agents/model/agent_domain_entity.dart`
+- `lib/classes/agents/attention_negotiation.dart`
+- `lib/classes/agents/agent_domain_entity.dart`

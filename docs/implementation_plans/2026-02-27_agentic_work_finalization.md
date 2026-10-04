@@ -73,7 +73,7 @@ flowchart TD
 
 **Changes**:
 
-1. **`lib/features/agents/model/agent_config.dart:14`** — Change default `modelId` from `'models/gemini-3.1-pro-preview'` to `'models/gemini-3-flash-preview'`.
+1. **`lib/classes/agents/agent_config.dart:14`** — Change default `modelId` from `'models/gemini-3.1-pro-preview'` to `'models/gemini-3-flash-preview'`.
 
 2. **`lib/features/agents/service/task_agent_service.dart:93`** — Pass the template's `modelId` into the `AgentConfig` instead of using `const AgentConfig()`:
    ```dart
@@ -371,7 +371,7 @@ After initial implementation, several UX and reliability issues were identified 
 **Problem**: No UI showed which model (Flash vs Pro) generated a conversation.
 
 **Changes**:
-- Added `modelId` field to `AgentTemplateVersionEntity` (`lib/features/agents/model/agent_domain_entity.dart`) — captures the template's configured model when the version is created
+- Added `modelId` field to `AgentTemplateVersionEntity` (`lib/classes/agents/agent_domain_entity.dart`) — captures the template's configured model when the version is created
 - Updated both version creation sites in `AgentTemplateService` to pass `modelId`
 - Added `modelIdForThreadProvider` (`lib/features/agents/state/agent_providers.dart`) — resolves model from `wake_run_log.template_version_id` → `AgentTemplateVersionEntity.modelId`, falls back to live template for pre-existing data
 - Converted `_ThreadTile` to `ConsumerWidget`, watches `modelIdForThreadProvider` to show the actual model used for each conversation (not the current template config)
@@ -414,7 +414,7 @@ After initial implementation, several UX and reliability issues were identified 
 **Problem**: On hot restart, in-memory locks are lost, leaving wake runs stuck in `running` status forever.
 
 **Changes**:
-- Added `WakeRunStatus.abandoned` enum value (`lib/features/agents/model/agent_enums.dart`)
+- Added `WakeRunStatus.abandoned` enum value (`lib/classes/agents/agent_enums.dart`)
 - Added `AgentRepository.abandonOrphanedWakeRuns()` method (`lib/features/agents/database/agent_repository.dart`)
 - Call on startup in `agentInitialization` provider (`lib/features/agents/state/agent_providers.dart`)
 - Updated test mocks to stub the new method
@@ -425,7 +425,7 @@ After initial implementation, several UX and reliability issues were identified 
 **Problem**: The model displayed in the conversation thread came from the live template config, not from the version used at the time of the conversation. Also, changing the model on a template did not create a new immutable version.
 
 **Changes**:
-- Added `String? modelId` field to `AgentTemplateVersionEntity` (`lib/features/agents/model/agent_domain_entity.dart`)
+- Added `String? modelId` field to `AgentTemplateVersionEntity` (`lib/classes/agents/agent_domain_entity.dart`)
 - Updated `AgentTemplateService.createVersion()` to record `template.modelId` on new versions
 - Updated `AgentTemplateService.updateTemplate()` to create a new version when `modelId` changes (author: `system:model_change`)
 - Updated workflow to resolve model from version: `templateCtx.version.modelId ?? templateCtx.template.modelId`

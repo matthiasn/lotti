@@ -18,7 +18,7 @@ arbitrate. It is Proposed and unimplemented. Its Decision 1 picks one agent per
 
 ### What already exists (verified in code)
 
-- `StandingAgreementEntity` (`lib/features/agents/model/agent_domain_entity.dart:516`) fully
+- `StandingAgreementEntity` (`lib/classes/agents/agent_domain_entity.dart:516`) fully
   models "exercise 3×/week" — scope (`fitness`, `sleep`, …), cadence, `minCount`/`minMinutes`
   quotas, enforcement (`preference`/`target`/`nonNegotiable`), approval mode, evidence refs —
   and has **no writer and no UI**. The day-planner context builder reads agreements for its

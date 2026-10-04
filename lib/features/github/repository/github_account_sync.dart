@@ -1,6 +1,6 @@
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_secret.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_secret.dart';
 
 /// Carries the user's GitHub account between their devices on the sync
 /// channel inference keys use: end-to-end encrypted, applied into the
