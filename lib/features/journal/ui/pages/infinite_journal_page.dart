@@ -22,6 +22,7 @@ import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -250,6 +251,7 @@ class _InfiniteJournalPageBodyState
             // The same titled header Tasks and Projects use, so the three
             // list panes read as one system.
             TabSectionHeader(
+              titleTrailing: const NotificationBell(),
               searchFocusNode: _searchFocusNode,
               title: context.messages.navTabTitleJournal,
               query: state.match,

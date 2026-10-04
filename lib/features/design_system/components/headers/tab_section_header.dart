@@ -2,7 +2,6 @@ import 'package:lotti/features/design_system/components/layout/detail_content_wi
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The shared header action button used by tab headers (and their collapsed
@@ -88,6 +87,10 @@ class TabSectionHeader extends StatelessWidget {
   final ValueChanged<String> onSearchPressed;
   final VoidCallback onFilterPressed;
   final String filterTooltip;
+
+  /// The control in the title row's square trailing slot — the tab pages
+  /// pass the notification bell. The slot keeps its size when empty, so
+  /// the title row and the search row still end on one edge.
   final Widget? titleTrailing;
   final Widget? titleLeading;
   final FocusNode? searchFocusNode;
@@ -111,8 +114,6 @@ class TabSectionHeader extends StatelessWidget {
         ? tokens.spacing.step5 + tokens.spacing.step2
         : tokens.spacing.step3;
     final highText = tokens.colors.text.highEmphasis;
-
-    final effectiveTitleTrailing = titleTrailing ?? const NotificationBell();
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
@@ -154,7 +155,7 @@ class TabSectionHeader extends StatelessWidget {
                 // happens to produce.
                 SizedBox.square(
                   dimension: TapTargets.minimum,
-                  child: Center(child: effectiveTitleTrailing),
+                  child: Center(child: titleTrailing),
                 ),
               ],
             ),

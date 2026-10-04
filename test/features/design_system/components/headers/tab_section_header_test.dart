@@ -55,15 +55,39 @@ void main() {
       );
     }
 
-    testWidgets('renders title, default bell, search input and filter icon', (
-      tester,
-    ) async {
+    testWidgets('renders title, search input and filter icon', (tester) async {
       await pump(tester, header: buildHeader());
 
       expect(find.text('Tasks'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.notification), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byIcon(LottiIcons.filter), findsOneWidget);
+    });
+
+    testWidgets('the trailing slot shows what the page passes and keeps its '
+        'size empty', (tester) async {
+      final squares = find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox &&
+            widget.width == TapTargets.minimum &&
+            widget.height == TapTargets.minimum,
+      );
+      const trailingKey = Key('trailing');
+      await pump(
+        tester,
+        header: buildHeader(titleTrailing: const SizedBox(key: trailingKey)),
+      );
+      expect(
+        find.descendant(of: squares, matching: find.byKey(trailingKey)),
+        findsOneWidget,
+      );
+      final withTrailing = squares.evaluate().length;
+
+      // The design system carries no feature control of its own: without a
+      // trailing widget the slot is empty but still reserves its square, so
+      // the title row and the search row keep ending on one edge.
+      await pump(tester, header: buildHeader());
+      expect(find.byIcon(LottiIcons.notification), findsNothing);
+      expect(squares.evaluate().length, withTrailing);
     });
 
     testWidgets('fires onSearchChanged as the user types', (tester) async {

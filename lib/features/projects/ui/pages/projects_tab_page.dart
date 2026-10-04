@@ -23,6 +23,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -357,6 +358,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
               return Column(
                 children: [
                   TabSectionHeader(
+                    titleTrailing: const NotificationBell(),
                     searchFocusNode: searchFocusNode,
                     title: context.messages.navTabTitleProjects,
                     query: filter.textQuery,

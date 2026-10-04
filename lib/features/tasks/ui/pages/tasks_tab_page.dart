@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -20,7 +19,6 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -31,6 +29,7 @@ import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
@@ -42,6 +41,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_r
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_list_chrome.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -268,7 +268,7 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           // the pane's bottom edge. The FAB's stock 16 px margin put the two
           // labelled pills on visibly different lines; matching the bar's own
           // padding puts them on one.
-          floatingActionButtonLocation: _ActionBarAlignedFabLocation(
+          floatingActionButtonLocation: ActionBarAlignedFabLocation(
             bottomMargin: context.designTokens.spacing.step4,
           ),
           floatingActionButton: launcherOwnsCreateAction
@@ -452,6 +452,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       mainAxisSize: MainAxisSize.min,
       children: [
         TabSectionHeader(
+          titleTrailing: const NotificationBell(),
           searchFocusNode: widget.searchFocusNode,
           title: context.messages.navTabTitleTasks,
           query: state.match,
@@ -700,7 +701,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             // its own.
                                             sectionHeaderTrailing:
                                                 entryIndex == 0
-                                                ? const _TaskListDensityToggle()
+                                                ? const TaskListDensityToggle()
                                                 : null,
                                             vectorDistance: distance,
                                             previousTaskIdInSection:
@@ -1121,90 +1122,3 @@ MobileNavDockAction tasksTabDockAction(BuildContext context, WidgetRef ref) =>
       icon: LottiIcons.add,
       onPressed: () => unawaited(createTaskFromTaskListFilters(ref)),
     );
-
-/// End-aligned floating location that sits [bottomMargin] above the content
-/// edge instead of the framework's fixed [kFloatingActionButtonMargin].
-///
-/// Never closer to the edge than the system's own bottom inset allows — a
-/// tighter margin is a visual alignment, not a licence to sit under the home
-/// indicator.
-@immutable
-class _ActionBarAlignedFabLocation extends StandardFabLocation
-    with FabEndOffsetX, FabFloatOffsetY {
-  const _ActionBarAlignedFabLocation({required this.bottomMargin});
-
-  final double bottomMargin;
-
-  // Value equality, not identity: `build` constructs a fresh instance every
-  // time, and `Scaffold.didUpdateWidget` reads a changed location as a move —
-  // restarting the FAB transition (and its setState) on every rebuild of a
-  // page that rebuilds on every journal query result.
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ActionBarAlignedFabLocation &&
-          other.bottomMargin == bottomMargin;
-
-  @override
-  int get hashCode => bottomMargin.hashCode;
-
-  @override
-  double getOffsetY(
-    ScaffoldPrelayoutGeometry scaffoldGeometry,
-    double adjustment,
-  ) {
-    final standard = super.getOffsetY(scaffoldGeometry, adjustment);
-    final lowest =
-        scaffoldGeometry.contentBottom -
-        scaffoldGeometry.floatingActionButtonSize.height -
-        scaffoldGeometry.minViewPadding.bottom;
-    return math.min(
-      standard + (kFloatingActionButtonMargin - bottomMargin),
-      lowest,
-    );
-  }
-}
-
-/// Compact list-density toggle riding the trailing end of the tasks list's
-/// first section-header line ("P2 Medium · 5 tasks"), so switching between
-/// full cards and title-only rows costs the header no row of its own.
-///
-/// The glyph stays at the dense [IconSizes.m] tier, but the hit area keeps
-/// the full [TapTargets.minimum] floor — a glyph-only control has no label
-/// to borrow interaction area from. The section header compensates by
-/// tightening its own vertical padding while it hosts a trailing control
-/// (see `TaskBrowseListItem.sectionHeaderTrailing`), so the line's overall
-/// height barely moves.
-class _TaskListDensityToggle extends ConsumerWidget {
-  const _TaskListDensityToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final compact = ref.watch(taskListDensityControllerProvider);
-    return IconButton(
-      key: const Key('tasks_list_density_toggle'),
-      tooltip: compact
-          ? context.messages.tasksListExpandedModeTooltip
-          : context.messages.tasksListCompactModeTooltip,
-      onPressed: ref.read(taskListDensityControllerProvider.notifier).toggle,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: TapTargets.minimum,
-        minHeight: TapTargets.minimum,
-      ),
-      style: compact
-          ? IconButton.styleFrom(
-              backgroundColor: DesignSystemListPalette.activatedFill(tokens),
-            )
-          : null,
-      icon: Icon(
-        LottiIcons.viewRows,
-        size: IconSizes.m,
-        color: compact
-            ? tokens.colors.interactive.enabled
-            : tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}
