@@ -4,16 +4,17 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 
 /// Shared detailed inference resolution used by agent headers and setup sheets.
-/// Relationship agents resolve their standalone defaults before template lookup.
+/// A kind with an entry in [agentResolvedSetupResolversProvider] (relationship
+/// agents) resolves through it instead of a template.
 final FutureProviderFamily<ResolvedAgentSetup?, String>
 taskAgentResolvedSetupProvider = FutureProvider.autoDispose
     .family<ResolvedAgentSetup?, String>(
@@ -63,9 +64,10 @@ Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
   final identityEntity = await ref.watch(agentIdentityProvider(agentId).future);
   final identity = identityEntity?.mapOrNull(agent: (value) => value);
   if (identity == null) return null;
-  if (identity.kind == AgentKinds.relationshipAgent) {
-    return ref.watch(relationshipAgentResolvedSetupProvider(agentId).future);
-  }
+  final kindResolver = ref.watch(
+    agentResolvedSetupResolversProvider,
+  )[identity.kind];
+  if (kindResolver != null) return kindResolver(ref, agentId);
 
   final templateEntity = await ref.watch(
     templateForAgentProvider(agentId).future,

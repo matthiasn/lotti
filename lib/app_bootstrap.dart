@@ -7,14 +7,19 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
@@ -34,6 +39,7 @@ import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -301,6 +307,22 @@ List<Override> buildProviderOverrides(ProfileContext context) {
         ...ref.watch(relationshipAgentWakeRunnersProvider),
       },
     ),
+    // A speech model download or removal re-advertises this node's
+    // capabilities to paired devices. Resolved per call: sync registers the
+    // broadcaster only for a profile that syncs.
+    localNodeCapabilitiesChangedProvider.overrideWithValue(
+      () => getIt<SyncNodeProfileBroadcaster>().broadcastIfChanged(),
+    ),
+    // AI profile automation reads agents and templates through ports.
+    automationSubjectAgentLookupProvider.overrideWith(
+      (ref) => ref.watch(subjectAgentResolverProvider).call,
+    ),
+    automationTemplateLookupProvider.overrideWith(
+      (ref) => ref.watch(agentTemplateServiceProvider),
+    ),
+    agentResolvedSetupResolversProvider.overrideWithValue({
+      AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
+    }),
     agentRuntimeMaintenanceProvider.overrideWith(
       (ref) => [
         ...ref.watch(dailyOsRuntimeMaintenanceProvider),

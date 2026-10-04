@@ -51,6 +51,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/model/pull_request_context_source.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -62,8 +63,6 @@ import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
-import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
-import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -184,7 +183,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
 
   /// Refreshes the task's linked pull requests for the wake's context; null
   /// leaves the `## Pull Requests` section out.
-  final PullRequestContextService? pullRequestContextService;
+  final PullRequestContextSource? pullRequestContextService;
 
   /// Optional bridge that keeps task-suggestion notifications aligned with
   /// agent change-set resolution.

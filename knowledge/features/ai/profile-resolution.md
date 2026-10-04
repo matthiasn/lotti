@@ -41,6 +41,14 @@ sources:
 | `resolveForCategory(categoryId)` | Standalone entries with no parent task. Reads `CategoryDefinition.defaultProfileId` and resolves it directly |
 | `resolveAutomationFallbacks(taskId)` | The ordered, de-duplicated profiles a task *inherits*. Used only by `ProfileAutomationService` — see [execution paths](execution-paths.md) |
 
+The resolver reads agents and their templates through two ports the AI
+feature declares in `profile_automation_providers.dart`:
+`automationSubjectAgentLookupProvider` (the agent assigned to a subject) and
+`automationTemplateLookupProvider` (an `AgentTemplateVersionLookup`, which the
+agents feature's `AgentTemplateService` implements). Both throw until the
+composition root (`buildProviderOverrides`) wires them, so the AI feature does
+not depend on the agents feature.
+
 `triggerSkillProvider` picks between the first two: with a non-null
 `linkedTaskId` it calls `resolveForTask`, otherwise it looks up the entry, reads
 its `categoryId`, and calls `resolveForCategory`. Skills whose `contextPolicy` is

@@ -567,7 +567,11 @@ entry stores, which is why the diagram has no transition into them.
 
 # In the task context
 
-`PullRequestContextService` serves both contexts. Whenever one is built it
+`PullRequestContextService` serves both contexts. It implements the AI
+feature's `PullRequestContextSource` port
+(`lib/features/ai/model/pull_request_context_source.dart`, which also owns
+`PullRequestContextAudience`), so the task agent workflow takes the port
+rather than the GitHub service. Whenever one is built it
 refreshes every linked pull request, in parallel, waiting at most eight
 seconds for each — a slower refresh finishes and is stored afterwards, but the
 context goes without it. The context uses what its own refresh read, unless

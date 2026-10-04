@@ -70,7 +70,10 @@ Receivers upsert it into a `SettingsDb` directory
   late, wiped settings, or missed the last event converges within a session. The
   receiver's last-write-wins upsert makes redundant re-publishes free.
 - `broadcastIfChanged()` — diff-only, called from the rename UI and after
-  embedded model installation/removal to suppress no-op broadcasts.
+  embedded model installation/removal to suppress no-op broadcasts. The
+  speech-model screen reaches it through the AI feature's
+  `localNodeCapabilitiesChangedProvider`, a no-op hook the composition root
+  wires to the broadcaster.
 
 **`AiConfigInferenceProfile.pinnedHostId`** is a single VC host UUID. When set,
 only that device claims inbound audio for the profile. **Null means no

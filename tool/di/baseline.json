@@ -59,7 +59,6 @@
     "lib/features/ai/ui/settings/embedding_backfill_modal.dart": {"lookups": 2},
     "lib/features/ai/ui/settings/provider/ai_provider_detail_page.dart": {"lookups": 1},
     "lib/features/ai/ui/settings/util/ai_settings_back_nav.dart": {"isRegistered": 1},
-    "lib/features/ai/ui/settings/widgets/sherpa_models_section.dart": {"lookups": 1},
     "lib/features/ai/ui/widgets/profile_pinning_selector.dart": {"isRegistered": 1},
     "lib/features/ai/util/audio_converter_channel.dart": {"lookups": 2},
     "lib/features/ai/util/model_prepopulation_service.dart": {"lookups": 1},

@@ -16,6 +16,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 
 /// Runs one wake for a single agent kind.
 ///
@@ -86,6 +87,22 @@ final agentRuntimeMaintenanceProvider = Provider<List<AgentRuntimeMaintenance>>(
   (ref) => const <AgentRuntimeMaintenance>[],
   name: 'agentRuntimeMaintenanceProvider',
 );
+
+/// Resolves the inference setup of one agent kind the owning feature
+/// resolves itself, instead of through the agent's template.
+///
+/// Called with the resolving provider's [Ref], so whatever it watches
+/// re-resolves the setup when it changes.
+typedef AgentResolvedSetupResolver =
+    Future<ResolvedAgentSetup?> Function(Ref ref, String agentId);
+
+/// [AgentResolvedSetupResolver]s by `AgentKinds` value. A kind missing here
+/// resolves through its agent template.
+final agentResolvedSetupResolversProvider =
+    Provider<Map<String, AgentResolvedSetupResolver>>(
+      (ref) => const <String, AgentResolvedSetupResolver>{},
+      name: 'agentResolvedSetupResolversProvider',
+    );
 
 /// Opens an owning feature's inference-setup surface from a runtime screen.
 ///

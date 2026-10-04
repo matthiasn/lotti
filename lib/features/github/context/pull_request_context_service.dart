@@ -4,6 +4,7 @@ import 'package:lotti/classes/github/pull_request_order.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/ai/model/pull_request_context_source.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
@@ -41,7 +42,7 @@ class PullRequestContextItem {
 /// Refreshes a task's pull requests for a task context: the coding prompt
 /// and the task agent's wake (`Request` and `Build` in
 /// `specs/tla/PullRequestSnapshot.tla`).
-class PullRequestContextService {
+class PullRequestContextService implements PullRequestContextSource {
   PullRequestContextService({
     required PullRequestRepository repository,
     required PullRequestService service,
@@ -65,6 +66,7 @@ class PullRequestContextService {
 
   /// The task's pull requests, refreshed now, rendered for [audience]; empty
   /// when the task has none or this device holds no GitHub token.
+  @override
   Future<String> contextFor(
     String taskId, {
     required PullRequestContextAudience audience,

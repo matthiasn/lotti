@@ -15,6 +15,16 @@ final sherpaInstalledModelIdsProvider = FutureProvider<Set<String>>((
   return installed;
 });
 
+/// Announces that this device's local speech capabilities changed, so
+/// paired devices learn which models it can now transcribe with.
+///
+/// A no-op until the composition root wires it to the sync feature's
+/// node-profile broadcast; the AI feature does not depend on sync.
+final localNodeCapabilitiesChangedProvider = Provider<Future<void> Function()>(
+  (ref) => () async {},
+  name: 'localNodeCapabilitiesChangedProvider',
+);
+
 /// Whether resolving availability for [models] needs the installed-model
 /// probe at all: true only when at least one of them routes through a sherpa
 /// provider.
