@@ -133,28 +133,20 @@ confirmed checklist change keeps an approval receipt, and the writes an agent
 makes without asking are logged in its audit trail.
 
 A small, named class of writes is pre-approved rather than proposed, because
-asking every time would add friction without telling you anything new. These
-are the complete set:
-
-- filling in the title and language of a task that has none;
-- transcribing a recording;
-- saving an AI summary or a generated prompt as a *new* entry beside your own;
-- image analysis, which appends its description to the image's text;
-- generating cover art for a task;
-- the day planner's triage (status, due date) and creating a task from a
-  phrase in your check-in.
-
-That class is fixed by
+asking every time would add friction without telling you anything new — for
+example transcribing a recording, saving an AI summary as a *new* entry beside
+your own, or titling a task that has none. The exact set is defined in
 [ADR 0102](docs/adr/0102-pre-approved-agent-changes.md) and can only grow by
 another decision record. Some things are human-only by construction: an event
 agent has no tool that can set an event's rating or cover photo.
 
-Signed provenance is the next step. The cryptographic building blocks —
-canonical encoding, Ed25519 signatures, and an envelope that chains each
-device's entries together — [are in the codebase](knowledge/features/provenance.md)
-and modelled in TLA+, so that every entry will carry a verifiable record of who
-authored it: you, an agent under a consent you gave, or an agent proposal you
-approved. Entries are not signed yet.
+**Record provenance is work in progress.** The goal is that every entry carries
+a verifiable record of who authored it — you, an agent acting under a consent
+you gave, or an agent proposal you approved — signed and chained per device so
+that the record can prove it was not altered. The cryptographic building
+blocks are [in the codebase](knowledge/features/provenance.md) and modelled in
+TLA+, but entries are not signed yet, and the design will keep moving as this
+lands.
 
 See [Two databases](#two-databases-human-in-the-loop-by-construction) for how
 the separation is enforced.
@@ -449,7 +441,7 @@ flowchart LR
 The rule matters because of how it is enforced. Agent-authored content sits in
 a different file on disk and reaches the user database only through a code path
 that requires your approval, or through one of the pre-approved paths
-[listed above](#3-memories-stay-unaltered-with-clear-provenance) and fixed by
+[described above](#3-memories-stay-unaltered-with-clear-provenance) and defined by
 [ADR 0102](docs/adr/0102-pre-approved-agent-changes.md). Every other change an
 agent wants to make to your record is a proposal you confirm or dismiss. Both
 databases sync between your devices the same way.
@@ -631,9 +623,10 @@ Settings → Sections, and expect it to change.
   the confirm control. Wrap-up at the end of the day separates what you
   finished from what carries forward.
   [Documentation](https://matthiasn.github.io/lotti/manual/development/plan-and-capture/daily-os)
-- **Signed provenance**: every entry signed by its author and chained per
-  device, so the record can prove who wrote what. The cryptographic primitives
-  exist; wiring them into the record is the next phase.
+
+Also under way, with no switch to flip yet: **record provenance**, so that
+every entry is signed by its author and the record can prove who wrote what —
+see [the vision](#3-memories-stay-unaltered-with-clear-provenance).
 
 Next agent types on the roadmap: week planners, long-term commitment monitors,
 and effort-against-goals balancers — same building blocks, different jobs.
