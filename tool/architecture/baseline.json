@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 85,
+  "_total": 75,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -50,12 +50,8 @@
     "lib/features/notifications/ui/widgets/notification_bell.dart": ["goals","tasks"],
     "lib/features/ratings/ui/rating_summary.dart": ["journal"],
     "lib/features/recent_searches/ui/recent_search_opener.dart": ["habits","journal","projects"],
-    "lib/features/settings/routing/settings_routes.dart": ["daily_os_next","github","habits","onboarding","projects","system_health"],
-    "lib/features/settings/ui/pages/advanced/maintenance_page.dart": ["onboarding"],
     "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": ["onboarding"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github"],
-    "lib/features/sync/ui/provisioned/bundle_import_page.dart": ["settings"],
-    "lib/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart": ["settings"],
     "lib/features/tasks/ui/header/desktop_task_header_connector.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_pickers.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_section.dart": ["projects"],
@@ -65,7 +61,6 @@
     "lib/widgets/charts/habits/habit_completion_rate_chart.dart": ["habits"],
     "lib/widgets/create/suggest_measurement.dart": ["dashboards"],
     "lib/widgets/media/journal_image_resolver.dart": ["journal"],
-    "lib/widgets/misc/contact_support_row.dart": ["settings"],
     "lib/widgets/misc/sidebar_activity_summary.dart": ["agents","speech"],
     "lib/widgets/misc/sidebar_audio_recording_section.dart": ["speech"],
     "lib/widgets/misc/timer_navigation.dart": ["tasks"],

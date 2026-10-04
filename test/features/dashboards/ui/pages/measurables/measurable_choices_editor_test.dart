@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/ui/pages/measurables/measurable_choices_editor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/measurables/measurable_choices_editor.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';

@@ -46,7 +46,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
-import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -59,6 +58,7 @@ import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
         journalDbProvider,

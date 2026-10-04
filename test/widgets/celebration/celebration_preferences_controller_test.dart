@@ -6,11 +6,11 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
-import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../widget_test_utils.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   late ProviderContainer container;

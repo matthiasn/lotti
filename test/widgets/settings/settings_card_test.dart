@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../test_helper.dart';
+import '../../test_helper.dart';
 
 void main() {
   testWidgets('renders title, subtitle, leading and trailing', (tester) async {

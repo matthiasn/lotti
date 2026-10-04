@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
+import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Invoked when a language is chosen in the picker; `null` signals clearing

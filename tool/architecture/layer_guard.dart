@@ -35,8 +35,9 @@ import 'package:path/path.dart' as p;
 /// above the AI layer it calls, the journal — the logbook surface, its
 /// repository now shared from `lib/logic` — above the speech and agent
 /// features it composes, sync above the features whose entities it carries
-/// (features reach it through its outbox), and the aggregators — settings,
-/// demo, onboarding, Daily OS — near the top. Moving a feature is a
+/// (features reach it through its outbox), the aggregators — demo,
+/// onboarding, Daily OS — near the top, and settings above them, since its
+/// route table hosts every feature's settings pages. Moving a feature is a
 /// design decision, and shows up as one in review.
 const featureOrder = <String>[
   'provenance',
@@ -66,7 +67,6 @@ const featureOrder = <String>[
   'nudges',
   'theming',
   'demo',
-  'settings',
   'github',
   'tasks',
   'plaza',
@@ -76,6 +76,7 @@ const featureOrder = <String>[
   'daily_os_next',
   'onboarding',
   'system_health',
+  'settings',
   'relationships',
   'events',
   'backup_restore',

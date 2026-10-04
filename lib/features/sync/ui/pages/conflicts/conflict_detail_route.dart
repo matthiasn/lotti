@@ -11,7 +11,7 @@ import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_resolution_vie
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Conflict resolution page. Loads the local + remote versions of the
