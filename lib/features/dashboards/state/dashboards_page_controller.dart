@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -15,7 +16,7 @@ final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
       final db = ref.read(journalDbProvider);
       return notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
+        notifications: ref.read(updateNotificationsProvider),
         notificationKeys: {dashboardsNotification, privateToggleNotification},
         fetcher: () async =>
             (await db.getAllDashboards()).where((d) => d.active).toList(),
@@ -49,7 +50,7 @@ final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
       final db = ref.read(journalDbProvider);
       final lockdown = ref.watch(lockdownControllerProvider);
       return notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
+        notifications: ref.read(updateNotificationsProvider),
         notificationKeys: {categoriesNotification, privateToggleNotification},
         fetcher: () async => (await db.getAllCategories())
             .where((c) => lockdown.allows(c.id))

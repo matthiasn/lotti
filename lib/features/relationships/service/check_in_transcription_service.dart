@@ -13,8 +13,8 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 const _logTag = 'CheckInTranscriptionService';
@@ -282,7 +282,7 @@ final checkInTranscriptionServiceProvider =
 CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
     CheckInTranscriptionService(
       ref.watch(journalDbProvider),
-      getIt<UpdateNotifications>(),
+      ref.read(updateNotificationsProvider),
       ref.watch(profileResolverProvider),
       ref.watch(skillInferenceRunnerProvider),
       ref.watch(relationshipRepositoryProvider),

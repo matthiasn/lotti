@@ -7,10 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
 /// Clock provider for timestamps — override in tests for determinism.
@@ -51,23 +50,26 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   }
 
   void _listen() {
-    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
-      affectedIds,
-    ) async {
-      if (!affectedIds.contains(id)) return;
-      developer.log(
-        'notify received id=$id affected=$affectedIds',
-        name: 'ChecklistItemController',
-      );
-      if (!ref.mounted) return;
-      final latest = await _fetch();
-      if (!ref.mounted) return;
-      developer.log(
-        'state updated id=$id isChecked=${latest?.data.isChecked}',
-        name: 'ChecklistItemController',
-      );
-      state = AsyncData(latest);
-    });
+    _updateSubscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen((
+          affectedIds,
+        ) async {
+          if (!affectedIds.contains(id)) return;
+          developer.log(
+            'notify received id=$id affected=$affectedIds',
+            name: 'ChecklistItemController',
+          );
+          if (!ref.mounted) return;
+          final latest = await _fetch();
+          if (!ref.mounted) return;
+          developer.log(
+            'state updated id=$id isChecked=${latest?.data.isChecked}',
+            name: 'ChecklistItemController',
+          );
+          state = AsyncData(latest);
+        });
   }
 
   Future<ChecklistItem?> _fetch() async {

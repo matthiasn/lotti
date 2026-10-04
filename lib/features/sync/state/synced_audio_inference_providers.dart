@@ -9,9 +9,8 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_listener.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 
 /// Live, sorted list of known peer node profiles plus the local node's own
 /// snapshot.
@@ -80,7 +79,7 @@ final syncedAudioInferenceListenerProvider =
     );
 SyncedAudioInferenceListener syncedAudioInferenceListener(Ref ref) {
   final listener = SyncedAudioInferenceListener(
-    updateNotifications: getIt<UpdateNotifications>(),
+    updateNotifications: ref.read(updateNotificationsProvider),
     dispatcher: ref.watch(syncedAudioInferenceDispatcherProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   )..start();

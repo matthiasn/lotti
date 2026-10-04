@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Live task fields needed by Daily OS plan surfaces.
@@ -79,7 +80,7 @@ final FutureProviderFamily<LiveTaskMetadata, String> liveTaskMetadataProvider =
       taskId,
     ) async {
       final db = ref.read(journalDbProvider);
-      final notifications = getIt<UpdateNotifications>();
+      final notifications = ref.read(updateNotificationsProvider);
       final sub = notifications.updateStream.listen((affectedIds) {
         if (affectedIds.contains(taskId) ||
             affectedIds.contains(categoriesNotification)) {

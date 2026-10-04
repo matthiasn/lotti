@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
-import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
@@ -11,7 +10,9 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -27,7 +28,7 @@ SavedTaskFilterCountRepository savedTaskFilterCountRepository(Ref ref) {
   return SavedTaskFilterCountRepository(
     db: ref.read(journalDbProvider),
     cache: getIt<EntitiesCacheService>(),
-    agentRepository: AgentRepository(getIt<AgentDatabase>()),
+    agentRepository: AgentRepository(ref.read(agentDatabaseProvider)),
   );
 }
 
@@ -62,7 +63,9 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
   if (saved.isEmpty) return const <String, int>{};
 
   Timer? debounce;
-  final sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
+  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
+    affectedIds,
+  ) {
     if (!affectedIds.contains(taskNotification)) return;
     debounce?.cancel();
     debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
@@ -104,7 +107,9 @@ final FutureProvider<int> allTasksTotalCountProvider =
     );
 Future<int> allTasksTotalCount(Ref ref) async {
   Timer? debounce;
-  final sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
+  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
+    affectedIds,
+  ) {
     if (!affectedIds.contains(taskNotification)) return;
     debounce?.cancel();
     debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
@@ -141,7 +146,9 @@ Future<int> currentTasksFilterCount(Ref ref) async {
       : live;
 
   Timer? debounce;
-  final sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
+  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
+    affectedIds,
+  ) {
     if (!affectedIds.contains(taskNotification)) return;
     debounce?.cancel();
     debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);

@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Riverpod controller backing the user's saved task-filter list.
@@ -28,7 +28,9 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   @override
   Future<List<SavedTaskFilter>> build() async {
     _repository = getIt<SavedTaskFiltersRepository>();
-    final subscription = getIt<UpdateNotifications>().updateStream
+    final subscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
         .where((ids) => ids.contains(savedTaskFiltersNotification))
         .listen((_) => _reload());
     ref.onDispose(subscription.cancel);
