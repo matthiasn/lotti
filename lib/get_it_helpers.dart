@@ -244,3 +244,31 @@ PersistenceServices buildPersistenceServices() => PersistenceServices(
 /// The [PersistenceLogic] facade over [buildPersistenceServices].
 PersistenceLogic buildPersistenceLogic() =>
     PersistenceLogic(services: buildPersistenceServices());
+/// [LiveWorldServices] over getIt, which always holds the generation that is
+/// live right now — so each read follows a profile switch.
+final class GetItLiveWorldServices implements LiveWorldServices {
+  const GetItLiveWorldServices();
+
+  @override
+  ProfileContext? get profileContext =>
+      getIt.isRegistered<ProfileContext>() ? getIt<ProfileContext>() : null;
+
+  @override
+  JournalDb get journalDb => getIt<JournalDb>();
+
+  @override
+  AiConfigRepository get aiConfigs => getIt<AiConfigRepository>();
+
+  @override
+  Directory get root => getIt<Directory>();
+
+  @override
+  PersistenceLogic get persistence => getIt<PersistenceLogic>();
+
+  @override
+  Fts5Db? get fts => getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null;
+
+  @override
+  DomainLogger? get domainLogger =>
+      getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null;
+}

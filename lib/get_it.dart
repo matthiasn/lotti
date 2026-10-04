@@ -33,6 +33,7 @@ import 'package:lotti/features/ai_consumption/service/transcript_attribution_coo
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/demo/state/live_world_services.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';

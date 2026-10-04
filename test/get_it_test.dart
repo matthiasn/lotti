@@ -1,12 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -275,6 +282,47 @@ void main() {
         buildRelationshipCascade(JournalRepository(), MockPersistenceLogic()),
         isA<RelationshipRepository>(),
       );
+    });
+  });
+
+  group('GetItLiveWorldServices', () {
+    test('is empty-handed in a generation that registered nothing', () {
+      const world = GetItLiveWorldServices();
+
+      expect(world.profileContext, isNull);
+      expect(world.fts, isNull);
+      expect(world.domainLogger, isNull);
+    });
+
+    test('answers with the services the live generation registered', () {
+      final journalDb = MockJournalDb();
+      final aiConfigs = MockAiConfigRepository();
+      final root = Directory.systemTemp;
+      final persistence = MockPersistenceLogic();
+      final fts = MockFts5Db();
+      final logger = MockDomainLogger();
+      final context = ProfileContext.forProfile(
+        profile: Profile.realDefault(),
+        root: Directory.systemTemp,
+      );
+      getIt
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<AiConfigRepository>(aiConfigs)
+        ..registerSingleton<Directory>(root)
+        ..registerSingleton<PersistenceLogic>(persistence)
+        ..registerSingleton<Fts5Db>(fts)
+        ..registerSingleton<DomainLogger>(logger)
+        ..registerSingleton<ProfileContext>(context);
+
+      const world = GetItLiveWorldServices();
+
+      expect(world.journalDb, same(journalDb));
+      expect(world.aiConfigs, same(aiConfigs));
+      expect(world.root, same(root));
+      expect(world.persistence, same(persistence));
+      expect(world.fts, same(fts));
+      expect(world.domainLogger, same(logger));
+      expect(world.profileContext, same(context));
     });
   });
 }

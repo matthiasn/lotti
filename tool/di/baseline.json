@@ -99,7 +99,7 @@
     "lib/features/dashboards/ui/settings/edit_dashboard_page.dart": {"lookups": 2},
     "lib/features/demo/ai/demo_ai_gate.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/demo/copy/demo_data_copier.dart": {"lookups": 1, "isRegistered": 1},
-    "lib/features/demo/state/demo_mode_gateway.dart": {"lookups": 15, "isRegistered": 4},
+    "lib/features/demo/state/demo_mode_gateway.dart": {"isRegistered": 1},
     "lib/features/demo/ui/demo_entry_launcher.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/demo/ui/demo_exit_sheet.dart": {"lookups": 4, "isRegistered": 1},
     "lib/features/demo/ui/demo_mode_banner.dart": {"lookups": 1, "isRegistered": 1},
