@@ -491,11 +491,16 @@ provider is subject to that provider's retention, not yours.
 
 *What this does not protect against:* a compromised device. The on-device
 SQLite files live inside your OS user account and are not separately encrypted
-by Lotti today — and that includes the sync account's tokens and encryption
-identity. App-level at-rest encryption is a candidate for the roadmap; until it
-lands, give Lotti's on-device data the same care you would give any personal
-app on the same machine, and weigh that before putting your most sensitive
-categories in it.
+by Lotti today. That includes the sync session: its access and refresh tokens,
+and its Olm identity and Megolm session keys, which the Matrix SDK stores
+pickled under a key derived from the account ID rather than from a secret.
+Anyone who can read your files can read your record and impersonate that
+device. The sync password, AI provider keys and GitHub token are the exception:
+they sit in the OS keystore. App-level at-rest encryption is a candidate for
+the roadmap; until it lands, rely on your operating system's full-disk
+encryption, give Lotti's on-device data the same care you would give any
+personal app on the same machine, and weigh that before putting your most
+sensitive categories in it.
 
 ### Your sync relay does not need your trust
 
@@ -527,11 +532,11 @@ plans, so read the terms rather than the marketing page.
 
 **Onboarding highlights a European route.** [Melious.ai](https://melious.ai) is
 a German company routing open-weight models across a network of EU
-infrastructure providers, independently verified at
-[staysin.eu](https://staysin.eu/api.melious.ai). They state that requests are
-not used for training and that data stays under European jurisdiction. Those
-are their claims, on their terms, and worth reading in full before you rely on
-them.
+infrastructure providers. They state that requests are not used for training
+and that data stays under European jurisdiction. Those are their claims, on
+their terms, and worth reading in full before you rely on them. Directories
+such as [staysin.eu](https://staysin.eu/api.melious.ai) list Melious, but they
+are compiled from providers' own published material, not from an audit.
 
 Mistral, Google, Alibaba, OpenAI, Anthropic, OpenRouter, and any other
 OpenAI-compatible endpoint work equally well. Lotti does not rank them, does
