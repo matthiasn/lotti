@@ -535,6 +535,24 @@ void main() {
               if (!(added?.contains(id) ?? false)) {'id': id, 'reason': reason},
           ]),
         );
+        // The telemetry counts what the write did, not what was asked.
+        final telemetry =
+            jsonDecode(
+                  verify(
+                        () => mockLogging.log(
+                          any<LogDomain>(),
+                          captureAny<String>(),
+                          subDomain: 'processor',
+                        ),
+                      ).captured.single
+                      as String,
+                )
+                as Map<String, dynamic>;
+        expect(telemetry['assigned'], added?.length ?? 0);
+        expect(
+          (telemetry['skipped'] as Map<String, dynamic>)[reason],
+          2 - (added?.length ?? 0),
+        );
       });
     }
 

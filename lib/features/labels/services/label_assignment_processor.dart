@@ -262,6 +262,33 @@ class LabelAssignmentProcessor {
     );
     sw.stop();
 
+    // The write decides again on the task as stored: what it did not add
+    // changed since this read (`specs/tla/TaskLabels.tla`,
+    // SuppressionAtWrite). Before the telemetry, so it counts what was
+    // written.
+    var changedSinceRead = 0;
+    var writeFailed = 0;
+    if (assigned.isNotEmpty) {
+      final added = await _repository.assignLabels(
+        journalEntityId: taskId,
+        labelIds: List.of(assigned),
+      );
+      final reason = added == null ? 'write_failed' : 'changed_since_read';
+      final notAdded = [
+        for (final id in assigned)
+          if (added == null || !added.contains(id)) id,
+      ];
+      skipped.addAll([
+        for (final id in notAdded) <String, String>{'id': id, 'reason': reason},
+      ]);
+      if (added == null) {
+        writeFailed = notAdded.length;
+      } else {
+        changedSinceRead = notAdded.length;
+      }
+      assigned.retainWhere((id) => added?.contains(id) ?? false);
+    }
+
     // Telemetry payload (Phase 1 schema)
     final telemetry = jsonEncode({
       'taskId': taskId,
@@ -274,6 +301,8 @@ class LabelAssignmentProcessor {
         'already_assigned': alreadyAssigned.length,
         'over_cap': overCap.length,
         'duplicate': duplicateIds.length,
+        'changed_since_read': changedSinceRead,
+        'write_failed': writeFailed,
       },
       'validationMs': sw.elapsedMilliseconds,
       // Phase 2 metrics
@@ -288,23 +317,6 @@ class LabelAssignmentProcessor {
       telemetry,
       subDomain: 'processor',
     );
-
-    if (assigned.isNotEmpty) {
-      // The write decides again on the task as stored: what it did not add
-      // changed since this read (`specs/tla/TaskLabels.tla`,
-      // SuppressionAtWrite).
-      final added = await _repository.assignLabels(
-        journalEntityId: taskId,
-        labelIds: List.of(assigned),
-      );
-      final reason = added == null ? 'write_failed' : 'changed_since_read';
-      skipped.addAll([
-        for (final id in assigned)
-          if (added == null || !added.contains(id))
-            <String, String>{'id': id, 'reason': reason},
-      ]);
-      assigned.retainWhere((id) => added?.contains(id) ?? false);
-    }
 
     return LabelAssignmentResult(
       assigned: assigned,

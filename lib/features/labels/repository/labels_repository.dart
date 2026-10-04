@@ -315,7 +315,12 @@ class LabelsRepository {
           for (final id in added)
             if (id.isNotEmpty) id,
         });
-        if (_sameList(next, current)) return null;
+        // Membership decides: the same labels in another order (the agent
+        // appends, the picker sorts) are no edit, and are not rewritten.
+        if (next.toSet().containsAll(current) &&
+            next.length == current.toSet().length) {
+          return null;
+        }
         return _withLabels(stored, next);
       });
     } catch (error, stackTrace) {
@@ -348,14 +353,6 @@ class LabelsRepository {
     }
     return resolved
       ..sort((a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b));
-  }
-
-  static bool _sameList(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 
   /// [stored] with its labels set to [sorted] under a new clock. For a task,

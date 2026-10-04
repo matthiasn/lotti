@@ -164,9 +164,13 @@ void main() {
       expect(labelsOf(), ['a', 'c']);
     });
 
-    test('an edit that changes nothing writes nothing', () async {
-      storing(task(labels: ['a']));
+    // The agent appends, the picker sorts: the same labels in another order
+    // are no edit.
+    test('an edit that changes nothing writes nothing, whatever the stored '
+        'order', () async {
+      storing(task(labels: ['c', 'a']));
 
+      expect(await repo.updateLabels(journalEntityId: 't1'), isTrue);
       expect(
         await repo.updateLabels(journalEntityId: 't1', added: {'a'}),
         isTrue,
