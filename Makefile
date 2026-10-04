@@ -223,22 +223,6 @@ design_system_import: deps
 watch: l10n
 	$(DART_CMD) run build_runner watch --delete-conflicting-outputs
 
-.PHONY: activate_fluttium
-activate_fluttium:
-	$(FLUTTER_CMD) pub global activate fluttium_cli
-
-.PHONY: fluttium_linux
-fluttium_linux:
-	fluttium test test_flows/habit_flow.yaml --reporter expanded
-
-.PHONY: fluttium_production
-fluttium_production:
-	fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart
-
-.PHONY: fluttium_docs
-fluttium_docs: manual_screenshots
-	@echo "fluttium_docs is deprecated; generated manual media is ready in $(MANUAL_MEDIA_DIR)."
-
 # Play Store listing screenshots, captured on an Android emulator through
 # `flutter drive` so they are what a phone actually renders. Boots $(LOTTI_AVD)
 # when no device is attached; see tool/store_screenshots/android.sh for the
