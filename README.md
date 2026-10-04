@@ -355,8 +355,8 @@ with FUSE, which desktops ship by default; where FUSE is missing, run it with
 - **Habits, measurables, and health data** imported from Apple Health and
   other sources.
 - **Sections** you switch on under Settings → Sections: Daily OS, Projects,
-  Goals, Habits, Dashboards, People and Events. They are in daily use, but ship
-  switched off; expect rough edges.
+  Goals, Habits, Dashboards, People and Events. They are in daily use and ship
+  switched off, so you choose which parts of Lotti you use.
 
 ### AI and automation
 
@@ -730,11 +730,10 @@ The application is in active daily use and the agentic layer is real, working,
 and shipping. Development happens in the open, and the [changelog](CHANGELOG.md)
 is the honest version of what changed.
 
-Worth knowing if you are picking it up now: the agentic layer is young — soul
-and template ergonomics, grievance handling, and pruning strategies are all
-under active development, and feedback there is especially useful. Local image
-generation, at-rest database encryption, and signed provenance do not exist
-yet.
+The agentic layer moves fastest: soul and template ergonomics, grievance
+handling, and pruning strategies are all under active development, and feedback
+there is especially useful. Local image generation, at-rest database
+encryption, and signed provenance do not exist yet.
 
 The manual, including every screenshot in all 11 languages, is generated from a
 deterministic fixture workspace, so the documentation cannot quietly drift from
