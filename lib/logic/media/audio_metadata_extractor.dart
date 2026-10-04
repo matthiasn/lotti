@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_recorder_constants.dart';
-import 'package:lotti/get_it.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path/path.dart' as p;
 
@@ -173,19 +172,14 @@ abstract final class AudioMetadataExtractor {
   /// In test environments (FLUTTER_TEST=true or [bypassMediaKitInTests]=true),
   /// returns a no-op reader that returns Duration.zero.
   ///
-  /// If a custom [AudioMetadataReader] is registered via GetIt, uses that.
-  /// Otherwise, uses [extractDuration] with MediaKit.
+  /// A [registeredReader] the caller injects wins. Otherwise, uses
+  /// [extractDuration] with MediaKit.
   static AudioMetadataReader selectReader({
     AudioMetadataReader? registeredReader,
   }) {
     // Use registered reader if provided (for dependency injection)
     if (registeredReader != null) {
       return registeredReader;
-    }
-
-    // Check if a reader is registered in GetIt (highest priority)
-    if (getIt.isRegistered<AudioMetadataReader>()) {
-      return getIt<AudioMetadataReader>();
     }
 
     // In headless/flutter test environments, prefer a no-op reader to avoid

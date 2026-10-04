@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
@@ -165,12 +167,12 @@ void main() {
 
     // Create container with overridden providers
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         audioRecorderRepositoryProvider.overrideWithValue(
           mockAudioRecorderRepository,
         ),
         playerFactoryProvider.overrideWithValue(() => mockPlayer),
-      ],
+      ]),
     );
   });
 
@@ -274,7 +276,10 @@ void main() {
         // PersistenceLogic when the recording is stopped, so these tests do
         // full record → stop round-trips.
         mockPersistence = MockPersistenceLogic();
-        getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+        getIt
+          ..registerSingleton<PersistenceLogic>(mockPersistence)
+          // SpeechRepository reads the journal through the same scope.
+          ..registerSingleton<JournalDb>(MockJournalDb());
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -324,13 +329,13 @@ void main() {
         // a linkedId is present.
         container.dispose();
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
-          ],
+          ]),
         );
       });
 
@@ -832,13 +837,13 @@ void main() {
 
           container.dispose();
           container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
               playerFactoryProvider.overrideWithValue(() => mockPlayer),
               automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
-            ],
+            ]),
           );
 
           final controller = await startRecording(container);
@@ -911,11 +916,11 @@ void main() {
     test('should properly handle provider lifecycle', () {
       // Arrange
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioRecorderRepositoryProvider.overrideWithValue(
             mockAudioRecorderRepository,
           ),
-        ],
+        ]),
       );
 
       // Act - Read the provider to initialize it
@@ -1202,11 +1207,11 @@ void main() {
           // Act - Create a new container to trigger build()
           final testContainer =
               ProviderContainer(
-                  overrides: [
+                  overrides: withServiceOverrides([
                     audioRecorderRepositoryProvider.overrideWithValue(
                       mockAudioRecorderRepository,
                     ),
-                  ],
+                  ]),
                 )
                 // Read the provider to ensure it's initialized
                 ..read(audioRecorderControllerProvider.notifier);
@@ -1254,11 +1259,11 @@ void main() {
           ).thenAnswer((_) => amplitudeController.stream);
 
           final testContainer = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
-            ],
+            ]),
           );
           final controller = testContainer.read(
             audioRecorderControllerProvider.notifier,
@@ -1329,11 +1334,11 @@ void main() {
 
         // Act
         ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
-            ],
+            ]),
           )
           ..read(audioRecorderControllerProvider)
           // Dispose container (which should cancel subscription)
@@ -1550,7 +1555,10 @@ void main() {
         () async {
           final mockPersistence = MockPersistenceLogic();
           if (!getIt.isRegistered<PersistenceLogic>()) {
-            getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+            getIt
+              ..registerSingleton<PersistenceLogic>(mockPersistence)
+              // SpeechRepository reads the journal through the same scope.
+              ..registerSingleton<JournalDb>(MockJournalDb());
           }
 
           when(
@@ -1590,13 +1598,13 @@ void main() {
           });
 
           final localContainer = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
               playerFactoryProvider.overrideWithValue(() => mockPlayer),
               automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
-            ],
+            ]),
           );
           addTearDown(localContainer.dispose);
 
@@ -1683,7 +1691,10 @@ void main() {
       test('does NOT trigger automatic prompts', () async {
         final mockPersistence = MockPersistenceLogic();
         if (!getIt.isRegistered<PersistenceLogic>()) {
-          getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistence)
+            // SpeechRepository reads the journal through the same scope.
+            ..registerSingleton<JournalDb>(MockJournalDb());
         }
 
         when(
@@ -1712,13 +1723,13 @@ void main() {
 
         final mockTrigger = MockAutomaticPromptTrigger();
         final localContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
             automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
-          ],
+          ]),
         );
         addTearDown(localContainer.dispose);
 
@@ -1771,14 +1782,14 @@ void main() {
           // a notifier that returns a playing state but throws from pause() without
           // catching, so the catch block inside _pauseAudioPlayer fires.
           final localContainer = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
               audioPlayerControllerProvider.overrideWith(
                 _PauseThrowingAudioPlayerController.new,
               ),
-            ],
+            ]),
           );
           addTearDown(localContainer.dispose);
 

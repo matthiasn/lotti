@@ -8,9 +8,10 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -23,7 +24,14 @@ final Provider<RatingRepository> ratingRepositoryProvider =
       name: 'ratingRepositoryProvider',
     );
 RatingRepository ratingRepository(Ref ref) {
-  return RatingRepository();
+  return RatingRepository(
+    journalDb: ref.watch(journalDbProvider),
+    persistenceLogic: ref.watch(persistenceLogicProvider),
+    vectorClockService: ref.watch(vectorClockServiceProvider),
+    updateNotifications: ref.watch(updateNotificationsProvider),
+    outboxService: ref.watch(outboxServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
 }
 
 /// Persistence layer for ratings.
@@ -35,8 +43,21 @@ RatingRepository ratingRepository(Ref ref) {
 /// compensating soft-delete of the orphaned rating. Sync enqueue and sequence
 /// logging are best-effort and never roll back an already-persisted local row.
 class RatingRepository {
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
+  RatingRepository({
+    required this._journalDb,
+    required this._persistenceLogic,
+    required this._vectorClockService,
+    required this._updateNotifications,
+    required this._outboxService,
+    required this._domainLogger,
+  });
+
+  final JournalDb _journalDb;
+  final PersistenceLogic _persistenceLogic;
+  final VectorClockService _vectorClockService;
+  final UpdateNotifications _updateNotifications;
+  final OutboxService _outboxService;
+  final DomainLogger _domainLogger;
 
   /// Creates or updates a rating for a target entry.
   ///
@@ -80,7 +101,7 @@ class RatingRepository {
         categoryId: targetEntry?.meta.categoryId,
       );
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _domainLogger.error(
         LogDomain.ratings,
         exception,
         stackTrace: stackTrace,
@@ -139,7 +160,7 @@ class RatingRepository {
         toId: targetId,
       );
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
+      _domainLogger.error(
         LogDomain.ratings,
         e,
         stackTrace: stackTrace,
@@ -189,13 +210,11 @@ class RatingRepository {
     required String fromId,
     required String toId,
   }) async {
-    final vectorClockService = getIt<VectorClockService>();
-
     // Wrap the VC reservation in a scope: if upsertEntryLink turns out to be
     // a no-op (row already exists unchanged), the scope releases and the
     // burn handler proactively broadcasts an unresolvable hint for the
     // reserved counter — peers skip the gap without a backfill round-trip.
-    await vectorClockService.withVcScope<bool>(
+    await _vectorClockService.withVcScope<bool>(
       () async {
         final now = DateTime.now();
         // The link's derived id, or the next version of a removed or hidden
@@ -215,7 +234,7 @@ class RatingRepository {
           createdAt: now,
           updatedAt: linkEditTimestamp(predecessor, now),
           hidden: false,
-          vectorClock: await vectorClockService.getNextVectorClock(
+          vectorClock: await _vectorClockService.getNextVectorClock(
             previous: predecessor?.vectorClock,
             payload: (id: id, type: SyncSequencePayloadType.entryLink),
           ),
@@ -223,14 +242,14 @@ class RatingRepository {
 
         final res = await _journalDb.upsertEntryLink(link);
         if (res == 0) return false;
-        getIt<UpdateNotifications>().notify({fromId, toId});
+        _updateNotifications.notify({fromId, toId});
 
         // Enqueue sync message separately so a sync failure doesn't
         // cause the caller to roll back an otherwise consistent local
         // state — and doesn't trigger a VC release (the link is already
         // persisted; the reserved counter is baked into disk).
         try {
-          await getIt<OutboxService>().enqueueMessage(
+          await _outboxService.enqueueMessage(
             SyncMessage.entryLink(
               entryLink: link,
               status: predecessor == null
@@ -239,7 +258,7 @@ class RatingRepository {
             ),
           );
         } catch (e, stackTrace) {
-          getIt<DomainLogger>().error(
+          _domainLogger.error(
             LogDomain.sync,
             e,
             message:
@@ -269,7 +288,7 @@ class RatingRepository {
         ),
       );
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
+      _domainLogger.error(
         LogDomain.ratings,
         e,
         stackTrace: stackTrace,

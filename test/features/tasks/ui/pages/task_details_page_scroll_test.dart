@@ -359,6 +359,8 @@ void main() {
             [XFile('/nonexistent/missing.jpg')],
             linkedId: testTask.id,
             categoryId: testTask.meta.categoryId,
+            speechRepository: MockSpeechRepository(),
+            domainLogger: mockLogger,
           );
         });
 

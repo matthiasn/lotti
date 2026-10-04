@@ -741,10 +741,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
   }
 
   Future<void> setLanguage(String language) async {
-    return SpeechRepository.updateLanguage(
-      journalEntityId: id,
-      language: language,
-    );
+    return ref
+        .read(speechRepositoryProvider)
+        .updateLanguage(
+          journalEntityId: id,
+          language: language,
+        );
   }
 
   Future<void> copyImage() async {

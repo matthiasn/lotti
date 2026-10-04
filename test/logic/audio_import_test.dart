@@ -4,11 +4,10 @@ import 'dart:io';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
@@ -21,6 +20,7 @@ void main() {
   late MockDomainLogger mockDomainLogger;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
+  late AudioMetadataReader reader;
   late Directory tempDir;
 
   setUpAll(() {
@@ -37,28 +37,12 @@ void main() {
 
     tempDir = await Directory.systemTemp.createTemp('audio_import_test_');
 
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<AudioMetadataReader>()) {
-      getIt.unregister<AudioMetadataReader>();
-    }
+    reader = (_) async => Duration.zero;
 
-    getIt
-      ..registerSingleton<DomainLogger>(mockDomainLogger)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(tempDir)
-      ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
+    getIt.registerSingleton<Directory>(tempDir);
 
     when(
       () => mockDomainLogger.error(
@@ -102,22 +86,28 @@ void main() {
       await tempDir.delete(recursive: true);
     } catch (_) {}
 
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<AudioMetadataReader>()) {
-      getIt.unregister<AudioMetadataReader>();
-    }
   });
+
+  /// Imports [files] through the mocks, reading durations with [reader].
+  Future<void> importAudio(
+    List<XFile> files, {
+    String? linkedId,
+    String? categoryId,
+  }) => importAudioXFiles(
+    files,
+    speechRepository: SpeechRepository(
+      persistenceLogic: mockPersistenceLogic,
+      journalDb: mockJournalDb,
+      domainLogger: mockDomainLogger,
+    ),
+    domainLogger: mockDomainLogger,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    metadataReader: reader,
+  );
 
   Future<File> createTestAudioFile(String filename, int sizeBytes) async {
     final file = File(path.join(tempDir.path, filename));
@@ -155,7 +145,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       verify(
         () => mockPersistenceLogic.createDbEntity(
@@ -172,7 +162,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       verifyNever(
         () => mockPersistenceLogic.createDbEntity(
@@ -189,7 +179,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       verify(
         () => mockDomainLogger.error(
@@ -206,7 +196,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       verify(
         () => mockDomainLogger.error(
@@ -222,7 +212,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(
+      await importAudio(
         dropDetails,
         linkedId: 'parent-123',
         categoryId: 'cat-456',
@@ -255,7 +245,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       // Entry creation was attempted (and failed)
       verify(
@@ -289,7 +279,7 @@ void main() {
       ]);
 
       // Should not throw
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       // Should log the error for the bad file
       verify(
@@ -315,17 +305,13 @@ void main() {
     test('logs duration error but still imports with zero duration', () async {
       // Override the reader to throw; the import must swallow the error,
       // log it under the duration subdomain, and proceed with zero duration.
-      getIt
-        ..unregister<AudioMetadataReader>()
-        ..registerSingleton<AudioMetadataReader>(
-          (_) async => throw Exception('duration extraction failed'),
-        );
+      reader = (_) async => throw Exception('duration extraction failed');
 
       final testFile = await createTestAudioFile('duration-fail.m4a', 1024);
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       // The duration-extraction failure is logged under its own subdomain.
       verify(
@@ -360,7 +346,7 @@ void main() {
       }) {
         final xFile = XFile(source.path);
         return IOOverrides.runZoned(
-          () => importAudioXFiles([xFile]),
+          () => importAudio([xFile]),
           createFile: (filePath) => filePath == source.path
               ? _UncopyableFile(
                   Zone.root.run(() => File(filePath)),
@@ -436,20 +422,18 @@ void main() {
       // seam: replace the just-copied file with a NON-EMPTY directory at the
       // exact target path so the later File(...).delete() throws and the
       // nested cleanup catch (and its error log) is exercised.
-      getIt
-        ..unregister<AudioMetadataReader>()
-        ..registerSingleton<AudioMetadataReader>((filePath) async {
-          await File(filePath).delete();
-          await Directory(filePath).create();
-          await File(path.join(filePath, 'inner.txt')).writeAsString('x');
-          return Duration.zero;
-        });
+      reader = (filePath) async {
+        await File(filePath).delete();
+        await Directory(filePath).create();
+        await File(path.join(filePath, 'inner.txt')).writeAsString('x');
+        return Duration.zero;
+      };
 
       final testFile = await createTestAudioFile('cleanup-fail.m4a', 1024);
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       // The failed delete is logged under the cleanup subdomain.
       verify(
@@ -470,7 +454,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importAudioXFiles(dropDetails);
+      await importAudio(dropDetails);
 
       final captured =
           verify(
@@ -529,14 +513,14 @@ void main() {
     const sharedName = '2025-10-20_16-49-32-203.m4a';
 
     test('a second source with the same timestamp gets its own file', () async {
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'first',
           name: sharedName,
           content: 'audio-one',
         ),
       ]);
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'second',
           name: sharedName,
@@ -554,14 +538,14 @@ void main() {
     });
 
     test('the first recording survives a colliding second import', () async {
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'first',
           name: sharedName,
           content: 'audio-one',
         ),
       ]);
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'second',
           name: sharedName,
@@ -581,7 +565,7 @@ void main() {
       'a third colliding import is distinct from both earlier ones',
       () async {
         for (final content in ['audio-one', 'audio-two', 'audio-three']) {
-          await importAudioXFiles([
+          await importAudio([
             await sourceNamed(
               sourceDir: content,
               name: sharedName,
@@ -611,7 +595,7 @@ void main() {
         ),
       ).thenThrow(Exception('DB creation failed'));
 
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'first',
           name: sharedName,
@@ -629,7 +613,7 @@ void main() {
     });
 
     test('an uncontested import keeps the plain timestamp name', () async {
-      await importAudioXFiles([
+      await importAudio([
         await sourceNamed(
           sourceDir: 'only',
           name: sharedName,

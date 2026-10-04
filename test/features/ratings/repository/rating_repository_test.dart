@@ -9,16 +9,13 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/outbox_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/commit_evaluating_vector_clock_service.dart';
@@ -95,15 +92,14 @@ void main() {
     mockOutbox = MockOutboxService();
     mockDomainLogger = MockDomainLogger();
 
-    getIt
-      ..registerSingleton<JournalDb>(mockDb)
-      ..registerSingleton<PersistenceLogic>(mockPersistence)
-      ..registerSingleton<VectorClockService>(mockVectorClock)
-      ..registerSingleton<UpdateNotifications>(mockNotifications)
-      ..registerSingleton<OutboxService>(mockOutbox)
-      ..registerSingleton<DomainLogger>(mockDomainLogger);
-
-    repository = RatingRepository();
+    repository = RatingRepository(
+      journalDb: mockDb,
+      persistenceLogic: mockPersistence,
+      vectorClockService: mockVectorClock,
+      updateNotifications: mockNotifications,
+      outboxService: mockOutbox,
+      domainLogger: mockDomainLogger,
+    );
   });
 
   tearDown(() async {
@@ -661,7 +657,6 @@ void main() {
         'back by a transient outbox error',
         () async {
           final mockSequenceLog = MockSyncSequenceLogService();
-          final mockDomainLogger = MockDomainLogger();
           when(
             () => mockSequenceLog.recordSentEntryLink(
               linkId: any(named: 'linkId'),
@@ -677,12 +672,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt.unregister<DomainLogger>();
-          }
-          getIt
-            ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
-            ..registerSingleton<DomainLogger>(mockDomainLogger);
+          getIt.registerSingleton<SyncSequenceLogService>(mockSequenceLog);
 
           stubCreateFlow(stubLink: false, stubUpdatePaths: true);
           when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
@@ -827,15 +817,32 @@ void main() {
   });
 
   group('ratingRepository riverpod provider', () {
-    test('provides a RatingRepository instance', () {
-      // GetIt is already populated by the outer setUp with JournalDb +
-      // PersistenceLogic mocks, so the provider can construct the repo
-      // without registering anything new here.
-      final container = ProviderContainer();
+    test("builds the repository from the scope's services", () async {
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(mockDb),
+          persistenceLogicProvider.overrideWithValue(mockPersistence),
+          vectorClockServiceProvider.overrideWithValue(mockVectorClock),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+          domainLoggerProvider.overrideWithValue(mockDomainLogger),
+        ],
+      );
       addTearDown(container.dispose);
+      when(
+        () => mockDb.getRatingForTimeEntry(
+          testTimeEntryId,
+          catalogId: any(named: 'catalogId'),
+        ),
+      ).thenAnswer((_) async => testRatingEntry);
 
       final repo = container.read(ratingRepositoryProvider);
-      expect(repo, isA<RatingRepository>());
+
+      // Reads go through the scope's JournalDb, not a global lookup.
+      expect(
+        await repo.getRatingForTargetEntry(testTimeEntryId),
+        testRatingEntry,
+      );
     });
   });
 }

@@ -217,6 +217,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -685,6 +686,8 @@ MockJournalDb mockJournalDbWithSyncFlag({
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockSpeechRepository extends Mock implements SpeechRepository {}
 
 class MockHabitAutoCompletionService extends Mock
     implements HabitAutoCompletionService {}

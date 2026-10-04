@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -27,10 +26,16 @@ abstract final class AudioImportConstants {
 ///
 /// If duration extraction fails, continues with zero duration which can be
 /// updated later. If journal entry creation fails, cleans up the copied file.
+///
+/// Entries are written through [speechRepository]; [metadataReader] replaces
+/// the platform duration reader (see [AudioMetadataExtractor.selectReader]).
 Future<void> importAudioXFiles(
   List<XFile> files, {
+  required SpeechRepository speechRepository,
+  required DomainLogger domainLogger,
   String? linkedId,
   String? categoryId,
+  AudioMetadataReader? metadataReader,
 }) async {
   for (final file in files) {
     String? copiedFilePath;
@@ -49,7 +54,7 @@ Future<void> importAudioXFiles(
       // Validate file name has extension
       final nameParts = file.name.split('.');
       if (nameParts.length < 2) {
-        getIt<DomainLogger>().error(
+        domainLogger.error(
           LogDomain.speech,
           'Audio file has no extension: ${file.name}',
           subDomain: 'importDroppedAudio',
@@ -67,7 +72,7 @@ Future<void> importAudioXFiles(
       // Validate file size
       final fileSize = await File(srcPath).length();
       if (fileSize > AudioImportConstants.maxFileSizeBytes) {
-        getIt<DomainLogger>().error(
+        domainLogger.error(
           LogDomain.speech,
           'Audio file too large: $fileSize bytes',
           subDomain: 'importDroppedAudio',
@@ -100,12 +105,12 @@ Future<void> importAudioXFiles(
       var duration = Duration.zero;
       try {
         final reader = AudioMetadataExtractor.selectReader(
-          registeredReader: _getRegisteredReader(),
+          registeredReader: metadataReader,
         );
         duration = await reader(targetFilePath);
       } catch (exception, stackTrace) {
         // Log but continue with zero duration - can be updated later
-        getIt<DomainLogger>().error(
+        domainLogger.error(
           LogDomain.speech,
           exception,
           stackTrace: stackTrace,
@@ -121,7 +126,7 @@ Future<void> importAudioXFiles(
       );
 
       // Create journal entry
-      final result = await SpeechRepository.createAudioEntry(
+      final result = await speechRepository.createAudioEntry(
         audioNote,
         linkedId: linkedId,
         categoryId: categoryId,
@@ -132,7 +137,7 @@ Future<void> importAudioXFiles(
         try {
           await File(copiedFilePath).delete();
         } catch (deleteException, deleteStackTrace) {
-          getIt<DomainLogger>().error(
+          domainLogger.error(
             LogDomain.speech,
             deleteException,
             stackTrace: deleteStackTrace,
@@ -142,7 +147,7 @@ Future<void> importAudioXFiles(
       }
     } catch (exception, stackTrace) {
       // Log and clean up on any error
-      getIt<DomainLogger>().error(
+      domainLogger.error(
         LogDomain.speech,
         exception,
         stackTrace: stackTrace,
@@ -154,7 +159,7 @@ Future<void> importAudioXFiles(
         try {
           await File(copiedFilePath).delete();
         } catch (deleteException, deleteStackTrace) {
-          getIt<DomainLogger>().error(
+          domainLogger.error(
             LogDomain.speech,
             deleteException,
             stackTrace: deleteStackTrace,
@@ -165,12 +170,4 @@ Future<void> importAudioXFiles(
       // Continue processing other files even if one fails
     }
   }
-}
-
-/// Gets the registered audio metadata reader from GetIt, if any.
-AudioMetadataReader? _getRegisteredReader() {
-  if (getIt.isRegistered<AudioMetadataReader>()) {
-    return getIt<AudioMetadataReader>();
-  }
-  return null;
 }

@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/utils/platform.dart' as lotti_platform;
 import 'package:media_kit/media_kit.dart';
@@ -987,65 +986,6 @@ void main() {
         // Restore original value
         AudioMetadataExtractor.bypassMediaKitInTests = originalValue;
       });
-    });
-  });
-
-  // GetIt-registered reader resolution (transplanted from the dissolved
-  // media_import_integration_test.dart; tests duplicating the groups above
-  // were removed - only the GetIt lookup path unique to this setup remains).
-  group('selectReader GetIt registration', () {
-    tearDown(() {
-      if (getIt.isRegistered<AudioMetadataReader>()) {
-        getIt.unregister<AudioMetadataReader>();
-      }
-    });
-
-    test(
-      'registered reader takes precedence over environment detection',
-      () async {
-        getIt.registerSingleton<AudioMetadataReader>(
-          (_) async => const Duration(minutes: 5),
-        );
-
-        final reader = AudioMetadataExtractor.selectReader();
-        expect(await reader('/dummy/path.m4a'), const Duration(minutes: 5));
-      },
-    );
-
-    test('registered reader persists across selections', () async {
-      const expectedDuration = Duration(seconds: 42);
-      getIt.registerSingleton<AudioMetadataReader>(
-        (_) async => expectedDuration,
-      );
-
-      expect(
-        await AudioMetadataExtractor.selectReader()('/test1.m4a'),
-        expectedDuration,
-      );
-      expect(
-        await AudioMetadataExtractor.selectReader()('/test2.m4a'),
-        expectedDuration,
-      );
-    });
-
-    test('re-registering switches the resolved reader', () async {
-      getIt.registerSingleton<AudioMetadataReader>(
-        (_) async => const Duration(seconds: 1),
-      );
-      expect(
-        await AudioMetadataExtractor.selectReader()('/a.m4a'),
-        const Duration(seconds: 1),
-      );
-
-      getIt
-        ..unregister<AudioMetadataReader>()
-        ..registerSingleton<AudioMetadataReader>(
-          (_) async => const Duration(seconds: 2),
-        );
-      expect(
-        await AudioMetadataExtractor.selectReader()('/a.m4a'),
-        const Duration(seconds: 2),
-      );
     });
   });
 }

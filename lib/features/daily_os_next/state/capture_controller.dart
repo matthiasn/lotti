@@ -105,7 +105,8 @@ class CaptureController extends Notifier<CaptureState> {
   late final AudioTranscriptionService _transcriber =
       _transcriberOverride ?? ref.read(audioTranscriptionServiceProvider);
   late final Future<JournalAudio?> Function(AudioNote) _persistAudio =
-      _persistAudioOverride ?? SpeechRepository.createAudioEntry;
+      _persistAudioOverride ??
+      ref.read(speechRepositoryProvider).createAudioEntry;
   DayProcessingOutboxRepository? get _processingOutbox =>
       _processingOutboxOverride ??
       (getIt.isRegistered<DayProcessingOutboxRepository>()

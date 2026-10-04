@@ -29,6 +29,8 @@ import 'package:lotti/features/tasks/ui/widgets/task_history_section.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/scroll_anchor.dart';
@@ -724,6 +726,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       onFiles: (files) => handleDroppedMediaFiles(
         files,
         linkedId: task.meta.id,
+        speechRepository: ref.read(speechRepositoryProvider),
+        domainLogger: ref.read(domainLoggerProvider),
         categoryId: task.meta.categoryId,
         analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
       ),
