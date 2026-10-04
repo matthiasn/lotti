@@ -1758,6 +1758,34 @@ void main() {
       },
     );
 
+    // A run again that cannot write the source link still reports the task
+    // (it exists), and says the link is missing.
+    test('a task found from an earlier run whose link cannot be written is '
+        'reported with the warning', () async {
+      stubSourceTaskLookup(makeSourceTask());
+      stubCreated([true]);
+      when(
+        () => mockJournalDb.journalEntityById(derivedId),
+      ).thenAnswer((_) async => makeNewTask(derivedId));
+      stubLinkCreation(result: false);
+      when(
+        () => mockJournalDb.linksBetween(
+          sourceTaskId,
+          derivedId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => const []);
+
+      final result = await handler.handle(sourceTaskId, {
+        'title': 'Follow-Up Task',
+      }, effect: effect);
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, derivedId);
+      expect(result.output, contains('already exists'));
+      expect(result.output, contains('Warning: failed to link source task'));
+    });
+
     test('still fails when the write fails and no task exists', () async {
       stubSourceTaskLookup(makeSourceTask());
       stubCreated([false, false]);
