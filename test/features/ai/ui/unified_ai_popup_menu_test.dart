@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -407,6 +409,10 @@ void main() {
           () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
         ).thenAnswer((_) => Stream.value(providers));
         return withServiceOverrides([
+          // Wired as the composition root wires it.
+          aiActionInterceptorProvider.overrideWithValue(
+            interceptForRealAiSetup,
+          ),
           profileContextProvider.overrideWithValue(
             ProfileContext.forProfile(
               profile: Profile(

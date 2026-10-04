@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 40,
+  "_total": 36,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -18,13 +18,10 @@
     "lib/features/ai/ui/settings/services/provider_prompt_setup_service.dart": ["agents"],
     "lib/features/ai/ui/settings/widgets/sherpa_models_section.dart": ["sync"],
     "lib/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart": ["agents"],
-    "lib/features/ai/ui/unified_ai_popup_menu.dart": ["demo"],
     "lib/features/ai/ui/widgets/profile_pinning_selector.dart": ["sync"],
     "lib/features/ai_consumption/state/consumption_providers.dart": ["agents"],
     "lib/features/categories/state/categories_list_controller.dart": ["lockdown"],
     "lib/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart": ["onboarding"],
-    "lib/features/demo/seed/demo_seeder.dart": ["onboarding"],
-    "lib/features/demo/ui/demo_ai_setup_sheet.dart": ["onboarding"],
     "lib/features/habits/ui/sheets/habit_completion_sheet.dart": ["goals"],
     "lib/features/insights/state/insights_providers.dart": ["agents"],
     "lib/features/journal/state/entry_controller.dart": ["daily_os_next"],
@@ -38,7 +35,6 @@
     "lib/features/tasks/ui/header/task_meta_pickers.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_section.dart": ["projects"],
     "lib/features/tasks/ui/widgets/task_showcase_chips.dart": ["projects"],
-    "lib/widgets/charts/habits/dashboard_habits_chart.dart": ["habits"],
     "lib/widgets/settings/settings_detail_scaffold.dart": ["keyboard"]
   }
 }

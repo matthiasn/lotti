@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
-import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
+import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';

@@ -9,12 +9,12 @@ import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 

@@ -1,7 +1,7 @@
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 
 /// Every private cadence key that can suppress an onboarding auto-show.
 ///

@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/onboarding_settings_keys.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

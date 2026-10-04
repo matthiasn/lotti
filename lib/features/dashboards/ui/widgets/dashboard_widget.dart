@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Renders a dashboard's ordered list of items as a vertical stack of chart
@@ -37,6 +37,7 @@ class DashboardWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(dashboardByIdProvider(dashboardId));
+    final habitChart = ref.watch(dashboardHabitChartBuilderProvider);
 
     if (dashboard == null) {
       return const SizedBox.shrink();
@@ -87,11 +88,15 @@ class DashboardWidget extends ConsumerWidget {
             rangeEnd: rangeEnd,
           );
         case final DashboardHabitItem habit:
-          return DashboardHabitsChart(
+          return KeyedSubtree(
             key: ValueKey('habit:${habit.habitId}'),
-            habitId: habit.habitId,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
+            child:
+                habitChart?.call(
+                  habitId: habit.habitId,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                ) ??
+                const SizedBox.shrink(),
           );
       }
     });
