@@ -1,6 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -47,7 +47,7 @@ double settingsHeaderContentHeight(
 /// delegate, or the shell's header container) owns the surface colour and
 /// the bottom hairline so a header with a `bottom` accessory can place the
 /// divider beneath the accessory rather than under the title.
-class SettingsHeaderBar extends StatelessWidget {
+class SettingsHeaderBar extends ConsumerWidget {
   const SettingsHeaderBar({
     required this.title,
     this.subtitle,
@@ -75,17 +75,17 @@ class SettingsHeaderBar extends StatelessWidget {
   /// page to pop. The previous default went straight to `beamBack()`, which
   /// follows URL history rather than the visible stack and could no-op on the
   /// drill-down — so the button did nothing while the back gesture worked.
-  void _handleBack(BuildContext context) {
+  void _handleBack(BuildContext context, WidgetRef ref) {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
     } else {
-      getIt<NavService>().beamBack();
+      ref.read(navServiceProvider).beamBack();
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final showSubtitle = subtitle?.trim().isNotEmpty ?? false;
     return Padding(
@@ -98,7 +98,7 @@ class SettingsHeaderBar extends StatelessWidget {
       child: Row(
         children: [
           if (showBackButton)
-            BackWidget(onPressed: onBack ?? () => _handleBack(context)),
+            BackWidget(onPressed: onBack ?? () => _handleBack(context, ref)),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,

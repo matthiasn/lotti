@@ -38,7 +38,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    service = WhatsNewService(httpClient: mockHttpClient);
+    service = WhatsNewService(
+      domainLogger: mockDomainLogger,
+      httpClient: mockHttpClient,
+    );
   });
 
   tearDown(getIt.reset);

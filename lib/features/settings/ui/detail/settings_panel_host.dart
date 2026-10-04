@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/routing/settings_route.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Cross-fade between a panel's body and the detail surfaces below it.
@@ -20,7 +21,7 @@ const Duration kSettingsPanelSwapDuration = Duration(milliseconds: 180);
 /// `SettingsLocation` updates on every desktop settings URL change. A route
 /// that belongs to another node leaves this host on its own body, so a body
 /// cached for a sibling leaf is unaffected.
-class SettingsPanelHost extends StatelessWidget {
+class SettingsPanelHost extends ConsumerWidget {
   const SettingsPanelHost({
     required this.nodeId,
     this.listenable,
@@ -41,11 +42,12 @@ class SettingsPanelHost extends StatelessWidget {
   final SettingsRouteTable? table;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final routes = table ?? settingsRoutes;
     final route = routes.routes[nodeId]!;
     final source =
-        listenable ?? getIt<NavService>().desktopSelectedSettingsRoute;
+        listenable ??
+        ref.watch(navServiceProvider).desktopSelectedSettingsRoute;
     return ValueListenableBuilder<DesktopSettingsRoute?>(
       valueListenable: source,
       builder: (context, current, _) {

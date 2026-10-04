@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show SynchronousFuture;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -10,8 +11,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_resolution_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -23,7 +24,7 @@ import 'package:material_ui/material_ui.dart';
 /// each (ADR 0092). The page shows the one [versionKey] names; without it, or
 /// once that one is resolved, the oldest still unresolved. Resolving one
 /// writes the merge of that pair, and the next is decided against it.
-class ConflictDetailRoute extends StatefulWidget {
+class ConflictDetailRoute extends ConsumerStatefulWidget {
   const ConflictDetailRoute({
     required this.conflictId,
     this.versionKey,
@@ -37,11 +38,12 @@ class ConflictDetailRoute extends StatefulWidget {
   final String? versionKey;
 
   @override
-  State<ConflictDetailRoute> createState() => _ConflictDetailRouteState();
+  ConsumerState<ConflictDetailRoute> createState() =>
+      _ConflictDetailRouteState();
 }
 
-class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
-  final JournalDb _db = getIt<JournalDb>();
+class _ConflictDetailRouteState extends ConsumerState<ConflictDetailRoute> {
+  late final JournalDb _db = ref.read(journalDbProvider);
   late final ConflictResolutionService _service = ConflictResolutionService(
     journalDb: _db,
   );

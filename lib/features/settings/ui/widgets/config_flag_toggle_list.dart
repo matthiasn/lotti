@@ -1,7 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/settings/settings_toggle_list.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -18,7 +19,7 @@ import 'package:material_ui/material_ui.dart';
 /// no local state: the caller rebuilds from `watchConfigFlags()`, so the toggle
 /// reflects what was stored rather than what was tapped. The card itself is
 /// [SettingsToggleList], the shape Settings → Notifications renders too.
-class ConfigFlagToggleList extends StatelessWidget {
+class ConfigFlagToggleList extends ConsumerWidget {
   const ConfigFlagToggleList({required this.flags, this.labels, super.key});
 
   /// Rows to render, in display order.
@@ -31,7 +32,7 @@ class ConfigFlagToggleList extends StatelessWidget {
   final FlagLabelResolver? labels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final resolve = labels ?? ConfigFlagLabels.resolverFor(context);
     return SettingsToggleList(
       rows: [
@@ -44,9 +45,11 @@ class ConfigFlagToggleList extends StatelessWidget {
               subtitle: subtitle,
               icon: ConfigFlagLabels.iconFor(flag.name),
               value: flag.status,
-              onChanged: (status) => getIt<PersistenceLogic>().setConfigFlag(
-                flag.copyWith(status: status),
-              ),
+              onChanged: (status) => ref
+                  .read(persistenceLogicProvider)
+                  .setConfigFlag(
+                    flag.copyWith(status: status),
+                  ),
             ),
       ],
     );

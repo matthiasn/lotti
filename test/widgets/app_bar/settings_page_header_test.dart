@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -26,31 +27,33 @@ Future<void> _pumpHeader(
   bool showTitleBar = true,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      builder: LegacyMaterialBridge.builder,
-      // The header reads context.designTokens (for its surface and title
-      // colours); the central helper attaches the brightness-matched
-      // DsTokens extension to whatever theme the test supplies.
-      theme: resolveTestTheme(theme ?? ThemeData.light()),
-      home: MediaQuery(
-        data: MediaQueryData(
-          size: Size(width, height),
-          padding: EdgeInsets.only(top: topPadding),
-          textScaler: TextScaler.linear(scale),
-        ),
-        child: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              SettingsPageHeader(
-                title: title,
-                subtitle: subtitle,
-                showBackButton: showBackButton,
-                pinned: pinned,
-                bottom: bottom,
-                showTitleBar: showTitleBar,
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: contentHeight)),
-            ],
+    ProviderScope(
+      child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
+        // The header reads context.designTokens (for its surface and title
+        // colours); the central helper attaches the brightness-matched
+        // DsTokens extension to whatever theme the test supplies.
+        theme: resolveTestTheme(theme ?? ThemeData.light()),
+        home: MediaQuery(
+          data: MediaQueryData(
+            size: Size(width, height),
+            padding: EdgeInsets.only(top: topPadding),
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                SettingsPageHeader(
+                  title: title,
+                  subtitle: subtitle,
+                  showBackButton: showBackButton,
+                  pinned: pinned,
+                  bottom: bottom,
+                  showTitleBar: showTitleBar,
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: contentHeight)),
+              ],
+            ),
           ),
         ),
       ),
@@ -78,21 +81,23 @@ Future<void> _pumpThemeSwitchingHeader(
   required String title,
 }) async {
   await tester.pumpWidget(
-    ValueListenableBuilder<ThemeMode>(
-      valueListenable: mode,
-      builder: (context, themeMode, _) => MaterialApp(
-        builder: LegacyMaterialBridge.builder,
-        theme: resolveTestTheme(ThemeData.light()),
-        darkTheme: resolveTestTheme(ThemeData.dark()),
-        themeMode: themeMode,
-        home: Builder(
-          builder: (context) => Scaffold(
-            backgroundColor: context.designTokens.colors.background.level01,
-            body: CustomScrollView(
-              slivers: [
-                SettingsPageHeader(title: title),
-                const SliverToBoxAdapter(child: SizedBox(height: 400)),
-              ],
+    ProviderScope(
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: mode,
+        builder: (context, themeMode, _) => MaterialApp(
+          builder: LegacyMaterialBridge.builder,
+          theme: resolveTestTheme(ThemeData.light()),
+          darkTheme: resolveTestTheme(ThemeData.dark()),
+          themeMode: themeMode,
+          home: Builder(
+            builder: (context) => Scaffold(
+              backgroundColor: context.designTokens.colors.background.level01,
+              body: CustomScrollView(
+                slivers: [
+                  SettingsPageHeader(title: title),
+                  const SliverToBoxAdapter(child: SizedBox(height: 400)),
+                ],
+              ),
             ),
           ),
         ),

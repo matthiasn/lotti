@@ -1,7 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_subsection.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -10,15 +11,15 @@ import 'package:material_ui/material_ui.dart';
 /// Highlights via [NavService.desktopShowAiImpact] (written by
 /// `DashboardsLocation`, so the URL stays the single source of truth) and opens
 /// the full-screen AI Impact dashboard at `/dashboards/impact`.
-class ImpactSidebarEntry extends StatelessWidget {
+class ImpactSidebarEntry extends ConsumerWidget {
   const ImpactSidebarEntry({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SidebarSubsectionSurface(
       children: [
         ValueListenableBuilder<bool>(
-          valueListenable: getIt<NavService>().desktopShowAiImpact,
+          valueListenable: ref.watch(navServiceProvider).desktopShowAiImpact,
           builder: (context, active, _) {
             return SidebarSubsectionAction(
               label: context.messages.aiImpactTitle,

@@ -54,7 +54,7 @@ void main() {
   ) async {
     var backs = 0;
     await tester.pumpWidget(
-      makeTestableWidget2(
+      makeTestableWidgetNoScroll(
         Scaffold(
           body: SettingsHeaderBar(
             title: 'Detail',
@@ -83,7 +83,7 @@ void main() {
 
       // The header is the sole route, so there is nothing to pop locally.
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           const Scaffold(
             body: SettingsHeaderBar(title: 'Root', showBackButton: true),
           ),

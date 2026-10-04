@@ -203,7 +203,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(5)),
         ),
       );
@@ -238,7 +238,7 @@ void main() {
         'state to it', (tester) async {
       final chosen = <String>[];
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: _photos(3, coverIndex: 1),
             onSetCover: (id) async {
@@ -274,7 +274,7 @@ void main() {
       getIt.registerSingleton<LoggingService>(logging);
       addTearDown(getIt.reset);
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: _photos(2),
             onSetCover: (_) async => false,
@@ -314,7 +314,7 @@ void main() {
       getIt.registerSingleton<LoggingService>(logging);
       addTearDown(getIt.reset);
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: _photos(2),
             onSetCover: (_) async => throw StateError('db down'),
@@ -351,7 +351,7 @@ void main() {
     ) async {
       final chosen = <String>[];
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: _photos(3, coverIndex: 1),
             initialIndex: 1,
@@ -374,7 +374,7 @@ void main() {
     testWidgets('no cover control without a handler, or for a photo without '
         'an id', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(2, coverIndex: 0)),
         ),
       );
@@ -383,7 +383,7 @@ void main() {
       expect(find.text('Set cover'), findsNothing);
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: [EventPhoto(testImage()), EventPhoto(testImage())],
             onSetCover: (_) async => true,
@@ -416,7 +416,7 @@ void main() {
     testWidgets('download exports the currently visible photo', (tester) async {
       final exported = <String>[];
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: _photos(3),
             imageExporter: (file) async {
@@ -443,7 +443,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(3)),
         ),
       );
@@ -468,7 +468,7 @@ void main() {
 
     testWidgets('double tap zoom leaves overlays visible', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(2)),
         ),
       );
@@ -488,7 +488,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(
             photos: [
               EventPhoto(
@@ -507,7 +507,7 @@ void main() {
 
     testWidgets('hides the page indicator for a single photo', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(1)),
         ),
       );
@@ -528,7 +528,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(1)),
           mediaQueryData: withoutInset,
         ),
@@ -538,7 +538,7 @@ void main() {
       final rightWithoutInset = tester.getTopRight(closeButton).dx;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           EventPhotoGalleryViewer(photos: _photos(1)),
           mediaQueryData: withInset,
         ),
@@ -577,7 +577,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidget2(EventPhotoGalleryViewer(photos: _photos(1))),
+          makeTestableWidgetNoScroll(EventPhotoGalleryViewer(photos: _photos(1))),
         );
         await tester.pump();
 

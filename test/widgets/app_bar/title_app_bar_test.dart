@@ -21,7 +21,7 @@ void main() {
       List<Widget>? actions,
     }) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           Scaffold(
             appBar: TitleAppBar(
               title: 'Page Title',
@@ -74,7 +74,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget2(
+        makeTestableWidgetNoScroll(
           const Scaffold(
             appBar: TitleWidgetAppBar(
               title: Icon(LottiIcons.star),

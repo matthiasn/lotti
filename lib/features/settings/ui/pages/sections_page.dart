@@ -1,10 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -44,7 +45,7 @@ class SectionsPage extends StatelessWidget {
 /// that navigation order, and each row is titled with the navigation label it
 /// switches on (see [ConfigFlagLabels.sectionResolverFor]), so the list reads
 /// the way the sidebar it builds does.
-class SectionsBody extends StatelessWidget {
+class SectionsBody extends ConsumerWidget {
   const SectionsBody({super.key, this.displayedItems = sectionFlags});
 
   /// Flag names to render, in display order.
@@ -52,7 +53,7 @@ class SectionsBody extends StatelessWidget {
   final List<String> displayedItems;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
 
     return Padding(
@@ -74,7 +75,7 @@ class SectionsBody extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step4),
           StreamBuilder<Set<ConfigFlag>>(
-            stream: getIt<JournalDb>().watchConfigFlags(),
+            stream: ref.watch(journalDbProvider).watchConfigFlags(),
             builder: (context, snapshot) {
               final flagLookup = <String, ConfigFlag>{
                 for (final flag in snapshot.data ?? <ConfigFlag>{})

@@ -13,6 +13,7 @@ import 'package:lotti/utils/device_region.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -25,7 +26,7 @@ void main() {
       int firstDayOfWeekIndex = 1,
     }) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           dailyOsPlanDaysProvider.overrideWith((ref, month) async {
             requestedMonths?.add(month);
             return planDays;
@@ -33,7 +34,7 @@ void main() {
           firstDayOfWeekIndexProvider.overrideWith(
             (ref) async => firstDayOfWeekIndex,
           ),
-        ],
+        ]),
         child: makeTestableWidget2(
           Material(
             child: Center(
