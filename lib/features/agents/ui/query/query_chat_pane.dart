@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
+import 'package:lotti/features/agents/ui/query/query_rename_dialog.dart';
 import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -326,7 +327,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         chat.private || ref.read(configFlagProvider('private')).value == true;
     final result = await ModalUtils.showSinglePageModal<String>(
       context: context,
-      builder: (context) => _QueryRenameDialog(
+      builder: (context) => QueryRenameDialog(
         controller: controller,
         chat: chat,
         private: authoredPrivate,
@@ -1757,106 +1758,6 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Owns the input until the modal route finishes its dismissal animation.
-class _QueryRenameDialog extends ConsumerStatefulWidget {
-  const _QueryRenameDialog({
-    required this.controller,
-    required this.chat,
-    required this.private,
-  });
-  final QueryChatController controller;
-  final QueryChatHistory chat;
-  final bool private;
-
-  @override
-  ConsumerState<_QueryRenameDialog> createState() => _QueryRenameDialogState();
-}
-
-class _QueryRenameDialogState extends ConsumerState<_QueryRenameDialog> {
-  late final _text = TextEditingController(text: widget.chat.title);
-  late bool _authoredPrivate = widget.private;
-
-  @override
-  void dispose() {
-    _text.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final data = ref.watch(queryChatDataProvider(widget.controller.key)).value;
-    final showPrivate = ref.watch(configFlagProvider('private')).value ?? false;
-    final lockdown = ref.watch(lockdownControllerProvider);
-    final access = data == null
-        ? null
-        : QueryAccessSnapshot(
-            showPrivate: showPrivate,
-            categories: data.access.categories,
-            entries: data.access.entries,
-            lockdown: lockdown,
-          );
-    final current = data?.projection.chats
-        .where((candidate) => candidate.id == widget.chat.id)
-        .firstOrNull;
-    final home = access?.entries[widget.controller.key.scope.id];
-    final homeVisible =
-        access != null &&
-        (widget.controller.key.scope.kind == QueryScopeKind.category
-            ? access.allowsCategory(widget.controller.key.scope.id)
-            : home != null && access.allowsEntry(home));
-    final visible =
-        homeVisible &&
-        current != null &&
-        (!(_authoredPrivate || current.private) || showPrivate) &&
-        current.events.every(
-          (event) => access.allowsEvent(event.data),
-        );
-    _authoredPrivate = _authoredPrivate || showPrivate;
-    if (!visible) {
-      // Remove the field before the modal's dismissal animation so
-      // neither the saved title nor newly typed text flashes on lock.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted && ModalRoute.of(context)?.isCurrent == true) {
-          _text.clear();
-          Navigator.of(context).pop();
-        }
-      });
-      return const SizedBox.shrink();
-    }
-    final tokens = context.designTokens;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DesignSystemTextInput(
-          controller: _text,
-          label: context.messages.queryRenameChat,
-          autofocus: true,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemModalActionBar(
-          primary: DesignSystemButton(
-            label: context.messages.saveButton,
-            fullWidth: true,
-            onPressed: () {
-              if (_text.text.trim().isNotEmpty &&
-                  _text.text.trim().length <= 120) {
-                Navigator.of(context).pop(_text.text.trim());
-              }
-            },
-          ),
-          secondary: [
-            DesignSystemButton(
-              label: context.messages.cancelButton,
-              onPressed: () => Navigator.of(context).pop(),
-              variant: DesignSystemButtonVariant.secondary,
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
