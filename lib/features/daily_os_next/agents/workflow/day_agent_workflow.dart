@@ -64,6 +64,7 @@ import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 part 'day_agent_context_builder.dart';
+part 'day_agent_planning_context.dart';
 part 'day_agent_persistence.dart';
 part 'day_agent_prompt_builder.dart';
 part 'day_agent_tool_handlers.dart';
