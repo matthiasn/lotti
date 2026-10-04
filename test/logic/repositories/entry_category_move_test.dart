@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -703,6 +705,46 @@ void main() {
       await categoryMove.replay();
 
       expect((await intents.pending()).keys, [testTask.meta.id]);
+    });
+  });
+
+  // The app's move records into the settings database the app provides, so
+  // its startup replay finds the record.
+  test('the provider records moves in the settings database the app '
+      'provides', () async {
+    final container = ProviderContainer(
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(journalRepository),
+        journalDbProvider.overrideWithValue(journalDb),
+        projectRepositoryProvider.overrideWithValue(projectRepository),
+        settingsDbProvider.overrideWithValue(settingsDb),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+      ],
+    );
+    addTearDown(container.dispose);
+    final linkedEntry = testTextEntryNoGeo.copyWith(
+      meta: testTextEntryNoGeo.meta.copyWith(
+        id: 'linked_entry',
+        categoryId: projectCategoryId,
+      ),
+    );
+    stored(taskIn(otherCategoryId));
+    linkedFrom(testTask.meta.id, [linkedEntry]);
+    // The linked entry does not take the category: the move stays recorded.
+    stored(linkedEntry);
+    when(
+      () => journalRepository.updateCategoryId(
+        linkedEntry.meta.id,
+        categoryId: otherCategoryId,
+      ),
+    ).thenAnswer((_) async => false);
+
+    await container
+        .read(entryCategoryMoveProvider)
+        .move(testTask.meta.id, otherCategoryId);
+
+    expect(await intents.pending(), {
+      testTask.meta.id: (categoryId: otherCategoryId),
     });
   });
 
