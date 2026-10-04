@@ -16,7 +16,6 @@ import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
-import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
@@ -248,9 +247,6 @@ class AiToolCallProcessor {
               }
             }
           }
-
-          // Force refresh of checklists UI
-          ref.invalidate(checklistItemControllerProvider);
         } catch (e) {
           developer.log(
             'Error processing add checklist item(s): ${e.runtimeType}',
@@ -286,8 +282,6 @@ class AiToolCallProcessor {
             'skipped ${updateHandler.skippedItems.length}',
             name: 'UnifiedAiInferenceRepository',
           );
-
-          ref.invalidate(checklistItemControllerProvider);
         } catch (e, stackTrace) {
           developer.log(
             'Error processing update_checklist_items: ${e.runtimeType}',
@@ -529,10 +523,6 @@ class AiToolCallProcessor {
           }
         }
       }
-
-      // Force refresh of all checklist items in this task
-      // This will cause the UI to re-check for suggestions
-      ref.invalidate(checklistItemControllerProvider);
 
       developer.log(
         'Processed ${suggestions.length} checklist completion suggestions for task ${currentTask.id}',

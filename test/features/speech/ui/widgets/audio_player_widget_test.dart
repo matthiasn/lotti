@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
-import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';

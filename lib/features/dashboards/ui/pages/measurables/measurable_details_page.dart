@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurable_choices_editor.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/save_shortcut_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -214,121 +215,124 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
       }
     }
 
-    return SettingsDetailScaffold(
-      title: widget.isCreateMode
-          ? messages.settingsMeasurablesCreateTitle
-          : messages.settingsMeasurableDetailsLabel,
-      onBack: backToList,
-      onSaveShortcut: () {
+    return SaveShortcutScope(
+      onSave: () {
         if (dirty) onSavePressed();
       },
-      saveShortcutEnabled: () => dirty,
-      actionBar: SettingsFormActionBar(
-        primaryLabel: widget.isCreateMode
-            ? messages.createButton
-            : messages.saveButton,
-        onPrimary: onSavePressed,
-        primaryEnabled: dirty,
-        secondaryLabel: messages.cancelButton,
-        onSecondary: backToList,
-      ),
-      deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
-      onDelete: widget.isCreateMode ? null : onDeletePressed,
-      children: [
-        FormBuilder(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: () {
-            setState(() {
-              dirty = true;
-            });
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SettingsFormSection(
-                title: messages.basicSettings,
-                children: [
-                  SettingsFormTextField(
-                    key: const Key('measurable_name_field'),
-                    initialValue: item.displayName,
-                    labelText: messages.settingsMeasurableNameLabel,
-                    name: 'displayName',
-                    semanticsLabel: messages.settingsMeasurableNameLabel,
-                    autofocus: widget.isCreateMode,
-                  ),
-                  SettingsFormTextField(
-                    key: const Key('measurable_description_field'),
-                    initialValue: item.description,
-                    labelText: messages.settingsMeasurableDescriptionLabel,
-                    fieldRequired: false,
-                    multiline: true,
-                    name: 'description',
-                    semanticsLabel: messages.settingsMeasurableDescriptionLabel,
-                  ),
-                  _ValueKindField(
-                    valueKind: _valueKind,
-                    onChanged: _setValueKind,
-                  ),
-                  if (!_isChoice) ...[
+      isEnabled: () => dirty,
+      child: SettingsDetailScaffold(
+        title: widget.isCreateMode
+            ? messages.settingsMeasurablesCreateTitle
+            : messages.settingsMeasurableDetailsLabel,
+        onBack: backToList,
+        actionBar: SettingsFormActionBar(
+          primaryLabel: widget.isCreateMode
+              ? messages.createButton
+              : messages.saveButton,
+          onPrimary: onSavePressed,
+          primaryEnabled: dirty,
+          secondaryLabel: messages.cancelButton,
+          onSecondary: backToList,
+        ),
+        deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
+        onDelete: widget.isCreateMode ? null : onDeletePressed,
+        children: [
+          FormBuilder(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            onChanged: () {
+              setState(() {
+                dirty = true;
+              });
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SettingsFormSection(
+                  title: messages.basicSettings,
+                  children: [
                     SettingsFormTextField(
-                      initialValue: item.unitName,
-                      labelText: messages.settingsMeasurableUnitLabel,
-                      fieldRequired: false,
-                      name: 'unitName',
-                      semanticsLabel: messages.settingsMeasurableUnitLabel,
+                      key: const Key('measurable_name_field'),
+                      initialValue: item.displayName,
+                      labelText: messages.settingsMeasurableNameLabel,
+                      name: 'displayName',
+                      semanticsLabel: messages.settingsMeasurableNameLabel,
+                      autofocus: widget.isCreateMode,
                     ),
-                    FormBuilderField<AggregationType>(
-                      name: 'aggregationType',
-                      initialValue: item.aggregationType,
-                      builder: (field) {
-                        final value = field.value;
-                        return SettingsPickerField(
-                          key: const Key('measurable_aggregation_field'),
-                          label: messages.settingsMeasurableAggregationLabel,
-                          valueText: value != null
-                              ? aggregationTypeLabel(messages, value)
-                              : null,
-                          hintText: messages.aggregationNone,
-                          helperText:
-                              messages.settingsMeasurableAggregationHelper,
-                          semanticsLabel:
-                              messages.settingsMeasurableAggregationLabel,
-                          onTap: () => _pickAggregationType(field),
-                        );
-                      },
+                    SettingsFormTextField(
+                      key: const Key('measurable_description_field'),
+                      initialValue: item.description,
+                      labelText: messages.settingsMeasurableDescriptionLabel,
+                      fieldRequired: false,
+                      multiline: true,
+                      name: 'description',
+                      semanticsLabel:
+                          messages.settingsMeasurableDescriptionLabel,
+                    ),
+                    _ValueKindField(
+                      valueKind: _valueKind,
+                      onChanged: _setValueKind,
+                    ),
+                    if (!_isChoice) ...[
+                      SettingsFormTextField(
+                        initialValue: item.unitName,
+                        labelText: messages.settingsMeasurableUnitLabel,
+                        fieldRequired: false,
+                        name: 'unitName',
+                        semanticsLabel: messages.settingsMeasurableUnitLabel,
+                      ),
+                      FormBuilderField<AggregationType>(
+                        name: 'aggregationType',
+                        initialValue: item.aggregationType,
+                        builder: (field) {
+                          final value = field.value;
+                          return SettingsPickerField(
+                            key: const Key('measurable_aggregation_field'),
+                            label: messages.settingsMeasurableAggregationLabel,
+                            valueText: value != null
+                                ? aggregationTypeLabel(messages, value)
+                                : null,
+                            hintText: messages.aggregationNone,
+                            helperText:
+                                messages.settingsMeasurableAggregationHelper,
+                            semanticsLabel:
+                                messages.settingsMeasurableAggregationLabel,
+                            onTap: () => _pickAggregationType(field),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+                if (_isChoice)
+                  MeasurableChoicesEditor(
+                    choices: _choices,
+                    showErrors: _showChoiceErrors,
+                    onChanged: _setChoices,
+                  ),
+                SettingsFormSection(
+                  title: messages.habitSectionOptionsTitle,
+                  children: [
+                    FormSwitch(
+                      name: 'favorite',
+                      initialValue: item.favorite ?? false,
+                      title: messages.favoriteLabel,
+                      icon: LottiIcons.star,
+                    ),
+                    FormSwitch(
+                      name: 'private',
+                      initialValue: item.private,
+                      title: messages.privateLabel,
+                      subtitle: messages.privateSwitchDescription,
+                      icon: LottiIcons.lock,
                     ),
                   ],
-                ],
-              ),
-              if (_isChoice)
-                MeasurableChoicesEditor(
-                  choices: _choices,
-                  showErrors: _showChoiceErrors,
-                  onChanged: _setChoices,
                 ),
-              SettingsFormSection(
-                title: messages.habitSectionOptionsTitle,
-                children: [
-                  FormSwitch(
-                    name: 'favorite',
-                    initialValue: item.favorite ?? false,
-                    title: messages.favoriteLabel,
-                    icon: LottiIcons.star,
-                  ),
-                  FormSwitch(
-                    name: 'private',
-                    initialValue: item.private,
-                    title: messages.privateLabel,
-                    subtitle: messages.privateSwitchDescription,
-                    icon: LottiIcons.lock,
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

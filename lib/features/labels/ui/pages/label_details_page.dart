@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/save_shortcut_scope.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
@@ -207,80 +208,82 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         !state.isSaving && state.name.trim().isNotEmpty && dirty;
     final tokens = context.designTokens;
 
-    return SettingsDetailScaffold(
-      title: title,
-      onBack: () => beamToNamed('/settings/labels'),
-      onSaveShortcut: () {
+    return SaveShortcutScope(
+      onSave: () {
         if (saveEnabled) handleSave();
       },
-      saveShortcutEnabled: () => saveEnabled,
-      actionBar: SettingsFormActionBar(
-        primaryLabel: widget.isCreateMode
-            ? messages.createButton
-            : messages.saveButton,
-        onPrimary: handleSave,
-        primaryEnabled: saveEnabled,
-        secondaryLabel: messages.cancelButton,
-        onSecondary: () => beamToNamed('/settings/labels'),
-      ),
-      deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
-      onDelete: widget.isCreateMode ? null : handleDelete,
-      deleteEnabled: !state.isSaving,
-      children: [
-        SettingsFormSection(
-          title: messages.basicSettings,
-          children: [
-            DesignSystemTextInput(
-              controller: _nameController,
-              label: messages.settingsLabelsNameLabel,
-              hintText: messages.settingsLabelsNameHint,
-              autofocus: widget.isCreateMode,
-              textCapitalization: TextCapitalization.sentences,
-              onChanged: controller.setName,
-            ),
-            DesignSystemTextarea(
-              controller: _descriptionController,
-              label: messages.settingsLabelsDescriptionLabel,
-              hintText: messages.settingsLabelsDescriptionHint,
-              onChanged: controller.setDescription,
-              minLines: 2,
-              maxLines: 4,
-            ),
-            // Color is a basic property, not a chapter — the categories
-            // editor places it here too.
-            _buildColorPicker(context, controller, state),
-          ],
+      isEnabled: () => saveEnabled,
+      child: SettingsDetailScaffold(
+        title: title,
+        onBack: () => beamToNamed('/settings/labels'),
+        actionBar: SettingsFormActionBar(
+          primaryLabel: widget.isCreateMode
+              ? messages.createButton
+              : messages.saveButton,
+          onPrimary: handleSave,
+          primaryEnabled: saveEnabled,
+          secondaryLabel: messages.cancelButton,
+          onSecondary: () => beamToNamed('/settings/labels'),
         ),
-        SettingsFormSection(
-          title: messages.habitSectionOptionsTitle,
-          children: [
-            SettingsSwitchRow(
-              title: messages.privateLabel,
-              subtitle: messages.privateSwitchDescription,
-              icon: LottiIcons.lock,
-              value: state.isPrivate,
-              onChanged: (value) =>
-                  controller.setPrivate(isPrivateValue: value),
-            ),
-          ],
-        ),
-        SettingsFormSection(
-          title: messages.settingsLabelsCategoriesHeading,
-          children: [
-            _buildApplicableCategories(context, controller, state),
-          ],
-        ),
-        if (state.errorMessage != null)
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spacing.step4),
-            child: Text(
-              state.errorMessage!,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.alert.error.ink,
+        deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
+        onDelete: widget.isCreateMode ? null : handleDelete,
+        deleteEnabled: !state.isSaving,
+        children: [
+          SettingsFormSection(
+            title: messages.basicSettings,
+            children: [
+              DesignSystemTextInput(
+                controller: _nameController,
+                label: messages.settingsLabelsNameLabel,
+                hintText: messages.settingsLabelsNameHint,
+                autofocus: widget.isCreateMode,
+                textCapitalization: TextCapitalization.sentences,
+                onChanged: controller.setName,
+              ),
+              DesignSystemTextarea(
+                controller: _descriptionController,
+                label: messages.settingsLabelsDescriptionLabel,
+                hintText: messages.settingsLabelsDescriptionHint,
+                onChanged: controller.setDescription,
+                minLines: 2,
+                maxLines: 4,
+              ),
+              // Color is a basic property, not a chapter — the categories
+              // editor places it here too.
+              _buildColorPicker(context, controller, state),
+            ],
+          ),
+          SettingsFormSection(
+            title: messages.habitSectionOptionsTitle,
+            children: [
+              SettingsSwitchRow(
+                title: messages.privateLabel,
+                subtitle: messages.privateSwitchDescription,
+                icon: LottiIcons.lock,
+                value: state.isPrivate,
+                onChanged: (value) =>
+                    controller.setPrivate(isPrivateValue: value),
+              ),
+            ],
+          ),
+          SettingsFormSection(
+            title: messages.settingsLabelsCategoriesHeading,
+            children: [
+              _buildApplicableCategories(context, controller, state),
+            ],
+          ),
+          if (state.errorMessage != null)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+              child: Text(
+                state.errorMessage!,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.alert.error.ink,
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

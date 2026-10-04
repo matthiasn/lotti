@@ -29,6 +29,7 @@ import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/tags/meta_tag.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/service_overrides.dart';

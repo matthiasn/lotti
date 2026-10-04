@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/service/agent_template_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 
+export 'package:lotti/classes/agents/agent_template_ids.dart';
+
 /// Thrown when a template cannot be deleted because active agents reference it.
 class TemplateInUseException implements Exception {
   const TemplateInUseException({
@@ -58,14 +60,6 @@ class EvolutionDataBundle {
       1;
 }
 
-/// Well-known template IDs for seeded defaults.
-const lauraTemplateId = 'template-laura-001';
-const tomTemplateId = 'template-tom-001';
-const dayAgentTemplateId = 'template-day-agent-001';
-const projectTemplateId = 'template-project-001';
-const eventTemplateId = 'template-event-001';
-const improverTemplateId = 'template-improver-001';
-const metaImproverTemplateId = 'template-meta-improver-001';
 const kDefaultAgentTemplateModelId = 'models/gemini-3-flash-preview';
 
 /// High-level service for agent template management.
