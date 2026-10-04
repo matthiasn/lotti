@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -123,15 +124,24 @@ class FollowUpTaskHandler {
     }
     final description = args['description'];
 
-    if (await _createdBefore(effect, title)
-        case final ToolExecutionResult existing) {
-      return existing;
-    }
-
     // Look up category defaults for profile inheritance.
     final category = categoryId != null
         ? getIt<EntitiesCacheService>().getCategoryById(categoryId)
         : null;
+
+    Future<void> attach(Task task, List<String> warnings) => _attach(
+      task,
+      sourceTaskId: sourceTaskId,
+      relation: relation,
+      categoryId: categoryId,
+      category: category,
+      warnings: warnings,
+    );
+
+    if (await _createdBefore(effect, title, attach)
+        case final ToolExecutionResult existing) {
+      return existing;
+    }
 
     // Build task data.
     final taskData = TaskData(
@@ -164,7 +174,7 @@ class FollowUpTaskHandler {
     if (newTask == null) {
       // The insert refuses an id that exists: the other device's task can
       // have arrived between the check above and the write.
-      if (await _createdBefore(effect, title)
+      if (await _createdBefore(effect, title, attach)
           case final ToolExecutionResult existing) {
         return existing;
       }
@@ -187,6 +197,79 @@ class FollowUpTaskHandler {
     );
 
     final warnings = <String>[];
+    await attach(newTask, warnings);
+
+    final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
+    if (relation != null) {
+      output.write(' — this task ${relation.englishPhrase} it');
+    }
+    for (final w in warnings) {
+      output.write('. $w');
+    }
+
+    return ToolExecutionResult(
+      success: true,
+      output: output.toString(),
+      mutatedEntityId: newTaskId,
+    );
+  }
+
+  /// The role of the task in its [ChangeEffect]'s derived ids.
+  static const _taskRole = 'task';
+
+  /// The result for a task an earlier application of [effect] created, or
+  /// `null` when there is none (or no effect).
+  ///
+  /// That application can have stopped after the task — the app died before
+  /// its link, project or agent were written — or run on another device. So
+  /// what hangs off the task is written again where missing ([attach]), each
+  /// write a no-op where it landed (`specs/tla/ChangeDispatchRecovery.tla`,
+  /// TailOnRerun). A task deleted since stays deleted, with nothing added.
+  Future<ToolExecutionResult?> _createdBefore(
+    ChangeEffect? effect,
+    String title,
+    Future<void> Function(Task task, List<String> warnings) attach,
+  ) async {
+    if (effect == null || !await effect.created(_journalDb, _taskRole)) {
+      return null;
+    }
+    final taskId = effect.entityId(_taskRole);
+    final warnings = <String>[];
+    final task = await _journalDb.journalEntityById(taskId);
+    if (task is Task) await attach(task, warnings);
+    _domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'Follow-up task ${DomainLogger.sanitizeId(taskId)} already created by '
+      'this change — completed what hangs off it',
+      subDomain: _sub,
+    );
+    final output = StringBuffer(
+      'Follow-up task "$title" already exists ($taskId)',
+    );
+    for (final w in warnings) {
+      output.write('. $w');
+    }
+    return ToolExecutionResult(
+      success: true,
+      output: output.toString(),
+      mutatedEntityId: taskId,
+    );
+  }
+
+  /// Writes what hangs off the follow-up [task]: its link to [sourceTaskId],
+  /// its project, inherited from the source, and its agent. Each is a no-op
+  /// where it is already there, so a dispatch run again completes what an
+  /// earlier one left. Failures are captured in [warnings]: the task is the
+  /// primary outcome.
+  Future<void> _attach(
+    Task task, {
+    required String sourceTaskId,
+    required DirectedRelation? relation,
+    required String? categoryId,
+    required CategoryDefinition? category,
+    required List<String> warnings,
+  }) async {
+    final newTaskId = task.meta.id;
 
     // Link source task ↔ new task. Without a relation this is the historic
     // plain link from source to new task; with one, the single edge is typed
@@ -198,25 +281,23 @@ class FollowUpTaskHandler {
     // a task without the very context the user just dictated.
     // Wrapped in try-catch so a link failure does not lose the
     // already-created task ID. Also checks the bool return value since
-    // PersistenceLogic.createLink reports some failures that way.
+    // PersistenceLogic.createLink reports some failures that way — and a
+    // link already live that way too, which is no failure.
     try {
-      final bool linked;
-      if (relation == null) {
-        linked = await _persistenceLogic.createLink(
-          fromId: sourceTaskId,
-          toId: newTaskId,
-        );
-      } else {
-        final endpoints = relation.canonicalEndpoints(
-          anchorId: sourceTaskId,
-          otherId: newTaskId,
-        );
-        linked = await _persistenceLogic.createLink(
-          fromId: endpoints.fromId,
-          toId: endpoints.toId,
-          linkType: relation.type,
-        );
-      }
+      final endpoints = relation?.canonicalEndpoints(
+        anchorId: sourceTaskId,
+        otherId: newTaskId,
+      );
+      final fromId = endpoints?.fromId ?? sourceTaskId;
+      final toId = endpoints?.toId ?? newTaskId;
+      final linkType = relation?.type ?? EntryLinkType.basic;
+      final linked =
+          await _persistenceLogic.createLink(
+            fromId: fromId,
+            toId: toId,
+            linkType: linkType,
+          ) ||
+          await _isLinked(fromId, toId, linkType);
       if (!linked) {
         warnings.add(_linkFailureWarning(relation));
       }
@@ -239,53 +320,23 @@ class FollowUpTaskHandler {
     // the behavior of UI-created tasks in create_entry.dart. Runs last so
     // the creation wake it enqueues sees the link and project written above.
     await _tryAutoAssignAgent(
-      newTask,
+      task,
       categoryId: categoryId,
       category: category,
       warnings: warnings,
     );
-
-    final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
-    if (relation != null) {
-      output.write(' — this task ${relation.englishPhrase} it');
-    }
-    for (final w in warnings) {
-      output.write('. $w');
-    }
-
-    return ToolExecutionResult(
-      success: true,
-      output: output.toString(),
-      mutatedEntityId: newTaskId,
-    );
   }
 
-  /// The role of the task in its [ChangeEffect]'s derived ids.
-  static const _taskRole = 'task';
-
-  /// The result for a task an earlier application of [effect] created, or
-  /// `null` when there is none (or no effect). Its link, project and agent
-  /// were written by that application, so nothing more is done here.
-  Future<ToolExecutionResult?> _createdBefore(
-    ChangeEffect? effect,
-    String title,
-  ) async {
-    if (effect == null || !await effect.created(_journalDb, _taskRole)) {
-      return null;
-    }
-    final taskId = effect.entityId(_taskRole);
-    _domainLogger?.log(
-      LogDomain.agentWorkflow,
-      'Follow-up task ${DomainLogger.sanitizeId(taskId)} already created by '
-      'this change — nothing to apply',
-      subDomain: _sub,
-    );
-    return ToolExecutionResult(
-      success: true,
-      output: 'Follow-up task "$title" already exists ($taskId)',
-      mutatedEntityId: taskId,
-    );
-  }
+  /// Whether a live link of [linkType] runs from [fromId] to [toId].
+  Future<bool> _isLinked(
+    String fromId,
+    String toId,
+    EntryLinkType linkType,
+  ) async => (await _journalDb.linksBetween(
+    fromId,
+    toId,
+    type: entryLinkTypeDbName(linkType),
+  )).any((link) => link.deletedAt == null);
 
   /// The warning for a failed source↔new-task link.
   ///
@@ -348,6 +399,9 @@ class FollowUpTaskHandler {
     if (repo == null) return;
 
     try {
+      // A task already in a project — filed there by an earlier application
+      // of this change, or by the user since — stays where it is.
+      if (await repo.getProjectForTask(newTaskId) != null) return;
       final inherited = await repo.inheritProjectFromTask(
         sourceTaskId: sourceTaskId,
         newTaskId: newTaskId,
@@ -393,6 +447,9 @@ class FollowUpTaskHandler {
     if (templateId == null) return;
 
     try {
+      // A task that has its agent — assigned by an earlier application of
+      // this change — keeps it.
+      if (await service.getTaskAgentForTask(newTask.meta.id) != null) return;
       await service.createTaskAgent(
         taskId: newTask.meta.id,
         templateId: templateId,

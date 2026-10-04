@@ -10,6 +10,8 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -3195,6 +3197,268 @@ void main() {
           });
         },
       );
+    });
+
+    // A dispatch is recorded before its claim and cleared once its outcome
+    // is written, so that one the app died in is finished at the next start
+    // (`specs/tla/ChangeDispatchRecovery.tla`, DispatchIntent).
+    group('interrupted dispatches', () {
+      late SettingsDb settingsDb;
+      late ChangeDispatchIntents intents;
+
+      setUp(() {
+        settingsDb = SettingsDb(inMemoryDatabase: true);
+        intents = ChangeDispatchIntents(
+          scope: 'task',
+          settingsDb: () => settingsDb,
+        );
+      });
+      tearDown(() => settingsDb.close());
+
+      ChangeSetConfirmationService recording(
+        AgentToolDispatch dispatch, {
+        ConfirmedDecisionCallback? onConfirmedDecision,
+      }) => ChangeSetConfirmationService(
+        syncService: mockSyncService,
+        toolDispatcher: dispatch,
+        labelsRepository: mockLabelsRepository,
+        domainLogger: mockDomainLogger,
+        onConfirmedDecision: onConfirmedDecision,
+        dispatchIntents: intents,
+      );
+
+      Future<ToolExecutionResult> applied(
+        String toolName,
+        Map<String, dynamic> args,
+        String taskId,
+      ) async => const ToolExecutionResult(success: true, output: 'Applied');
+
+      test('a dispatch is recorded while its tool runs and cleared once '
+          'applied', () async {
+        final changeSet = makeChangeSetWith();
+        final stored = persistUpsertedChangeSets(changeSet);
+        Map<String, ChangeDispatch?>? whileRunning;
+        final service = recording((toolName, args, taskId) async {
+          whileRunning = await intents.pending();
+          return applied(toolName, args, taskId);
+        });
+
+        await withClock(testClock, () => service.confirmItem(changeSet, 1));
+
+        expect(whileRunning!.values, [
+          (changeSetId: changeSet.id, itemIndex: 1),
+        ]);
+        expect(await intents.pending(), isEmpty);
+        expect(stored().items[1].status, ChangeItemStatus.confirmed);
+      });
+
+      test(
+        'a failed dispatch puts its item back and clears its record',
+        () async {
+          final changeSet = makeChangeSetWith();
+          final stored = persistUpsertedChangeSets(changeSet);
+          final service = recording(
+            (toolName, args, taskId) async => const ToolExecutionResult(
+              success: false,
+              output: 'Error',
+              errorMessage: 'failed',
+            ),
+          );
+
+          await withClock(testClock, () => service.confirmItem(changeSet, 0));
+
+          expect(stored().items[0].status, ChangeItemStatus.pending);
+          expect(await intents.pending(), isEmpty);
+        },
+      );
+
+      test('a confirmation that loses its claim clears its record', () async {
+        final changeSet = makeChangeSetWith();
+        persistUpsertedChangeSets(changeSet);
+        // The first read sees the item pending; by the claim's read another
+        // confirmation has taken it.
+        var reads = 0;
+        when(() => mockRepository.getEntity(changeSet.id)).thenAnswer(
+          (_) async => ++reads == 1
+              ? changeSet
+              : changeSet.copyWith(
+                  items: [
+                    changeSet.items[0].copyWith(
+                      status: ChangeItemStatus.confirmed,
+                    ),
+                    changeSet.items[1],
+                  ],
+                ),
+        );
+        var dispatches = 0;
+        final service = recording((toolName, args, taskId) async {
+          dispatches++;
+          return applied(toolName, args, taskId);
+        });
+
+        final result = await withClock(
+          testClock,
+          () => service.confirmItem(changeSet, 0),
+        );
+
+        expect(result.errorMessage, 'Concurrent change set update detected');
+        expect(dispatches, 0);
+        expect(await intents.pending(), isEmpty);
+      });
+
+      test("a chat set's dispatch, carrying the user's approval, is not "
+          'recorded', () async {
+        final changeSet = makeChangeSetWith().copyWith(
+          id: 'query-chat:question:actions',
+          runKey: 'query-chat:question',
+        );
+        persistUpsertedChangeSets(changeSet);
+        Map<String, ChangeDispatch?>? whileRunning;
+        final service = recording((toolName, args, taskId) async {
+          whileRunning = await intents.pending();
+          return applied(toolName, args, taskId);
+        });
+
+        await withClock(testClock, () => service.confirmItem(changeSet, 0));
+
+        expect(whileRunning, isEmpty);
+      });
+
+      test('an app that died mid-dispatch has it finished at the next start, '
+          'under the same effect, once', () async {
+        final changeSet = makeChangeSetWith();
+        final stored = persistUpsertedChangeSets(changeSet);
+        // The first run's tool never returns: the app dies inside it.
+        final interrupted = Completer<Map<String, dynamic>>();
+        final dying = recording((toolName, args, taskId) {
+          interrupted.complete(args);
+          return Completer<ToolExecutionResult>().future;
+        });
+        unawaited(withClock(testClock, () => dying.confirmItem(changeSet, 0)));
+        final interruptedArgs = await interrupted.future;
+        expect(stored().items[0].status, ChangeItemStatus.confirmed);
+
+        final resumed = <(String, Map<String, dynamic>, String)>[];
+        final hooks = <ChangeDecisionEntity>[];
+        final restarted = recording(
+          (toolName, args, taskId) async {
+            resumed.add((toolName, args, taskId));
+            return applied(toolName, args, taskId);
+          },
+          onConfirmedDecision:
+              ({required changeSet, required item, required decision}) async =>
+                  hooks.add(decision),
+        );
+
+        await withClock(testClock, restarted.resumeInterrupted);
+
+        expect(resumed, hasLength(1));
+        final (toolName, args, taskId) = resumed.single;
+        expect(
+          (toolName, taskId),
+          (changeSet.items[0].toolName, changeSet.taskId),
+        );
+        expect(args, interruptedArgs);
+        expect(
+          resumed.single.$2[ChangeEffect.keyArg],
+          changeSet.items[0].effectKeyIn(changeSet.id, 0),
+        );
+        expect(stored().items[0].status, ChangeItemStatus.confirmed);
+        expect(await intents.pending(), isEmpty);
+        // The decision was persisted with the claim; its hook ran in the
+        // run that died or not at all.
+        expect(hooks, isEmpty);
+
+        await withClock(testClock, restarted.resumeInterrupted);
+        expect(resumed, hasLength(1));
+      });
+
+      for (final (name, status) in [
+        ('never claimed', ChangeItemStatus.pending),
+        ('rejected since', ChangeItemStatus.rejected),
+        ('retracted since', ChangeItemStatus.retracted),
+      ]) {
+        test('a recorded dispatch whose item was $name is dropped, not '
+            'run', () async {
+          final changeSet = makeChangeSetWith();
+          persistUpsertedChangeSets(
+            changeSet.copyWith(
+              items: [
+                changeSet.items[0].copyWith(status: status),
+                changeSet.items[1],
+              ],
+            ),
+          );
+          await intents.record((changeSetId: changeSet.id, itemIndex: 0));
+          var dispatches = 0;
+          final service = recording((toolName, args, taskId) async {
+            dispatches++;
+            return applied(toolName, args, taskId);
+          });
+
+          await withClock(testClock, service.resumeInterrupted);
+
+          expect(dispatches, 0);
+          expect(await intents.pending(), isEmpty);
+        });
+      }
+
+      test('a recorded dispatch of a missing set, a missing item or an '
+          'unreadable key is dropped, not run', () async {
+        final changeSet = makeChangeSetWith();
+        persistUpsertedChangeSets(changeSet);
+        await intents.record((changeSetId: 'gone', itemIndex: 0));
+        await intents.record((changeSetId: changeSet.id, itemIndex: 2));
+        await settingsDb.saveSettingsItem(
+          '${ChangeDispatchIntents.keyPrefix}task:unreadable',
+          '',
+        );
+        var dispatches = 0;
+        final service = recording((toolName, args, taskId) async {
+          dispatches++;
+          return applied(toolName, args, taskId);
+        });
+
+        await withClock(testClock, service.resumeInterrupted);
+
+        expect(dispatches, 0);
+        expect(await intents.pending(), isEmpty);
+      });
+
+      test('a resume that cannot read its set keeps the record for the next '
+          'start', () async {
+        final changeSet = makeChangeSetWith();
+        when(
+          () => mockRepository.getEntity(changeSet.id),
+        ).thenThrow(StateError('database closed'));
+        final key = await intents.record((
+          changeSetId: changeSet.id,
+          itemIndex: 0,
+        ));
+        final service = recording(applied);
+
+        await withClock(testClock, service.resumeInterrupted);
+
+        expect((await intents.pending()).keys, [key]);
+        verify(
+          () => mockDomainLogger.error(
+            any(),
+            any(that: isA<StateError>()),
+            message: 'Resuming an interrupted dispatch failed',
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('a service without a record resumes nothing', () async {
+        await intents.record((changeSetId: 'set', itemIndex: 0));
+
+        await service.resumeInterrupted();
+
+        verifyNever(() => mockRepository.getEntity(any()));
+        expect(await intents.pending(), hasLength(1));
+      });
     });
 
     group('domain logging', () {

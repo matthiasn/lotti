@@ -954,6 +954,166 @@ void _registerIdempotency(_Db Function() fixture) {
       }
     });
 
+    // An application that stopped after its first write — the app died
+    // before the link, the project or the agent — is finished by the dispatch
+    // run again at the next start, or by the other device's, and a further
+    // run writes nothing more (`specs/tla/ChangeDispatchRecovery.tla`,
+    // TailOnRerun).
+    group('a dispatch run again after the app died mid-way', () {
+      late ProjectRepository repository;
+      late ProjectEntry project;
+
+      setUp(() async {
+        repository = ProjectRepository(
+          journalDb: f.db,
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          persistenceLogic: getIt<PersistenceLogic>(),
+          updateNotifications: getIt<UpdateNotifications>(),
+          vectorClockService: getIt<VectorClockService>(),
+        );
+        project = makeTestProject(
+          id: 'project-1',
+          categoryId: f.task.meta.categoryId,
+        );
+        await getIt<PersistenceLogic>().createDbEntity(project);
+      });
+
+      /// The task an earlier application of the item [key] got as far as
+      /// creating, under the id that item derives.
+      Future<String> onlyTaskOf(String key, String title) async =>
+          (await getIt<PersistenceLogic>().createTaskEntry(
+            data: f.task.data.copyWith(title: title, checklistIds: null),
+            entryText: const EntryText(plainText: ''),
+            categoryId: f.task.meta.categoryId,
+            uuidV5Input: ChangeEffect(key: key).entityInput('task'),
+          ))!.meta.id;
+
+      /// Live links from [fromId] to [toId].
+      Future<int> liveLinks(String fromId, String toId) async =>
+          (await f.db.linksBetween(
+            fromId,
+            toId,
+          )).where((link) => link.deletedAt == null).length;
+
+      test('create_follow_up_task links the task it finds and files it in '
+          "the source's project", () async {
+        expect(
+          await repository.linkTaskToProject(
+            projectId: project.meta.id,
+            taskId: f.task.meta.id,
+          ),
+          isTrue,
+        );
+        final dispatcher = TaskToolDispatcher(
+          journalDb: f.db,
+          journalRepository: JournalRepository(),
+          checklistRepository: ChecklistRepository(),
+          labelsRepository: f.dispatcher.labelsRepository,
+          persistenceLogic: getIt<PersistenceLogic>(),
+          timeService: getIt<TimeService>(),
+          projectRepository: repository,
+        );
+        final taskId = await onlyTaskOf('set-1:0', 'Renew the certificate');
+        Future<ToolExecutionResult> rerun() => dispatcher.dispatch(
+          TaskAgentToolNames.createFollowUpTask,
+          const ChangeEffect(
+            key: 'set-1:0',
+          ).addTo({'title': 'Renew the certificate'}),
+          f.task.meta.id,
+        );
+
+        final resumed = await rerun();
+
+        expect(resumed.success, isTrue, reason: resumed.output);
+        expect(resumed.mutatedEntityId, taskId);
+        expect(await liveLinks(f.task.meta.id, taskId), 1);
+        expect(
+          (await repository.getProjectForTask(taskId))?.meta.id,
+          project.meta.id,
+        );
+
+        // The user files the task elsewhere; a further run leaves it there.
+        final elsewhere = makeTestProject(
+          id: 'project-2',
+          categoryId: f.task.meta.categoryId,
+        );
+        await getIt<PersistenceLogic>().createDbEntity(elsewhere);
+        expect(
+          await repository.linkTaskToProject(
+            projectId: elsewhere.meta.id,
+            taskId: taskId,
+          ),
+          isTrue,
+        );
+
+        final again = await rerun();
+
+        expect(again.success, isTrue, reason: again.output);
+        expect(await liveLinks(f.task.meta.id, taskId), 1);
+        expect(
+          (await repository.getProjectForTask(taskId))?.meta.id,
+          elsewhere.meta.id,
+        );
+        expect(await idsOf('Task', 'Renew the certificate'), [taskId]);
+      });
+
+      test('create_task files the task it finds in the project', () async {
+        final projects = ProjectToolDispatcher(
+          projectRepository: repository,
+          persistenceLogic: getIt<PersistenceLogic>(),
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          journalDb: f.db,
+        );
+        final taskId = await onlyTaskOf('project-set:0', 'Write the guide');
+
+        final resumed = await projects.dispatch(
+          ProjectAgentToolNames.createTask,
+          const ChangeEffect(
+            key: 'project-set:0',
+          ).addTo({'title': 'Write the guide'}),
+          project.meta.id,
+        );
+
+        expect(resumed.success, isTrue, reason: resumed.output);
+        expect(resumed.mutatedEntityId, taskId);
+        expect(
+          (await repository.getProjectForTask(taskId))?.meta.id,
+          project.meta.id,
+        );
+        expect(await idsOf('Task', 'Write the guide'), [taskId]);
+      });
+
+      test('create_time_entry links the entry it finds to the task', () async {
+        const args = {
+          'startTime': '2026-03-17T14:00:00',
+          'endTime': '2026-03-17T15:00:00',
+          'summary': 'Paired on the rotation script',
+        };
+        when(() => getIt<TimeService>().getCurrent()).thenReturn(null);
+        // The earlier application wrote the entry, not its link.
+        const effect = ChangeEffect(key: 'set-1:0');
+        final entry = JournalEntity.journalEntry(
+          entryText: const EntryText(plainText: 'Paired [generated]'),
+          meta: await getIt<PersistenceLogic>().createMetadata(
+            dateFrom: DateTime(2026, 3, 17, 14),
+            dateTo: DateTime(2026, 3, 17, 15),
+            categoryId: f.task.meta.categoryId,
+            uuidV5Input: effect.entityInput('time-entry'),
+          ),
+        );
+        expect(await getIt<PersistenceLogic>().createDbEntity(entry), isTrue);
+        expect(await liveLinks(f.task.meta.id, entry.meta.id), 0);
+
+        final resumed = await apply(TaskAgentToolNames.createTimeEntry, args);
+
+        expect(resumed.success, isTrue, reason: resumed.output);
+        expect(resumed.mutatedEntityId, entry.meta.id);
+        expect(await liveLinks(f.task.meta.id, entry.meta.id), 1);
+        await apply(TaskAgentToolNames.createTimeEntry, args);
+        expect(await liveLinks(f.task.meta.id, entry.meta.id), 1);
+      });
+    });
+
     // Every tool twice or more, on a replica that holds the other device's
     // writes, with the user editing in between — restoring a field to the
     // proposal's base included: the journal must equal applying each item

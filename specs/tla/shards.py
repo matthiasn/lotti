@@ -145,6 +145,7 @@ SECONDS = {
     "AgentWakeOutcomeSkew": 2,
     "ChangeSetConfirm": 1,
     "ChangeSetConfirmFaults": 1,
+    "ChangeDispatchRecovery": 2,
     "ChangeSetDependency": 1,
     "ChangeSetLifecycleConsolidate": 1,
     "ChangeSetLifecycleRaceLink": 1,

@@ -680,6 +680,53 @@ void main() {
       verifyNoMoreInteractions(domainLogger);
     });
 
+    // Confirmed changes whose dispatch a previous process died in are
+    // finished at start, after the runtime is restored
+    // (`specs/tla/ChangeDispatchRecovery.tla`).
+    test("resumes the agents' interrupted change dispatches", () async {
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
+
+      verifyInOrder([
+        () => bench.mockOrchestrator.restoreWakeIntents(),
+        () => bench.mockTaskConfirmations.resumeInterrupted(),
+        () => bench.mockProjectConfirmations.resumeInterrupted(),
+        () => bench.mockEventConfirmations.resumeInterrupted(),
+      ]);
+    });
+
+    test('a resume that fails is logged and holds neither the other agents '
+        'nor initialization back', () async {
+      final domainLogger = MockDomainLogger();
+      when(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      when(
+        bench.mockTaskConfirmations.resumeInterrupted,
+      ).thenAnswer((_) async => throw StateError('settings closed'));
+      final container = bench.createContainer(testDomainLogger: domainLogger);
+
+      await bench.initAndSubscribe(container);
+
+      verify(bench.mockProjectConfirmations.resumeInterrupted).called(1);
+      verify(bench.mockEventConfirmations.resumeInterrupted).called(1);
+      verify(() => bench.mockScheduledWakeManager.start()).called(1);
+      verify(
+        () => domainLogger.error(
+          LogDomain.agentRuntime,
+          any<Object>(that: isA<StateError>()),
+          message: 'interrupted change dispatches not resumed',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
     test('starts scheduled wake manager when enabled', () async {
       final container = bench.createContainer();
       await bench.initAndSubscribe(container);

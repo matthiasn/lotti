@@ -1084,6 +1084,10 @@ void main() {
 
       setUp(() {
         mockTaskAgentService = MockTaskAgentService();
+        // The new task has no agent yet.
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask(any()),
+        ).thenAnswer((_) async => null);
 
         handlerWithAgent = FollowUpTaskHandler(
           persistenceLogic: mockPersistenceLogic,
@@ -1168,6 +1172,97 @@ void main() {
           ).called(1);
         });
       });
+
+      // The task an earlier application of the item created, found again
+      // when the dispatch runs a second time after the app died: it gets the
+      // agent that application did not get to, and keeps one it did
+      // (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun).
+      for (final hasAgent in [false, true]) {
+        test('a task found from an earlier run '
+            '${hasAgent ? 'keeps its agent' : 'gets its agent'}', () async {
+          const effect = ChangeEffect(key: 'set-1:0');
+          final taskId = effect.entityId('task');
+          final found = makeNewTask(taskId);
+          when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+            CategoryDefinition(
+              id: categoryId,
+              name: 'Test Category',
+              color: '#0000FFFF',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+              active: true,
+              private: false,
+              defaultTemplateId: 'template-from-category',
+            ),
+          );
+          stubSourceTaskLookup(makeSourceTask());
+          when(
+            () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+              taskId,
+            ]),
+          ).thenAnswer((_) async => {taskId: found});
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => found);
+          stubLinkCreation();
+          if (hasAgent) {
+            when(
+              () => mockTaskAgentService.getTaskAgentForTask(taskId),
+            ).thenAnswer(
+              (_) async =>
+                  AgentDomainEntity.agent(
+                        id: 'earlier-agent',
+                        agentId: 'earlier-agent',
+                        kind: 'task_agent',
+                        displayName: 'Earlier Agent',
+                        lifecycle: AgentLifecycle.active,
+                        mode: AgentInteractionMode.autonomous,
+                        allowedCategoryIds: {categoryId},
+                        currentStateId: 'state-1',
+                        config: const AgentConfig(),
+                        createdAt: DateTime(2024),
+                        updatedAt: DateTime(2024),
+                        vectorClock: null,
+                      )
+                      as AgentIdentityEntity,
+            );
+          }
+
+          final result = await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'Follow-Up Task'},
+            effect: effect,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, taskId);
+          Future<AgentIdentityEntity> create() =>
+              mockTaskAgentService.createTaskAgent(
+                taskId: taskId,
+                templateId: 'template-from-category',
+                profileId: any(named: 'profileId'),
+                allowedCategoryIds: {categoryId},
+                awaitContent: true,
+                automaticUpdatesEnabled: any(
+                  named: 'automaticUpdatesEnabled',
+                ),
+              );
+          if (hasAgent) {
+            verifyNever(create);
+          } else {
+            verify(create).called(1);
+          }
+          verifyNever(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+            ),
+          );
+        });
+      }
 
       // Creating the agent enqueues its creation wake immediately, so the
       // relationship must already be on disk — otherwise the new agent's
@@ -1391,6 +1486,10 @@ void main() {
 
       setUp(() {
         mockProjectRepo = MockProjectRepository();
+        // The new task is in no project yet; a test stubs its source's.
+        when(
+          () => mockProjectRepo.getProjectForTask(any()),
+        ).thenAnswer((_) async => null);
         handlerWithProject = FollowUpTaskHandler(
           persistenceLogic: mockPersistenceLogic,
           journalDb: mockJournalDb,

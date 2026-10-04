@@ -100,6 +100,11 @@ void main() {
     when(
       () => mockJournalDb.journalEntityMapForIdsIncludingDeleted(any()),
     ).thenAnswer((_) async => const {});
+    // A task found by its derived id reads as deleted unless a test says
+    // otherwise.
+    when(
+      () => mockJournalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
   });
 
   test('suggest_follow_up_task creates a task linked to the event', () async {
@@ -393,6 +398,46 @@ void main() {
         expect(lookups, 2);
       },
     );
+
+    // An earlier application can have stopped between the task and its
+    // link to the event — the app died — so a run again links a live task
+    // and creates nothing (`specs/tla/ChangeDispatchRecovery.tla`,
+    // TailOnRerun); a task deleted since is left unlinked.
+    for (final live in [true, false]) {
+      test('a task found from an earlier run is '
+          '${live ? 'linked to the event' : 'left alone, deleted'}', () async {
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+            derivedId,
+          ]),
+        ).thenAnswer((_) async => {derivedId: createdTask});
+        when(
+          () => mockJournalDb.journalEntityById(derivedId),
+        ).thenAnswer((_) async => live ? createdTask : null);
+        Future<bool> link() =>
+            mockPersistenceLogic.createLink(fromId: eventId, toId: derivedId);
+        when(link).thenAnswer((_) async => true);
+
+        final result = await accept();
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, derivedId);
+        if (live) {
+          verify(link).called(1);
+        } else {
+          verifyNever(link);
+        }
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        );
+      });
+    }
 
     test('still fails when the write fails and no task exists', () async {
       stubCreate(null);

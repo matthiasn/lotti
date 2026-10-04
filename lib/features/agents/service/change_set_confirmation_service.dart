@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/features/agents/service/change_dispatch_intents.dart';
 import 'package:lotti/features/agents/service/change_set_resolution_store.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -66,6 +67,7 @@ class ChangeSetConfirmationService {
     this._onConfirmedDecision,
     this._onChangeSetResolved,
     this.approvedToolDispatcher,
+    this._dispatchIntents,
   });
 
   final AgentSyncService _syncService;
@@ -75,6 +77,11 @@ class ChangeSetConfirmationService {
   final DomainLogger? _domainLogger;
   final ConfirmedDecisionCallback? _onConfirmedDecision;
   final ChangeSetResolvedCallback? _onChangeSetResolved;
+
+  /// Where this service records the dispatches it has in flight, so that one
+  /// the app died in is resumed at the next start ([resumeInterrupted]).
+  /// `null` for a service whose dispatches are not resumed.
+  final ChangeDispatchIntents? _dispatchIntents;
 
   static const _sub = 'ChangeSetConfirmation';
 
@@ -181,6 +188,18 @@ class ChangeSetConfirmationService {
         ? await _syncService.localHost()
         : null;
 
+    // 0. Record the dispatch before the claim, so that an app dying between
+    //    the claim and the dispatch's outcome resumes it at its next start
+    //    (resumeInterrupted; `specs/tla/ChangeDispatchRecovery.tla`,
+    //    DispatchIntent). A chat set's dispatch carries the user's approval,
+    //    which only this caller can give, and is not resumed.
+    final intentKey = isChat
+        ? null
+        : await _dispatchIntents?.record((
+            changeSetId: current.id,
+            itemIndex: itemIndex,
+          ));
+
     // 1. Claim the item — an atomic pending -> confirmed compare-and-swap —
     //    and persist the decision BEFORE dispatching the tool, in one
     //    transaction: a failed decision write rolls the claim back instead
@@ -200,6 +219,7 @@ class ChangeSetConfirmationService {
       args: identical(resolvedArgs, item.args) ? null : resolvedArgs,
     );
     if (claim == null) {
+      await _clearIntent(intentKey);
       return const ToolExecutionResult(
         success: false,
         output: 'Change item is no longer pending',
@@ -209,6 +229,112 @@ class ChangeSetConfirmationService {
     final (changeSet: confirmedSet, :decision) = claim;
     onClaimed?.call(item.effectKeyIn(current.id, itemIndex));
 
+    final approval = approvalHost == null
+        ? null
+        : ChecklistItemProvenance(
+            approvedBy: 'user',
+            approvalHost: approvalHost,
+            approvedAt: decision.createdAt,
+            approvalMode: approvalMode,
+            originatingMessageId: current.runKey.substring(
+              'query-chat:'.length,
+            ),
+            conversationId: current.threadId,
+            changeSetId: current.id,
+            decisionId: decision.id,
+            agentId: current.agentId,
+          );
+    return _dispatchClaimed(
+      current: current,
+      confirmedSet: confirmedSet,
+      itemIndex: itemIndex,
+      dispatchArgs: dispatchArgs,
+      decision: decision,
+      approval: approval,
+      intentKey: intentKey,
+    );
+  }
+
+  /// Finishes every dispatch of this service that the app died in the
+  /// middle of: one recorded ([ChangeDispatchIntents]) whose item is still
+  /// confirmed is dispatched again — the tools are idempotent per item, and
+  /// a create-style tool completes what an earlier run left
+  /// (`specs/tla/ChangeDispatchRecovery.tla`) — and one whose item is no
+  /// longer confirmed (the claim never landed, or the outcome was written)
+  /// is dropped. Runs once at startup; a resume that throws is logged and
+  /// kept for the next start.
+  Future<void> resumeInterrupted() async {
+    final intents = _dispatchIntents;
+    if (intents == null) return;
+    for (final MapEntry(:key, value: dispatch)
+        in (await intents.pending()).entries) {
+      try {
+        final changeSet = dispatch == null
+            ? null
+            : await _syncService.repository.getEntity(dispatch.changeSetId);
+        if (dispatch == null ||
+            changeSet is! ChangeSetEntity ||
+            dispatch.itemIndex >= changeSet.items.length ||
+            changeSet.items[dispatch.itemIndex].status !=
+                ChangeItemStatus.confirmed) {
+          await intents.clear(key);
+          continue;
+        }
+        final item = changeSet.items[dispatch.itemIndex];
+        _domainLogger?.log(
+          LogDomain.agentWorkflow,
+          'Resuming the interrupted dispatch of item ${dispatch.itemIndex} '
+          '(${item.toolName}) in change set '
+          '${DomainLogger.sanitizeId(changeSet.id)}',
+          subDomain: _sub,
+        );
+        // The claim stored the item's resolved arguments.
+        await _dispatchClaimed(
+          current: changeSet,
+          confirmedSet: changeSet,
+          itemIndex: dispatch.itemIndex,
+          dispatchArgs: ChangeEffect(
+            key: item.effectKeyIn(changeSet.id, dispatch.itemIndex),
+            base: item.base,
+            targetBase: item.targetBase,
+          ).addTo(item.args),
+          decision: null,
+          approval: null,
+          intentKey: key,
+        );
+      } catch (error, stackTrace) {
+        _domainLogger?.error(
+          LogDomain.agentWorkflow,
+          error,
+          message: 'Resuming an interrupted dispatch failed',
+          subDomain: _sub,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+  }
+
+  Future<void> _clearIntent(String? key) async {
+    if (key != null) await _dispatchIntents?.clear(key);
+  }
+
+  /// Dispatches the tool of the claimed item at [itemIndex] and writes the
+  /// outcome: on failure the item reverts to pending or is retracted, on
+  /// success the resolved id reaches its siblings and the confirmed-decision
+  /// hook runs (when there is a [decision]: a resumed dispatch has none in
+  /// hand). The recorded dispatch [intentKey] is cleared once the outcome is
+  /// written.
+  Future<ToolExecutionResult> _dispatchClaimed({
+    required ChangeSetEntity current,
+    required ChangeSetEntity confirmedSet,
+    required int itemIndex,
+    required Map<String, dynamic> dispatchArgs,
+    required ChangeDecisionEntity? decision,
+    required ChecklistItemProvenance? approval,
+    required String? intentKey,
+  }) async {
+    final item = current.items[itemIndex];
+
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
     //    proposals that can never succeed with their immutable arguments.
@@ -217,21 +343,6 @@ class ChangeSetConfirmationService {
     //    was decided while the tool ran.
     late final ToolExecutionResult result;
     try {
-      final approval = approvalHost == null
-          ? null
-          : ChecklistItemProvenance(
-              approvedBy: 'user',
-              approvalHost: approvalHost,
-              approvedAt: decision.createdAt,
-              approvalMode: approvalMode,
-              originatingMessageId: current.runKey.substring(
-                'query-chat:'.length,
-              ),
-              conversationId: current.threadId,
-              changeSetId: current.id,
-              decisionId: decision.id,
-              agentId: current.agentId,
-            );
       result = approvedToolDispatcher == null
           ? await _toolDispatcher(item.toolName, dispatchArgs, current.taskId)
           : await approvedToolDispatcher!(
@@ -306,6 +417,7 @@ class ChangeSetConfirmationService {
           );
         }
 
+        await _clearIntent(intentKey);
         await _resolution.notifyChangeSetResolved(
           retractedSet,
           _onChangeSetResolved,
@@ -331,6 +443,7 @@ class ChangeSetConfirmationService {
             errorMessage: 'Failed to update failed confirmation status',
           );
         }
+        await _clearIntent(intentKey);
       }
       return result;
     }
@@ -341,7 +454,7 @@ class ChangeSetConfirmationService {
     _resolution.captureResolvedId(item, result);
     await _resolution.persistResolvedIdToSiblings(item, result, current);
 
-    if (_onConfirmedDecision != null) {
+    if (_onConfirmedDecision != null && decision != null) {
       try {
         await _onConfirmedDecision(
           changeSet: current,
@@ -365,6 +478,7 @@ class ChangeSetConfirmationService {
       }
     }
 
+    await _clearIntent(intentKey);
     await _resolution.notifyChangeSetResolved(
       confirmedSet,
       _onChangeSetResolved,

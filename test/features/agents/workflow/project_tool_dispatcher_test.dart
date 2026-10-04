@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -38,6 +39,10 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTaskAgentService = MockTaskAgentService();
     mockJournalDb = MockJournalDb();
+    // A task has no agent until one is created for it.
+    when(
+      () => mockTaskAgentService.getTaskAgentForTask(any()),
+    ).thenAnswer((_) async => null);
 
     dispatcher = ProjectToolDispatcher(
       projectRepository: mockProjectRepository,
@@ -1185,6 +1190,10 @@ void main() {
         when(
           () => mockEntitiesCacheService.getCategoryById('cat-001'),
         ).thenReturn(null);
+        // An existing task reads as deleted unless a test says otherwise.
+        when(
+          () => mockJournalDb.journalEntityById(derivedId),
+        ).thenAnswer((_) async => null);
       });
 
       test(
@@ -1221,10 +1230,33 @@ void main() {
         },
       );
 
-      test(
-        'create_task writes nothing when the task exists, and names it',
-        () async {
+      // An earlier application created the task and can have stopped before
+      // its project link — the app died — so a dispatch run again links a
+      // live task that is in no project, creating nothing
+      // (`specs/tla/ChangeDispatchRecovery.tla`, TailOnRerun). A task filed
+      // elsewhere since, or deleted, is left as it is.
+      for (final (name, live, filedElsewhere, links) in [
+        ('in no project is linked to it', true, false, true),
+        ('filed elsewhere since stays there', true, true, false),
+        ('deleted since is left deleted', false, false, false),
+      ]) {
+        test('create_task finding its task: a task $name, and none is '
+            'created', () async {
           stubCreated(created: true);
+          if (live) {
+            when(
+              () => mockJournalDb.journalEntityById(derivedId),
+            ).thenAnswer((_) async => makeTestTask(id: derivedId));
+          }
+          when(
+            () => mockProjectRepository.getProjectForTask(derivedId),
+          ).thenAnswer((_) async => filedElsewhere ? project : null);
+          when(
+            () => mockProjectRepository.linkTaskToProject(
+              projectId: projectId,
+              taskId: derivedId,
+            ),
+          ).thenAnswer((_) async => true);
 
           final result = await dispatcher.dispatch(
             ProjectAgentToolNames.createTask,
@@ -1244,14 +1276,78 @@ void main() {
               uuidV5Input: any(named: 'uuidV5Input'),
             ),
           );
-          verifyNever(
-            () => mockProjectRepository.linkTaskToProject(
-              projectId: any(named: 'projectId'),
-              taskId: any(named: 'taskId'),
+          Future<bool> link() => mockProjectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: derivedId,
+          );
+          if (links) {
+            verify(link).called(1);
+          } else {
+            verifyNever(link);
+          }
+        });
+      }
+
+      // The earlier application can also have stopped before the task's
+      // agent: the run again assigns the agent the category names, and a
+      // task that has one keeps it.
+      for (final hasAgent in [false, true]) {
+        test('create_task finding its task '
+            '${hasAgent ? 'keeps its agent' : 'gives it its agent'}', () async {
+          stubCreated(created: true);
+          when(
+            () => mockJournalDb.journalEntityById(derivedId),
+          ).thenAnswer((_) async => makeTestTask(id: derivedId));
+          when(
+            () => mockProjectRepository.getProjectForTask(derivedId),
+          ).thenAnswer((_) async => project);
+          when(
+            () => mockEntitiesCacheService.getCategoryById('cat-001'),
+          ).thenReturn(
+            CategoryDefinition(
+              id: 'cat-001',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              name: 'Platform',
+              vectorClock: null,
+              private: false,
+              active: true,
+              defaultTemplateId: 'template-001',
             ),
           );
-        },
-      );
+          if (hasAgent) {
+            when(
+              () => mockTaskAgentService.getTaskAgentForTask(derivedId),
+            ).thenAnswer((_) async => makeTestIdentity());
+          }
+          Future<AgentIdentityEntity> create() =>
+              mockTaskAgentService.createTaskAgent(
+                taskId: derivedId,
+                templateId: 'template-001',
+                profileId: any(named: 'profileId'),
+                allowedCategoryIds: {'cat-001'},
+                awaitContent: true,
+                automaticUpdatesEnabled: any(
+                  named: 'automaticUpdatesEnabled',
+                ),
+              );
+          when(create).thenAnswer((_) async => makeTestIdentity());
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.createTask,
+            effect.addTo({'title': 'Write docs'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, derivedId);
+          if (hasAgent) {
+            verifyNever(create);
+          } else {
+            verify(create).called(1);
+          }
+        });
+      }
 
       test(
         'create_task takes a refused insert for the task that arrived '
