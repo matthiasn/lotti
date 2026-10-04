@@ -1,10 +1,4 @@
-import 'dart:math' as math;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:material_ui/material_ui.dart';
+part of 'tasks_tab_page.dart';
 
 /// End-aligned floating location that sits [bottomMargin] above the content
 /// edge instead of the framework's fixed [kFloatingActionButtonMargin].
@@ -16,9 +10,9 @@ import 'package:material_ui/material_ui.dart';
 /// Floats the tasks page's FAB level with its action bar: the standard
 /// end-float position lifted by the bar's bottom margin, never below the
 /// content's bottom edge.
-class ActionBarAlignedFabLocation extends StandardFabLocation
+class _ActionBarAlignedFabLocation extends StandardFabLocation
     with FabEndOffsetX, FabFloatOffsetY {
-  const ActionBarAlignedFabLocation({required this.bottomMargin});
+  const _ActionBarAlignedFabLocation({required this.bottomMargin});
 
   final double bottomMargin;
 
@@ -29,7 +23,7 @@ class ActionBarAlignedFabLocation extends StandardFabLocation
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ActionBarAlignedFabLocation &&
+      other is _ActionBarAlignedFabLocation &&
           other.bottomMargin == bottomMargin;
 
   @override
@@ -62,8 +56,8 @@ class ActionBarAlignedFabLocation extends StandardFabLocation
 /// tightening its own vertical padding while it hosts a trailing control
 /// (see `TaskBrowseListItem.sectionHeaderTrailing`), so the line's overall
 /// height barely moves.
-class TaskListDensityToggle extends ConsumerWidget {
-  const TaskListDensityToggle({super.key});
+class _TaskListDensityToggle extends ConsumerWidget {
+  const _TaskListDensityToggle();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

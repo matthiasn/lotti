@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -41,7 +43,6 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_r
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_list_chrome.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -54,6 +55,8 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
+
+part 'tasks_tab_page_chrome_part.dart';
 
 /// Signature for the create-task action invoked by the [TasksTabPage] FAB.
 typedef TasksTabCreateTaskCallback =
@@ -268,7 +271,7 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           // the pane's bottom edge. The FAB's stock 16 px margin put the two
           // labelled pills on visibly different lines; matching the bar's own
           // padding puts them on one.
-          floatingActionButtonLocation: ActionBarAlignedFabLocation(
+          floatingActionButtonLocation: _ActionBarAlignedFabLocation(
             bottomMargin: context.designTokens.spacing.step4,
           ),
           floatingActionButton: launcherOwnsCreateAction
@@ -701,7 +704,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             // its own.
                                             sectionHeaderTrailing:
                                                 entryIndex == 0
-                                                ? const TaskListDensityToggle()
+                                                ? const _TaskListDensityToggle()
                                                 : null,
                                             vectorDistance: distance,
                                             previousTaskIdInSection:
