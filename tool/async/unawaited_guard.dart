@@ -26,7 +26,8 @@ bool isGenerated(String path) =>
 
 /// Counts calls of `dart:async`'s `unawaited(...)` in [source]: an invocation
 /// named `unawaited` with no target, or behind a `dart:async` import prefix
-/// (`async.unawaited(...)`). A method of another object (`foo.unawaited()`)
+/// (`async.unawaited(...)`). A method of another object (`foo.unawaited()`,
+/// or the cascade `foo..unawaited()`, whose target the analyzer leaves null)
 /// and comments or strings never count. A `part` file has no imports of its
 /// own — pass its library's source as [librarySource] and its prefixes apply.
 int countUnawaited(String source, {String? librarySource}) {
@@ -54,7 +55,7 @@ class _UnawaitedVisitor extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     final target = node.target;
     if (node.methodName.name == 'unawaited' &&
-        (target == null ||
+        ((target == null && !node.isCascaded) ||
             (target is SimpleIdentifier && prefixes.contains(target.name)))) {
       count++;
     }
