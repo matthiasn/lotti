@@ -17,7 +17,6 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -35,6 +34,7 @@ import 'package:lotti/features/relationships/state/relationship_proposal_provide
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

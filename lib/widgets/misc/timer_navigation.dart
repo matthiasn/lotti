@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Shared navigation behavior for the running-timer surfaces (the

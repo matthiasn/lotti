@@ -6,9 +6,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/state/notification_inbox_controller.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 

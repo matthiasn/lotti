@@ -4,9 +4,9 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 
 const _logTag = 'ProfileResolver';
 

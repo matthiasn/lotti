@@ -6,10 +6,10 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
-import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
+import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 
 /// Query dictation uses the current category default's transcription slot,
 /// independently of the task/agent's thinking setup. Resolve on each recording

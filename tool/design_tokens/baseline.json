@@ -249,7 +249,7 @@
     "lib/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart": {"color":2},
     "lib/features/tasks/ui/task_compact_app_bar.dart": {"spacing":1},
     "lib/features/tasks/ui/task_expandable_app_bar.dart": {"spacing":2,"color":2},
-    "lib/features/tasks/ui/widgets/language_selection_modal_content.dart": {"spacing":4},
+    "lib/widgets/modal/language_selection_modal_content.dart": {"spacing":4},
     "lib/features/tasks/ui/widgets/task_action_bar_buttons.dart": {"color":3},
     "lib/features/tasks/ui/widgets/task_browse_list_item_rows.dart": {"spacing":5},
     "lib/features/tasks/ui/widgets/task_detail_back_leading.dart": {"color":1},

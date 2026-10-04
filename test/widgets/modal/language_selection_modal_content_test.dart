@@ -2,12 +2,12 @@ import 'package:country_flags/country_flags.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/settings/settings_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../test_helper.dart';
+import '../../test_helper.dart';
 
 void main() {
   group('LanguageSelectionModalContent', () {

@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
-import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
+import 'package:lotti/utils/task_state_markdown.dart';
 
-import '../test_utils.dart' show makeTestChecklistApproval;
+import '../features/agents/test_utils.dart' show makeTestChecklistApproval;
 
 AiInputTaskObject _task({
   String title = 'Test task',

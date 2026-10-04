@@ -209,6 +209,6 @@ legacy `modelId` fallback ensures the agent can still wake.
 - [Implementation plan](../implementation_plans/2026-02-28_agent_privacy_profiles.md)
 - [ADR 0005: Template Model Resolution Policy](./0005-template-model-resolution-policy.md) (predecessor)
 - `lib/classes/ai/ai_config.dart` — `AiConfig` sealed union
-- `lib/features/agents/util/inference_provider_resolver.dart` — existing resolver
+- `lib/features/ai/util/inference_provider_resolver.dart` — existing resolver
 - `lib/features/agents/workflow/task_agent_workflow.dart` — wake cycle
 - `lib/features/ai/constants/provider_config.dart` — `noApiKeyRequired`

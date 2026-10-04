@@ -18,7 +18,6 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
@@ -31,6 +30,7 @@ import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/widgets/cards/task_detail_section_card.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

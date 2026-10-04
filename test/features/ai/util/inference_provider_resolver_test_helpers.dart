@@ -1,7 +1,7 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
 
-import '../test_utils.dart';
+import '../../agents/test_utils.dart';
 
 enum GeneratedModelLookupShape {
   empty,

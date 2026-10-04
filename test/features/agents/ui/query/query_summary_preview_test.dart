@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';

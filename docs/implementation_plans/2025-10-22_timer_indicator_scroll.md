@@ -91,7 +91,7 @@ Timer tap → fetch `TimeService.linkedFrom` → publish `TaskFocusIntent(taskId
   - `lib/features/journal/ui/widgets/entry_detail_linked.dart`
 
 - **Add**
-  - `lib/features/tasks/state/task_focus_controller.dart` (focus intent provider)
+  - `lib/providers/task_focus_controller.dart` (focus intent provider)
   - New test files under `test/widgets/misc/` and `test/features/tasks/ui/`
 
 - **Docs**

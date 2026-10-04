@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
+import 'package:lotti/features/labels/ui/label_ui_utils.dart';
 
 LabelDefinition _label(
   String id, {

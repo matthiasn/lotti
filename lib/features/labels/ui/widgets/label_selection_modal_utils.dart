@@ -5,8 +5,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/label_ui_utils.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
-import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';

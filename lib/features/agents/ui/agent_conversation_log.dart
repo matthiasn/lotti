@@ -7,12 +7,12 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Displays agent messages grouped by thread (wake cycle).

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import '../test_utils.dart';
+import '../../agents/test_utils.dart';
 import 'inference_provider_resolver_test_helpers.dart';
 
 void main() {

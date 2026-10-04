@@ -604,7 +604,7 @@ Uses existing `isDesktop` from `lib/utils/platform.dart`.
 ### 8.2 Ollama / Local Provider API Key Handling
 
 The existing `resolveInferenceProvider()` in
-`lib/features/agents/util/inference_provider_resolver.dart` rejects providers
+`lib/features/ai/util/inference_provider_resolver.dart` rejects providers
 with empty API keys (the `provider.apiKey.isEmpty` guard). However, local
 providers (Ollama, Voxtral, Whisper) don't require API keys — see
 `ProviderConfig.noApiKeyRequired` in
@@ -661,7 +661,7 @@ local transcription + cloud thinking).
 | `lib/classes/agents/agent_domain_entity.dart` | Add `profileId` to `agentTemplate` and `agentTemplateVersion` |
 | `lib/classes/agents/agent_config.dart` | Add `profileId` to `AgentConfig` |
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Use `ProfileResolver` instead of direct `resolveInferenceProvider` |
-| `lib/features/agents/util/inference_provider_resolver.dart` | Keep for legacy fallback, call from `ProfileResolver` |
+| `lib/features/ai/util/inference_provider_resolver.dart` | Keep for legacy fallback, call from `ProfileResolver` |
 | `lib/features/agents/service/agent_template_service.dart` | Accept `profileId` in `createTemplate`/`updateTemplate` |
 | `lib/features/agents/service/task_agent_service.dart` | Accept `profileId` in `createTaskAgent`, add `updateAgentProfile` method, write to `AgentConfig` |
 | `lib/features/agents/ui/agent_template_detail_page.dart` | Replace `AgentModelSelector` with `ProfileSelector` |

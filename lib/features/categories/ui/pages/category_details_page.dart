@@ -25,12 +25,12 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_repository_field.dart';
-import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
+import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';

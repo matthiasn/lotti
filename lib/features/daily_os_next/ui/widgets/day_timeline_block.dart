@@ -11,8 +11,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/live_task_metadata.dart'
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';

@@ -2,15 +2,15 @@ import 'package:flutter/material.dart' as legacy;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../mocks/mocks.dart';
-import '../../../../widget_test_utils.dart';
+import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 /// Pumps [AgentMarkdownView] inside the standard scaffolded test harness and
 /// settles the first frame. Returns nothing; callers locate widgets/elements

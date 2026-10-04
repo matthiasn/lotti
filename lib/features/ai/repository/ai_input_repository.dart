@@ -12,7 +12,6 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/shown_checklist_items.dart';
-import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
@@ -26,6 +25,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/entry_tools.dart';
+import 'package:lotti/utils/task_state_markdown.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Repository for preparing AI input data from journal entities.

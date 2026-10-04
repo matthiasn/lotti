@@ -10,7 +10,6 @@ import 'package:lotti/features/tasks/state/checklist_completion_controller.dart'
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -18,6 +17,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/cards/task_detail_section_card.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
