@@ -198,8 +198,6 @@ Map<String, GetItDebt> readBaseline(File file) {
 /// Zero counts are left out to keep the file readable.
 String encodeBaseline(Map<String, GetItDebt> debt) {
   final keys = debt.keys.toList()..sort();
-  final lookups = debt.values.fold(0, (a, d) => a + d.lookups);
-  final isRegistered = debt.values.fold(0, (a, d) => a + d.isRegistered);
   final buffer = StringBuffer()
     ..writeln('{')
     ..writeln(
@@ -207,9 +205,6 @@ String encodeBaseline(Map<String, GetItDebt> debt) {
       'composition root, still to be migrated to providers or constructor '
       'arguments. Regenerate with: dart run tool/di/validate.dart '
       '--update-baseline. These numbers only ever go down.",',
-    )
-    ..writeln(
-      '  "_total": {"lookups": $lookups, "isRegistered": $isRegistered},',
     )
     ..writeln('  "files": {');
   for (var i = 0; i < keys.length; i++) {

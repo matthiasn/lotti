@@ -179,7 +179,6 @@ String encodeBaseline(Map<String, int> counts) {
       'tool/logging/validate.dart --update-baseline. This number only ever '
       'goes down.",',
     )
-    ..writeln('  "_total": ${counts.values.fold(0, (a, b) => a + b)},')
     ..writeln('  "files": {');
   for (var i = 0; i < keys.length; i++) {
     final comma = i == keys.length - 1 ? '' : ',';
