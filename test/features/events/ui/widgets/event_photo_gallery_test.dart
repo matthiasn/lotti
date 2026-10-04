@@ -577,7 +577,9 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidgetNoScroll(EventPhotoGalleryViewer(photos: _photos(1))),
+          makeTestableWidgetNoScroll(
+            EventPhotoGalleryViewer(photos: _photos(1)),
+          ),
         );
         await tester.pump();
 

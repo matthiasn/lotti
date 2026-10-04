@@ -5,7 +5,7 @@ description: The middle layer between categories and tasks — a denormalized me
 resource: ../../lib/features/projects
 tags: [projects, grouping, health, agents]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-29T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: project-actions
@@ -149,9 +149,11 @@ linking. A category can still move after linking, and that
 write is nowhere near the link, so the category rule has to be re-checked there
 too.
 
-**`EntryController.updateCategoryId` does that for the task side**: it drops the
-project link of every task it moves when the new category is not the project's
-own.
+**`EntryCategoryMove` does that for the task side**: it drops the project link
+of every task it moves when the new category is not the project's own, after
+the category writes. A move the app died in before the unlink is finished at
+the next start (`EntryCategoryMove.replay`), so a crash does not leave the task
+in one category and its project in another (ADR 0122).
 
 ```mermaid
 stateDiagram-v2

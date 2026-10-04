@@ -234,6 +234,8 @@ void main() {
           bridged.read(domainLoggerProvider),
           same(getIt<DomainLogger>()),
         );
+        // Category moves record themselves in this generation's settings.
+        expect(bridged.read(settingsDbProvider), same(getIt<SettingsDb>()));
 
         // A representative write lands in the guest world only.
         final task = TestTaskFactory.create(id: 'guest-task-1');

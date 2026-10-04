@@ -114,7 +114,7 @@
     "lib/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart": 1,
     "lib/features/goals/workflow/goal_agent_strategy.dart": 1,
     "lib/features/journal/create/create_entry.dart": 9,
-    "lib/features/journal/state/entry_controller.dart": 4,
+    "lib/features/journal/state/entry_controller.dart": 3,
     "lib/features/nudges/ui/nudge_banner_actions.dart": 1,
     "lib/features/onboarding/services/onboarding_capture_to_task_service.dart": 2,
     "lib/features/projects/service/project_lifecycle_service.dart": 1,

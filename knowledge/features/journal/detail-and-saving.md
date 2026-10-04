@@ -12,6 +12,14 @@ sources:
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
     last_modified: 2026-10-04
+  - id: category-move
+    resource: ../../../lib/logic/repositories/entry_category_move.dart
+    title: EntryCategoryMove — an entry and what belongs to it, moved across a crash
+    last_modified: 2026-10-04
+  - id: category-move-spec
+    resource: ../../../specs/tla/TaskCategoryMove.tla
+    title: TaskCategoryMove — a task's category move, model-checked
+    last_modified: 2026-10-04
   - id: editor-tools
     resource: ../../../lib/features/journal/ui/widgets/editor/editor_tools.dart
     title: Editor conversion helpers
@@ -142,8 +150,13 @@ or sync set since the page loaded is kept (see
 
 ## Behaviours that are easy to miss
 
-- **Updating a category from the detail controller also propagates that category
-  to currently linked outgoing entries.**
+- **Updating a category from the detail controller moves everything that
+  belongs to the entry with it** (`EntryCategoryMove`): the entries linked from
+  it, a task's checklists and their items — not one another task shows too —
+  and, last, the project link of a moved task whose project is not in the new
+  category. The move is recorded in the settings database before its first
+  write and finished at the next start if the app died in it, while the entry
+  still holds that category (`specs/tla/TaskCategoryMove.tla`, ADR 0122).
 - Saving with `stopRecording: true` updates the text and the end first, then
   stops the timer after a short delay, without writing the end again
   (`stop(persistEnd: false)`).
