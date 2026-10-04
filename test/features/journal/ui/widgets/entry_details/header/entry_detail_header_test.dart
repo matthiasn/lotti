@@ -73,7 +73,24 @@ void main() {
   group('EntryDetailHeader', () {
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeMetadata());
+    registerFallbackValue((JournalEntity stored) => stored);
     final mockJournalDb = MockJournalDb();
+    final mockPersistenceLogic = MockPersistenceLogic();
+
+    /// The one change a toggle handed `PersistenceLogic.updateEntity` for
+    /// [testTextEntry], applied to it as stored.
+    JournalEntity toggled() {
+      final change =
+          verify(
+                () => mockPersistenceLogic.updateEntity(
+                  testTextEntry.meta.id,
+                  captureAny(),
+                ),
+              ).captured.single
+              as JournalEntity? Function(JournalEntity);
+      return change(testTextEntry)!;
+    }
+
     final mockEditorDb = MockEditorDb();
     final mockEditorStateService = MockEditorStateService();
     final mockEntitiesCacheService = MockEntitiesCacheService();
@@ -84,7 +101,6 @@ void main() {
       registerFallbackValue(FakeQuillController());
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      final mockPersistenceLogic = MockPersistenceLogic();
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -114,7 +130,7 @@ void main() {
       );
 
       when(
-        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+        () => mockPersistenceLogic.updateEntity(any(), any()),
       ).thenAnswer(
         (_) async => true,
       );
@@ -166,6 +182,9 @@ void main() {
       await tester.tap(starIconActiveFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+
+      // The tap unstars the entry as stored.
+      expect(toggled().meta.starred, isFalse);
     });
 
     testWidgets('tap flagged icon', (WidgetTester tester) async {
@@ -196,6 +215,9 @@ void main() {
       await tester.tap(flagIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+
+      // The toggle flips the flag of the entry as stored.
+      expect(toggled().meta.flag, EntryFlag.import);
     });
 
     testWidgets(
@@ -585,6 +607,9 @@ void main() {
       await tester.tap(lockIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+
+      // The tap makes the entry as stored private.
+      expect(toggled().meta.private, isTrue);
     });
 
     testWidgets('save button invisible when saved/clean', (
@@ -819,7 +844,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         when(
-          () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+          () => mockPersistenceLogic.updateEntity(any(), any()),
         ).thenAnswer((_) async => true);
 
         when(
@@ -1575,7 +1600,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         when(
-          () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+          () => mockPersistenceLogic.updateEntity(any(), any()),
         ).thenAnswer((_) async => true);
 
         when(

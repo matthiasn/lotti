@@ -3960,6 +3960,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Posten har ändrats under tiden — kontrollera skillnaden igen';
+
+  @override
   String get conflictFieldBody => 'Kaross';
 
   @override

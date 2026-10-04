@@ -3951,6 +3951,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Indlægget er ændret i mellemtiden — tjek forskellen igen';
+
+  @override
   String get conflictFieldBody => 'Karrosseri';
 
   @override

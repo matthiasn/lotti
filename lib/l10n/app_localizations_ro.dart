@@ -4024,6 +4024,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Intrarea s-a modificat între timp — verificați din nou diferența';
+
+  @override
   String get conflictFieldBody => 'Conținut';
 
   @override

@@ -3987,6 +3987,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Der Eintrag hat sich inzwischen geändert — prüf den Unterschied noch einmal';
+
+  @override
   String get conflictFieldBody => 'Text';
 
   @override

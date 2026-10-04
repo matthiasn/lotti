@@ -36,14 +36,41 @@ extension _AnyGeneratedGeolocationPendingScenario on glados.Any {
       .map((idSlots) => _GeneratedGeolocationPendingScenario(idSlots: idSlots));
 }
 
+/// One stored entry, and the `persist` callback over it, applying a change
+/// the way `PersistenceLogic.updateEntity` does: to the entry as stored when
+/// the write lands. A missing entry is not written.
+class _Store {
+  _Store(this.entry);
+
+  JournalEntity? entry;
+  int writes = 0;
+
+  Future<bool> persist(
+    String id,
+    JournalEntity? Function(JournalEntity stored) change,
+  ) async {
+    final stored = entry;
+    if (stored == null || stored.id != id) return false;
+    final changed = change(stored);
+    if (changed != null) {
+      entry = changed;
+      writes++;
+    }
+    return true;
+  }
+}
+
+Future<bool> _neverCalled(
+  String id,
+  JournalEntity? Function(JournalEntity stored) change,
+) async => fail('persisted without a location');
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('GeolocationService', () {
     late GeolocationService geolocationService;
-    late MockJournalDb mockJournalDb;
     late MockDomainLogger mockDomainLogger;
-    late MockMetadataService mockMetadataService;
     late MockDeviceLocation mockDeviceLocation;
 
     final testGeolocation = Geolocation(
@@ -55,50 +82,33 @@ void main() {
       geohashString: 'u33db2',
     );
 
-    final testMetadata = Metadata(
-      id: 'test-id',
-      createdAt: DateTime(2024, 1, 15, 10),
-      updatedAt: DateTime(2024, 1, 15, 10),
-      dateFrom: DateTime(2024, 1, 15, 9),
-      dateTo: DateTime(2024, 1, 15, 10),
-      vectorClock: const VectorClock({'test-host': 1}),
-    );
-
-    final updatedMetadata = Metadata(
-      id: 'test-id',
-      createdAt: DateTime(2024, 1, 15, 10),
-      updatedAt: DateTime(2024, 1, 15, 11),
-      dateFrom: DateTime(2024, 1, 15, 9),
-      dateTo: DateTime(2024, 1, 15, 10),
-      vectorClock: const VectorClock({'test-host': 2}),
-    );
+    final otherGeolocation = testGeolocation.copyWith(latitude: 48.14);
 
     JournalEntry createTestEntry({
-      String id = 'test-entry-id',
+      String id = 'test-id',
       Geolocation? geolocation,
-      Metadata? meta,
+      String text = 'Test entry',
     }) {
       return JournalEntry(
-        meta: meta ?? testMetadata.copyWith(id: id),
-        entryText: const EntryText(plainText: 'Test entry'),
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
+          dateFrom: DateTime(2024, 1, 15, 9),
+          dateTo: DateTime(2024, 1, 15, 10),
+          vectorClock: const VectorClock({'test-host': 1}),
+        ),
+        entryText: EntryText(plainText: text),
         geolocation: geolocation,
       );
     }
 
     setUp(() {
-      mockJournalDb = MockJournalDb();
       mockDomainLogger = MockDomainLogger();
-      mockMetadataService = MockMetadataService();
       mockDeviceLocation = MockDeviceLocation();
 
-      // Register fallback values for mocktail
-      registerFallbackValue(testMetadata);
-      registerFallbackValue(createTestEntry());
-
       geolocationService = GeolocationService(
-        journalDb: mockJournalDb,
         loggingService: mockDomainLogger,
-        metadataService: mockMetadataService,
         deviceLocation: mockDeviceLocation,
       );
     });
@@ -113,13 +123,13 @@ void main() {
         // Start first operation
         final future1 = geolocationService.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          _neverCalled,
         );
 
         // Second call should return null immediately
         final result = await geolocationService.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          _neverCalled,
         );
         expect(result, isNull);
 
@@ -142,11 +152,11 @@ void main() {
         // Start operations for different entities
         final future1 = geolocationService.addGeolocationAsync(
           'test-id-1',
-          (_) async => true,
+          _neverCalled,
         );
         final future2 = geolocationService.addGeolocationAsync(
           'test-id-2',
-          (_) async => true,
+          _neverCalled,
         );
 
         expect(callCount, equals(2));
@@ -160,15 +170,13 @@ void main() {
 
       test('returns null when device location is null', () async {
         final serviceWithoutLocation = GeolocationService(
-          journalDb: mockJournalDb,
           loggingService: mockDomainLogger,
-          metadataService: mockMetadataService,
           // deviceLocation is null
         );
 
         final result = await serviceWithoutLocation.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          _neverCalled,
         );
 
         expect(result, isNull);
@@ -181,7 +189,7 @@ void main() {
 
         final result = await geolocationService.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          _neverCalled,
         );
 
         expect(result, isNull);
@@ -191,76 +199,105 @@ void main() {
         when(
           () => mockDeviceLocation.getCurrentGeoLocation(),
         ).thenAnswer((_) async => testGeolocation);
-        when(
-          () => mockJournalDb.journalEntityById('non-existent'),
-        ).thenAnswer((_) async => null);
+        final store = _Store(null);
 
         final result = await geolocationService.addGeolocationAsync(
           'non-existent',
-          (_) async => true,
+          store.persist,
         );
 
         expect(result, isNull);
+        expect(store.writes, 0);
       });
 
-      test('returns existing geolocation when entry already has one', () async {
-        final entryWithGeolocation = createTestEntry(
-          id: 'test-id',
-          geolocation: testGeolocation,
+      test('keeps the geolocation the stored entry already has', () async {
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => otherGeolocation);
+        final store = _Store(createTestEntry(geolocation: testGeolocation));
+
+        final result = await geolocationService.addGeolocationAsync(
+          'test-id',
+          store.persist,
         );
 
+        expect(result, equals(testGeolocation));
+        expect(store.writes, 0);
+        expect(store.entry!.geolocation, testGeolocation);
+      });
+
+      test('adds geolocation to an entry without one', () async {
         when(
           () => mockDeviceLocation.getCurrentGeoLocation(),
         ).thenAnswer((_) async => testGeolocation);
-        when(
-          () => mockJournalDb.journalEntityById('test-id'),
-        ).thenAnswer((_) async => entryWithGeolocation);
+        final store = _Store(createTestEntry());
 
-        var persisterCalled = false;
-        final result = await geolocationService.addGeolocationAsync('test-id', (
-          _,
-        ) async {
-          persisterCalled = true;
-          return true;
-        });
-
-        expect(result, equals(testGeolocation));
-        expect(persisterCalled, isFalse);
-      });
-
-      test('adds geolocation to entry without one', () async {
-        final entryWithoutGeolocation = createTestEntry(
-          id: 'test-id',
-          meta: testMetadata.copyWith(id: 'test-id'),
+        final result = await geolocationService.addGeolocationAsync(
+          'test-id',
+          store.persist,
         );
 
+        expect(result, equals(testGeolocation));
+        expect(store.writes, 1);
+        expect(store.entry!.geolocation, equals(testGeolocation));
+      });
+
+      test(
+        'sets the geolocation on the entry as stored when the fix arrives, '
+        'keeping what was written while it was fixed',
+        () async {
+          final fix = Completer<Geolocation?>();
+          when(
+            () => mockDeviceLocation.getCurrentGeoLocation(),
+          ).thenAnswer((_) => fix.future);
+          final store = _Store(createTestEntry());
+
+          final added = geolocationService.addGeolocationAsync(
+            'test-id',
+            store.persist,
+          );
+          // Another writer stores a version while the location is fixed.
+          store.entry = createTestEntry(text: 'edited meanwhile');
+          fix.complete(testGeolocation);
+
+          expect(await added, testGeolocation);
+          expect(store.entry!.entryText?.plainText, 'edited meanwhile');
+          expect(store.entry!.geolocation, testGeolocation);
+        },
+      );
+
+      test(
+        'does not add a location a concurrent writer already stored',
+        () async {
+          final fix = Completer<Geolocation?>();
+          when(
+            () => mockDeviceLocation.getCurrentGeoLocation(),
+          ).thenAnswer((_) => fix.future);
+          final store = _Store(createTestEntry());
+
+          final added = geolocationService.addGeolocationAsync(
+            'test-id',
+            store.persist,
+          );
+          store.entry = createTestEntry(geolocation: otherGeolocation);
+          fix.complete(testGeolocation);
+
+          expect(await added, otherGeolocation);
+          expect(store.entry!.geolocation, otherGeolocation);
+        },
+      );
+
+      test('returns null when the write is not stored', () async {
         when(
           () => mockDeviceLocation.getCurrentGeoLocation(),
         ).thenAnswer((_) async => testGeolocation);
-        when(
-          () => mockJournalDb.journalEntityById('test-id'),
-        ).thenAnswer((_) async => entryWithoutGeolocation);
-        when(
-          () => mockMetadataService.updateMetadata(any()),
-        ).thenAnswer((_) async => updatedMetadata);
 
-        JournalEntity? persistedEntity;
-        final result = await geolocationService.addGeolocationAsync('test-id', (
-          entity,
-        ) async {
-          persistedEntity = entity;
-          return true;
-        });
-
-        expect(result, equals(testGeolocation));
-        expect(persistedEntity, isNotNull);
-        expect(persistedEntity!.geolocation, equals(testGeolocation));
-        expect(
-          persistedEntity!.meta.vectorClock,
-          equals(updatedMetadata.vectorClock),
+        final result = await geolocationService.addGeolocationAsync(
+          'test-id',
+          (id, change) async => false,
         );
 
-        verify(() => mockMetadataService.updateMetadata(any())).called(1);
+        expect(result, isNull);
       });
 
       test('logs exception when getting location fails', () async {
@@ -269,10 +306,7 @@ void main() {
           () => mockDeviceLocation.getCurrentGeoLocation(),
         ).thenThrow(exception);
 
-        await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
+        await geolocationService.addGeolocationAsync('test-id', _neverCalled);
 
         verify(
           () => mockDomainLogger.error(
@@ -284,24 +318,17 @@ void main() {
       });
 
       test('logs exception when persistence fails', () async {
-        final entry = createTestEntry(id: 'test-id');
         final exception = Exception('Persistence error');
-
         when(
           () => mockDeviceLocation.getCurrentGeoLocation(),
         ).thenAnswer((_) async => testGeolocation);
-        when(
-          () => mockJournalDb.journalEntityById('test-id'),
-        ).thenAnswer((_) async => entry);
-        when(
-          () => mockMetadataService.updateMetadata(any()),
-        ).thenThrow(exception);
 
-        await geolocationService.addGeolocationAsync(
+        final result = await geolocationService.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          (id, change) async => throw exception,
         );
 
+        expect(result, isNull);
         verify(
           () => mockDomainLogger.error(
             LogDomain.location,
@@ -320,7 +347,7 @@ void main() {
         // Should not throw
         final result = await geolocationService.addGeolocationAsync(
           'test-id',
-          (_) async => true,
+          _neverCalled,
         );
 
         expect(result, isNull);
@@ -328,21 +355,23 @@ void main() {
     });
 
     group('addGeolocation (fire-and-forget)', () {
-      test('calls addGeolocationAsync without awaiting', () async {
-        final completer = Completer<Geolocation?>();
+      test('adds the location without the caller awaiting it', () async {
+        final fix = Completer<Geolocation?>();
         when(
           () => mockDeviceLocation.getCurrentGeoLocation(),
-        ).thenAnswer((_) => completer.future);
+        ).thenAnswer((_) => fix.future);
+        final store = _Store(createTestEntry());
 
         // Fire-and-forget call
-        geolocationService.addGeolocation('test-id', (_) async => true);
+        geolocationService.addGeolocation('test-id', store.persist);
 
         verify(() => mockDeviceLocation.getCurrentGeoLocation()).called(1);
+        expect(store.writes, 0);
 
-        // Cleanup
-        completer.complete(null);
+        fix.complete(testGeolocation);
+        await pumpEventQueue();
 
-        await completer.future;
+        expect(store.entry!.geolocation, testGeolocation);
       });
     });
 
@@ -358,9 +387,9 @@ void main() {
 
         // Start multiple concurrent calls for the same entry
         final futures = [
-          geolocationService.addGeolocationAsync('test-id', (_) async => true),
-          geolocationService.addGeolocationAsync('test-id', (_) async => true),
-          geolocationService.addGeolocationAsync('test-id', (_) async => true),
+          geolocationService.addGeolocationAsync('test-id', _neverCalled),
+          geolocationService.addGeolocationAsync('test-id', _neverCalled),
+          geolocationService.addGeolocationAsync('test-id', _neverCalled),
         ];
 
         expect(locationCallCount, equals(1));
@@ -388,17 +417,11 @@ void main() {
         });
 
         // First call
-        await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
+        await geolocationService.addGeolocationAsync('test-id', _neverCalled);
         expect(callCount, equals(1));
 
         // Second call (should proceed since first completed)
-        await geolocationService.addGeolocationAsync(
-          'test-id',
-          (_) async => true,
-        );
+        await geolocationService.addGeolocationAsync('test-id', _neverCalled);
         expect(callCount, equals(2));
       });
 
@@ -419,7 +442,7 @@ void main() {
 
         final futures = [
           for (final id in scenario.ids)
-            geolocationService.addGeolocationAsync(id, (_) async => true),
+            geolocationService.addGeolocationAsync(id, _neverCalled),
         ];
 
         expect(

@@ -690,29 +690,29 @@ class EntryController extends AsyncNotifier<EntryState?> {
     }
   }
 
+  /// The toggles change only their own flag, on the entry as stored
+  /// (`PersistenceLogic.updateEntity`): a field set since — a task's status
+  /// by its agent, a checklist listed on it — is kept, not written back from
+  /// a copy (`specs/tla/TaskFieldWrites.tla`, MetaOnStored).
   Future<void> toggleStarred() async {
-    final item = await _journalDb.journalEntityById(id);
-    if (item != null) {
-      final prev = item.meta.starred ?? false;
-      await _persistenceLogic.updateJournalEntity(
-        item,
-        item.meta.copyWith(starred: !prev),
-      );
-    }
+    await _persistenceLogic.updateEntity(
+      id,
+      (stored) => stored.copyWith(
+        meta: stored.meta.copyWith(starred: !(stored.meta.starred ?? false)),
+      ),
+    );
   }
 
   Future<void> togglePrivate() async {
-    final item = await _journalDb.journalEntityById(id);
-    if (item != null) {
-      final prev = item.meta.private ?? false;
-      final nextPrivate = !prev;
-      final updated = await _persistenceLogic.updateJournalEntity(
-        item,
-        item.meta.copyWith(private: nextPrivate),
+    var isTask = false;
+    final updated = await _persistenceLogic.updateEntity(id, (stored) {
+      isTask = stored is Task;
+      return stored.copyWith(
+        meta: stored.meta.copyWith(private: !(stored.meta.private ?? false)),
       );
-      if (updated && item is Task) {
-        await _dropPrivacyMismatchedProjectLink(item.id);
-      }
+    });
+    if (updated && isTask) {
+      await _dropPrivacyMismatchedProjectLink(id);
     }
   }
 
@@ -779,17 +779,16 @@ class EntryController extends AsyncNotifier<EntryState?> {
   }
 
   Future<void> toggleFlagged() async {
-    final item = await _journalDb.journalEntityById(id);
-    if (item != null) {
-      await _persistenceLogic.updateJournalEntity(
-        item,
-        item.meta.copyWith(
+    await _persistenceLogic.updateEntity(
+      id,
+      (stored) => stored.copyWith(
+        meta: stored.meta.copyWith(
           // Cleared by writing `none`, never by writing null — see
           // [MetadataFlag.isFlagged], which is what every reader asks.
-          flag: item.meta.isFlagged ? EntryFlag.none : EntryFlag.import,
+          flag: stored.meta.isFlagged ? EntryFlag.none : EntryFlag.import,
         ),
-      );
-    }
+      ),
+    );
   }
 
   /// (Re)builds the Quill editor [controller] from the best available source:

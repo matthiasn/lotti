@@ -68,9 +68,10 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
 
   /// Fire-and-forget: add geolocation to entry.
   ///
-  /// Delegates to [GeolocationService.addGeolocation].
+  /// Delegates to [GeolocationService.addGeolocation], which sets the
+  /// geolocation on the entry as stored through the facade's `updateEntity`.
   void addGeolocation(String journalEntityId) {
-    geolocationService.addGeolocation(journalEntityId, logic.updateDbEntity);
+    geolocationService.addGeolocation(journalEntityId, logic.updateEntity);
   }
 
   /// [precondition], when given, runs inside the write's transaction; the

@@ -3971,6 +3971,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Het item is intussen gewijzigd — bekijk het verschil opnieuw';
+
+  @override
   String get conflictFieldBody => 'Lichaam';
 
   @override

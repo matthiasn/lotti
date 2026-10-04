@@ -566,9 +566,7 @@ class TutorialAppHarness {
       vectorClockService: vectorClockService,
     );
     final geolocationService = GeolocationService(
-      journalDb: journalDb,
       loggingService: DomainLogger(loggingService: loggingService),
-      metadataService: metadataService,
     );
 
     getIt

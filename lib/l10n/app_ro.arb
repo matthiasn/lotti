@@ -1707,6 +1707,7 @@
   "conflictDetailNotFoundTitle": "Conflict negăsit",
   "conflictDiffRecommended": "Recomandat",
   "conflictDiffUnchanged": "{count, plural, =1{1 câmp neschimbat} other{{count} câmpuri neschimbate}}",
+  "conflictEntryChangedTitle": "Intrarea s-a modificat între timp — verificați din nou diferența",
   "conflictFieldBody": "Conținut",
   "conflictFieldCategory": "categorie",
   "conflictFieldDueDate": "data scadenței",

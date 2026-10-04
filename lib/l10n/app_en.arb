@@ -2505,6 +2505,10 @@
       }
     }
   },
+  "conflictEntryChangedTitle": "The entry changed meanwhile — check the difference again",
+  "@conflictEntryChangedTitle": {
+    "description": "Toast when a conflict resolution was not applied because the entry changed on this device while the conflict page was open; the page then shows the difference again."
+  },
   "conflictFieldBody": "Body",
   "conflictFieldCategory": "Category",
   "conflictFieldDueDate": "Due date",

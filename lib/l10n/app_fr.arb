@@ -1707,6 +1707,7 @@
   "conflictDetailNotFoundTitle": "Conflit introuvable",
   "conflictDiffRecommended": "Recommandé",
   "conflictDiffUnchanged": "{count, plural, =1{1 champ inchangé} other{{count} champs inchangés}}",
+  "conflictEntryChangedTitle": "L'entrée a changé entre-temps — vérifie à nouveau la différence",
   "conflictFieldBody": "Corps",
   "conflictFieldCategory": "catégorie",
   "conflictFieldDueDate": "date d'échéance",

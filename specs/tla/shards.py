@@ -116,6 +116,7 @@ SECONDS = {
     "TaskFieldWrites": 20,
     "TaskFieldWritesAgents": 60,
     "TaskFieldWritesResolve": 25,
+    "TaskFieldWritesStale": 60,
     # Local runs with 20 workers took 222s, 225s and 6s; budgeted for a
     # runner with fewer cores. Refresh from CI.
     "ChecklistReplication": 600,

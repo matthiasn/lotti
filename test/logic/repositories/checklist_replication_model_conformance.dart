@@ -344,6 +344,7 @@ class _ReplicaChecklistBench {
     final (local, remote) = open[(arg ~/ 2) % open.length];
     use(device);
     await ConflictResolutionService(
+      journalDb: device.db,
       persistenceLogic: device.persistence,
       checklistRepository: device.repository,
     ).keepSide(

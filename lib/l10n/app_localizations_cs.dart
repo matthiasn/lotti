@@ -4002,6 +4002,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'Záznam se mezitím změnil — zkontroluj rozdíl znovu';
+
+  @override
   String get conflictFieldBody => 'Text';
 
   @override

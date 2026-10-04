@@ -6606,6 +6606,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}'**
   String conflictDiffUnchanged(int count);
 
+  /// Toast when a conflict resolution was not applied because the entry changed on this device while the conflict page was open; the page then shows the difference again.
+  ///
+  /// In en, this message translates to:
+  /// **'The entry changed meanwhile — check the difference again'**
+  String get conflictEntryChangedTitle;
+
   /// No description provided for @conflictFieldBody.
   ///
   /// In en, this message translates to:

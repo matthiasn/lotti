@@ -1936,6 +1936,7 @@
       }
     }
   },
+  "conflictEntryChangedTitle": "A entrada mudou entretanto — verifica a diferença novamente",
   "conflictFieldBody": "Corpo",
   "conflictFieldCategory": "Categoria",
   "conflictFieldDueDate": "Data de vencimento",

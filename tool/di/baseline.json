@@ -1,6 +1,6 @@
 {
   "_comment": "getIt lookups and isRegistered checks outside the composition root, still to be migrated to providers or constructor arguments. Regenerate with: dart run tool/di/validate.dart --update-baseline. These numbers only ever go down.",
-  "_total": {"lookups": 651, "isRegistered": 161},
+  "_total": {"lookups": 648, "isRegistered": 161},
   "files": {
     "lib/app_root.dart": {"lookups": 1},
     "lib/beamer/beamer_app.dart": {"lookups": 2, "isRegistered": 1},
@@ -211,7 +211,7 @@
     "lib/features/sync/state/synced_audio_inference_providers.dart": {"lookups": 1},
     "lib/features/sync/ui/backfill_settings_page.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/sync/ui/matrix_sync_maintenance_page.dart": {"lookups": 1},
-    "lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart": {"lookups": 2},
+    "lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart": {"lookups": 1},
     "lib/features/sync/ui/pages/conflicts/conflicts_page.dart": {"lookups": 1},
     "lib/features/sync/ui/pages/outbox/outbox_monitor_page.dart": {"lookups": 4},
     "lib/features/sync/ui/pages/sync_node_profile_page.dart": {"lookups": 1},
@@ -255,7 +255,7 @@
     "lib/logic/persistence_updates.dart": {"lookups": 3},
     "lib/logic/repositories/checklist_membership_intents.dart": {"lookups": 1},
     "lib/logic/repositories/checklist_repository.dart": {"lookups": 5, "isRegistered": 1},
-    "lib/logic/repositories/journal_repository.dart": {"lookups": 39},
+    "lib/logic/repositories/journal_repository.dart": {"lookups": 37},
     "lib/logic/repositories/project_repository.dart": {"lookups": 7, "isRegistered": 1},
     "lib/logic/repositories/saved_task_filters_repository.dart": {"lookups": 3},
     "lib/logic/repositories/speech_repository.dart": {"lookups": 11},

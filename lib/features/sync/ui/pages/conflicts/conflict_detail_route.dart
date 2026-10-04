@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -40,7 +41,10 @@ class ConflictDetailRoute extends StatefulWidget {
 }
 
 class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
-  final ConflictResolutionService _service = ConflictResolutionService();
+  final JournalDb _db = getIt<JournalDb>();
+  late final ConflictResolutionService _service = ConflictResolutionService(
+    journalDb: _db,
+  );
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
 
@@ -58,18 +62,41 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
     final key = '${conflict.id}/${conflict.versionKey}';
     if (_futureKey != key || _localEntryFuture == null) {
       _futureKey = key;
-      _localEntryFuture = getIt<JournalDb>().journalEntityByIdIncludingDeleted(
+      _localEntryFuture = _db.journalEntityByIdIncludingDeleted(
         conflict.id,
       );
     }
     return _localEntryFuture!;
   }
 
-  Future<void> _resolve(Future<bool> Function() action) async {
+  /// Runs a resolution of [pair]. One refused because this device stored
+  /// another version of the entry since the page read it (the service's
+  /// precondition) is not applied: the page reads the local side again and
+  /// shows the difference as it now is, for the user to decide on.
+  Future<void> _resolve(
+    ConflictPair pair,
+    Future<bool> Function() action,
+  ) async {
     try {
       final applied = await action();
       if (!applied) {
+        final stored = await _db.journalEntityByIdIncludingDeleted(
+          pair.local.id,
+        );
         if (!mounted) return;
+        if (stored != null &&
+            stored.meta.vectorClock != pair.local.meta.vectorClock) {
+          // The side just read is shown at once, in place of the old one:
+          // the page keeps its diff rather than flashing a loading scaffold.
+          setState(() {
+            _localEntryFuture = SynchronousFuture(stored);
+          });
+          context.showToast(
+            tone: DesignSystemToastTone.warning,
+            title: context.messages.conflictEntryChangedTitle,
+          );
+          return;
+        }
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: context.messages.conflictApplyFailedTitle,
@@ -95,7 +122,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   @override
   Widget build(BuildContext context) {
-    final db = getIt<JournalDb>();
+    final db = _db;
     return StreamBuilder<List<Conflict>>(
       stream: db.watchConflictById(widget.conflictId),
       builder: (context, snapshot) {
@@ -142,7 +169,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
               diff: pair.diff,
               service: _service,
               pair: pair,
-              resolve: _resolve,
+              resolve: (action) => _resolve(pair, action),
             );
           },
         );

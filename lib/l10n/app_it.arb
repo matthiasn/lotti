@@ -1937,6 +1937,7 @@
       }
     }
   },
+  "conflictEntryChangedTitle": "La voce è cambiata nel frattempo — controlla di nuovo la differenza",
   "conflictFieldBody": "Corpo",
   "conflictFieldCategory": "Categoria",
   "conflictFieldDueDate": "Data di scadenza",

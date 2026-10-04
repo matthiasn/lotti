@@ -1707,6 +1707,7 @@
   "conflictDetailNotFoundTitle": "Conflicto no encontrado",
   "conflictDiffRecommended": "Recomendado",
   "conflictDiffUnchanged": "{count, plural, =1{1 campo sin cambios} other{{count} campos sin cambios}}",
+  "conflictEntryChangedTitle": "La entrada cambió mientras tanto — revisa la diferencia de nuevo",
   "conflictFieldBody": "Cuerpo",
   "conflictFieldCategory": "categoría",
   "conflictFieldDueDate": "fecha de vencimiento",

@@ -190,7 +190,6 @@ void main() {
             clearLabelIds: any<bool>(named: 'clearLabelIds'),
           ),
         ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
-        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
         when(
           () => mockPl.updateDbEntity(
             any(),
@@ -201,15 +200,12 @@ void main() {
 
         await repo.addLabels(journalEntityId: 'img1', addedLabelIds: ['a']);
         await repo.setLabels(journalEntityId: 'img1', labelIds: const ['a']);
-        final written = [
-          ...verify(() => mockPl.updateDbEntity(captureAny())).captured,
-          ...verify(
-            () => mockPl.updateDbEntity(
-              captureAny(),
-              precondition: any(named: 'precondition'),
-            ),
-          ).captured,
-        ];
+        final written = verify(
+          () => mockPl.updateDbEntity(
+            captureAny(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).captured;
         expect(written, hasLength(2));
         expect(written, everyElement(isA<JournalImage>()));
       },

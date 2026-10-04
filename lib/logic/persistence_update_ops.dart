@@ -141,6 +141,50 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
     }
   }
 
+  /// Applies [change] to the stored entry [journalEntityId] and writes the
+  /// result on that row under a new clock ([writeOnStored]).
+  ///
+  /// [change] is handed the entry as stored — never a copy a screen or a
+  /// service read before further awaits — and answers it with only its own
+  /// change made, or `null` when there is nothing to write. A version stored
+  /// meanwhile, by another writer on this device, is built on again rather
+  /// than replaced, so a field it set (a task's status, its checklist list)
+  /// is never put back; one synced in is built on too, rather than raising
+  /// a conflict with a version that never saw it
+  /// (`specs/tla/TaskFieldWrites.tla` and `ChecklistMembership.tla`,
+  /// MetaOnStored). A task's own fields are changed with [updateTaskImpl].
+  ///
+  /// Returns whether the change is stored: `true` when [change] had nothing
+  /// to write, `false` when the entry does not exist, the write was refused,
+  /// or it failed.
+  Future<bool> updateEntity(
+    String journalEntityId,
+    JournalEntity? Function(JournalEntity stored) change,
+  ) async {
+    try {
+      return await writeOnStored(
+        journalDb: journalDb,
+        persistenceLogic: logic,
+        id: journalEntityId,
+        build: (stored) async {
+          final changed = change(stored);
+          if (changed == null || changed == stored) return null;
+          return changed.copyWith(
+            meta: await logic.updateMetadata(changed.meta),
+          );
+        },
+      );
+    } catch (exception, stackTrace) {
+      loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'updateEntity',
+      );
+      return false;
+    }
+  }
+
   /// Applies [change] to the data of the stored task [journalEntityId], and
   /// [entryText] when given, and writes the result on that row
   /// ([writeOnStored]).

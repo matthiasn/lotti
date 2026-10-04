@@ -4014,6 +4014,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'L\'entrée a changé entre-temps — vérifie à nouveau la différence';
+
+  @override
   String get conflictFieldBody => 'Corps';
 
   @override

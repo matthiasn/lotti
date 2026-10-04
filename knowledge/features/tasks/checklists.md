@@ -123,10 +123,14 @@ sequenceDiagram
 checklist list.** Every other task write keeps the stored list:
 `PersistenceLogic.updateTask` — which every task field write goes through,
 the agent's field tools included — applies its change to the stored task and
-keeps its `checklistIds`. So a status or
-estimate saved from a screen's copy of the task cannot drop a checklist the
-agent or sync added since. Conflict resolution writes through
-`PersistenceLogic` directly and keeps the side the user chose.
+keeps its `checklistIds`, and `PersistenceLogic.updateEntity` — the toggles,
+the category, date and geolocation writes — does the same for a write that
+sets no task field, as does the agent's label assignment
+([ADR 0119](../../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md)).
+So a status, a star or a label saved from a copy of the task cannot drop a
+checklist the agent or sync added since. Conflict resolution joins both
+sides' lists, and applies only while the stored task is still the side the
+user was shown.
 
 **The screens' copies are never the base of a write.** `ChecklistController`
 and `ChecklistItemController` state is refreshed by an update notification

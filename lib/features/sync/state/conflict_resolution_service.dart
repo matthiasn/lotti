@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
@@ -32,14 +33,23 @@ class ConflictPair {
 /// checklist is written through [ChecklistRepository.resolveConflict], which
 /// also lists a kept checklist on its task, or deletes the items of one whose
 /// deletion was kept (ADR 0105).
+///
+/// A resolution is built on the sides the user was shown, so it applies only
+/// while the stored row is still that local side: a version stored since —
+/// the task agent setting a field, a checklist listed on the task — would
+/// otherwise be replaced by the merged clock without anyone having seen it
+/// (`specs/tla/TaskFieldWrites.tla`, ResolveOnStored). Refused, the
+/// resolution answers false, and the screen reads the local side again.
 class ConflictResolutionService {
   ConflictResolutionService({
+    required this._journalDb,
     PersistenceLogic? persistenceLogic,
     ChecklistRepository? checklistRepository,
   }) : _persistence = persistenceLogic ?? getIt<PersistenceLogic>(),
        _checklistRepositoryOverride = checklistRepository;
 
   final PersistenceLogic _persistence;
+  final JournalDb _journalDb;
   final ChecklistRepository? _checklistRepositoryOverride;
 
   /// Built on first use: only a checklist's resolution needs it.
@@ -53,12 +63,22 @@ class ConflictResolutionService {
       remote: pair.remote,
       side: side,
     );
-    return _write(winner);
+    return _write(winner, pair);
   }
 
-  Future<bool> _write(JournalEntity resolved) {
-    Future<bool> write() =>
-        _persistence.updateJournalEntity(resolved, resolved.meta);
+  Future<bool> _write(JournalEntity resolved, ConflictPair pair) {
+    // Read with its soft deletion, as the screen read it: a delete-versus-
+    // edit conflict is resolved over the local tombstone.
+    Future<bool> shown() async =>
+        (await _journalDb.journalEntityByIdIncludingDeleted(
+          pair.local.id,
+        ))?.meta.vectorClock ==
+        pair.local.meta.vectorClock;
+    Future<bool> write() => _persistence.updateJournalEntity(
+      resolved,
+      resolved.meta,
+      precondition: shown,
+    );
     if (resolved is! Checklist) return write();
     return _checklistRepository.resolveConflict(resolved, write);
   }
@@ -75,6 +95,6 @@ class ConflictResolutionService {
       baseSide: baseSide,
       choices: choices,
     );
-    return _write(merged);
+    return _write(merged, pair);
   }
 }

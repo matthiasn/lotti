@@ -371,6 +371,8 @@ void registerAllFallbackValues() {
   // `JournalRepository.updateTask` apply to the stored task data.
   registerFallbackValue((TaskData stored) => stored);
   registerFallbackValue((Task stored) => true);
+  // The change `PersistenceLogic.updateEntity` applies to the stored entry.
+  registerFallbackValue((JournalEntity stored) => stored);
   // The change `ChecklistRepository.updateChecklistItem` applies to the
   // stored item data.
   registerFallbackValue((ChecklistItemData stored) => stored);

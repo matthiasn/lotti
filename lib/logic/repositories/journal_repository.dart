@@ -137,26 +137,14 @@ class JournalRepository {
     required String? categoryId,
   }) async {
     try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-
-      final journalEntity = await getIt<JournalDb>().journalEntityById(
+      // Built on the entry as stored, so a field set since — a task's
+      // status, a checklist listed on it — is kept (MetaOnStored).
+      return await getIt<PersistenceLogic>().updateEntity(
         journalEntityId,
-      );
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final updated = await persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(
-          meta: await persistenceLogic.updateMetadata(
-            journalEntity.meta,
-            categoryId: categoryId,
-            clearCategoryId: categoryId == null,
-          ),
+        (stored) => stored.copyWith(
+          meta: stored.meta.copyWith(categoryId: categoryId),
         ),
       );
-      return updated ?? false;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,
@@ -334,35 +322,26 @@ class JournalRepository {
     onlyIf: onlyIf,
   );
 
-  /// Updates an entity's `dateFrom`/`dateTo` and, if it is the running timer,
-  /// pushes the new range into the time service so the live duration stays in
-  /// sync. Returns false only when the entity does not exist.
+  /// Updates an entity's `dateFrom`/`dateTo` on the entry as stored, so a
+  /// field set since is kept (MetaOnStored), and, if it is the running
+  /// timer, pushes the new range into the time service so the live duration
+  /// stays in sync. Returns whether the range is stored: false when the
+  /// entity does not exist, the write was refused, or it failed.
   Future<bool> updateJournalEntityDate(
     String journalEntityId, {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-
-      final journalEntity = await getIt<JournalDb>().journalEntityById(
+      JournalEntity? updated;
+      final stored = await getIt<PersistenceLogic>().updateEntity(
         journalEntityId,
-      );
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final updated = journalEntity.copyWith(
-        meta: await persistenceLogic.updateMetadata(
-          journalEntity.meta,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
+        (stored) => updated = stored.copyWith(
+          meta: stored.meta.copyWith(dateFrom: dateFrom, dateTo: dateTo),
         ),
       );
-
-      await persistenceLogic.updateDbEntity(updated);
-      getIt<TimeService>().updateCurrent(updated);
+      if (stored) getIt<TimeService>().updateCurrent(updated);
+      return stored;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,
@@ -370,8 +349,8 @@ class JournalRepository {
         stackTrace: stackTrace,
         subDomain: 'updateJournalEntityDate',
       );
+      return false;
     }
-    return true;
   }
 
   /// Creates a new text journal entry from `entryText`, optionally linked to

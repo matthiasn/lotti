@@ -51,6 +51,10 @@
 (*                PersistenceLogic.updateTask (updateTaskImpl)             *)
 (*   uiSort       ChecklistsWidget's reorder of the task's checklists,     *)
 (*                EntryController.updateChecklistOrder                     *)
+(*   uiMeta       a task write that sets no task field: the star, flag and *)
+(*                private toggles, the category and date changes, and the *)
+(*                geolocation added after creation, through                *)
+(*                PersistenceLogic.updateEntity                            *)
 (*   agAdd        ChecklistRepository.addItemToChecklist                   *)
 (*   agList       ChecklistRepository.createChecklist                      *)
 (*   agCheck      the agent's checklist update tools, which write an item  *)
@@ -58,6 +62,8 @@
 (*   agTaskEdit   the agent's task field tools, which write a task read    *)
 (*                when the tool call began (JournalRepository.             *)
 (*                updateJournalEntity)                                     *)
+(*   agLabels     the agent's label assignment (LabelsRepository.          *)
+(*                addLabels), through the same writer as uiMeta            *)
 (*   Receive      sync applying a newer version from another device — an  *)
 (*                item and the checklist version listing it, or a new      *)
 (*                checklist and the task version listing it                *)
@@ -90,10 +96,15 @@ CONSTANTS
                        \* task's list changes
     IntentLog,         \* a multi-row operation records its intent first,
                        \* and the next start finishes it
-    DeleteReportsFailure \* a failed delete is reported as one, so its
+    DeleteReportsFailure, \* a failed delete is reported as one, so its
                        \* operation keeps its intent; FALSE is the former
                        \* deleteJournalEntity, which answered true whatever
                        \* its write did
+    MetaOnStored       \* a task write that sets no task field is applied
+                       \* to the stored row; FALSE is the former toggles,
+                       \* category, date, geolocation and label writes,
+                       \* which wrote the whole row they had read a few
+                       \* awaits earlier
 
 ASSUME First \in Lists /\ Lists \cap Items = {}
 
@@ -189,6 +200,9 @@ UiTaskEdit ==
 UiSort(c) ==
     << Read("task", IF RebaseTask THEN "stored" ELSE "widget"),
        Commit("task", D("front", c), RebaseTask) >>
+\* The writer reads the row, then writes it after further awaits.
+MetaEdit ==
+    << Read("task", "stored"), Commit("task", D("keep", "none"), MetaOnStored) >>
 
 AgAdd(c, i) ==
     << Create(i, c), Read(c, "stored"), Commit(c, D("add", i), RebaseLists) >>
@@ -287,6 +301,8 @@ UserStarts ==
           /\ UNCHANGED home
     \/ /\ Start("ui", UiTaskEdit, NoIntent)
        /\ UNCHANGED home
+    \/ /\ Start("ui", MetaEdit, NoIntent)
+       /\ UNCHANGED home
 
 AgentStarts ==
     \/ \E c \in Lists, i \in Items \ Taken :
@@ -302,6 +318,8 @@ AgentStarts ==
           /\ Start("agent", AgCheck(i), NoIntent)
           /\ UNCHANGED home
     \/ /\ Start("agent", AgTaskEdit, NoIntent)
+       /\ UNCHANGED home
+    \/ /\ Start("agent", MetaEdit, NoIntent)
        /\ UNCHANGED home
 
 Begin ==

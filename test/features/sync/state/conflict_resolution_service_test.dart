@@ -13,6 +13,7 @@ import '../ui/widgets/conflicts/conflict_test_entities.dart';
 
 void main() {
   late MockPersistenceLogic persistence;
+  late MockJournalDb journalDb;
   late ConflictResolutionService service;
 
   final local = entryOf(
@@ -28,17 +29,40 @@ void main() {
 
   JournalEntity capturedWrite() =>
       verify(
-            () => persistence.updateJournalEntity(captureAny(), any()),
+            () => persistence.updateJournalEntity(
+              captureAny(),
+              any(),
+              precondition: any(named: 'precondition'),
+            ),
           ).captured.single
           as JournalEntity;
+
+  /// The precondition the resolution's write was made under.
+  Future<bool> Function() capturedPrecondition() =>
+      verify(
+            () => persistence.updateJournalEntity(
+              any(),
+              any(),
+              precondition: captureAny(named: 'precondition'),
+            ),
+          ).captured.single
+          as Future<bool> Function();
 
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
     persistence = MockPersistenceLogic();
-    service = ConflictResolutionService(persistenceLogic: persistence);
+    journalDb = MockJournalDb();
+    service = ConflictResolutionService(
+      persistenceLogic: persistence,
+      journalDb: journalDb,
+    );
     when(
-      () => persistence.updateJournalEntity(any(), any()),
+      () => persistence.updateJournalEntity(
+        any(),
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((_) async => true);
   });
 
@@ -82,6 +106,83 @@ void main() {
     });
   });
 
+  // A resolution is built on the sides the page showed, and applies only
+  // while the stored row is still the local one: a version stored since —
+  // the task agent setting a field — is not replaced by the merged clock
+  // (`specs/tla/TaskFieldWrites.tla`, ResolveOnStored).
+  group('the write is made only over the local side shown', () {
+    final pair = ConflictPair(local: local, remote: remote);
+
+    for (final (name, resolve) in [
+      (
+        'keepSide',
+        () => service.keepSide(pair, ConflictSide.remote),
+      ),
+      (
+        'combine',
+        () => service.combine(
+          pair,
+          baseSide: ConflictSide.local,
+          choices: const {},
+        ),
+      ),
+    ]) {
+      test('$name: holds while the stored row is the local side', () async {
+        when(
+          () => journalDb.journalEntityByIdIncludingDeleted(local.id),
+        ).thenAnswer((_) async => local);
+
+        await resolve();
+
+        expect(await capturedPrecondition()(), isTrue);
+      });
+
+      test('$name: fails once this device stored another version', () async {
+        when(
+          () => journalDb.journalEntityByIdIncludingDeleted(local.id),
+        ).thenAnswer(
+          (_) async => local.copyWith(
+            meta: local.meta.copyWith(
+              vectorClock: const VectorClock({'a': 3}),
+            ),
+          ),
+        );
+
+        await resolve();
+
+        expect(await capturedPrecondition()(), isFalse);
+      });
+    }
+
+    test('a local side deleted here is the stored row, deleted', () async {
+      final deleted = local.copyWith(
+        meta: local.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+      );
+      when(
+        () => journalDb.journalEntityByIdIncludingDeleted(local.id),
+      ).thenAnswer((_) async => deleted);
+
+      await service.keepSide(
+        ConflictPair(local: deleted, remote: remote),
+        ConflictSide.remote,
+      );
+
+      expect(await capturedPrecondition()(), isTrue);
+    });
+
+    test('a refused write answers false', () async {
+      when(
+        () => persistence.updateJournalEntity(
+          any(),
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      expect(await service.keepSide(pair, ConflictSide.local), isFalse);
+    });
+  });
+
   group('a checklist (ADR 0105)', () {
     late MockChecklistRepository checklists;
 
@@ -110,6 +211,7 @@ void main() {
       service = ConflictResolutionService(
         persistenceLogic: persistence,
         checklistRepository: checklists,
+        journalDb: journalDb,
       );
     });
 

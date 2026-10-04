@@ -4003,6 +4003,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get conflictEntryChangedTitle =>
+      'La entrada cambió mientras tanto — revisa la diferencia de nuevo';
+
+  @override
   String get conflictFieldBody => 'Cuerpo';
 
   @override
