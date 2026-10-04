@@ -43,8 +43,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
@@ -85,18 +83,6 @@ void Function(String) persistedStateChangedNotifier(
   return (id) {
     notifications.notifyUiOnly({id, agentNotification});
   };
-}
-
-/// Optional sync processor dependency for cross-device agent wiring.
-final maybeSyncEventProcessorProvider = Provider<SyncEventProcessor?>(
-  maybeSyncEventProcessor,
-  name: 'maybeSyncEventProcessorProvider',
-);
-SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
-  if (!getIt.isRegistered<SyncEventProcessor>()) {
-    return null;
-  }
-  return getIt<SyncEventProcessor>();
 }
 
 /// Reclaims the JSON sidecars of rows that have been hard-deleted or pruned.
@@ -383,26 +369,10 @@ bool reachesSyncServer(List<ConnectivityResult> results) => results.any(
 
 /// Whether this device may claim or fire a leased project update slot now:
 /// connected, with its sync inbox drained. Null where sync is not wired (a
-/// guest world, a test), where there are no peers to race.
+/// guest world, a test), where there are no peers to race; the composition
+/// root wires the sync feature's gate (`buildSyncLeaseGate`).
 final syncLeaseGateProvider = Provider<SyncLeaseGate?>(
-  (ref) {
-    if (!getIt.isRegistered<MatrixService>()) return null;
-    final matrixService = getIt<MatrixService>();
-    final journalDb = ref.watch(journalDbProvider);
-    final gate = SyncLeaseGate(
-      syncEnabled: () => journalDb.getConfigFlag(enableMatrixFlag),
-      connected: matrixService.isLoggedIn,
-      connectivityChanges: Connectivity().onConnectivityChanged
-          .map(reachesSyncServer)
-          .handleError((Object _) {}),
-      currentlyOnline: () async =>
-          reachesSyncServer(await Connectivity().checkConnectivity()),
-      waitForInboxDrained: (timeout) => matrixService.queueCoordinator.queue
-          .waitForDrainAtMostTo(0, timeout: timeout),
-    );
-    ref.onDispose(gate.dispose);
-    return gate;
-  },
+  (ref) => null,
   name: 'syncLeaseGateProvider',
 );
 
@@ -582,7 +552,7 @@ ImproverAgentService improverAgentService(Ref ref) {
 /// every device, from app start (`beamer_app.dart` listens to it).
 ///
 /// This provider:
-/// 1. Hands the agent repository to the [SyncEventProcessor] before it
+/// 1. Hands the agent repository to sync before it
 ///    builds any runtime provider, so a runtime that fails to build or start
 ///    never leaves sync unable to store another device's agents.
 /// 2. Starts the [WakeOrchestrator] listening to
@@ -604,8 +574,8 @@ Future<void> agentInitialization(Ref ref) async {
   // Sync first, before any runtime provider is built: building one can
   // throw, and until the repository is wired every agent entity and link
   // arriving from another device fails to apply.
-  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
-  wireAgentSyncRepository(ref, syncEventProcessor);
+  final syncAttachment = ref.watch(agentSyncAttachmentProvider);
+  syncAttachment?.attachRepository(ref);
 
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
@@ -626,10 +596,9 @@ Future<void> agentInitialization(Ref ref) async {
 
   // 0. Wire the wake runtime into the sync event processor, before anything
   //    below can await or throw, so synced lifecycle changes reach it.
-  wireSyncEventProcessor(
+  syncAttachment?.attachRuntime(
     ref,
     orchestrator,
-    syncEventProcessor,
     retireSupersededTaskAgents: (taskId) =>
         taskAgentService.retirement.retireSuperseded(taskId),
   );

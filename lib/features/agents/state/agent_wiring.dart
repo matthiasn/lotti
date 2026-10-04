@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -283,59 +282,5 @@ Future<void> _notifyWakeCompletion(
     ?templateId,
     agentNotification,
     ...extraTokens,
-  });
-}
-
-/// Hands the agent repository to the [SyncEventProcessor] and its backfill
-/// handler, so incoming agent entities and links are stored and backfill
-/// requests for them answered.
-///
-/// This is sync's only hard dependency on the agent feature, and it needs
-/// nothing but the agent database: `agentInitialization` calls it before it
-/// resolves any runtime provider, so a runtime that fails to build or start
-/// can never leave sync unable to store another device's agents. The runtime
-/// half is [wireSyncEventProcessor].
-void wireAgentSyncRepository(Ref ref, SyncEventProcessor? processor) {
-  if (processor == null) return;
-  final repository = ref.read(agentRepositoryProvider);
-  processor.agentRepository = repository;
-  processor.backfillResponseHandler.agentRepository = repository;
-  ref.onDispose(() {
-    processor.agentRepository = null;
-    processor.backfillResponseHandler.agentRepository = null;
-  });
-}
-
-/// Wires the wake runtime into the [SyncEventProcessor] so that incoming
-/// lifecycle changes (pause/destroy from another device) restore/remove
-/// subscriptions. The repository comes earlier, from
-/// [wireAgentSyncRepository].
-///
-/// [retireSupersededTaskAgents] runs the retirement pass
-/// (`TaskAgentRetirement.retireSuperseded`) for a task whose `agent_task`
-/// link or task agent the processor has just applied.
-void wireSyncEventProcessor(
-  Ref ref,
-  WakeOrchestrator orchestrator,
-  SyncEventProcessor? processor, {
-  required Future<void> Function(String taskId) retireSupersededTaskAgents,
-}) {
-  if (processor == null) return;
-  processor
-    ..wakeOrchestrator = orchestrator
-    ..agentWakeCoordinator = ref.read(agentWakeCoordinatorProvider)
-    // Feature-owned runtime mirrors (goal agents today): a synced-in
-    // identity is offered to each contributor so subscriptions follow the
-    // agent onto this device mid-session.
-    ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider)
-    ..retireSupersededTaskAgents = retireSupersededTaskAgents
-    ..armProjectUpdate = armProjectUpdate(ref);
-  ref.onDispose(() {
-    processor
-      ..wakeOrchestrator = null
-      ..agentWakeCoordinator = null
-      ..runtimeMaintenance = const []
-      ..retireSupersededTaskAgents = null
-      ..armProjectUpdate = null;
   });
 }

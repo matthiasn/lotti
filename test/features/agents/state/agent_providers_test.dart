@@ -55,7 +55,6 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
@@ -74,8 +73,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart'
-    show enableForkHealingFlag, enableMatrixFlag;
+import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
@@ -206,24 +204,11 @@ void main() {
       );
     });
 
-    test('maybeSyncEventProcessorProvider returns null when unregistered', () {
+    test('agentSyncAttachmentProvider is absent until sync wires it', () {
       final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
-      expect(container.read(maybeSyncEventProcessorProvider), isNull);
-    });
-
-    test('maybeSyncEventProcessorProvider returns registered instance', () {
-      final mockProcessor = MockSyncEventProcessor();
-      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
-
-      final container = ProviderContainer(overrides: getItServiceOverrides());
-      addTearDown(container.dispose);
-
-      expect(
-        container.read(maybeSyncEventProcessorProvider),
-        same(mockProcessor),
-      );
+      expect(container.read(agentSyncAttachmentProvider), isNull);
     });
   });
 
@@ -1653,9 +1638,9 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       final mockHandler = MockBackfillResponseHandler();
       when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
-      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
-
-      final container = bench.createContainer();
+      final container = bench.createContainer(
+        syncEventProcessor: mockProcessor,
+      );
       await bench.initAndSubscribe(container);
 
       verify(
@@ -1679,12 +1664,13 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       final mockHandler = MockBackfillResponseHandler();
       when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
-      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
       when(
         () => bench.mockOrchestrator.start(any()),
       ).thenThrow(StateError('orchestrator failed to start'));
 
-      final container = bench.createContainer();
+      final container = bench.createContainer(
+        syncEventProcessor: mockProcessor,
+      );
       final sub = container.listen(agentInitializationProvider, (_, _) {});
       await expectLater(
         container.read(agentInitializationProvider.future),
@@ -1707,9 +1693,8 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       final mockHandler = MockBackfillResponseHandler();
       when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
-      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
-
       final container = bench.createContainer(
+        syncEventProcessor: mockProcessor,
         taskAgentWorkflow: (ref) => throw StateError('workflow failed'),
       );
       final sub = container.listen(agentInitializationProvider, (_, _) {});
@@ -1733,9 +1718,9 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       final mockHandler = MockBackfillResponseHandler();
       when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
-      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
-
-      final container = bench.createContainer();
+      final container = bench.createContainer(
+        syncEventProcessor: mockProcessor,
+      );
 
       final sub = container.listen(
         agentInitializationProvider,
@@ -3522,54 +3507,10 @@ void main() {
 
   group('syncLeaseGateProvider', () {
     test('is absent where sync is not wired', () {
-      if (getIt.isRegistered<MatrixService>()) {
-        getIt.unregister<MatrixService>();
-      }
       final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(syncLeaseGateProvider), isNull);
-    });
-
-    test('opens with sync off, and with sync on only while logged in with '
-        'the inbox drained', () async {
-      final matrixService = MockMatrixService();
-      final coordinator = MockQueuePipelineCoordinator();
-      final queue = MockInboundQueue();
-      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
-      when(() => coordinator.queue).thenReturn(queue);
-      when(
-        () => queue.waitForDrainAtMostTo(0, timeout: any(named: 'timeout')),
-      ).thenAnswer((_) async {});
-      var loggedIn = false;
-      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
-      if (getIt.isRegistered<MatrixService>()) {
-        getIt.unregister<MatrixService>();
-      }
-      getIt.registerSingleton<MatrixService>(matrixService);
-      addTearDown(() => getIt.unregister<MatrixService>());
-      final journalDb = MockJournalDb();
-      var syncEnabled = false;
-      when(
-        () => journalDb.getConfigFlag(enableMatrixFlag),
-      ).thenAnswer((_) async => syncEnabled);
-      final container = ProviderContainer(
-        overrides: withServiceOverrides([
-          journalDbProvider.overrideWithValue(journalDb),
-        ]),
-      );
-      addTearDown(container.dispose);
-
-      final gate = container.read(syncLeaseGateProvider)!;
-
-      expect(await gate.ready(), isTrue);
-      syncEnabled = true;
-      expect(await gate.ready(), isFalse);
-      loggedIn = true;
-      expect(await gate.ready(), isTrue);
-      verify(
-        () => queue.waitForDrainAtMostTo(0, timeout: gate.drainTimeout),
-      ).called(1);
     });
   });
 }

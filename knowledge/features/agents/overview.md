@@ -87,6 +87,7 @@ allowed to see both features.
 | `agentWakeRunnersProvider` | one `AgentWakeRunner` per kind | `wireWakeExecutor`, consulted before the task-agent default |
 | `agentRuntimeMaintenanceProvider` | `beforeWakeScan()` / `restoreSubscriptions()` hooks | `scheduledWakeManagerProvider`'s pre-check and the startup restoration pass |
 | `agentResolvedSetupResolversProvider` | an `AgentResolvedSetupResolver` per kind that resolves its own inference setup (relationship agents) | `taskAgentResolvedSetup`, consulted before the template lookup |
+| `agentSyncAttachmentProvider` | sync's `AgentSyncAttachment` (`SyncEventProcessorAgentAttachment`): the repository, then the wake runtime | `agentInitialization`, which attaches the repository before building any runtime provider |
 | `promptLogWrapRenderersProvider` | per-`wrap`-kind prompt-log splices | `WakePromptReconstructor` |
 | `dailyOsSetupSheetLauncherProvider` | the inference-setup sheet opener | the agent internals "current setup" row |
 

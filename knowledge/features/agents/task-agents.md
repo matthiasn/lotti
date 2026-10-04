@@ -246,7 +246,8 @@ assignments. `TaskAgentRetirement` resolves the pair once the agents meet
   engine never runs it again, and its history stays.
 - **The pass runs at three points**: after `SyncEventProcessor` applies an
   `agent_task` link or a task agent's identity
-  (`retireSupersededTaskAgents`, wired by `wireSyncEventProcessor`); at
+  (`retireSupersededTaskAgents`, wired by sync's
+  `SyncEventProcessorAgentAttachment.attachRuntime`); at
   startup, first thing in `restoreSubscriptions`, over every task with links
   from more than one agent (`getTaskIdsWithSeveralAgentLinks`), which also
   clears what older builds left; and in `wireWakeExecutor`'s gate before a

@@ -16,6 +16,7 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/state/agent_sync_attachment.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
@@ -223,7 +224,9 @@ class InitProviderBench {
         if (testDomainLogger != null)
           domainLoggerProvider.overrideWithValue(testDomainLogger),
         if (syncEventProcessor != null)
-          maybeSyncEventProcessorProvider.overrideWithValue(syncEventProcessor),
+          agentSyncAttachmentProvider.overrideWithValue(
+            SyncEventProcessorAgentAttachment(syncEventProcessor),
+          ),
       ]),
     );
     addTearDown(container.dispose);

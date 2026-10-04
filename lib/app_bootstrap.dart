@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
+import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
@@ -39,8 +40,11 @@ import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/features/sync/state/agent_sync_attachment.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
@@ -274,8 +278,17 @@ Future<ProfileContext> bootstrapProfileServices(
 List<Override> buildProviderOverrides(ProfileContext context) {
   return [
     profileContextProvider.overrideWithValue(context),
-    if (context.capabilities.syncEnabled)
+    if (context.capabilities.syncEnabled) ...[
       matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
+      // Sync gates leased project slots; the agent runtime declares the
+      // seam, sync fills it.
+      syncLeaseGateProvider.overrideWith(buildSyncLeaseGate),
+    ],
+    // Sync stores another device's agents wherever its event processor runs.
+    if (getIt.isRegistered<SyncEventProcessor>())
+      agentSyncAttachmentProvider.overrideWithValue(
+        SyncEventProcessorAgentAttachment(getIt<SyncEventProcessor>()),
+      ),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
@@ -300,6 +313,8 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     // Daily OS and Goals plug their agent kinds into the shared runtime.
     // These are MERGES, not replacements: a kind missing from the map
     // silently falls back to the task-agent workflow.
+    // The profile pinning picker lists the devices sync knows.
+    pairedSyncNodesProvider.overrideWith(knownSyncNodes),
     agentWakeRunnersProvider.overrideWith(
       (ref) => {
         ...ref.watch(dayAgentWakeRunnersProvider),

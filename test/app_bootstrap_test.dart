@@ -44,6 +44,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -673,6 +674,7 @@ void main() {
             ..registerSingleton<OutboxService>(MockOutboxService())
             ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
             ..registerSingleton<MatrixService>(MockMatrixService())
+            ..registerSingleton<SyncEventProcessor>(MockSyncEventProcessor())
             // The goal agent service carries the off-track alert sink
             // (ADR 0073), whose producer takes the repository from GetIt.
             ..registerSingleton<NotificationRepository>(

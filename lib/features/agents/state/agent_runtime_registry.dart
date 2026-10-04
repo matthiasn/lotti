@@ -15,6 +15,7 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 
@@ -103,6 +104,33 @@ final agentResolvedSetupResolversProvider =
       (ref) => const <String, AgentResolvedSetupResolver>{},
       name: 'agentResolvedSetupResolversProvider',
     );
+
+/// Attaches the agent runtime to sync, so another device's agents are stored
+/// here and their lifecycle changes reach this runtime.
+///
+/// `agentInitialization` calls [attachRepository] before it builds any
+/// runtime provider, so a runtime that fails to build never leaves sync unable
+/// to store another device's agents, then [attachRuntime]. Each attachment
+/// detaches itself when the `ref` it was given is disposed.
+abstract interface class AgentSyncAttachment {
+  /// Hands the agent repository to sync.
+  void attachRepository(Ref ref);
+
+  /// Hands the wake runtime to sync. [retireSupersededTaskAgents] runs the
+  /// retirement pass for a task whose agent link or task agent sync applied.
+  void attachRuntime(
+    Ref ref,
+    WakeOrchestrator orchestrator, {
+    required Future<void> Function(String taskId) retireSupersededTaskAgents,
+  });
+}
+
+/// The [AgentSyncAttachment], or null where sync is not wired (a guest world,
+/// a test).
+final agentSyncAttachmentProvider = Provider<AgentSyncAttachment?>(
+  (ref) => null,
+  name: 'agentSyncAttachmentProvider',
+);
 
 /// Opens an owning feature's inference-setup surface from a runtime screen.
 ///
