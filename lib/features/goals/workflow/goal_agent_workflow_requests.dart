@@ -1,5 +1,11 @@
 part of 'goal_agent_workflow.dart';
 
+/// Conservative deterministic gate for a user-initiated replacement banner.
+///
+/// Cooldown overrides cannot depend on the model first agreeing to call the ad
+/// tool. A missing-banner report, or a short affirmation immediately following
+/// the agent's banner offer, also carries replacement intent. Visibility
+/// requests such as snooze or dismiss always win.
 bool isExplicitGoalAdReplacementRequest(
   String? message, {
   String? previousAssistantMessage,

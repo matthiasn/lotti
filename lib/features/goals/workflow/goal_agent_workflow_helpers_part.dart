@@ -14,12 +14,6 @@ class GoalOutputPersistenceResult {
   final bool reportHeadAdvanced;
 }
 
-/// Conservative deterministic gate for a user-initiated replacement banner.
-///
-/// Cooldown overrides cannot depend on the model first agreeing to call the ad
-/// tool. A missing-banner report, or a short affirmation immediately following
-/// the agent's banner offer, also carries replacement intent. Visibility
-/// requests such as snooze or dismiss always win.
 /// The pre-rounded aggregates a report's rolling standing must quote,
 /// rendered exactly as the FACTS block carries them.
 ///
