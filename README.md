@@ -564,8 +564,18 @@ went, and what it cost.
 ### Local models and the sweet spot for agents
 
 Some of Lotti runs well on your own machine today. Speech is fully offline via
-Whisper or Voxtral, and Ollama or any other OpenAI-compatible local server
-handles lighter jobs.
+Whisper or Voxtral, and a local inference server handles lighter jobs. Lotti
+connects to:
+
+- [Ollama](https://ollama.com) and [oMLX](https://github.com/jundot/omlx) (MLX
+  on Apple Silicon), which have their own provider types in Lotti's settings;
+- anything else that serves an OpenAI-compatible API, through the generic
+  OpenAI-compatible provider: Python-based servers such as
+  [vLLM](https://github.com/vllm-project/vllm),
+  [SGLang](https://github.com/sgl-project/sglang) and
+  [mlx-lm](https://github.com/ml-explore/mlx-lm), as well as
+  [llama.cpp](https://github.com/ggml-org/llama.cpp)'s `llama-server` and
+  [LM Studio](https://lmstudio.ai).
 
 The agents are a different matter. Their sweet spot right now is models of the
 size and capability of **DeepSeek V4.1 Flash** and **GLM 5.3 Flash**, both of
