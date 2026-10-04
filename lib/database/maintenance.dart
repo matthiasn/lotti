@@ -9,12 +9,44 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
+/// A database the integrity check covers, under the name its report carries.
+typedef MaintainedStore = ({String name, GeneratedDatabase database});
+
 class Maintenance {
-  final JournalDb _db = getIt<JournalDb>();
+  /// The editor and sync databases are resolved on use, and
+  /// [agentDatabase] and [editorStateService] may be absent (a build or test
+  /// without them). `fts5Db` is the current search
+  /// index; `replaceFts5Db` swaps in a fresh one and returns it.
+  /// `integrityStores` lists the databases this build has, in check order.
+  Maintenance({
+    required JournalDb journalDb,
+    required DomainLogger domainLogger,
+    required this._editorDb,
+    required this._syncDatabase,
+    required this._fts5Db,
+    required this._replaceFts5Db,
+    required this._integrityStores,
+    AgentDatabase? Function()? agentDatabase,
+    EditorStateService? Function()? editorStateService,
+  }) : _db = journalDb,
+       _logger = domainLogger,
+       _agentDatabase = agentDatabase ?? _absent,
+       _editorStateService = editorStateService ?? _absent;
+
+  static Null _absent() => null;
+
+  final JournalDb _db;
+  final DomainLogger _logger;
+  final EditorDb Function() _editorDb;
+  final SyncDatabase Function() _syncDatabase;
+  final Fts5Db Function() _fts5Db;
+  final Fts5Db Function() _replaceFts5Db;
+  final List<MaintainedStore> Function() _integrityStores;
+  final AgentDatabase? Function() _agentDatabase;
+  final EditorStateService? Function() _editorStateService;
 
   /// Backs up `agent.sqlite`, closes the registered [AgentDatabase], and
   /// removes the file together with its WAL, shared-memory and rollback
@@ -30,15 +62,13 @@ class Maintenance {
     if (file.existsSync()) {
       await createDbBackup(agentDbFileName);
     } else {
-      getIt<DomainLogger>().log(
+      _logger.log(
         LogDomain.database,
         'Database file $agentDbFileName does not exist',
         subDomain: 'deleteAgentDb',
       );
     }
-    if (getIt.isRegistered<AgentDatabase>()) {
-      await getIt<AgentDatabase>().close();
-    }
+    await _agentDatabase()?.close();
     // Companions are removed even when the main file is gone: a leftover
     // `-wal` would be replayed into the database created on the next launch.
     _deleteWithCompanions(file);
@@ -51,17 +81,15 @@ class Maintenance {
   Future<void> clearEditorDb() async {
     // Drop the in-memory drafts first: a debounced write that fired while
     // the rows were being deleted would land after them.
-    if (getIt.isRegistered<EditorStateService>()) {
-      getIt<EditorStateService>().resetDrafts();
-    }
-    await _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
+    _editorStateService()?.resetDrafts();
+    await _emptyDatabase(_editorDb(), subDomain: 'clearEditorDb');
   }
 
   /// Empties the sync database — outbox, sequence log, host activity, inbound
   /// queue, queue markers, onboarding rounds and watermarks — through its
   /// live connection.
   Future<void> clearSyncDb() =>
-      _emptyDatabase(getIt<SyncDatabase>(), subDomain: 'clearSyncDb');
+      _emptyDatabase(_syncDatabase(), subDomain: 'clearSyncDb');
 
   /// Deletes every row of every table in [db] and reclaims the space, on the
   /// connection the app is using.
@@ -97,7 +125,7 @@ class Maintenance {
     db.notifyUpdates({
       for (final name in names) TableUpdate(name, kind: UpdateKind.delete),
     });
-    getIt<DomainLogger>().log(
+    _logger.log(
       LogDomain.database,
       'Emptied ${names.length} table(s)',
       subDomain: subDomain,
@@ -125,12 +153,11 @@ class Maintenance {
   /// show phantom results.
   Future<List<DatabaseIntegrityReport>> checkIntegrity() async {
     final reports = <DatabaseIntegrityReport>[];
-    Future<void> check<T extends GeneratedDatabase>(String name) async {
-      if (!getIt.isRegistered<T>()) return;
+    for (final (:name, :database) in _integrityStores()) {
       try {
-        reports.add(await quickCheck(name, getIt<T>()));
+        reports.add(await quickCheck(name, database));
       } catch (e, stackTrace) {
-        getIt<DomainLogger>().error(
+        _logger.error(
           LogDomain.database,
           e,
           stackTrace: stackTrace,
@@ -139,12 +166,6 @@ class Maintenance {
         reports.add((database: name, problems: ['$e']));
       }
     }
-
-    await check<JournalDb>('journal');
-    await check<SyncDatabase>('sync');
-    await check<AgentDatabase>('agent');
-    await check<EditorDb>('editor');
-    await check<Fts5Db>('search');
     return reports;
   }
 
@@ -171,7 +192,7 @@ class Maintenance {
     void Function(int deletedSoFar)? onProgress,
     DateTime? now,
   }) async {
-    final syncDb = getIt<SyncDatabase>();
+    final syncDb = _syncDatabase();
     final deleted = await syncDb.pruneSentOutboxItemsChunked(
       retention: retention,
       chunkSize: chunkSize,
@@ -179,7 +200,7 @@ class Maintenance {
       onProgress: onProgress,
       now: now,
     );
-    getIt<DomainLogger>().log(
+    _logger.log(
       LogDomain.database,
       'purgeSentOutbox removed=$deleted '
       'retentionDays=${retention.inDays} '
@@ -197,7 +218,7 @@ class Maintenance {
     // Companions go regardless, so an orphaned `-wal` cannot be replayed
     // into the index rebuilt next.
     _deleteWithCompanions(file);
-    getIt<DomainLogger>().log(
+    _logger.log(
       LogDomain.database,
       existed
           ? 'FTS5 database DELETED'
@@ -209,11 +230,11 @@ class Maintenance {
   Future<void> recreateFts5({void Function(double)? onProgress}) async {
     // Close before unlinking: a file removed under an open connection keeps
     // being written by that connection until restart.
-    await getIt<Fts5Db>().close();
+    await _fts5Db().close();
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.database,
         e,
         stackTrace: stackTrace,
@@ -221,11 +242,7 @@ class Maintenance {
       );
     }
 
-    getIt
-      ..unregister<Fts5Db>()
-      ..registerSingleton<Fts5Db>(Fts5Db());
-
-    final fts5Db = getIt<Fts5Db>();
+    final fts5Db = _replaceFts5Db();
 
     final entryCount = await _db.getJournalCount();
     var completed = 0;
@@ -259,7 +276,7 @@ class Maintenance {
         if (currentPercentage > lastReportedProgress) {
           lastReportedProgress = currentPercentage;
           onProgress?.call(currentProgress);
-          getIt<DomainLogger>().log(
+          _logger.log(
             LogDomain.database,
             'Progress: $currentPercentage%, $completed/$entryCount',
             subDomain: 'recreateFts5',

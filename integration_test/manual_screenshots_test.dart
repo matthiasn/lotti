@@ -250,7 +250,7 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
 
   await initConfigFlags(journalDb, inMemoryDatabase: true);
 
-  final vectorClockService = VectorClockService();
+  final vectorClockService = buildVectorClockService();
   getIt.registerSingleton<VectorClockService>(vectorClockService);
   await vectorClockService.initialized;
 
@@ -273,11 +273,11 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     ..registerSingleton<MetadataService>(metadataService)
     ..registerSingleton<GeolocationService>(geolocationService)
     ..registerSingleton<EntitiesCacheService>(entitiesCacheService)
-    ..registerSingleton<PersistenceLogic>(PersistenceLogic())
+    ..registerSingleton<PersistenceLogic>(buildPersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<LinkService>(LinkService());
 
-  final maintenance = Maintenance();
+  final maintenance = buildMaintenance();
   final navService = NavService(journalDb: journalDb, settingsDb: settingsDb);
   getIt
     ..registerSingleton<Maintenance>(maintenance)

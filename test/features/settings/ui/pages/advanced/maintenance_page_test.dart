@@ -18,6 +18,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -65,7 +66,8 @@ void main() {
       getItInstance
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<Maintenance>(Maintenance());
+        ..registerSingleton<DomainLogger>(MockDomainLogger())
+        ..registerSingleton<Maintenance>(buildMaintenance());
       ensureThemingServicesRegistered();
     });
 

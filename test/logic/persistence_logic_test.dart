@@ -252,7 +252,8 @@ extension _AnyGeneratedPersistenceScenario on glados.Any {
 }
 
 class TestPersistenceLogic extends PersistenceLogic {
-  TestPersistenceLogic({this.updateDbEntityHandler});
+  TestPersistenceLogic({this.updateDbEntityHandler})
+    : super(services: buildPersistenceServices());
 
   final Future<bool?> Function(
     JournalEntity entity, {
@@ -553,7 +554,7 @@ void main() {
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<VectorClockService>(VectorClockService())
+        ..registerSingleton<VectorClockService>(buildVectorClockService())
         ..registerSingleton<MetadataService>(
           MetadataService(vectorClockService: getIt<VectorClockService>()),
         )
@@ -563,7 +564,7 @@ void main() {
             deviceLocation: mockDeviceLocation,
           ),
         )
-        ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+        ..registerSingleton<PersistenceLogic>(buildPersistenceLogic());
     });
 
     tearDown(() async {
@@ -647,7 +648,7 @@ void main() {
 
         // The next process: a fresh reservation service (no pending map) over
         // the surviving stores, then startup settlement.
-        final restarted = VectorClockService();
+        final restarted = buildVectorClockService();
         await restarted.initialized;
         final logger = getIt<DomainLogger>();
         final handler = BackfillResponseHandler(
@@ -2038,7 +2039,7 @@ void main() {
           MetadataService(vectorClockService: vectorClockService),
         );
 
-      logic = PersistenceLogic();
+      logic = buildPersistenceLogic();
     });
 
     tearDown(() async {

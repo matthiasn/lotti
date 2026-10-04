@@ -683,7 +683,7 @@ void registerTaskFieldWritesConformance() {
       put<JournalDb>(db);
       put<OutboxService>(mockOutboxService);
       put<NotificationService>(mockNotificationService);
-      put<VectorClockService>(VectorClockService());
+      put<VectorClockService>(buildVectorClockService());
       put<TimeService>(MockTimeService());
       put<NavService>(MockNavService());
       put<EntitiesCacheService>(MockEntitiesCacheService());
@@ -692,7 +692,7 @@ void registerTaskFieldWritesConformance() {
         MetadataService(vectorClockService: getIt<VectorClockService>()),
       );
       put<GeolocationService>(MockGeolocationService());
-      put<PersistenceLogic>(PersistenceLogic());
+      put<PersistenceLogic>(buildPersistenceLogic());
     });
 
     tearDown(() async {

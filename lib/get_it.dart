@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:drift/drift.dart' show GeneratedDatabase;
 import 'package:get_it/get_it.dart';
 import 'package:health/health.dart';
 import 'package:lotti/database/agents/agent_database.dart';
@@ -86,6 +87,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/persistence_services.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
@@ -158,7 +160,7 @@ Future<void> registerSingletons({
     ..registerSingleton<OnboardingMetricsDb>(OnboardingMetricsDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<StartupTasks>(StartupTasks())
-    ..registerSingleton<VectorClockService>(VectorClockService())
+    ..registerSingleton<VectorClockService>(buildVectorClockService())
     ..registerSingleton<TimeService>(buildPersistingTimeService());
 
   // Initialize config flags before constructing services that depend on them.
@@ -426,7 +428,7 @@ Future<void> registerSingletons({
         deviceLocation: Platform.isWindows ? null : DeviceLocation(),
       ),
     )
-    ..registerSingleton<PersistenceLogic>(PersistenceLogic())
+    ..registerSingleton<PersistenceLogic>(buildPersistenceLogic())
     ..registerSingleton<HabitAutoCompletionService>(
       HabitAutoCompletionService(
         journalDb: journalDb,
@@ -476,7 +478,7 @@ Future<void> registerSingletons({
   }
   getIt
     ..registerSingleton<LinkService>(LinkService())
-    ..registerSingleton<Maintenance>(Maintenance())
+    ..registerSingleton<Maintenance>(buildMaintenance())
     ..registerSingleton<NavService>(
       NavService(),
       dispose: (service) => service.dispose(),

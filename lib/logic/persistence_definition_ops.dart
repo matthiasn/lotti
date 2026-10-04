@@ -3,18 +3,16 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 
 /// Entity/dashboard definition and config-flag operations of
 /// [PersistenceLogic].
 class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
-  PersistenceDefinitionOps(super.logic);
+  PersistenceDefinitionOps(super.logic, super.services);
 
   Future<int> upsertEntityDefinitionImpl(
     EntityDefinition definition,
@@ -112,7 +110,7 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
         rangeStart: DateTime(1),
         rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
       );
-      await getIt<Fts5Db>().reindexMeasurements(dataType, entries);
+      await fts5Db.reindexMeasurements(dataType, entries);
     } catch (exception, stackTrace) {
       // FTS is derived and can be rebuilt from the journal. A failed reindex
       // must not turn an already-persisted definition edit into a failed save
@@ -144,7 +142,7 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     );
 
     if (dashboard.deletedAt != null) {
-      await getIt<NotificationService>().cancelNotification(
+      await notificationService.cancelNotification(
         dashboard.id.hashCode,
       );
     }
@@ -182,7 +180,7 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
   /// notifications feature's preference effects, shared with the sync apply
   /// path so a flag flipped on a peer reaches this device's alarms as well.
   Future<void> _applyNotificationPreference(ConfigFlag flag) =>
-      getIt<ConfigFlagEffects>().apply(flag);
+      configFlagEffects.apply(flag);
 
   Future<int> deleteDashboardDefinitionImpl(
     DashboardDefinition dashboard,
@@ -193,7 +191,7 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
       ),
     );
 
-    await getIt<NotificationService>().cancelNotification(
+    await notificationService.cancelNotification(
       dashboard.id.hashCode,
     );
 

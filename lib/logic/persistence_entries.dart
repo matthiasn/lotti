@@ -7,7 +7,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
@@ -17,7 +16,6 @@ import 'package:lotti/logic/services/metadata_service.dart'
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Metadata, link and entry-creation entry points of [PersistenceLogic].
@@ -26,7 +24,7 @@ import 'package:lotti/utils/file_utils.dart';
 /// the public `createXxxEntry` wrappers (routing through the facade to the
 /// create-ops builders), [createLink] and the core [createDbEntity] writer.
 class PersistenceEntries extends PersistenceCollaboratorBase {
-  PersistenceEntries(super.logic);
+  PersistenceEntries(super.logic, super.services);
 
   /// Creates a [Metadata] object with either a random UUID v1 ID or a
   /// deterministic UUID v5 ID.
@@ -242,7 +240,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           // Swallow to preserve the commit-on-write invariant: the VC is
           // already baked into the persisted link row and must not be
           // rewound just because the outbox write failed transiently.
-          getIt<DomainLogger>().error(
+          loggingService.error(
             LogDomain.sync,
             exception,
             message:
@@ -324,7 +322,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
               // let an outbox failure trigger a release that would re-hand
               // the counter to a different entity. Log and move on; the
               // receiver will observe a transient gap that backfill fills.
-              getIt<DomainLogger>().error(
+              loggingService.error(
                 LogDomain.sync,
                 exception,
                 message:
@@ -375,7 +373,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         labelUsageNotification,
       });
 
-      await getIt<NotificationService>().updateBadge();
+      await notificationService.updateBadge();
 
       if (shouldAddGeolocation) {
         logic.addGeolocation(journalEntity.id);

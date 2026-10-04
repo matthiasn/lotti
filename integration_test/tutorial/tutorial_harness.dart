@@ -558,7 +558,7 @@ class TutorialAppHarness {
       await journalDb.upsertConfigFlag(existing.copyWith(status: flag.value));
     }
 
-    final vectorClockService = VectorClockService();
+    final vectorClockService = buildVectorClockService();
     getIt.registerSingleton<VectorClockService>(vectorClockService);
     await vectorClockService.initialized;
 
@@ -575,7 +575,7 @@ class TutorialAppHarness {
       )
       ..registerSingleton<MetadataService>(metadataService)
       ..registerSingleton<GeolocationService>(geolocationService)
-      ..registerSingleton<PersistenceLogic>(PersistenceLogic())
+      ..registerSingleton<PersistenceLogic>(buildPersistenceLogic())
       ..registerSingleton<EditorStateService>(EditorStateService())
       ..registerSingleton<LinkService>(LinkService())
       // Every createDbEntity call ends with an updateBadge() call; without
@@ -613,7 +613,7 @@ class TutorialAppHarness {
     await entitiesCacheService.init();
     getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
-    final maintenance = Maintenance();
+    final maintenance = buildMaintenance();
     final navService = NavService(journalDb: journalDb, settingsDb: settingsDb);
     getIt
       ..registerSingleton<Maintenance>(maintenance)

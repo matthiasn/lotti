@@ -89,6 +89,22 @@ Future<void> _insertEntries(JournalDb db, List<JournalEntity> entries) async {
 }
 
 class _ThrowingMaintenance extends Maintenance {
+  _ThrowingMaintenance()
+    : super(
+        journalDb: getIt<JournalDb>(),
+        domainLogger: getIt<DomainLogger>(),
+        editorDb: getIt.get<EditorDb>,
+        syncDatabase: getIt.get<SyncDatabase>,
+        fts5Db: getIt.get<Fts5Db>,
+        replaceFts5Db: () {
+          getIt
+            ..unregister<Fts5Db>()
+            ..registerSingleton<Fts5Db>(Fts5Db());
+          return getIt<Fts5Db>();
+        },
+        integrityStores: () => const [],
+      );
+
   @override
   Future<void> deleteFts5Db() {
     throw const FileSystemException('Simulated delete failure');
@@ -199,7 +215,7 @@ void main() {
         return;
       });
 
-      maintenance = Maintenance();
+      maintenance = buildMaintenance();
     });
 
     tearDown(() async {

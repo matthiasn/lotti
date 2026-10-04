@@ -580,7 +580,7 @@ void main() {
       settingsDb = SettingsDb(inMemoryDatabase: true);
       getIt.registerSingleton<SettingsDb>(settingsDb);
 
-      vectorClockService = VectorClockService();
+      vectorClockService = buildVectorClockService();
       // Await initialization to complete instead of using arbitrary delay
       await vectorClockService.initialized;
 

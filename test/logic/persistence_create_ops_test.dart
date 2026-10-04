@@ -65,7 +65,7 @@ void main() {
           'id:${invocation.namedArguments[const Symbol('uuidV5Input')]}',
     );
     logic = MockPersistenceLogic();
-    ops = PersistenceCreateOps(logic);
+    ops = PersistenceCreateOps(logic, buildPersistenceServices());
 
     when(
       () => logic.createMetadata(

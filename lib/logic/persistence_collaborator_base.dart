@@ -1,30 +1,39 @@
 import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
+import 'package:lotti/logic/persistence_services.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Shared dependencies for the [PersistenceLogic] collaborators.
 ///
-/// Each collaborator resolves its singletons lazily from `getIt` (matching
-/// the original mixin layout) and holds a [logic] back-reference to the
-/// facade for cross-group calls that must remain virtually overridable.
+/// Each collaborator reaches its services through [services], resolved on
+/// use, and holds a [logic] back-reference to the facade for cross-group
+/// calls that must remain virtually overridable.
 abstract class PersistenceCollaboratorBase {
-  PersistenceCollaboratorBase(this.logic);
+  PersistenceCollaboratorBase(this.logic, this.services);
 
   /// Facade back-reference for cross-collaborator calls.
   final PersistenceLogicContract logic;
 
-  JournalDb get journalDb => getIt<JournalDb>();
-  MetadataService get metadataService => getIt<MetadataService>();
-  VectorClockService get vectorClockService => getIt<VectorClockService>();
-  GeolocationService get geolocationService => getIt<GeolocationService>();
-  DomainLogger get loggingService => getIt<DomainLogger>();
-  UpdateNotifications get updateNotifications => getIt<UpdateNotifications>();
-  OutboxService get outboxService => getIt<OutboxService>();
+  /// The services this collaborator uses.
+  final PersistenceServices services;
+
+  JournalDb get journalDb => services.journalDb();
+  MetadataService get metadataService => services.metadataService();
+  VectorClockService get vectorClockService => services.vectorClockService();
+  GeolocationService get geolocationService => services.geolocationService();
+  DomainLogger get loggingService => services.domainLogger();
+  UpdateNotifications get updateNotifications => services.updateNotifications();
+  OutboxService get outboxService => services.outboxService();
+  Fts5Db get fts5Db => services.fts5Db();
+  NotificationService get notificationService => services.notificationService();
+  ConfigFlagEffects get configFlagEffects => services.configFlagEffects();
 }

@@ -2830,7 +2830,7 @@ void main() {
     setUp(() async {
       db = JournalDb(inMemoryDatabase: true);
       // The real service: the tombstone's clock is what is under test.
-      vectorClockService = VectorClockService();
+      vectorClockService = buildVectorClockService();
       // A fresh device: its first counter is 0, which VectorClock.compare
       // reads the same as an absent host — the link order must not.
       await vectorClockService.initialized;

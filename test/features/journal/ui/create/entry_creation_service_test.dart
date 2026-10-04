@@ -114,7 +114,7 @@ void main() {
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<VectorClockService>(VectorClockService())
+        ..registerSingleton<VectorClockService>(buildVectorClockService())
         ..registerSingleton<MetadataService>(
           MetadataService(
             vectorClockService: getIt<VectorClockService>(),
@@ -124,7 +124,7 @@ void main() {
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+        ..registerSingleton<PersistenceLogic>(buildPersistenceLogic());
 
       final container = ProviderContainer(
         overrides: withServiceOverrides([

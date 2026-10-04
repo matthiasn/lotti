@@ -93,7 +93,7 @@ void main() {
       );
     });
     logic = MockPersistenceLogic();
-    ops = PersistenceDefinitionOps(logic);
+    ops = PersistenceDefinitionOps(logic, buildPersistenceServices());
 
     when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
     when(() => mocks.updateNotifications.notify(any())).thenReturn(null);

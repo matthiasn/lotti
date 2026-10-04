@@ -15,7 +15,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// ([PersistenceLogicContract]) so test subclasses overriding those keep
 /// intercepting the calls.
 class PersistenceUpdateOps extends PersistenceCollaboratorBase {
-  PersistenceUpdateOps(super.logic);
+  PersistenceUpdateOps(super.logic, super.services);
 
   Future<bool> updateJournalEntityTextImpl(
     String journalEntityId,

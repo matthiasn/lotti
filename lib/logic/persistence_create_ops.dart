@@ -7,12 +7,10 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/entry_utils.dart';
 
@@ -22,7 +20,7 @@ import 'package:lotti/utils/entry_utils.dart';
 /// back through the facade ([PersistenceLogicContract]) so test subclasses
 /// that override those methods keep intercepting the calls.
 class PersistenceCreateOps extends PersistenceCollaboratorBase {
-  PersistenceCreateOps(super.logic);
+  PersistenceCreateOps(super.logic, super.services);
 
   /// Stores a health sample, returning the entity when the database accepted a
   /// change and `null` when nothing was written.
@@ -275,7 +273,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         // celebration flag, replays the celebration when the row's
         // `completedToday` flip finally arrives.
         try {
-          await getIt<NotificationService>().scheduleHabitNotification(
+          await notificationService.scheduleHabitNotification(
             habitDefinition,
             daysToAdd: 1,
           );

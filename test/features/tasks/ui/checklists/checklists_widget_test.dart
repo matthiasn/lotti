@@ -186,7 +186,7 @@ void main() {
           )
           ..registerSingleton<SecureStorage>(mockSecureStorage)
           ..registerSingleton<OutboxService>(MockOutboxService())
-          ..registerSingleton<VectorClockService>(VectorClockService())
+          ..registerSingleton<VectorClockService>(buildVectorClockService())
           ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
           ..registerSingleton<EditorStateService>(mockEditorStateService);
       },

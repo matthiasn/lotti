@@ -124,7 +124,8 @@ class _ObservedOutboxMessageSender implements OutboxMessageSender {
 /// Gives each simulated device a stable host identity while both devices run
 /// inside the same test isolate and therefore share GetIt's SettingsDb.
 class _DeviceVectorClockService extends VectorClockService {
-  _DeviceVectorClockService(this._host);
+  _DeviceVectorClockService(this._host)
+    : super(settingsDb: getIt<SettingsDb>());
 
   final String _host;
 

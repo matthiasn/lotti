@@ -132,9 +132,9 @@ class _GraphDevice {
     );
     // The clock reads its host and counter from the device's settings.
     _put<SettingsDb>(device.settings);
-    device.clocks = VectorClockService();
+    device.clocks = buildVectorClockService();
     await device.clocks.initialized;
-    device.persistence = PersistenceLogic();
+    device.persistence = buildPersistenceLogic();
     device.projects = ProjectRepository(
       journalDb: device.db,
       entitiesCacheService: cache,

@@ -36,7 +36,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
-  _RejectingTaskCleanupPersistenceLogic({this.commitBeforeFailure = false});
+  _RejectingTaskCleanupPersistenceLogic({this.commitBeforeFailure = false})
+    : super(services: buildPersistenceServices());
 
   final bool commitBeforeFailure;
   @override
@@ -134,7 +135,7 @@ void main() {
             ..registerSingleton<JournalDb>(journalDb)
             ..registerSingleton<OutboxService>(mockOutboxService)
             ..registerSingleton<NotificationService>(mockNotificationService)
-            ..registerSingleton<VectorClockService>(VectorClockService())
+            ..registerSingleton<VectorClockService>(buildVectorClockService())
             ..registerSingleton<MetadataService>(
               MetadataService(
                 vectorClockService: getIt<VectorClockService>(),
@@ -146,7 +147,7 @@ void main() {
             ..registerSingleton<EntitiesCacheService>(
               MockEntitiesCacheService(),
             )
-            ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+            ..registerSingleton<PersistenceLogic>(buildPersistenceLogic());
         },
       );
     });

@@ -22,7 +22,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -995,7 +994,7 @@ void main() {
 
           // B edits it the way PersistenceLogic does: a clock reserved from
           // B's new host with the stored clock as `previous`.
-          final clocks = VectorClockService();
+          final clocks = buildVectorClockService();
           await clocks.initialized;
           final meta = await MetadataService(
             vectorClockService: clocks,
