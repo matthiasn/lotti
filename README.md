@@ -768,8 +768,6 @@ unsolicited code PR will be closed unmerged, with thanks and without review —
 so please open an issue instead of writing the patch. It is more useful to me
 and cheaper for you.
 
-Lotti is GPL-3.0: fork it and build whatever you like on top for yourself.
-
 [CONTRIBUTING.md](CONTRIBUTING.md) has the details, including what makes a
 translation PR mergeable.
 
