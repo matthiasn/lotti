@@ -430,7 +430,7 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
             child: _PullRequestMenu(
               entryId: entry.id,
               refreshing: refresh.refreshing,
-              onRefresh: () => unawaited(_refresh()),
+              onRefresh: _refresh,
               onOpen: () =>
                   handleMarkdownLinkTap(pullRequestWebUrl(entry), title),
               onUnlink: () => ref
