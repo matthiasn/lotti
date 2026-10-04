@@ -88,6 +88,34 @@ void main() {
       );
     });
 
+    test('SizedBox.square counts a numeric dimension only', () {
+      expect(
+        count('''
+          SizedBox.square(dimension: 24);
+          const SizedBox.square(dimension: 8);
+          SizedBox.square(dimension: tokens.spacing.step4);
+          const SizedBox.square();
+        ''')[TokenCategory.spacing],
+        2,
+      );
+    });
+
+    test('import-prefixed constructors count like bare ones', () {
+      final counts = count('''
+          const ui.Color(0xFFFFFFFF);
+          ui.Color(0x80000000);
+          ui.Color.fromARGB(255, 0, 0, 0);
+          const ui.Color.fromRGBO(0, 0, 0, 1);
+          w.EdgeInsets.all(8);
+          const w.SizedBox(height: 4);
+          ui.TextStyle(fontSize: 12);
+          ui.Color(value);
+        ''');
+      expect(counts[TokenCategory.color], 4);
+      expect(counts[TokenCategory.spacing], 2);
+      expect(counts[TokenCategory.typography], 1);
+    });
+
     test('comments and strings never count', () {
       expect(
         count('''

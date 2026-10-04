@@ -32,15 +32,17 @@ bool isGenerated(String path) =>
 /// Counts raw spacing, typography and colour values in [source]:
 ///
 /// - **spacing**: `EdgeInsets.*` / `EdgeInsetsDirectional.*` calls with a
-///   numeric literal argument, and `SizedBox` with a numeric `width` or
-///   `height`;
+///   numeric literal argument, `SizedBox` with a numeric `width` or
+///   `height`, and `SizedBox.square` with a numeric `dimension`;
 /// - **typography**: `TextStyle(...)` constructions, and `fontSize:`
 ///   arguments outside one (a `copyWith(fontSize: …)`, say), so a
 ///   `TextStyle(fontSize: 12)` counts once;
 /// - **color**: `Color(<literal>)`, `Color.fromARGB` / `fromRGBO` with
 ///   literals, and `Colors.<name>` other than the neutral `Colors.transparent`.
 ///
-/// Counting runs on the parsed source, so comments and strings never count.
+/// A constructor qualified by an import prefix (`ui.Color(…)`) counts like
+/// the bare one. Counting runs on the parsed source, so comments and strings
+/// never count.
 Map<TokenCategory, int> countRawValues(String source) {
   final unit = parseString(content: source, throwIfDiagnostics: false).unit;
   final visitor = _RawValueVisitor();
@@ -57,6 +59,12 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
   int _insideTextStyle = 0;
 
   void _hit(TokenCategory c) => counts[c] = counts[c]! + 1;
+
+  /// Import prefixes are lowerCamelCase and types PascalCase, which is all
+  /// that tells `ui.Color` (prefix, type) from `EdgeInsets.all` (type,
+  /// constructor) in unresolved source.
+  static bool _isImportPrefix(String name) =>
+      name.isNotEmpty && name[0] == name[0].toLowerCase();
 
   static bool _numeric(Expression e) {
     final unwrapped = e is NamedExpression ? e.expression : e;
@@ -79,6 +87,11 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
           (a) =>
               (a.name.label.name == 'width' || a.name.label.name == 'height') &&
               _numeric(a.expression),
+        );
+        if (sized) _hit(TokenCategory.spacing);
+      case 'SizedBox' when member == 'square':
+        final sized = arguments.whereType<NamedExpression>().any(
+          (a) => a.name.label.name == 'dimension' && _numeric(a.expression),
         );
         if (sized) _hit(TokenCategory.spacing);
       case 'TextStyle' when member == null:
@@ -109,11 +122,21 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final target = node.target;
-    final (type, member) = target == null
-        ? (node.methodName.name, null)
-        : target is SimpleIdentifier
-        ? (target.name, node.methodName.name)
-        : ('', null);
+    final method = node.methodName.name;
+    final (type, member) = switch (target) {
+      null => (method, null),
+      // `ui.Color(…)`: a prefixed constructor, not a static call.
+      SimpleIdentifier(:final name) when _isImportPrefix(name) => (
+        method,
+        null,
+      ),
+      SimpleIdentifier(:final name) => (name, method),
+      // `ui.Color.fromARGB(…)`.
+      PrefixedIdentifier(:final prefix, :final identifier)
+          when _isImportPrefix(prefix.name) =>
+        (identifier.name, method),
+      _ => ('', null),
+    };
     if (type.isNotEmpty) _call(type, member, node.argumentList);
     _descend(type, member, node, () => super.visitMethodInvocation(node));
   }
@@ -122,9 +145,13 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
   void visitInstanceCreationExpression(InstanceCreationExpression node) {
     final name = node.constructorName;
     // Unresolved, `const EdgeInsets.all(8)` parses as type `all` under an
-    // import prefix `EdgeInsets`, with no constructor name.
+    // import prefix `EdgeInsets`, with no constructor name, just as
+    // `const ui.Color(1)` parses as type `Color` under the prefix `ui`.
     final prefix = name.type.importPrefix?.name.lexeme;
-    final (type, member) = name.name == null && prefix != null
+    final (
+      type,
+      member,
+    ) = name.name == null && prefix != null && !_isImportPrefix(prefix)
         ? (prefix, name.type.name.lexeme)
         : (name.type.name.lexeme, name.name?.name);
     _call(type, member, node.argumentList);
