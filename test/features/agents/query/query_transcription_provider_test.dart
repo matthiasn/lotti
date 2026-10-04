@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../test_data/ai_config_factories.dart';
@@ -63,11 +64,11 @@ void main() {
       ],
     );
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         querySourceAccessProvider.overrideWithValue(bench.crawler.access),
         aiConfigRepositoryProvider.overrideWithValue(configs),
         sherpaModelRepositoryProvider.overrideWithValue(embeddedModels),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
   });

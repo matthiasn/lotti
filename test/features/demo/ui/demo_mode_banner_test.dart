@@ -18,6 +18,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -32,7 +33,7 @@ void main() {
     Locale? locale,
   }) {
     return ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(
           size: size,
@@ -365,6 +366,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),

@@ -55,6 +55,7 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../helpers/fake_linked_entries_controller.dart';
+import '../../../../../../helpers/service_overrides.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../test_helper.dart';
@@ -67,7 +68,7 @@ Widget _buildWithRoute({
   required List<Override> overrides,
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: withServiceOverrides(overrides),
     child: MaterialApp(
       builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(),
@@ -1852,10 +1853,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             createEntryControllerOverride(audioEntry),
             createEntryControllerOverride(task),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -1889,10 +1890,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             createEntryControllerOverride(audioEntry),
             createEntryControllerOverride(task),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -1991,7 +1992,7 @@ void main() {
     /// that ModernLabelsItem makes when opening the labels modal.
     ProviderScope buildWrapper(JournalEntity entry) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => _TestEntryController(entry),
           ),
@@ -2001,7 +2002,7 @@ void main() {
             ),
           ),
           labelsRepositoryProvider.overrideWithValue(repository),
-        ],
+        ]),
         child: MediaQuery(
           data: const MediaQueryData(size: Size(390, 844)),
           child: MaterialApp(
@@ -2038,7 +2039,7 @@ void main() {
     /// Simple wrapper for testing widget visibility only (no modal interaction)
     ProviderScope buildSimpleWrapper(JournalEntity entry) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => _TestEntryController(entry),
           ),
@@ -2048,7 +2049,7 @@ void main() {
             ),
           ),
           labelsRepositoryProvider.overrideWithValue(repository),
-        ],
+        ]),
         child: MediaQuery(
           data: const MediaQueryData(size: Size(390, 844)),
           child: MaterialApp(
@@ -2688,9 +2689,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider('e3').overrideWith(() => controller),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -2730,9 +2731,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider('e4').overrideWith(() => controller),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -3015,7 +3016,7 @@ class _CopyTextEntryController extends EntryController {
 
 Widget _wrapWithCopyApp(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: withServiceOverrides(overrides),
     child: MaterialApp(
       builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(),

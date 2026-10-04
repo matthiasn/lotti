@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../projects/test_utils.dart';
 import '../test_utils.dart';
@@ -522,11 +523,11 @@ void main() {
         ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -608,11 +609,11 @@ void main() {
         ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -654,11 +655,11 @@ void main() {
         ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -715,11 +716,11 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -792,11 +793,11 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -819,11 +820,11 @@ void main() {
         final mockRepository = MockAgentRepository();
         final notifications = UpdateNotifications();
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockAgentService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
 
         when(
@@ -883,7 +884,9 @@ void main() {
       final runner = WakeRunner();
       addTearDown(runner.dispose);
       final container = ProviderContainer(
-        overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+        overrides: withServiceOverrides([
+          wakeRunnerProvider.overrideWithValue(runner),
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -956,13 +959,13 @@ void main() {
         }
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
 
         try {
@@ -1015,13 +1018,13 @@ void main() {
       });
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           wakeRunnerProvider.overrideWithValue(runner),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentServiceProvider.overrideWithValue(mockAgentService),
           journalDbProvider.overrideWithValue(mockJournalDb),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -1066,13 +1069,13 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1104,13 +1107,13 @@ void main() {
         await runner.tryAcquire('agent-missing');
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1161,13 +1164,13 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1210,13 +1213,13 @@ void main() {
         await runner.tryAcquire('agent-err');
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1277,13 +1280,13 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1328,13 +1331,13 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             agentServiceProvider.overrideWithValue(mockAgentService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1375,13 +1378,13 @@ void main() {
       });
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           wakeRunnerProvider.overrideWithValue(runner),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentServiceProvider.overrideWithValue(mockAgentService),
           journalDbProvider.overrideWithValue(mockJournalDb),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -1405,10 +1408,10 @@ void main() {
     ProviderContainer createContainer() {
       final notifications = UpdateNotifications();
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(mockJournalDb),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(() {
         notifications.dispose();
@@ -1549,10 +1552,10 @@ void main() {
         fakeAsync((async) {
           final notifications = UpdateNotifications();
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               journalDbProvider.overrideWithValue(mockJournalDb),
               updateNotificationsProvider.overrideWithValue(notifications),
-            ],
+            ]),
           );
           addTearDown(() {
             notifications.dispose();

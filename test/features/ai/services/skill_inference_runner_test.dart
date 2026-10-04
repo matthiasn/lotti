@@ -129,7 +129,7 @@ void main() {
       'repository and reports its failures on the container it lives in',
       () async {
         final providerContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             cloudInferenceRepositoryProvider.overrideWithValue(
               setup.mockCloudRepo,
             ),
@@ -138,7 +138,7 @@ void main() {
             aiConfigRepositoryProvider.overrideWithValue(
               setup.mockAiConfigRepo,
             ),
-          ],
+          ]),
         );
         addTearDown(providerContainer.dispose);
         when(

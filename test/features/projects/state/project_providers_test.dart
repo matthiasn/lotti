@@ -12,6 +12,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'project_providers_test_helpers.dart';
@@ -33,9 +34,9 @@ void main() {
     ).thenAnswer((_) => updateStreamController.stream);
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectRepositoryProvider.overrideWithValue(mockRepo),
-      ],
+      ]),
     );
   });
 
@@ -158,10 +159,10 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             updateNotificationsProvider.overrideWithValue(notifications),
             agentRepositoryProvider.overrideWithValue(agentRepository),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         final updateCompleter = Completer<Set<String>>();
@@ -206,14 +207,14 @@ void main() {
       () async {
         var reportRead = false;
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectRepositoryProvider.overrideWithValue(mockRepo),
             projectAgentProvider(projectId).overrideWith((ref) async => null),
             agentReportProvider(agentId).overrideWith((ref) async {
               reportRead = true;
               throw StateError('report provider should not be read');
             }),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 
@@ -228,13 +229,13 @@ void main() {
 
     test('returns null when the project agent has no report yet', () async {
       final scopedContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectRepositoryProvider.overrideWithValue(mockRepo),
           projectAgentProvider(projectId).overrideWith(
             (ref) async => hMakeProjectAgent(agentId),
           ),
           agentReportProvider(agentId).overrideWith((ref) async => null),
-        ],
+        ]),
       );
       addTearDown(scopedContainer.dispose);
 
@@ -249,7 +250,7 @@ void main() {
       'reads the health band from the latest project-agent report',
       () async {
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectRepositoryProvider.overrideWithValue(mockRepo),
             projectAgentProvider(projectId).overrideWith(
               (ref) async => hMakeProjectAgent(agentId),
@@ -270,7 +271,7 @@ void main() {
                 },
               ),
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 

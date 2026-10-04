@@ -21,6 +21,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -157,10 +158,10 @@ Widget _wrap(
   bool use24Hour = false,
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       captureControllerProvider.overrideWith(captureFactory ?? _stubCapture),
       ...overrides,
-    ],
+    ]),
     child: makeTestableWidget2(
       child,
       mediaQueryData: MediaQueryData(

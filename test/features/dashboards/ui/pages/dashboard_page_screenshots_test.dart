@@ -41,6 +41,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -177,9 +178,9 @@ Future<void> _pump(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         dashboardByIdProvider(_dashboardId).overrideWithValue(_dashboardConfig),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,

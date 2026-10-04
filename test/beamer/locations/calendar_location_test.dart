@@ -27,6 +27,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../features/daily_os_next/test_doubles/mock_day_agent.dart';
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 import '../../test_utils/material_ui_finders.dart';
 import '../../widget_test_utils.dart';
@@ -127,14 +128,14 @@ Widget _wrapRouteChild(
   required List<Override> overrides,
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       captureControllerProvider.overrideWith(_stubCapture),
       dailyOsPreferencesControllerProvider.overrideWith(
         _SeededPreferencesController.new,
       ),
       dayAgentProvider.overrideWith((ref) => _stubDayAgent()),
       ...overrides,
-    ],
+    ]),
     child: makeTestableWidget2(child),
   );
 }
@@ -442,11 +443,11 @@ void main() {
       await withClock(Clock.fixed(DateTime(2026, 1, 15)), () async {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               currentDraftPlanProvider.overrideWith(
                 (ref, date) => pendingPlan.future,
               ),
-            ],
+            ]),
             child: makeTestableWidget2(const CalendarRoot()),
           ),
         );

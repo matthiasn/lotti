@@ -673,7 +673,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
+            overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
           ),
         );
         await tester.pump();
@@ -719,7 +719,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TaskDetailsPage(taskId: testTask.id),
-          overrides: hTaskDetailsPageOverrides(),
+          overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
         ),
       );
 
@@ -761,7 +761,7 @@ void main() {
     testWidgets('pre-existing intent handled on page build', (tester) async {
       // Create a container and publish intent before building the page
       final container = ProviderContainer(
-        overrides: hTaskDetailsPageOverrides(),
+        overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
       );
 
       container
@@ -923,7 +923,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
+            overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
           ),
         );
         await tester.pumpAndSettle();

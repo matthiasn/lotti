@@ -85,10 +85,9 @@ void main() {
         );
       });
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           agentSyncServiceProvider.overrideWithValue(syncService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -178,13 +177,12 @@ void main() {
       },
     );
     final container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',
         ).overrideWith((ref) => const Stream.empty()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -236,13 +234,12 @@ void main() {
       },
     );
     final container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',
         ).overrideWith((ref) => const Stream.empty()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

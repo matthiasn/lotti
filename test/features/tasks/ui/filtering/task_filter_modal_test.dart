@@ -29,6 +29,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
@@ -156,7 +157,7 @@ void main() {
     return WidgetTestBench(
       mediaQueryData: mediaQueryData,
       child: ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           journalPageScopeProvider.overrideWithValue(true),
           journalPageControllerProvider(true).overrideWith(
             () => fakeController,
@@ -174,7 +175,7 @@ void main() {
           tasksFilterHasUnsavedClausesProvider.overrideWith(
             (ref) => hasUnsavedClauses,
           ),
-        ],
+        ]),
         child: Scaffold(
           body: Builder(
             builder: (context) {
@@ -1115,7 +1116,7 @@ void main() {
           WidgetTestBench(
             mediaQueryData: desktopMediaQuery,
             child: ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 journalPageScopeProvider.overrideWithValue(true),
                 journalPageControllerProvider(true).overrideWith(
                   () => fakeController,
@@ -1127,7 +1128,7 @@ void main() {
                 tasksFilterHasUnsavedClausesProvider.overrideWith(
                   (ref) => false,
                 ),
-              ],
+              ]),
               child: Scaffold(
                 body: Builder(
                   builder: (context) {
@@ -1258,7 +1259,7 @@ void main() {
 
       return WidgetTestBench(
         child: ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
               () => saveFlowFakeController,
@@ -1268,7 +1269,7 @@ void main() {
             tasksFilterHasUnsavedClausesProvider.overrideWith(
               (ref) => hasUnsavedClauses,
             ),
-          ],
+          ]),
           child: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(

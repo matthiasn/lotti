@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -18,9 +19,9 @@ void main() {
 
   ProviderContainer createContainer() {
     return ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         soulDocumentServiceProvider.overrideWithValue(mockService),
-      ],
+      ]),
     );
   }
 
@@ -233,10 +234,10 @@ void main() {
 
     ProviderContainer createContainerWithTemplate() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           soulDocumentServiceProvider.overrideWithValue(mockService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-        ],
+        ]),
       );
     }
 
@@ -291,10 +292,10 @@ void main() {
 
     ProviderContainer createContainerWithTemplate() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           soulDocumentServiceProvider.overrideWithValue(mockService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-        ],
+        ]),
       );
     }
 
@@ -378,10 +379,10 @@ void main() {
 
     ProviderContainer createContainerWithTemplate() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           soulDocumentServiceProvider.overrideWithValue(mockService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-        ],
+        ]),
       );
     }
 

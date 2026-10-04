@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_doubles/mock_day_agent.dart';
 
@@ -37,7 +38,7 @@ void main() {
       final aliveParams = aliveFor ?? paramsFor(const CaptureId('cap_alive'));
       final container =
           ProviderContainer(
-              overrides: [
+              overrides: withServiceOverrides([
                 dayAgentProvider.overrideWithValue(override ?? agent),
                 dailyOsPreferencesControllerProvider.overrideWith(
                   () => _SeededPreferencesController(excludedCategoryIds),
@@ -46,7 +47,7 @@ void main() {
                   (ref, captureId) =>
                       updates ?? const Stream<Set<String>>.empty(),
                 ),
-              ],
+              ]),
             )
             // The reconcile controller is auto-dispose; without a live
             // listener it tears down between `triage` / `breakLink` calls
@@ -206,7 +207,7 @@ void main() {
         addTearDown(running.close);
         final refreshingAgent = _RefreshingDayAgent();
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             dayAgentProvider.overrideWithValue(refreshingAgent),
             dailyOsPreferencesControllerProvider.overrideWith(
               () => _SeededPreferencesController(const <String>{}),
@@ -222,7 +223,7 @@ void main() {
                   ? running.stream
                   : Stream.value(false),
             ),
-          ],
+          ]),
         )..listen(reconcileControllerProvider(params), (_, _) {});
         addTearDown(container.dispose);
 
@@ -353,9 +354,9 @@ void main() {
       'UpdateNotifications service is registered',
       () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             maybeUpdateNotificationsProvider.overrideWithValue(null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -381,9 +382,9 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             maybeUpdateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

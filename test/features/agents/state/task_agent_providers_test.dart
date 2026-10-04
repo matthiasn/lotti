@@ -16,6 +16,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -37,7 +38,7 @@ void main() {
       final mockSyncService = MockAgentSyncService();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentServiceProvider.overrideWithValue(mockAgentService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           wakeOrchestratorProvider.overrideWithValue(orchestrator),
@@ -45,7 +46,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -66,7 +67,7 @@ void main() {
           () => cadence.consumeAll('project-agent'),
         ).thenAnswer((_) async => 2);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(MockAgentService()),
             agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
             wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
@@ -75,7 +76,7 @@ void main() {
             domainLoggerProvider.overrideWithValue(
               DomainLogger(loggingService: LoggingService()),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -99,9 +100,9 @@ void main() {
       ).thenAnswer((_) async => identity);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -120,9 +121,9 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -141,9 +142,9 @@ void main() {
       ).thenAnswer((_) async => throw Exception('DB error'));
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -183,10 +184,10 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             taskAgentServiceProvider.overrideWithValue(mockService),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
 
         // Keep the provider alive so notification-driven rebuild fires.
@@ -236,9 +237,9 @@ void main() {
       ).thenAnswer((_) async => identityB);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

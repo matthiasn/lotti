@@ -47,6 +47,7 @@ import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/test_finders.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -179,7 +180,7 @@ void main() {
         ),
         mediaQueryData: mediaQueryData,
         theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
       ),
     );
     await tester.pump();

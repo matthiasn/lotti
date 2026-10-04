@@ -11,6 +11,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 
 void main() {
@@ -246,10 +247,10 @@ void main() {
   group('dailyOsRuntimeMaintenanceProvider', () {
     test('contributes a single entry wired to the resolved service', () {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentServiceProvider.overrideWithValue(dayAgents),
           domainLoggerProvider.overrideWithValue(logger),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -267,10 +268,10 @@ void main() {
       // would leave the pre-scan repairs running against a stale orchestrator.
       var service = dayAgents;
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentServiceProvider.overrideWith((ref) => service),
           domainLoggerProvider.overrideWithValue(logger),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

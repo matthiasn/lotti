@@ -23,6 +23,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -158,7 +159,7 @@ void main() {
     ).thenReturn(true);
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         profileAutomationServiceProvider.overrideWithValue(
           mockProfileAutomationService,
         ),
@@ -171,7 +172,7 @@ void main() {
         triggerSkillProvider.overrideWith((ref, params) async {
           skillTriggers.add(params);
         }),
-      ],
+      ]),
     );
   });
 

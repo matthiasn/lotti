@@ -25,6 +25,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
@@ -59,7 +60,7 @@ void main() {
       final notifications = MockUpdateNotifications();
       final dayProcessingOutbox = MockDayProcessingOutboxRepository();
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayProcessingOutboxRepositoryProvider.overrideWithValue(
             dayProcessingOutbox,
           ),
@@ -79,7 +80,7 @@ void main() {
           soulDocumentServiceProvider.overrideWithValue(soulDocumentService),
           domainLoggerProvider.overrideWithValue(domainLogger),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -129,9 +130,9 @@ void main() {
   group('dayAgentWakeRunnersProvider', () {
     test('registers exactly the day_agent kind', () {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentWorkflowProvider.overrideWithValue(MockDayAgentWorkflow()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -157,7 +158,9 @@ void main() {
         ).thenAnswer((_) async => const WakeResult(success: true));
 
         final container = ProviderContainer(
-          overrides: [dayAgentWorkflowProvider.overrideWithValue(workflow)],
+          overrides: withServiceOverrides([
+            dayAgentWorkflowProvider.overrideWithValue(workflow),
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -202,7 +205,9 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [dayAgentWorkflowProvider.overrideWithValue(workflow)],
+        overrides: withServiceOverrides([
+          dayAgentWorkflowProvider.overrideWithValue(workflow),
+        ]),
       );
       addTearDown(container.dispose);
 

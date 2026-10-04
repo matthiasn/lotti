@@ -17,6 +17,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -64,14 +65,14 @@ void main() {
     ).thenAnswer((_) => const Stream.empty());
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectRepositoryProvider.overrideWithValue(mockRepo),
         agentRepositoryProvider.overrideWithValue(mockAgentRepo),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         projectAgentOverviewUpdateStreamProvider.overrideWith(
           (ref) => const Stream.empty(),
         ),
-      ],
+      ]),
     );
   });
 
@@ -320,14 +321,14 @@ void main() {
           },
         );
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             projectAgentOverviewUpdateStreamProvider.overrideWith(
               (ref) => agentUpdates.stream,
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         final values = <ProjectsOverviewSnapshot>[];
@@ -395,12 +396,12 @@ void main() {
           return <String, List<AgentLink>>{};
         });
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         final subscription = scopedContainer.listen(
@@ -434,10 +435,10 @@ void main() {
           () => mockAgentRepo.getEntitiesByIds({'agent-1'}),
         ).thenThrow(StateError('agent database unavailable'));
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 
@@ -548,11 +549,11 @@ void main() {
     Future<ProviderContainer> makeOverviewContainer() async {
       final snapshot = makeSnapshot();
       final scopedContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(snapshot),
           ),
-        ],
+        ]),
       );
       addTearDown(scopedContainer.dispose);
       final subscription = scopedContainer.listen(
@@ -605,11 +606,11 @@ void main() {
       'ProjectsFilterController.filter replaces the entire filter state',
       () {
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectsOverviewProvider.overrideWith(
               (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 
@@ -647,7 +648,9 @@ void main() {
     );
 
     test('ProjectsFilterController defaults to current work and can reset', () {
-      final scopedContainer = ProviderContainer();
+      final scopedContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       addTearDown(scopedContainer.dispose);
 
       final notifier = scopedContainer.read(
@@ -679,11 +682,11 @@ void main() {
       'ProjectsFilterController.setSelectedStatusIds updates only status ids',
       () {
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectsOverviewProvider.overrideWith(
               (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 
@@ -717,11 +720,11 @@ void main() {
       'ProjectsFilterController.setTextQuery toggles local text search mode',
       () {
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectsOverviewProvider.overrideWith(
               (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
 
@@ -1021,14 +1024,14 @@ void main() {
             ),
           );
           final scopedContainer = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               projectRepositoryProvider.overrideWithValue(mockRepo),
               agentRepositoryProvider.overrideWithValue(mockAgentRepo),
               aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
               projectAgentOverviewUpdateStreamProvider.overrideWith(
                 (ref) => agentUpdates.stream,
               ),
-            ],
+            ]),
           );
           addTearDown(scopedContainer.dispose);
           showProfiles(scopedContainer);
@@ -1272,14 +1275,14 @@ void main() {
           () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
         ).thenAnswer((_) => loads.removeAt(0).stream);
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             projectAgentOverviewUpdateStreamProvider.overrideWith(
               (ref) => agentUpdates.stream,
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         scopedContainer
@@ -1341,11 +1344,11 @@ void main() {
 
       test('a first-load failure surfaces as an error', () async {
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectsOverviewProvider.overrideWith(
               (ref) => Stream.error(StateError('db closed')),
             ),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         final subscription = scopedContainer.listen(
@@ -1365,9 +1368,9 @@ void main() {
         final overview = StreamController<ProjectsOverviewSnapshot>();
         addTearDown(overview.close);
         final scopedContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             projectsOverviewProvider.overrideWith((ref) => overview.stream),
-          ],
+          ]),
         );
         addTearDown(scopedContainer.dispose);
         scopedContainer
@@ -1394,7 +1397,9 @@ void main() {
 
     test('the out-of-date filter is set and cleared by the controller, and '
         'reset clears it', () {
-      final scopedContainer = ProviderContainer();
+      final scopedContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       addTearDown(scopedContainer.dispose);
       final controller = scopedContainer.read(
         projectsFilterControllerProvider.notifier,
@@ -1413,7 +1418,9 @@ void main() {
     });
 
     test('resetToCurrent keeps the inference profile display switch', () {
-      final scopedContainer = ProviderContainer();
+      final scopedContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       addTearDown(scopedContainer.dispose);
 
       scopedContainer.read(projectsFilterControllerProvider.notifier)

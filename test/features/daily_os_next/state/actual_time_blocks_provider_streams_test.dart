@@ -10,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
 
@@ -41,9 +42,9 @@ void main() {
       () {
         fakeAsync((async) {
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
           final states = <AsyncValue<Set<String>>>[];
@@ -67,11 +68,11 @@ void main() {
         addTearDown(notifications.dispose);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             maybeUpdateNotificationsProvider.overrideWith(
               (ref) => notifications,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -118,7 +119,9 @@ void main() {
         ).thenAnswer((_) async => const <EntryLink>[]);
 
         final container = ProviderContainer(
-          overrides: [journalDbProvider.overrideWithValue(db)],
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(db),
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -164,7 +167,9 @@ void main() {
         ).thenAnswer((_) async => [task]);
 
         final container = ProviderContainer(
-          overrides: [journalDbProvider.overrideWithValue(db)],
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(db),
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -207,7 +212,9 @@ void main() {
         ).thenAnswer((_) async => const <EntryLink>[]);
 
         final container = ProviderContainer(
-          overrides: [journalDbProvider.overrideWithValue(db)],
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(db),
+          ]),
         );
         addTearDown(container.dispose);
 

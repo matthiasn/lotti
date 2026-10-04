@@ -168,11 +168,10 @@ void main() {
     });
 
     final container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

@@ -10,6 +10,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 const RecentSearchSurface _tasks = RecentSearchSurface.tasks;
@@ -43,10 +44,10 @@ class _Bench {
       () => repository.save(any()),
     ).thenAnswer((_) => (save ?? () async {})());
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         recentSearchesRepositoryProvider.overrideWithValue(repository),
         loggingServiceProvider.overrideWithValue(logging),
-      ],
+      ]),
     );
     // Hold the provider the way the sidebar does, then let the stored list
     // arrive.

@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -106,9 +107,9 @@ void main() {
     ).thenAnswer((_) async => const {});
     getIt.registerSingleton<UpdateNotifications>(mockNotifications);
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         relationshipRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      ]),
     );
   });
 

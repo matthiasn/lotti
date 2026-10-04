@@ -292,6 +292,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -318,6 +319,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -345,6 +347,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -373,6 +376,7 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               return ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: Column(
                   children: [
                     Expanded(
@@ -420,6 +424,7 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               return ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: Column(
                   children: [
                     Expanded(
@@ -467,6 +472,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: true,
@@ -507,6 +513,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -535,6 +542,7 @@ void main() {
         Widget subject({required Color errorColor}) {
           return makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -574,6 +582,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -600,6 +609,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -628,6 +638,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -669,6 +680,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -694,6 +706,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -2848,6 +2861,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -2871,6 +2885,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2905,6 +2920,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2927,6 +2943,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2953,6 +2970,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: EntryDetailsWidget(
                   itemId: testTextEntry.meta.id,
                   showAiEntry: false,
@@ -2977,6 +2995,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3011,6 +3030,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3053,6 +3073,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3083,6 +3104,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: EntryDetailsWidget(
                   itemId: testAudioEntry.meta.id,
                   showAiEntry: false,
@@ -3143,6 +3165,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3188,6 +3211,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3212,6 +3236,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3236,6 +3261,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3265,6 +3291,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3347,6 +3374,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3371,6 +3399,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3396,6 +3425,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3437,6 +3467,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3463,6 +3494,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3489,6 +3521,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3847,14 +3880,15 @@ void main() {
         );
       }
 
-      List<Override> attribution(AiAttributionDetails? details) => [
-        aiAttributionForArtifactProvider.overrideWith(
-          (ref, artifact) async => details,
-        ),
-        aiAttributionDetailsProvider.overrideWith(
-          (ref, id) async => details,
-        ),
-      ];
+      List<Override> attribution(AiAttributionDetails? details) =>
+          withServiceOverrides([
+            aiAttributionForArtifactProvider.overrideWith(
+              (ref, artifact) async => details,
+            ),
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => details,
+            ),
+          ]);
 
       testWidgets('a photo the AI worked on carries the attribution pill', (
         tester,
@@ -4095,6 +4129,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4135,6 +4170,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4188,6 +4224,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4345,6 +4382,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -4456,6 +4494,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,

@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.da
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/test_data/wake_factories.dart';
@@ -42,14 +43,14 @@ void main() {
       () => repository.getTokenUsageForAgent(any()),
     ).thenAnswer((_) async => tokenUsage);
     final result = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         silenceAgentUpdates,
         dayAgentIsRunningProvider.overrideWith((ref, d) => running),
         agent_providers.dayAgentProvider.overrideWith(
           (ref, d) async => owner,
         ),
         agentRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(result.dispose);
     return result;

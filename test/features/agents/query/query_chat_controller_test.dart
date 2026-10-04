@@ -18,6 +18,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../test_data/entity_factories.dart';
@@ -48,7 +49,7 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
   ProviderContainer buildContainer(QueryChatKey chatKey) => ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       configFlagProvider('enable_query_chat').overrideWith((ref) async* {
         yield true;
         yield* enabled.stream;
@@ -138,7 +139,7 @@ void main() {
           ),
         );
       }),
-    ],
+    ]),
   );
 
   setUp(() {
@@ -898,12 +899,12 @@ void main() {
     'creation retains private authoring provenance across its asynchronous visibility read',
     () => withClock(Clock.fixed(now), () async {
       final privateContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           queryChatStoreProvider.overrideWithValue(bench.store),
           configFlagProvider(
             'private',
           ).overrideWith((ref) => Stream.value(true)),
-        ],
+        ]),
       );
       addTearDown(privateContainer.dispose);
       final privacySubscription = privateContainer.listen(

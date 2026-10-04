@@ -14,6 +14,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../../widget_test_utils.dart';
@@ -24,13 +25,13 @@ void main() {
     required int incoming,
     required int outgoing,
     bool syncEnabled = true,
-  }) => [
+  }) => withServiceOverrides([
     journalDbProvider.overrideWithValue(
       mockJournalDbWithSyncFlag(enabled: syncEnabled),
     ),
     syncDatabaseProvider.overrideWithValue(mockSyncDatabaseWithCount(outgoing)),
     inboundQueueDepthProvider.overrideWith((_) => Stream<int>.value(incoming)),
-  ];
+  ]);
 
   Future<void> pumpBadge(
     WidgetTester tester, {
@@ -43,10 +44,12 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         wrap == null ? counts : wrap(counts),
-        overrides: queues(
-          incoming: incoming,
-          outgoing: outgoing,
-          syncEnabled: syncEnabled,
+        overrides: withServiceOverrides(
+          queues(
+            incoming: incoming,
+            outgoing: outgoing,
+            syncEnabled: syncEnabled,
+          ),
         ),
       ),
     );

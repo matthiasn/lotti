@@ -13,6 +13,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -91,6 +92,7 @@ void main() {
       // tokens theme extension, and the AppLocalizations delegates.
       Widget harness({Widget? child}) {
         return ProviderScope(
+          overrides: getItServiceOverrides(),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             navigatorObservers: [spy],
@@ -120,6 +122,7 @@ void main() {
         required NavigatorObserver nestedObserver,
       }) {
         return ProviderScope(
+          overrides: getItServiceOverrides(),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             navigatorObservers: [rootObserver],

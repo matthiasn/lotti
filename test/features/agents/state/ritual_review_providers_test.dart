@@ -5,6 +5,8 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+
+import '../../../helpers/service_overrides.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -21,14 +23,14 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[
               activeSession,
               completedSession,
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -57,14 +59,14 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             evolutionSessionsProvider(kTestTemplateId).overrideWith(
               (ref) async => <AgentDomainEntity>[
                 completedSession,
                 staleActiveSession,
               ],
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -78,7 +80,7 @@ void main() {
 
     test('returns null when all sessions are completed or abandoned', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[
               makeTestEvolutionSession(
@@ -92,7 +94,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -105,11 +107,11 @@ void main() {
 
     test('returns null when session list is empty', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -129,11 +131,11 @@ void main() {
       final note = makeTestEvolutionNote(id: 'note-1');
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[note, activeSession],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -151,7 +153,7 @@ void main() {
   group('templatesPendingReviewProvider', () {
     test('collects distinct template IDs from active sessions', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(agentNotification).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
@@ -168,7 +170,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -181,7 +183,7 @@ void main() {
 
     test('ignores completed and abandoned sessions', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(agentNotification).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
@@ -205,7 +207,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -218,7 +220,7 @@ void main() {
 
     test('returns empty set when no active sessions', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(agentNotification).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
@@ -230,7 +232,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -245,7 +247,7 @@ void main() {
       'deduplicates when multiple active sessions share a template',
       () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentUpdateStreamProvider(agentNotification).overrideWith(
               (ref) => const Stream<Set<String>>.empty(),
             ),
@@ -262,7 +264,7 @@ void main() {
                 ),
               ],
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

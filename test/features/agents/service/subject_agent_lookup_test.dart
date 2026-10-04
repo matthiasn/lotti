@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_data/entity_factories.dart';
 
@@ -156,10 +157,10 @@ void main() {
   group('provider', () {
     test('builds the resolver from the agent repository and service', () {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentServiceProvider.overrideWithValue(agentService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

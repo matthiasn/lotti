@@ -28,6 +28,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -49,7 +50,7 @@ void main() {
 
   Widget wrap(Widget child, {List<Override> extraOverrides = const []}) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         ...extraOverrides,
         taskLiveDataProvider.overrideWith(
           // ignore: avoid_redundant_argument_values
@@ -62,7 +63,7 @@ void main() {
         agentUpdateStreamProvider.overrideWith(
           (ref, agentId) => const Stream<Set<String>>.empty(),
         ),
-      ],
+      ]),
       child: makeTestableWidget2(
         Theme(
           data: DesignSystemTheme.dark(),

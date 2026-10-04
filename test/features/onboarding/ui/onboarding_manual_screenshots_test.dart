@@ -44,6 +44,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -116,7 +117,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: size, disableAnimations: true),
         child: MaterialApp(
@@ -305,7 +306,7 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> overrides() => [
+  List<Override> overrides() => withServiceOverrides([
     aiConfigRepositoryProvider.overrideWithValue(aiRepository),
     categoryRepositoryProvider.overrideWithValue(categoryRepository),
     captureControllerProvider.overrideWith(() => captureController),
@@ -332,7 +333,7 @@ void main() {
       enableAiSummaryTtsFlag,
     ])
       configFlagProvider(flag).overrideWith((ref) => Stream.value(false)),
-  ];
+  ]);
 
   Future<void> tapText(
     WidgetTester tester,
@@ -511,7 +512,7 @@ void main() {
           home: home,
           brightness: brightness,
           size: device.size,
-          overrides: overrides(),
+          overrides: withServiceOverrides(overrides()),
         ),
       );
       await settleFrames(tester, 18);

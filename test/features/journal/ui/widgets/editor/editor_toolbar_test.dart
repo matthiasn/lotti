@@ -21,6 +21,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -100,12 +101,12 @@ void main() {
     List<Override> extraOverrides = const [],
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         entryControllerProvider(entryId).overrideWith(
           controllerFactory ?? _TestEntryController.new,
         ),
         ...extraOverrides,
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final sub = container.listen(

@@ -62,6 +62,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/manual_demo_world.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -562,7 +563,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
@@ -775,7 +776,7 @@ void main() {
       thinkingModel: manualDemoAiModels.first,
     );
 
-    return [
+    return withServiceOverrides([
       journalDbProvider.overrideWithValue(mocks.journalDb),
       agentTemplateServiceProvider.overrideWithValue(templateService),
       soulDocumentServiceProvider.overrideWithValue(soulService),
@@ -970,7 +971,7 @@ void main() {
         (ref, notifier) => Stream.value(manualDemoAiProfiles),
       ),
       maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-    ];
+    ]);
   }
 
   Future<void> pumpSurface(
@@ -989,7 +990,7 @@ void main() {
             : _directPage(surface),
         brightness: brightness,
         device: device,
-        overrides: overrides(),
+        overrides: withServiceOverrides(overrides()),
       ),
     );
     await settleFrames(tester, 8);

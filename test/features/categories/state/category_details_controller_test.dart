@@ -10,6 +10,7 @@ import 'package:lotti/features/categories/state/category_details_controller.dart
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -31,9 +32,9 @@ void main() {
     /// addTearDown.
     ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -1245,9 +1246,9 @@ void main() {
 
       final container =
           ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
+            ]),
           )..listen(
             categoryDetailsControllerProvider(testCategoryId),
             (_, _) {},

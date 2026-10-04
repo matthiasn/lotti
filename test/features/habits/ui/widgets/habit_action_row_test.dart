@@ -22,6 +22,7 @@ import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -105,7 +106,7 @@ void main() {
         mediaQueryData: reduceMotion
             ? phoneMediaQueryData.copyWith(disableAnimations: true)
             : null,
-        overrides: extraOverrides,
+        overrides: withServiceOverrides(extraOverrides),
       ),
     );
     await tester.pump();

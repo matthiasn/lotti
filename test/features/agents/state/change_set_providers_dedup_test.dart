@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'change_set_providers_test_helpers.dart';
@@ -37,14 +38,14 @@ void main() {
     ProviderListenable<Object?>? listenTo,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectAgentProvider(projectId).overrideWith((ref) async => agent),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         if (agent != null && updateController != null)
           agentUpdateStreamProvider(agent.agentId).overrideWith(
             (ref) => updateController.stream,
           ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     if (listenTo != null) {

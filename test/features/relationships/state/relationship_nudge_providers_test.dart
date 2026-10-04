@@ -18,6 +18,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -81,7 +82,7 @@ void main() {
 
   ProviderContainer container({bool flagEnabled = true}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         configFlagProvider(
           enableRelationshipsFlag,
         ).overrideWith((ref) => Stream.value(flagEnabled)),
@@ -91,7 +92,7 @@ void main() {
           relationshipRepository,
         ),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

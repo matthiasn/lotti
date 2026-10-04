@@ -40,14 +40,14 @@ List<Override> _agentJobExecutorOverrides() {
   when(
     () => orchestrator.runCompletions,
   ).thenAnswer((_) => const Stream.empty());
-  return [
+  return withServiceOverrides([
     dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
     dayAgentPlanServiceProvider.overrideWithValue(MockDayAgentPlanService()),
     dayAgentCaptureServiceProvider.overrideWithValue(
       MockDayAgentCaptureService(),
     ),
     wakeOrchestratorProvider.overrideWithValue(orchestrator),
-  ];
+  ]);
 }
 
 void main() {

@@ -76,13 +76,12 @@ ProviderContainer _buildContainer({
   required _FakeRepo repo,
 }) {
   return ProviderContainer(
-    overrides: [
-      ...getItServiceOverrides(),
+    overrides: withServiceOverrides([
       savedTaskFiltersControllerProvider.overrideWith(
         () => _StubController(seed),
       ),
       savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-    ],
+    ]),
   );
 }
 
@@ -323,13 +322,12 @@ void main() {
       required SavedTaskFilterCountRepository repo,
     }) {
       return ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           journalPageControllerProvider(
             true,
           ).overrideWith(() => FakeJournalPageController(pageState)),
           savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-        ],
+        ]),
       );
     }
 
@@ -453,10 +451,9 @@ void main() {
     test('counts every task via the repository (all statuses)', () async {
       final repo = _FakeRepo(const [124]);
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final sub = container.listen(allTasksTotalCountProvider, (_, _) {});
@@ -477,10 +474,9 @@ void main() {
 
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-          ],
+          ]),
         )..listen(allTasksTotalCountProvider, (_, _) {});
         addTearDown(container.dispose);
 
@@ -507,10 +503,9 @@ void main() {
 
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-          ],
+          ]),
         )..listen(allTasksTotalCountProvider, (_, _) {});
         addTearDown(container.dispose);
 

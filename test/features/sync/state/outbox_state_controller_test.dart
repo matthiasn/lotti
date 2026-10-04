@@ -8,6 +8,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -33,10 +34,10 @@ void main() {
       ).thenAnswer((_) => countStreamController.stream);
 
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(mockDb),
           syncDatabaseProvider.overrideWithValue(mockSyncDb),
-        ],
+        ]),
       );
     });
 

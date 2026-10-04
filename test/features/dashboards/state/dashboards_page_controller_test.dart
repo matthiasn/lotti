@@ -41,10 +41,9 @@ void main() {
 
       lockdown = TestLockdownController();
       container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           lockdownControllerProvider.overrideWith(() => lockdown),
-        ],
+        ]),
       );
     });
 

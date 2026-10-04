@@ -297,15 +297,14 @@ void main() {
       );
 
       return ProviderScope(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           entryControllerProvider(testTask.id).overrideWith(
             () => MockEntryController(mockEntry: taskWithIds),
           ),
           checklistRepositoryProvider.overrideWithValue(
             mockChecklistRepository,
           ),
-        ],
+        ]),
         child: WidgetTestBench(
           child: ChecklistsWidget(
             entryId: testTask.id,
@@ -399,8 +398,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             entryControllerProvider(mockTask.id).overrideWith(
               () => controller,
             ),
@@ -416,7 +414,7 @@ void main() {
                 const (id: 'checklist1', taskId: 'task1'),
               ),
             ),
-          ],
+          ]),
           child: WidgetTestBench(
             child: Consumer(
               builder: (context, ref, _) {
@@ -499,8 +497,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             entryControllerProvider(firstTask.id).overrideWith(
               () => MockEntryController(mockEntry: firstTask),
             ),
@@ -528,7 +525,7 @@ void main() {
                 taskId: 'task2',
               )),
             ),
-          ],
+          ]),
           child: WidgetTestBench(
             child: StatefulBuilder(
               builder: (context, setState) {
@@ -595,8 +592,7 @@ void main() {
         // card to SizedBox.shrink while still rendering the surviving card.
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              ...getItServiceOverrides(),
+            overrides: withServiceOverrides([
               entryControllerProvider('task1').overrideWith(
                 () => MockEntryController(mockEntry: mockTask),
               ),
@@ -612,7 +608,7 @@ void main() {
                   taskId: 'task1',
                 )),
               ),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistsWidget(
                 entryId: 'task1',
@@ -652,12 +648,11 @@ void main() {
     testWidgets('returns SizedBox.shrink when entry is null', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: null),
             ),
-          ],
+          ]),
           child: WidgetTestBench(
             child: ChecklistsWidget(
               entryId: 'task1',
@@ -691,12 +686,11 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             entryControllerProvider('task1').overrideWith(
               () => MockEntryController(mockEntry: journalEntry),
             ),
-          ],
+          ]),
           child: WidgetTestBench(
             child: ChecklistsWidget(
               entryId: 'task1',
@@ -757,15 +751,14 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            ...getItServiceOverrides(),
+          overrides: withServiceOverrides([
             entryControllerProvider('task1').overrideWith(
               () => controller,
             ),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
-          ],
+          ]),
           child: WidgetTestBench(
             child: ChecklistsWidget(
               entryId: 'task1',
@@ -881,15 +874,14 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              ...getItServiceOverrides(),
+            overrides: withServiceOverrides([
               entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistsWidget(
                 entryId: 'task1',
@@ -952,15 +944,14 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              ...getItServiceOverrides(),
+            overrides: withServiceOverrides([
               entryControllerProvider('task1').overrideWith(
                 () => controller,
               ),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistsWidget(
                 entryId: 'task1',
@@ -1045,13 +1036,12 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              ...getItServiceOverrides(),
+            overrides: withServiceOverrides([
               entryControllerProvider('task1').overrideWith(() => controller),
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistsWidget(entryId: 'task1', task: mockTask),
             ),

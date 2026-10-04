@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/refine_voice_sync.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../test_doubles/mock_day_agent.dart';
 
 /// Records the orb's calls into capture instead of touching the recorder.
@@ -36,7 +37,7 @@ void main() {
   setUp(() {
     capture = _RecordingCaptureController();
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         dayAgentProvider.overrideWithValue(
           MockDayAgent(
             parseLatency: Duration.zero,
@@ -47,7 +48,7 @@ void main() {
           ),
         ),
         captureControllerProvider.overrideWith(() => capture),
-      ],
+      ]),
     )..listen(refineControllerProvider(draft), (_, _) {});
   });
 

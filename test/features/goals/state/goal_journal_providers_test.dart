@@ -19,8 +19,7 @@ void main() {
 
   ProviderContainer container() {
     final c = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
         agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
         agentServiceProvider.overrideWithValue(MockAgentService()),
@@ -28,7 +27,7 @@ void main() {
           MockCloudInferenceRepository(),
         ),
         loggingServiceProvider.overrideWithValue(MockLoggingService()),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

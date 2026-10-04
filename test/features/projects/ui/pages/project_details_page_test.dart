@@ -264,7 +264,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: makeTestableWidget2(
           Theme(
             data: DesignSystemTheme.dark(),
@@ -455,7 +455,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -634,7 +634,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -1348,7 +1348,7 @@ void main() {
           // returns true.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -2132,7 +2132,7 @@ void main() {
 
               await tester.pumpWidget(
                 ProviderScope(
-                  overrides: overrides,
+                  overrides: withServiceOverrides(overrides),
                   child: makeTestableWidget2(
                     Theme(
                       data: DesignSystemTheme.dark(),
@@ -2302,7 +2302,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),

@@ -16,6 +16,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
@@ -50,7 +51,7 @@ void main() {
         );
         getIt.registerSingleton<UpdateNotifications>(notifications);
         addTearDown(getIt.reset);
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
         // autoDispose: without a live listener the provider is torn down
         // between the read and the first emission.
@@ -121,10 +122,10 @@ void main() {
           () => db.getJournalEntitiesForIdsUnordered({person.meta.id}),
         ).thenAnswer((_) async => [person]);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(db),
             healthSignalRefreshServiceProvider.overrideWithValue(null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -146,12 +147,12 @@ void main() {
         healthImport.getWorkoutsHealthDataDelta,
       ).thenAnswer((_) async => const HealthImportResult.imported(0));
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(db),
           healthSignalRefreshServiceProvider.overrideWithValue(
             HealthSignalRefreshService(healthImport),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -166,10 +167,10 @@ void main() {
       'projects the day without an importer (desktop, demo worlds)',
       () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(db),
             healthSignalRefreshServiceProvider.overrideWithValue(null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -220,10 +221,10 @@ void main() {
         getIt.registerSingleton<EntitiesCacheService>(cache);
         addTearDown(getIt.reset);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(db),
             healthSignalRefreshServiceProvider.overrideWithValue(null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -254,10 +255,10 @@ void main() {
 
       ProviderContainer container() {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(db),
             healthSignalRefreshServiceProvider.overrideWithValue(null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         return container;
@@ -324,12 +325,12 @@ void main() {
         healthImport.getWorkoutsHealthDataDelta,
       ).thenThrow(StateError('health store unavailable'));
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(db),
           healthSignalRefreshServiceProvider.overrideWithValue(
             HealthSignalRefreshService(healthImport),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

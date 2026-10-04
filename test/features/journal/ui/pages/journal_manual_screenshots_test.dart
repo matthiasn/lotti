@@ -74,6 +74,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
@@ -167,7 +168,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: device.size, disableAnimations: true),
         child: MaterialApp(
@@ -622,7 +623,7 @@ void main() {
     await documentsDirectory.delete(recursive: true);
   });
 
-  List<Override> overrides() => [
+  List<Override> overrides() => withServiceOverrides([
     // The entry page's action bar watches the recorder controller; the real
     // one boots the platform recorder, which a widget test cannot host.
     audioRecorderControllerProvider.overrideWith(
@@ -678,7 +679,7 @@ void main() {
       () => MockLinkedFromEntriesController(const []),
     ),
     ratingRepositoryProvider.overrideWithValue(ratingRepository),
-  ];
+  ]);
 
   Future<void> pumpSurface(
     WidgetTester tester, {
@@ -697,7 +698,7 @@ void main() {
             home: const SizedBox(key: ValueKey('journal-precache-host')),
             brightness: brightness,
             device: device,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
             platform: platform,
           ),
         );
@@ -735,7 +736,7 @@ void main() {
             home: home,
             brightness: brightness,
             device: device,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
             platform: platform,
           ),
         );

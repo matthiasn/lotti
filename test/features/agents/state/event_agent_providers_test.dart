@@ -16,6 +16,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -38,7 +39,7 @@ void main() {
       addTearDown(notifications.dispose);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentServiceProvider.overrideWithValue(mockAgentService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           wakeOrchestratorProvider.overrideWithValue(orchestrator),
@@ -47,7 +48,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -72,9 +73,9 @@ void main() {
       ).thenAnswer((_) async => identity);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           eventAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -93,9 +94,9 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           eventAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -113,9 +114,9 @@ void main() {
       ).thenAnswer((_) async => throw Exception('DB error'));
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           eventAgentServiceProvider.overrideWithValue(mockService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -153,10 +154,10 @@ void main() {
         });
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             eventAgentServiceProvider.overrideWithValue(mockService),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
 
         final sub = container.listen(

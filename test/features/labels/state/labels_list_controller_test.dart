@@ -46,10 +46,9 @@ void main() {
 
   ProviderContainer makeContainer() {
     final container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         labelsRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;

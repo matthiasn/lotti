@@ -12,6 +12,7 @@ import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 class _MockGoalChatService extends Mock implements GoalChatService {}
@@ -39,7 +40,9 @@ void main() {
         () => service.sendMessage(agentId: 'goal-1', text: 'Try this.'),
       ).thenThrow(StateError('database unavailable'));
       final container = ProviderContainer(
-        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+        overrides: withServiceOverrides([
+          goalChatServiceProvider.overrideWithValue(service),
+        ]),
       );
       addTearDown(container.dispose);
       final controller = container.read(
@@ -67,7 +70,9 @@ void main() {
         if (attempts == 1) throw StateError('database unavailable');
       });
       final container = ProviderContainer(
-        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+        overrides: withServiceOverrides([
+          goalChatServiceProvider.overrideWithValue(service),
+        ]),
       );
       addTearDown(container.dispose);
       final controller = container.read(
@@ -108,7 +113,9 @@ void main() {
         throw StateError('database unavailable');
       });
       final container = ProviderContainer(
-        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+        overrides: withServiceOverrides([
+          goalChatServiceProvider.overrideWithValue(service),
+        ]),
       );
       addTearDown(container.dispose);
       final controller = container.read(
@@ -150,13 +157,13 @@ void main() {
     ).thenAnswer((_) async => attempts++);
     var chatReads = 0;
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         goalChatServiceProvider.overrideWithValue(service),
         agentChatProjectionProvider('goal-1').overrideWith((ref) async {
           chatReads++;
           return [];
         }),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     await container.read(agentChatProjectionProvider('goal-1').future);
@@ -203,7 +210,9 @@ void main() {
     () async {
       final service = _MockGoalChatService();
       final container = ProviderContainer(
-        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+        overrides: withServiceOverrides([
+          goalChatServiceProvider.overrideWithValue(service),
+        ]),
       );
       addTearDown(container.dispose);
       final controller = container.read(
@@ -243,7 +252,7 @@ void main() {
       var bannerReads = 0;
       var chatReads = 0;
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           goalChatServiceProvider.overrideWithValue(service),
           activeGoalNudgesProvider.overrideWith((ref) async {
             bannerReads++;
@@ -253,7 +262,7 @@ void main() {
             chatReads++;
             return [];
           }),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       await container.read(activeGoalNudgesProvider.future);
@@ -296,10 +305,10 @@ void main() {
       ],
     );
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         goalChatServiceProvider.overrideWithValue(service),
         agentRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final controller = container.read(

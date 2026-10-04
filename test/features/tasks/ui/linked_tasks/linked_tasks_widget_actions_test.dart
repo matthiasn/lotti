@@ -422,10 +422,10 @@ void main() {
       when(
         () => mockEntitiesCacheService.getCategoryById(any()),
       ).thenReturn(newTaskCategory);
-      return [
+      return withServiceOverrides([
         createEntryControllerOverride(parentTaskWithCategory(parentCategoryId)),
         taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-      ];
+      ]);
     }
 
     // Opens the create-new-linked-task flow and confirms the relationship

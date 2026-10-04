@@ -19,6 +19,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../../helpers/service_overrides.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../widget_test_utils.dart';
@@ -67,7 +68,7 @@ void main() {
     bool clipboardHasImage = false,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         clipboardHasImageProvider.overrideWith(
           (ref) async => clipboardHasImage,
         ),
@@ -80,7 +81,7 @@ void main() {
             testLabelDefinition2,
           ]),
         ),
-      ],
+      ]),
       child: makeTestableWidgetWithScaffold(
         InitialModalPageContent(
           entryId: entry?.id ?? 'entry-123',
@@ -219,14 +220,14 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryControllerProvider(entry.id).overrideWith(
                 () => TestEntryController(entry),
               ),
               labelsStreamProvider.overrideWith(
                 (ref) => Stream<List<LabelDefinition>>.value([]),
               ),
-            ],
+            ]),
             child: makeTestableWidgetWithScaffold(
               InitialModalPageContent(
                 entryId: entry.id,
@@ -282,14 +283,14 @@ void main() {
 
     ProviderScope buildAudioWrapper(JournalAudio entry) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.value([]),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: entry.id,
@@ -338,14 +339,14 @@ void main() {
 
     ProviderScope buildImageWrapper(JournalImage entry) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.value([]),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: entry.id,

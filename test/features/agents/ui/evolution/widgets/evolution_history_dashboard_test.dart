@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_tim
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
 
@@ -56,13 +57,16 @@ void main() {
     ];
     const dashboard = EvolutionHistoryDashboard(templateId: kTestTemplateId);
     if (retryFailures) {
-      return makeTestableWidgetWithScaffold(dashboard, overrides: overrides);
+      return makeTestableWidgetWithScaffold(
+        dashboard,
+        overrides: withServiceOverrides(overrides),
+      );
     }
     // Riverpod retries a failed provider (reporting it as loading meanwhile),
     // so an error branch is only reachable with retries disabled.
     final host = makeTestableWidgetWithContainer(
       const Scaffold(body: SingleChildScrollView(child: dashboard)),
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       retry: (_, _) => null,
     );
     addTearDown(host.container.dispose);

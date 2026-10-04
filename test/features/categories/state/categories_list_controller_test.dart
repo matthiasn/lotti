@@ -9,6 +9,7 @@ import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../lockdown/lockdown_test_utils.dart';
 import '../test_utils.dart';
@@ -27,9 +28,9 @@ void main() {
     ).thenAnswer((_) => categoriesController.stream);
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     // LIFO teardown: dispose the container FIRST so the provider's stream
     // subscription cancels before close() awaits listener completion.
@@ -80,10 +81,10 @@ void main() {
       const LockdownState(categoryIds: {'work'}),
     );
     final locked = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(repository),
         lockdownControllerProvider.overrideWith(() => lockdown),
-      ],
+      ]),
     );
     addTearDown(locked.dispose);
     final sub = locked.listen(categoriesStreamProvider, (_, _) {});

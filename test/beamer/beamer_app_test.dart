@@ -4713,12 +4713,12 @@ void main() {
         filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
       );
 
-      List<Override> countOverrides() => [
+      List<Override> countOverrides() => withServiceOverrides([
         savedTaskFilterCountsProvider.overrideWith(
           (ref) async => const {'due-today': 4, 'blocked': 2},
         ),
         allTasksTotalCountProvider.overrideWith((ref) async => 23),
-      ];
+      ]);
 
       testWidgets('are listed under the active Tasks row, as on desktop', (
         tester,

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../test_utils.dart';
 
@@ -133,11 +134,11 @@ void main() {
     });
 
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentTemplateServiceProvider.overrideWithValue(templateService),
         soulDocumentServiceProvider.overrideWithValue(soulService),
         ...overrides,
-      ],
+      ]),
     );
     try {
       return await container.read(agentInstanceVmsProvider.future);

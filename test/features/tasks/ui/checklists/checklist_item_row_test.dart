@@ -23,6 +23,7 @@ import 'package:lotti/widgets/celebration/celebration_preferences_controller.dar
 import 'package:material_ui/material_ui.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart' show makeTestChecklistApproval;
 import 'drag_test_fakes.dart';
@@ -205,7 +206,7 @@ Future<void> _pump(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         checklistItemControllerProvider((
           id: 'item-1',
           taskId: 'task-1',
@@ -217,7 +218,7 @@ Future<void> _pump(
         checklistCompletionServiceProvider.overrideWith(
           () => FakeChecklistCompletionService(suggestions),
         ),
-      ],
+      ]),
       child: makeTestableWidgetWithScaffold(
         ChecklistItemRow(
           itemId: 'item-1',
@@ -257,7 +258,7 @@ _pumpWithControllers(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         checklistItemControllerProvider((
           id: 'item-1',
           taskId: 'task-1',
@@ -269,7 +270,7 @@ _pumpWithControllers(
           () => completionSvc,
         ),
         ...extraOverrides,
-      ],
+      ]),
       child: makeTestableWidgetWithScaffold(
         ChecklistItemRow(
           itemId: 'item-1',
@@ -367,7 +368,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistItemControllerProvider((
               id: 'item-1',
               taskId: 'task-1',
@@ -379,7 +380,7 @@ void main() {
             checklistCompletionServiceProvider.overrideWith(
               FakeChecklistCompletionService.new,
             ),
-          ],
+          ]),
           child: makeTestableWidgetWithScaffold(
             const ChecklistItemRow(
               itemId: 'item-1',
@@ -545,7 +546,7 @@ void main() {
     testWidgets('returns SizedBox.shrink for null item', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistItemControllerProvider((
               id: 'item-1',
               taskId: 'task-1',
@@ -557,7 +558,7 @@ void main() {
             checklistCompletionServiceProvider.overrideWith(
               FakeChecklistCompletionService.new,
             ),
-          ],
+          ]),
           child: makeTestableWidgetWithScaffold(
             const ChecklistItemRow(
               itemId: 'item-1',
@@ -720,7 +721,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistItemControllerProvider((
                 id: 'item-1',
                 taskId: 'task-1',
@@ -731,7 +732,7 @@ void main() {
               checklistCompletionServiceProvider.overrideWith(
                 () => completionSvc,
               ),
-            ],
+            ]),
             // A tall spacer pushes the row far below the visible viewport, but
             // a SingleChildScrollView still builds it (so its data listener
             // runs) — the burst must be suppressed by the on-screen check.
@@ -1080,7 +1081,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 checklistItemControllerProvider((
                   id: 'item-1',
                   taskId: 'task-1',
@@ -1091,7 +1092,7 @@ void main() {
                 checklistCompletionServiceProvider.overrideWith(
                   () => completionSvc,
                 ),
-              ],
+              ]),
               child: makeTestableWidgetWithScaffold(
                 StatefulBuilder(
                   builder: (context, setState) {
@@ -1179,7 +1180,7 @@ void main() {
           // Pre-resolve the provider so it has data before the widget
           // mounts. A ProviderContainer reads the provider eagerly.
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistItemControllerProvider((
                 id: 'item-1',
                 taskId: 'task-1',
@@ -1190,7 +1191,7 @@ void main() {
               checklistCompletionServiceProvider.overrideWith(
                 FakeChecklistCompletionService.new,
               ),
-            ],
+            ]),
           );
           // Force the provider to resolve before the widget tree mounts.
           await container.read(
@@ -1610,7 +1611,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistItemControllerProvider((
                 id: 'item-1',
                 taskId: 'task-1',
@@ -1621,7 +1622,7 @@ void main() {
               checklistCompletionServiceProvider.overrideWith(
                 () => completionSvc,
               ),
-            ],
+            ]),
             child: makeTestableWidgetWithScaffold(
               const ChecklistItemRow(
                 itemId: 'item-1',
@@ -1667,7 +1668,7 @@ void main() {
 
         // Pre-resolve the provider so the synchronous build() path is taken.
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistItemControllerProvider((
               id: 'item-1',
               taskId: 'task-1',
@@ -1678,7 +1679,7 @@ void main() {
             checklistCompletionServiceProvider.overrideWith(
               FakeChecklistCompletionService.new,
             ),
-          ],
+          ]),
         );
         await container.read(
           checklistItemControllerProvider((

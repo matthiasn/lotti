@@ -41,11 +41,10 @@ void main() {
       () => repository.loadProject('project'),
     ).thenAnswer((_) async => first);
     container = ProviderContainer.test(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         plazaRepositoryProvider.overrideWithValue(repository),
         plazaUpdatesProvider.overrideWithValue(updates.stream),
-      ],
+      ]),
     );
   });
 

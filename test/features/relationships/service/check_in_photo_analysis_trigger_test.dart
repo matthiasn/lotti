@@ -111,12 +111,11 @@ void main() {
     ).thenAnswer((_) async => checkIn());
 
     container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         profileAutomationServiceProvider.overrideWithValue(automation),
         skillInferenceRunnerProvider.overrideWithValue(runner),
         relationshipRepositoryProvider.overrideWithValue(relationships),
-      ],
+      ]),
     );
   });
 

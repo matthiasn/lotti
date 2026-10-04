@@ -31,6 +31,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -192,11 +193,11 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidget2(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider(
               _eventId,
             ).overrideWith(_NullEntryController.new),
-          ],
+          ]),
           child: const EventDetailPage(eventId: _eventId),
         ),
       ),
@@ -212,11 +213,11 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidget2(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider(
               _eventId,
             ).overrideWith(_ErrorEntryController.new),
-          ],
+          ]),
           child: const EventDetailPage(eventId: _eventId),
         ),
       ),
@@ -246,7 +247,7 @@ void main() {
       // onto the root navigator can read providers too.
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider(_eventId).overrideWith(
               controllerBuilder ?? () => FakeEntryController(_event()),
             ),
@@ -254,7 +255,7 @@ void main() {
               _eventId,
             ).overrideWithValue(linked),
             ...extraOverrides,
-          ],
+          ]),
           child: makeTestableWidget2(
             const EventDetailPage(eventId: _eventId),
             mediaQueryData: MediaQueryData(size: size),

@@ -12,6 +12,7 @@ import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -54,12 +55,12 @@ void main() {
 
   ProviderContainer container({bool withJournal = true}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         goalRepositoryProvider.overrideWithValue(withJournal ? goals : null),
         goalMirrorServiceProvider.overrideWithValue(
           withJournal ? mirror : null,
         ),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;
@@ -144,13 +145,13 @@ void main() {
         entryText: const EntryText(plainText: 'Gym bag packed.'),
       );
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           goalRepositoryProvider.overrideWithValue(goals),
           goalMirrorServiceProvider.overrideWithValue(mirror),
           resolvedOutgoingLinkedEntriesProvider(
             'goal-1',
           ).overrideWithValue([entry]),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
 
@@ -196,9 +197,9 @@ void main() {
         ),
       ).thenAnswer((_) async => failed);
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           consumptionRepositoryProvider.overrideWithValue(consumption),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
 
@@ -239,9 +240,9 @@ void main() {
         ),
       );
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           consumptionRepositoryProvider.overrideWithValue(consumption),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
 

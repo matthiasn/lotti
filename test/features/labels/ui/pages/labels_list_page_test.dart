@@ -17,6 +17,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
@@ -30,10 +31,10 @@ Widget _buildPage({
   Widget page = const LabelsListPage(),
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       labelsStreamProvider.overrideWith((ref) => Stream.value(labels)),
       labelUsageStatsProvider.overrideWith((ref) => Stream.value(usageCounts)),
-    ],
+    ]),
     child: makeTestableWidgetWithScaffold(page),
   );
 }
@@ -593,11 +594,11 @@ void main() {
       tester,
     ) async {
       final widget = ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.error('boom'),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(const LabelsListPage()),
       );
 
@@ -695,7 +696,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             labelsStreamProvider.overrideWith(
               (ref) => Stream.value([
                 testLabelDefinition1,
@@ -705,7 +706,7 @@ void main() {
             labelUsageStatsProvider.overrideWith(
               (ref) => Stream.value(const <String, int>{}),
             ),
-          ],
+          ]),
           child: makeTestableWidgetWithScaffold(const LabelsListPage()),
         ),
       );

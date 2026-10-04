@@ -55,6 +55,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -181,7 +182,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
@@ -409,7 +410,7 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> overrides(ManualDemoWorld world) => [
+  List<Override> overrides(ManualDemoWorld world) => withServiceOverrides([
     journalDbProvider.overrideWithValue(mocks.journalDb),
     aiConfigRepositoryProvider.overrideWithValue(aiRepository),
     templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
@@ -424,7 +425,7 @@ void main() {
     firstDayOfWeekIndexProvider.overrideWith(
       (ref) => DateTime.monday % 7,
     ),
-  ];
+  ]);
 
   Future<void> pumpSurface(
     WidgetTester tester, {
@@ -443,7 +444,7 @@ void main() {
             : SettingsDesktopPage(beamToReplacementNamed: (_, _) {}),
         brightness: brightness,
         device: device,
-        overrides: overrides(world),
+        overrides: withServiceOverrides(overrides(world)),
       ),
     );
     await settleFrames(tester, 8);
@@ -621,7 +622,7 @@ void main() {
                 ),
                 brightness: brightness,
                 device: device,
-                overrides: overrides(world),
+                overrides: withServiceOverrides(overrides(world)),
               ),
             );
           } else {

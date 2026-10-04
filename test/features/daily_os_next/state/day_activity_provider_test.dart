@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
@@ -52,7 +53,7 @@ void main() {
     Stream<Set<String>> Function(String key)? updates,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
         capturesForDateProvider.overrideWith((ref, date) async => const []),
         draftedPlanForDateProvider.overrideWith((ref, date) async => null),
@@ -61,7 +62,7 @@ void main() {
           (ref, agentId) =>
               updates?.call(agentId) ?? const Stream<Set<String>>.empty(),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;

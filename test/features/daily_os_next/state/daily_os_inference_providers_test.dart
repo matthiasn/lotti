@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.da
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 
@@ -106,7 +107,7 @@ void main() {
         profileId: 'profile',
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dailyOsOnboardingProviderReadyProvider.overrideWith(
             (ref) async => true,
           ),
@@ -114,7 +115,7 @@ void main() {
           dailyOsPreferencesControllerProvider.overrideWith(
             _PreferencesController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -140,7 +141,7 @@ void main() {
         kind: AgentTemplateKind.dayAgent,
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dailyOsOnboardingProviderReadyProvider.overrideWith(
             (ref) async => true,
           ),
@@ -148,7 +149,7 @@ void main() {
           dailyOsPreferencesControllerProvider.overrideWith(
             _PreferencesController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -202,10 +203,10 @@ void main() {
         profileId: 'profile-1',
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentTemplateProvider.overrideWith((ref, id) async => template),
           profileResolverProvider.overrideWithValue(resolver),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -233,10 +234,10 @@ void main() {
           profileId: profileId,
         );
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentTemplateProvider.overrideWith((ref, id) async => template),
             profileResolverProvider.overrideWithValue(resolver),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         expect(

@@ -210,13 +210,13 @@ void main() {
     );
   }
 
-  List<Override> pageOverrides() => [
+  List<Override> pageOverrides() => withServiceOverrides([
     ...getItServiceOverrides(),
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
     fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-  ];
+  ]);
 
   /// The desktop list pane reads the desktop selection; stub it before
   /// pumping the page at [desktopLayoutMediaQueryData].
@@ -248,7 +248,7 @@ void main() {
         ),
       ),
       mediaQueryData: desktop ? desktopLayoutMediaQueryData : mediaQueryData,
-      overrides: pageOverrides(),
+      overrides: withServiceOverrides(pageOverrides()),
     );
   }
 

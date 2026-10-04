@@ -6,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import '../helpers/service_overrides.dart';
 
 void main() {
   final providers = <String, ProviderListenable<Object?>>{
@@ -19,7 +20,7 @@ void main() {
 
   for (final entry in providers.entries) {
     test('${entry.key} throws when not overridden', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final reader = container.read;
 
@@ -40,7 +41,7 @@ void main() {
   test(
     'outboxLoginGateStreamProvider surfaces an error when not overridden',
     () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       // This StreamProvider delegates to outboxServiceProvider, which throws
@@ -65,7 +66,7 @@ void main() {
       await getIt.reset();
       final registered = DomainLogger(loggingService: LoggingService());
       getIt.registerSingleton<DomainLogger>(registered);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(domainLoggerProvider), same(registered));
@@ -77,7 +78,7 @@ void main() {
         await getIt.reset();
         // Neither getIt nor loggingServiceProvider is set up, as in a widget
         // test that never thought about logging.
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final logger = container.read(domainLoggerProvider);
@@ -97,7 +98,9 @@ void main() {
       );
       final generation = DomainLogger(loggingService: LoggingService());
       final container = ProviderContainer(
-        overrides: [domainLoggerProvider.overrideWithValue(generation)],
+        overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(generation),
+        ]),
       );
       addTearDown(container.dispose);
 

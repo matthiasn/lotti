@@ -323,10 +323,9 @@ void main() {
       ).thenAnswer((_) => controller.stream);
 
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           habitsRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

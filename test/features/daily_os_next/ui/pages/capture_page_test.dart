@@ -27,6 +27,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -70,7 +71,7 @@ Widget _wrap(
   MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1280, 900)),
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: withServiceOverrides(overrides),
     child: makeTestableWidget2(
       child,
       mediaQueryData: mediaQueryData,

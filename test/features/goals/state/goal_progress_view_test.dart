@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/future_provider_probe.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -66,7 +67,7 @@ void main() {
                 () => db.getHabitById('floss'),
               ).thenAnswer((_) => definition.future);
               final container = ProviderContainer(
-                overrides: [
+                overrides: withServiceOverrides([
                   journalDbProvider.overrideWithValue(db),
                   goalMeasurableCaptureDecisionsProvider(
                     'goal-1',
@@ -74,7 +75,7 @@ void main() {
                   goalAgentHealthProvider(
                     'goal-1',
                   ).overrideWith((ref) => pending.future),
-                ],
+                ]),
               );
               final provider = span
                   ? goalAgentProgressViewForSpanProvider((
@@ -1151,7 +1152,7 @@ void main() {
             )
             as GoalSpecVersionEntity;
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         journalDbProvider.overrideWithValue(db),
         goalAgentHealthProvider('goal-1').overrideWith(
           (ref) async => (
@@ -1165,7 +1166,7 @@ void main() {
             buffer: 1,
           ),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -1184,7 +1185,7 @@ void main() {
     'provider returns no presentation when the goal has no active spec',
     () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: null,
@@ -1197,7 +1198,7 @@ void main() {
               buffer: null,
             ),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -1484,7 +1485,7 @@ void main() {
             )
             as GoalSpecVersionEntity;
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         journalDbProvider.overrideWithValue(db),
         goalAgentHealthProvider('goal-1').overrideWith(
           (ref) async => (
@@ -1520,7 +1521,7 @@ void main() {
             ),
           },
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

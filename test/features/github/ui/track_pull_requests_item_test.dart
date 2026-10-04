@@ -6,6 +6,7 @@ import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -17,7 +18,9 @@ void main() {
   setUp(() {
     repository = MockPullRequestRepository();
     container = ProviderContainer(
-      overrides: [pullRequestRepositoryProvider.overrideWithValue(repository)],
+      overrides: withServiceOverrides([
+        pullRequestRepositoryProvider.overrideWithValue(repository),
+      ]),
     );
     addTearDown(container.dispose);
     // The page keeps the intent alive; here a listener stands in for it.

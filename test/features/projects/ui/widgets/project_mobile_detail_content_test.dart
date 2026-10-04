@@ -31,6 +31,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -61,7 +62,9 @@ void main() {
 
     return makeTestableWidget2(
       ProviderScope(
-        overrides: [queryChatEnabledProvider.overrideWithValue(false)],
+        overrides: withServiceOverrides([
+          queryChatEnabledProvider.overrideWithValue(false),
+        ]),
         child: Theme(
           data: DesignSystemTheme.dark(),
           child: Scaffold(body: content),

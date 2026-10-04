@@ -69,6 +69,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -1248,7 +1249,7 @@ Future<void> _pumpTaskSurface(
       RepaintBoundary(
         key: screenshotBoundaryKey,
         child: ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             journalRepositoryProvider.overrideWithValue(journalRepository),
             clipboardHasImageProvider.overrideWith(
               (ref) async => clipboardHasImage,
@@ -1359,7 +1360,7 @@ Future<void> _pumpTaskSurface(
             for (final task in world.taskBrowseTasks)
               createEntryControllerOverride(task),
             ...hTaskDetailsPageOverrides(),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             debugShowCheckedModeBanner: false,

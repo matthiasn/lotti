@@ -18,6 +18,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'agent_providers_test_helpers.dart';
@@ -414,11 +415,11 @@ void main() {
     /// Helper to create a [ProviderContainer] with common mocks overridden.
     ProviderContainer createContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentServiceProvider.overrideWithValue(mockService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -445,11 +446,11 @@ void main() {
           (_) async => const [],
         );
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             projectUpdateCadenceProvider.overrideWithValue(cadence),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -662,7 +663,7 @@ void main() {
         when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
         final vc = MockVectorClockService();
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(mockService),
             agentRepositoryProvider.overrideWithValue(mockRepository),
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
@@ -676,7 +677,7 @@ void main() {
             domainLoggerProvider.overrideWithValue(
               DomainLogger(loggingService: LoggingService()),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final result = await container.read(
@@ -1265,9 +1266,9 @@ void main() {
         addTearDown(runner.dispose);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1289,9 +1290,9 @@ void main() {
         addTearDown(runner.dispose);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1318,9 +1319,9 @@ void main() {
         addTearDown(runner.dispose);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1355,9 +1356,9 @@ void main() {
         await runner.tryAcquire(kTestAgentId);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             wakeRunnerProvider.overrideWithValue(runner),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1382,7 +1383,9 @@ void main() {
         addTearDown(runner.dispose);
 
         final container = ProviderContainer(
-          overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+          overrides: withServiceOverrides([
+            wakeRunnerProvider.overrideWithValue(runner),
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1407,7 +1410,9 @@ void main() {
           addTearDown(runner.dispose);
 
           final container = ProviderContainer(
-            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+            overrides: withServiceOverrides([
+              wakeRunnerProvider.overrideWithValue(runner),
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -1438,7 +1443,9 @@ void main() {
           addTearDown(runner.dispose);
 
           final container = ProviderContainer(
-            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+            overrides: withServiceOverrides([
+              wakeRunnerProvider.overrideWithValue(runner),
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -1465,7 +1472,9 @@ void main() {
         addTearDown(runner.dispose);
 
         final container = ProviderContainer(
-          overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+          overrides: withServiceOverrides([
+            wakeRunnerProvider.overrideWithValue(runner),
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -1510,7 +1519,9 @@ void main() {
           await runner.tryAcquire(kTestAgentId, workspaceKey: 'day:one');
 
           final container = ProviderContainer(
-            overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+            overrides: withServiceOverrides([
+              wakeRunnerProvider.overrideWithValue(runner),
+            ]),
           );
           addTearDown(container.dispose);
 

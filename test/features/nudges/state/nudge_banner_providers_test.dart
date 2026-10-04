@@ -14,6 +14,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 NudgeBannerEntry _entry(
@@ -64,7 +65,7 @@ void main() {
 
   group('activeNudgeBannersProvider', () {
     test('with no registered sources (the default) it is empty', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final sub = container.listen(activeNudgeBannersProvider, (_, _) {});
       addTearDown(sub.close);
@@ -77,9 +78,9 @@ void main() {
         (ref) async => [_entry('b'), _entry('a')],
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           nudgeBannerSourcesProvider.overrideWithValue([source]),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final sub = container.listen(activeNudgeBannersProvider, (_, _) {});
@@ -115,13 +116,13 @@ void main() {
         (ref) => Completer<List<NudgeBannerEntry>>().future,
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           nudgeBannerSourcesProvider.overrideWithValue([
             goals,
             relationships,
             never,
           ]),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final sub = container.listen(activeNudgeBannersProvider, (_, _) {});
@@ -143,9 +144,9 @@ void main() {
           return const [];
         });
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             nudgeBannerSourcesProvider.overrideWithValue([source]),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final sub = container.listen(activeNudgeBannersProvider, (_, _) {});
@@ -164,7 +165,7 @@ void main() {
     test('stores a future deadline, ignores a past one, and removes itself '
         'on time', () {
       fakeAsync((async) {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
         final sub = container.listen(
           locallySnoozedNudgeDeadlinesProvider,
@@ -216,11 +217,11 @@ void main() {
         ),
       ).thenReturn(null);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentSyncServiceProvider.overrideWithValue(syncService),
           domainLoggerProvider.overrideWithValue(logger),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

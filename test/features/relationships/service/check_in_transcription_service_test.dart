@@ -17,6 +17,7 @@ import 'package:lotti/features/relationships/service/check_in_transcription_serv
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -312,12 +313,12 @@ void main() {
       addTearDown(tearDownTestGetIt);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(journalDb),
           profileResolverProvider.overrideWithValue(resolver),
           skillInferenceRunnerProvider.overrideWithValue(runner),
           relationshipRepositoryProvider.overrideWithValue(relationships),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

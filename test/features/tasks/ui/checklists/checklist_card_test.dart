@@ -19,6 +19,7 @@ import 'package:lotti/widgets/celebration/celebration_preferences_controller.dar
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Key used by the add-item field inside [ChecklistCard] when id='cl-1'.
@@ -46,7 +47,7 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
-      overrides: extraOverrides,
+      overrides: withServiceOverrides(extraOverrides),
       ChecklistCard(
         id: 'cl-1',
         taskId: 'task-1',

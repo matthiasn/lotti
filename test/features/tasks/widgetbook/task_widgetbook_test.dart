@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:widgetbook/widgetbook.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -78,7 +79,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: showcaseOverrides,
+          overrides: withServiceOverrides(showcaseOverrides),
           child: makeTestableWidget2(
             Theme(
               data: DesignSystemTheme.dark(),
@@ -115,7 +116,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: showcaseOverrides,
+          overrides: withServiceOverrides(showcaseOverrides),
           child: makeTestableWidget2(
             Theme(
               data: DesignSystemTheme.light(),

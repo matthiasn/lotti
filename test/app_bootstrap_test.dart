@@ -208,7 +208,7 @@ void main() {
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
-          overrides: buildProviderOverrides(context),
+          overrides: withServiceOverrides(buildProviderOverrides(context)),
         );
         addTearDown(bridged.dispose);
         expect(

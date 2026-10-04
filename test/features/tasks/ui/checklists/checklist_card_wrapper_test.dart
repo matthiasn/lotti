@@ -25,6 +25,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
 import 'drag_test_fakes.dart';
@@ -252,7 +253,7 @@ Future<({_ClipboardSpy clip, _FakeChecklistController controller})> _pump(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         checklistControllerProvider((
           id: cl.id,
           taskId: 'task-1',
@@ -272,7 +273,7 @@ Future<({_ClipboardSpy clip, _FakeChecklistController controller})> _pump(
         ),
         ...itemOverrides,
         ...extraItemOverrides,
-      ],
+      ]),
       child: WidgetTestBench(
         child: ChecklistCardWrapper(
           entryId: cl.id,
@@ -375,7 +376,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistControllerProvider((
               id: 'missing',
               taskId: 'task-1',
@@ -399,7 +400,7 @@ void main() {
             checklistCompletionServiceProvider.overrideWith(
               _FakeCompletionService.new,
             ),
-          ],
+          ]),
           child: const WidgetTestBench(
             child: ChecklistCardWrapper(
               entryId: 'missing',
@@ -478,7 +479,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistControllerProvider((
                 id: cl.id,
                 taskId: 'task-1',
@@ -505,7 +506,7 @@ void main() {
               checklistItemControllerProvider(
                 (id: 'item-1', taskId: 'task-1'),
               ).overrideWith(() => _FakeChecklistItemController(item1)),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistCardWrapper(
                 entryId: cl.id,
@@ -593,7 +594,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistControllerProvider((
               id: cl.id,
               taskId: 'task-1',
@@ -620,7 +621,7 @@ void main() {
                 id: itemId,
                 taskId: 'task-1',
               )).overrideWith(() => _FakeChecklistItemController(null)),
-          ],
+          ]),
           child: WidgetTestBench(
             child: ChecklistCardWrapper(
               entryId: cl.id,
@@ -727,7 +728,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistControllerProvider((
                 id: cl.id,
                 taskId: 'task-1',
@@ -756,7 +757,7 @@ void main() {
                 id: 'item-error',
                 taskId: 'task-1',
               )).overrideWith(_ThrowingChecklistItemController.new),
-            ],
+            ]),
             child: WidgetTestBench(
               child: ChecklistCardWrapper(
                 entryId: cl.id,

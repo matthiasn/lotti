@@ -77,8 +77,7 @@ void main() {
     SystemHealthAnalyzer? analyzer,
   }) {
     final container = ProviderContainer(
-      overrides: [
-        ...getItServiceOverrides(),
+      overrides: withServiceOverrides([
         systemHealthReportStoreProvider.overrideWithValue(store()),
         aiConfigRepositoryProvider.overrideWithValue(configs),
         taskAgentSetupOptionsProvider.overrideWith(
@@ -103,7 +102,7 @@ void main() {
                     },
               ),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -202,10 +201,9 @@ void main() {
         'store keeps reports in a system_health folder', () {
       getIt.registerSingleton<Directory>(logs);
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(configs),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

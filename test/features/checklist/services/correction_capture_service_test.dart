@@ -8,6 +8,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -59,9 +60,9 @@ void main() {
   /// of every capture-flow test. Disposal is registered automatically.
   ProviderContainer makeRepoContainer() {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -362,14 +363,14 @@ void main() {
 
   group('CorrectionCaptureNotifier', () {
     test('build returns null initially', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(correctionCaptureProvider), isNull);
     });
 
     test('setPending sets state correctly', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final pending = PendingCorrection(
@@ -388,7 +389,7 @@ void main() {
     });
 
     test('cancel clears state immediately', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final pending = PendingCorrection(
@@ -417,7 +418,7 @@ void main() {
     });
 
     test('cancel returns false when no pending correction', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final wasCancelled = container
@@ -428,7 +429,7 @@ void main() {
     });
 
     test('new setPending replaces previous pending', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final pending1 = PendingCorrection(
@@ -467,7 +468,7 @@ void main() {
 
     test('disposal before timer fires does not throw', () {
       fakeAsync((async) {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
 
         final pending = PendingCorrection(
           before: 'before',
@@ -494,7 +495,7 @@ void main() {
 
     test('setPending starts timer and cancel prevents onSave', () {
       fakeAsync((async) {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         var saveCalled = false;
@@ -534,7 +535,7 @@ void main() {
     });
 
     test('multiple setPending calls cancel previous timer', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       var firstSaveCalled = false;
@@ -586,7 +587,9 @@ void main() {
       when(() => repo.getCategoryById('missing')).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
-        overrides: [categoryRepositoryProvider.overrideWithValue(repo)],
+        overrides: withServiceOverrides([
+          categoryRepositoryProvider.overrideWithValue(repo),
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -607,7 +610,7 @@ void main() {
   group('CorrectionCaptureNotifier – timer fires and clears state', () {
     test('timer fires after delay: onSave is called and state is cleared', () {
       fakeAsync((async) {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         // Subscribe so the provider stays active; without a live listener,
@@ -652,7 +655,9 @@ void main() {
       'timer callback handles onSave exception without crashing; state is cleared',
       () {
         fakeAsync((async) {
-          final container = ProviderContainer();
+          final container = ProviderContainer(
+            overrides: getItServiceOverrides(),
+          );
           addTearDown(container.dispose);
 
           container.listen<PendingCorrection?>(
@@ -696,7 +701,9 @@ void main() {
       'timer does not call onSave when state was changed before it fires',
       () {
         fakeAsync((async) {
-          final container = ProviderContainer();
+          final container = ProviderContainer(
+            overrides: getItServiceOverrides(),
+          );
           addTearDown(container.dispose);
 
           // Subscribe so the provider stays active.

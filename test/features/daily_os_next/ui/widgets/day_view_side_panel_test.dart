@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../lockdown/lockdown_test_utils.dart';
@@ -93,7 +94,7 @@ void main() {
     List<DateTime>? requestedDays,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         currentDraftPlanProvider.overrideWith((ref, date) async {
           requestedDays?.add(date);
           return plan;
@@ -104,7 +105,7 @@ void main() {
         dailyOsPreferencesControllerProvider.overrideWith(
           preferences ?? _SeededPreferencesController.new,
         ),
-      ],
+      ]),
       child: makeTestableWidget2(
         SizedBox(width: size.width, height: size.height, child: child),
         mediaQueryData: MediaQueryData(size: size),
@@ -277,7 +278,7 @@ void main() {
         setView(tester, size);
         final requested = <DateTime>[];
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             currentDraftPlanProvider.overrideWith((ref, date) async {
               requested.add(date);
               return null;
@@ -288,7 +289,7 @@ void main() {
             dailyOsPreferencesControllerProvider.overrideWith(
               _SeededPreferencesController.new,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final today = _today;
@@ -442,7 +443,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               currentDraftPlanProvider.overrideWith(
                 (ref, date) => plan.future,
               ),
@@ -452,7 +453,7 @@ void main() {
               dailyOsPreferencesControllerProvider.overrideWith(
                 _SeededPreferencesController.new,
               ),
-            ],
+            ]),
             child: makeTestableWidget2(
               SizedBox(
                 width: size.width,
@@ -542,6 +543,7 @@ void main() {
       var toggled = 0;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: getItServiceOverrides(),
           child: makeTestableWidget2(
             SizedBox(
               width: size.width,
@@ -584,7 +586,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             currentDraftPlanProvider.overrideWith(
               (ref, date) async => _planForToday(),
             ),
@@ -595,7 +597,7 @@ void main() {
               _SeededPreferencesController.new,
             ),
             lockdownOverride(const {'cat_work'}),
-          ],
+          ]),
           child: makeTestableWidget2(
             SizedBox(
               width: size.width,

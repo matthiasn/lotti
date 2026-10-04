@@ -33,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
@@ -43,7 +44,9 @@ void main() {
   /// Builds a [ProviderContainer] with [overrides], disposed automatically
   /// at test teardown — shared by every provider-wiring test below.
   ProviderContainer buildContainer(List<Override> overrides) {
-    final container = ProviderContainer(overrides: overrides);
+    final container = ProviderContainer(
+      overrides: withServiceOverrides(overrides),
+    );
     addTearDown(container.dispose);
     return container;
   }

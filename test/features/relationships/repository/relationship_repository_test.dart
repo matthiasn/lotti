@@ -1534,10 +1534,9 @@ void main() {
       });
 
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockAgentRepository),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

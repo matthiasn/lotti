@@ -340,7 +340,7 @@ void main() {
       when(
         () => mockOutboxService.notLoggedInGateStream,
       ).thenAnswer((_) => const Stream<void>.empty());
-      return [
+      return withServiceOverrides([
         ...extra,
         themingControllerProvider.overrideWith(ReadyThemingController.new),
         enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
@@ -367,7 +367,7 @@ void main() {
           ),
         ),
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
-      ];
+      ]);
     }
 
     setUp(() async {
@@ -579,7 +579,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: shellOverrides(),
+          overrides: withServiceOverrides(shellOverrides()),
           child: MyBeamerApp(navService: mockNavService),
         ),
       );
@@ -607,7 +607,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: shellOverrides(),
+            overrides: withServiceOverrides(shellOverrides()),
             child: MyBeamerApp(navService: mockNavService),
           ),
         );
@@ -656,7 +656,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: shellOverrides(),
+          overrides: withServiceOverrides(shellOverrides()),
           child: MyBeamerApp(navService: mockNavService),
         ),
       );

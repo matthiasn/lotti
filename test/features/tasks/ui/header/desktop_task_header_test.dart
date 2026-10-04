@@ -25,6 +25,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget _desktopHost(
@@ -34,7 +35,7 @@ Widget _desktopHost(
   TargetPlatform platform = TargetPlatform.windows,
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: withServiceOverrides(overrides),
     child: MaterialApp(
       builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(theme),
@@ -72,7 +73,7 @@ Future<void> _pumpDesktop(
     _desktopHost(
       SizedBox(width: size.width, child: child),
       theme: theme,
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       platform: platform,
     ),
   );
@@ -1902,9 +1903,17 @@ void main() {
           const CelebrationPreferences.allEnabled().copyWith(tasks: false),
         ),
       ];
-      await _pumpDesktop(tester, header(open()), overrides: overrides);
+      await _pumpDesktop(
+        tester,
+        header(open()),
+        overrides: withServiceOverrides(overrides),
+      );
       // Transition into Done with the task switch off → no glow, no burst.
-      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await _pumpDesktop(
+        tester,
+        header(done()),
+        overrides: withServiceOverrides(overrides),
+      );
       await tester.pump(const Duration(milliseconds: 560));
       expect(find.byType(CompletionGlow), findsNothing);
       expect(find.byType(CompletionBurst), findsNothing);
@@ -1921,8 +1930,16 @@ void main() {
           const CelebrationPreferences.allEnabled().copyWith(enabled: false),
         ),
       ];
-      await _pumpDesktop(tester, header(open()), overrides: overrides);
-      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await _pumpDesktop(
+        tester,
+        header(open()),
+        overrides: withServiceOverrides(overrides),
+      );
+      await _pumpDesktop(
+        tester,
+        header(done()),
+        overrides: withServiceOverrides(overrides),
+      );
       await tester.pump(const Duration(milliseconds: 560));
       expect(find.byType(CompletionGlow), findsNothing);
       expect(find.byType(CompletionBurst), findsNothing);
@@ -1938,8 +1955,16 @@ void main() {
           ),
         ),
       ];
-      await _pumpDesktop(tester, header(open()), overrides: overrides);
-      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await _pumpDesktop(
+        tester,
+        header(open()),
+        overrides: withServiceOverrides(overrides),
+      );
+      await _pumpDesktop(
+        tester,
+        header(done()),
+        overrides: withServiceOverrides(overrides),
+      );
       await tester.pump(const Duration(milliseconds: 560));
 
       final burst = tester.widget<CompletionBurst>(
@@ -1989,8 +2014,16 @@ void main() {
             const CelebrationPreferences.allEnabled().copyWith(haptics: false),
           ),
         ];
-        await _pumpDesktop(tester, header(open()), overrides: overrides);
-        await _pumpDesktop(tester, header(done()), overrides: overrides);
+        await _pumpDesktop(
+          tester,
+          header(open()),
+          overrides: withServiceOverrides(overrides),
+        );
+        await _pumpDesktop(
+          tester,
+          header(done()),
+          overrides: withServiceOverrides(overrides),
+        );
         await tester.pump();
 
         expect(haptics, isEmpty);

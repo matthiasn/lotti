@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -85,12 +86,12 @@ void main() {
       ),
     );
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',
         ).overrideWith((ref) => const Stream.empty()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -158,12 +159,12 @@ void main() {
       );
     }
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider(
           'goal-1',
         ).overrideWith((ref) => const Stream.empty()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

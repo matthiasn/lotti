@@ -28,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -183,7 +184,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
             TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
+            overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
             mediaQueryData: const MediaQueryData(size: Size(800, 400)),
           ),
         );
@@ -274,7 +275,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetNoScroll(
               TaskDetailsPage(taskId: testTask.meta.id),
-              overrides: hTaskDetailsPageOverrides(),
+              overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
             ),
           );
 
@@ -304,7 +305,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TaskDetailsPage(taskId: testTask.id),
-          overrides: hTaskDetailsPageOverrides(),
+          overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
         ),
       );
       await tester.pump();
@@ -343,7 +344,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
+            overrides: withServiceOverrides(hTaskDetailsPageOverrides()),
           ),
         );
         await tester.pump();

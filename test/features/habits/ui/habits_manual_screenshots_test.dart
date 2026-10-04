@@ -36,6 +36,7 @@ import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
@@ -391,7 +392,7 @@ Future<void> _pumpHabitsDashboard(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         habitsControllerProvider.overrideWith(() => controller),
         habitHeatmapControllerProvider.overrideWith(
           () => _FixedHeatmapController(_heatmapData()),
@@ -400,7 +401,7 @@ Future<void> _pumpHabitsDashboard(
         celebrationPreferencesProvider.overrideWithValue(
           const CelebrationPreferences.allEnabled().copyWith(enabled: false),
         ),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
@@ -436,14 +437,14 @@ Future<void> _pumpHabitCompletion(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         habitSignalStatusProvider(
           _inspectHabitatSeals.id,
         ).overrideWith(() => _FixedSignalStatus(_inspectHabitatSeals.id)),
         measurableSuggestionsControllerProvider(
           _krillRations.id,
         ).overrideWith(_FixedSuggestions.new),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
@@ -572,14 +573,14 @@ Future<void> _pumpHabitEditor(
   final theme = _theme(brightness);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         measurableDataTypesStreamProvider.overrideWith(
           (ref) => Stream.value([_krillRations, _hydrationCheck]),
         ),
         workoutTypesProvider.overrideWith(
           (ref) async => ['functionalStrengthTraining', 'running'],
         ),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,

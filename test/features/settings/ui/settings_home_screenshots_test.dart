@@ -40,6 +40,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
@@ -67,7 +68,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: size),
         child: MaterialApp(
@@ -103,7 +104,7 @@ Future<void> _pumpScreen(
       home: home,
       brightness: brightness,
       size: device.size,
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
     ),
   );
   await settleFrames(tester);
@@ -177,9 +178,9 @@ void main() {
   /// Overrides shared by every capture:
   /// - `journalDbProvider` so `configFlagProvider` resolves the gating
   ///   flags from the stubbed mock.
-  List<Override> baseOverrides() => [
+  List<Override> baseOverrides() => withServiceOverrides([
     journalDbProvider.overrideWithValue(mocks.journalDb),
-  ];
+  ]);
 
   // -------------------------------------------------------------------------
   // Desktop (1440x900) → SettingsDesktopPage tree-nav master/detail.
@@ -189,7 +190,7 @@ void main() {
     await _pumpScreen(
       tester,
       device: desktopDevice,
-      overrides: baseOverrides(),
+      overrides: withServiceOverrides(baseOverrides()),
       home: const SettingsRootPage(),
     );
     // Top-level tree leaves prove the settings tree rendered.
@@ -211,7 +212,7 @@ void main() {
       tester,
       device: desktopDevice,
       brightness: Brightness.light,
-      overrides: baseOverrides(),
+      overrides: withServiceOverrides(baseOverrides()),
       home: const SettingsRootPage(),
     );
     final messages = _messages(tester);
@@ -235,7 +236,7 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      overrides: baseOverrides(),
+      overrides: withServiceOverrides(baseOverrides()),
       home: const SettingsRootPage(),
     );
     // Legacy single-page list rows.
@@ -257,7 +258,7 @@ void main() {
       tester,
       device: miniDevice,
       brightness: Brightness.light,
-      overrides: baseOverrides(),
+      overrides: withServiceOverrides(baseOverrides()),
       home: const SettingsRootPage(),
     );
     final messages = _messages(tester);
@@ -287,7 +288,7 @@ void main() {
         tester,
         device: desktopDevice,
         brightness: brightness,
-        overrides: baseOverrides(),
+        overrides: withServiceOverrides(baseOverrides()),
         home: const SettingsDesktopPage(beamToReplacementNamed: _ignoreBeam),
       );
       await _openDesktopDefinitions(tester);
@@ -311,7 +312,7 @@ void main() {
         tester,
         device: miniDevice,
         brightness: brightness,
-        overrides: baseOverrides(),
+        overrides: withServiceOverrides(baseOverrides()),
         home: const SettingsMobileBranchPage(branchId: 'definitions'),
       );
 

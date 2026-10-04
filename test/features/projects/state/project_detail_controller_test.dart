@@ -12,6 +12,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -45,9 +46,9 @@ void main() {
   /// Creates a container and waits for the controller to finish loading.
   Future<ProviderContainer> createLoadedContainer() async {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectRepositoryProvider.overrideWithValue(mockRepo),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -838,7 +839,9 @@ void main() {
           () => mockRepo.getProjectById(projectId),
         ).thenAnswer((_) async => null);
         final container = ProviderContainer(
-          overrides: [projectRepositoryProvider.overrideWithValue(mockRepo)],
+          overrides: withServiceOverrides([
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+          ]),
         );
         addTearDown(container.dispose);
 

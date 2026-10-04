@@ -269,10 +269,9 @@ void main() {
 
     ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
-          ...getItServiceOverrides(),
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(agentRepo),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

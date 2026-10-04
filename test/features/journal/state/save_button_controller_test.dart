@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -132,11 +133,11 @@ void main() {
   group('SaveButtonController', () {
     test('returns true when entry state is dirty', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(_testId).overrideWith(
             _DirtyEntryController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -149,11 +150,11 @@ void main() {
 
     test('returns false when entry state is saved', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(_testId).overrideWith(
             _SavedEntryController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -166,11 +167,11 @@ void main() {
 
     test('returns null when entry state is not yet loaded', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(_testId).overrideWith(
             _NullEntryController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -184,11 +185,11 @@ void main() {
     test('save delegates to entry controller notifier', () async {
       late _SavedEntryController entryController;
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(_testId).overrideWith(
             () => entryController = _SavedEntryController(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -209,13 +210,13 @@ void main() {
     test('save passes estimate to entry controller', () async {
       Duration? receivedEstimate;
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(_testId).overrideWith(() {
             return _EstimateTrackingEntryController(
               onSave: (estimate) => receivedEstimate = estimate,
             );
           }),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

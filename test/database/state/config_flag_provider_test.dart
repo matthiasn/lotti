@@ -9,6 +9,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 
 void main() {
@@ -34,9 +35,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         // Listen to the provider
@@ -61,9 +62,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         final subscription = container!.listen(
@@ -89,9 +90,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         // Create multiple listeners for the same flag
@@ -135,9 +136,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         final subscription = container!.listen(
@@ -165,9 +166,9 @@ void main() {
 
         container =
             ProviderContainer(
-                overrides: [
+                overrides: withServiceOverrides([
                   journalDbProvider.overrideWithValue(mockDb),
-                ],
+                ]),
               )
               // Create subscription
               ..listen(
@@ -211,9 +212,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         final values = <bool>[];
@@ -252,9 +253,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         final eventsSubscription = container!.listen(
@@ -290,9 +291,9 @@ void main() {
         );
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
 
         final subscription = container!.listen(

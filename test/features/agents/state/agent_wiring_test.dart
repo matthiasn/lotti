@@ -17,6 +17,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_data/entity_factories.dart';
 
@@ -62,12 +63,12 @@ void main() {
       when(() => notifications.notifyUiOnly(any())).thenReturn(null);
 
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentServiceProvider.overrideWithValue(agentService),
           eventAgentWorkflowProvider.overrideWithValue(eventWorkflow),
           agentTemplateServiceProvider.overrideWithValue(templateService),
           agentWakeRunnersProvider.overrideWithValue(contributedRunners),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
     });
@@ -441,11 +442,11 @@ void main() {
       notifications = MockUpdateNotifications();
       when(() => notifications.notifyUiOnly(any())).thenReturn(null);
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectUpdateCadenceProvider.overrideWithValue(cadence),
           scheduledWakeManagerProvider.overrideWithValue(manager),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       wireProjectSlotRefusals(

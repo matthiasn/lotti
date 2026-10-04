@@ -24,6 +24,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -71,12 +72,12 @@ void main() {
     bool showGraphEntryPoint = true,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         knowledgeGraphEntryPointEnabledProvider.overrideWithValue(
           showGraphEntryPoint,
         ),
         ...overrides,
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         theme: DesignSystemTheme.dark(),

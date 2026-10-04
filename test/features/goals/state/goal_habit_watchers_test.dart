@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
+import '../../../helpers/service_overrides.dart';
 
 void main() {
   const window = GoalWindow.rollingDays(count: 7);
@@ -80,13 +81,13 @@ void main() {
     required Map<String, GoalSpecVersionEntity?> specs,
   }) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         activeGoalAgentsProvider.overrideWith((ref) async => agents),
         for (final entry in specs.entries)
           goalAgentHealthProvider(
             entry.key,
           ).overrideWith((ref) async => health(entry.value)),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

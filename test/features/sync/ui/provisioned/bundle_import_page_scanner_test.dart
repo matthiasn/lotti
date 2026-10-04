@@ -20,6 +20,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import 'bundle_import_page_test_helpers.dart';
@@ -112,10 +113,10 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> defaultOverrides() => [
+  List<Override> defaultOverrides() => withServiceOverrides([
     matrixServiceProvider.overrideWithValue(mockMatrixService),
     loggingServiceProvider.overrideWithValue(mockLoggingService),
-  ];
+  ]);
 
   Future<void> tapScanInstead(WidgetTester tester) async {
     final action = find.byKey(const Key('bundle_import_scan_instead'));
@@ -139,7 +140,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -174,7 +175,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -194,7 +195,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -219,7 +220,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -244,7 +245,7 @@ void main() {
             SingleChildScrollView(
               child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
             ),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -271,7 +272,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -303,7 +304,7 @@ void main() {
             SingleChildScrollView(
               child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
             ),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -341,7 +342,7 @@ void main() {
             SingleChildScrollView(
               child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
             ),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -381,7 +382,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -709,7 +710,7 @@ void main() {
             SingleChildScrollView(
               child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
             ),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -761,7 +762,7 @@ void main() {
           SingleChildScrollView(
             child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();

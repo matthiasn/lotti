@@ -114,6 +114,7 @@ import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/journal_image_fixtures.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/thumb_hash_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -348,7 +349,7 @@ Widget _app({
 }) => RepaintBoundary(
   key: screenshotBoundaryKey,
   child: ProviderScope(
-    overrides: overrides,
+    overrides: withServiceOverrides(overrides),
     child: MediaQuery(
       data: _mediaQueryFor(device, textScaler: textScaler),
       child: MaterialApp(
@@ -797,7 +798,7 @@ void main() {
     RelationshipProposalSnapshot? proposals,
     PendingInteraction? pending,
     List<ImportedContact> contacts = const [],
-  }) => [
+  }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
     relationshipAgentServiceProvider.overrideWithValue(agentService),
     relationshipReminderServiceProvider.overrideWithValue(reminders),
@@ -849,7 +850,7 @@ void main() {
     createEntryControllerOverride(_pipBanner),
     createEntryControllerOverride(_skuaArriving),
     createEntryControllerOverride(_tillyPending),
-  ];
+  ]);
 
   /// Decodes Pip's photograph at every size an avatar draws it — and Skua's
   /// ThumbHash stand-in, whose raster also goes through the engine — *before*
@@ -982,7 +983,7 @@ void main() {
           home: home,
           brightness: brightness,
           device: device,
-          overrides: overrides,
+          overrides: withServiceOverrides(overrides),
           platform: device.isPhone ? TargetPlatform.iOS : TargetPlatform.macOS,
           textScaler: textScaler,
           locale: locale,
@@ -1058,7 +1059,7 @@ void main() {
               : const RelationshipsPage(),
           device: device,
           brightness: brightness,
-          overrides: personOverrides(),
+          overrides: withServiceOverrides(personOverrides()),
         );
 
         expect(
@@ -1100,7 +1101,7 @@ void main() {
               : const RelationshipsPage(),
           device: device,
           brightness: brightness,
-          overrides: personOverrides(),
+          overrides: withServiceOverrides(personOverrides()),
         );
 
         expect(find.byType(PeopleListRow), findsNothing);
@@ -1215,7 +1216,7 @@ void main() {
       home: const RelationshipDetailsPage(relationshipId: _pipId),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(),
+      overrides: withServiceOverrides(personOverrides()),
     );
 
     expect(
@@ -1237,7 +1238,7 @@ void main() {
       home: const RelationshipDetailsPage(relationshipId: _pipId),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(),
+      overrides: withServiceOverrides(personOverrides()),
     );
 
     await tester.tap(find.byKey(const ValueKey('person-pill-reminders')));
@@ -1268,7 +1269,7 @@ void main() {
       home: const RelationshipDetailsPage(relationshipId: _moId),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(),
+      overrides: withServiceOverrides(personOverrides()),
     );
 
     expect(find.text('Mo Krillson'), findsWidgets);
@@ -1645,7 +1646,7 @@ void main() {
         ),
         device: proDevice,
         brightness: Brightness.dark,
-        overrides: face.value(),
+        overrides: withServiceOverrides(face.value()),
         settle: !face.key.startsWith('running'),
       );
 
@@ -1751,7 +1752,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
       await openModal(tester);
 
@@ -1971,7 +1972,7 @@ void main() {
           ),
           device: device,
           brightness: Brightness.light,
-          overrides: personOverrides(),
+          overrides: withServiceOverrides(personOverrides()),
         );
         await openModal(tester);
         expect(find.byKey(const ValueKey('check-in-dictate')), findsOne);
@@ -1995,7 +1996,7 @@ void main() {
           ),
           device: device,
           brightness: Brightness.dark,
-          overrides: personOverrides(),
+          overrides: withServiceOverrides(personOverrides()),
           textScaler: const TextScaler.linear(1.6),
           locale: const Locale('de'),
         );
@@ -2049,7 +2050,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
       await openModal(tester);
 
@@ -2078,7 +2079,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
       await openModal(tester);
 
@@ -2123,7 +2124,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
       // The Photo card's banner strip decodes at the card's width.
       await warmAfterDryRun(
@@ -2326,7 +2327,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
       await openModal(tester);
 
@@ -2357,7 +2358,7 @@ void main() {
         ),
         device: device,
         brightness: Brightness.dark,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
 
       await warmAfterDryRun(
@@ -2433,7 +2434,7 @@ void main() {
       home: const ContactImportPage(),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(contacts: addressBook),
+      overrides: withServiceOverrides(personOverrides(contacts: addressBook)),
     );
 
     expect(
@@ -2572,7 +2573,7 @@ void main() {
         ),
         device: proDevice,
         brightness: brightness,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
 
       expect(
@@ -2635,7 +2636,7 @@ void main() {
         ),
         device: proDevice,
         brightness: brightness,
-        overrides: personOverrides(),
+        overrides: withServiceOverrides(personOverrides()),
       );
 
       expect(find.byType(PersonaAvatar), findsNWidgets(12));
@@ -2673,7 +2674,7 @@ void main() {
       ),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(),
+      overrides: withServiceOverrides(personOverrides()),
     );
 
     expect(find.byType(PeopleListRow), findsNWidgets(listItems.length));

@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -45,7 +46,7 @@ void main() {
     Override? firstDayOfWeek,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         insightsRepositoryProvider.overrideWithValue(repository),
         maybeUpdateNotificationsProvider.overrideWith(
           (ref) => withNotifications,
@@ -62,7 +63,7 @@ void main() {
             firstDayOfWeekIndexProvider.overrideWith(
               (ref) => DateTime.monday % 7,
             ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -630,7 +631,9 @@ void main() {
   group('insightsRepositoryProvider', () {
     test('default factory builds a repository over journalDbProvider', () {
       final container = ProviderContainer(
-        overrides: [journalDbProvider.overrideWithValue(MockJournalDb())],
+        overrides: withServiceOverrides([
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+        ]),
       );
       addTearDown(container.dispose);
       expect(

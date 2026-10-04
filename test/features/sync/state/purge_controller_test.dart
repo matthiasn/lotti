@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -17,10 +18,10 @@ void main() {
     ensureDomainLoggerRegistered();
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         journalDbProvider.overrideWithValue(mockDb),
         loggingServiceProvider.overrideWithValue(MockLoggingService()),
-      ],
+      ]),
     );
     controller = container.read(purgeControllerProvider.notifier);
   });
