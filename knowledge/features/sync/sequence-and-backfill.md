@@ -794,9 +794,9 @@ The stores (`deep_backfill_stores.dart`, `allDeepBackfillStores`) cover
 journal entries, entry links, agent entities and links, notifications and AI
 consumption events, all registered with the sync stack. Each reads its own
 database, so none waits on another feature's runtime. Agent stores used to
-join only once the agent runtime attached its runtime to the processor
-(`SyncEventProcessorAgentAttachment.attachRuntime`); a device whose agent start-up failed first
-advertised and counted no agent records at all.
+join only once the agent runtime had wired itself into the processor; a
+device whose agent start-up failed first advertised and counted no agent
+records at all.
 Rows without a clock (written before their type carried one) cannot be
 ordered against anything, so a batch does not list them as versions. It
 **names** them instead, in `unclocked`. Leaving them out was a defect: the
