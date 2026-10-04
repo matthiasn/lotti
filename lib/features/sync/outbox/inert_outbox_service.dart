@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:meta/meta.dart';
 
 /// [OutboxService] for worlds that must never sync (guest/demo profiles).

@@ -82,7 +82,7 @@ Add `toJson()`, `fromJson()`, `==`, `hashCode` to the existing plain class.
 
 ### 1.2 New freezed variant: `wakeTokenUsage`
 
-**File**: `lib/features/agents/model/agent_domain_entity.dart`
+**File**: `lib/classes/agents/agent_domain_entity.dart`
 
 ```dart
 const factory AgentDomainEntity.wakeTokenUsage({
@@ -117,7 +117,7 @@ Add `wakeTokenUsage` cases to all `map()` and `mapOrNull()` calls:
 
 ### 1.4 Update `AgentEntityTypes`
 
-**File**: `lib/features/agents/model/agent_constants.dart`
+**File**: `lib/classes/agents/agent_constants.dart`
 
 Add `static const wakeTokenUsage = 'wakeTokenUsage';`
 
@@ -248,9 +248,9 @@ Add labels for token usage section.
 | File | Change |
 |------|--------|
 | `lib/features/ai/model/inference_usage.dart` | Add toJson/fromJson/equality |
-| `lib/features/agents/model/agent_domain_entity.dart` | New `wakeTokenUsage` variant |
+| `lib/classes/agents/agent_domain_entity.dart` | New `wakeTokenUsage` variant |
 | `lib/features/agents/database/agent_db_conversions.dart` | Add cases for new variant |
-| `lib/features/agents/model/agent_constants.dart` | Add entity type string |
+| `lib/classes/agents/agent_constants.dart` | Add entity type string |
 | `lib/features/agents/database/agent_database.drift` | Add named query |
 | `lib/features/ai/conversation/conversation_repository.dart` | sendMessage returns InferenceUsage? |
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Create + persist usage entity |

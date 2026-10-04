@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
-
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

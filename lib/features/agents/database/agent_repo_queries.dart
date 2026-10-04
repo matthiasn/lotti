@@ -1,14 +1,14 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
 
 /// Read queries for reports, templates, soul documents, and message threads of
 /// [AgentRepository]. Collaborator extracted from the former `_AgentRepoQueries`

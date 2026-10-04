@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 
 class GeminiThinkingConfig {
   const GeminiThinkingConfig({

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 

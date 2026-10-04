@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 
 /// Last-writer-wins timestamp source for [AgentDomainEntity].
 extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {

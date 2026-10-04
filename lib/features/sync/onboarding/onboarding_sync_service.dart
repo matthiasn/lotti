@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 

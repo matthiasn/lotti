@@ -1,5 +1,5 @@
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 
 /// Connection-state hint surfaced on the provider card. Reflects what
 /// the redesigned settings page can determine locally — no live

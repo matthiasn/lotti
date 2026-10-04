@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/supported_language.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_summary_tool.dart';

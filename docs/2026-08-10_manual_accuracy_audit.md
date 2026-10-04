@@ -431,7 +431,7 @@ who operates the server". State the prerequisite in the first paragraph.
 short table:
 
 The synced set is the `SyncMessage` union in
-`lib/features/sync/model/sync_message.dart`. Enumerating it is the only way to
+`lib/classes/sync/sync_message.dart`. Enumerating it is the only way to
 get this right, and it is considerably wider than "entries and definitions":
 
 | Syncs | Stays on the device |

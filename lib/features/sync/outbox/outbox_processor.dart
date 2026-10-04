@@ -2,8 +2,8 @@
 
 import 'dart:async';
 
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/outbox/outbox_collapse.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';

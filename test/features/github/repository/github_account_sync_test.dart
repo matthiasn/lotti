@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_secret.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

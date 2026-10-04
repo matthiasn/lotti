@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 
 import '../test_data/entity_factories.dart';
 import '../test_data/link_factories.dart';

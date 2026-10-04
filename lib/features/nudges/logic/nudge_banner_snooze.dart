@@ -1,6 +1,6 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 
 /// How long a banner remains current while it is actually eligible to show.

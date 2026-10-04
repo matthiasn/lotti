@@ -3,11 +3,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 
 /// Provides the configured [MatrixService]. Must be overridden in [ProviderScope].
 final matrixServiceProvider = Provider<MatrixService>(

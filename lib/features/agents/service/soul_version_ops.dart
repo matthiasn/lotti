@@ -1,10 +1,10 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart'
     show SoulTemplateOps;
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';

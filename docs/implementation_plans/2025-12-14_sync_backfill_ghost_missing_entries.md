@@ -26,7 +26,7 @@ monotonic counter).
 - `lib/features/sync/outbox/outbox_service.dart` - Records sent EntryLink counters
 - `lib/features/sync/backfill/backfill_response_handler.dart` - Multi-payload backfill
 - `lib/features/sync/backfill/backfill_request_service.dart` - Bug fix: full backfill query
-- `lib/features/sync/model/sync_message.dart` - Extended with `payloadType`/`payloadId`
+- `lib/classes/sync/sync_message.dart` - Extended with `payloadType`/`payloadId`
 - `lib/features/sync/state/sequence_log_populate_controller.dart` - Two-phase populate
 - `lib/features/sync/ui/sequence_log_populate_modal.dart` - UI updates for links
 

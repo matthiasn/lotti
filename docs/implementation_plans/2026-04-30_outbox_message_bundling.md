@@ -106,7 +106,7 @@ static const int outboxBundleMaxSize = 50;
 
 ### 3.2 New SyncMessage variant
 
-`lib/features/sync/model/sync_message.dart` — add a freezed factory:
+`lib/classes/sync/sync_message.dart` — add a freezed factory:
 
 ```dart
 const factory SyncMessage.outboxBundle({
@@ -152,7 +152,7 @@ ordering invariants hold under concurrent drains.
 | File | Change |
 |---|---|
 | `lib/features/sync/tuning.dart` | Add `outboxBundleMaxSize`. |
-| `lib/features/sync/model/sync_message.dart` (+ generated) | Add `SyncOutboxBundle`. |
+| `lib/classes/sync/sync_message.dart` (+ generated) | Add `SyncOutboxBundle`. |
 | `lib/features/sync/outbox/outbox_repository.dart` | Add `claimNextBatch`, `markSentBatch`, `markRetryBatch`. |
 | `lib/features/sync/outbox/outbox_processor.dart` | Switch from `claim()` to `claimNextBatch()`; build bundle when batch > 1; send + mark batch atomically; preserve all retry / failure-diagnostics behavior. |
 | `lib/features/sync/outbox/outbox_service.dart` | Pattern-match `SyncOutboxBundle` in the freezed switch; the dequeue-built bundle is the only construction site, so no enqueue path is added. |

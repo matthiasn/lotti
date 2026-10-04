@@ -1,5 +1,5 @@
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';

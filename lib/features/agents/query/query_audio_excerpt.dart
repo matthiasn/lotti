@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
 
 /// A range of the original recording, including a little listening context.
 /// Long quotations retain their full duration rather than being cut mid-proof.

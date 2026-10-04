@@ -15,7 +15,6 @@ import 'package:lotti/features/design_system/components/motion/size_fade_entranc
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';

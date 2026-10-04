@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai_consumption/database/attribution_db_conversions.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
     as db;
 import 'package:lotti/features/ai_consumption/database/consumption_db_conversions.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 
 /// Raw persistence for [AiConsumptionEvent]s, over [db.ConsumptionDatabase].

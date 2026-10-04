@@ -1,5 +1,5 @@
+import 'package:lotti/classes/agents/agent_link.dart' as model;
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
 
 import 'constants.dart';
 

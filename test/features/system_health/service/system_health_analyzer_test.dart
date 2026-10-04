@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/system_health/domain/system_health_report.dart';
 import 'package:lotti/features/system_health/service/log_file_reader.dart';
 import 'package:lotti/features/system_health/service/system_health_analyzer.dart';

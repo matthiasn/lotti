@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';

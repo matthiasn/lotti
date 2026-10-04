@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 
 /// A position in the captured input log — a strict total order over captured
 /// (synced, never live-read) metadata, so two devices holding the same log

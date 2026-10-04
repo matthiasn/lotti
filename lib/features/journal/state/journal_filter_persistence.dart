@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/services/dev_logger.dart';
 

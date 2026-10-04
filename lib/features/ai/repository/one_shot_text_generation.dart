@@ -1,10 +1,10 @@
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:openai_dart/openai_dart.dart';

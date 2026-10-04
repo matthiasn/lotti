@@ -13,7 +13,7 @@ sources:
     title: Agents feature source
     last_modified: 2026-08-01
   - id: constants
-    resource: ../../../lib/features/agents/model/agent_constants.dart
+    resource: ../../../lib/classes/agents/agent_constants.dart
     title: AgentKinds and AgentLinkTypes
     last_modified: 2026-07-24
   - id: runtime-registry
@@ -29,7 +29,7 @@ sources:
     title: The enforced import direction between agents and daily_os_next
     last_modified: 2026-08-07
   - id: enums
-    resource: ../../../lib/features/agents/model/agent_enums.dart
+    resource: ../../../lib/classes/agents/agent_enums.dart
     title: WakeReason and AgentLifecycle
     last_modified: 2026-07-13
   - id: adr-0001

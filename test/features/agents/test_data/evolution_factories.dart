@@ -5,9 +5,9 @@
 // Changes to those factories' defaults can therefore ripple into evolution
 // tests — keep default values stable, add new behavior via named overrides.
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 

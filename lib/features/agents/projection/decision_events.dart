@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/utils/string_utils.dart';

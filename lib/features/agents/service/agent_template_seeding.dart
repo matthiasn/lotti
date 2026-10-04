@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';

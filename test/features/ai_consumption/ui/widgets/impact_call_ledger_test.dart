@@ -2,9 +2,9 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
+import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_call_ledger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';

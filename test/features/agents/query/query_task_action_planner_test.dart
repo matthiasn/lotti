@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 

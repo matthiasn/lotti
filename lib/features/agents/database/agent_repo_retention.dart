@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 
 /// Batched hard deletes for the derived rows retention may forget.
 ///

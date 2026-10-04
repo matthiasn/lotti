@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 
 /// Service responsible for filtering AI configurations based on user criteria

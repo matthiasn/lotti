@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:meta/meta.dart';
 
 /// Resolves the local node's capabilities for `SyncNodeProfileBroadcaster`.

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 
 import '../../../ai_consumption/test_utils.dart';
 import 'support/goal_agent_eval_fixtures.dart';

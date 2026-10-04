@@ -1,5 +1,5 @@
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 
 /// True iff every populated model id on [profile] resolves to a local

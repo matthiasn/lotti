@@ -1006,7 +1006,7 @@ gantt
 5. Unit tests for scheduled wake detection and enqueue
 
 **Files touched**:
-- `lib/features/agents/model/agent_enums.dart` (enum extension)
+- `lib/classes/agents/agent_enums.dart` (enum extension)
 - `lib/features/agents/wake/scheduled_wake_manager.dart` (new)
 - `lib/features/agents/wake/wake_orchestrator.dart` (integration)
 - `lib/features/agents/state/agent_providers.dart` (provider wiring)
@@ -1025,7 +1025,7 @@ gantt
 6. Unit tests with mock agent data
 
 **Files touched**:
-- `lib/features/agents/model/agent_enums.dart` (new enums)
+- `lib/classes/agents/agent_enums.dart` (new enums)
 - `lib/features/agents/model/classified_feedback.dart` (new)
 - `lib/features/agents/service/feedback_extraction_service.dart` (new)
 - `test/features/agents/service/feedback_extraction_service_test.dart` (new)
@@ -1043,10 +1043,10 @@ gantt
 6. Unit tests for CRUD and slot management
 
 **Files touched**:
-- `lib/features/agents/model/agent_enums.dart` (enum extension)
+- `lib/classes/agents/agent_enums.dart` (enum extension)
 - `lib/features/agents/model/improver_slot_keys.dart` (new)
 - `lib/features/agents/service/improver_agent_service.dart` (new)
-- `lib/features/agents/model/agent_constants.dart` (new link type if needed)
+- `lib/classes/agents/agent_constants.dart` (new link type if needed)
 - `test/features/agents/service/improver_agent_service_test.dart` (new)
 
 ### 9.5 Phase 4: Ritual Workflow

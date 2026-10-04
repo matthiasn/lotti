@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps_model.dart';
 
 import '../../../../agents/test_data/change_set_factories.dart';

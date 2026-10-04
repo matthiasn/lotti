@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// Pure wake-permission policy for task agents.
 ///

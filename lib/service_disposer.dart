@@ -20,7 +20,7 @@ import 'package:lotti/features/habits/service/habit_auto_completion_service.dart
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 
 /// Default deadline for best-effort cleanup. Dependency-sensitive drains opt
 /// out because timing out a Future does not stop it from using its stores.

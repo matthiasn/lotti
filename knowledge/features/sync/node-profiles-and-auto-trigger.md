@@ -9,7 +9,7 @@ generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: node-profile
-    resource: ../../../lib/features/sync/model/sync_node_profile.dart
+    resource: ../../../lib/classes/sync/sync_node_profile.dart
     title: SyncNodeProfile
     last_modified: 2026-06-22
   - id: probe

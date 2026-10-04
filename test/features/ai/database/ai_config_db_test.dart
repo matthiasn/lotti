@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 /// Versions of AI configurations are stamped, and a receiver keeps only the

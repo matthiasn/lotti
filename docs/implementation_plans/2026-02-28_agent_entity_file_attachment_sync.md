@@ -8,7 +8,7 @@ Follow the exact same pattern as `SyncJournalEntity`: upload payload as file, se
 
 ## Changes
 
-### 1. Model: `lib/features/sync/model/sync_message.dart`
+### 1. Model: `lib/classes/sync/sync_message.dart`
 - Added `String? jsonPath` to `SyncAgentEntity` and `SyncAgentLink`
 - Made `agentEntity` and `agentLink` nullable (for descriptor-only messages)
 - Ran `make build_runner` to regenerate

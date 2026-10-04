@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';

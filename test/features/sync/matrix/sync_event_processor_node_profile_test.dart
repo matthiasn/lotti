@@ -6,10 +6,10 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:mocktail/mocktail.dart';
 

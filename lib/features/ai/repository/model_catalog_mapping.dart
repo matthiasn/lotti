@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 
 /// Shared helpers for mapping a provider's `/models` catalog response into the
 /// app's `KnownModel` shape.

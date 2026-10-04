@@ -16,7 +16,7 @@ Track which vector clocks are "covered" by an outbox item, so receivers know whi
 
 ## Phase 1: Sync Message Model Changes
 
-### File: `lib/features/sync/model/sync_message.dart`
+### File: `lib/classes/sync/sync_message.dart`
 
 Add `coveredVectorClocks` field to `SyncJournalEntity` and `SyncEntryLink`:
 
@@ -341,7 +341,7 @@ group('coveredVectorClocks processing', () {
 
 | File | Changes |
 |------|---------|
-| `lib/features/sync/model/sync_message.dart` | Add `coveredVectorClocks` field to SyncJournalEntity and SyncEntryLink |
+| `lib/classes/sync/sync_message.dart` | Add `coveredVectorClocks` field to SyncJournalEntity and SyncEntryLink |
 | `lib/database/sync_db.dart` | Add `entryId` column, migration, `findPendingByEntryId()`, `updateOutboxMessage()` |
 | `lib/features/sync/outbox/outbox_service.dart` | Merge logic in `enqueueMessage()`, set `entryId` on new items |
 | `lib/features/sync/sequence/sync_sequence_log_service.dart` | Add `coveredVectorClocks` parameter, `_markCoveredCountersAsReceived()` |

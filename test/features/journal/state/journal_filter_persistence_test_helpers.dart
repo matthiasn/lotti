@@ -1,5 +1,5 @@
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 
 // Candidate values kept small and bounded so the generated sets exercise
 // membership/ordering variety without exploding the search space.
