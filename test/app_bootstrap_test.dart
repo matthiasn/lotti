@@ -879,5 +879,28 @@ void main() {
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
     });
+
+    test('the feature wiring stands alone, as the integration harnesses '
+        'spread it without the getIt bridge', () {
+      // The tutorial and manual-screenshot harnesses build their own bridge
+      // and spread only appFeatureWiringOverrides; a seam left out of it is
+      // missing from every full-app integration run.
+      final container = ProviderContainer(
+        overrides: appFeatureWiringOverrides(),
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(agentWakeRunnersProvider).keys,
+        containsAll([
+          AgentKinds.dayAgent,
+          AgentKinds.goalAgent,
+          AgentKinds.relationshipAgent,
+        ]),
+      );
+      expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
+      expect(container.read(dashboardHabitChartBuilderProvider), isNotNull);
+      expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
+    });
   });
 }

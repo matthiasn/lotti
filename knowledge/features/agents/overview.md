@@ -79,7 +79,7 @@ through the same registry mechanism as the day agent.
 The first four kinds above are wired directly in `wireWakeExecutor`, because this
 feature owns their workflows. `day_agent` is not: it is contributed through the
 registries in `agent_runtime_registry.dart`, which default to empty and are
-overridden in the composition root (`buildProviderOverrides`) — the one place
+overridden in the composition root (`appFeatureWiringOverrides`) — the one place
 allowed to see both features.
 
 | Registry | Contributes | Consumed by |

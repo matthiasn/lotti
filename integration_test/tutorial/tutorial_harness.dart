@@ -29,6 +29,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -725,6 +726,7 @@ class TutorialAppHarness {
     navServiceProvider.overrideWithValue(getIt<NavService>()),
     timeServiceProvider.overrideWithValue(getIt<TimeService>()),
     vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
+    ...appFeatureWiringOverrides(),
   ];
 
   Future<void> dispose() async {

@@ -62,18 +62,27 @@ and rebinds every provider against the freshly registered generation. In
 guest worlds `matrixServiceProvider` is deliberately left unoverridden — the
 Matrix stack does not exist there, and accidental resolution fails loudly.
 
-It carries a second, different kind of override. Beyond bridging getIt
-singletons, `buildProviderOverrides()` is where features that own an *agent
-kind* register it with the shared agent runtime — wake runners, runtime
+It carries a second, different kind of override, kept in its own list:
+`appFeatureWiringOverrides()`, which `buildProviderOverrides()` spreads. This
+is how features plug into one another. A lower feature cannot import a higher
+one, so it declares a seam — a nullable or default provider, a slot builder, a
+hook list — and the composition root, the only place permitted to see both
+sides, binds the higher feature to it. Features that own an *agent kind*
+register it with the shared agent runtime the same way: wake runners, runtime
 maintenance hooks, prompt-log wrap renderers and the Daily OS setup-sheet
-launcher. Those registries live in `features/agents` and default to empty
-precisely so that feature need not import the features that fill them; the
-composition root is the only place permitted to see both sides. See
+launcher. See
 [agent kinds](../features/agents/overview.md#how-an-owning-feature-plugs-a-kind-in).
-Unlike a missing getIt bridge, a missing registration here fails **silently** —
-an unregistered kind falls through to the task-agent workflow — so the
-registrations are pinned by
+Unlike a missing getIt bridge, a missing binding here fails **silently** — an
+unregistered kind falls through to the task-agent workflow, an unbound slot
+renders nothing — so the registrations are pinned by
 `test/app_bootstrap_test.dart` (the `agent runtime registrations` group).
+
+Every entry in that list is a lazy binding rather than a getIt bridge, so the
+full-app integration harnesses (`integration_test/tutorial/tutorial_harness.dart`
+and `integration_test/manual_screenshots_test.dart`) build their own bridge
+and spread the same list. A seam bound only in `buildProviderOverrides()`
+would be missing from every tutorial video and manual screenshot — and those
+suites run in CI only when their own files change, so nothing would notice.
 
 The getIt registrations in `lib/get_it.dart` carry one seam of the same kind:
 `RelationshipCascadeFactory`. The journal repository lives in `lib/logic`,

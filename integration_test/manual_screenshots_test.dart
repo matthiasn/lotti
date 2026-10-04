@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
@@ -357,6 +358,7 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     navServiceProvider.overrideWithValue(getIt<NavService>()),
     timeServiceProvider.overrideWithValue(getIt<TimeService>()),
     vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
+    ...appFeatureWiringOverrides(),
   ];
 }
 
