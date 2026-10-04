@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -85,7 +86,11 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
         if (!mounted) return;
         if (stored != null &&
             stored.meta.vectorClock != pair.local.meta.vectorClock) {
-          setState(() => _localEntryFuture = null);
+          // The side just read is shown at once, in place of the old one:
+          // the page keeps its diff rather than flashing a loading scaffold.
+          setState(() {
+            _localEntryFuture = SynchronousFuture(stored);
+          });
           context.showToast(
             tone: DesignSystemToastTone.warning,
             title: context.messages.conflictEntryChangedTitle,

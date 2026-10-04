@@ -391,7 +391,22 @@ void main() {
       await _showConflict(tester, bench, conflict);
       expect(find.textContaining('Edited since'), findsNothing);
 
-      await _tap(tester, l10n.conflictPickerUseThisDevice);
+      final button = find.widgetWithText(
+        DesignSystemButton,
+        l10n.conflictPickerUseThisDevice,
+      );
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      // Frame by frame: the established diff stays on screen while the side
+      // is read again — never the full-page loading scaffold.
+      var sawLoading = false;
+      for (var frame = 0; frame < 10; frame++) {
+        await tester.pump();
+        if (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+          sawLoading = true;
+        }
+      }
+      expect(sawLoading, isFalse, reason: 'a background re-read flashed');
       await tester.pumpAndSettle();
 
       final toast = tester.widget<DesignSystemToast>(
