@@ -6,7 +6,6 @@
     "lib/features/agents/wake/wake_orchestrator.dart": 1316,
     "lib/features/ai/services/skill_inference_runner.dart": 1776,
     "lib/features/goals/ui/pages/create_goal_agent_page.dart": 1143,
-    "lib/features/goals/workflow/goal_agent_workflow.dart": 1609,
     "lib/logic/repositories/checklist_repository.dart": 1127,
     "lib/features/tasks/ui/pages/tasks_tab_page.dart": 1127
   }

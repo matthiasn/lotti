@@ -118,7 +118,7 @@
     "lib/features/goals/service/goal_health_refresh_service.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/goals/state/goal_agent_providers.dart": {"lookups": 4, "isRegistered": 4},
     "lib/features/goals/ui/pages/unified_goals_page.dart": {"lookups": 1},
-    "lib/features/goals/workflow/goal_agent_workflow.dart": {"lookups": 1},
+    "lib/features/goals/workflow/goal_agent_workflow_persistence.dart": {"lookups": 1},
     "lib/features/habits/repository/habits_repository.dart": {"lookups": 1},
     "lib/features/habits/state/habit_completion_controller.dart": {"lookups": 1},
     "lib/features/habits/state/habit_settings_controller.dart": {"lookups": 1},
