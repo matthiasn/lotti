@@ -425,14 +425,14 @@ void main() {
         );
         when(() => mockTimeService.getCurrent()).thenReturn(entry);
         when(
-          () => mockTimeService.stop(),
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
         ).thenAnswer((_) async {});
         when(
           () => mockNotificationService.updateBadge(),
         ).thenAnswer((_) async {});
 
         expect(await repository.deleteJournalEntity(entry.id), isTrue);
-        verify(() => mockTimeService.stop()).called(1);
+        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
       });
 
       test('the tombstone is built on the entry as stored: a version stored '
