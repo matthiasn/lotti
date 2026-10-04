@@ -55,37 +55,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       logSummarizer: logSummarizer,
       domainLogger: domainLogger,
     );
-    // Rendered once: input capture logs these sources, and the
-    // unchanged-input gate below fingerprints them. Null when rendering
-    // failed, which skips both rather than aborting the wake.
-    List<RenderedSource>? sources;
-    var linkedEntityIds = const <String>{};
-    try {
-      final linked = await journalDb.getLinkedEntities(taskId);
-      // Image AI analyses (summary, OCR, …) are linked from their image,
-      // not from the task, so they need their own bulk lookup. A failure
-      // here degrades to rendering without analyses rather than skipping
-      // the sources altogether.
-      var imageAiResponses = const <String, List<AiResponseEntry>>{};
-      try {
-        imageAiResponses = await fetchAiResponsesForImages(
-          db: journalDb,
-          linkedEntities: linked,
-        );
-      } catch (e) {
-        logError('failed to fetch image AI responses for capture', error: e);
-      }
-      sources = renderTaskSources(
-        linked,
-        // A running timer's duration is still ticking; capturing it would
-        // mint a new content version every wake (see renderTaskSources).
-        runningEntryId: getIt<TimeService>().getCurrent()?.meta.id,
-        aiResponsesByEntryId: imageAiResponses,
-      );
-      linkedEntityIds = {for (final entity in linked) entity.meta.id};
-    } catch (e) {
-      logError('failed to render wake sources', error: e);
-    }
+    final (:sources, :linkedEntityIds) = await _renderWakeSources(taskId);
 
     var captureSucceeded = false;
     final renderedSources = sources;
@@ -325,90 +295,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     );
 
     // 6a. Persist the prompts for inspectability before sending to the LLM.
-    // The system prompt is content-addressed: one payload per DISTINCT prompt
-    // text (it only changes when the template/soul/scaffold change, so storage
-    // does not grow per wake), referenced from each wake by a `system` message
-    // with a `contentEntryId` so the conversation view can expand it. In the
-    // actual LLM request the system prompt is always messages[0] — this row is
-    // audit/inspection only.
-    try {
-      final systemPromptContent = <String, Object?>{
-        'role': 'system',
-        'text': systemPrompt,
-      };
-      final systemPromptPayloadId = ContentDigest.of(systemPromptContent);
-      if (await agentRepository.getEntity(systemPromptPayloadId) == null) {
-        await syncService.upsertEntity(
-          AgentDomainEntity.agentMessagePayload(
-            id: systemPromptPayloadId,
-            agentId: AgentInputCaptureService.sharedContentAgentId,
-            createdAt: now,
-            vectorClock: null,
-            content: systemPromptContent,
-          ),
-        );
-      }
-      // NB: a `system` message WITH a contentEntryId is how the conversation
-      // UI identifies the prompt row (`_displayRank` ordering and the
-      // "System Prompt" badge both key on it) — keep `system`-kind
-      // bookkeeping rows (milestones, retractions) payload-free.
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: TaskAgentWorkflow._uuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.system,
-          createdAt: now,
-          vectorClock: null,
-          contentEntryId: systemPromptPayloadId,
-          metadata: AgentMessageMetadata(runKey: runKey),
-        ),
-      );
-    } catch (e) {
-      logError('failed to persist system prompt', error: e);
-      // Non-fatal: continue with execution even if audit fails.
-    }
-    try {
-      final userPayloadId = TaskAgentWorkflow._uuid.v4();
-      // ADR 0020 v2 prompt records: when the read flipped, the embedded log
-      // block is a pure function of the synced event log — store only the
-      // non-derivable halves plus the reconstruction marker, instead of the
-      // whole prompt. Legacy wakes (live journal render) keep the full blob.
-      final logStart = builtMessage.logStart;
-      final logEnd = builtMessage.logEnd;
-      final userPayloadContent = (logStart != null && logEnd != null)
-          ? encodePromptRecord(
-              head: userMessage.substring(0, logStart),
-              tail: userMessage.substring(logEnd),
-              summaryId: memoryView.activeSummaryId,
-              until: memoryView.lastEventPosition,
-            )
-          : <String, Object?>{'text': userMessage};
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessagePayload(
-          id: userPayloadId,
-          agentId: agentId,
-          createdAt: now,
-          vectorClock: null,
-          content: userPayloadContent,
-        ),
-      );
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: TaskAgentWorkflow._uuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.user,
-          createdAt: now,
-          vectorClock: null,
-          contentEntryId: userPayloadId,
-          metadata: AgentMessageMetadata(runKey: runKey),
-        ),
-      );
-    } catch (e) {
-      logError('failed to persist user message', error: e);
-      // Non-fatal: continue with execution even if audit fails.
-    }
+    await _persistWakePrompts(
+      agentId: agentId,
+      threadId: threadId,
+      runKey: runKey,
+      now: now,
+      systemPrompt: systemPrompt,
+      builtMessage: builtMessage,
+      memoryView: memoryView,
+    );
 
     // Visible to the failure path below: incremental flushes commit as they
     // go, so a wake that dies later still has suggestions on disk that need
@@ -424,57 +319,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         threadId: threadId,
       );
 
-      final toolDispatcher = TaskToolDispatcher(
-        journalDb: journalDb,
-        journalRepository: this.journalRepository,
-        checklistRepository: this.checklistRepository,
-        labelsRepository: labelsRepository,
-        persistenceLogic: getIt<PersistenceLogic>(),
-        timeService: getIt<TimeService>(),
-        taskAgentService: taskAgentService,
-        projectRepository: this.projectRepository,
-        agentRepository: agentRepository,
-        syncService: syncService,
-        requestingAgentId: agentId,
-      );
-
-      final changeSetBuilder = ChangeSetBuilder(
+      final changeSetBuilder = _buildChangeSetBuilder(
         agentId: agentId,
         taskId: taskId,
         threadId: threadId,
         runKey: runKey,
-        domainLogger: domainLogger,
-        approvedChecklistItemResolver: journalChecklistItemResolver(journalDb),
-        checklistItemBaseResolver: journalChecklistItemResolver(journalDb),
-        checklistItemStateResolver: (itemId) async {
-          final entity = await journalDb.journalEntityById(itemId);
-          if (entity is ChecklistItem) {
-            return (
-              title: entity.data.title,
-              isChecked: entity.data.isChecked,
-              isArchived: entity.data.isArchived,
-            );
-          }
-          return null;
-        },
-        existingChecklistTitlesResolver: () async {
-          final entity = await journalDb.journalEntityById(taskId);
-          if (entity is! Task) return {};
-          final items = await this.checklistRepository.getChecklistItemsForTask(
-            task: entity,
-          );
-          return items
-              .map((item) => item.data.title.toLowerCase().trim())
-              .toSet();
-        },
-        labelNameResolver: (labelId) async {
-          final label = await journalDb.getLabelDefinitionById(labelId);
-          return label?.name;
-        },
-        existingLabelIdsResolver: () async {
-          final entity = await journalDb.journalEntityById(taskId);
-          return entity?.meta.labelIds?.toSet() ?? {};
-        },
       );
 
       flushedChangeSets = changeSetBuilder;
@@ -498,119 +347,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           : TaskAgentWakeFacts.permissive;
       final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
 
-      final strategy = TaskAgentStrategy(
-        // Withhold `update_report` from the opening turn so the wake does the
-        // work before it reports on it. Null when the flag is off, which
-        // leaves one fixed tool list for the conversation as before.
-        stagedToolExposure: narrowToolSurface
-            ? TaskAgentStagedToolExposure(allTools: tools)
-            : null,
+      final strategy = _buildStrategy(
+        tools: tools,
         executor: executor,
-        syncService: syncService,
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
-        // Surface proposals at each turn boundary instead of making the user
-        // wait out the report turn, its forced retry and any report-editor
-        // pass. `pendingSets` is the pre-wake snapshot: an incremental flush
-        // dedups against it but never writes to it — consolidation waits for
-        // the end-of-wake build, which runs after staged retractions land.
-        //
-        // Wrapped in a transaction because a flush is retried on the next
-        // turn boundary: a superseded running-timer match writes a
-        // `ChangeDecisionEntity` before the change set itself, so a failure
-        // in between would otherwise leave that decision behind and the retry
-        // would mint a second one for the same match. The end-of-wake build
-        // gets its atomicity from `WakeOutputWriter`'s own transaction —
-        // `runInTransaction` nests, so both paths are covered exactly once.
-        flushChangeSet: () async {
-          await syncService.runInTransaction(
-            () => changeSetBuilder.build(
-              syncService,
-              existingPendingSets: pendingSets,
-              rejectedFingerprints: ledger.rejectedFingerprints,
-              rejectedDisplayKeys: ledger.rejectedDisplayKeys,
-              incremental: true,
-            ),
-          );
-          // Writing the change set is not enough to show it: the suggestion
-          // providers re-query only when `agentUpdateStreamProvider` emits,
-          // and `AgentSyncService` does not notify on upsert. Without this the
-          // flush is invisible until `_notifyWakeCompletion` fires after the
-          // whole wake returns — which is the wait this feature exists to
-          // remove.
-          //
-          // `notifyUiOnly` rather than `notify`: the latter also feeds
-          // `localUpdateStream`, which drives wake orchestration and would let
-          // a wake re-trigger itself.
-          if (getIt.isRegistered<UpdateNotifications>()) {
-            getIt<UpdateNotifications>().notifyUiOnly({
-              agentId,
-              taskId,
-              agentNotification,
-            });
-          }
-        },
+        ledger: ledger,
         retractionService: retractionService,
-        resolveTaskMetadata: () =>
-            ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
-        resolveCategoryId: (entityId) async {
-          final entity = await journalDb.journalEntityById(entityId);
-          return entity?.categoryId;
-        },
-        readVectorClock: (entityId) async {
-          final entity = await journalDb.journalEntityById(entityId);
-          return entity?.meta.vectorClock;
-        },
-        executeToolHandler: (toolName, args, manager) =>
-            toolDispatcher.dispatch(toolName, args, taskId),
-        // The entries that `update_time_entry` may target — those rendered in
-        // the "Editable Time Entries" prompt section plus the running timer
-        // of the "Active Running Timer" one, which is linked from this task
-        // like any other. A referenced entryId outside this set is a
-        // hallucinated id.
-        resolveEditableTimeEntryIds: () async {
-          final linked = await journalDb.getLinkedEntities(taskId);
-          return linked
-              .whereType<JournalEntry>()
-              .map((entry) => entry.meta.id)
-              .toSet();
-        },
-        // The id of the timer running for THIS task (mirrors the same-task
-        // branch of the "Active Running Timer" prompt section), or null. Only
-        // its text may be proposed while it runs.
-        resolveRunningTimerId: () async {
-          final timeService = getIt<TimeService>();
-          final current = timeService.getCurrent();
-          if (current is! JournalEntry) return null;
-          return timeService.linkedFrom?.id == taskId ? current.meta.id : null;
-        },
-        // The fields an `update_time_entry` proposal records as its base.
-        resolveTimeEntryFields: (entryId) async {
-          final entity = await journalDb.journalEntityById(entryId);
-          return entity is JournalEntry ? timeEntryFields(entity) : null;
-        },
-        // A `link_task` target must be a live task; anything else is a
-        // hallucinated id. Returns the title for the proposal summary.
-        resolveLinkableTaskTitle: (targetTaskId) async {
-          final entity = await journalDb.journalEntityById(targetTaskId);
-          if (entity is! Task || entity.meta.deletedAt != null) return null;
-          return entity.data.title;
-        },
-        // Canonical triples of every live link touching this task, so an
-        // already-existing relationship is suppressed instead of re-proposed.
-        resolveExistingTaskRelations: () async {
-          final links = await journalDb.linksForEntryIdsBidirectional({
-            taskId,
-          });
-          return {
-            for (final link in links)
-              if (link.deletedAt == null && link.hidden != true)
-                TaskAgentChangeHandlers.canonicalRelationTripleOfLink(link),
-          };
-        },
       );
 
       final inferenceRepo = CloudInferenceWrapper(
@@ -695,170 +441,25 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         }
       }
 
-      var effectiveReport = TaskAgentReportDraft.fromJson({
-        'oneLiner': strategy.extractReportOneLiner(),
-        'tldr': strategy.extractReportTldr(),
-        'content': strategy.extractReportContent(),
-      });
-      InferenceUsage? reportEditorUsage;
-      ReportFinalizerOutcome? reportFinalizerOutcome;
-      final reportRoute = TaskAgentReportEditor.routeFor(
-        providerType: provider.inferenceProviderType,
+      final (
+        report: effectiveReport,
+        editorUsage: reportEditorUsage,
+        outcome: reportFinalizerOutcome,
+      ) = await _finalizeReport(
+        strategy: strategy,
+        provider: provider,
         modelId: modelId,
+        inferenceRepo: inferenceRepo,
+        task: taskAttentionContext.task,
+        reportWasRequired: reportWasRequired,
+        templateCtx: templateCtx,
+        recordConsumption: recordConsumption,
+        consumptionCategoryId: consumptionCategoryId,
+        agentId: agentId,
+        taskId: taskId,
+        runKey: runKey,
+        threadId: threadId,
       );
-      final mistralReportEditorEligible =
-          reportRoute == TaskAgentReportRoute.alwaysEdited;
-      final isDirectQwenExecutor = reportRoute == TaskAgentReportRoute.detected;
-      final normalizedExecutorModelId = modelId.toLowerCase();
-      final isDirectQwenModel =
-          normalizedExecutorModelId == meliousQwen35122BA10BModelId;
-      final isMistralEditorCandidate =
-          normalizedExecutorModelId == meliousMistralSmall4119BInstructModelId;
-      final isReportEditorCandidate =
-          isMistralEditorCandidate || isDirectQwenModel;
-      final reportEditorRouteEligible =
-          mistralReportEditorEligible || isDirectQwenExecutor;
-      final currentTaskData = taskAttentionContext.task?.data;
-      final currentTaskDue = currentTaskData?.due;
-      final currentTaskPriority = switch (currentTaskData?.priority) {
-        TaskPriority.p0Urgent => TaskPriority.p0Urgent.short,
-        TaskPriority.p1High => TaskPriority.p1High.short,
-        _ => null,
-      };
-      final materialTaskState =
-          reportEditorRouteEligible && effectiveReport != null
-          ? TaskAgentReportEditor.buildMaterialTaskState(
-              strategy.extractSuccessfulMutations(),
-              currentDueDate: currentTaskDue?.toIso8601String().substring(
-                0,
-                10,
-              ),
-              currentEstimateMinutes: currentTaskData?.estimate?.inMinutes,
-              currentPriority: currentTaskPriority,
-            )
-          : null;
-      final languageCode = materialTaskState == null
-          ? null
-          : materialTaskState['languageCode'] as String? ??
-                taskAttentionContext.task?.data.languageCode ??
-                'en';
-      final directQwenIssues = isDirectQwenExecutor && effectiveReport != null
-          ? TaskAgentReportEditor.detectDirectQwenRegressions(
-              languageCode: languageCode!,
-              materialTaskState: materialTaskState!,
-              report: effectiveReport.toJson(),
-            ).toSet()
-          : const <TaskAgentReportRevisionIssue>{};
-      if (directQwenIssues.isNotEmpty) {
-        final issueCodes = directQwenIssues.map((issue) => issue.name).toList()
-          ..sort();
-        logInfo(
-          'report defect detector matched: ${issueCodes.join(',')}; '
-          'executorModelId=$modelId',
-          subDomain: 'reportEditor',
-        );
-      }
-      final shouldRunReportEditor =
-          mistralReportEditorEligible || directQwenIssues.isNotEmpty;
-      if (!reportEditorRouteEligible && isReportEditorCandidate) {
-        logInfo(
-          'report editor route not eligible: '
-          'providerType=${provider.inferenceProviderType.name};'
-          'executorModelId=$modelId',
-          subDomain: 'reportEditor',
-        );
-      }
-      if (reportEditorRouteEligible && effectiveReport == null) {
-        await strategy.recordWorkflowResult(
-          toolName: reportWasRequired
-              ? '${TaskAgentReportEditor.auditToolPrefix}_failed'
-              : '${TaskAgentReportEditor.auditToolPrefix}_not_needed',
-          errorMessage: reportWasRequired
-              ? 'executor_missing_required_report'
-              : null,
-        );
-      } else if (isDirectQwenExecutor && directQwenIssues.isEmpty) {
-        await strategy.recordWorkflowResult(
-          toolName: '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen',
-        );
-      } else if (shouldRunReportEditor && effectiveReport != null) {
-        // Whatever happens below, the editor ran, so its outcome is recorded.
-        reportFinalizerOutcome = ReportFinalizerOutcome.failed;
-        try {
-          final editResult =
-              await TaskAgentReportEditor(
-                conversationRepository: conversationRepository,
-                inferenceRepository: inferenceRepo,
-                provider: provider,
-              ).edit(
-                draft: effectiveReport,
-                languageCode: languageCode!,
-                materialTaskState: materialTaskState!,
-                reportDirective:
-                    TaskAgentPromptBuilder.effectiveReportDirective(
-                      version: templateCtx.version,
-                      modelId: modelId,
-                    ),
-                consumptionAgentId: recordConsumption ? agentId : null,
-                consumptionTaskId: recordConsumption ? taskId : null,
-                consumptionCategoryId: consumptionCategoryId,
-                consumptionWakeRunKey: recordConsumption ? runKey : null,
-                consumptionThreadId: recordConsumption ? threadId : null,
-                initialValidationIssues: directQwenIssues,
-              );
-          reportEditorUsage = editResult.usage;
-          final revision = editResult.revision;
-          if (editResult.error != null) {
-            await strategy.recordWorkflowResult(
-              toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
-              errorMessage: editResult.error.runtimeType.toString(),
-            );
-            logError(
-              'report editor failed; preserving executor report',
-              error: editResult.error,
-              stackTrace: editResult.stackTrace,
-            );
-          } else if (revision != null) {
-            effectiveReport = revision;
-            reportFinalizerOutcome = ReportFinalizerOutcome.accepted;
-            await strategy.recordWorkflowResult(
-              toolName: isDirectQwenExecutor
-                  ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired'
-                  : '${TaskAgentReportEditor.auditToolPrefix}_accepted',
-            );
-            logInfo(
-              'accepted report editor revision after '
-              '${editResult.attempts} attempt(s)',
-              subDomain: 'reportEditor',
-            );
-          } else {
-            reportFinalizerOutcome = ReportFinalizerOutcome.rejected;
-            await strategy.recordWorkflowResult(
-              toolName: '${TaskAgentReportEditor.auditToolPrefix}_rejected',
-              errorMessage: editResult.validationIssues
-                  .map((issue) => issue.name)
-                  .join(','),
-            );
-            logInfo(
-              'rejected report editor revision after '
-              '${editResult.attempts} attempt(s): '
-              '${editResult.validationIssues.map((issue) => issue.name).join(',')}; '
-              'candidateReturned=${editResult.hadRevision}',
-              subDomain: 'reportEditor',
-            );
-          }
-        } catch (e, s) {
-          await strategy.recordWorkflowResult(
-            toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
-            errorMessage: e.runtimeType.toString(),
-          );
-          logError(
-            'report editor failed; preserving executor report',
-            error: e,
-            stackTrace: s,
-          );
-        }
-      }
 
       conversationTimer.stop();
       persistenceTimer.start();
@@ -936,24 +537,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
             now: now,
-            reportProvenance: reportFinalizerOutcome == null
-                ? ReportInferenceProvenance.executorOnly(runSnapshot)
-                : ReportInferenceProvenance.edited(
-                    runSnapshot,
-                    // The editor runs on the executor's provider connection.
-                    finalizer: InferenceRouteSnapshot(
-                      providerModelId: meliousQwen35122BA10BModelId,
-                      modelName: meliousQwen35122BA10BModelId,
-                      servingProviderConfigId:
-                          runSnapshot.executor.servingProviderConfigId,
-                      servingProviderType:
-                          runSnapshot.executor.servingProviderType,
-                      servingProviderName:
-                          runSnapshot.executor.servingProviderName,
-                      runtimeSettings: const {},
-                    ),
-                    outcome: reportFinalizerOutcome,
-                  ),
+            reportProvenance: _reportProvenance(
+              runSnapshot,
+              reportFinalizerOutcome,
+            ),
           );
 
       // 9b. Embed the report for vector search (fire-and-forget).

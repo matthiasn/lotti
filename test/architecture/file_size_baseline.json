@@ -8,7 +8,6 @@
     "lib/features/agents/ui/ai_summary_card/proposal_row_part.dart": 1026,
     "lib/features/agents/ui/chat/agent_chat_view.dart": 1190,
     "lib/features/agents/wake/wake_orchestrator.dart": 1316,
-    "lib/features/agents/workflow/task_agent_execute.dart": 1132,
     "lib/features/ai/services/skill_inference_runner.dart": 1776,
     "lib/features/daily_os_next/ui/pages/day_page.dart": 1070,
     "lib/features/events/ui/widgets/event_detail_view.dart": 1022,
