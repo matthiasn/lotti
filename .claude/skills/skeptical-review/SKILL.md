@@ -88,7 +88,8 @@ nitpick. Verify against `AGENTS.md` (authoritative) — highlights:
   not a test). New/changed behavior in `lib/` without matching test changes
   is worth flagging.
 - **l10n**: no hardcoded user-visible strings; new labels added to every
-  catalog in `lib/l10n/` (list and register rules in
+  full catalog in `lib/l10n/`, with `app_en_GB.arb` getting an entry only
+  where British spelling differs (list, exception and register rules in
   `knowledge/conventions/localization.md`); generated l10n Dart files never
   hand-edited.
 - **Design system**: no raw spacing numbers, `TextStyle` constructors, or
