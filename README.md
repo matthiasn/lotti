@@ -166,8 +166,9 @@ The long-term direction is inference on your own devices, as they become
 powerful enough to run capable models. The record and the reasoning over it
 would then both stay at home. Part of that is already here: speech recognition
 runs fully offline with Whisper or Voxtral, and lighter jobs run on a local
-model. The agents still need a larger class of model than personal hardware runs
-well — see
+model. For the agents, today's answer is the cloud with zero data retention,
+because they need a larger class of model than personal hardware runs fast
+enough yet — see
 [Local models and the sweet spot for agents](#local-models-and-the-sweet-spot-for-agents).
 
 ---
@@ -263,8 +264,9 @@ them, on your devices — read by no model unless you route it to one.
 ### You choose the brain, and you can see what it cost
 
 Lotti has no inference backend. Route each category of your life to the compute
-you are willing to stand behind: a local model for the private things, a
-frontier model for work, or the European option Lotti recommends. The usage
+you are willing to stand behind: a cloud provider with zero data retention,
+the European option Lotti recommends, or a local model as personal hardware
+catches up. The usage
 view reports tokens and requests for every cloud call, and spend, energy and
 CO₂e for the providers that report them — today that means Melious. Local
 inference is not measured at all, because the cost moves onto your own hardware
@@ -521,8 +523,8 @@ whether its operator enables retention.
 
 Lotti has no inference backend. Every AI call goes to a provider you
 configured, under your own account and API key, and you choose per category
-which provider that is. Work can go to a frontier model while a journal stays
-on a local one. That granularity is the entire point.
+which provider that is. Work can go to one provider while your journal goes
+to another, or to none at all. That granularity is the entire point.
 
 **Prefer zero data retention.** The provider you route a category to sees what
 that category sends it. The safest cloud choice is a provider whose terms
@@ -589,10 +591,9 @@ typically run locally are not that far behind on correctness, but they are slow:
 Qwen 3.8 27B, for example, lands only a few points below them, yet is far slower
 even on cloud inference, occasionally stalls, and misses the day planner's
 30-second budget ([the evaluation](docs/evaluations/lotti-gym-2026-09-21.md)).
-On a personal machine that gap only widens.
-Local inference is also power-hungry: under sustained agent load on an M4 Max
-with 128 GB of RAM, the laptop is audible and the battery drains noticeably
-faster than during normal work.
+On a personal machine that gap only widens: even an M4 Max with 128 GB of RAM
+does not yet run the agents fast enough to keep up with daily use. Personal
+hardware is improving quickly, and closing that gap is the long-term direction.
 
 **LottiGym is how new models are judged.** Models enter the market every few
 weeks, and a benchmark score says little about whether one can run a task
@@ -607,12 +608,13 @@ passing it:
 python3 tool/lotti_gym.py assess --model MODEL_ID
 ```
 
-Hybrid is the realistic answer today: speech offline, lighter jobs on a local
-model if you like, and the agents on a sweet-spot-class model from a provider
-with zero data retention. Image generation has no local path yet — cover art
-goes through Gemini or Alibaba. As personal hardware gets faster, models of
-that class are expected to move onto your own devices, until a cloud provider
-is a choice rather than a necessity.
+**The practical answer today is the cloud, with zero data retention:** run
+the agents on a sweet-spot-class model from a provider whose terms commit to
+keeping nothing, and keep speech fully offline with Whisper or Voxtral if you
+like. Image generation has no local path yet — cover art goes through Gemini or
+Alibaba. As personal hardware gets faster, models of that class are expected to
+move onto your own devices, until a cloud provider is a choice rather than a
+necessity.
 
 **Input on running Lotti locally is very welcome.** If you have a model,
 quantisation, runtime or hardware setup that keeps up with the agents, please
