@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/journal_card_wiring.dart';
 import 'package:lotti/classes/ai_input.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -22,13 +23,13 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
-import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -38,6 +39,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/entry_tools.dart' as entry_tools;
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
+import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -1033,6 +1035,9 @@ void main() {
           makeTestableWidget(
             ModernJournalCard(item: testChecklist),
             overrides: [
+              journalChecklistCountsProvider.overrideWith(
+                checklistCountsFromTasks,
+              ),
               checklistCompletionControllerProvider(
                 (id: 'test-checklist-id', taskId: null),
               ).overrideWith(_FakeChecklistCompletion.new),
@@ -1056,6 +1061,9 @@ void main() {
           makeTestableWidget(
             ModernJournalCard(item: testChecklist),
             overrides: [
+              journalChecklistCountsProvider.overrideWith(
+                checklistCountsFromTasks,
+              ),
               checklistCompletionControllerProvider(
                 (id: 'test-checklist-id', taskId: null),
               ).overrideWith(_LoadingChecklistCompletion.new),
@@ -1233,6 +1241,9 @@ void main() {
                 ),
               ),
               overrides: [
+                journalRelationshipNameProvider.overrideWith(
+                  relationshipNameFromRelationships,
+                ),
                 relationshipNameProvider(
                   'test-relationship-id',
                 ).overrideWith((ref) async => 'Frida Kjellsen'),
@@ -1261,6 +1272,9 @@ void main() {
               makeTestableWidget(
                 ModernJournalCard(item: checkIn(entry.key, text: 'Talked')),
                 overrides: [
+                  journalRelationshipNameProvider.overrideWith(
+                    relationshipNameFromRelationships,
+                  ),
                   relationshipNameProvider(
                     'test-relationship-id',
                   ).overrideWith((ref) async => 'Frida Kjellsen'),
@@ -1299,6 +1313,9 @@ void main() {
             makeTestableWidget(
               ModernJournalCard(item: bare),
               overrides: [
+                journalRelationshipNameProvider.overrideWith(
+                  relationshipNameFromRelationships,
+                ),
                 relationshipNameProvider(
                   'test-relationship-id',
                 ).overrideWith((ref) async => null),
@@ -1424,6 +1441,9 @@ void main() {
           makeTestableWidget(
             ModernJournalCard(item: checkIn),
             overrides: [
+              journalRelationshipNameProvider.overrideWith(
+                relationshipNameFromRelationships,
+              ),
               relationshipNameProvider(
                 'rel-1',
               ).overrideWith((ref) async => 'Wanja'),

@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lotti/beamer/journal_card_wiring.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/agents/agent_database.dart';
@@ -35,6 +36,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
 import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/task_title_hooks.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
@@ -334,6 +336,11 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       (ref) => [
         if (getIt.isRegistered<AgentDatabase>()) dailyOsTaskTitleSync(ref),
       ],
+    ),
+    // Journal cards show checklist progress and a check-in's person.
+    journalChecklistCountsProvider.overrideWith(checklistCountsFromTasks),
+    journalRelationshipNameProvider.overrideWith(
+      relationshipNameFromRelationships,
     ),
     agentWakeRunnersProvider.overrideWith(
       (ref) => {

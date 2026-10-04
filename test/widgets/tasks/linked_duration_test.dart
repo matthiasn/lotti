@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task_progress_state.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
-import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/task_progress_controller.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/tasks/linked_duration.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../helpers/service_overrides.dart';
-import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
+import '../../helpers/service_overrides.dart';
+import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 class _FixedProgressController extends TaskProgressController {
   _FixedProgressController({required this.fixedState});

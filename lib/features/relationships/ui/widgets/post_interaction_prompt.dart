@@ -11,6 +11,7 @@ import 'package:lotti/features/relationships/service/pending_interaction_store.d
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the composer describing [pending] — the channel, when it started

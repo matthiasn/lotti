@@ -41,8 +41,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart' as permissions;
 
 part 'check_in_capture_sheet_actions_part.dart';
-part 'check_in_capture_sheet_launch_part.dart';
 part 'check_in_capture_sheet_form_part.dart';
+part 'check_in_capture_sheet_launch_part.dart';
 
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
@@ -57,16 +57,6 @@ String checkInInteractionLabel(
     context.messages.checkInInteractionVideoCall,
   CheckInInteractionType.message => context.messages.checkInInteractionMessage,
   CheckInInteractionType.other => context.messages.checkInInteractionOther,
-};
-
-/// The icon for an interaction type — shared by the detail page's check-in
-/// rows and the journal card, so the two can't drift apart.
-IconData checkInInteractionIcon(CheckInInteractionType type) => switch (type) {
-  CheckInInteractionType.inPerson => LottiIcons.people,
-  CheckInInteractionType.call => LottiIcons.call,
-  CheckInInteractionType.videoCall => LottiIcons.video,
-  CheckInInteractionType.message => LottiIcons.chat,
-  CheckInInteractionType.other => LottiIcons.forum,
 };
 
 /// The localized label for a sentiment — shared by the capture sheet and the

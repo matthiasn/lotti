@@ -10,6 +10,7 @@ import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The Check-ins section of the person page (design 2026-09-06 §3): one

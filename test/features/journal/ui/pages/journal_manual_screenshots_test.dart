@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:lotti/beamer/journal_card_wiring.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -37,6 +38,7 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
@@ -633,6 +635,9 @@ void main() {
       () => _ManualJournalPageController(pageState),
     ),
     labelsStreamProvider.overrideWith((ref) => Stream.value(world.labels)),
+    journalRelationshipNameProvider.overrideWith(
+      relationshipNameFromRelationships,
+    ),
     relationshipNameProvider(
       _pipRelationshipId,
     ).overrideWith((ref) async => 'Commander Pip Frostbeak'),
