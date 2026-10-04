@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
-import 'package:lotti/features/sync/g_counter.dart';
 
 void main() {
   GoalNudgeEntity goalNudge({

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/services/secure_storage.dart';
 
 /// Returns the persisted [MatrixConfig], preferring the one already cached on
 /// [session]. On a cache miss it reads and decodes the config JSON from

@@ -7,12 +7,12 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/pages/definitions_list_page.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../test_utils/hover_divider_harness.dart';
-import '../../../../widget_test_utils.dart';
+import '../../test_utils/hover_divider_harness.dart';
+import '../../widget_test_utils.dart';
 
 /// Pumps the generic template directly with plain [String] items — no
 /// providers needed because the template consumes a ready [AsyncValue].

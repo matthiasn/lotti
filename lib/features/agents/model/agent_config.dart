@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/sync/g_counter.dart';
 
 part 'agent_config.freezed.dart';
 part 'agent_config.g.dart';

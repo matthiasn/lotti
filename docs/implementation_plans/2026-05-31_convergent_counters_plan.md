@@ -60,7 +60,7 @@ Net target: **three fields** — `wakeCounter`, `totalSessionsCompleted`,
 
 ### 1. A `GCounter` value type (not a raw `Map`)
 
-`lib/features/sync/g_counter.dart` — a small immutable CRDT primitive sitting
+`lib/classes/g_counter.dart` — a small immutable CRDT primitive sitting
 beside `VectorClock`:
 
 - storage: `Map<String,int> byHost` (non-negative);

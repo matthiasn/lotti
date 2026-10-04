@@ -3,11 +3,11 @@ import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_progress_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Entry point for the "generate embeddings" maintenance flow.

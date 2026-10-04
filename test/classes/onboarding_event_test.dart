@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 
 void main() {
   group('OnboardingEventName.isDailyOsOnboarding', () {

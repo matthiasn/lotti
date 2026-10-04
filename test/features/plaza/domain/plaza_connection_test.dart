@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/plaza/domain/plaza_connection.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 
 void main() {
   for (final type in relationshipSelectorTypes) {

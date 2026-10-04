@@ -1,10 +1,10 @@
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-export 'package:lotti/features/tasks/model/directed_relation.dart';
+export 'package:lotti/classes/directed_relation.dart';
 
 /// The (primary, inverse) phrasing pair for a directional relationship type,
 /// or null for `basic` (symmetric — no phrasing choice). Shared by the

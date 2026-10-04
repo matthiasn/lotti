@@ -1,4 +1,4 @@
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/services/secure_storage.dart';
 
 /// Stores inference-provider credentials outside the AI configuration database.
 ///

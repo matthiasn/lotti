@@ -4,7 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/tasks/repository/task_field_write.dart';
+import 'package:lotti/features/journal/repository/task_field_write.dart';
 import 'package:uuid/uuid.dart';
 
 /// Result of processing a task status transition.

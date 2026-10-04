@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:meta/meta.dart';
 
 /// The user's GitHub account on this device: the token, the login it was

@@ -1,7 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/membership_list.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/tasks/model/membership_list.dart';
 
 /// How many ids one bulk read binds, well below SQLite's variable cap.
 const _chunk = 500;

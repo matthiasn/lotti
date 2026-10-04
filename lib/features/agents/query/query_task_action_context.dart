@@ -1,11 +1,11 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/shown_checklist_items.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
-import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 
 /// Loads bounded, live task metadata for explicit user-requested changes.
 /// No report, transcript, neighbour body or historical instruction is included.

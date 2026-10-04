@@ -178,7 +178,7 @@ shapes and failure-representation needs. See
 ## The voice surface shares the same directed vocabulary
 
 `DirectedRelation` lives in
-`../../../lib/features/tasks/model/directed_relation.dart` (pure Dart, no
+`../../../lib/classes/directed_relation.dart` (pure Dart, no
 Flutter import) and is re-exported by the picker file, so the UI and the task
 agent cannot drift apart on what a phrase means. Beyond the localized picker
 labels, each relation carries a stable `wireName`

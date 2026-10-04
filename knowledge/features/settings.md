@@ -37,7 +37,7 @@ sources:
     title: Shared settings detail scaffold
     last_modified: 2026-07-15
   - id: list-shell
-    resource: ../../lib/features/settings/ui/pages/definitions_list_page.dart
+    resource: ../../lib/widgets/pages/definitions_list_page.dart
     title: DefinitionsListPage — the shared definition list shell
     last_modified: 2026-10-03
   - id: maintenance-page

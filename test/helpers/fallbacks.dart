@@ -15,6 +15,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
@@ -45,7 +46,6 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';

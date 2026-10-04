@@ -7,8 +7,8 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/secure_storage.dart';
 
 part 'ai_config_db.g.dart';
 
