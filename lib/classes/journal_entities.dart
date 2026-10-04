@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -16,8 +17,7 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
 

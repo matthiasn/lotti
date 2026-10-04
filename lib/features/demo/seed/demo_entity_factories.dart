@@ -1,10 +1,10 @@
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 
 // Entity factories shared by the production demo seed and the test suite.
 //

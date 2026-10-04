@@ -1,6 +1,6 @@
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 
 /// Rebuilds the local attribution read model from existing sync carriers.

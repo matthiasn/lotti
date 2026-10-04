@@ -14,7 +14,7 @@ import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 

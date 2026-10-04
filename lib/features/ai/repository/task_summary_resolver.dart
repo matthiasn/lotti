@@ -1,11 +1,11 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
 

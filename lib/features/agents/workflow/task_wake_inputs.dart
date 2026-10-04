@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// The rows a wake of task agent [agentId] reads as input, with their vector
 /// clocks, which `AgentWakeCoordinator` checks against a peer's watermark: a

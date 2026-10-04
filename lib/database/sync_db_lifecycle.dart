@@ -148,7 +148,7 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
   /// This method is the amnesty half of the retire pair: any
   /// `missing`/`requested` row older than [amnestyWindow] is treated as
   /// unresolvable. `amnestyWindow` should be wider than the active
-  /// backfill-request window ([SyncTuning.defaultBackfillMaxAge]) so
+  /// backfill-request window (`SyncTuning.defaultBackfillMaxAge`) so
   /// rows have a fair chance to be requested before being retired, but
   /// narrow enough that truly stuck rows do not accumulate
   /// indefinitely.

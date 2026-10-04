@@ -2,9 +2,9 @@ import 'dart:ui' show Locale;
 
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 
 /// A wake seeded from the shipped penguin demo world.

@@ -104,7 +104,7 @@ historical measurements when any of those searchable labels change; archive
 state and choice ordering alone do not rewrite the index.
 
 **The data decides, not the definition.** `measurementValueLabel`
-(`lib/features/journal/util/entry_tools.dart`) reads a measurement as a choice
+(`lib/utils/entry_tools.dart`) reads a measurement as a choice
 recording iff `choiceId` is set: a number recorded before the measurable was
 switched to choices still reads as its number, and a choice id still resolves
 after a switch back. A choice the definition no longer lists reads as a

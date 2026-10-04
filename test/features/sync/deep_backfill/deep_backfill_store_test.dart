@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   late JournalDb db;

@@ -1,5 +1,5 @@
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
 /// Pure scheduling helpers for the outbox send pipeline: row-level priority
 /// classification and the backoff-gate / enqueue-delay arithmetic.

@@ -1,16 +1,16 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_backfill_queries.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_backfill_responder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_gap_materializer.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_missing_notifier.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_receiver.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
-import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 

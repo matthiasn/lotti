@@ -57,7 +57,7 @@ sources:
     title: initConfigFlags — the stored flag set
     last_modified: 2026-09-20
   - id: flag-placement
-    resource: ../../lib/features/settings/domain/config_flag_placement.dart
+    resource: ../../lib/classes/config_flag_placement.dart
     title: Which settings surface each config flag appears on
     last_modified: 2026-09-20
 ---
@@ -319,7 +319,7 @@ the flag was. A switch that *tunes* a feature is only looked for by someone who
 already has it, and is fine where it is.
 
 Both lists live in
-[`config_flag_placement.dart`](../../lib/features/settings/domain/config_flag_placement.dart) —
+[`config_flag_placement.dart`](../../lib/classes/config_flag_placement.dart) —
 one file, outside the UI layer, so a test can ask where a flag belongs without
 importing a widget and the two halves of the partition cannot drift into
 separate layers.

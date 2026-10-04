@@ -17,8 +17,8 @@ import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/features/github/ui/pull_request_details_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/utils/relative_age_label.dart';
+import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How a part of the status line reads: its colour backs up a word, never

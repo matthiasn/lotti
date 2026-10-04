@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';

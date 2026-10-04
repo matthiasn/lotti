@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
 /// Live state for one in-flight inference run.

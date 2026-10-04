@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
@@ -24,7 +25,6 @@ import 'package:lotti/features/agents/wake/wake_suppression_tracker.dart';
 import 'package:lotti/features/agents/wake/wake_throttle_coordinator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 

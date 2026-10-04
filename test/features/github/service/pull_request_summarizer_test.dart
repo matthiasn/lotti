@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/pull_request_data.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:mocktail/mocktail.dart';

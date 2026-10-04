@@ -58,7 +58,7 @@ Move them to a standalone file so removing `logging_db.dart` doesn't break impor
 - `lib/main.dart` — Remove `LoggingDb` registration in GetIt and
   `loggingDbProvider` override.
 - `lib/providers/service_providers.dart` — Remove `loggingDbProvider`.
-- `lib/services/service_disposer.dart` — Remove `LoggingDb` disposal.
+- `lib/service_disposer.dart` — Remove `LoggingDb` disposal.
 - `lib/database/maintenance.dart` — Remove `deleteLoggingDb()`.
 - `lib/features/settings/ui/pages/advanced/maintenance_page.dart` — Remove
   "Delete Logging DB" button/action.
@@ -116,7 +116,7 @@ Replace the SQLite-backed list with a file-based reader:
 | Delete | `lib/database/logging_db.g.dart` |
 | Modify | `lib/main.dart` |
 | Modify | `lib/providers/service_providers.dart` |
-| Modify | `lib/services/service_disposer.dart` |
+| Modify | `lib/service_disposer.dart` |
 | Modify | `lib/database/maintenance.dart` |
 | Modify | `lib/features/settings/ui/pages/advanced/maintenance_page.dart` |
 | Modify | `lib/features/settings/ui/pages/advanced/logging_page.dart` |

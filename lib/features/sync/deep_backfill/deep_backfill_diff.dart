@@ -1,4 +1,4 @@
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// What one inventory batch asks of the device that diffs it.
 ///

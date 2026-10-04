@@ -1,7 +1,7 @@
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/sync/g_counter.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// A pair of genuinely-concurrent versions of one id, plus their timestamps.
 ///

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_db_conversions.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_utils.dart';
 

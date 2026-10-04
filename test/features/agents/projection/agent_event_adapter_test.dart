@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/entity_factories.dart';
 import 'projection_test_fixtures.dart';

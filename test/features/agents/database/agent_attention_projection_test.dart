@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Mirror tests for [AgentAttentionProjection]. They construct the collaborator
 /// wired to a real [AgentRepoCore] over an in-memory [AgentDatabase]. Because

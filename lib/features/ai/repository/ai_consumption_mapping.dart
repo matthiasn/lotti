@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 
 /// Maps the AI feature's [AiResponseType] onto the consumption feature's

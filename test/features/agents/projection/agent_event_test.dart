@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/projection/agent_event.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 const _vc = VectorClock({'h0': 1});
 

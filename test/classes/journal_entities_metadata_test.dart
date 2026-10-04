@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/conversions.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'journal_entities_test_helpers.dart';
 import 'project_test_generators.dart';

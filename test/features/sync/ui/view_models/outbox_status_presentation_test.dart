@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados3, IntAnys, any;
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.dart';
 
 QueueSummary _summary({

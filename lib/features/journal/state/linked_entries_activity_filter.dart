@@ -1,5 +1,5 @@
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 
 /// Activity kinds surfaced as toggle pills above the linked entries list.
 ///

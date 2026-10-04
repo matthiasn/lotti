@@ -46,7 +46,7 @@ const tokenFile = 'lib/features/design_system/theme/icon_tokens.dart';
 ///
 /// Additions need a reason of that shape. "It was convenient" is not one.
 const domainGlyphAllowlist = <String>{
-  'lib/features/categories/domain/category_icon_data.dart',
+  'lib/widgets/category_icon_data.dart',
 };
 
 /// One file's outstanding debt.

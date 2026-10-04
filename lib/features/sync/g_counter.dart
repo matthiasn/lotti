@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// A grow-only counter (G-counter CRDT): a per-host map of monotonic counts
 /// whose observable [value] is their **sum**. Merge is element-wise max, so an

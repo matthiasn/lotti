@@ -3,9 +3,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';

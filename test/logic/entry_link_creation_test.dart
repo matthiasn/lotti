@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 

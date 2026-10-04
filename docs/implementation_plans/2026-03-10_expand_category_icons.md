@@ -119,7 +119,7 @@ but users frequently create categories for which no fitting icon exists:
 
 ## Files to Modify
 
-### 1. `lib/features/categories/domain/category_icon.dart`
+### 1. `lib/classes/category_icon/category_icon.dart`
 **The main file. All changes concentrate here.**
 
 - **Enum values** (lines 137–202): Add 35 new values organized in new groups after the

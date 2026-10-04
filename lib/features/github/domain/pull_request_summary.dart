@@ -1,5 +1,5 @@
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/pull_request_data.dart';
-import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:meta/meta.dart';
 
 /// How much of a description a summary is asked to read.

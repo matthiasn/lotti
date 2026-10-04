@@ -1,5 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Internal record of which entities an agent mutated and when.

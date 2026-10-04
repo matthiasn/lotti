@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 
 import '../../../test_data/test_data.dart';

@@ -4,19 +4,19 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/database/outbox_status.dart';
 
 part 'sync_db.g.dart';
 part 'sync_db_backfill.dart';
 part 'sync_db_deep_backfill.dart';
 part 'sync_db_lifecycle.dart';
+part 'sync_db_onboarding.dart';
 part 'sync_db_outbox.dart';
 part 'sync_db_outbox_dedup.dart';
 part 'sync_db_outbox_prune.dart';
-part 'sync_db_onboarding.dart';
 part 'sync_db_sequence.dart';
 part 'sync_db_tables.dart';
 part 'sync_db_trusted_senders.dart';

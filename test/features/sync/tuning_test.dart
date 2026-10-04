@@ -9,6 +9,7 @@ import 'package:glados/glados.dart'
         IntAnys,
         ListAnys,
         any;
+import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 /// A generated [BackfillHostStats] scenario. Wrapping the raw counts in a named

@@ -1,5 +1,5 @@
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 
 /// Unit tests for the standalone VC-dominance check. The class is
 /// performance-critical — it runs once per incoming agent attachment

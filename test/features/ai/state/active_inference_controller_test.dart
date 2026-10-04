@@ -4,8 +4,8 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 
 enum _GeneratedActiveEntitySlot { primary, secondary }
 

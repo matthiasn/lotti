@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:meta/meta.dart';
 
 /// Kind of an agent-log event, as the projection kernel sees it.
