@@ -110,6 +110,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     final repository = ref.read(projectRepositoryProvider);
     final templateService = ref.read(agentTemplateServiceProvider);
     final agentService = ref.read(projectAgentServiceProvider);
+    final persistence = ref.read(persistenceLogicProvider);
     final categoryId = _categoryId;
     final categoryProfileId = getIt<EntitiesCacheService>()
         .getCategoryById(categoryId)
@@ -117,13 +118,11 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
 
     try {
       final now = DateTime.now();
-      final meta = await ref
-          .read(persistenceLogicProvider)
-          .createMetadata(
-            dateFrom: now,
-            dateTo: now,
-            categoryId: categoryId,
-          );
+      final meta = await persistence.createMetadata(
+        dateFrom: now,
+        dateTo: now,
+        categoryId: categoryId,
+      );
 
       final project =
           JournalEntity.project(

@@ -13,6 +13,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../test_utils/material_ui_finders.dart';
@@ -68,9 +69,9 @@ void main() {
     return MediaQuery(
       data: const MediaQueryData(size: Size(1200, 1800)),
       child: ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           labelsRepositoryProvider.overrideWithValue(repository),
-        ],
+        ]),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),

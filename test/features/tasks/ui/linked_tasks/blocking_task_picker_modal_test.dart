@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../categories/test_utils.dart';
@@ -86,6 +87,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 

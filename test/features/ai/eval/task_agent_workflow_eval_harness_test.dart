@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import 'support/penguin_wake_scenarios.dart';
 import 'support/penguin_wake_world_seed.dart';
 import 'support/task_agent_workflow_eval_harness.dart';
@@ -28,7 +29,7 @@ void main() {
   late TaskAgentWorkflowEvalHarness harness;
 
   setUp(() async {
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
     harness = await TaskAgentWorkflowEvalHarness.start(container: container);
   });
 
@@ -132,7 +133,9 @@ void main() {
     test('the no-op scenario seeds a wake with nothing to do', () async {
       // Built separately: the default harness in setUp is the unblocking
       // scenario, and the no-op world has to be the state before it.
-      final noOpContainer = ProviderContainer();
+      final noOpContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       addTearDown(noOpContainer.dispose);
       await harness.dispose();
       final noOp = await TaskAgentWorkflowEvalHarness.start(
@@ -178,7 +181,9 @@ void main() {
     });
 
     test('the pending-proposal scenario queues a real change set', () async {
-      final pendingContainer = ProviderContainer();
+      final pendingContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       addTearDown(pendingContainer.dispose);
       await harness.dispose();
       final pending = await TaskAgentWorkflowEvalHarness.start(

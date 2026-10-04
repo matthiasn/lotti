@@ -53,6 +53,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../projects/test_utils.dart';
@@ -249,11 +250,11 @@ void main() {
     List<Override> overrides = const [],
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentInitializationProvider.overrideWith((ref) async {}),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         ...overrides,
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -4998,7 +4999,9 @@ void main() {
       'sets _isFocused and _shouldShowEditorToolBar true when focus is gained',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+          overrides: withServiceOverrides([
+            agentInitializationProvider.overrideWith((ref) async {}),
+          ]),
         );
         final entryId = testTextEntry.meta.id;
         final provider = entryControllerProvider(entryId);
@@ -5054,7 +5057,9 @@ void main() {
       'clears _isFocused when focus is lost after it was gained',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+          overrides: withServiceOverrides([
+            agentInitializationProvider.overrideWith((ref) async {}),
+          ]),
         );
         final entryId = testTextEntry.meta.id;
         final provider = entryControllerProvider(entryId);

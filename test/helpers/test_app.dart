@@ -8,6 +8,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'service_overrides.dart';
+
 const phoneMediaQueryData = MediaQueryData(
   size: Size(390, 844),
   padding: EdgeInsets.only(top: 47, bottom: 34),
@@ -157,7 +159,7 @@ Widget makeTestableWidgetNoScroll(
   List<NavigatorObserver> navigatorObservers = const [],
   GlobalKey<NavigatorState>? navigatorKey,
 }) => ProviderScope(
-  overrides: overrides,
+  overrides: withServiceOverrides(overrides),
   child: _testApp(
     child,
     mediaQueryData: mediaQueryData,
@@ -179,7 +181,10 @@ Widget makeTestableWidgetNoScroll(
   Locale? locale,
   Duration? Function(int retryCount, Object error)? retry,
 }) {
-  final container = ProviderContainer(overrides: overrides, retry: retry);
+  final container = ProviderContainer(
+    overrides: withServiceOverrides(overrides),
+    retry: retry,
+  );
   return (
     container: container,
     widget: UncontrolledProviderScope(

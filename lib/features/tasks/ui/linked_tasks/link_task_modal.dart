@@ -14,6 +14,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -86,6 +87,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     relation: _relation,
     messenger: ScaffoldMessenger.of(context),
     repository: ref.read(journalRepositoryProvider),
+    persistence: ref.read(persistenceLogicProvider),
     messages: context.messages,
     phrase: directedRelationLabel(context, _relation),
   );
@@ -101,13 +103,11 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     final fromId = swap ? task.meta.id : widget.currentTaskId;
     final toId = swap ? widget.currentTaskId : task.meta.id;
 
-    final created = await ref
-        .read(persistenceLogicProvider)
-        .createLink(
-          fromId: fromId,
-          toId: toId,
-          linkType: deps.relation.type,
-        );
+    final created = await deps.persistence.createLink(
+      fromId: fromId,
+      toId: toId,
+      linkType: deps.relation.type,
+    );
 
     if (!created) {
       // Only a blocking link can fail the cycle guard. Reporting a cycle for
@@ -254,6 +254,7 @@ class _LinkCommitDeps {
     required this.relation,
     required this.messenger,
     required this.repository,
+    required this.persistence,
     required this.messages,
     required this.phrase,
   });
@@ -261,6 +262,7 @@ class _LinkCommitDeps {
   final DirectedRelation relation;
   final ScaffoldMessengerState messenger;
   final JournalRepository repository;
+  final PersistenceLogic persistence;
   final AppLocalizations messages;
 
   /// The relation's localized phrase, resolved while a context still existed.

@@ -28,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../categories/test_utils.dart';
@@ -65,10 +66,10 @@ void main() {
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             if (journalRepo != null)
               journalRepositoryProvider.overrideWithValue(journalRepo),
-          ],
+          ]),
           child: WidgetTestBench(
             mediaQueryData: mediaQueryData,
             child: Builder(
@@ -321,6 +322,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -349,6 +351,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -423,6 +426,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -465,6 +469,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -513,6 +518,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -612,6 +618,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -647,6 +654,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -691,6 +699,7 @@ void main() {
                 ),
               ),
             ),
+            overrides: getItServiceOverrides(),
           ),
         );
 
@@ -747,6 +756,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -825,6 +835,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -885,6 +896,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1313,6 +1325,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1360,6 +1373,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1402,6 +1416,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1449,6 +1464,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 
@@ -1501,6 +1517,7 @@ void main() {
               ),
             ),
           ),
+          overrides: getItServiceOverrides(),
         ),
       );
 

@@ -28,6 +28,7 @@ import 'package:lotti/utils/time_range_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart' show makeTestChecklistApproval;
@@ -127,11 +128,11 @@ class TestContainerBuilder {
 
   ProviderContainer build() {
     return ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         taskProgressRepositoryProvider.overrideWithValue(
           _mockTaskProgressRepository,
         ),
-      ],
+      ]),
     );
   }
 
@@ -2002,9 +2003,9 @@ void main() {
 
     ProviderContainer buildContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectRepositoryProvider.overrideWithValue(mockProjectRepository),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -2151,11 +2152,11 @@ void main() {
       ).thenAnswer((_) async => <String, List<JournalEntity>>{});
 
       containerLang = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskProgressRepositoryProvider.overrideWithValue(
             mockTaskProgressRepoLang,
           ),
-        ],
+        ]),
       );
 
       final ref = containerLang.read(testRefProvider);
@@ -2582,7 +2583,7 @@ void main() {
             ..registerSingleton<JournalDb>(db);
         },
       );
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(() async {
         container.dispose();
         await tearDownTestGetIt();
@@ -2865,14 +2866,14 @@ void main() {
       mockCacheServiceLinked = MockEntitiesCacheService();
       mockProjectRepositoryLinked = MockProjectRepository();
       containerLinked = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskProgressRepositoryProvider.overrideWithValue(
             mockTaskProgressRepositoryLinked,
           ),
           projectRepositoryProvider.overrideWithValue(
             mockProjectRepositoryLinked,
           ),
-        ],
+        ]),
       );
 
       await setUpTestGetIt(

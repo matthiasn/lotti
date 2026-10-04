@@ -552,6 +552,7 @@ class _OnboardingCategoryStepState
   Future<void> _continue(List<OnboardingCategoryOption> options) async {
     if (_busy) return;
     setState(() => _busy = true);
+    final loggingService = ref.read(loggingServiceProvider);
     try {
       final repository = ref.read(categoryRepositoryProvider);
       final profileId = onboardingSeededProfileId(widget.type);
@@ -647,14 +648,12 @@ class _OnboardingCategoryStepState
       // A category write failure must not die silently under the Continue
       // button — log it so a field failure is diagnosable, and surface a toast
       // so the user knows to retry.
-      ref
-          .read(loggingServiceProvider)
-          .captureException(
-            error,
-            domain: 'ONBOARDING',
-            subDomain: 'OnboardingCategoryStep.createCategories',
-            stackTrace: stackTrace,
-          );
+      loggingService.captureException(
+        error,
+        domain: 'ONBOARDING',
+        subDomain: 'OnboardingCategoryStep.createCategories',
+        stackTrace: stackTrace,
+      );
       if (mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,

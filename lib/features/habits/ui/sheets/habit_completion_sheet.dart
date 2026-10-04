@@ -186,22 +186,22 @@ class _HabitCompletionSheetState extends ConsumerState<HabitCompletionSheet> {
     if (!form.validate()) return;
     form.save();
     final formData = form.value;
+    // Read before the pop: `ref` is unusable once the sheet is gone.
+    final persistence = ref.read(persistenceLogicProvider);
     Navigator.pop(context);
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       widget.habitId,
     );
-    await ref
-        .read(persistenceLogicProvider)
-        .createHabitCompletionEntry(
-          data: HabitCompletionData(
-            habitId: widget.habitId,
-            dateTo: !_startReset ? clock.now() : _started,
-            dateFrom: _started,
-            completionType: _outcome,
-          ),
-          comment: formData['comment'] as String,
-          habitDefinition: habitDefinition,
-        );
+    await persistence.createHabitCompletionEntry(
+      data: HabitCompletionData(
+        habitId: widget.habitId,
+        dateTo: !_startReset ? clock.now() : _started,
+        dateFrom: _started,
+        completionType: _outcome,
+      ),
+      comment: formData['comment'] as String,
+      habitDefinition: habitDefinition,
+    );
   }
 
   /// The "other value" path: the full capture flow, whose saved entry then

@@ -34,6 +34,7 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -171,10 +172,10 @@ void main() {
   }) {
     return ProviderScope(
       retry: retry,
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         ...additionalOverrides,
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         navigatorObservers: navigatorObservers,
@@ -1752,9 +1753,9 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
@@ -1833,9 +1834,9 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(

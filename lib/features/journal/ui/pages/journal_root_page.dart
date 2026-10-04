@@ -11,7 +11,6 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -180,25 +179,23 @@ class _AutoSelectNewestEntryState
   /// same entry in one frame.
   bool _selectionCallbackPending = false;
 
+  /// The nav service the selection listener is attached to, read once in
+  /// [initState]: `ref` is unusable in [dispose], and detaching must reach
+  /// the same instance the listener was added to.
+  late final NavService _navService;
+
   @override
   void initState() {
     super.initState();
+    _navService = ref.read(navServiceProvider);
     // Re-fill when the selection is cleared (e.g. a bare /journal beam).
-    ref
-        .read(navServiceProvider)
-        .desktopSelectedEntryId
-        .addListener(_maybeSelect);
+    _navService.desktopSelectedEntryId.addListener(_maybeSelect);
   }
 
   @override
   void dispose() {
     _pagingController?.removeListener(_maybeSelect);
-    if (getIt.isRegistered<NavService>()) {
-      ref
-          .read(navServiceProvider)
-          .desktopSelectedEntryId
-          .removeListener(_maybeSelect);
-    }
+    _navService.desktopSelectedEntryId.removeListener(_maybeSelect);
     super.dispose();
   }
 
@@ -220,8 +217,8 @@ class _AutoSelectNewestEntryState
     // being built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _selectionCallbackPending = false;
-      if (!mounted || !getIt.isRegistered<NavService>()) return;
-      final navService = ref.read(navServiceProvider);
+      if (!mounted) return;
+      final navService = _navService;
       if (navService.desktopSelectedEntryId.value != null) return;
       final items = _pagingController?.items;
       if (items == null) return;

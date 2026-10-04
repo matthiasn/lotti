@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -54,7 +55,9 @@ void main() {
       final bench = QueryPersistenceBench();
       addTearDown(bench.close);
       final container = ProviderContainer(
-        overrides: [agentDatabaseProvider.overrideWithValue(bench.agentDb)],
+        overrides: withServiceOverrides([
+          agentDatabaseProvider.overrideWithValue(bench.agentDb),
+        ]),
       );
       addTearDown(container.dispose);
       final provider = queryActionChangeSetProvider((
@@ -129,12 +132,12 @@ void main() {
               : AgentLifecycle.active,
         );
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             querySourceAccessProvider.overrideWithValue(bench.crawler.access),
             projectAgentProvider(
               'project',
             ).overrideWith((ref) async => identity),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final target = await container.read(
@@ -175,10 +178,10 @@ void main() {
         ),
       ).thenAnswer((_) async => identity);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
           agentServiceProvider.overrideWithValue(service),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final target = await container.read(
@@ -228,7 +231,7 @@ void main() {
           ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
         var enabled = true;
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(bench.db),
             querySourceAccessProvider.overrideWithValue(bench.crawler.access),
             queryChatStoreProvider.overrideWithValue(bench.store),
@@ -246,7 +249,7 @@ void main() {
             ),
             labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
             queryChatEnabledProvider.overrideWith((_) => enabled),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final service = container.read(queryChatActionServiceProvider);
@@ -278,7 +281,7 @@ void main() {
       final cloud = MockCloudInferenceRepository();
       const scope = QueryScope(kind: QueryScopeKind.task, id: 'task');
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(bench.db),
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
           agentRepositoryProvider.overrideWithValue(bench.repository),
@@ -290,7 +293,7 @@ void main() {
               chatModelUnavailable: true,
             ),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       await expectLater(
@@ -396,7 +399,7 @@ void main() {
             return bench.categories;
           });
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               journalDbProvider.overrideWithValue(bench.db),
               agentSyncServiceProvider.overrideWithValue(bench.store.sync),
               agentRepositoryProvider.overrideWithValue(bench.repository),
@@ -413,7 +416,7 @@ void main() {
               activeTemplateVersionProvider(template.id).overrideWith(
                 (ref) async => version,
               ),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
           final scope = QueryScope(
@@ -480,12 +483,12 @@ void main() {
         final started = Completer<void>();
         final resolved = Completer<ResolvedAgentSetup?>();
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentResolvedSetupProvider('agent').overrideWith((ref) {
               started.complete();
               return resolved.future;
             }),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final provider = queryProfileProvider((
@@ -521,10 +524,10 @@ void main() {
       bench.entries[task.meta.id] = task;
       final identity = makeTestIdentity();
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
           taskAgentProvider(task.meta.id).overrideWith((ref) async => identity),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final target = await container.read(
@@ -551,10 +554,10 @@ void main() {
       final service = MockAgentService();
       when(() => service.getAgent(id)).thenAnswer((_) async => identity);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
           agentServiceProvider.overrideWithValue(service),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final target = await container.read(
@@ -574,9 +577,9 @@ void main() {
     () async {
       final bench = QueryTestBench()..add('task', private: true);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final subscription = container.listen(
@@ -608,11 +611,11 @@ void main() {
       const key = (agentId: 'agent', scope: scope);
       final id = await bench.store.create('agent', scope, 'Feeder');
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           queryChatStoreProvider.overrideWithValue(bench.store),
           agentDatabaseProvider.overrideWithValue(bench.agentDb),
           journalDbProvider.overrideWithValue(journal),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final provider = queryChatDataProvider(key);
@@ -673,7 +676,9 @@ void main() {
         '(enabled=$enabled)', () {
       const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-waddle');
       final container = ProviderContainer(
-        overrides: [queryChatEnabledProvider.overrideWithValue(enabled)],
+        overrides: withServiceOverrides([
+          queryChatEnabledProvider.overrideWithValue(enabled),
+        ]),
       );
       addTearDown(container.dispose);
       final pane = container.read(queryPaneOpenProvider(scope).notifier);

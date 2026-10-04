@@ -16,6 +16,7 @@ import 'package:lotti/services/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -112,7 +113,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemsByKeys(any()),
       ).thenAnswer((_) async => const <String, String>{});
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {
@@ -235,7 +236,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenReturn(null);
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {
@@ -274,7 +275,7 @@ void main() {
         verifyNever(() => outboxService.enqueueMessage(any()));
         verifyNever(() => replacementOutbox.enqueueMessage(any()));
         // Teardown owns this replacement container, not the disposed profile.
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
       }, initialTime: DateTime(2026));
     });
 

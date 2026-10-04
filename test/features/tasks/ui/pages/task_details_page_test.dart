@@ -56,6 +56,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/task_progress_test_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -1012,10 +1013,10 @@ void main() {
       'suggestions focus clears when proposals section never mounts',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             taskAgentProvider.overrideWith((ref, id) async => null),
-          ],
+          ]),
         );
 
         container
@@ -1159,14 +1160,14 @@ void main() {
         });
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableSuggestionOverrides(items: fourItems),
             changeSetConfirmationServiceProvider.overrideWith(
               (ref) => confirmationService,
             ),
-          ],
+          ]),
         );
         final position = await pumpWithRailCentred(tester, container);
 
@@ -1253,14 +1254,14 @@ void main() {
         });
 
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableSuggestionOverrides(items: fourItems),
             changeSetConfirmationServiceProvider.overrideWith(
               (ref) => confirmationService,
             ),
-          ],
+          ]),
         );
         await pumpWithRailCentred(tester, container);
 
@@ -1296,10 +1297,10 @@ void main() {
       'jump the scroll',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
         // Start with a single open proposal so we can grow it mid-run.
         container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
@@ -1471,7 +1472,7 @@ void main() {
           });
 
           container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               ...hTaskDetailsPageOverrides(),
               ...hLinkedEntriesOverrides(),
               ...hControllableSuggestionOverrides(
@@ -1480,7 +1481,7 @@ void main() {
               changeSetConfirmationServiceProvider.overrideWith(
                 (ref) => confirmationService,
               ),
-            ],
+            ]),
           );
 
           await tester.pumpWidget(
@@ -1533,11 +1534,11 @@ void main() {
         addTearDown(tester.view.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
         container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
 
@@ -1578,11 +1579,11 @@ void main() {
       addTearDown(tester.view.reset);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...hTaskDetailsPageOverrides(),
           ...hLinkedEntriesOverrides(),
           ...hControllableSuggestionOverrides(),
-        ],
+        ]),
       );
 
       await tester.pumpWidget(
@@ -1626,12 +1627,12 @@ void main() {
         addTearDown(tester.view.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableLinkedTasksOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
 
         await tester.pumpWidget(
@@ -1700,12 +1701,12 @@ void main() {
         addTearDown(tester.view.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableLinkedTasksOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
         container.read(controllableLinkedTaskCountProvider.notifier).set(1);
 
@@ -1771,12 +1772,12 @@ void main() {
         addTearDown(tester.view.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableLinkedTasksOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
         container.read(controllableLinkedTaskCountProvider.notifier).set(1);
 
@@ -1861,12 +1862,12 @@ void main() {
         addTearDown(tester.view.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             ...hTaskDetailsPageOverrides(),
             ...hLinkedEntriesOverrides(),
             ...hControllableLinkedTasksOverrides(),
             ...hControllableSuggestionOverrides(),
-          ],
+          ]),
         );
 
         // Start populated and then *grow* the band. A shrink at offset zero is

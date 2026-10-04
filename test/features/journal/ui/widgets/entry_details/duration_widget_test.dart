@@ -16,6 +16,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -102,13 +103,13 @@ void main() {
   }) {
     final entry = item ?? testEntry;
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         createEntryControllerOverride(entry),
         newestLinkedIdControllerProvider(linkedFrom?.id).overrideWith(
           () => _StubNewestLinkedIdController(entry.meta.id),
         ),
         ...extraOverrides,
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;

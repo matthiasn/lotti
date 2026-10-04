@@ -8,6 +8,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -25,7 +26,7 @@ void main() {
     when(
       () => mocks.settingsDb.saveSettingsItem(any<String>(), any<String>()),
     ).thenAnswer((_) async => 1);
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {

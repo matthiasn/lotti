@@ -26,6 +26,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -751,12 +752,12 @@ void main() {
     'neither audio action can begin while voice input is recording',
     () async {
       final recording = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...bench.overrides,
           chatRecorderControllerProvider.overrideWith(
             RecordingTestController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(recording.dispose);
       final listener = recording.listen(provider, (_, _) {});
@@ -783,10 +784,10 @@ void main() {
     bench.engine = FakeTtsEngine(output: file);
     final recorder = TranscriptEmittingController();
     final recording = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         ...bench.overrides,
         chatRecorderControllerProvider.overrideWith(() => recorder),
-      ],
+      ]),
     );
     addTearDown(recording.dispose);
     final listener = recording.listen(provider, (_, _) {});
@@ -841,10 +842,10 @@ void main() {
   test('starting voice input stops an excerpt already playing', () async {
     final recorder = TranscriptEmittingController();
     final recording = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         ...bench.overrides,
         chatRecorderControllerProvider.overrideWith(() => recorder),
-      ],
+      ]),
     );
     addTearDown(recording.dispose);
     final listener = recording.listen(provider, (_, _) {});
@@ -874,12 +875,12 @@ void main() {
         ),
       );
       final category = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...bench.overrides,
           queryChatDataProvider(
             home,
           ).overrideWith((ref) => Stream.value(bench.snapshot())),
-        ],
+        ]),
       );
       addTearDown(category.dispose);
       final audio = queryAudioControllerProvider(audioKey);

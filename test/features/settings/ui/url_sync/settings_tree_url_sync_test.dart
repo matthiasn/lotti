@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 
 class _FakeNavService implements NavService {
@@ -200,6 +201,7 @@ void main() {
               routerDelegate: delegate,
               routeInformationParser: BeamerParser(),
             ),
+            overrides: getItServiceOverrides(),
           ),
         );
         await tester.pump();

@@ -13,6 +13,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../habit_completion_record_fixtures.dart';
@@ -143,10 +144,10 @@ void main() {
     );
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         habitsRepositoryProvider.overrideWithValue(mockRepository),
         habitsNowProvider.overrideWithValue(() => controllerNow),
-      ],
+      ]),
     );
   });
 

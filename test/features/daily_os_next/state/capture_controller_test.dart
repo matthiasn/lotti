@@ -23,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../services/day_processing_test_db.dart';
@@ -159,7 +160,7 @@ class _Bench {
     DailyOsTranscriptionTarget? transcriptionTarget,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         captureControllerProvider.overrideWith(
           () => CaptureController(
             recorder: recorder,
@@ -173,7 +174,7 @@ class _Bench {
             now: () => _now,
           ),
         ),
-      ],
+      ]),
     )..listen(captureControllerProvider, (_, _) {});
     return container;
   }
@@ -664,7 +665,7 @@ void main() {
         ..registerSingleton<DayProcessingOutboxRepository>(bench.outbox);
       bench.stubTranscript('from locator wiring');
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           captureControllerProvider.overrideWith(
             () => CaptureController(
               recorder: bench.recorder,
@@ -675,7 +676,7 @@ void main() {
               now: () => _now,
             ),
           ),
-        ],
+        ]),
       )..listen(captureControllerProvider, (_, _) {});
       addTearDown(container.dispose);
       final controller = container.read(captureControllerProvider.notifier);

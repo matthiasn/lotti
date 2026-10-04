@@ -8,6 +8,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -46,7 +47,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -99,7 +100,7 @@ void main() {
         return callCount == 1 ? firstEntities : secondEntities;
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final provider = surveyChartDataControllerProvider((
@@ -172,7 +173,7 @@ void main() {
         return callCount == 1 ? firstEntities : secondEntities;
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final provider = surveyChartDataControllerProvider((
@@ -227,7 +228,7 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final provider = surveyChartDataControllerProvider((

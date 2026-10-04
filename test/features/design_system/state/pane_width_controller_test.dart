@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 import 'pane_width_controller_test_helpers.dart';
 
@@ -30,7 +31,7 @@ void main() {
         dayViewPanelHiddenKey: null,
       },
     );
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {

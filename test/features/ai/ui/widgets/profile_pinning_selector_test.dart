@@ -12,6 +12,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -389,7 +390,7 @@ void main() {
           additionalSetup: () =>
               getIt.registerSingleton<VectorClockService>(vectorClock),
         );
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         expect(
@@ -401,7 +402,7 @@ void main() {
 
     test('is null before a vector clock service is registered', () async {
       await setUpTestGetIt();
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(

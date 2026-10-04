@@ -26,6 +26,7 @@ import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/service_overrides.dart';
 import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
@@ -188,12 +189,12 @@ Widget _buildTestRouterApp({
   required List<Override> overrides,
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       audioRecorderControllerProvider.overrideWith(
         StubAudioRecorderController.new,
       ),
       ...overrides,
-    ],
+    ]),
     child: MaterialApp.router(
       builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(ThemeData.dark(useMaterial3: true)),

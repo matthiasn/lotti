@@ -23,6 +23,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -169,7 +170,7 @@ Widget _wrap(
   if (container != null) {
     return UncontrolledProviderScope(container: container, child: app);
   }
-  return ProviderScope(child: app);
+  return ProviderScope(child: app, overrides: getItServiceOverrides());
 }
 
 void main() {
@@ -419,7 +420,7 @@ void main() {
 
         String? openedPath;
         beamToNamedOverride = (path) => openedPath = path;
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         await tester.pumpWidget(
@@ -474,7 +475,7 @@ void main() {
         _setView(tester, const Size(1280, 1200));
 
         beamToNamedOverride = (_) {};
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         await tester.pumpWidget(

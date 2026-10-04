@@ -237,6 +237,7 @@ class _TaskKnowledgeGraphPageState
     int requestId,
     int expansionVersion,
   ) async {
+    final loggingService = ref.read(loggingServiceProvider);
     try {
       final merge = widget.mergeGraphData ?? mergeTaskGraphData;
       final expansions = List<TaskGraphData>.of(_expansions.values);
@@ -251,14 +252,12 @@ class _TaskKnowledgeGraphPageState
       }
       setState(() => _visibleData = merged);
     } on Object catch (error, stackTrace) {
-      ref
-          .read(loggingServiceProvider)
-          .captureException(
-            error,
-            domain: 'KNOWLEDGE_GRAPH',
-            subDomain: 'taskGraphProvider.merge',
-            stackTrace: stackTrace,
-          );
+      loggingService.captureException(
+        error,
+        domain: 'KNOWLEDGE_GRAPH',
+        subDomain: 'taskGraphProvider.merge',
+        stackTrace: stackTrace,
+      );
     }
   }
 

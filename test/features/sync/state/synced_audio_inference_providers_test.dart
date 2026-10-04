@@ -22,6 +22,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -71,10 +72,10 @@ void main() {
     settingsDb = SettingsDb(inMemoryDatabase: true);
     repo = SyncNodeProfileRepository(settingsDb: settingsDb);
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         // Inject the in-memory repository so we don't need a real get_it.
         syncNodeProfileRepositoryProvider.overrideWithValue(repo),
-      ],
+      ]),
     );
   });
 
@@ -180,7 +181,7 @@ void main() {
         addTearDown(tearDownTestGetIt);
 
         final wiringContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(MockJournalDb()),
             profileAutomationResolverProvider.overrideWith(
               (_) => MockProfileAutomationResolver(),
@@ -200,7 +201,7 @@ void main() {
             wakeOrchestratorProvider.overrideWith(
               (_) => MockWakeOrchestrator(),
             ),
-          ],
+          ]),
         );
         addTearDown(wiringContainer.dispose);
 
@@ -253,11 +254,11 @@ void main() {
         });
 
         final wiringContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             syncedAudioInferenceDispatcherProvider.overrideWithValue(
               mockDispatcher,
             ),
-          ],
+          ]),
         );
 
         // Reading the provider should construct the listener, call start(),

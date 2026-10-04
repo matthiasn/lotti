@@ -78,6 +78,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -148,11 +149,11 @@ void main() {
   /// Helper to create a [ProviderContainer] with common mocks overridden.
   ProviderContainer createContainer() {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentServiceProvider.overrideWithValue(mockService),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -168,14 +169,14 @@ void main() {
     });
 
     test('maybeUpdateNotificationsProvider returns null when unregistered', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(maybeUpdateNotificationsProvider), isNull);
     });
 
     test('updateNotificationsProvider throws when unregistered', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(
@@ -194,7 +195,7 @@ void main() {
       final mockNotifications = MockUpdateNotifications();
       getIt.registerSingleton<UpdateNotifications>(mockNotifications);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(
@@ -204,7 +205,7 @@ void main() {
     });
 
     test('maybeSyncEventProcessorProvider returns null when unregistered', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(maybeSyncEventProcessorProvider), isNull);
@@ -214,7 +215,7 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(
@@ -233,7 +234,7 @@ void main() {
         await getIt.reset();
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       final resolved = container.read(agentDatabaseProvider);
       expect(resolved, isA<AgentDatabase>());
@@ -254,11 +255,11 @@ void main() {
       });
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -283,11 +284,11 @@ void main() {
       ).thenAnswer((_) async => stampedClock);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -343,7 +344,7 @@ void main() {
       ).thenAnswer((_) async => const {});
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentServiceProvider.overrideWithValue(mockService),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           loggingServiceProvider.overrideWithValue(LoggingService()),
@@ -354,7 +355,7 @@ void main() {
             mockProjectAgentService,
           ),
           domainLoggerProvider.overrideWithValue(logger),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -517,7 +518,7 @@ void main() {
 
     ProviderContainer createTaskWorkflowContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           conversationRepositoryProvider.overrideWith(
@@ -546,7 +547,7 @@ void main() {
           pullRequestContextServiceProvider.overrideWithValue(
             mockPullRequestContextService,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -1769,7 +1770,7 @@ void main() {
 
   group('wakeQueueProvider', () {
     test('supports enqueue and dequeue', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final queue = container.read(wakeQueueProvider);
@@ -1795,7 +1796,7 @@ void main() {
     });
 
     test('deduplicates by run key', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final queue = container.read(wakeQueueProvider);
@@ -1814,7 +1815,7 @@ void main() {
 
   group('wakeRunnerProvider', () {
     test('supports lock acquisition and release', () async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final runner = container.read(wakeRunnerProvider);
@@ -1830,7 +1831,7 @@ void main() {
     });
 
     test('disposes runner when container is disposed', () async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       final runner = container.read(wakeRunnerProvider);
       final acquired = await runner.tryAcquire(kTestAgentId);
@@ -2030,7 +2031,7 @@ void main() {
       addTearDown(runner.dispose);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
@@ -2038,7 +2039,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2081,7 +2082,7 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entitiesCacheServiceProvider.overrideWithValue(cache),
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
@@ -2090,7 +2091,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2111,7 +2112,7 @@ void main() {
       addTearDown(() => getIt.unregister<SettingsDb>());
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
           wakeQueueProvider.overrideWithValue(WakeQueue()),
@@ -2119,7 +2120,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2147,14 +2148,14 @@ void main() {
         addTearDown(getIt.reset);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(mockRepo),
             wakeQueueProvider.overrideWithValue(queue),
             wakeRunnerProvider.overrideWithValue(runner),
             domainLoggerProvider.overrideWithValue(
               DomainLogger(loggingService: LoggingService()),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -2178,7 +2179,7 @@ void main() {
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2187,7 +2188,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2213,7 +2214,7 @@ void main() {
       ).thenAnswer((_) async => true);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
@@ -2222,7 +2223,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2256,7 +2257,7 @@ void main() {
       ).thenAnswer((_) async => flag);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
           agentSyncServiceProvider.overrideWithValue(bench.service),
@@ -2266,7 +2267,7 @@ void main() {
           domainLoggerProvider.overrideWithValue(
             DomainLogger(loggingService: LoggingService()),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2575,14 +2576,14 @@ void main() {
       final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           outboxServiceProvider.overrideWithValue(mockOutbox),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2606,12 +2607,12 @@ void main() {
       final mockOutbox = MockOutboxService();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           outboxServiceProvider.overrideWithValue(mockOutbox),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2646,7 +2647,9 @@ void main() {
       getIt.registerSingleton<Directory>(dir);
 
       final container = ProviderContainer(
-        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+        overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2661,7 +2664,9 @@ void main() {
       // is skipped there instead of failing the delete or sweep that asked
       // for it. setUp has already cleared any registration.
       final container = ProviderContainer(
-        overrides: [domainLoggerProvider.overrideWithValue(MockDomainLogger())],
+        overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2680,14 +2685,14 @@ void main() {
       final notifications = UpdateNotifications();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           updateNotificationsProvider.overrideWithValue(notifications),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(() {
         notifications.dispose();
@@ -2730,13 +2735,13 @@ void main() {
       addTearDown(() => getIt.unregister<VectorClockService>());
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           updateNotificationsProvider.overrideWithValue(notifications),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -2813,7 +2818,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
           wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
@@ -2825,7 +2830,7 @@ void main() {
           agentRuntimeMaintenanceProvider.overrideWith(
             (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
           ),
-        ],
+        ]),
       );
       addTearDown(() {
         notifications.dispose();
@@ -2869,7 +2874,7 @@ void main() {
         ).thenReturn(null);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
             wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
             agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
@@ -2881,7 +2886,7 @@ void main() {
             agentRuntimeMaintenanceProvider.overrideWith(
               (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
             ),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -2924,7 +2929,7 @@ void main() {
         ).thenReturn(null);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
             wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
             agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
@@ -2936,7 +2941,7 @@ void main() {
             agentRuntimeMaintenanceProvider.overrideWith(
               (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
             ),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -2983,7 +2988,7 @@ void main() {
         final following = _RecordingMaintenance();
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
             wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
             agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
@@ -2993,7 +2998,7 @@ void main() {
               throwing,
               following,
             ]),
-          ],
+          ]),
         );
         addTearDown(() {
           notifications.dispose();
@@ -3035,12 +3040,12 @@ void main() {
       final mockOutbox = MockOutboxService();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -3057,13 +3062,13 @@ void main() {
       final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -3094,7 +3099,7 @@ void main() {
       final domainLogger = DomainLogger(loggingService: LoggingService());
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
@@ -3111,7 +3116,7 @@ void main() {
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           domainLoggerProvider.overrideWithValue(domainLogger),
           journalDbProvider.overrideWithValue(MockJournalDb()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -3137,7 +3142,7 @@ void main() {
       final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -3147,7 +3152,7 @@ void main() {
           ),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           loggingServiceProvider.overrideWithValue(mockLogging),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -3181,7 +3186,7 @@ void main() {
       MockImproverAgentService? improverOverride,
     }) {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepo),
           agentSyncServiceProvider.overrideWithValue(mockSync),
@@ -3194,7 +3199,7 @@ void main() {
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           if (improverOverride != null)
             improverAgentServiceProvider.overrideWithValue(improverOverride),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -3414,11 +3419,11 @@ void main() {
       when(manager.requestCheck).thenReturn(null);
       when(() => notifications.notifyUiOnly(any())).thenReturn(null);
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectUpdateCadenceProvider.overrideWithValue(cadence),
           scheduledWakeManagerProvider.overrideWithValue(manager),
           updateNotificationsProvider.overrideWithValue(notifications),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
     });
@@ -3499,11 +3504,11 @@ void main() {
         repository.getPendingScheduledWakeRecords,
       ).thenAnswer((_) async => [slot]);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -3518,7 +3523,7 @@ void main() {
       if (getIt.isRegistered<MatrixService>()) {
         getIt.unregister<MatrixService>();
       }
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(container.read(syncLeaseGateProvider), isNull);
@@ -3547,7 +3552,9 @@ void main() {
         () => journalDb.getConfigFlag(enableMatrixFlag),
       ).thenAnswer((_) async => syncEnabled);
       final container = ProviderContainer(
-        overrides: [journalDbProvider.overrideWithValue(journalDb)],
+        overrides: withServiceOverrides([
+          journalDbProvider.overrideWithValue(journalDb),
+        ]),
       );
       addTearDown(container.dispose);
 

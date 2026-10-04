@@ -33,6 +33,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/screenshot_harness.dart';
@@ -202,7 +203,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           linkableTasksOverride('task-main', exists: linkableTasksExist),
           linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
@@ -221,7 +222,7 @@ void main() {
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
-        ],
+        ]),
         child: WidgetTestBench(
           locale: locale,
           mediaQueryData: mediaQueryData,
@@ -346,7 +347,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             linkableTasksOverride('task-main', exists: true),
             linkedTasksControllerProvider(
               'task-main',
@@ -363,7 +364,7 @@ void main() {
               return {firstTask.id: 'Established summary'};
             }),
             journalRepositoryProvider.overrideWithValue(journalRepo),
-          ],
+          ]),
           child: const WidgetTestBench(
             child: LinkedTasksWidget(taskId: 'task-main'),
           ),
@@ -780,7 +781,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             linkableTasksOverride('task-a', exists: true),
             linkableTasksOverride('task-b', exists: true),
             linkedTasksControllerProvider('task-a').overrideWith(
@@ -790,7 +791,7 @@ void main() {
               LinkedTasksController.new,
             ),
             journalRepositoryProvider.overrideWithValue(journalRepo),
-          ],
+          ]),
           child: const WidgetTestBench(
             child: LinkedTasksWidget(taskId: 'task-a'),
           ),
@@ -809,7 +810,7 @@ void main() {
       // Swap to task-b without recreating the widget tree above.
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             linkableTasksOverride('task-a', exists: true),
             linkableTasksOverride('task-b', exists: true),
             linkedTasksControllerProvider('task-a').overrideWith(
@@ -819,7 +820,7 @@ void main() {
               LinkedTasksController.new,
             ),
             journalRepositoryProvider.overrideWithValue(journalRepo),
-          ],
+          ]),
           child: const WidgetTestBench(
             child: LinkedTasksWidget(taskId: 'task-b'),
           ),

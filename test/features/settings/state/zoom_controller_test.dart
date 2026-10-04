@@ -7,6 +7,7 @@ import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 
 /// Creates a fresh [ProviderContainer] with [SettingsDb.itemByKey] stubbed
@@ -21,7 +22,7 @@ Future<ProviderContainer> _createContainerWithPersistedScale(
       () => mocks.settingsDb.itemByKey('ZOOM_SCALE'),
     ).thenAnswer((_) async => storedValue);
   }
-  return ProviderContainer();
+  return ProviderContainer(overrides: getItServiceOverrides());
 }
 
 /// Waits for the async hydration in [ZoomController] to settle.
@@ -54,7 +55,7 @@ void main() {
 
   setUp(() async {
     await setUpTestGetIt();
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {
