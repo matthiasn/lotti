@@ -16,15 +16,14 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/membership_list.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/ai_config_initialization.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
+import 'package:lotti/features/journal/state/task_title_hooks.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -454,20 +453,17 @@ class EntryController extends AsyncNotifier<EntryState?> {
   }
 
   Future<void> _syncDailyOsTaskTitle(String taskId, String title) async {
-    if (!getIt.isRegistered<AgentDatabase>()) {
-      return;
-    }
-    try {
-      await ref
-          .read(dayAgentPlanServiceProvider)
-          .syncTaskTitle(taskId: taskId, title: title);
-    } catch (e, stackTrace) {
-      developer.log(
-        'Failed to sync Daily OS planned block title for task $taskId: $e',
-        name: 'EntryController',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    for (final hook in ref.read(taskTitleChangedHooksProvider)) {
+      try {
+        await hook(taskId, title);
+      } catch (e, stackTrace) {
+        developer.log(
+          'Failed to sync a title change for task $taskId: $e',
+          name: 'EntryController',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
     }
   }
 

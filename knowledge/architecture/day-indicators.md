@@ -184,7 +184,9 @@ flowchart LR
 
 A verdict is always a goal's: `GoalAssessmentRecord.dimensionRatings` files
 the user's per-dimension ruling under the goal's criterion id. Habits reach
-those rulings through `lib/features/goals/state/goal_habit_watchers.dart`:
+those rulings through `lib/features/goals/state/goal_habit_watchers.dart`,
+behind the habits-owned `habitReflectionsProvider` slot that the composition
+root fills with `goalHabitReflections`:
 
 - `goalsWatchingHabitProvider(habitId)` — the active goals whose current spec
   names the habit, each with the criterion id the habit is filed under. It
@@ -198,7 +200,8 @@ those rulings through `lib/features/goals/state/goal_habit_watchers.dart`:
 flowchart LR
   A["GoalAssessmentRecord.dimensionRatings[criterionId]"] --> D["latestDimensionRatingsByDay"]
   D --> P["_ProgressDayCell(verdict:)<br/>goal detail habit card"]
-  W["goalsWatchingHabitProvider(habitId)"] --> S["HabitCompletionSheet<br/>Reflect on this day in ‹goal›"]
+  W["goalsWatchingHabitProvider(habitId)"] --> G["goalHabitReflections<br/>(habitReflectionsProvider)"]
+  G --> S["HabitCompletionSheet<br/>Reflect on this day in ‹goal›"]
   S --> R["showGoalDayAssessmentSheet(day: the sheet's day)"]
 ```
 

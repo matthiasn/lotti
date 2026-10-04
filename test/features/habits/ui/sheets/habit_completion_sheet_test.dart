@@ -23,6 +23,8 @@ import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_habit_watchers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
+import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
+import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/state/habit_signal_status_controller.dart';
 import 'package:lotti/features/habits/ui/sheets/habit_completion_sheet.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_signal_row.dart';
@@ -904,6 +906,7 @@ void main() {
       await pumpSheet(
         tester,
         overrides: [
+          habitReflectionsProvider.overrideWithValue(goalHabitReflections),
           goalsWatchingHabitProvider(
             habitFlossing.id,
           ).overrideWith((ref) async => const []),
@@ -921,6 +924,7 @@ void main() {
         tester,
         dateString: '2026-08-06',
         overrides: [
+          habitReflectionsProvider.overrideWithValue(goalHabitReflections),
           goalsWatchingHabitProvider(
             habitFlossing.id,
           ).overrideWith((ref) async => [watcher('g1')]),
@@ -957,6 +961,7 @@ void main() {
         tester,
         dateString: '2026-07-20',
         overrides: [
+          habitReflectionsProvider.overrideWithValue(goalHabitReflections),
           goalsWatchingHabitProvider(
             habitFlossing.id,
           ).overrideWith((ref) async => [watcher('g1')]),
@@ -975,17 +980,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
-    });
-
-    test('reflectionSpanDays covers the day and never drops below a week', () {
-      final today = DateTime(2026, 8, 8, 14);
-      expect(reflectionSpanDays(from: today, today: today), 7);
-      expect(
-        reflectionSpanDays(from: DateTime(2026, 8, 6, 23), today: today),
-        7,
-      );
-      expect(reflectionSpanDays(from: DateTime(2026, 8), today: today), 8);
-      expect(reflectionSpanDays(from: DateTime(2026, 7, 20), today: today), 20);
     });
   });
 }

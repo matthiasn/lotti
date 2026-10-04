@@ -29,11 +29,15 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
+import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
+import 'package:lotti/features/journal/state/task_title_hooks.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
@@ -318,6 +322,18 @@ void main() {
       expect(
         wired.read(journalDetailSlotsProvider),
         same(appJournalDetailSlots),
+      );
+      expect(
+        wired.read(habitReflectionsProvider),
+        same(goalHabitReflections),
+      );
+      // A real profile has the agent store, so Daily OS follows title edits.
+      expect(wired.read(taskTitleChangedHooksProvider), hasLength(1));
+      final welcome = wired.listen(welcomeOnboardingOwedProvider, (_, _) {});
+      addTearDown(welcome.close);
+      expect(
+        await wired.read(welcomeOnboardingOwedProvider.future),
+        isA<bool>(),
       );
 
       // The ports the AI feature declares resolve to the agents and sync

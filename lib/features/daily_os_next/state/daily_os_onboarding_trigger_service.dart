@@ -8,13 +8,22 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
-import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+
+/// Whether the general first-run welcome still owes the user its auto-show.
+///
+/// The Daily OS walkthrough waits behind it. False until the composition root
+/// wires the onboarding feature's answer (`shouldAutoShowOnboardingProvider`);
+/// Daily OS does not depend on onboarding.
+final welcomeOnboardingOwedProvider = FutureProvider<bool>(
+  (ref) async => false,
+  name: 'welcomeOnboardingOwedProvider',
+);
 
 /// Prefix for every private [SettingsDb] key backing the Daily OS onboarding
 /// walkthrough's auto-show cadence. Deliberately *not* a `ConfigFlags` row --
@@ -142,7 +151,7 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
   // Sequenced behind What's New and the general FTUE welcome: establish those
   // subscriptions synchronously too so this re-evaluates when either resolves.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
-  final welcomeOwedFuture = ref.watch(shouldAutoShowOnboardingProvider.future);
+  final welcomeOwedFuture = ref.watch(welcomeOnboardingOwedProvider.future);
 
   final dailyOsEnabled =
       dailyOsFlag.value ?? await db.getConfigFlag(enableDailyOsPageFlag);
