@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -1020,6 +1022,9 @@ void main() {
                 configFlagProvider(
                   enableEventsFlag,
                 ).overrideWith((ref) => Stream.value(true)),
+                journalDetailSlotsProvider.overrideWithValue(
+                  appJournalDetailSlots,
+                ),
               ]),
               child: const EntryDetailsWidget(
                 itemId: 'event-id',

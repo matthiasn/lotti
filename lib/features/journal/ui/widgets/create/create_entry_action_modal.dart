@@ -2,10 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
-import 'package:lotti/features/github/state/github_providers.dart';
-import 'package:lotti/features/github/ui/track_pull_requests_item.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -88,11 +87,9 @@ class _CreateEntryMenuList extends ConsumerWidget {
     // Offered on a task without a Pull requests section, while this device
     // may start tracking pull requests; once the section is there it is the
     // way in, and the row stands down.
-    final offerPullRequestTracking =
-        id != null &&
-        hostIsTask &&
-        ref.watch(gitHubTrackingAvailableProvider) &&
-        !ref.watch(taskShowsPullRequestsProvider(id));
+    final taskAction = id != null && hostIsTask
+        ? ref.watch(journalDetailSlotsProvider).taskCreateAction?.call(ref, id)
+        : null;
 
     return DsActionModalList(
       children: [
@@ -112,7 +109,7 @@ class _CreateEntryMenuList extends ConsumerWidget {
         if (isMacOS || isLinux)
           CreateScreenshotItem(linkedFromId, categoryId: categoryId),
         if (canPasteImage) PasteImageItem(linkedFromId, categoryId: categoryId),
-        if (offerPullRequestTracking) TrackPullRequestsItem(id),
+        ?taskAction,
       ],
     );
   }

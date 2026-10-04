@@ -1,6 +1,6 @@
 {
   "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
-  "_total": 36,
+  "_total": 27,
   "files": {
     "lib/features/agents/query/query_audio_controller.dart": ["speech"],
     "lib/features/agents/state/agent_providers.dart": ["sync"],
@@ -21,11 +21,7 @@
     "lib/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart": ["onboarding"],
     "lib/features/habits/ui/sheets/habit_completion_sheet.dart": ["goals"],
     "lib/features/journal/state/entry_controller.dart": ["daily_os_next"],
-    "lib/features/journal/ui/pages/entry_details_page.dart": ["tasks"],
-    "lib/features/journal/ui/widgets/create/create_entry_action_modal.dart": ["github"],
-    "lib/features/journal/ui/widgets/entry_details_widget.dart": ["events","tasks"],
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": ["relationships","tasks"],
-    "lib/features/knowledge_graph/ui/entry_detail_sidebar.dart": ["tasks"],
     "lib/features/sync/matrix/sync_event_processor.dart": ["github"],
     "lib/features/tasks/ui/header/desktop_task_header_connector.dart": ["projects"],
     "lib/features/tasks/ui/header/task_meta_pickers.dart": ["projects"],
