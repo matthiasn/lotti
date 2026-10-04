@@ -3331,7 +3331,7 @@ fields of their own (`entry_field_diff.dart`), and "Combine" takes each from
 the side the user picks (`buildMergedEntity`).
 
 The conformance trace is
-`test/features/tasks/repository/task_field_writes_model_conformance.dart`:
+`test/features/journal/repository/task_field_writes_model_conformance.dart`:
 a real in-memory `JournalDb` behind the real `PersistenceLogic`, the real
 `TaskStatusHandler`, `TaskTitleHandler` and `TaskPriorityHandler`, and the
 real `ConflictResolutionService`; the other device writes on its own copy
