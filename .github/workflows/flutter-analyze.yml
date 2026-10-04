@@ -74,3 +74,8 @@ jobs:
       # may fall, never rise; the token definitions themselves are exempt.
       - name: Check design-token discipline
         run: dart run tool/design_tokens/validate.dart
+      # Every import in lib/ follows the layer order in
+      # tool/architecture/layer_guard.dart; the imports that already break it
+      # are baselined, and the baseline may only shrink.
+      - name: Check imports follow the layer order
+        run: dart run tool/architecture/validate.dart
