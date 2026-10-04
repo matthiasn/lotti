@@ -17,6 +17,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -187,7 +188,7 @@ void main() {
       ).thenAnswer((_) async => whatsNewFeatureEnabled);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(mockJournalDb),
           whatsNewControllerProvider.overrideWith(
             whatsNewHasUnseen
@@ -197,7 +198,7 @@ void main() {
           dailyOsOnboardingProviderReadyProvider.overrideWith(
             (ref) async => providerReady,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -212,7 +213,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
         ).thenAnswer((_) async => false);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockJournalDb),
             whatsNewControllerProvider.overrideWith(
               _NoUnseenWhatsNewController.new,
@@ -220,7 +221,7 @@ void main() {
             dailyOsOnboardingProviderReadyProvider.overrideWith(
               (ref) async => false,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -466,7 +467,7 @@ void main() {
     });
 
     ProviderContainer createContainer() {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       return container;
     }
@@ -543,7 +544,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
         ).thenAnswer((_) async => false);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockJournalDb),
             whatsNewControllerProvider.overrideWith(
               _NoUnseenWhatsNewController.new,
@@ -551,7 +552,7 @@ void main() {
             dailyOsOnboardingProviderReadyProvider.overrideWith(
               (ref) async => false,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final subscription = container.listen(
@@ -598,11 +599,11 @@ void main() {
 
     test('wires readiness and retirement by default', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dailyOsOnboardingProviderReadyProvider.overrideWith(
             (ref) async => true,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -645,7 +646,7 @@ void main() {
 
     test('recordShown logs and does not throw when the read fails', () async {
       when(() => settingsDb.itemsByKeys(any())).thenThrow(Exception('db down'));
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       await expectLater(

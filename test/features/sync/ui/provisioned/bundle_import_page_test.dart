@@ -23,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
@@ -135,10 +136,10 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> defaultOverrides() => [
+  List<Override> defaultOverrides() => withServiceOverrides([
     matrixServiceProvider.overrideWithValue(mockMatrixService),
     loggingServiceProvider.overrideWithValue(mockLoggingService),
-  ];
+  ]);
 
   group('BundleImportWidget', () {
     testWidgets('leads with a live paste action while the field is empty', (
@@ -147,7 +148,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -176,7 +177,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -210,7 +211,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -245,7 +246,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -278,7 +279,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -307,7 +308,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -343,7 +344,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -372,7 +373,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -409,7 +410,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -442,7 +443,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -467,7 +468,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -525,7 +526,7 @@ void main() {
               child: BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
             ),
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
           locale: const Locale('fr'),
         ),
       );
@@ -554,7 +555,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -598,7 +599,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -640,7 +641,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -690,7 +691,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -745,7 +746,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -768,7 +769,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: defaultOverrides(),
+            overrides: withServiceOverrides(defaultOverrides()),
           ),
         );
         await tester.pump();
@@ -791,7 +792,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -868,7 +869,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();
@@ -1002,7 +1003,7 @@ void main() {
             pageIndexNotifier: pageIndexNotifier,
             onSignInWithAccount: () => signIns++,
           ),
-          overrides: defaultOverrides(),
+          overrides: withServiceOverrides(defaultOverrides()),
         ),
       );
       await tester.pump();

@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../database/test_utils.dart' show clearAllTables;
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -1700,11 +1701,11 @@ void main() {
       ..registerSingleton<VectorClockService>(vectorClockService)
       ..registerSingleton<DomainLogger>(logger);
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         journalDbProvider.overrideWithValue(journalDb),
         agentRepositoryProvider.overrideWithValue(agentRepository),
         outboxServiceProvider.overrideWithValue(outboxService),
-      ],
+      ]),
     );
     addTearDown(() async {
       container.dispose();

@@ -46,6 +46,7 @@ import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/material_ui_finders.dart';
@@ -88,7 +89,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: size),
         child: MaterialApp(
@@ -159,7 +160,7 @@ Future<void> _pumpSurface(
       home: device.isPhone ? _mobilePage(surface) : const SettingsDesktopPage(),
       brightness: brightness,
       size: device.size,
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
     ),
   );
   await settleFrames(tester);
@@ -267,13 +268,13 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> overrides() => [
+  List<Override> overrides() => withServiceOverrides([
     journalDbProvider.overrideWithValue(mocks.journalDb),
     templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
     recordingStyleAppPrefsProvider.overrideWithValue(
       fakeRecordingStylePrefs(recordingPrefs),
     ),
-  ];
+  ]);
 
   // The 402 dp phone matches the manual's canonical mobile viewport and gives
   // the three celebration-surface labels enough room to remain legible.
@@ -291,7 +292,7 @@ void main() {
             device: device,
             brightness: brightness,
             navService: navService,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
           );
           final messages = _messages(tester);
           expect(find.text(messages.settingsThemingTitle), findsWidgets);
@@ -330,7 +331,7 @@ void main() {
             device: device,
             brightness: brightness,
             navService: navService,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
           );
           final messages = AppLocalizations.of(
             tester.element(find.byType(Scaffold).first),
@@ -369,7 +370,7 @@ void main() {
             device: device,
             brightness: brightness,
             navService: navService,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
           );
           final messages = _messages(tester);
           expect(find.text(messages.settingsSpeechTitle), findsWidgets);
@@ -415,7 +416,7 @@ void main() {
             device: device,
             brightness: brightness,
             navService: navService,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
           );
           final messages = _messages(tester);
           expect(
@@ -493,7 +494,7 @@ void main() {
             device: device,
             brightness: brightness,
             navService: navService,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
           );
           final messages = _messages(tester);
           expect(find.text(messages.settingsCelebrationsTitle), findsWidgets);
@@ -551,7 +552,7 @@ void main() {
               ),
               brightness: brightness,
               size: device.size,
-              overrides: overrides(),
+              overrides: withServiceOverrides(overrides()),
             ),
           );
           await settleFrames(tester, 6);

@@ -37,6 +37,7 @@ import 'package:lotti/features/recent_searches/state/recent_searches_controller.
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -116,7 +117,9 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) => ValueListenableBuilder<String?>(
-            valueListenable: getIt<NavService>().desktopSelectedProjectId,
+            valueListenable: ref
+                .read(navServiceProvider)
+                .desktopSelectedProjectId,
             builder: (context, selectedProjectId, _) {
               final canHideListPane = selectedProjectId != null;
               final queryScope = selectedProjectId == null
@@ -352,7 +355,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
           skipError: true,
           data: (groups) => ValueListenableBuilder<String?>(
             valueListenable: isDesktopLayout(context)
-                ? getIt<NavService>().desktopSelectedProjectId
+                ? ref.read(navServiceProvider).desktopSelectedProjectId
                 : _noProjectSelectionNotifier,
             builder: (context, activeProjectId, _) {
               return Column(

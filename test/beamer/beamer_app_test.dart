@@ -107,6 +107,7 @@ import 'package:uuid/uuid.dart';
 
 import '../features/recent_searches/test_utils.dart';
 import '../helpers/fallbacks.dart';
+import '../helpers/service_overrides.dart';
 import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
@@ -492,7 +493,7 @@ Future<void> _pumpAppScreen(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
           (ref) => Stream<LoginState>.value(LoginState.loggedIn),
@@ -533,7 +534,7 @@ Future<void> _pumpAppScreen(
         // would reach for the settings store.
         fakeRecentSearches(FakeRecentSearchesController(recents)),
         ...extraOverrides,
-      ],
+      ]),
       child: MaterialApp.router(
         builder: LegacyMaterialBridge.builder,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
@@ -597,7 +598,7 @@ Future<void> _pumpAppScreenCustomProviders(
   final mockJournalDb = MockJournalDb();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
           (ref) => Stream<LoginState>.value(LoginState.loggedIn),
@@ -642,7 +643,7 @@ Future<void> _pumpAppScreenCustomProviders(
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
         fakeRecentSearches(FakeRecentSearchesController()),
         ...extraOverrides,
-      ],
+      ]),
       child: MaterialApp.router(
         builder: LegacyMaterialBridge.builder,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
@@ -711,7 +712,7 @@ Future<void> _pumpReadyMyBeamerApp(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         themingControllerProvider.overrideWith(ReadyThemingController.new),
         manualLanguageControllerProvider.overrideWith(
           _FollowSystemManualLanguageController.new,
@@ -748,7 +749,7 @@ Future<void> _pumpReadyMyBeamerApp(
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
         fakeRecentSearches(FakeRecentSearchesController()),
         ...extraOverrides,
-      ],
+      ]),
       child: app,
     ),
   );
@@ -1334,7 +1335,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             themingControllerProvider.overrideWith(
               _LoadingThemingController.new,
             ),
@@ -1345,7 +1346,7 @@ void main() {
               MockDayProcessingRuntime(),
             ),
             agentInitializationProvider.overrideWith((ref) async {}),
-          ],
+          ]),
           child: MyBeamerApp(navService: mockNavService),
         ),
       );
@@ -1380,7 +1381,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             themingControllerProvider.overrideWith(
               _LoadingThemingController.new,
             ),
@@ -1393,7 +1394,7 @@ void main() {
             agentInitializationProvider.overrideWith(
               (ref) async => throw failure,
             ),
-          ],
+          ]),
           child: MyBeamerApp(navService: mockNavService),
         ),
       );
@@ -4712,12 +4713,12 @@ void main() {
         filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
       );
 
-      List<Override> countOverrides() => [
+      List<Override> countOverrides() => withServiceOverrides([
         savedTaskFilterCountsProvider.overrideWith(
           (ref) async => const {'due-today': 4, 'blocked': 2},
         ),
         allTasksTotalCountProvider.overrideWith((ref) async => 23),
-      ];
+      ]);
 
       testWidgets('are listed under the active Tasks row, as on desktop', (
         tester,
@@ -5417,7 +5418,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               matrixServiceProvider.overrideWithValue(mockMatrix),
               loginStateStreamProvider.overrideWith(
                 (ref) => Stream<LoginState>.value(LoginState.loggedIn),
@@ -5454,7 +5455,7 @@ void main() {
               ),
               currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
               tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
-            ],
+            ]),
             child: MaterialApp.router(
               builder: LegacyMaterialBridge.builder,
               theme: withOverrides(ThemeData.dark(useMaterial3: true)),

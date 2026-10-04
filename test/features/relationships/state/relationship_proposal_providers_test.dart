@@ -19,6 +19,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -55,12 +56,12 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentUpdateStreamProvider(
             agentId,
           ).overrideWith((ref) => const Stream.empty()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final provider = relationshipSuggestionListProvider('person');
@@ -123,13 +124,13 @@ void main() {
         final service = MockRelationshipProposalService();
         when(() => service.cachedReceipt(set.id, 0)).thenReturn(testTask);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(repository),
             relationshipProposalServiceProvider.overrideWithValue(service),
             agentUpdateStreamProvider(
               agentId,
             ).overrideWith((ref) => const Stream.empty()),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final provider = relationshipSuggestionListProvider('person');
@@ -182,7 +183,7 @@ void main() {
       when(() => repository.getEntity(set.id)).thenAnswer((_) async => set);
       when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentSyncServiceProvider.overrideWithValue(sync),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
@@ -192,7 +193,7 @@ void main() {
           ),
           journalDbProvider.overrideWithValue(MockJournalDb()),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       expect(
@@ -225,7 +226,7 @@ void main() {
     'disposing highlights cancels pending expiry and repeated highlights reset it',
     () {
       fakeAsync((async) {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         final highlighter = container.read(
           relationshipTaskHighlightProvider.notifier,
         )..highlight('task');

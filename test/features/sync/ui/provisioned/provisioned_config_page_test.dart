@@ -27,6 +27,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import 'provisioned_status_page_test_helpers.dart';
@@ -739,7 +740,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             provisioningControllerProvider.overrideWith(
               controller ?? () => _FakeProvisioningController(state),
@@ -748,7 +749,7 @@ void main() {
               () => FakeSyncDevicesController(devices),
             ),
             ...extraOverrides,
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             localizationsDelegates: const [

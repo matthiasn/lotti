@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../test_utils.dart';
 import '../util/seed_tombstone_test_utils.dart';
 
@@ -40,9 +41,9 @@ void main() {
 
   ProviderContainer createContainer() {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(repo),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;

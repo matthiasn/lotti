@@ -24,6 +24,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/sync/agent_replica_bench.dart';
 import '../../agents/wake/wake_device_bench.dart';

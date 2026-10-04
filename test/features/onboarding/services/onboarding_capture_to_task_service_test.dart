@@ -20,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../categories/test_utils.dart';
@@ -869,7 +870,7 @@ void main() {
         () => wiredCategoryRepository.getCategoryById(any()),
       ).thenAnswer((_) async => null);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           onboardingTaskStructuringServiceProvider.overrideWithValue(
             wiredStructuring,
           ),
@@ -877,7 +878,7 @@ void main() {
             wiredCategoryRepository,
           ),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

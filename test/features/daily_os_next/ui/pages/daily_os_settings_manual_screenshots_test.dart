@@ -33,6 +33,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -59,7 +60,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: size),
         child: MaterialApp(
@@ -141,7 +142,7 @@ void main() {
       createdAt: manualDemoNow.subtract(const Duration(days: 36)),
       updatedAt: manualDemoNow.subtract(const Duration(hours: 5)),
     );
-    return [
+    return withServiceOverrides([
       journalDbProvider.overrideWithValue(mocks.journalDb),
       templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
       dayAgentServiceProvider.overrideWithValue(dayAgentService),
@@ -156,7 +157,7 @@ void main() {
       dailyOsPreferencesControllerProvider.overrideWith(
         _PreferencesController.new,
       ),
-    ];
+    ]);
   }
 
   for (final deviceCase in [
@@ -176,7 +177,7 @@ void main() {
                   : const SettingsDesktopPage(),
               brightness: brightness,
               size: deviceCase.device.size,
-              overrides: overrides(),
+              overrides: withServiceOverrides(overrides()),
             ),
           );
           await settleFrames(tester, 6);

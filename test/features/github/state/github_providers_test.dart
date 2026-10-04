@@ -43,6 +43,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -73,14 +74,14 @@ void main() {
 
   ProviderContainer container({List<JournalEntity> linked = const []}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         gitHubClientProvider.overrideWithValue(client),
         gitHubTokenStorageProvider.overrideWithValue(tokens),
         pullRequestServiceProvider.overrideWithValue(service),
         resolvedOutgoingLinkedEntriesProvider.overrideWith(
           (ref, taskId) => linked,
         ),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;
@@ -120,7 +121,7 @@ void main() {
 
     ProviderContainer account() {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           gitHubClientProvider.overrideWithValue(client),
           gitHubTokenStorageProvider.overrideWithValue(storage),
           gitHubAccountSyncProvider.overrideWithValue(
@@ -133,7 +134,7 @@ void main() {
               rescan: () async => rescans++,
             ),
           ),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -472,7 +473,7 @@ void main() {
 
     ProviderContainer world(ProfileType type) {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           profileContextProvider.overrideWithValue(
             ProfileContext.forProfile(
               profile: Profile(
@@ -485,7 +486,7 @@ void main() {
               root: Directory('/data/lotti'),
             ),
           ),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -559,7 +560,7 @@ void main() {
 
     ProviderContainer status({List<Override> overrides = const []}) {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           gitHubClientProvider.overrideWithValue(client),
           gitHubTokenStorageProvider.overrideWithValue(storage),
           gitHubAccountSyncProvider.overrideWithValue(
@@ -569,7 +570,7 @@ void main() {
             ),
           ),
           ...overrides,
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -786,11 +787,11 @@ void main() {
 
     PullRequestContextService serviceIn() {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           gitHubTokenStorageProvider.overrideWithValue(tokens),
           pullRequestRepositoryProvider.overrideWithValue(repository),
           pullRequestServiceProvider.overrideWithValue(service),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c.read(pullRequestContextServiceProvider);
@@ -837,14 +838,14 @@ void main() {
       List<JournalEntity> linked = const [],
     }) async {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(
             task.meta.id,
           ).overrideWith(() => FakeEntryController(task)),
           resolvedOutgoingLinkedEntriesProvider.overrideWith(
             (ref, taskId) => linked,
           ),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       c.listen(taskShowsPullRequestsProvider(task.meta.id), (_, _) {});
@@ -1005,7 +1006,7 @@ void main() {
 
     ProviderContainer world() {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           gitHubClientProvider.overrideWithValue(client),
           gitHubTokenStorageProvider.overrideWithValue(tokens),
           journalDbProvider.overrideWithValue(db),
@@ -1013,7 +1014,7 @@ void main() {
           profileAutomationResolverProvider.overrideWithValue(resolver),
           cloudInferenceRepositoryProvider.overrideWithValue(inference),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -1173,7 +1174,9 @@ void main() {
           (_) async => reads++ == 0 ? first : second,
         );
         final c = ProviderContainer(
-          overrides: [pullRequestRepositoryProvider.overrideWithValue(entries)],
+          overrides: withServiceOverrides([
+            pullRequestRepositoryProvider.overrideWithValue(entries),
+          ]),
         );
         addTearDown(c.dispose);
         final seen = <PullRequestSummary?>[];
@@ -1204,7 +1207,9 @@ void main() {
           () => entries.liveEntry(entry.id),
         ).thenAnswer((_) async => stored);
         final c = ProviderContainer(
-          overrides: [pullRequestRepositoryProvider.overrideWithValue(entries)],
+          overrides: withServiceOverrides([
+            pullRequestRepositoryProvider.overrideWithValue(entries),
+          ]),
         );
         addTearDown(c.dispose);
         // Watched, as a row watches it: an auto-disposed provider read only
@@ -1284,9 +1289,9 @@ void main() {
             }) async => answer,
       );
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           pullRequestSummarizerProvider.overrideWithValue(summarizer),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       final seen = <PullRequestSummaryOutcome?>[];
@@ -1504,11 +1509,11 @@ void main() {
 
     ProviderContainer pickerContainer() {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(db),
           pullRequestRepositoryProvider.overrideWithValue(entries),
           pullRequestServiceProvider.overrideWithValue(service),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -1595,7 +1600,9 @@ void main() {
           () => journal.getJournalEntitiesByIds({'other-task'}),
         ).thenAnswer((_) async => visible);
         final c = ProviderContainer(
-          overrides: [journalRepositoryProvider.overrideWithValue(journal)],
+          overrides: withServiceOverrides([
+            journalRepositoryProvider.overrideWithValue(journal),
+          ]),
         );
         addTearDown(c.dispose);
         final seen = <String?>[];
@@ -1640,7 +1647,9 @@ void main() {
           return pending.future;
         });
         final c = ProviderContainer(
-          overrides: [journalRepositoryProvider.overrideWithValue(journal)],
+          overrides: withServiceOverrides([
+            journalRepositoryProvider.overrideWithValue(journal),
+          ]),
         );
         addTearDown(c.dispose);
         final provider = pullRequestHolderTitleProvider('other-task');

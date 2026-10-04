@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_progress_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -45,7 +46,7 @@ class TaskProgressController extends AsyncNotifier<TaskProgressState?> {
   Duration? _estimate;
   StreamSubscription<Set<String>>? _updateSubscription;
   StreamSubscription<JournalEntity?>? _timeServiceSubscription;
-  final TimeService _timeService = getIt<TimeService>();
+  TimeService get _timeService => ref.read(timeServiceProvider);
 
   /// Wires the two live-update sources (DB change notifications and the time
   /// service ticker). Called once at the end of [build]; subscriptions are

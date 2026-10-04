@@ -19,6 +19,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -56,14 +57,14 @@ void main() {
     );
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
         journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
         checklistRepositoryProvider.overrideWithValue(
           MockChecklistRepository(),
         ),
-      ],
+      ]),
     );
   });
 

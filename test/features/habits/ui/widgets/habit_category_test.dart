@@ -12,6 +12,7 @@ import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
@@ -74,7 +75,7 @@ void main() {
         () => mockEntitiesCacheService.getCategoryById(categoryMindfulness.id),
       ).thenReturn(categoryMindfulness);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
@@ -118,7 +119,7 @@ void main() {
     when(
       () => mockEntitiesCacheService.getCategoryById(any()),
     ).thenReturn(categoryMindfulness);
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
     final provider = habitSettingsControllerProvider(habitFlossing.id);
     container.read(provider.notifier).setCategory(categoryMindfulness.id);

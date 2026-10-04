@@ -4,6 +4,7 @@ import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   ProviderContainer makeContainer() {
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
     return container;
   }

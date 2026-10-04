@@ -26,6 +26,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../services/day_processing_test_db.dart';
@@ -39,14 +40,14 @@ List<Override> _agentJobExecutorOverrides() {
   when(
     () => orchestrator.runCompletions,
   ).thenAnswer((_) => const Stream.empty());
-  return [
+  return withServiceOverrides([
     dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
     dayAgentPlanServiceProvider.overrideWithValue(MockDayAgentPlanService()),
     dayAgentCaptureServiceProvider.overrideWithValue(
       MockDayAgentCaptureService(),
     ),
     wakeOrchestratorProvider.overrideWithValue(orchestrator),
-  ];
+  ]);
 }
 
 void main() {
@@ -99,12 +100,12 @@ void main() {
     '(ADR 0032 §5)',
     () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioTranscriptionServiceProvider.overrideWithValue(
             MockAudioTranscriptionService(),
           ),
           ..._agentJobExecutorOverrides(),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -140,10 +141,10 @@ void main() {
   test('constructs every local-first runtime dependency', () async {
     final transcriber = MockAudioTranscriptionService();
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         audioTranscriptionServiceProvider.overrideWithValue(transcriber),
         ..._agentJobExecutorOverrides(),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -222,12 +223,12 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioTranscriptionServiceProvider.overrideWithValue(
             MockAudioTranscriptionService(),
           ),
           ..._agentJobExecutorOverrides(),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -268,10 +269,10 @@ void main() {
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         audioTranscriptionServiceProvider.overrideWithValue(transcriber),
         ..._agentJobExecutorOverrides(),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final processor = container.read(dayProcessingOutboxProcessorProvider);
@@ -355,13 +356,13 @@ void main() {
         () => journalDb.journalEntityById(any()),
       ).thenAnswer((_) async => null);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioTranscriptionServiceProvider.overrideWithValue(transcriber),
           dailyOsTranscriptionTargetProvider.overrideWith(
             (ref) async => (provider: provider, model: model),
           ),
           ..._agentJobExecutorOverrides(),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final processor = container.read(dayProcessingOutboxProcessorProvider);
@@ -392,12 +393,12 @@ void main() {
 
   test('the drain prioritises the day the user is looking at', () async {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         audioTranscriptionServiceProvider.overrideWithValue(
           MockAudioTranscriptionService(),
         ),
         ..._agentJobExecutorOverrides(),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 
@@ -430,12 +431,12 @@ void main() {
 
   test('re-reads the selection per claim rather than at build time', () async {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         audioTranscriptionServiceProvider.overrideWithValue(
           MockAudioTranscriptionService(),
         ),
         ..._agentJobExecutorOverrides(),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

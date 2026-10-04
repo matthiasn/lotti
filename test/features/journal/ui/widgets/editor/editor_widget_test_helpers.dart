@@ -15,6 +15,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../widget_test_utils.dart';
 
 class TestEntryController extends EntryController {
@@ -57,7 +58,7 @@ Widget buildEditorTestWidget({
   TargetPlatform platform = TargetPlatform.windows,
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       entryControllerProvider(entryId).overrideWith(
         () => TestEntryController(showToolbar: showToolbar, onSave: onSave),
       ),
@@ -65,7 +66,7 @@ Widget buildEditorTestWidget({
         speechDictionaryServiceProvider.overrideWithValue(
           speechDictionaryServiceOverride,
         ),
-    ],
+    ]),
     child: MediaQuery(
       data: const MediaQueryData(),
       child: MaterialApp(

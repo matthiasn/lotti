@@ -4,8 +4,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
@@ -55,7 +54,9 @@ class CardWrapperWidget extends ConsumerWidget {
 
     final card = tracksSelection
         ? ValueListenableBuilder<String?>(
-            valueListenable: getIt<NavService>().desktopSelectedEntryId,
+            valueListenable: ref
+                .read(navServiceProvider)
+                .desktopSelectedEntryId,
             builder: (context, selectedEntryId, _) =>
                 buildCard(selected: selectedEntryId == item.meta.id),
           )

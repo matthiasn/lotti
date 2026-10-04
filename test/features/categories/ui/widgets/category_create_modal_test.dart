@@ -12,6 +12,7 @@ import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
@@ -30,9 +31,9 @@ void main() {
     CategoryIcon? initialIcon,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      ]),
       child: WidgetTestBench(
         child: CategoryCreateModal(
           onCategoryCreated: onCategoryCreated,

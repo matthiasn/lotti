@@ -11,6 +11,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -80,9 +81,9 @@ void main() {
     );
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         habitsRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      ]),
     );
   });
 

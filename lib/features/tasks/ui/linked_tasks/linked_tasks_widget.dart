@@ -21,10 +21,9 @@ import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:material_ui/material_ui.dart';
@@ -592,6 +591,9 @@ Future<void> _createNewLinkedTask(
 
   final entryState = ref.read(entryControllerProvider(taskId)).value;
   final categoryId = entryState?.entry?.meta.categoryId;
+  // Read before any await: the typed link must still land if the user leaves
+  // the task while the new one is being created.
+  final persistence = ref.read(persistenceLogicProvider);
 
   final newTask = await createTask(
     linkedId: taskId,
@@ -607,7 +609,7 @@ Future<void> _createNewLinkedTask(
     // removing first would leave the freshly created task with no link back
     // to its parent at all.
     final swap = selection.inverse;
-    final created = await getIt<PersistenceLogic>().createLink(
+    final created = await persistence.createLink(
       fromId: swap ? newTask.meta.id : taskId,
       toId: swap ? taskId : newTask.meta.id,
       linkType: selection.type,

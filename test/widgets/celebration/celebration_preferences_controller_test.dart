@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/service_overrides.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -22,7 +23,7 @@ void main() {
     when(
       () => mocks.settingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {
@@ -195,7 +196,7 @@ void main() {
         when(
           () => mocks.settingsDb.itemByKey('CELEBRATE_CHECKLIST_ITEMS'),
         ).thenAnswer((_) async => 'false');
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         final completer = Completer<CelebrationPreferences>();
         container
@@ -225,7 +226,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_ENABLED'),
       ).thenAnswer((_) async => 'false');
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container
@@ -252,7 +253,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_HAPTICS'),
       ).thenAnswer((_) async => 'false');
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container
@@ -276,7 +277,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_VARIANT_HABITS'),
       ).thenAnswer((_) async => CelebrationVariant.embers.name);
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container
@@ -320,7 +321,7 @@ void main() {
         when(
           () => mocks.settingsDb.itemByKey('CELEBRATE_VARIANT'),
         ).thenAnswer((_) async => CelebrationVariant.fireworks.name);
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         final completer = Completer<CelebrationPreferences>();
         container
@@ -366,7 +367,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_VARIANT_TASKS'),
       ).thenAnswer((_) async => CelebrationVariant.embers.name);
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container
@@ -410,7 +411,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_TASKS'),
       ).thenAnswer((_) async => 'false');
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container
@@ -443,7 +444,7 @@ void main() {
         when(
           () => mocks.settingsDb.itemByKey('CELEBRATE_TASKS'),
         ).thenAnswer((_) async => 'false');
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         // build() schedules hydration; toggle checklist items before its
         // async reads resolve.
@@ -739,7 +740,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_ENABLED'),
       ).thenAnswer((_) async => 'false');
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container.listen(celebrationPreferencesControllerProvider, (_, next) {
@@ -772,7 +773,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_PARAMS_sparks'),
       ).thenAnswer((_) async => tuned.encode());
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container.listen(celebrationPreferencesControllerProvider, (_, next) {
@@ -800,7 +801,7 @@ void main() {
         when(
           () => mocks.settingsDb.itemByKey('CELEBRATE_HABITS'),
         ).thenAnswer((_) async => 'false');
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         // build() schedules hydration; tune sparks before its async reads resolve.
         final notifier = container.read(
@@ -881,7 +882,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey('CELEBRATE_VARIANT_TASKS'),
       ).thenAnswer((_) async => CelebrationSelection.randomToken);
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final completer = Completer<CelebrationPreferences>();
       container.listen(celebrationPreferencesControllerProvider, (_, next) {

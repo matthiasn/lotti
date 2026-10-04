@@ -10,9 +10,8 @@ import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The template's agent instances, one lazily-built row each.
@@ -118,7 +117,7 @@ class TemplateInstanceRow extends ConsumerWidget {
                 icon: const Icon(LottiIcons.openExternal, size: 20),
                 tooltip: messages.agentTemplateInstanceOpenTask,
                 onPressed: () =>
-                    getIt<NavService>().beamToNamed('/tasks/$taskId'),
+                    ref.read(navServiceProvider).beamToNamed('/tasks/$taskId'),
               ),
         sortAt: instance.lastActiveAt,
         searchKey: '',

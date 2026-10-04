@@ -22,6 +22,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -224,7 +225,7 @@ void main() {
       ).thenAnswer((_) async => everPlanCount);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(mockJournalDb),
           agentRepositoryProvider.overrideWithValue(mockAgentRepo),
           currentDraftPlanProvider.overrideWith((ref, date) async => todayPlan),
@@ -242,7 +243,7 @@ void main() {
             shouldAutoShowOnboardingProvider.overrideWith(
               (ref) async => welcomeStillOwed,
             ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -430,7 +431,7 @@ void main() {
     });
 
     ProviderContainer createContainer() {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       return container;
     }
@@ -527,7 +528,7 @@ void main() {
 
     test('recordShown logs and does not throw when the read fails', () async {
       when(() => settingsDb.itemsByKeys(any())).thenThrow(Exception('db down'));
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       await expectLater(

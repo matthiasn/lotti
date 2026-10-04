@@ -33,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart' show MockAiConfigByTypeController;
@@ -2683,7 +2684,7 @@ List<Override> _baseOverrides({
   required ProfileAutomationResolver resolver,
   required List<AiConfig> configs,
 }) {
-  return [
+  return withServiceOverrides([
     hasAvailableSkillsProvider((
       entityId: entity.id,
       linkedFromId: null,
@@ -2699,7 +2700,7 @@ List<Override> _baseOverrides({
     aiConfigRepositoryProvider.overrideWithValue(
       _StubAiConfigRepository(configs),
     ),
-  ];
+  ]);
 }
 
 /// Minimal stub repository so the popup's `getConfigsByType` read

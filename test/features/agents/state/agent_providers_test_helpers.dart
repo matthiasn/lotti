@@ -29,6 +29,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -177,7 +178,7 @@ class InitProviderBench {
     TaskAgentWorkflow Function(Ref)? taskAgentWorkflow,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentServiceProvider.overrideWithValue(mockService),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
@@ -222,7 +223,7 @@ class InitProviderBench {
           domainLoggerProvider.overrideWithValue(testDomainLogger),
         if (syncEventProcessor != null)
           maybeSyncEventProcessorProvider.overrideWithValue(syncEventProcessor),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -285,11 +286,11 @@ ProviderContainer createTemplateContainer({
   required MockAgentRepository mockRepository,
 }) {
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
       agentServiceProvider.overrideWithValue(mockService),
       agentRepositoryProvider.overrideWithValue(mockRepository),
-    ],
+    ]),
   );
   addTearDown(container.dispose);
   return container;
@@ -322,7 +323,9 @@ setUpUpdateStreamTest({
   getIt.registerSingleton<UpdateNotifications>(mockNotifications);
   addTearDown(getIt.reset);
 
-  final container = containerFactory?.call() ?? ProviderContainer();
+  final container =
+      containerFactory?.call() ??
+      ProviderContainer(overrides: getItServiceOverrides());
   addTearDown(container.dispose);
 
   return (container: container, controller: controller);
@@ -342,12 +345,12 @@ ProviderContainer createAgentTokenContainer({
   ).thenAnswer((_) async => records);
 
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentRepositoryProvider.overrideWithValue(repo),
       agentUpdateStreamProvider.overrideWith(
         (ref, agentId) => const Stream.empty(),
       ),
-    ],
+    ]),
   );
   addTearDown(container.dispose);
   return container;
@@ -368,12 +371,12 @@ ProviderContainer createTemplateTokenContainer({
   ).thenAnswer((_) async => records);
 
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentRepositoryProvider.overrideWithValue(repo),
       agentUpdateStreamProvider.overrideWith(
         (ref, agentId) => const Stream.empty(),
       ),
-    ],
+    ]),
   );
   addTearDown(container.dispose);
   return container;
@@ -389,7 +392,7 @@ ProviderContainer createCoordinatorContainer({
   required MockSyncDatabase mockSyncDb,
 }) {
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentRepositoryProvider.overrideWithValue(mockRepo),
       journalDbProvider.overrideWithValue(mockDb),
       outboxServiceProvider.overrideWithValue(mockOutbox),
@@ -397,7 +400,7 @@ ProviderContainer createCoordinatorContainer({
       domainLoggerProvider.overrideWithValue(
         DomainLogger(loggingService: LoggingService()),
       ),
-    ],
+    ]),
   );
   addTearDown(container.dispose);
   return container;
@@ -414,7 +417,7 @@ ProviderContainer createCheckerContainer({
   final runner = WakeRunner();
   addTearDown(runner.dispose);
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentRepositoryProvider.overrideWithValue(mockRepo),
       wakeQueueProvider.overrideWithValue(WakeQueue()),
       wakeRunnerProvider.overrideWithValue(runner),
@@ -422,7 +425,7 @@ ProviderContainer createCheckerContainer({
         DomainLogger(loggingService: LoggingService()),
       ),
       journalDbProvider.overrideWithValue(mockDb),
-    ],
+    ]),
   );
   addTearDown(container.dispose);
   return container;

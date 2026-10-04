@@ -134,7 +134,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
       recordingVisible = false;
     }
 
-    final timeService = getIt<TimeService>();
+    final timeService = ref.read(timeServiceProvider);
     return StreamBuilder<JournalEntity?>(
       // Seeded like the island, so a timer already running on the first
       // frame reserves its room on that frame too.

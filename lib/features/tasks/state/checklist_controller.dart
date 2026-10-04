@@ -7,10 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/membership_list.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:meta/meta.dart';
@@ -100,14 +100,16 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   /// lists but does not show is never dropped by a reorder
   /// ([inVisibleOrder] keeps it).
   Future<Checklist?> _fetch() async {
-    final res = await getIt<JournalDb>().journalEntityById(id);
+    final res = await ref.read(journalDbProvider).journalEntityById(id);
     return res is Checklist && !res.isDeleted ? _shown(res) : null;
   }
 
   /// [stored] as the screen shows it (see [_fetch]).
   Future<Checklist> _shown(Checklist stored) async {
     _listed = stored.data.linkedChecklistItems;
-    final shown = await readShownChecklistItems(getIt<JournalDb>(), [stored]);
+    final shown = await readShownChecklistItems(ref.read(journalDbProvider), [
+      stored,
+    ]);
     return stored.copyWith(
       data: stored.data.copyWith(
         linkedChecklistItems: [

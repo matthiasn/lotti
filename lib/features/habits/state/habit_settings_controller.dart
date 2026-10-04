@@ -8,7 +8,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -249,7 +248,7 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
       priority: priority,
     );
 
-    await getIt<PersistenceLogic>().upsertEntityDefinition(dataType);
+    await ref.read(persistenceLogicProvider).upsertEntityDefinition(dataType);
     state = state.copyWith(dirty: false);
 
     // Scheduling the reminder is a side effect of a definition that has
@@ -276,8 +275,10 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
 
   /// Deletes the habit by marking it with a deletedAt timestamp.
   Future<void> delete() async {
-    await getIt<PersistenceLogic>().upsertEntityDefinition(
-      state.habitDefinition.copyWith(deletedAt: DateTime.now()),
-    );
+    await ref
+        .read(persistenceLogicProvider)
+        .upsertEntityDefinition(
+          state.habitDefinition.copyWith(deletedAt: DateTime.now()),
+        );
   }
 }

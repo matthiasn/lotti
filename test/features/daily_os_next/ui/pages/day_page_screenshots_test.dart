@@ -56,6 +56,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../screenshot_harness.dart';
@@ -793,7 +794,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(
           size: size,

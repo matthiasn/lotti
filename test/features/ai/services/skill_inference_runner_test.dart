@@ -48,6 +48,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
@@ -128,7 +129,7 @@ void main() {
       'repository and reports its failures on the container it lives in',
       () async {
         final providerContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             cloudInferenceRepositoryProvider.overrideWithValue(
               setup.mockCloudRepo,
             ),
@@ -137,7 +138,7 @@ void main() {
             aiConfigRepositoryProvider.overrideWithValue(
               setup.mockAiConfigRepo,
             ),
-          ],
+          ]),
         );
         addTearDown(providerContainer.dispose);
         when(

@@ -61,6 +61,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -291,6 +292,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -317,6 +319,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -344,6 +347,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -372,6 +376,7 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               return ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: Column(
                   children: [
                     Expanded(
@@ -419,6 +424,7 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               return ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: Column(
                   children: [
                     Expanded(
@@ -466,6 +472,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: true,
@@ -506,6 +513,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -534,6 +542,7 @@ void main() {
         Widget subject({required Color errorColor}) {
           return makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -573,6 +582,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -599,6 +609,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -627,6 +638,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -668,6 +680,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -693,6 +706,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: EntryDetailsWidget(
               itemId: testTextEntry.meta.id,
               showAiEntry: false,
@@ -730,11 +744,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(testTask.meta.id).overrideWith(
                   () => _FakeEntryController(testTask),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTask.meta.id,
                 showAiEntry: false,
@@ -761,11 +775,11 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
-                overrides: [
+                overrides: withServiceOverrides([
                   entryControllerProvider(pr.meta.id).overrideWith(
                     () => _FakeEntryController(pr),
                   ),
-                ],
+                ]),
                 child: EntryDetailsWidget(
                   itemId: pr.meta.id,
                   showAiEntry: false,
@@ -792,11 +806,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(testTask.meta.id).overrideWith(
                   () => _FakeEntryController(testTask),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTask.meta.id,
                 showAiEntry: false,
@@ -843,11 +857,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('ai-entry-id').overrideWith(
                   () => _FakeEntryController(aiEntry),
                 ),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'ai-entry-id',
                 showAiEntry: false,
@@ -894,11 +908,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('ai-gate-id').overrideWith(
                   () => _FakeEntryController(aiEntry),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: 'ai-gate-id',
                 showAiEntry: showAiEntry,
@@ -996,7 +1010,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('event-id').overrideWith(
                   () => _FakeEntryController(buildEvent()),
                 ),
@@ -1006,7 +1020,7 @@ void main() {
                 configFlagProvider(
                   enableEventsFlag,
                 ).overrideWith((ref) => Stream.value(true)),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'event-id',
                 showAiEntry: true,
@@ -1027,14 +1041,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('event-id').overrideWith(
                   () => _FakeEntryController(buildEvent()),
                 ),
                 configFlagProvider(
                   enableEventsFlag,
                 ).overrideWith((ref) => Stream.value(false)),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'event-id',
                 showAiEntry: true,
@@ -1056,11 +1070,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryControllerProvider(
                 'missing-id',
               ).overrideWith(_NullEntryController.new),
-            ],
+            ]),
             child: const EntryDetailsWidget(
               itemId: 'missing-id',
               showAiEntry: false,
@@ -1085,11 +1099,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryControllerProvider(
                 deletedEntry.meta.id,
               ).overrideWith(() => _FakeEntryController(deletedEntry)),
-            ],
+            ]),
             child: EntryDetailsWidget(
               itemId: deletedEntry.meta.id,
               showAiEntry: false,
@@ -1128,11 +1142,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -1161,11 +1175,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -1196,11 +1210,11 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
-                overrides: [
+                overrides: withServiceOverrides([
                   entryControllerProvider(
                     testTextEntry.meta.id,
                   ).overrideWith(() => _FakeEntryController(testTextEntry)),
-                ],
+                ]),
                 child: EntryDetailsWidget(
                   itemId: testTextEntry.meta.id,
                   showAiEntry: false,
@@ -1276,11 +1290,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('ai-detail-id').overrideWith(
                   () => _FakeEntryController(aiEntry),
                 ),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'ai-detail-id',
                 showAiEntry: true,
@@ -1319,11 +1333,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('checklist-id').overrideWith(
                   () => _FakeEntryController(checklist),
                 ),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'checklist-id',
                 showAiEntry: false,
@@ -1363,11 +1377,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider('checklist-item-id').overrideWith(
                   () => _FakeEntryController(checklistItem),
                 ),
-              ],
+              ]),
               child: const EntryDetailsWidget(
                 itemId: 'checklist-item-id',
                 showAiEntry: false,
@@ -1391,11 +1405,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testImageEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testImageEntry)),
-              ],
+              ]),
               child: SizedBox(
                 height: 400,
                 child: TaskScrollStabilityScope(
@@ -1452,14 +1466,14 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryControllerProvider(attributedImage.id).overrideWith(
                 () => _FakeEntryController(attributedImage),
               ),
               aiAttributionDetailsProvider.overrideWith(
                 (ref, attributionId) async => null,
               ),
-            ],
+            ]),
             child: EntryDetailsContent(attributedImage.id),
           ),
         ),
@@ -1505,13 +1519,13 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(initialImage.id).overrideWith(
                   () => entryController = _ControllableEntryController(
                     initialImage,
                   ),
                 ),
-              ],
+              ]),
               child: SizedBox(
                 height: 600,
                 child: TaskScrollStabilityScope(
@@ -1638,7 +1652,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   transcribedAudio.meta.id,
                 ).overrideWith(() => _FakeEntryController(transcribedAudio)),
@@ -1656,7 +1670,7 @@ void main() {
                 aiAttributionDetailsProvider.overrideWith(
                   (ref, attributionId) async => null,
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: transcribedAudio.meta.id,
                 showAiEntry: false,
@@ -1687,7 +1701,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
@@ -1702,7 +1716,7 @@ void main() {
                     const [],
                   ),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -1739,7 +1753,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
@@ -1754,7 +1768,7 @@ void main() {
                     [_testLinkedAiResponse],
                   ),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -1786,7 +1800,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
@@ -1801,7 +1815,7 @@ void main() {
                     [_testLinkedAiResponse],
                   ),
                 ),
-              ],
+              ]),
               child: EntryDetailsContent(
                 testAudioEntry.meta.id,
                 linkedFrom: testTask,
@@ -1843,14 +1857,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   labelled.meta.id,
                 ).overrideWith(() => _FakeEntryController(labelled)),
                 labelsStreamProvider.overrideWith(
                   (ref) => Stream.value(const <LabelDefinition>[]),
                 ),
-              ],
+              ]),
               child: EntryDetailsContent(labelled.meta.id),
             ),
           ),
@@ -1884,14 +1898,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   labelled.meta.id,
                 ).overrideWith(() => _FakeEntryController(labelled)),
                 labelsStreamProvider.overrideWith(
                   (ref) => Stream.value(const <LabelDefinition>[]),
                 ),
-              ],
+              ]),
               child: EntryDetailsContent(
                 labelled.meta.id,
                 linkedFrom: testTask,
@@ -1913,13 +1927,13 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testMeasurementChocolateEntry.meta.id,
                 ).overrideWith(
                   () => _FakeEntryController(testMeasurementChocolateEntry),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testMeasurementChocolateEntry.meta.id,
                 showAiEntry: false,
@@ -1945,13 +1959,13 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testHabitCompletionEntry.meta.id,
                 ).overrideWith(
                   () => _FakeEntryController(testHabitCompletionEntry),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testHabitCompletionEntry.meta.id,
                 showAiEntry: false,
@@ -1977,13 +1991,13 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 // Use the SAME itemId so both EntryDetailsWidget and
                 // EntryDetailsContent watch the same provider.
                 entryControllerProvider(
                   deletedEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(deletedEntry)),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 // EntryDetailsWidget sees deletedAt → collapses before
                 // EntryDetailsContent is even built (line 70-72 guard).
@@ -2027,11 +2041,11 @@ void main() {
             StatefulBuilder(
               builder: (context, setState) {
                 return ProviderScope(
-                  overrides: [
+                  overrides: withServiceOverrides([
                     entryControllerProvider(
                       testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
-                  ],
+                  ]),
                   child: Column(
                     children: [
                       Expanded(
@@ -2088,11 +2102,11 @@ void main() {
             StatefulBuilder(
               builder: (context, setState) {
                 return ProviderScope(
-                  overrides: [
+                  overrides: withServiceOverrides([
                     entryControllerProvider(
                       testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
-                  ],
+                  ]),
                   child: Column(
                     children: [
                       Expanded(
@@ -2163,11 +2177,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -2218,11 +2232,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -2315,11 +2329,11 @@ void main() {
             StatefulBuilder(
               builder: (context, setState) {
                 return ProviderScope(
-                  overrides: [
+                  overrides: withServiceOverrides([
                     entryControllerProvider(
                       testTextEntry.meta.id,
                     ).overrideWith(() => _FakeEntryController(testTextEntry)),
-                  ],
+                  ]),
                   child: Column(
                     children: [
                       EntryDetailsWidget(
@@ -2418,14 +2432,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               // Fixed-height box gives the inner CustomScrollView a bounded
               // viewport so we can scroll the entry above the visible area.
               // A large cacheExtent keeps the entry's render object alive even
@@ -2531,14 +2545,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: SizedBox(
                 height: 600,
                 child: CustomScrollView(
@@ -2640,14 +2654,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: EntryDetailsContent(
                 testTextEntry.meta.id,
                 linkedFrom: testTask,
@@ -2699,14 +2713,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: EntryDetailsContent(
                 testTextEntry.meta.id,
                 linkedFrom: testTask,
@@ -2762,14 +2776,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testTextEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testTextEntry)),
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: StatefulBuilder(
                 builder: (context, setState) {
                   setOuter = setState;
@@ -2847,6 +2861,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -2870,6 +2885,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2904,6 +2920,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2926,6 +2943,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -2952,6 +2970,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: EntryDetailsWidget(
                   itemId: testTextEntry.meta.id,
                   showAiEntry: false,
@@ -2976,6 +2995,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3010,6 +3030,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3052,6 +3073,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3082,6 +3104,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
+                overrides: getItServiceOverrides(),
                 child: EntryDetailsWidget(
                   itemId: testAudioEntry.meta.id,
                   showAiEntry: false,
@@ -3142,6 +3165,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3187,6 +3211,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3211,6 +3236,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3235,6 +3261,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3264,6 +3291,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3296,11 +3324,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -3346,6 +3374,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3370,6 +3399,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3395,6 +3425,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3436,6 +3467,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3462,6 +3494,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3488,6 +3521,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3560,7 +3594,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testAudioEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testAudioEntry)),
@@ -3575,7 +3609,7 @@ void main() {
                     responses,
                   ),
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,
@@ -3793,7 +3827,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(
                   testImageEntry.meta.id,
                 ).overrideWith(() => _FakeEntryController(testImageEntry)),
@@ -3809,7 +3843,7 @@ void main() {
                   ),
                 ),
                 ...extraOverrides,
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -3846,14 +3880,15 @@ void main() {
         );
       }
 
-      List<Override> attribution(AiAttributionDetails? details) => [
-        aiAttributionForArtifactProvider.overrideWith(
-          (ref, artifact) async => details,
-        ),
-        aiAttributionDetailsProvider.overrideWith(
-          (ref, id) async => details,
-        ),
-      ];
+      List<Override> attribution(AiAttributionDetails? details) =>
+          withServiceOverrides([
+            aiAttributionForArtifactProvider.overrideWith(
+              (ref, artifact) async => details,
+            ),
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => details,
+            ),
+          ]);
 
       testWidgets('a photo the AI worked on carries the attribution pill', (
         tester,
@@ -3986,7 +4021,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
-                overrides: [
+                overrides: withServiceOverrides([
                   entryControllerProvider(
                     testImageEntry.meta.id,
                   ).overrideWith(() => _FakeEntryController(testImageEntry)),
@@ -4001,7 +4036,7 @@ void main() {
                       const [],
                     ),
                   ),
-                ],
+                ]),
                 child: EntryDetailsContent(
                   testImageEntry.meta.id,
                   linkedFrom: testTask,
@@ -4040,7 +4075,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
-                overrides: [
+                overrides: withServiceOverrides([
                   entryControllerProvider(
                     untitled.meta.id,
                   ).overrideWith(() => _FakeEntryController(untitled)),
@@ -4055,7 +4090,7 @@ void main() {
                       const [],
                     ),
                   ),
-                ],
+                ]),
                 child: EntryDetailsWidget(
                   itemId: untitled.meta.id,
                   showAiEntry: false,
@@ -4094,6 +4129,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4134,6 +4170,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4187,6 +4224,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4234,11 +4272,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4292,11 +4330,11 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
               ProviderScope(
-                overrides: [
+                overrides: withServiceOverrides([
                   journalRepositoryProvider.overrideWithValue(
                     mockJournalRepository,
                   ),
-                ],
+                ]),
                 child: EntryDetailsWidget(
                   itemId: testImageEntry.meta.id,
                   showAiEntry: false,
@@ -4344,6 +4382,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
                 showAiEntry: false,
@@ -4403,11 +4442,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
-              ],
+              ]),
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
                 showAiEntry: false,
@@ -4455,6 +4494,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
+              overrides: getItServiceOverrides(),
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
                 showAiEntry: false,

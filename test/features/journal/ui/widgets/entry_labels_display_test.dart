@@ -17,6 +17,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/material_ui_finders.dart';
@@ -116,7 +117,7 @@ void main() {
     List<Override> extraOverrides = const [],
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         entryControllerProvider('entry-123').overrideWith(
           () => _TestEntryController(entry),
         ),
@@ -124,7 +125,7 @@ void main() {
           (ref) => Stream<List<LabelDefinition>>.value([labelA, labelB]),
         ),
         ...extraOverrides,
-      ],
+      ]),
       child: makeTestableWidgetWithScaffold(
         EntryLabelsDisplay(
           entryId: 'entry-123',

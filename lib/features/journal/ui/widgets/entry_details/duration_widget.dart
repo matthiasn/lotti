@@ -9,8 +9,8 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/ratings/state/session_ended_controller.dart';
 import 'package:lotti/features/ratings/ui/pulsating_rate_button.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/entry_tools.dart';
@@ -40,7 +40,7 @@ class DurationWidget extends ConsumerStatefulWidget {
 }
 
 class _DurationWidgetState extends ConsumerState<DurationWidget> {
-  final TimeService _timeService = getIt<TimeService>();
+  TimeService get _timeService => ref.read(timeServiceProvider);
   StreamSubscription<JournalEntity?>? _subscription;
 
   /// Tracks whether this entry was actively recording in the previous

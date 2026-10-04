@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 import 'pane_width_controller_test_helpers.dart';
 
@@ -27,7 +28,7 @@ void main() {
         sidebarCollapsedKey: null,
       },
     );
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {
@@ -426,7 +427,7 @@ void main() {
         container.dispose();
         // Replace with a fresh container so the file-level tearDown disposes a
         // valid (and so far unread) instance.
-        container = ProviderContainer();
+        container = ProviderContainer(overrides: getItServiceOverrides());
 
         // Advancing past the debounce window must not fire the cancelled
         // timers — onDispose cancels both, so no write reaches SettingsDb.
@@ -450,7 +451,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemsByKeys(any()),
       ).thenThrow(Exception('database error'));
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
 
       final result = await hAwaitHydration(container);
       expect(result.sidebarWidth, defaultSidebarWidth);

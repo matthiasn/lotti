@@ -14,6 +14,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/time_range_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -99,9 +100,9 @@ void main() {
     );
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         taskProgressRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      ]),
     );
 
     // Mock repository methods with specific values
@@ -468,9 +469,9 @@ void main() {
 
     // Create and use a local container that we'll dispose
     final localContainer = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         taskProgressRepositoryProvider.overrideWithValue(testRepository),
-      ],
+      ]),
     );
 
     // Initialize the controller

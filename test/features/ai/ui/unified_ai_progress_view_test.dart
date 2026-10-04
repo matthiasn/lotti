@@ -30,6 +30,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart'
     show
@@ -309,7 +310,7 @@ void main() {
         var triggerCount = 0;
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
@@ -322,7 +323,7 @@ void main() {
             triggerNewInferenceProvider.overrideWith((ref, arg) async {
               triggerCount++;
             }),
-          ],
+          ]),
         );
 
         // Start an active inference so _subscribeToExistingInference finds
@@ -394,7 +395,7 @@ void main() {
       // This test ensures the _subscribeToExistingInference method is called
       // when showExisting is true
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           unifiedAiInferenceRepositoryProvider.overrideWithValue(
             mockRepository,
           ),
@@ -404,7 +405,7 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(
             mockCategoryRepository,
           ),
-        ],
+        ]),
       );
 
       await tester.pumpWidget(
@@ -530,7 +531,7 @@ void main() {
     testWidgets('handles model not installed error', (tester) async {
       // This test checks the _modelNotInstalledRegex pattern matching
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           unifiedAiInferenceRepositoryProvider.overrideWithValue(
             mockRepository,
           ),
@@ -540,7 +541,7 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(
             mockCategoryRepository,
           ),
-        ],
+        ]),
       );
 
       // Set error state with model not installed message
@@ -589,7 +590,7 @@ void main() {
     testWidgets('cleans up stream subscription on dispose', (tester) async {
       // This test ensures _progressSubscription is properly canceled
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           unifiedAiInferenceRepositoryProvider.overrideWithValue(
             mockRepository,
           ),
@@ -599,7 +600,7 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(
             mockCategoryRepository,
           ),
-        ],
+        ]),
       );
 
       await tester.pumpWidget(
@@ -1156,7 +1157,7 @@ Generate a widget that renders a login form.''',
       'shows streamed progress when showExisting=true and active inference exists',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
@@ -1170,7 +1171,7 @@ Generate a widget that renders a login form.''',
               (ref) async => testPromptConfig,
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
-          ],
+          ]),
         );
 
         // Start an active inference so _subscribeToExistingInference finds it
@@ -1232,7 +1233,7 @@ Generate a widget that renders a login form.''',
       'stream updates from active inference are reflected when showExisting=true',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
@@ -1246,7 +1247,7 @@ Generate a widget that renders a login form.''',
               (ref) async => testPromptConfig,
             ),
             triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
-          ],
+          ]),
         );
 
         // Start an active inference
@@ -1387,7 +1388,7 @@ Generate a widget that renders a login form.''',
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
@@ -1421,7 +1422,7 @@ Generate a widget that renders a login form.''',
             triggerNewInferenceProvider.overrideWith((ref, arg) async {
               triggerCalled = true;
             }),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -1548,7 +1549,7 @@ Generate a widget that renders a login form.''',
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepository,
               ),
@@ -1583,7 +1584,7 @@ Generate a widget that renders a login form.''',
               triggerNewInferenceProvider.overrideWith((ref, arg) async {
                 triggerCalled = true;
               }),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
@@ -1657,7 +1658,7 @@ Generate a widget that renders a login form.''',
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
@@ -1685,7 +1686,7 @@ Generate a widget that renders a login form.''',
             triggerNewInferenceProvider.overrideWith(
               (ref, arg) => onTrigger(),
             ),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),

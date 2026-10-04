@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../helpers/package_info.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -61,10 +62,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         whatsNewServiceProvider.overrideWithValue(mockService),
         domainLoggerProvider.overrideWithValue(logger),
-      ],
+      ]),
     );
   });
 
@@ -80,10 +81,10 @@ void main() {
     container.dispose();
     mockService = MockWhatsNewService();
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         whatsNewServiceProvider.overrideWithValue(mockService),
         domainLoggerProvider.overrideWithValue(logger),
-      ],
+      ]),
     );
   }
 
@@ -299,11 +300,11 @@ void main() {
       ).thenAnswer((_) async => enabled);
 
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           whatsNewServiceProvider.overrideWithValue(mockService),
           journalDbProvider.overrideWithValue(mockDb),
           domainLoggerProvider.overrideWithValue(logger),
-        ],
+        ]),
       );
     }
 

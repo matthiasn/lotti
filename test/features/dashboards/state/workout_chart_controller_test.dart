@@ -11,6 +11,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -57,7 +58,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -89,7 +90,7 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final provider = workoutChartDataControllerProvider((
@@ -140,7 +141,7 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final provider = workoutChartDataControllerProvider((
@@ -207,7 +208,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       // First ensure the data controller has loaded
       await container.read(
@@ -247,7 +248,7 @@ void main() {
           ),
         ).thenAnswer((_) => completer.future);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final provider = workoutObservationsControllerProvider((
@@ -297,7 +298,7 @@ void main() {
           ),
         ).thenAnswer((_) async => entities);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final result = await container.read(
@@ -342,7 +343,7 @@ void main() {
         ],
       );
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -384,7 +385,7 @@ void main() {
           ],
         );
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         // Without the isRegistered guard this throws in the controller

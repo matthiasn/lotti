@@ -62,6 +62,7 @@ import 'package:research_package/research_package.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/manual_demo_world.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -481,7 +482,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(
           size: size,
@@ -522,7 +523,7 @@ Future<void> _pumpScreen(
       brightness: brightness,
       size: device.size,
       textScale: textScale,
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
     ),
   );
   await settleFrames(tester);
@@ -710,26 +711,26 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> categoriesListOverrides() => [
+  List<Override> categoriesListOverrides() => withServiceOverrides([
     categoryRepositoryProvider.overrideWithValue(categoryRepo),
     categoryTaskCountProvider.overrideWith(
       (ref, categoryId) async => _taskCounts[categoryId] ?? 0,
     ),
-  ];
+  ]);
 
-  List<Override> categoriesDetailOverrides() => [
+  List<Override> categoriesDetailOverrides() => withServiceOverrides([
     categoryRepositoryProvider.overrideWithValue(categoryRepo),
     aiConfigRepositoryProvider.overrideWithValue(aiConfigRepo),
-  ];
+  ]);
 
-  List<Override> labelsListOverrides() => [
+  List<Override> labelsListOverrides() => withServiceOverrides([
     labelsStreamProvider.overrideWith((ref) => Stream.value(_allLabels)),
     labelUsageStatsProvider.overrideWith((ref) => Stream.value(_labelUsage)),
-  ];
+  ]);
 
-  List<Override> labelsDetailOverrides() => [
+  List<Override> labelsDetailOverrides() => withServiceOverrides([
     labelsRepositoryProvider.overrideWithValue(labelsRepo),
-  ];
+  ]);
 
   // -------------------------------------------------------------------------
   // Categories.
@@ -745,7 +746,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          overrides: categoriesListOverrides(),
+          overrides: withServiceOverrides(categoriesListOverrides()),
           home: const CategoriesListPage(),
         );
         expect(
@@ -772,7 +773,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          overrides: categoriesDetailOverrides(),
+          overrides: withServiceOverrides(categoriesDetailOverrides()),
           home: CategoryDetailsPage(categoryId: _penguinOperations.id),
         );
         expect(
@@ -821,7 +822,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          overrides: categoriesDetailOverrides(),
+          overrides: withServiceOverrides(categoriesDetailOverrides()),
           home: CategoryDetailsPage(categoryId: _penguinOperations.id),
         );
 
@@ -872,7 +873,7 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      overrides: categoriesDetailOverrides(),
+      overrides: withServiceOverrides(categoriesDetailOverrides()),
       home: const CategoryDetailsPage(),
     );
     expect(
@@ -893,7 +894,7 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      overrides: categoriesListOverrides(),
+      overrides: withServiceOverrides(categoriesListOverrides()),
       home: const CategoriesListPage(),
     );
     expect(
@@ -913,7 +914,7 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      overrides: categoriesDetailOverrides(),
+      overrides: withServiceOverrides(categoriesDetailOverrides()),
       home: CategoryDetailsPage(categoryId: _penguinOperations.id),
     );
     // Scroll the form to its end so content visibly slides behind the
@@ -945,7 +946,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          overrides: labelsListOverrides(),
+          overrides: withServiceOverrides(labelsListOverrides()),
           home: const LabelsListPage(),
         );
         expect(find.text('Project Waddle'), findsOneWidget);
@@ -969,7 +970,7 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          overrides: labelsDetailOverrides(),
+          overrides: withServiceOverrides(labelsDetailOverrides()),
           home: LabelDetailsPage(labelId: _projectWaddle.id),
         );
         expect(
@@ -1003,7 +1004,7 @@ void main() {
       tester,
       device: miniDevice,
       textScale: 2,
-      overrides: labelsDetailOverrides(),
+      overrides: withServiceOverrides(labelsDetailOverrides()),
       home: LabelDetailsPage(labelId: _projectWaddle.id),
     );
     expect(

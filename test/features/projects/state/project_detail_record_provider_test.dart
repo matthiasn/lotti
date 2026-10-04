@@ -16,6 +16,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -159,7 +160,7 @@ void main() {
     MockAgentRepository? agentRepository,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(
           agentRepository ?? mockAgentRepository,
         ),
@@ -180,7 +181,7 @@ void main() {
             agent.mapOrNull(agent: (a) => a.agentId) ?? '',
           ).overrideWith((ref) async => agentState),
         ],
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -959,7 +960,7 @@ void main() {
 
   group('projectDetailNowProvider', () {
     test('returns the clock-backed current instant', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final fixedNow = DateTime(2024, 3, 15, 10, 30);
 

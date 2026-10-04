@@ -7,6 +7,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../helpers/service_overrides.dart';
 import '../../widget_test_utils.dart';
 
 const _pageButtonKey = Key('page-button');
@@ -650,7 +651,7 @@ void main() {
   group('mobileNavigationDrawerControllerProvider', () {
     test('hands out one closed controller and disposes it with its '
         'container', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       final controller = container.read(
         mobileNavigationDrawerControllerProvider,
       );

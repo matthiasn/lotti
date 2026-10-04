@@ -7,8 +7,8 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_labels.dart';
 import 'package:lotti/features/settings/ui/widgets/config_flag_toggle_list.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
@@ -151,7 +151,7 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         // height the host gave us.
         Expanded(
           child: StreamBuilder<Set<ConfigFlag>>(
-            stream: getIt<JournalDb>().watchConfigFlags(),
+            stream: ref.read(journalDbProvider).watchConfigFlags(),
             builder: (context, snapshot) {
               final flagLookup = <String, ConfigFlag>{
                 for (final flag in snapshot.data ?? <ConfigFlag>{})

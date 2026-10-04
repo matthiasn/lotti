@@ -14,6 +14,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../test_utils.dart';
@@ -69,7 +70,7 @@ void main() {
     CategorySingleResult? captured;
     await tester.pumpWidget(
       WidgetTestBench(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: Builder(
           builder: (context) => Center(
             child: ElevatedButton(
@@ -106,7 +107,7 @@ void main() {
     List<Override> overrides = const [],
   }) {
     return WidgetTestBench(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: Material(
         child: CategoryPickerSheet(
           mode: CategoryPickerMode.multi,

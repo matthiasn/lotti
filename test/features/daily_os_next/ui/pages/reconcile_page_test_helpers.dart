@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_doubles/mock_day_agent.dart';
 
@@ -22,7 +23,7 @@ Widget hWrap(
   bool agentRunning = false,
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       // Single agent-running override (Riverpod forbids overriding a family
       // twice). Defaults to idle so the Heard column's parsing bars stay
       // off; pass agentRunning: true for the parse-in-flight case. Post-
@@ -37,7 +38,7 @@ Widget hWrap(
         ),
       ),
       ...overrides,
-    ],
+    ]),
     child: makeTestableWidget2(
       child,
       mediaQueryData: mediaQueryData,

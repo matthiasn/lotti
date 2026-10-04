@@ -4,6 +4,7 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -62,7 +63,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemByKey(recentSearchesSettingsKey),
       ).thenAnswer((_) async => encodeRecentSearches(_searches));
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final loaded = await container

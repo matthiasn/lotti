@@ -11,6 +11,7 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -18,7 +19,7 @@ void main() {
 
   ProviderContainer container() {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
         agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
         agentServiceProvider.overrideWithValue(MockAgentService()),
@@ -26,7 +27,7 @@ void main() {
           MockCloudInferenceRepository(),
         ),
         loggingServiceProvider.overrideWithValue(MockLoggingService()),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

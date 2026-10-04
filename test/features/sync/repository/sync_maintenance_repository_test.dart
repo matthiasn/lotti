@@ -26,6 +26,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -922,7 +923,7 @@ void main() {
       addTearDown(tearDownTestGetIt);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(mockJournalDb),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
           aiConfigRepositoryProvider.overrideWithValue(
@@ -932,7 +933,7 @@ void main() {
           savedTaskFiltersRepositoryProvider.overrideWithValue(
             mockSavedTaskFiltersRepository,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

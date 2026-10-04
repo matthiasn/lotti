@@ -18,7 +18,6 @@ import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/categories/domain/category_knowledge_brief.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -75,13 +74,15 @@ class AiInputRepository {
     String? categoryId,
     String? id,
   }) async {
-    return getIt<PersistenceLogic>().createAiResponseEntry(
-      data: data,
-      dateFrom: start,
-      linkedId: linkedId,
-      categoryId: categoryId,
-      id: id,
-    );
+    return ref
+        .read(persistenceLogicProvider)
+        .createAiResponseEntry(
+          data: data,
+          dateFrom: start,
+          linkedId: linkedId,
+          categoryId: categoryId,
+          id: id,
+        );
   }
 
   /// Creates a directed link from [fromId] to [toId].
@@ -94,7 +95,9 @@ class AiInputRepository {
     required String fromId,
     required String toId,
   }) async {
-    return getIt<PersistenceLogic>().createLink(fromId: fromId, toId: toId);
+    return ref
+        .read(persistenceLogicProvider)
+        .createLink(fromId: fromId, toId: toId);
   }
 
   Future<AiInputTaskObject?> generate(String id) async {

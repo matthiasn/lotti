@@ -28,6 +28,7 @@ import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -46,14 +47,14 @@ final _testProfile = AiConfig.inferenceProfile(
 /// Shared overrides for the inference profile provider used by ProfileSelector.
 List<Override> _profileOverrides({
   List<AiConfig> profiles = const [],
-}) => [
+}) => withServiceOverrides([
   inferenceProfileControllerProvider.overrideWithBuild(
     (ref, notifier) => Stream.value(profiles),
   ),
-];
+]);
 
 /// Common overrides for template stats/reports providers (empty data).
-List<Override> _templateStatsOverrides() => [
+List<Override> _templateStatsOverrides() => withServiceOverrides([
   templateTokenUsageSummariesProvider.overrideWith(
     (ref, id) async => <AgentTokenUsageSummary>[],
   ),
@@ -81,7 +82,7 @@ List<Override> _templateStatsOverrides() => [
   templateTaskResolutionTimeSeriesProvider.overrideWith(
     (ref, id) async => const TaskResolutionTimeSeries(dailyBuckets: []),
   ),
-];
+]);
 
 void main() {
   late MockAgentTemplateService mockTemplateService;
@@ -1329,7 +1330,7 @@ void main() {
 
       final (:widget, :container) = makeTestableWidgetWithContainer(
         const AgentTemplateDetailPage(templateId: templateId),
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         mediaQueryData: const MediaQueryData(size: Size(400, 800)),
       );
       addTearDown(container.dispose);
@@ -1396,7 +1397,7 @@ void main() {
 
         final (:widget, :container) = makeTestableWidgetWithContainer(
           const AgentTemplateDetailPage(templateId: templateId),
-          overrides: overrides,
+          overrides: withServiceOverrides(overrides),
           mediaQueryData: const MediaQueryData(size: Size(400, 800)),
         );
         addTearDown(container.dispose);
@@ -2110,7 +2111,7 @@ void main() {
     List<Override> soulOverrides({
       List<AgentDomainEntity> souls = const [],
       AgentDomainEntity? soulForTemplate,
-    }) => [
+    }) => withServiceOverrides([
       soulDocumentServiceProvider.overrideWithValue(mockSoulService),
       allSoulDocumentsProvider.overrideWith(
         (ref) async => souls,
@@ -2118,7 +2119,7 @@ void main() {
       soulForTemplateProvider.overrideWith(
         (ref, id) async => soulForTemplate,
       ),
-    ];
+    ]);
 
     testWidgets(
       'create mode persists soul selection via assignSoulToTemplate',

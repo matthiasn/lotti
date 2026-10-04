@@ -8,6 +8,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -44,7 +45,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final future = container.read(
@@ -103,7 +104,7 @@ void main() {
           return callCount == 1 ? firstEntities : secondEntities;
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final provider = healthChartDataControllerProvider((
@@ -174,7 +175,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       // Ensure the data controller has loaded first
       await container.read(
@@ -237,7 +238,7 @@ void main() {
           return callCount == 1 ? firstEntities : secondEntities;
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final provider = healthChartDataControllerProvider((
@@ -308,7 +309,7 @@ void main() {
         ),
       ).thenAnswer((_) async => entities);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       // Ensure the data controller has loaded first
       await container.read(
@@ -347,7 +348,7 @@ void main() {
           ),
         ).thenAnswer((_) => completer.future);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final provider = healthObservationsControllerProvider((

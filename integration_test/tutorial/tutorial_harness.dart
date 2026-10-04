@@ -59,13 +59,7 @@ import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/manual_language_controller.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show
-        journalDbProvider,
-        loggingServiceProvider,
-        maintenanceProvider,
-        outboxServiceProvider,
-        syncDatabaseProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -728,6 +722,11 @@ class TutorialAppHarness {
     shouldAutoShowOnboardingProvider.overrideWith((ref) async => false),
     shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
+    settingsDbProvider.overrideWithValue(getIt<SettingsDb>()),
+    persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
+    navServiceProvider.overrideWithValue(getIt<NavService>()),
+    timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
   ];
 
   Future<void> dispose() async {

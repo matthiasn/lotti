@@ -13,6 +13,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../features/habits/test_utils.dart';
 import '../features/recent_searches/test_utils.dart';
+import '../helpers/service_overrides.dart';
 import '../mocks/mocks.dart';
 import '../test_utils/fake_journal_page_controller.dart';
 import '../widget_test_utils.dart';
@@ -33,12 +34,12 @@ class _Bench {
         now: DateTime(2024, 3, 15),
       ).copyWith(showSearch: habitsSearchShowing),
     );
-    return [
+    return withServiceOverrides([
       fakeRecentSearches(recents),
       journalPageControllerProvider(true).overrideWith(() => tasks),
       journalPageControllerProvider(false).overrideWith(() => logbook),
       habitsControllerProvider.overrideWith(() => habits),
-    ];
+    ]);
   }
 
   /// Pumps a button that opens [search] when tapped, and taps it.
@@ -59,7 +60,9 @@ class _Bench {
             );
           },
         ),
-        overrides: overrides(habitsSearchShowing: habitsSearchShowing),
+        overrides: withServiceOverrides(
+          overrides(habitsSearchShowing: habitsSearchShowing),
+        ),
       ),
     );
     await tester.tap(find.text('open'));

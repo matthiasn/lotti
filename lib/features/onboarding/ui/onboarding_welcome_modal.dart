@@ -23,7 +23,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -552,6 +552,7 @@ class _OnboardingCategoryStepState
   Future<void> _continue(List<OnboardingCategoryOption> options) async {
     if (_busy) return;
     setState(() => _busy = true);
+    final loggingService = ref.read(loggingServiceProvider);
     try {
       final repository = ref.read(categoryRepositoryProvider);
       final profileId = onboardingSeededProfileId(widget.type);
@@ -647,7 +648,7 @@ class _OnboardingCategoryStepState
       // A category write failure must not die silently under the Continue
       // button — log it so a field failure is diagnosable, and surface a toast
       // so the user knows to retry.
-      getIt<LoggingService>().captureException(
+      loggingService.captureException(
         error,
         domain: 'ONBOARDING',
         subDomain: 'OnboardingCategoryStep.createCategories',

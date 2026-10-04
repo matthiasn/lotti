@@ -169,7 +169,7 @@ AgentSyncService agentSyncService(Ref ref) {
   return AgentSyncService(
     repository: ref.watch(agentRepositoryProvider),
     outboxService: ref.watch(outboxServiceProvider),
-    vectorClockService: getIt<VectorClockService>(),
+    vectorClockService: ref.read(vectorClockServiceProvider),
   );
 }
 
@@ -275,7 +275,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     // settings database simply do not persist wake intents.
     intentStore: getIt.isRegistered<SettingsDb>()
         ? WakeIntentStore(
-            settingsDb: getIt<SettingsDb>(),
+            settingsDb: ref.read(settingsDbProvider),
             domainLogger: ref.watch(domainLoggerProvider),
           )
         : null,
@@ -330,7 +330,7 @@ Future<Map<String, int>> _wakeWatermark(Ref ref, Set<String> hosts) async {
   final watermark = await ref
       .read(syncDatabaseProvider)
       .contiguousWatermarks(hosts);
-  final vectorClock = getIt<VectorClockService>();
+  final vectorClock = ref.read(vectorClockServiceProvider);
   final host = await _localHostId();
   if (host != null) watermark[host] = await vectorClock.lastReservedCounter();
   return watermark;
@@ -745,7 +745,7 @@ Future<void> agentInitialization(Ref ref) async {
   // is idempotent: it clears the key, so the second caller is a no-op.
   await SeedTombstoneMigration(
     aiConfigRepository: ref.read(aiConfigRepositoryProvider),
-    settingsDb: getIt<SettingsDb>(),
+    settingsDb: ref.read(settingsDbProvider),
   ).migrate();
 
   await Future.wait([

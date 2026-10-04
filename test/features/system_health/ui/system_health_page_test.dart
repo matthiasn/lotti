@@ -30,6 +30,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
@@ -149,7 +150,7 @@ void main() {
     List<AiConfigInferenceProfile>? profiles,
     List<AiConfigModel>? models,
     Completer<String>? findingsGate,
-  }) => [
+  }) => withServiceOverrides([
     systemHealthReportStoreProvider.overrideWithValue(reportStore),
     aiConfigRepositoryProvider.overrideWithValue(configs),
     taskAgentSetupOptionsProvider.overrideWith(
@@ -167,7 +168,7 @@ void main() {
                 findingsGate?.future ?? Future.value(findings),
       ),
     ),
-  ];
+  ]);
 
   Future<void> pumpBody(
     WidgetTester tester, {
@@ -528,7 +529,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const SingleChildScrollView(child: SystemHealthBody()),
-        overrides: overrides(),
+        overrides: withServiceOverrides(overrides()),
         locale: const Locale('de'),
       ),
     );

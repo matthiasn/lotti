@@ -27,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -133,7 +134,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           linkableTasksOverride('task-main', exists: true),
           linkedTasksControllerProvider('task-main').overrideWith(
             manageMode
@@ -142,7 +143,7 @@ void main() {
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
-        ],
+        ]),
         child: WidgetTestBench(
           locale: locale,
           mediaQueryData: mediaQueryData,
@@ -421,10 +422,10 @@ void main() {
       when(
         () => mockEntitiesCacheService.getCategoryById(any()),
       ).thenReturn(newTaskCategory);
-      return [
+      return withServiceOverrides([
         createEntryControllerOverride(parentTaskWithCategory(parentCategoryId)),
         taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-      ];
+      ]);
     }
 
     // Opens the create-new-linked-task flow and confirms the relationship

@@ -15,6 +15,7 @@ import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -243,7 +244,7 @@ void main() {
   testWidgets('tapping body navigates to task and publishes focus intent', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
     final task = makeTask('task-3');
     final timer = makeTimerEntry('timer-3');

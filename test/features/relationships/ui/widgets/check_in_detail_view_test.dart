@@ -30,6 +30,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -536,7 +537,7 @@ void main() {
   });
 
   test('the photo importer defaults to the platform picker', () {
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
 
     expect(

@@ -13,6 +13,7 @@ import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -79,13 +80,14 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> overrides({bool recordController = false}) => [
-    labelsRepositoryProvider.overrideWithValue(repository),
-    if (recordController)
-      labelEditorControllerProvider.overrideWith2(
-        (_) => _RecordingLabelEditorController(),
-      ),
-  ];
+  List<Override> overrides({bool recordController = false}) =>
+      withServiceOverrides([
+        labelsRepositoryProvider.overrideWithValue(repository),
+        if (recordController)
+          labelEditorControllerProvider.overrideWith2(
+            (_) => _RecordingLabelEditorController(),
+          ),
+      ]);
 
   Future<void> pumpSheet(
     WidgetTester tester, {
@@ -101,7 +103,9 @@ void main() {
           initialName: initialName,
           onSaved: onSaved,
         ),
-        overrides: overrides(recordController: recordController),
+        overrides: withServiceOverrides(
+          overrides(recordController: recordController),
+        ),
       ),
     );
     await tester.pump();
@@ -243,7 +247,7 @@ void main() {
               ),
             ),
           ),
-          overrides: overrides(),
+          overrides: withServiceOverrides(overrides()),
         ),
       );
 

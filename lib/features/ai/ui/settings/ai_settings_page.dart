@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -27,8 +26,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dar
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
@@ -260,7 +259,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     //  chrome, one without) so the visual treatment stays
     //  consistent and every `InferenceProviderType` value remains
     //  reachable — including the formerly-hidden `genericOpenAi`.
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     final dismissed =
         await settingsDb.itemByKey(kAiPickProviderDismissedKey) == 'true';
     if (!mounted) return;

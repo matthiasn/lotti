@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 
@@ -87,7 +88,7 @@ void main() {
 
     final container =
         ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepository,
               ),
@@ -97,7 +98,7 @@ void main() {
               aiConfigByIdProvider(testPromptId).overrideWith(
                 (ref) => Future.value(testPromptConfig),
               ),
-            ],
+            ]),
           )
           // Listen to state changes
           ..listen(

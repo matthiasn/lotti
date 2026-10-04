@@ -38,6 +38,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -208,7 +209,10 @@ void main() {
     MediaQueryData? mediaQueryData,
   }) => withClock(Clock.fixed(now), () async {
     await tester.pumpWidget(
-      buildPage(overrides: overrides, mediaQueryData: mediaQueryData),
+      buildPage(
+        overrides: withServiceOverrides(overrides),
+        mediaQueryData: mediaQueryData,
+      ),
     );
     await tester.pumpAndSettle();
   });

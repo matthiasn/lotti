@@ -46,6 +46,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/future_provider_probe.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -124,7 +125,7 @@ void main() {
       () => aiConfigRepository.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => []);
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
         // The banner provider is gated on the unified-Goals rollout flag.
         configFlagProvider(
@@ -141,7 +142,7 @@ void main() {
         wakeOrchestratorProvider.overrideWithValue(wakeOrchestrator),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
         domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
   });
@@ -2507,13 +2508,13 @@ void main() {
   test('the banner provider returns nothing while the unified Goals flag '
       'is off', () async {
     final gated = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         configFlagProvider(
           enableUnifiedGoalsFlag,
         ).overrideWith((ref) => Stream.value(false)),
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(gated.dispose);
     final unifiedSub = gated.listen(
@@ -2533,13 +2534,13 @@ void main() {
       () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
     ).thenAnswer((_) async => []);
     final gated = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         configFlagProvider(
           enableUnifiedGoalsFlag,
         ).overrideWith((ref) => Stream.value(true)),
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(gated.dispose);
     final unifiedSub = gated.listen(
@@ -2678,7 +2679,9 @@ void main() {
     final wakeRunner = WakeRunner();
     addTearDown(wakeRunner.dispose);
     final runnerContainer = ProviderContainer(
-      overrides: [wakeRunnerProvider.overrideWithValue(wakeRunner)],
+      overrides: withServiceOverrides([
+        wakeRunnerProvider.overrideWithValue(wakeRunner),
+      ]),
     );
     addTearDown(runnerContainer.dispose);
     final sub = runnerContainer.listen(

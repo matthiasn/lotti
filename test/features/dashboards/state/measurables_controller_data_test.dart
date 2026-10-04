@@ -12,6 +12,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -86,7 +87,7 @@ void main() {
         final entry2 = makeObsEntry(DateTime(2024, 3, 12, 14), 20);
         stubMeasurements([entry1, entry2]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final params = (
@@ -120,7 +121,7 @@ void main() {
         final entry2 = makeObsEntry(DateTime(2024, 3, 12, 14), 20);
         stubMeasurements([entry1, entry2]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final params = (
@@ -153,7 +154,7 @@ void main() {
         final entry2 = makeObsEntry(DateTime(2024, 3, 12, 14), 20);
         stubMeasurements([entry1, entry2]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final params = (
@@ -200,7 +201,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [entry1, entry2, entry3]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
         addTearDown(streamController.close);
 
@@ -244,7 +245,7 @@ void main() {
       final entry2 = makeObsEntry(DateTime(2024, 3, 12, 9, 45), 20);
       stubMeasurements([entry1, entry2]);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final params = (
@@ -287,7 +288,7 @@ void main() {
         final entry2 = makeObsEntry(DateTime(2024, 3, 12, 14), 5);
         stubMeasurements([entry1, entry2]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final params = (
@@ -317,7 +318,7 @@ void main() {
       stubDataType(null);
       stubMeasurements([]);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final params = (
@@ -376,7 +377,7 @@ void main() {
         ],
       );
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       addTearDown(streamController.close);
 
@@ -403,7 +404,7 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       addTearDown(streamController.close);
 

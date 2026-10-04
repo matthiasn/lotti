@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../test_utils.dart';
 
@@ -37,7 +38,7 @@ void main() {
     FutureOr<AgentDomainEntity?> Function(Ref, String)? versionOverride,
   }) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         templateEvolutionWorkflowProvider.overrideWithValue(mockWorkflow),
         activeTemplateVersionProvider.overrideWith(
           versionOverride ?? (ref, id) async => testVersion,
@@ -51,7 +52,7 @@ void main() {
         templateVersionHistoryProvider.overrideWith(
           (ref, id) async => <AgentDomainEntity>[],
         ),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

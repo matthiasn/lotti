@@ -29,6 +29,7 @@ import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -166,7 +167,9 @@ void main() {
     Widget child = const LabelDetailsPage(),
     TargetPlatform platform = TargetPlatform.windows,
   }) async {
-    final container = ProviderContainer(overrides: overrides);
+    final container = ProviderContainer(
+      overrides: withServiceOverrides(overrides),
+    );
     addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(

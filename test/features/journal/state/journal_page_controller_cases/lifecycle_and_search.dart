@@ -447,7 +447,9 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
   group('Controller Disposal', () {
     test('disposing container cleans up subscriptions', () {
       fakeAsync((async) {
-        final localContainer = ProviderContainer();
+        final localContainer = ProviderContainer(
+          overrides: getItServiceOverrides(),
+        );
 
         localContainer.read(journalPageControllerProvider(false));
 

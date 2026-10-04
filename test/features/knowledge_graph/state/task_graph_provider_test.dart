@@ -24,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../tasks/shown_items_stub.dart';
 
@@ -212,7 +213,7 @@ void main() {
   });
 
   test('knowledge graph entry points are enabled by default', () {
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
 
     expect(container.read(knowledgeGraphEntryPointEnabledProvider), isTrue);
@@ -268,9 +269,9 @@ void main() {
 
     ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(agentRepo),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

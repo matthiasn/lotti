@@ -87,6 +87,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/manual_demo_world.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -595,7 +596,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: size),
         child: MaterialApp(
@@ -827,7 +828,7 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  List<Override> overrides(_SyncSurface surface) => [
+  List<Override> overrides(_SyncSurface surface) => withServiceOverrides([
     configFlagProvider(enableMatrixFlag).overrideWith(
       (ref) => Stream.value(true),
     ),
@@ -883,7 +884,7 @@ void main() {
       syncDevicesControllerProvider.overrideWith(
         () => _ManualSyncDevicesController(_manualDevices),
       ),
-  ];
+  ]);
 
   /// Opens the setup modal and imports a deterministic demo bundle.
   ///
@@ -1213,7 +1214,7 @@ void main() {
                 : const SettingsRootPage(),
             brightness: brightness,
             size: device.size,
-            overrides: overrides(surface),
+            overrides: withServiceOverrides(overrides(surface)),
           ),
         );
         await settleFrames(tester, 18);

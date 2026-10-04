@@ -42,6 +42,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../screenshot_harness.dart';
 import '../../test_doubles/mock_day_agent.dart';
 
@@ -371,7 +372,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(
           size: size,

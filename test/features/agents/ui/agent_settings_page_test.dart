@@ -24,6 +24,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -91,7 +92,7 @@ void main() {
     Map<String, String?> subjectTitles = const {},
     List<Override> extraOverrides = const [],
   }) {
-    return [
+    return withServiceOverrides([
       agentTemplatesProvider.overrideWith(
         (ref) async => templates,
       ),
@@ -133,7 +134,7 @@ void main() {
         (ref, String? entryId) async => subjectTitles[entryId],
       ),
       ...extraOverrides,
-    ];
+    ]);
   }
 
   Widget buildSubject({
@@ -148,14 +149,16 @@ void main() {
     return makeTestableWidgetNoScroll(
       const AgentSettingsPage(),
       theme: DesignSystemTheme.light(),
-      overrides: buildOverrides(
-        templates: templates,
-        souls: souls,
-        agents: agents,
-        evolutions: evolutions,
-        pendingWakes: pendingWakes,
-        subjectTitles: subjectTitles,
-        extraOverrides: extraOverrides,
+      overrides: withServiceOverrides(
+        buildOverrides(
+          templates: templates,
+          souls: souls,
+          agents: agents,
+          evolutions: evolutions,
+          pendingWakes: pendingWakes,
+          subjectTitles: subjectTitles,
+          extraOverrides: extraOverrides,
+        ),
       ),
     );
   }
@@ -1045,7 +1048,7 @@ void main() {
           makeTestableWidgetNoScroll(
             const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
             theme: DesignSystemTheme.light(),
-            overrides: buildOverrides(),
+            overrides: withServiceOverrides(buildOverrides()),
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));
@@ -1089,7 +1092,7 @@ void main() {
           makeTestableWidgetNoScroll(
             const AgentSettingsPage(initialTab: AgentSettingsTab.souls),
             theme: DesignSystemTheme.light(),
-            overrides: buildOverrides(),
+            overrides: withServiceOverrides(buildOverrides()),
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));

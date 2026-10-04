@@ -26,6 +26,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Record type identifying an entity together with its optional parent task,

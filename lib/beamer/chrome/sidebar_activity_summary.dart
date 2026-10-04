@@ -8,9 +8,8 @@ import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dar
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/time_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
@@ -51,7 +50,7 @@ class _SidebarActivitySummaryState
     final audioVisible =
         widget.showAudio && sidebarAudioRecordingHasVisibleContent(ref);
     final agentCounts = _agentCounts();
-    final timeService = getIt<TimeService>();
+    final timeService = ref.read(timeServiceProvider);
 
     return StreamBuilder<JournalEntity?>(
       stream: timeService.getStream(),

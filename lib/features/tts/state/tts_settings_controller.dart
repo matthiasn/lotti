@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Holds the user's TTS preferences — selected voice, model, and playback
 /// speed and automatic chat audio preparation — persisted locally via [SettingsDb].
@@ -31,7 +31,7 @@ class TtsSettingsController extends Notifier<TtsSettings> {
 
   Future<void> _load() async {
     try {
-      final stored = await getIt<SettingsDb>().itemsByKeys({
+      final stored = await ref.read(settingsDbProvider).itemsByKeys({
         ttsVoiceIdKey,
         ttsModelIdKey,
         ttsSpeedKey,
@@ -59,10 +59,12 @@ class TtsSettingsController extends Notifier<TtsSettings> {
     _userChanged = true;
     state = state.copyWith(autoPrepareChatAudio: enabled);
     unawaited(
-      getIt<SettingsDb>().saveSettingsItem(
-        ttsAutoPrepareChatAudioKey,
-        enabled.toString(),
-      ),
+      ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            ttsAutoPrepareChatAudioKey,
+            enabled.toString(),
+          ),
     );
   }
 
@@ -70,14 +72,18 @@ class TtsSettingsController extends Notifier<TtsSettings> {
   void setVoice(String voiceId) {
     _userChanged = true;
     state = state.copyWith(voiceId: voiceId);
-    unawaited(getIt<SettingsDb>().saveSettingsItem(ttsVoiceIdKey, voiceId));
+    unawaited(
+      ref.read(settingsDbProvider).saveSettingsItem(ttsVoiceIdKey, voiceId),
+    );
   }
 
   /// Selects [modelId] and persists it.
   void setModel(String modelId) {
     _userChanged = true;
     state = state.copyWith(modelId: modelId);
-    unawaited(getIt<SettingsDb>().saveSettingsItem(ttsModelIdKey, modelId));
+    unawaited(
+      ref.read(settingsDbProvider).saveSettingsItem(ttsModelIdKey, modelId),
+    );
   }
 
   /// Sets the playback [speed] (clamped to the supported range) and persists
@@ -87,7 +93,9 @@ class TtsSettingsController extends Notifier<TtsSettings> {
     final clamped = TtsSettings.clampSpeed(speed);
     state = state.copyWith(speed: clamped);
     unawaited(
-      getIt<SettingsDb>().saveSettingsItem(ttsSpeedKey, clamped.toString()),
+      ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(ttsSpeedKey, clamped.toString()),
     );
   }
 }

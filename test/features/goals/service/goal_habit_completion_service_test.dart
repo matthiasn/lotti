@@ -16,6 +16,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -428,11 +429,11 @@ void main() {
       );
       addTearDown(tearDownTestGetIt);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(agentRepository),
           journalDbProvider.overrideWithValue(journalDb),
           wakeOrchestratorProvider.overrideWithValue(orchestrator),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

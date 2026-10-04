@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -13,7 +13,7 @@ import 'package:lotti/services/notification_stream.dart';
 /// Gates whether private labels are included by [labelsStreamProvider] and the
 /// label visibility filters in the UI. Emits `false` until the flag resolves.
 final showPrivateEntriesProvider = StreamProvider<bool>(
-  (ref) => getIt<JournalDb>().watchConfigFlag('private'),
+  (ref) => ref.read(journalDbProvider).watchConfigFlag('private'),
 );
 
 /// Streams per-label usage counts keyed by label ID, sourced from the `labeled`
@@ -26,7 +26,7 @@ final labelUsageStatsProvider = StreamProvider<Map<String, int>>(
   (ref) => notificationDrivenMapStream(
     notifications: getIt<UpdateNotifications>(),
     notificationKeys: {labelUsageNotification, labelsNotification},
-    fetcher: getIt<JournalDb>().getLabelUsageCounts,
+    fetcher: ref.read(journalDbProvider).getLabelUsageCounts,
   ),
 );
 

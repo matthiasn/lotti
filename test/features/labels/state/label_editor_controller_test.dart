@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -22,9 +23,9 @@ void main() {
   setUp(() {
     repository = MockLabelsRepository();
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         labelsRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
   });
 

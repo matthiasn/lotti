@@ -4,18 +4,17 @@ import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 final plazaRepositoryProvider = Provider<PlazaRepository>(
   (ref) => PlazaRepository(
-    db: getIt<JournalDb>(),
+    db: ref.read(journalDbProvider),
     cache: getIt<EntitiesCacheService>(),
-    persistence: getIt<PersistenceLogic>(),
+    persistence: ref.read(persistenceLogicProvider),
   ),
 );
 

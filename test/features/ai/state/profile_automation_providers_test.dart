@@ -16,6 +16,7 @@ import 'package:lotti/providers/service_providers.dart'
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../test_utils.dart';
@@ -28,7 +29,7 @@ void main() {
 
     setUp(() {
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(
             MockAiConfigRepository(),
           ),
@@ -39,7 +40,7 @@ void main() {
             MockAgentTemplateService(),
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
     });
 
@@ -69,7 +70,7 @@ void main() {
           () => models.isAvailable('tiny'),
         ).thenAnswer((_) async => installed);
         final scoped = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(configs),
             sherpaModelRepositoryProvider.overrideWithValue(models),
             subjectAgentResolverProvider.overrideWithValue(
@@ -79,7 +80,7 @@ void main() {
               MockAgentTemplateService(),
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-          ],
+          ]),
         );
         addTearDown(scoped.dispose);
         final service = scoped.read(profileAutomationServiceProvider);
@@ -116,7 +117,7 @@ void main() {
         );
 
         final scoped = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             subjectAgentResolverProvider.overrideWithValue(
               MockSubjectAgentResolver(),
@@ -125,7 +126,7 @@ void main() {
               MockAgentTemplateService(),
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-          ],
+          ]),
         );
         addTearDown(scoped.dispose);
 
@@ -160,7 +161,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final scoped = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             subjectAgentResolverProvider.overrideWithValue(
               mockSubjectAgentResolver,
@@ -170,7 +171,7 @@ void main() {
             ),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
             journalDbProvider.overrideWithValue(mockDb),
-          ],
+          ]),
         );
         addTearDown(scoped.dispose);
 
@@ -272,7 +273,7 @@ void main() {
 
     ProviderContainer createContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           subjectAgentResolverProvider.overrideWithValue(
             mockSubjectAgentResolver,
@@ -282,7 +283,7 @@ void main() {
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalDbProvider.overrideWithValue(mockDb),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -416,7 +417,7 @@ void main() {
 
     ProviderContainer createContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           subjectAgentResolverProvider.overrideWithValue(
             MockSubjectAgentResolver(),
@@ -426,7 +427,7 @@ void main() {
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalDbProvider.overrideWithValue(mockDb),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

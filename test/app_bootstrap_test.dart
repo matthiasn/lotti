@@ -51,6 +51,7 @@ import 'package:path/path.dart' as p;
 
 import 'helpers/db_settle.dart';
 import 'helpers/entity_factories.dart';
+import 'helpers/service_overrides.dart';
 import 'mocks/mocks.dart';
 import 'widget_test_utils.dart';
 
@@ -199,14 +200,15 @@ void main() {
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode:
-        // 14 overrides instead of the real profile's 15 (the entities cache is
+        // 19 overrides instead of the real profile's 20 (the entities cache and
+        // the settings, persistence, nav, time and vector-clock services are
         // registered in both). Which providers those are is asserted in the
         // 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(14));
+        expect(buildProviderOverrides(context), hasLength(19));
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
-          overrides: buildProviderOverrides(context),
+          overrides: withServiceOverrides(buildProviderOverrides(context)),
         );
         addTearDown(bridged.dispose);
         expect(
@@ -275,7 +277,7 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(15));
+      expect(buildProviderOverrides(context), hasLength(20));
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.
@@ -644,7 +646,7 @@ void main() {
     /// constructing the real service would pull in the whole agent database.
     ProviderContainer containerFor(ProfileContext context) {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...buildProviderOverrides(context),
           dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
           // Same reasoning for the goal chain's leaves: these tests assert
@@ -657,7 +659,7 @@ void main() {
           relationshipRepositoryProvider.overrideWithValue(
             MockRelationshipRepository(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

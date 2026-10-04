@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -21,7 +21,7 @@ final StreamProvider<List<DashboardDefinition>> allDashboardsStreamProvider =
       (ref) => notificationDrivenStream(
         notifications: getIt<UpdateNotifications>(),
         notificationKeys: {dashboardsNotification, privateToggleNotification},
-        fetcher: getIt<JournalDb>().getAllDashboards,
+        fetcher: ref.read(journalDbProvider).getAllDashboards,
       ),
     );
 

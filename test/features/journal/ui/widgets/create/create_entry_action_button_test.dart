@@ -14,6 +14,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -66,7 +67,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(mockDb),
+          ]),
           child: makeTestableWidget2(
             const Scaffold(
               body: FloatingAddActionButton(categoryId: 'fab-category'),

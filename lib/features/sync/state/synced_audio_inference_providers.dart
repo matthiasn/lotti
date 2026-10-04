@@ -10,10 +10,8 @@ import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_listener.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 
 /// Live, sorted list of known peer node profiles plus the local node's own
 /// snapshot.
@@ -58,7 +56,7 @@ final syncedAudioInferenceDispatcherProvider =
 SyncedAudioInferenceDispatcher syncedAudioInferenceDispatcher(Ref ref) {
   return SyncedAudioInferenceDispatcher(
     journalDb: ref.watch(journalDbProvider),
-    vectorClockService: getIt<VectorClockService>(),
+    vectorClockService: ref.read(vectorClockServiceProvider),
     profileAutomationResolver: ref.watch(profileAutomationResolverProvider),
     profileResolver: ref.watch(profileResolverProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),

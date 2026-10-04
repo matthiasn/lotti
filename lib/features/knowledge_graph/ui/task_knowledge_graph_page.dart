@@ -12,9 +12,8 @@ import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/state/graph_image_cache.dart';
 import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Adds [expansion]'s nodes and edges to [current] without changing the
@@ -197,12 +196,14 @@ class _TaskKnowledgeGraphPageState
 
   void _logExpansionError(Object error, StackTrace stackTrace) {
     if (!mounted) return;
-    getIt<LoggingService>().captureException(
-      error,
-      domain: 'KNOWLEDGE_GRAPH',
-      subDomain: 'taskGraphProvider.expand',
-      stackTrace: stackTrace,
-    );
+    ref
+        .read(loggingServiceProvider)
+        .captureException(
+          error,
+          domain: 'KNOWLEDGE_GRAPH',
+          subDomain: 'taskGraphProvider.expand',
+          stackTrace: stackTrace,
+        );
   }
 
   void _removeExpansion(String taskId) {
@@ -236,6 +237,7 @@ class _TaskKnowledgeGraphPageState
     int requestId,
     int expansionVersion,
   ) async {
+    final loggingService = ref.read(loggingServiceProvider);
     try {
       final merge = widget.mergeGraphData ?? mergeTaskGraphData;
       final expansions = List<TaskGraphData>.of(_expansions.values);
@@ -250,7 +252,7 @@ class _TaskKnowledgeGraphPageState
       }
       setState(() => _visibleData = merged);
     } on Object catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
+      loggingService.captureException(
         error,
         domain: 'KNOWLEDGE_GRAPH',
         subDomain: 'taskGraphProvider.merge',
@@ -306,12 +308,14 @@ class _TaskKnowledgeGraphPageState
     // shows a generic, localized message (never raw exception text).
     ref.listen(taskGraphProvider(widget.taskId), (_, next) {
       if (next case AsyncError(:final error, :final stackTrace)) {
-        getIt<LoggingService>().captureException(
-          error,
-          domain: 'KNOWLEDGE_GRAPH',
-          subDomain: 'taskGraphProvider',
-          stackTrace: stackTrace,
-        );
+        ref
+            .read(loggingServiceProvider)
+            .captureException(
+              error,
+              domain: 'KNOWLEDGE_GRAPH',
+              subDomain: 'taskGraphProvider',
+              stackTrace: stackTrace,
+            );
       }
     });
 

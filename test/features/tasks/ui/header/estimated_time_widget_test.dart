@@ -11,6 +11,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -30,11 +31,11 @@ class _FixedSuggestions extends TaskEstimateSuggestionsController {
 void main() {
   late MockTimeService mockTimeService;
 
-  List<Override> quickPickOverrides() => [
+  List<Override> quickPickOverrides() => withServiceOverrides([
     taskEstimateSuggestionsControllerProvider.overrideWith(
       _FixedSuggestions.new,
     ),
-  ];
+  ]);
 
   setUp(() async {
     mockTimeService = MockTimeService();
@@ -206,7 +207,7 @@ void main() {
       Duration? saved;
       await tester.pumpWidget(
         WidgetTestBench(
-          overrides: quickPickOverrides(),
+          overrides: withServiceOverrides(quickPickOverrides()),
           child: Builder(
             builder: (context) => Scaffold(
               body: Center(
@@ -277,7 +278,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         WidgetTestBench(
-          overrides: quickPickOverrides(),
+          overrides: withServiceOverrides(quickPickOverrides()),
           child: Builder(
             builder: (context) => Scaffold(
               body: Center(
@@ -313,7 +314,7 @@ void main() {
       // chips track the wheel's draft, not the value the modal opened on.
       await tester.pumpWidget(
         WidgetTestBench(
-          overrides: quickPickOverrides(),
+          overrides: withServiceOverrides(quickPickOverrides()),
           child: Builder(
             builder: (context) => Scaffold(
               body: Center(
@@ -354,7 +355,7 @@ void main() {
       Duration? saved;
       await tester.pumpWidget(
         WidgetTestBench(
-          overrides: quickPickOverrides(),
+          overrides: withServiceOverrides(quickPickOverrides()),
           child: Builder(
             builder: (context) => Scaffold(
               body: Center(

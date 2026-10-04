@@ -5,6 +5,7 @@ import 'package:lotti/features/habits/state/habit_editor_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -20,7 +21,7 @@ void main() {
         ..registerSingleton<JournalDb>(journalDb),
     );
     addTearDown(tearDownTestGetIt);
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
     return container;
   }
@@ -65,7 +66,7 @@ void main() {
           ..registerSingleton<JournalDb>(journalDb),
       );
       addTearDown(tearDownTestGetIt);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       expect(await container.read(workoutTypesProvider.future), [
         'running',

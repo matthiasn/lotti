@@ -29,6 +29,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 import 'support/penguin_wake_scenarios.dart';
@@ -83,7 +84,7 @@ void main() {
           Platform.environment['MELIOUS_API_KEY'] ??
           '';
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final attribution = AiInteractionCaptureTestBench.create();

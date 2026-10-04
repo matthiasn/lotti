@@ -29,6 +29,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
@@ -208,7 +209,7 @@ void main() {
         providerId: provider?.id ?? 'provider-1',
         focusApiKey: focusApiKey,
         navigatorObservers: navigatorObservers,
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
       ),
     );
     await tester.pump();

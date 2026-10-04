@@ -18,6 +18,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../../helpers/service_overrides.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../widget_test_utils.dart';
@@ -67,14 +68,14 @@ void main() {
   Future<void> pumpAndOpenModal(WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(
             testAudioEntry.meta.id,
           ).overrideWith(() => _TestEntryController(testAudioEntry)),
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.value([]),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           Builder(
             builder: (context) => TextButton(

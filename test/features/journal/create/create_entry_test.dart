@@ -31,6 +31,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/path_provider.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -794,7 +795,7 @@ void main() {
       // Create ProviderContainer and get a real Ref for testing
       // Note: In Riverpod 3.x, WidgetRef is sealed, so we test the repository directly
       // using a ProviderContainer instead of calling the createChecklist helper function.
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       // Call the repository directly using the container

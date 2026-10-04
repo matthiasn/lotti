@@ -15,6 +15,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -85,7 +86,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       LinkedFromTaskWidget(checklist),
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
     ),
   );
   await tester.pump();

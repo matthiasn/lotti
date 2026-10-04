@@ -13,6 +13,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../test_utils.dart';
@@ -82,14 +83,14 @@ void main() {
         () => repository.getProjectById(project.id),
       ).thenAnswer((_) async => updated);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           projectRepositoryProvider.overrideWithValue(repository),
           projectAgentServiceProvider.overrideWithValue(projectAgents),
           agentServiceProvider.overrideWithValue(agents),
           projectAgentMutationCoordinatorProvider.overrideWithValue(
             coordinator,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final now = DateTime(2026, 9, 4);

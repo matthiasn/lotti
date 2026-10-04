@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// [SettingsDb] keys backing each celebratory-animation switch. The bool keys
 /// store the strings `'true'` / `'false'`; an absent key means "never set" → on.
@@ -218,7 +219,7 @@ class CelebrationPreferencesController
   Future<void> _hydrate() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     try {
-      final db = getIt<SettingsDb>();
+      final db = ref.read(settingsDbProvider);
       final enabled = await db.itemByKey(_celebrateEnabledKey);
       final haptics = await db.itemByKey(_celebrateHapticsKey);
       final habits = await db.itemByKey(_celebrateHabitsKey);
@@ -389,7 +390,7 @@ class CelebrationPreferencesController
   Future<void> _persist(String key, String value) async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     try {
-      await getIt<SettingsDb>().saveSettingsItem(key, value);
+      await ref.read(settingsDbProvider).saveSettingsItem(key, value);
     } catch (_) {
       // The in-memory state still reflects the change; persistence will be
       // retried on the next change. Swallow so a DB hiccup can't crash a tap.

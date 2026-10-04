@@ -9,6 +9,7 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -133,11 +134,11 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             taskProgressControllerProvider(taskId).overrideWith(
               () => makeController(progress, estimate),
             ),
-          ],
+          ]),
           child: const MaterialApp(
             builder: LegacyMaterialBridge.builder,
             home: Scaffold(

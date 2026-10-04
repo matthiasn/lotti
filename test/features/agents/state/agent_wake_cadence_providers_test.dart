@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -21,9 +22,9 @@ void main() {
 
   ProviderContainer container({bool withCache = true}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         if (withCache) entitiesCacheServiceProvider.overrideWithValue(cache),
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

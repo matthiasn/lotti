@@ -10,6 +10,7 @@ import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -61,11 +62,11 @@ void main() {
     VoidCallback? onCheckIn,
   }) async {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         dailyOsOnboardingCadenceProvider.overrideWith(
           () => _CountingCadence(() => cadenceRecordShownCount++),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final controller = container.read(
@@ -216,11 +217,11 @@ void main() {
       'global origin',
       (tester) async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             dailyOsOnboardingCadenceProvider.overrideWith(
               () => _CountingCadence(() => cadenceRecordShownCount++),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         container

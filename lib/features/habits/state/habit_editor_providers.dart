@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_workout_types.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// The workout activities present in the journal, canonicalised, de-duplicated
 /// and sorted: rows imported in the plugin era say `RUNNING` while older and
@@ -10,7 +9,7 @@ import 'package:lotti/logic/health_workout_types.dart';
 /// activity across every stored spelling (`workoutTypeSpellings`).
 final FutureProvider<List<String>> workoutTypesProvider =
     FutureProvider.autoDispose<List<String>>((ref) async {
-      final stored = await getIt<JournalDb>().getWorkoutTypes();
+      final stored = await ref.read(journalDbProvider).getWorkoutTypes();
       return stored
           .map(canonicalWorkoutType)
           .where((type) => type.isNotEmpty)

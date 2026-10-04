@@ -24,6 +24,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -155,7 +156,10 @@ void main() {
   group('FlagsPage', () {
     testWidgets('renders DesignSystemListItem for each flag', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -167,7 +171,10 @@ void main() {
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -178,7 +185,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -194,7 +204,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -220,7 +233,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -241,7 +257,10 @@ void main() {
 
     testWidgets('shows correct switch state for enabled flag', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -263,7 +282,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -283,7 +305,10 @@ void main() {
 
     testWidgets('toggles flag when switch is tapped', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -310,7 +335,10 @@ void main() {
 
     testWidgets('toggles flag when row is tapped', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -340,7 +368,10 @@ void main() {
 
     testWidgets('shows correct icons for specific flags', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -357,7 +388,10 @@ void main() {
 
     testWidgets('wraps items in decorated box with border', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -441,7 +475,10 @@ void main() {
       String Function(AppLocalizations m) title,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -507,7 +544,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -520,7 +560,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -539,7 +582,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -554,7 +600,10 @@ void main() {
 
     testWidgets('search is case-insensitive', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+          overrides: getItServiceOverrides(),
+        ),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -569,7 +618,10 @@ void main() {
       'a query that matches no flag shows the empty-search message',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -592,7 +644,10 @@ void main() {
       'tapping the built-in clear button restores the full list',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -622,7 +677,10 @@ void main() {
       'emptying the textfield from outside also restores the full list',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -646,7 +704,10 @@ void main() {
       'a whitespace-only query is treated as empty and shows the full list',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -668,7 +729,10 @@ void main() {
       'rows allow long descriptions to wrap by passing subtitleMaxLines: null',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -689,7 +753,10 @@ void main() {
       'gap between Preferences and Advanced',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -713,7 +780,10 @@ void main() {
       'ScrollNotification to keep activity tracking alive',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -737,7 +807,10 @@ void main() {
       'search field is OUTSIDE the scrollable region — only the list scrolls',
       (tester) async {
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -924,7 +997,10 @@ void main() {
         'switch arms and onTap persistence call',
         (tester) async {
           await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(const FlagsPage()),
+            makeTestableWidgetWithScaffold(
+              const FlagsPage(),
+              overrides: getItServiceOverrides(),
+            ),
           );
           await tester.pump(const Duration(milliseconds: 100));
 
@@ -1050,6 +1126,7 @@ void main() {
                 ConfigFlagGroup.preferences: [unknownFlagName],
               },
             ),
+            overrides: getItServiceOverrides(),
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));
@@ -1089,7 +1166,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -1144,6 +1224,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             const FlagsPage(),
             overrides: [
+              ...getItServiceOverrides(),
               profileContextProvider.overrideWithValue(guestContext()),
             ],
           ),
@@ -1175,7 +1256,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: getItServiceOverrides(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 

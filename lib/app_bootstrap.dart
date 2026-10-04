@@ -31,13 +31,17 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -266,6 +270,16 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
+    if (getIt.isRegistered<SettingsDb>())
+      settingsDbProvider.overrideWithValue(getIt<SettingsDb>()),
+    if (getIt.isRegistered<PersistenceLogic>())
+      persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
+    if (getIt.isRegistered<NavService>())
+      navServiceProvider.overrideWithValue(getIt<NavService>()),
+    if (getIt.isRegistered<TimeService>())
+      timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    if (getIt.isRegistered<VectorClockService>())
+      vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
     if (getIt.isRegistered<EntitiesCacheService>())
       entitiesCacheServiceProvider.overrideWithValue(

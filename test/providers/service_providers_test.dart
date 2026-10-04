@@ -15,6 +15,11 @@ void main() {
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
     'syncDatabaseProvider': syncDatabaseProvider,
+    'settingsDbProvider': settingsDbProvider,
+    'persistenceLogicProvider': persistenceLogicProvider,
+    'navServiceProvider': navServiceProvider,
+    'timeServiceProvider': timeServiceProvider,
+    'vectorClockServiceProvider': vectorClockServiceProvider,
   };
 
   for (final entry in providers.entries) {

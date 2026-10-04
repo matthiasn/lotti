@@ -10,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../logic/signals/signal_test_fixtures.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -61,7 +62,7 @@ void main() {
           ..registerSingleton<EntitiesCacheService>(cache);
       },
     );
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {

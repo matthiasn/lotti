@@ -62,7 +62,7 @@ class DemoCopyCandidates {
 /// Loads the copy-over candidates from the ACTIVE demo world.
 ///
 /// [journalDb], [aiConfigRepository] and [demoRoot] are the demo
-/// generation's active handles (`getIt<JournalDb>()` /
+/// generation's active handles (`ref.read(journalDbProvider)` /
 /// `getIt<AiConfigRepository>()` / `getIt<Directory>()` in production); the
 /// manifest at [demoRoot] supplies the seeded-id exclusion sets. A missing
 /// or malformed manifest excludes nothing — better to over-offer than to

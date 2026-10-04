@@ -13,6 +13,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 /// A contacts service whose access answer and contact list are scripted.
@@ -92,7 +93,7 @@ void main() {
     PersonIdMinter? mintPersonId,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
         relationshipAgentServiceProvider.overrideWithValue(agentService),
@@ -101,7 +102,7 @@ void main() {
           contactImportControllerProvider.overrideWith(
             () => ContactImportController(mintPersonId: mintPersonId),
           ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     // Reading the state first instantiates the notifier.
@@ -807,7 +808,7 @@ void main() {
 
     test('scopes the key to this device via the sync host id', () async {
       when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final key = await container.read(contactRefKeyProvider.future);
@@ -824,7 +825,7 @@ void main() {
 
     test('yields no key while the host id is unprovisioned', () async {
       when(vectorClockService.getHost).thenAnswer((_) async => null);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(await container.read(contactRefKeyProvider.future), isNull);

@@ -9,6 +9,7 @@ import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -104,7 +105,7 @@ void main() {
   group('build', () {
     test('queries the 90-day window, from midnight, for a full row', () async {
       stubRanked(const [Duration(minutes: 11)]);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       await read(container);
@@ -124,7 +125,7 @@ void main() {
 
     test('serves the ranking topped up and sorted', () async {
       stubRanked(const [Duration(minutes: 11), Duration(minutes: 35)]);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(await read(container), const [
@@ -140,7 +141,7 @@ void main() {
     test("re-derives when private visibility changes, so a hidden person's "
         'habits stop ranking', () async {
       stubRanked(const [Duration(minutes: 11)]);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       // The listener keeps the auto-disposed row alive, and resolves the
       // moment a re-derived ranking lands — no timer, no scheduler turn.
@@ -174,7 +175,7 @@ void main() {
         'a later picker re-ranks instead of serving the first ranking for '
         'ever', () {
       stubRanked(const [Duration(minutes: 11)]);
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       fakeAsync((async) {

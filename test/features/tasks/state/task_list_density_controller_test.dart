@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
 
   setUp(() async {
     mocks = await setUpTestGetIt();
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {

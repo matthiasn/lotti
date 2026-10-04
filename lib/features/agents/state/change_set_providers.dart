@@ -18,15 +18,12 @@ import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:meta/meta.dart';
 
 /// Deduplicates change sets that have identical pending-item fingerprints.
@@ -135,7 +132,7 @@ final eventChangeSetConfirmationServiceProvider =
         toolDispatcher: EventToolDispatcher(
           journalDb: ref.watch(journalDbProvider),
           journalRepository: ref.watch(journalRepositoryProvider),
-          persistenceLogic: getIt<PersistenceLogic>(),
+          persistenceLogic: ref.read(persistenceLogicProvider),
           entitiesCacheService: getIt<EntitiesCacheService>(),
           domainLogger: logger,
         ).dispatch,
@@ -161,7 +158,7 @@ final projectRecommendationServiceProvider =
           domainLogger: ref.watch(domainLoggerProvider),
           taskDispatcher: (tool, args, projectId) => ProjectToolDispatcher(
             projectRepository: ref.read(projectRepositoryProvider),
-            persistenceLogic: getIt<PersistenceLogic>(),
+            persistenceLogic: ref.read(persistenceLogicProvider),
             entitiesCacheService: getIt<EntitiesCacheService>(),
             journalDb: ref.read(journalDbProvider),
             domainLogger: ref.read(domainLoggerProvider),
@@ -245,8 +242,8 @@ TaskToolDispatcher taskToolDispatcher(Ref ref) => TaskToolDispatcher(
   journalRepository: ref.watch(journalRepositoryProvider),
   checklistRepository: ref.watch(checklistRepositoryProvider),
   labelsRepository: ref.watch(labelsRepositoryProvider),
-  persistenceLogic: getIt<PersistenceLogic>(),
-  timeService: getIt<TimeService>(),
+  persistenceLogic: ref.read(persistenceLogicProvider),
+  timeService: ref.read(timeServiceProvider),
   domainLogger: ref.watch(domainLoggerProvider),
   taskAgentService: ref.watch(taskAgentServiceProvider),
   projectRepository: ref.watch(projectRepositoryProvider),
@@ -263,7 +260,7 @@ final projectChangeSetConfirmationServiceProvider =
         syncService: ref.watch(agentSyncServiceProvider),
         toolDispatcher: ProjectToolDispatcher(
           projectRepository: ref.watch(projectRepositoryProvider),
-          persistenceLogic: getIt<PersistenceLogic>(),
+          persistenceLogic: ref.read(persistenceLogicProvider),
           entitiesCacheService: getIt<EntitiesCacheService>(),
           journalDb: ref.watch(journalDbProvider),
           domainLogger: logger,

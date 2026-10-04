@@ -8,6 +8,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import 'sync_maintenance_controller_test_helpers.dart';
 
@@ -27,10 +28,10 @@ void main() {
     mockLoggingService = MockDomainLogger();
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         syncMaintenanceRepositoryProvider.overrideWithValue(mockRepository),
         domainLoggerProvider.overrideWithValue(mockLoggingService),
-      ],
+      ]),
     );
     controller = container.read(syncControllerProvider.notifier);
 

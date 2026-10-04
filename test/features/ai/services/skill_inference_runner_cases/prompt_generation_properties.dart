@@ -14,7 +14,9 @@ extension _PromptGenerationPropertyCases on _SkillInferenceTestSetup {
         final localLoggingService = MockDomainLogger();
         final localPromptBuilderHelper = MockPromptBuilderHelper();
         final localTaskSummaryResolver = MockTaskSummaryResolver();
-        final localContainer = ProviderContainer();
+        final localContainer = ProviderContainer(
+          overrides: getItServiceOverrides(),
+        );
 
         void stubLocalLoggingException() {
           when(

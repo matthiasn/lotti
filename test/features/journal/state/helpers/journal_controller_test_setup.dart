@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 
 /// Advances fake time past the controller's debounce window and drains
@@ -148,7 +148,7 @@ class JournalControllerTestSetup {
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<NavService>(mockNavService);
 
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   }
 
   /// Convenience for tests: drives a nav-index emission on the same

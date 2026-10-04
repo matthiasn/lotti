@@ -18,6 +18,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -233,13 +234,13 @@ void main() {
 
   Widget createTestApp(Widget child) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         syncMaintenanceRepositoryProvider.overrideWithValue(
           mockSyncMaintenanceRepository,
         ),
         domainLoggerProvider.overrideWithValue(mockLoggingService),
         syncControllerProvider.overrideWith(SpySyncController.new),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(),
@@ -496,10 +497,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             syncControllerProvider.overrideWith(() => controller),
             domainLoggerProvider.overrideWithValue(mockLoggingService),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -590,10 +591,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             syncControllerProvider.overrideWith(() => controller),
             domainLoggerProvider.overrideWithValue(mockLoggingService),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),

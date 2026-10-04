@@ -6,6 +6,7 @@ import 'package:lotti/features/settings/state/settings_tree_width_controller.dar
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -30,7 +31,7 @@ Future<ProviderContainer> _containerWith({String? persistedValue}) async {
       settingsTreeNavWidthKey: persistedValue,
     },
   );
-  return ProviderContainer();
+  return ProviderContainer(overrides: getItServiceOverrides());
 }
 
 void main() {
@@ -38,7 +39,7 @@ void main() {
 
   setUp(() async {
     await setUpTestGetIt();
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
   });
 
   tearDown(() async {
@@ -266,7 +267,7 @@ void main() {
         when(
           () => mocks.settingsDb.itemsByKeys(any()),
         ).thenThrow(StateError('disk read failed'));
-        final c = ProviderContainer();
+        final c = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(c.dispose);
 
         // Read the provider to trigger the async hydration, then drain.
@@ -296,7 +297,7 @@ void main() {
           () => mocks.settingsDb.saveSettingsItem(any(), any()),
         ).thenThrow(StateError('disk write failed'));
 
-        final c = ProviderContainer();
+        final c = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(c.dispose);
         // Hydrate.
         c.read(settingsTreeNavWidthProvider);

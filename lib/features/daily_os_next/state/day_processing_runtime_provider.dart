@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,9 +20,8 @@ import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.
 import 'package:lotti/features/daily_os_next/state/day_agent_job_wiring.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 
 final Provider<DayProcessingOutboxRepository>
 dayProcessingOutboxRepositoryProvider = Provider((ref) {
@@ -101,7 +101,7 @@ final Provider<DayAudioTranscriptWriter> dayAudioTranscriptWriterProvider =
     Provider((ref) {
       return DayAudioTranscriptWriter(
         journalDb: getIt(),
-        persistenceLogic: getIt<PersistenceLogic>(),
+        persistenceLogic: ref.read(persistenceLogicProvider),
       );
     });
 
@@ -139,6 +139,7 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   final processor = ref.watch(dayProcessingOutboxProcessorProvider);
   final outbox = ref.watch(dayProcessingOutboxRepositoryProvider);
   ref.watch(dayAudioReviewFenceProvider);
+  final vectorClockService = ref.read(vectorClockServiceProvider);
   final runtime = DayProcessingRuntime(
     repository: outbox,
     drain: () => drainDayProcessingLanes(processor),
@@ -150,7 +151,7 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
       await outbox.pruneTerminalBefore(
         DateTime.now().subtract(dayProcessingLedgerRetention),
       );
-      final currentHostId = await getIt<VectorClockService>().getHost();
+      final currentHostId = await vectorClockService.getHost();
       return DayProcessingOutboxRepair(
         repository: outbox,
         journalDb: getIt(),

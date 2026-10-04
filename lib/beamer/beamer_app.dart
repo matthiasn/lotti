@@ -238,7 +238,7 @@ class AppScreen extends ConsumerStatefulWidget {
 class _AppScreenState extends ConsumerState<AppScreen> {
   late final DomainLogger _logger;
 
-  final NavService navService = getIt<NavService>();
+  NavService get navService => ref.read(navServiceProvider);
 
   /// Merged once: recreating the merge on every rebuild would make the
   /// enclosing [ListenableBuilder] resubscribe to the delegates each
@@ -1386,7 +1386,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   void initState() {
     super.initState();
     _logger = ref.read(domainLoggerProvider);
-    effectiveNavService = widget.navService ?? getIt<NavService>();
+    effectiveNavService = widget.navService ?? ref.read(navServiceProvider);
 
     routerDelegate = BeamerDelegate(
       initialPath: effectiveNavService.currentPath,

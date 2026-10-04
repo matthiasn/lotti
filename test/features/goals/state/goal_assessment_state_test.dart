@@ -12,6 +12,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -72,12 +73,12 @@ void main() {
         },
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentUpdateStreamProvider(
             'goal-1',
           ).overrideWith((ref) => const Stream.empty()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -147,12 +148,12 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           agentUpdateStreamProvider(
             'goal-1',
           ).overrideWith((ref) => const Stream.empty()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -177,9 +178,9 @@ void main() {
 
   test('the service provider builds on the shared sync service', () {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
 

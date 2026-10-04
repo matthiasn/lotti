@@ -6,6 +6,7 @@ import 'package:lotti/providers/manual_language_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/service_overrides.dart';
 import '../widget_test_utils.dart';
 
 void main() {
@@ -177,7 +178,7 @@ void main() {
       when(
         () => mocks.settingsDb.removeSettingsItem(any()),
       ).thenAnswer((_) async {});
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {

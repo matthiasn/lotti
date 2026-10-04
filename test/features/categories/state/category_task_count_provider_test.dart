@@ -7,6 +7,7 @@ import 'package:lotti/features/categories/state/category_task_count_provider.dar
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -34,9 +35,9 @@ void main() {
 
     ProviderContainer createContainer() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+        ]),
       );
     }
 

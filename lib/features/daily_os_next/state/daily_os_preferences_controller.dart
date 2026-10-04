@@ -106,7 +106,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
 
   Future<void> _load() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
-    final values = await getIt<SettingsDb>().itemsByKeys(
+    final values = await ref.read(settingsDbProvider).itemsByKeys(
       const [
         dailyOsUserNameSettingsKey,
         dailyOsUserNameUpdatedAtSettingsKey,
@@ -209,11 +209,13 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   Future<void> _persistUserName(String userName, int timestamp) async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     try {
-      final saved = await getIt<SettingsDb>().saveLocalSettingsGroup(
-        {dailyOsUserNameSettingsKey: userName},
-        stampKey: dailyOsUserNameUpdatedAtSettingsKey,
-        timestamp: timestamp,
-      );
+      final saved = await ref
+          .read(settingsDbProvider)
+          .saveLocalSettingsGroup(
+            {dailyOsUserNameSettingsKey: userName},
+            stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+            timestamp: timestamp,
+          );
       if (!ref.mounted) return;
       _enqueueUserNameSync(
         saved.values[dailyOsUserNameSettingsKey]!,
@@ -239,13 +241,15 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
       () async {
         if (!getIt.isRegistered<OutboxService>()) return;
         try {
-          await getIt<OutboxService>().enqueueMessage(
-            SyncMessage.dailyOsUserName(
-              userName: userName,
-              updatedAt: updatedAt,
-              status: SyncEntryStatus.update,
-            ),
-          );
+          await ref
+              .read(outboxServiceProvider)
+              .enqueueMessage(
+                SyncMessage.dailyOsUserName(
+                  userName: userName,
+                  updatedAt: updatedAt,
+                  status: SyncEntryStatus.update,
+                ),
+              );
           if (!ref.mounted) return;
           // Record what we published so this name is not bootstrapped again.
           _save(dailyOsUserNameSyncedAtSettingsKey, updatedAt.toString());
@@ -291,9 +295,11 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     // The apply phase already resolved last-write-wins before writing, so the
     // stored value is authoritative — override even a locally edited name. The
     // reload never enqueues, so it cannot echo back to other devices.
-    final stored = await getIt<SettingsDb>().itemByKey(
-      dailyOsUserNameSettingsKey,
-    );
+    final stored = await ref
+        .read(settingsDbProvider)
+        .itemByKey(
+          dailyOsUserNameSettingsKey,
+        );
     if (!ref.mounted) return;
     final synced = stored?.trim() ?? '';
     if (synced != state.userName) {
@@ -317,7 +323,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
 
   void _save(String key, String value) {
     if (!getIt.isRegistered<SettingsDb>()) return;
-    unawaited(getIt<SettingsDb>().saveSettingsItem(key, value));
+    unawaited(ref.read(settingsDbProvider).saveSettingsItem(key, value));
   }
 
   Set<String> _decodeCategoryIds(String? raw) {

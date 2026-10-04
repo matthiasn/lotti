@@ -18,6 +18,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -49,14 +50,14 @@ void main() {
     ],
   );
 
-  List<Override> modalOverrides() => [
+  List<Override> modalOverrides() => withServiceOverrides([
     historicalSyncServiceProvider.overrideWithValue(
       mockHistoricalSyncService,
     ),
     syncMaintenanceRepositoryProvider.overrideWithValue(
       mockSyncMaintenanceRepository,
     ),
-  ];
+  ]);
 
   Future<void> pumpModal(
     WidgetTester tester, {
@@ -69,7 +70,7 @@ void main() {
           onboardingTarget: onboardingTarget,
           onboardingSyncService: onboardingSyncService,
         ),
-        overrides: modalOverrides(),
+        overrides: withServiceOverrides(modalOverrides()),
       ),
     );
     await tester.pump();
@@ -94,7 +95,7 @@ void main() {
             child: const Text('Open onboarding'),
           ),
         ),
-        overrides: modalOverrides(),
+        overrides: withServiceOverrides(modalOverrides()),
       ),
     );
 

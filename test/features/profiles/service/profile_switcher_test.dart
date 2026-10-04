@@ -20,6 +20,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/db_settle.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 class _ThrowingStartupTasks extends StartupTasks {
@@ -250,7 +251,9 @@ void main() {
           if (++playerDisposals == 1) throw StateError('mpv boom');
         });
         final audioContainer = ProviderContainer(
-          overrides: [playerFactoryProvider.overrideWithValue(() => player)],
+          overrides: withServiceOverrides([
+            playerFactoryProvider.overrideWithValue(() => player),
+          ]),
         );
         addTearDown(audioContainer.dispose);
         audioContainer

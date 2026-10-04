@@ -47,6 +47,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 
 /// Mock What's New controller that returns no unseen releases
@@ -278,12 +279,12 @@ void main() {
     );
 
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         whatsNewControllerProvider.overrideWith(_MockWhatsNewController.new),
         ...additionalOverrides,
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         theme: ThemeData(
@@ -339,7 +340,7 @@ void main() {
     test(
       'meliousInferenceRepositoryProvider wires the real reusable repository',
       () async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final repository = container.read(meliousInferenceRepositoryProvider);
@@ -357,7 +358,7 @@ void main() {
     test(
       'mistralInferenceRepositoryProvider wires the real reusable repository',
       () async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final repository = container.read(mistralInferenceRepositoryProvider);
@@ -1395,11 +1396,11 @@ void main() {
             // Riverpod retries a failing stream and reports loading
             // meanwhile; the error branch only renders without retries.
             retry: (_, _) => null,
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigByTypeControllerProvider(
                 AiConfigType.model,
               ).overrideWith(_ErrorAiConfigByTypeController.new),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
@@ -2004,12 +2005,12 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               meliousInferenceRepositoryProvider.overrideWithValue(
                 fakeMeliousRepository,
               ),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
@@ -2080,7 +2081,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               aiConfigByTypeControllerProvider(
                 AiConfigType.model,
@@ -2088,7 +2089,7 @@ void main() {
               meliousInferenceRepositoryProvider.overrideWithValue(
                 fakeMeliousRepository,
               ),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
@@ -2481,7 +2482,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             aiConfigRepositoryProvider.overrideWithValue(mockRepository),
             meliousInferenceRepositoryProvider.overrideWithValue(
               FakeMeliousInferenceRepository([
@@ -2493,7 +2494,7 @@ void main() {
                 if (isOmlx) result else empty,
               ]),
             ),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: ThemeData(
@@ -2549,7 +2550,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               geminiModelsRepositoryProvider.overrideWithValue(
                 GeminiModelsRepository(
@@ -2563,7 +2564,7 @@ void main() {
                   ),
                 ),
               ),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
@@ -4213,20 +4214,21 @@ void main() {
     // strip to render — verified / failed http / failed network /
     // checking (delayed) — and the controller's real `verify()` lands
     // the canned state in Riverpod.
-    List<Override> verifierOverridesFor({required _RecordingProbe probe}) => [
-      connectionProbeRegistryProvider.overrideWithValue(
-        <InferenceProviderType, ConnectionProbe>{
-          InferenceProviderType.openAi: probe,
-        },
-      ),
-      // Cheap MockClient — never invoked because the fake probe
-      // short-circuits before reaching it, but the verifier
-      // requires *some* client factory.
-      connectionVerifierClientProvider.overrideWithValue(_NoopClient.new),
-      connectionVerifierTimeoutProvider.overrideWithValue(
-        const Duration(milliseconds: 200),
-      ),
-    ];
+    List<Override> verifierOverridesFor({required _RecordingProbe probe}) =>
+        withServiceOverrides([
+          connectionProbeRegistryProvider.overrideWithValue(
+            <InferenceProviderType, ConnectionProbe>{
+              InferenceProviderType.openAi: probe,
+            },
+          ),
+          // Cheap MockClient — never invoked because the fake probe
+          // short-circuits before reaching it, but the verifier
+          // requires *some* client factory.
+          connectionVerifierClientProvider.overrideWithValue(_NoopClient.new),
+          connectionVerifierTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 200),
+          ),
+        ]);
 
     // Drive the page to a state where the API-key field is rendered
     // (create mode with a preselected type) and type a key so the

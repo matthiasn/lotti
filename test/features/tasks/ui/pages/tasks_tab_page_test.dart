@@ -50,6 +50,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -209,12 +210,13 @@ void main() {
     );
   }
 
-  List<Override> pageOverrides() => [
+  List<Override> pageOverrides() => withServiceOverrides([
+    ...getItServiceOverrides(),
     journalPageScopeProvider.overrideWithValue(true),
     journalPageControllerProvider(true).overrideWith(() => fakeController),
     fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-  ];
+  ]);
 
   /// The desktop list pane reads the desktop selection; stub it before
   /// pumping the page at [desktopLayoutMediaQueryData].
@@ -246,7 +248,7 @@ void main() {
         ),
       ),
       mediaQueryData: desktop ? desktopLayoutMediaQueryData : mediaQueryData,
-      overrides: pageOverrides(),
+      overrides: withServiceOverrides(pageOverrides()),
     );
   }
 
@@ -273,6 +275,7 @@ void main() {
         ),
       ),
       overrides: [
+        ...getItServiceOverrides(),
         journalPageScopeProvider.overrideWithValue(true),
         journalPageControllerProvider(true).overrideWith(() => fakeController),
         taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
@@ -776,6 +779,7 @@ void main() {
           ),
           mediaQueryData: desktopLayoutMediaQueryData,
           overrides: [
+            ...getItServiceOverrides(),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(
               true,
@@ -1498,6 +1502,7 @@ void main() {
         const TasksTabPage(),
         mediaQueryData: mediaQueryData,
         overrides: [
+          ...getItServiceOverrides(),
           journalPageScopeProvider.overrideWithValue(true),
           journalPageControllerProvider(
             true,
@@ -2471,6 +2476,7 @@ void main() {
             ),
             mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(true),
               journalPageControllerProvider(
                 true,
@@ -2534,6 +2540,7 @@ void main() {
             ),
             mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(true),
               journalPageControllerProvider(
                 true,
@@ -2583,6 +2590,7 @@ void main() {
               child: TasksTabPage(),
             ),
             overrides: [
+              ...getItServiceOverrides(),
               journalPageScopeProvider.overrideWithValue(true),
               journalPageControllerProvider(
                 true,

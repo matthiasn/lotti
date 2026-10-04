@@ -14,9 +14,9 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
 import 'unified_suggestion_test_generators.dart';
 
 void main() {
@@ -42,10 +42,10 @@ void main() {
     ).thenAnswer((_) async => ledger);
 
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         taskAgentProvider('task-abc').overrideWith((ref) async => agent),
         agentRepositoryProvider.overrideWithValue(mockRepo),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -65,11 +65,11 @@ void main() {
           displayName: 'Generated Agent',
         );
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             taskAgentProvider('task-abc').overrideWith((ref) async => agent),
             agentRepositoryProvider.overrideWithValue(generatedRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
-          ],
+          ]),
         );
 
         when(

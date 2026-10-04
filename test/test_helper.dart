@@ -4,6 +4,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'helpers/service_overrides.dart';
 import 'widget_test_utils.dart';
 
 class WidgetTestBench extends StatelessWidget {
@@ -39,7 +40,7 @@ class WidgetTestBench extends StatelessWidget {
         const BoxConstraints(minHeight: 800, minWidth: 800);
 
     return ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
@@ -78,6 +79,7 @@ class DarkWidgetTestBench extends StatelessWidget {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
 
     return ProviderScope(
+      overrides: getItServiceOverrides(),
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
@@ -133,7 +135,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
         const BoxConstraints(minHeight: 800, minWidth: 800);
 
     return ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
@@ -175,7 +177,7 @@ class DarkRiverpodWidgetTestBench extends StatelessWidget {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
 
     return ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(

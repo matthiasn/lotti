@@ -11,6 +11,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -58,7 +59,7 @@ void main() {
         () => mockEntitiesCacheService.getDataTypeById(testId),
       ).thenReturn(testDataType);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -92,7 +93,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById(testId),
       ).thenAnswer((_) async => testDataType);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -115,7 +116,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById(testId),
       ).thenAnswer((_) async => null);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -140,7 +141,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById('test-id'),
       ).thenAnswer((_) async => null);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -174,7 +175,7 @@ void main() {
           () => mockEntitiesCacheService.getDataTypeById('test-id'),
         ).thenReturn(testDataType);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final result = await container.read(
@@ -198,7 +199,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById('test-id'),
       ).thenAnswer((_) async => null);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(
@@ -237,7 +238,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [entry]);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       addTearDown(streamController.close);
 
@@ -275,7 +276,7 @@ void main() {
         return callCount == 1 ? [entry1] : [entry1, entry2];
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       addTearDown(streamController.close);
 
@@ -323,7 +324,7 @@ void main() {
           return callCount == 1 ? [entry1] : [entry1, entry2];
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
         addTearDown(streamController.close);
 
@@ -369,7 +370,7 @@ void main() {
         return [entry];
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       addTearDown(streamController.close);
 
@@ -425,7 +426,7 @@ void main() {
           ),
         ).thenAnswer((_) async => <JournalEntity>[]);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final result = await container.read(
@@ -459,7 +460,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [entry]);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final result = await container.read(

@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -14,9 +15,9 @@ void main() {
   setUp(() {
     mockMaintenance = MockMaintenance();
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         maintenanceProvider.overrideWithValue(mockMaintenance),
-      ],
+      ]),
     );
     controller = container.read(fts5ControllerProvider.notifier);
   });

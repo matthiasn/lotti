@@ -17,9 +17,8 @@ import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Responsive entry point for the tasks feature.
 ///
@@ -96,7 +95,9 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
               !paneWidths.dayViewPanelHidden &&
               constraints.maxWidth < kDesktopBreakpoint;
           return ValueListenableBuilder<List<String>>(
-            valueListenable: getIt<NavService>().desktopTaskDetailStack,
+            valueListenable: ref
+                .read(navServiceProvider)
+                .desktopTaskDetailStack,
             builder: (context, stack, _) {
               final selectedTaskId = stack.isEmpty ? null : stack.last;
               final queryScope = selectedTaskId == null

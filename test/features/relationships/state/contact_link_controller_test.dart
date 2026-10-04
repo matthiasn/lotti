@@ -10,6 +10,7 @@ import 'package:lotti/features/relationships/state/contact_link_controller.dart'
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 class _FakeContactsService implements ContactsService {
@@ -98,11 +99,11 @@ void main() {
 
   ContactLinkController build({String? refKey = deviceKey}) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
         contactRefKeyProvider.overrideWith((ref) async => refKey),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container.read(contactLinkControllerProvider);

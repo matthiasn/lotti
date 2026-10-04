@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 
 final embeddingBackfillControllerProvider =
@@ -95,7 +96,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     );
 
     try {
-      final db = getIt<JournalDb>();
+      final db = ref.read(journalDbProvider);
       final embeddingStore = getIt<EmbeddingStore>();
       final embeddingRepository = getIt<OllamaEmbeddingRepository>();
       final aiConfigRepository = getIt<AiConfigRepository>();

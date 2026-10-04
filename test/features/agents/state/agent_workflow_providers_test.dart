@@ -26,6 +26,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -58,7 +59,7 @@ void main() {
       notifications = MockUpdateNotifications();
 
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(repository),
           conversationRepositoryProvider.overrideWith(
             ConversationRepository.new,
@@ -96,7 +97,7 @@ void main() {
           pullRequestContextServiceProvider.overrideWithValue(
             MockPullRequestContextService(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
     });

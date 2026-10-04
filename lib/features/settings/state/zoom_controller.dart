@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 const _zoomScaleKey = 'ZOOM_SCALE';
 
@@ -39,7 +39,7 @@ class ZoomController extends Notifier<double> {
   }
 
   Future<void> _loadPersistedScale() async {
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     final stored = await settingsDb.itemByKey(_zoomScaleKey);
     // Skip if user already interacted before hydration completed.
     if (_userAdjusted) return;
@@ -52,10 +52,12 @@ class ZoomController extends Notifier<double> {
   }
 
   void _persist() {
-    getIt<SettingsDb>().saveSettingsItem(
-      _zoomScaleKey,
-      state.toStringAsFixed(2),
-    );
+    ref
+        .read(settingsDbProvider)
+        .saveSettingsItem(
+          _zoomScaleKey,
+          state.toStringAsFixed(2),
+        );
   }
 
   /// Increases the scale by [zoomStep] (capped at [maxZoomScale]) and

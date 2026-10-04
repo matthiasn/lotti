@@ -43,6 +43,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
@@ -259,7 +260,7 @@ void main() {
     int aiCallCount = 0,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         createEntryControllerOverride(task),
         labelsStreamProvider.overrideWith(
           (ref) => Stream<List<LabelDefinition>>.value(labels),
@@ -282,7 +283,7 @@ void main() {
             ),
           ),
         ),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         theme: DesignSystemTheme.dark(),
@@ -362,13 +363,13 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             createEntryControllerOverride(notATask),
             labelsStreamProvider.overrideWith(
               (ref) => Stream<List<LabelDefinition>>.value(const []),
             ),
             projectForTaskProvider('note-1').overrideWith((ref) async => null),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: DesignSystemTheme.dark(),
@@ -735,7 +736,7 @@ void main() {
     List<Override> connectorOverrides({
       required Task task,
       required ToggleCallTracker tracker,
-    }) => [
+    }) => withServiceOverrides([
       entryControllerProvider(task.id).overrideWith(
         () => FakeEntryController(task, tracker: tracker),
       ),
@@ -746,14 +747,14 @@ void main() {
       taskProgressControllerProvider(task.id).overrideWith(
         () => _FakeTaskProgressController(null),
       ),
-    ];
+    ]);
 
     Widget wrapInTestApp({
       required List<Override> overrides,
       required Widget home,
     }) {
       return ProviderScope(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
@@ -773,7 +774,9 @@ void main() {
       required ToggleCallTracker tracker,
     }) {
       return wrapInTestApp(
-        overrides: connectorOverrides(task: task, tracker: tracker),
+        overrides: withServiceOverrides(
+          connectorOverrides(task: task, tracker: tracker),
+        ),
         home: Scaffold(body: DesktopTaskHeaderConnector(taskId: task.id)),
       );
     }
@@ -798,7 +801,9 @@ void main() {
 
         await tester.pumpWidget(
           wrapInTestApp(
-            overrides: connectorOverrides(task: task, tracker: tracker),
+            overrides: withServiceOverrides(
+              connectorOverrides(task: task, tracker: tracker),
+            ),
             home: MediaQuery(
               data: const MediaQueryData(size: Size(390, 844)),
               child: Navigator(
@@ -931,7 +936,7 @@ void main() {
       List<ProjectEntry> projects = const [],
       ProjectEntry? currentProject,
     }) {
-      return [
+      return withServiceOverrides([
         entryControllerProvider(task.id).overrideWith(
           () => FakeEntryController(task, tracker: tracker),
         ),
@@ -949,7 +954,7 @@ void main() {
           projectsForCategoryProvider(task.meta.categoryId!).overrideWith(
             (ref) async => projects,
           ),
-      ];
+      ]);
     }
 
     Widget wrapWithProjectApp({
@@ -957,7 +962,7 @@ void main() {
       required Task task,
     }) {
       return ProviderScope(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
@@ -998,7 +1003,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          wrapWithProjectApp(overrides: overrides, task: task),
+          wrapWithProjectApp(
+            overrides: withServiceOverrides(overrides),
+            task: task,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1039,7 +1047,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          wrapWithProjectApp(overrides: overrides, task: task),
+          wrapWithProjectApp(
+            overrides: withServiceOverrides(overrides),
+            task: task,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1102,7 +1113,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        wrapWithProjectApp(overrides: overrides, task: task),
+        wrapWithProjectApp(
+          overrides: withServiceOverrides(overrides),
+          task: task,
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1149,7 +1163,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          wrapWithProjectApp(overrides: overrides, task: task),
+          wrapWithProjectApp(
+            overrides: withServiceOverrides(overrides),
+            task: task,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1198,7 +1215,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          wrapWithProjectApp(overrides: overrides, task: task),
+          wrapWithProjectApp(
+            overrides: withServiceOverrides(overrides),
+            task: task,
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -1245,11 +1265,13 @@ void main() {
 
         await tester.pumpWidget(
           wrapWithProjectApp(
-            overrides: projectPickerOverrides(
-              task: task,
-              tracker: tracker,
-              projectRepo: projectRepo,
-              projects: [project],
+            overrides: withServiceOverrides(
+              projectPickerOverrides(
+                task: task,
+                tracker: tracker,
+                projectRepo: projectRepo,
+                projects: [project],
+              ),
             ),
             task: task,
           ),
@@ -1296,7 +1318,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryControllerProvider(task.id).overrideWith(
                 () => FakeEntryController(task, tracker: tracker),
               ),
@@ -1309,7 +1331,7 @@ void main() {
               taskProgressControllerProvider(task.id).overrideWith(
                 () => _FakeTaskProgressController(null),
               ),
-            ],
+            ]),
             child: MaterialApp(
               builder: LegacyMaterialBridge.builder,
               theme: DesignSystemTheme.dark(),

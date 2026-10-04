@@ -16,6 +16,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../shown_items_stub.dart';
@@ -164,10 +165,10 @@ void main() {
 
   ProviderContainer makeContainer() {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;

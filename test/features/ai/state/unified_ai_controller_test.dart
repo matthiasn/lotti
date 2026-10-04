@@ -21,6 +21,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -108,11 +109,11 @@ void main() {
     ).thenAnswer((_) => Stream.value([]));
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-      ],
+      ]),
     );
 
     // Mock logging methods
@@ -198,14 +199,14 @@ void main() {
         var runInferenceCallCount = 0;
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider('prompt-join').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -282,14 +283,14 @@ void main() {
 
         // Override the aiConfigByIdProvider to return our test prompt
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -390,14 +391,14 @@ void main() {
       var runCount = 0;
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           unifiedAiInferenceRepositoryProvider.overrideWithValue(
             mockRepository,
           ),
           aiConfigByIdProvider('prompt-1').overrideWith(
             (ref) => Future.value(promptConfig),
           ),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -465,14 +466,14 @@ void main() {
         // Local container (the shared `container` from setUp must not be
         // reassigned mid-test — the original would leak undisposed).
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -545,14 +546,14 @@ void main() {
         // 'Invalid prompt configuration', and the catch-block's second
         // config lookup also gets null so no status update is attempted.
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider(
               'missing-prompt',
             ).overrideWith((ref) => Future.value()),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 

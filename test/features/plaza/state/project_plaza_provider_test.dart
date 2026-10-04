@@ -13,6 +13,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
@@ -40,10 +41,10 @@ void main() {
       () => repository.loadProject('project'),
     ).thenAnswer((_) async => first);
     container = ProviderContainer.test(
-      overrides: [
+      overrides: withServiceOverrides([
         plazaRepositoryProvider.overrideWithValue(repository),
         plazaUpdatesProvider.overrideWithValue(updates.stream),
-      ],
+      ]),
     );
   });
 
@@ -76,7 +77,7 @@ void main() {
       when(
         () => services.journalDb.getProjectsForCategory(category.id),
       ).thenAnswer((_) async => []);
-      final live = ProviderContainer.test();
+      final live = ProviderContainer.test(overrides: getItServiceOverrides());
       addTearDown(live.dispose);
       final subscription = live.listen(
         categoryPlazaProvider(category.id),

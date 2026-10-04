@@ -40,6 +40,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -161,11 +162,11 @@ void main() {
     ).thenAnswer((_) async => <JournalDbEntity>[]);
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-      ],
+      ]),
     );
 
     // Mock logging methods
@@ -229,10 +230,10 @@ void main() {
               as AiConfigSkill;
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([transcriptionSkill]),
           createEntryControllerOverride(audioEntity),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -262,10 +263,10 @@ void main() {
       );
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
           createEntryControllerOverride(journalEntry),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -292,14 +293,14 @@ void main() {
 
       // Override the aiConfigByIdProvider to return our test prompt
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           unifiedAiInferenceRepositoryProvider.overrideWithValue(
             mockRepository,
           ),
           aiConfigByIdProvider('prompt-1').overrideWith(
             (ref) => Future.value(promptConfig),
           ),
-        ],
+        ]),
       );
 
       var runInferenceCallCount = 0;
@@ -346,14 +347,14 @@ void main() {
 
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
-          ],
+          ]),
         );
 
         // Track status updates for both entities
@@ -431,14 +432,14 @@ void main() {
 
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
             ),
             aiConfigByIdProvider('prompt-1').overrideWith(
               (ref) => Future.value(promptConfig),
             ),
-          ],
+          ]),
         );
 
         // Track status updates for both entities
@@ -568,13 +569,13 @@ void main() {
         );
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([
               transcriptionSkill,
               promptSkill,
             ]),
             createEntryControllerOverride(audioEntity),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -630,10 +631,10 @@ void main() {
         );
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([imageSkill, promptSkill]),
             createEntryControllerOverride(imageEntity),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -691,13 +692,13 @@ void main() {
       );
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([
             audioOnlySkill,
             promptSkill,
           ]),
           createEntryControllerOverride(taskEntity),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -747,10 +748,10 @@ void main() {
       );
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([imageOnlySkill]),
           createEntryControllerOverride(taskEntity),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -791,10 +792,10 @@ void main() {
       );
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
           createEntryControllerOverride(taskEntity),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -842,10 +843,10 @@ void main() {
         );
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([textSkill]),
             createEntryControllerOverride(measurementEntity),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -877,10 +878,10 @@ void main() {
 
         Future<List<AiConfigSkill>> readFor(JournalEntity entity) async {
           final c = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               skillRegistryProvider.overrideWithValue([textSkill]),
               createEntryControllerOverride(entity),
-            ],
+            ]),
           );
           containersToDispose.add(c);
           await c.read(entryControllerProvider(entity.id).future);
@@ -1024,7 +1025,7 @@ void main() {
               as AiConfigSkill;
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([
             plainTranscribe,
             taskContextTranscribe,
@@ -1032,7 +1033,7 @@ void main() {
             compactCoverArt,
           ]),
           createEntryControllerOverride(audioEntity),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -1127,13 +1128,13 @@ void main() {
         ).thenAnswer((_) async => [toDbEntity(linkedTask)]);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([
               plainTranscribe,
               codingPrompt,
             ]),
             createEntryControllerOverride(audioEntity),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1193,10 +1194,10 @@ void main() {
                 as AiConfigSkill;
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([coverArtSkill]),
             createEntryControllerOverride(taskEntity),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1217,13 +1218,13 @@ void main() {
 
     test('returns empty list when entity not found', () async {
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
           // No entry controller override — entity will not be found
           entryControllerProvider('nonexistent').overrideWith(
             FakeEntryControllerNull.new,
           ),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -1269,10 +1270,10 @@ void main() {
                 as AiConfigSkill;
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             createEntryControllerOverride(entity),
-          ],
+          ]),
         );
         try {
           await testContainer.read(
@@ -1316,14 +1317,14 @@ void main() {
 
     test('returns early when skill not found', () async {
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -1379,7 +1380,7 @@ void main() {
         ).thenAnswer((_) async => audioEntity);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1387,7 +1388,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1428,14 +1429,14 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -1532,7 +1533,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1540,7 +1541,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1592,7 +1593,7 @@ void main() {
           () => mockAutomationService.resolveDirectTranscription(),
         ).thenAnswer((_) async => AutomationResult.notHandled);
         final declineContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1600,7 +1601,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(declineContainer);
 
@@ -1662,7 +1663,7 @@ void main() {
         addTearDown(bench.unregister);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1670,7 +1671,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1703,7 +1704,7 @@ void main() {
           () => bench.service.begin(any()),
         ).thenThrow(StateError('attribution store is down'));
         final brokenContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1711,7 +1712,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(brokenContainer);
 
@@ -1762,7 +1763,7 @@ void main() {
         addTearDown(bench.unregister);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1770,7 +1771,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1810,7 +1811,7 @@ void main() {
           () => mockResolver.resolveForSubject('task-no-profile-image'),
         ).thenAnswer((_) async => null);
         final taskContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1818,7 +1819,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(taskContainer);
 
@@ -1882,7 +1883,7 @@ void main() {
         );
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -1890,7 +1891,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -1929,7 +1930,9 @@ void main() {
         ..unregister<DomainLogger>()
         ..registerSingleton<DomainLogger>(logger);
 
-      final testContainer = ProviderContainer();
+      final testContainer = ProviderContainer(
+        overrides: getItServiceOverrides(),
+      );
       containersToDispose.add(testContainer);
 
       // The goal path: nothing was attempted, because the user switched
@@ -2018,14 +2021,14 @@ void main() {
       ).thenAnswer((_) async {});
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -2097,14 +2100,14 @@ void main() {
         ).thenThrow(StateError('runner blew up'));
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
               mockAutomationService,
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2209,7 +2212,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -2217,7 +2220,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2264,7 +2267,7 @@ void main() {
                 as AiConfigSkill;
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -2272,7 +2275,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2349,14 +2352,14 @@ void main() {
       ).thenAnswer((_) async {});
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -2428,14 +2431,14 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
               mockAutomationService,
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2525,14 +2528,14 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
               mockAutomationService,
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2604,14 +2607,14 @@ void main() {
       ).thenAnswer((_) async {});
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -2741,14 +2744,14 @@ void main() {
           ).thenAnswer((_) async {});
 
           final testContainer = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               skillRegistryProvider.overrideWithValue([skill]),
               profileAutomationResolverProvider.overrideWithValue(mockResolver),
               profileAutomationServiceProvider.overrideWithValue(
                 mockAutomationService,
               ),
               skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-            ],
+            ]),
           );
           containersToDispose.add(testContainer);
 
@@ -2825,14 +2828,14 @@ void main() {
       ).thenAnswer((_) async {});
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -2910,14 +2913,14 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
               mockAutomationService,
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -2997,14 +3000,14 @@ void main() {
       ];
 
       final testContainer = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           profileAutomationServiceProvider.overrideWithValue(
             mockAutomationService,
           ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
+        ]),
       );
       containersToDispose.add(testContainer);
 
@@ -3077,14 +3080,14 @@ void main() {
         ).thenAnswer((_) async {});
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
               mockAutomationService,
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -3177,7 +3180,7 @@ void main() {
         ).thenAnswer((_) async => resolvedProfile);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
             profileAutomationServiceProvider.overrideWithValue(
@@ -3185,7 +3188,7 @@ void main() {
             ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
-          ],
+          ]),
         );
         containersToDispose.add(testContainer);
 
@@ -3316,14 +3319,14 @@ void main() {
           const asrPromptId = 'asr-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
               aiConfigByIdProvider(asrPromptId).overrideWith(
                 (ref) => Future.value(asrPromptConfig),
               ),
-            ],
+            ]),
           );
 
           var capturedEntityId = '';
@@ -3412,14 +3415,14 @@ void main() {
           const asrPromptId = 'asr-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
               aiConfigByIdProvider(asrPromptId).overrideWith(
                 (ref) => Future.value(asrPromptConfig),
               ),
-            ],
+            ]),
           );
 
           final mainEntityStatuses = <InferenceStatus>[];
@@ -3507,14 +3510,14 @@ void main() {
           const asrPromptId = 'asr-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
               aiConfigByIdProvider(asrPromptId).overrideWith(
                 (ref) => Future.value(asrPromptConfig),
               ),
-            ],
+            ]),
           );
 
           var mainEntityErrorStatus = false;
@@ -3585,7 +3588,7 @@ void main() {
           const taskSummaryPromptId = 'task-summary-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
@@ -3595,7 +3598,7 @@ void main() {
               aiConfigByIdProvider(taskSummaryPromptId).overrideWith(
                 (ref) => Future.value(taskSummaryPromptConfig),
               ),
-            ],
+            ]),
           );
 
           final executionOrder = <String>[];
@@ -3690,7 +3693,7 @@ void main() {
           const taskSummaryPromptId = 'task-summary-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
@@ -3700,7 +3703,7 @@ void main() {
               aiConfigByIdProvider(taskSummaryPromptId).overrideWith(
                 (ref) => Future.value(taskSummaryPromptConfig),
               ),
-            ],
+            ]),
           );
 
           final executionOrder = <String>[];
@@ -3798,7 +3801,7 @@ void main() {
           const taskSummaryPromptId = 'task-summary-prompt';
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               unifiedAiInferenceRepositoryProvider.overrideWithValue(
                 mockRepositoryLinked,
               ),
@@ -3808,7 +3811,7 @@ void main() {
               aiConfigByIdProvider(taskSummaryPromptId).overrideWith(
                 (ref) => Future.value(taskSummaryPromptConfig),
               ),
-            ],
+            ]),
           );
 
           final taskEntityStatuses = <Map<String, dynamic>>[];

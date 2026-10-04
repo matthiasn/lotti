@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -30,7 +31,7 @@ void main() {
     FakeTtsModelRepository? repo,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         ttsEngineProvider.overrideWithValue(engine ?? FakeTtsEngine()),
         ttsAudioPlayerProvider.overrideWithValue(
           player ?? FakeTtsAudioPlayer(),
@@ -38,7 +39,7 @@ void main() {
         ttsModelRepositoryProvider.overrideWithValue(
           repo ?? FakeTtsModelRepository(),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final states = <TtsPlaybackState>[];

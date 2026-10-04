@@ -42,6 +42,7 @@ import 'package:record/record.dart' show Amplitude;
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -126,9 +127,9 @@ void main() {
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
-        ],
+        ]),
       );
       service = container.read(entryCreationServiceProvider);
     });
@@ -428,11 +429,11 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -486,11 +487,11 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -560,10 +561,10 @@ void main() {
       late EntryCreationService service;
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockJournalDb),
             ...overrides,
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),

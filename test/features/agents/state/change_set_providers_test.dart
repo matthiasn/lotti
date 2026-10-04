@@ -26,6 +26,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
@@ -59,7 +60,7 @@ void main() {
     ProviderListenable<Object?>? listenTo,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectAgentProvider(projectId).overrideWith((ref) async => agent),
         projectRecommendationServiceProvider.overrideWithValue(recommendations),
         agentRepositoryProvider.overrideWithValue(mockRepository),
@@ -67,7 +68,7 @@ void main() {
           agentUpdateStreamProvider(agent.agentId).overrideWith(
             (ref) => updateController.stream,
           ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     if (listenTo != null) {
@@ -87,14 +88,14 @@ void main() {
     ProviderListenable<Object?>? listenTo,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         eventAgentProvider(eventId).overrideWith((ref) async => agent),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         if (agent != null && updateController != null)
           agentUpdateStreamProvider(agent.agentId).overrideWith(
             (ref) => updateController.stream,
           ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     if (listenTo != null) {
@@ -281,7 +282,7 @@ void main() {
       MockJournalDb? journalDb,
     }) {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(journalDb ?? MockJournalDb()),
           journalRepositoryProvider.overrideWithValue(
             journal ?? MockJournalRepository(),
@@ -291,7 +292,7 @@ void main() {
             MockChangeSetConfirmationService(),
           ),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -390,14 +391,14 @@ void main() {
         );
         addTearDown(tearDownTestGetIt);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(sync),
             journalDbProvider.overrideWithValue(MockJournalDb()),
             projectRepositoryProvider.overrideWithValue(projects),
             taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
             maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         final result = await container
@@ -414,11 +415,11 @@ void main() {
       final mockSyncService = MockAgentSyncService();
       final mockLogger = MockDomainLogger();
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           domainLoggerProvider.overrideWithValue(mockLogger),
           maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -449,7 +450,7 @@ void main() {
             (_) async => stillThere ? makeTestTask(id: 'task-1') : null,
           );
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               agentSyncServiceProvider.overrideWithValue(
                 MockAgentSyncService(),
               ),
@@ -457,7 +458,7 @@ void main() {
               maybeUpdateNotificationsProvider.overrideWith((ref) => null),
               journalRepositoryProvider.overrideWithValue(journal),
               journalDbProvider.overrideWithValue(journalDb),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -732,13 +733,13 @@ void main() {
 
     test('creates an event-scoped service with resolved dependencies', () {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
           journalDbProvider.overrideWithValue(MockJournalDb()),
           journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
           labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -773,7 +774,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
             journalDbProvider.overrideWithValue(MockJournalDb()),
             journalRepositoryProvider.overrideWithValue(
@@ -781,7 +782,7 @@ void main() {
             ),
             labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -826,12 +827,12 @@ void main() {
       final updates = StreamController<Set<String>>.broadcast();
       addTearDown(updates.close);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentUpdateStreamProvider(agentId).overrideWith(
             (ref) => updates.stream,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final sub = container.listen(

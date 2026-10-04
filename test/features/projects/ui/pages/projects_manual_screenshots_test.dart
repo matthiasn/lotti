@@ -60,6 +60,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -144,7 +145,7 @@ Widget _app({
   return RepaintBoundary(
     key: screenshotBoundaryKey,
     child: ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: MediaQuery(
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
@@ -556,7 +557,7 @@ void main() {
     }
   });
 
-  List<Override> overrides() => [
+  List<Override> overrides() => withServiceOverrides([
     projectsOverviewProvider.overrideWith(
       (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
     ),
@@ -594,7 +595,7 @@ void main() {
     taskAgentResolvedSetupProvider.overrideWith(
       (ref, agentId) async => _manualProjectAgentSetup,
     ),
-  ];
+  ]);
 
   Future<void> pumpSurface(
     WidgetTester tester, {
@@ -626,7 +627,7 @@ void main() {
             home: device.isPhone ? mobile : desktop,
             brightness: brightness,
             device: device,
-            overrides: overrides(),
+            overrides: withServiceOverrides(overrides()),
             platform: platform,
           ),
         );

@@ -16,6 +16,7 @@ import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/material_ui_finders.dart';
@@ -112,17 +113,18 @@ void main() {
   group('TaskDetailShowListButton', () {
     /// A task whose cover art puts an image behind the pane's top-left
     /// corner, wired through the entry controller the button reads.
-    List<Override> withCoverArt({required bool coverArt}) => [
-      entryControllerProvider(testTask.meta.id).overrideWith(
-        () => _FixedEntryController(
-          coverArt
-              ? testTask.copyWith(
-                  data: testTask.data.copyWith(coverArtId: 'cover-1'),
-                )
-              : testTask,
-        ),
-      ),
-    ];
+    List<Override> withCoverArt({required bool coverArt}) =>
+        withServiceOverrides([
+          entryControllerProvider(testTask.meta.id).overrideWith(
+            () => _FixedEntryController(
+              coverArt
+                  ? testTask.copyWith(
+                      data: testTask.data.copyWith(coverArtId: 'cover-1'),
+                    )
+                  : testTask,
+            ),
+          ),
+        ]);
 
     testWidgets('exposes its action and label', (tester) async {
       var presses = 0;
@@ -156,7 +158,7 @@ void main() {
               onPressed: () {},
               taskId: testTask.meta.id,
             ),
-            overrides: withCoverArt(coverArt: false),
+            overrides: withServiceOverrides(withCoverArt(coverArt: false)),
           ),
         );
         await tester.pump();
@@ -184,7 +186,7 @@ void main() {
               onPressed: () {},
               taskId: testTask.meta.id,
             ),
-            overrides: withCoverArt(coverArt: true),
+            overrides: withServiceOverrides(withCoverArt(coverArt: true)),
           ),
         );
         await tester.pump();

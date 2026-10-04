@@ -36,6 +36,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../categories/test_utils.dart';
 
@@ -77,7 +78,7 @@ void main() {
 
   ProviderContainer container({List<Override> overrides = const []}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
         agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
         agentServiceProvider.overrideWithValue(MockAgentService()),
@@ -87,7 +88,7 @@ void main() {
         ),
         domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ...overrides,
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;
@@ -353,7 +354,7 @@ void main() {
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
 
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(agentRepository),
           agentSyncServiceProvider.overrideWithValue(syncService),
           relationshipRepositoryProvider.overrideWithValue(
@@ -364,7 +365,7 @@ void main() {
           // a logger; without this the real graph reaches the unoverridable
           // loggingServiceProvider.
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-        ],
+        ]),
       );
       addTearDown(c.dispose);
 
@@ -441,7 +442,9 @@ void main() {
           () => journalDb.getCategoryById('cat-gone'),
         ).thenAnswer((_) async => null);
         final c = ProviderContainer(
-          overrides: [journalDbProvider.overrideWithValue(journalDb)],
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(journalDb),
+          ]),
         );
         addTearDown(c.dispose);
         final lookup = c.read(relationshipCategoryProfileLookupProvider);
@@ -594,7 +597,7 @@ void main() {
       List<Override> overrides = const [],
     }) {
       final c = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           templateForAgentProvider.overrideWith((ref, id) async => null),
           aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
           agentRepositoryProvider.overrideWithValue(agentRepository),
@@ -608,7 +611,7 @@ void main() {
           ),
           journalDbProvider.overrideWithValue(journalDb),
           ...overrides,
-        ],
+        ]),
       );
       addTearDown(c.dispose);
       return c;
@@ -806,7 +809,7 @@ void main() {
           (_) => Stream.value([model('model-glm', 'melious-provider')]),
         );
         final c = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentServiceProvider.overrideWithValue(MockAgentService()),
             agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
             relationshipAgentServiceProvider.overrideWithValue(
@@ -820,7 +823,7 @@ void main() {
             ),
             agentRepositoryProvider.overrideWithValue(agentRepository),
             journalDbProvider.overrideWithValue(journalDb),
-          ],
+          ]),
         );
         addTearDown(c.dispose);
         c.listen(relationshipRuntimeMaintenanceProvider, (_, _) {});

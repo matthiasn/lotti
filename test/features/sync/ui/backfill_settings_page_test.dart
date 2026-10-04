@@ -32,6 +32,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
 
@@ -118,7 +119,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: const SingleChildScrollView(child: BackfillSettingsBody()),
       ),
     );

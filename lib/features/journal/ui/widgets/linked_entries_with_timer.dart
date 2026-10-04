@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/time_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Wrapper widget that listens to the active timer and rebuilds only
@@ -23,7 +22,7 @@ class LinkedEntriesWithTimer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timeService = getIt<TimeService>();
+    final timeService = ref.read(timeServiceProvider);
 
     // Only react to changes of the active timer entry ID, not every tick.
     return StreamBuilder<String?>(

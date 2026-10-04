@@ -25,6 +25,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -74,11 +75,11 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  List<Override> overrides() => [
+  List<Override> overrides() => withServiceOverrides([
     projectRepositoryProvider.overrideWithValue(mockProjectRepo),
     agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
     projectAgentServiceProvider.overrideWithValue(mockAgentService),
-  ];
+  ]);
 
   Metadata makeMetadata({String? categoryId}) {
     final date = DateTime(2024, 3, 15);
@@ -176,7 +177,7 @@ void main() {
             ),
           ),
         ),
-        overrides: overrides(),
+        overrides: withServiceOverrides(overrides()),
       ),
     );
     await tester.pump();
@@ -754,7 +755,7 @@ void main() {
               ),
             ),
           ),
-          overrides: overrides(),
+          overrides: withServiceOverrides(overrides()),
         ),
       );
       await tester.pump();

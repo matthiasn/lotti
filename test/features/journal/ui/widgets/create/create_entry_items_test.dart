@@ -42,6 +42,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -301,14 +302,14 @@ void main() {
           // Wrap in a route so Navigator.pop() works.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 entryControllerProvider(parentId).overrideWith(
                   () => _TestEntryController(task),
                 ),
                 checklistRepositoryProvider.overrideWithValue(
                   mockChecklistRepository,
                 ),
-              ],
+              ]),
               child: makeTestableWidget2(
                 Builder(
                   builder: (ctx) => Scaffold(
@@ -394,7 +395,7 @@ void main() {
         // We embed it inline to avoid issues with modal context inheritance.
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               imagePasteControllerProvider((
                 linkedFromId: linkedId,
                 categoryId: categoryId,
@@ -403,7 +404,7 @@ void main() {
                   onPaste: () => pasteCalled = true,
                 ),
               ),
-            ],
+            ]),
             child: makeTestableWidget2(
               Builder(
                 builder: (ctx) => Scaffold(
@@ -560,7 +561,7 @@ void main() {
     test(
       'publishTaskFocus is called when timer entry appears in linked entries and isTask is true',
       () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const parentId = 'task-parent-scroll-id';
         const timerEntryId = 'timer-scroll-id';
 
@@ -594,7 +595,7 @@ void main() {
     test(
       'publishTaskFocus reflects correct taskId for multiple tasks',
       () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const taskId1 = 'task-id-one';
         const taskId2 = 'task-id-two';
         const timerId1 = 'timer-one';
@@ -629,7 +630,7 @@ void main() {
     test(
       '_waitForTimerAndScroll publishes task focus when entry found in linked entries',
       () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const parentId = 'task-linked-parent-id';
         const timerEntryId = 'timer-linked-id';
 
@@ -703,7 +704,7 @@ void main() {
     test(
       'no focus is published when linked entries list is empty',
       () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const parentId = 'empty-list-parent-id';
 
         // No call to publishTaskFocus is made — entries list is empty.
@@ -788,11 +789,11 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               automaticImageAnalysisTriggerProvider.overrideWithValue(
                 mockTrigger,
               ),
-            ],
+            ]),
             child: makeTestableWidget2(
               Builder(
                 builder: (ctx) => Scaffold(
@@ -975,7 +976,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(mockService),
               entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
@@ -983,7 +984,7 @@ void main() {
               linkedEntriesControllerProvider(parentId).overrideWith(
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
-            ],
+            ]),
             child: makeTestableWidget2(
               Builder(
                 builder: (ctx) {
@@ -1104,7 +1105,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(mockService),
               entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentTask),
@@ -1112,7 +1113,7 @@ void main() {
               linkedEntriesControllerProvider(parentId).overrideWith(
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
-            ],
+            ]),
             child: makeTestableWidget2(
               Builder(
                 builder: (ctx) {
@@ -1736,7 +1737,9 @@ void main() {
       test(
         'publishJournalFocus is called with correct parameters when timer and linked entry exist',
         () {
-          final container = ProviderContainer();
+          final container = ProviderContainer(
+            overrides: getItServiceOverrides(),
+          );
           const linkedId = 'parent-entry-id';
           const timerEntryId = 'new-timer-id';
 
@@ -1794,7 +1797,7 @@ void main() {
       );
 
       test('publishJournalFocus is not called when timerEntry is null', () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const linkedId = 'parent-entry-id';
 
         final linkedEntry = JournalEntry(
@@ -1831,7 +1834,7 @@ void main() {
       });
 
       test('publishJournalFocus uses kDefaultScrollAlignment', () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const linkedId = 'parent-entry-id';
         const timerEntryId = 'new-timer-id';
 
@@ -1853,7 +1856,7 @@ void main() {
       });
 
       test('multiple timer creations update focus intent correctly', () {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         const linkedId = 'parent-entry-id';
         const timer1Id = 'timer-1';
         const timer2Id = 'timer-2';
@@ -2189,14 +2192,14 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
               entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
               ),
-            ],
+            ]),
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
@@ -2265,14 +2268,14 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
               entryControllerProvider(parentId).overrideWith(
                 () => _TestEntryController(parentEntry),
               ),
-            ],
+            ]),
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
@@ -2329,11 +2332,11 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
-            ],
+            ]),
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
@@ -2402,7 +2405,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
@@ -2411,7 +2414,7 @@ void main() {
               entryControllerProvider(linkedId).overrideWith(
                 () => _TestEntryController(_makeJournalEntry(linkedId)),
               ),
-            ],
+            ]),
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
@@ -2486,14 +2489,14 @@ void main() {
           ).thenAnswer((_) async => note);
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
               entryControllerProvider(
                 taskId,
               ).overrideWith(() => _TestEntryController(hostTask)),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -2539,6 +2542,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: makeTestableWidget2(
               const Scaffold(
                 body: ImportImageItem(
@@ -2569,6 +2573,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: getItServiceOverrides(),
             child: makeTestableWidget2(
               const Scaffold(
                 body: CreateScreenshotItem(
@@ -2722,7 +2727,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             row.widget,
-            overrides: row.overrides,
+            overrides: withServiceOverrides(row.overrides),
           ),
         );
         await tester.pump();

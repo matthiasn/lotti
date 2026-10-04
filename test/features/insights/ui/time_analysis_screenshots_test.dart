@@ -35,6 +35,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../categories/test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
@@ -259,7 +260,7 @@ Future<void> _pumpDashboard(
       RepaintBoundary(
         key: _boundaryKey,
         child: ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             insightsRepositoryProvider.overrideWithValue(repository),
             maybeUpdateNotificationsProvider.overrideWith((ref) => null),
             categoriesStreamProvider.overrideWith(
@@ -268,7 +269,7 @@ Future<void> _pumpDashboard(
             insightsPreferencesControllerProvider.overrideWith(
               () => _FixedPreferencesController(focusCategoryIds),
             ),
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             debugShowCheckedModeBanner: false,

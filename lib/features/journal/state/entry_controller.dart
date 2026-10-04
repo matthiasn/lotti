@@ -34,10 +34,9 @@ import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -96,10 +95,10 @@ class EntryController extends AsyncNotifier<EntryState?> {
   DateTime? _draftBase;
   bool _isFocused = false;
   bool _shouldShowEditorToolBar = false;
-  PersistenceLogic get _persistenceLogic => getIt<PersistenceLogic>();
+  PersistenceLogic get _persistenceLogic => ref.read(persistenceLogicProvider);
   StreamSubscription<Set<String>>? _updateSubscription;
 
-  final JournalDb _journalDb = getIt<JournalDb>();
+  JournalDb get _journalDb => ref.read(journalDbProvider);
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
@@ -405,7 +404,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
         ),
       );
     } else {
-      final timeService = getIt<TimeService>();
+      final timeService = ref.read(timeServiceProvider);
       final running = timeService.getCurrent();
       // Captured before the stop clears it: the task this timer ran for.
       final timedTask = stopRecording && running?.id == id
@@ -427,7 +426,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
       if (stopRecording) {
         await Future<void>.delayed(stopRecordingDelay).then((_) {
-          getIt<TimeService>().stop();
+          timeService.stop();
         });
       }
     }
@@ -666,13 +665,15 @@ class EntryController extends AsyncNotifier<EntryState?> {
   Future<bool> delete({
     required bool beamBack,
   }) async {
+    // Read before the delete: removing the entry can dispose this controller.
+    final navService = ref.read(navServiceProvider);
     final res = await ref
         .read(journalRepositoryProvider)
         .deleteJournalEntity(id);
     // Not deleted: the entry is still there, and so is its page.
     if (!res) return false;
     if (beamBack) {
-      getIt<NavService>().beamBack();
+      navService.beamBack();
     }
     state = const AsyncData(null);
     return true;

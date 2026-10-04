@@ -10,8 +10,7 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Where the import flow currently stands.
@@ -319,7 +318,7 @@ String contactRefKeyForHost(String host) =>
 /// linking still copies channels, refreshing reports the contact missing,
 /// and nothing is written under a key another device could collide with.
 final contactRefKeyProvider = FutureProvider<String?>((ref) async {
-  final vectorClockService = getIt<VectorClockService>();
+  final vectorClockService = ref.read(vectorClockServiceProvider);
   await vectorClockService.initialized;
   final host = await vectorClockService.getHost();
   return host == null ? null : contactRefKeyForHost(host);

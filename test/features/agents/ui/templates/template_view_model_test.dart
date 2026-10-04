@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/templates/template_view_model.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../test_utils.dart';
 
 enum _GeneratedTemplateEntitySlot { alpha, beta, gamma, delta, nonTemplate }
@@ -233,7 +234,7 @@ Future<List<TemplateVm>> _readTemplateVms({
   required Set<String> pendingTemplateIds,
 }) async {
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       agentTemplatesProvider.overrideWith((ref) async => entities),
       activeTemplateVersionProvider.overrideWith(
         (ref, templateId) async => versionsByTemplateId[templateId],
@@ -241,7 +242,7 @@ Future<List<TemplateVm>> _readTemplateVms({
       templatesPendingReviewProvider.overrideWith(
         (ref) async => pendingTemplateIds,
       ),
-    ],
+    ]),
   );
 
   try {

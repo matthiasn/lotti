@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../tts/test_utils.dart';
 import '../../query/query_audio_test_bench.dart';
@@ -55,7 +56,7 @@ void main() {
                   );
           },
         ),
-        overrides: bench.overrides,
+        overrides: withServiceOverrides(bench.overrides),
       ),
     );
     await tester.pump();

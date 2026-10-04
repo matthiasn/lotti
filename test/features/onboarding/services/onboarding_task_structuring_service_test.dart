@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai/test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -532,11 +533,11 @@ void main() {
       'builds a service from the app providers that structures end-to-end',
       () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             cloudInferenceRepositoryProvider.overrideWithValue(cloudRepo),
             aiConfigRepositoryProvider.overrideWithValue(aiConfigRepo),
             categoryRepositoryProvider.overrideWithValue(categoryRepo),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

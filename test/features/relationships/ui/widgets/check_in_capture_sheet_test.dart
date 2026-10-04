@@ -25,6 +25,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
@@ -185,7 +186,7 @@ void main() {
     );
   }
 
-  List<Override> speechOverrides() => [
+  List<Override> speechOverrides() => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(mockRepository),
     audioRecorderControllerProvider.overrideWith(() => recorder),
     checkInTranscriptionServiceProvider.overrideWithValue(stubTranscription),
@@ -193,7 +194,7 @@ void main() {
       openedSettings.add(1);
       return true;
     }),
-  ];
+  ]);
 
   Widget buildForm({
     bool startSpeaking = false,
@@ -271,7 +272,7 @@ void main() {
       ),
     ),
     mediaQueryData: tallForm,
-    overrides: speechOverrides(),
+    overrides: withServiceOverrides(speechOverrides()),
   );
 
   /// Presses *Dictate* and settles the preflight: the recorder is up.
@@ -1562,7 +1563,7 @@ void main() {
           mediaQueryData: MediaQueryData(
             size: physicalSize / devicePixelRatio,
           ),
-          overrides: speechOverrides(),
+          overrides: withServiceOverrides(speechOverrides()),
         ),
       );
       await tester.tap(find.text('Open'));

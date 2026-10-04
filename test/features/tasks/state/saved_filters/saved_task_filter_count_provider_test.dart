@@ -16,6 +16,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -75,12 +76,12 @@ ProviderContainer _buildContainer({
   required _FakeRepo repo,
 }) {
   return ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       savedTaskFiltersControllerProvider.overrideWith(
         () => _StubController(seed),
       ),
       savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-    ],
+    ]),
   );
 }
 
@@ -306,7 +307,7 @@ void main() {
             ..unregister<AgentDatabase>();
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final repo = container.read(savedTaskFilterCountRepositoryProvider);
@@ -321,12 +322,12 @@ void main() {
       required SavedTaskFilterCountRepository repo,
     }) {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           journalPageControllerProvider(
             true,
           ).overrideWith(() => FakeJournalPageController(pageState)),
           savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-        ],
+        ]),
       );
     }
 
@@ -450,9 +451,9 @@ void main() {
     test('counts every task via the repository (all statuses)', () async {
       final repo = _FakeRepo(const [124]);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final sub = container.listen(allTasksTotalCountProvider, (_, _) {});
@@ -473,9 +474,9 @@ void main() {
 
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-          ],
+          ]),
         )..listen(allTasksTotalCountProvider, (_, _) {});
         addTearDown(container.dispose);
 
@@ -502,9 +503,9 @@ void main() {
 
         final repo = _FakeRepo(const [10, 20]);
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
-          ],
+          ]),
         )..listen(allTasksTotalCountProvider, (_, _) {});
         addTearDown(container.dispose);
 

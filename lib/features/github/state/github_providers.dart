@@ -31,12 +31,10 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:openai_dart/openai_dart.dart' show ReasoningEffort;
 
@@ -60,7 +58,7 @@ final gitHubTokenStorageProvider = Provider<GitHubTokenStorage>(
 final pullRequestRepositoryProvider = Provider<PullRequestRepository>(
   (ref) => PullRequestRepository(
     journalDb: ref.watch(journalDbProvider),
-    persistenceLogic: getIt<PersistenceLogic>(),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
   ),
   name: 'pullRequestRepositoryProvider',
@@ -467,7 +465,7 @@ final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
   (ref) => GitHubAccountSync(
     storage: ref.watch(gitHubTokenStorageProvider),
     enqueueOrThrow: (message) =>
-        getIt<OutboxService>().enqueueMessageOrThrow(message),
+        ref.read(outboxServiceProvider).enqueueMessageOrThrow(message),
     rescan:
         ref.watch(syncFeatureAvailableProvider) &&
             getIt.isRegistered<MatrixService>()

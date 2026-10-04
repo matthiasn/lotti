@@ -12,6 +12,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -43,7 +44,9 @@ void main() {
       ),
     ).thenReturn(null);
     container = ProviderContainer(
-      overrides: [domainLoggerProvider.overrideWithValue(logger)],
+      overrides: withServiceOverrides([
+        domainLoggerProvider.overrideWithValue(logger),
+      ]),
     );
   });
 
@@ -98,7 +101,7 @@ void main() {
     expect(read(), ProjectTaskListOptions.defaults);
 
     container.dispose();
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: getItServiceOverrides());
     when(() => mocks.settingsDb.itemByKey(key)).thenAnswer((_) async => '[1]');
     read();
     await awaitHydration();
@@ -199,7 +202,9 @@ void main() {
     await tearDownTestGetIt();
     expect(getIt.isRegistered<SettingsDb>(), isFalse);
     final bare = ProviderContainer(
-      overrides: [domainLoggerProvider.overrideWithValue(logger)],
+      overrides: withServiceOverrides([
+        domainLoggerProvider.overrideWithValue(logger),
+      ]),
     );
     addTearDown(bare.dispose);
     const chosen = ProjectTaskListOptions(sortBy: ProjectTaskSortBy.estimate);

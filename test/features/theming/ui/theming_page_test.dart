@@ -14,6 +14,7 @@ import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/settings_header_harness.dart';
 import '../../../widget_test_utils.dart';
@@ -46,6 +47,7 @@ void main() {
   /// very tree the page is rendered in.
   Widget createTestWidget({Locale? locale}) {
     return ProviderScope(
+      overrides: getItServiceOverrides(),
       child: Consumer(
         builder: (context, ref, _) => MaterialApp(
           builder: LegacyMaterialBridge.builder,

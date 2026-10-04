@@ -179,7 +179,7 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
 
   final providerReady = await providerReadyFuture;
 
-  final settingsDb = getIt<SettingsDb>();
+  final settingsDb = ref.read(settingsDbProvider);
   final stored = await settingsDb.itemsByKeys(const [
     dailyOsOnboardingCompletedKey,
     dailyOsOnboardingShownCountKey,
@@ -236,7 +236,7 @@ class DailyOsOnboardingCadence extends AsyncNotifier<void> {
   /// budgeted), never worth blocking the walkthrough for.
   Future<void> recordShown() async {
     try {
-      final settingsDb = getIt<SettingsDb>();
+      final settingsDb = ref.read(settingsDbProvider);
       final stored = await settingsDb.itemsByKeys(const [
         dailyOsOnboardingShownCountKey,
         dailyOsOnboardingFirstShownAtKey,

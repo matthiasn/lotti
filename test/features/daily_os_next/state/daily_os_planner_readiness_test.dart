@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
@@ -246,14 +247,14 @@ void main() {
       ).thenAnswer((_) async => profile);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentInitializationProvider.overrideWith(
             (ref) => initializeAgents?.call() ?? Future<void>.value(),
           ),
           agentRepositoryProvider.overrideWithValue(agentRepository),
           agentTemplateServiceProvider.overrideWithValue(templateService),
           profileResolverProvider.overrideWithValue(profileResolver),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       container.listen(dailyOsOnboardingProviderReadyProvider, (_, _) {});

@@ -19,6 +19,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
@@ -129,7 +130,7 @@ void main() {
             ),
           ),
     );
-    return [
+    return withServiceOverrides([
       agentIdentityProvider.overrideWith((ref, id) async => identity),
       taskAgentResolvedSetupProvider.overrideWith(
         (ref, id) async => resolvedSetup ?? resolved,
@@ -139,7 +140,7 @@ void main() {
       ),
       taskAgentServiceProvider.overrideWithValue(service),
       journalDbProvider.overrideWithValue(journalDb),
-    ];
+    ]);
   }
 
   Future<void> openSheet(
@@ -167,11 +168,13 @@ void main() {
             ),
           ),
         ),
-        overrides: overrides(
-          automaticUpdates: automaticUpdates,
-          config: config,
-          resolvedSetup: resolvedSetup,
-          setupOptions: setupOptions,
+        overrides: withServiceOverrides(
+          overrides(
+            automaticUpdates: automaticUpdates,
+            config: config,
+            resolvedSetup: resolvedSetup,
+            setupOptions: setupOptions,
+          ),
         ),
       ),
     );

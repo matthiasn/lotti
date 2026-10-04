@@ -47,6 +47,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
@@ -219,9 +220,9 @@ void main() {
       () => repository.getProjectById(project.id),
     ).thenAnswer((_) async => project);
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         projectRepositoryProvider.overrideWithValue(repository),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     final resolved = await container.read(projectByIdResolverProvider)(
@@ -263,7 +264,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: overrides,
+        overrides: withServiceOverrides(overrides),
         child: makeTestableWidget2(
           Theme(
             data: DesignSystemTheme.dark(),
@@ -376,7 +377,7 @@ void main() {
         when(
           () => mockRepository.getProjectById(_projectId),
         ).thenAnswer((_) async => null);
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final created = await container.read(projectTaskCreatorProvider)(
@@ -393,9 +394,9 @@ void main() {
       () async {
         final mockService = MockTaskAgentService();
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             taskAgentServiceProvider.overrideWithValue(mockService),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -454,7 +455,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -633,7 +634,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -1218,7 +1219,7 @@ void main() {
           // `projectAgentProvider(_projectId)` to null.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 projectDetailControllerProvider(_projectId).overrideWith(
                   () => _TestProjectDetailController(
                     ProjectDetailState(
@@ -1251,7 +1252,7 @@ void main() {
                 projectPendingChangeSetsProvider(
                   _projectId,
                 ).overrideWith((ref) async => []),
-              ],
+              ]),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -1347,7 +1348,7 @@ void main() {
           // returns true.
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),
@@ -2131,7 +2132,7 @@ void main() {
 
               await tester.pumpWidget(
                 ProviderScope(
-                  overrides: overrides,
+                  overrides: withServiceOverrides(overrides),
                   child: makeTestableWidget2(
                     Theme(
                       data: DesignSystemTheme.dark(),
@@ -2301,7 +2302,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: overrides,
+              overrides: withServiceOverrides(overrides),
               child: makeTestableWidget2(
                 Theme(
                   data: DesignSystemTheme.dark(),

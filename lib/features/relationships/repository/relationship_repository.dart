@@ -17,6 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -851,12 +852,12 @@ class RelationshipRepository implements RelationshipCascade {
 
 final relationshipRepositoryProvider = Provider<RelationshipRepository>(
   (ref) => RelationshipRepository(
-    journalDb: getIt<JournalDb>(),
+    journalDb: ref.read(journalDbProvider),
     // Constructed bare like every other JournalRepository call site — the
     // class resolves its own dependencies via getIt and is not itself
     // registered there.
     journalRepository: JournalRepository(),
-    persistenceLogic: getIt<PersistenceLogic>(),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
   ),
   name: 'relationshipRepositoryProvider',

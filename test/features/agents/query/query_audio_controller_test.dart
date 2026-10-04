@@ -26,6 +26,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -46,7 +47,9 @@ void main() {
     await setUpTestGetIt();
     getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
     bench = QueryAudioTestBench();
-    container = ProviderContainer(overrides: bench.overrides);
+    container = ProviderContainer(
+      overrides: withServiceOverrides(bench.overrides),
+    );
     subscription = container.listen(provider, (_, _) {});
     controller = container.read(provider.notifier);
     await container.read(configFlagProvider('private').future);
@@ -252,7 +255,9 @@ void main() {
       final logger = MockDomainLogger();
       await getIt.unregister<DomainLogger>();
       getIt.registerSingleton<DomainLogger>(logger);
-      final local = ProviderContainer(overrides: bench.overrides);
+      final local = ProviderContainer(
+        overrides: withServiceOverrides(bench.overrides),
+      );
       addTearDown(local.dispose);
       final listener = local.listen(provider, (_, _) {});
       await local.read(configFlagProvider('private').future);
@@ -306,7 +311,9 @@ void main() {
       live.audio = live.audio.copyWith(
         data: live.audio.data.copyWith(transcriptTimings: {}),
       );
-      final wired = ProviderContainer(overrides: live.overrides);
+      final wired = ProviderContainer(
+        overrides: withServiceOverrides(live.overrides),
+      );
       addTearDown(wired.dispose);
       final listener = wired.listen(provider, (_, _) {});
       addTearDown(listener.close);
@@ -751,12 +758,12 @@ void main() {
     'neither audio action can begin while voice input is recording',
     () async {
       final recording = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...bench.overrides,
           chatRecorderControllerProvider.overrideWith(
             RecordingTestController.new,
           ),
-        ],
+        ]),
       );
       addTearDown(recording.dispose);
       final listener = recording.listen(provider, (_, _) {});
@@ -783,10 +790,10 @@ void main() {
     bench.engine = FakeTtsEngine(output: file);
     final recorder = TranscriptEmittingController();
     final recording = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         ...bench.overrides,
         chatRecorderControllerProvider.overrideWith(() => recorder),
-      ],
+      ]),
     );
     addTearDown(recording.dispose);
     final listener = recording.listen(provider, (_, _) {});
@@ -841,10 +848,10 @@ void main() {
   test('starting voice input stops an excerpt already playing', () async {
     final recorder = TranscriptEmittingController();
     final recording = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         ...bench.overrides,
         chatRecorderControllerProvider.overrideWith(() => recorder),
-      ],
+      ]),
     );
     addTearDown(recording.dispose);
     final listener = recording.listen(provider, (_, _) {});
@@ -874,12 +881,12 @@ void main() {
         ),
       );
       final category = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           ...bench.overrides,
           queryChatDataProvider(
             home,
           ).overrideWith((ref) => Stream.value(bench.snapshot())),
-        ],
+        ]),
       );
       addTearDown(category.dispose);
       final audio = queryAudioControllerProvider(audioKey);

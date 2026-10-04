@@ -45,6 +45,7 @@ import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -344,7 +345,7 @@ void main() {
     }
 
     return ProviderScope(
-      overrides: overrides,
+      overrides: withServiceOverrides(overrides),
       child: Builder(
         builder: (context) {
           // If we have a specific state to set, update the controller
@@ -503,13 +504,13 @@ void main() {
     // Shared helpers (from coverage tests)
     // ---------------------------------------------------------------------------
 
-    List<Override> baseOverrides() => [
+    List<Override> baseOverrides() => withServiceOverrides([
       audioRecorderRepositoryProvider.overrideWithValue(
         mockAudioRecorderRepository,
       ),
       categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
       playerFactoryProvider.overrideWithValue(() => mockPlayer),
-    ];
+    ]);
 
     Future<void> pumpModalContent(
       WidgetTester tester, {
@@ -521,10 +522,10 @@ void main() {
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             ...baseOverrides(),
             ...extraOverrides,
-          ],
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: theme ?? resolveTestTheme(),
@@ -556,7 +557,10 @@ void main() {
       final results = <String?>[];
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [...baseOverrides(), ...extraOverrides],
+          overrides: withServiceOverrides([
+            ...baseOverrides(),
+            ...extraOverrides,
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -597,7 +601,10 @@ void main() {
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [...baseOverrides(), ...extraOverrides],
+          overrides: withServiceOverrides([
+            ...baseOverrides(),
+            ...extraOverrides,
+          ]),
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -878,7 +885,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
+              overrides: withServiceOverrides([
                 ...baseOverrides(),
                 audioRecorderControllerProvider.overrideWith(
                   () => _CallbackTrackingController(
@@ -886,7 +893,7 @@ void main() {
                     createdId: 'audio-entry-1',
                   ),
                 ),
-              ],
+              ]),
               child: MaterialApp(
                 builder: LegacyMaterialBridge.builder,
                 theme: resolveTestTheme(),
@@ -1892,7 +1899,7 @@ void main() {
       ).thenAnswer((_) => Stream.value(categoryToUse));
 
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           audioRecorderRepositoryProvider.overrideWithValue(
             mockAudioRecorderRepository,
           ),
@@ -1911,7 +1918,7 @@ void main() {
             )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
-        ],
+        ]),
         child: Builder(
           builder: (context) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2007,7 +2014,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
@@ -2025,7 +2032,7 @@ void main() {
             )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
-          ],
+          ]),
           child: Builder(
             builder: (context) {
               if (state.enableSpeechRecognition != null) {
@@ -2094,7 +2101,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
@@ -2111,7 +2118,7 @@ void main() {
             )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
-          ],
+          ]),
           child: Builder(
             builder: (context) {
               if (state.enableSpeechRecognition != null) {
@@ -2174,7 +2181,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
@@ -2192,7 +2199,7 @@ void main() {
             )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
-          ],
+          ]),
           child: Builder(
             builder: (context) {
               if (state.enableSpeechRecognition != null) {
@@ -2257,7 +2264,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
@@ -2275,7 +2282,7 @@ void main() {
               )).overrideWithValue(
                 const AutomaticPromptVisibility(speech: true),
               ),
-            ],
+            ]),
             child: Builder(
               builder: (context) {
                 if (state.enableSpeechRecognition != null) {
@@ -2341,7 +2348,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
@@ -2359,7 +2366,7 @@ void main() {
             )).overrideWithValue(
               const AutomaticPromptVisibility(speech: true),
             ),
-          ],
+          ]),
           child: Builder(
             builder: (context) {
               if (state.enableSpeechRecognition != null) {
@@ -2422,7 +2429,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             audioRecorderRepositoryProvider.overrideWithValue(
               mockAudioRecorderRepository,
             ),
@@ -2441,7 +2448,7 @@ void main() {
                 speech: true,
               ),
             ),
-          ],
+          ]),
           child: Builder(
             builder: (context) {
               if (state.enableSpeechRecognition != null) {
@@ -2528,7 +2535,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
+            overrides: withServiceOverrides([
               audioRecorderRepositoryProvider.overrideWithValue(
                 mockAudioRecorderRepository,
               ),
@@ -2545,7 +2552,7 @@ void main() {
               )).overrideWithValue(
                 const AutomaticPromptVisibility(speech: true),
               ),
-            ],
+            ]),
             child: Builder(
               builder: (context) {
                 if (state.enableSpeechRecognition != null) {

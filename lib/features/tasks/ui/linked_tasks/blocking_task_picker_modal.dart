@@ -10,10 +10,9 @@ import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -55,11 +54,13 @@ class BlockingTaskPickerModal extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final repository = ref.read(journalRepositoryProvider);
 
-    final created = await getIt<PersistenceLogic>().createLink(
-      fromId: blocker.meta.id,
-      toId: blockedTaskId,
-      linkType: EntryLinkType.blocks,
-    );
+    final created = await ref
+        .read(persistenceLogicProvider)
+        .createLink(
+          fromId: blocker.meta.id,
+          toId: blockedTaskId,
+          linkType: EntryLinkType.blocks,
+        );
 
     if (!created) {
       if (context.mounted) {

@@ -5,13 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/logic/signals/signal_reader.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -99,7 +99,7 @@ class HabitSignalStatusController extends AsyncNotifier<HabitSignalStatus?> {
       isChoice: (dataTypeId) =>
           cache.getDataTypeById(dataTypeId)?.isChoice ?? false,
     );
-    final reader = SignalReader(journalDb: getIt<JournalDb>());
+    final reader = SignalReader(journalDb: ref.read(journalDbProvider));
     final window = await reader.read(rule: normalizedRule, reference: now);
     final verdict = const HabitRuleEvaluator().evaluate(
       rule: normalizedRule,

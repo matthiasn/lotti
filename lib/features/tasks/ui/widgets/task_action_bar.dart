@@ -10,8 +10,8 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
@@ -132,7 +132,7 @@ class TaskActionBar extends ConsumerStatefulWidget {
 }
 
 class _TaskActionBarState extends ConsumerState<TaskActionBar> {
-  final TimeService _timeService = getIt<TimeService>();
+  TimeService get _timeService => ref.read(timeServiceProvider);
   StreamSubscription<JournalEntity?>? _subscription;
   JournalEntity? _running;
 

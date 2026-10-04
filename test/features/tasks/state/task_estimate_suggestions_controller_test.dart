@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/state/task_estimate_suggestions_controller.
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -53,7 +54,7 @@ void main() {
   }
 
   ProviderContainer buildContainer() {
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: getItServiceOverrides());
     addTearDown(container.dispose);
     return container;
   }

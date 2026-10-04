@@ -17,6 +17,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -45,7 +46,7 @@ void main() {
 
   ProviderContainer makeContainer({UpdateNotifications? withNotifications}) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         consumptionRepositoryProvider.overrideWithValue(repository),
         maybeUpdateNotificationsProvider.overrideWith(
           (ref) => withNotifications,
@@ -55,7 +56,7 @@ void main() {
         consumptionRefetchThrottleProvider.overrideWithValue(null),
         // Deterministic Monday-start weeks regardless of host region.
         firstDayOfWeekIndexProvider.overrideWith((ref) => DateTime.monday % 7),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -521,7 +522,7 @@ void main() {
       );
       addTearDown(tearDownTestGetIt);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       expect(

@@ -15,6 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -123,14 +124,14 @@ void main() {
         ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -199,14 +200,14 @@ void main() {
         ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -258,14 +259,14 @@ void main() {
         ).thenAnswer((_) async => itemNoCategory);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -305,14 +306,14 @@ void main() {
 
       test('does nothing when title is null', () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -352,12 +353,12 @@ void main() {
 
       test('stamps checkedBy: user and checkedAt on check', () async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             clockProvider.overrideWithValue(() => fixedTime),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -421,12 +422,12 @@ void main() {
         ).thenAnswer((_) async => checkedItem);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
             clockProvider.overrideWithValue(() => fixedTime),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -468,11 +469,11 @@ void main() {
         'archive sets isArchived to true and keeps isChecked unchanged',
         () async {
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -534,11 +535,11 @@ void main() {
         ).thenAnswer((_) async => archivedItem);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -589,11 +590,11 @@ void main() {
         ).thenAnswer((_) async => checkedItem);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -654,11 +655,11 @@ void main() {
           });
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -703,11 +704,11 @@ void main() {
           });
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               checklistRepositoryProvider.overrideWithValue(
                 mockChecklistRepository,
               ),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -753,7 +754,7 @@ void main() {
 
       Future<(ProviderContainer, ChecklistItemController)> load() async {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
             ),
@@ -761,7 +762,7 @@ void main() {
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         await container.read(checklistItemControllerProvider(params).future);

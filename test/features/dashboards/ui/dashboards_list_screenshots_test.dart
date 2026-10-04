@@ -25,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -69,6 +70,7 @@ Future<void> _pump(
     RepaintBoundary(
       key: _boundaryKey,
       child: ProviderScope(
+        overrides: getItServiceOverrides(),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,

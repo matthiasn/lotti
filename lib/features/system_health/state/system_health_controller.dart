@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -17,7 +16,7 @@ import 'package:lotti/features/system_health/service/log_redactor.dart';
 import 'package:lotti/features/system_health/service/system_health_analyzer.dart';
 import 'package:lotti/features/system_health/service/system_health_findings_inference.dart';
 import 'package:lotti/features/system_health/service/system_health_report_store.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -252,11 +251,12 @@ class SystemHealthController extends Notifier<SystemHealthState> {
     // Hold the auto-disposed analyzer (and the inference repository behind
     // it) for the whole run; a bare read could let it close mid-stream.
     final subscription = ref.listen(systemHealthAnalyzerProvider, (_, _) {});
+    final journalDb = ref.read(journalDbProvider);
     try {
       final request = SystemHealthRequest(
         range: state.rangeAt(clock.now()),
         domains: await _enabledDomains(),
-        includeSlowQueries: await getIt<JournalDb>().getConfigFlag(
+        includeSlowQueries: await journalDb.getConfigFlag(
           logSlowQueriesFlag,
         ),
         model: await _resolveModel(),
@@ -292,7 +292,7 @@ class SystemHealthController extends Notifier<SystemHealthState> {
   }
 
   Future<Set<LogDomain>> _enabledDomains() async {
-    final db = getIt<JournalDb>();
+    final db = ref.read(journalDbProvider);
     final domains = <LogDomain>{};
     for (final domain in LogDomain.values) {
       if (await db.getConfigFlag(domain.flagName)) domains.add(domain);

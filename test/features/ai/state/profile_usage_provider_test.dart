@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 
@@ -40,14 +41,14 @@ void main() {
     when(mockAgents.getAllAgentIdentities).thenAnswer((_) async => agents);
 
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         // Overriding the stream provider rather than the repository keeps the
         // test off getIt, which the real repository provider reaches into.
         categoriesStreamProvider.overrideWith(
           (ref) => Stream.value(categories),
         ),
         agentRepositoryProvider.overrideWithValue(mockAgents),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     // A StreamProvider in this Riverpod version only subscribes once

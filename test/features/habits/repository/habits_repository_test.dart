@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../habit_completion_record_fixtures.dart';
 
@@ -296,7 +297,7 @@ void main() {
     });
 
     test('provides HabitsRepositoryImpl instance', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final repository = container.read(habitsRepositoryProvider);
@@ -305,7 +306,7 @@ void main() {
     });
 
     test('is keepAlive (persists across reads)', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final repository1 = container.read(habitsRepositoryProvider);
@@ -322,9 +323,9 @@ void main() {
       ).thenAnswer((_) => controller.stream);
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           habitsRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

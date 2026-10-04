@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_cont
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -57,12 +58,14 @@ Future<SavedTaskFilter?> promptSaveCurrentTaskFilter(
     return created;
   } catch (error, stackTrace) {
     if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.tasks,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'saveCurrentFilter',
-      );
+      ref
+          .read(domainLoggerProvider)
+          .error(
+            LogDomain.tasks,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'saveCurrentFilter',
+          );
     }
     return null;
   }

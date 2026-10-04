@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_agent_mutation_coordinator.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -912,11 +913,11 @@ final projectRepositoryProvider = Provider<ProjectRepository>(
 );
 ProjectRepository projectRepository(Ref ref) {
   return ProjectRepository(
-    journalDb: getIt<JournalDb>(),
+    journalDb: ref.read(journalDbProvider),
     entitiesCacheService: getIt<EntitiesCacheService>(),
-    persistenceLogic: getIt<PersistenceLogic>(),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     updateNotifications: getIt<UpdateNotifications>(),
-    vectorClockService: getIt<VectorClockService>(),
+    vectorClockService: ref.read(vectorClockServiceProvider),
     projectHasActiveAgent: projectHasActiveAgent,
     mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
   );

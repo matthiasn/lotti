@@ -1,8 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -30,7 +29,7 @@ class SyncFeatureGate extends ConsumerWidget {
       return const _BounceToSettings();
     }
     return StreamBuilder<bool>(
-      stream: getIt<JournalDb>().watchConfigFlag(enableMatrixFlag),
+      stream: ref.read(journalDbProvider).watchConfigFlag(enableMatrixFlag),
       builder: (context, snap) {
         // While loading initial flag value, render nothing (avoid false redirect bounce).
         if (!snap.hasData) {

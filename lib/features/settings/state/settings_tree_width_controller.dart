@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -69,7 +67,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
 
   Future<void> _loadPersistedWidth() async {
     try {
-      final db = getIt<SettingsDb>();
+      final db = ref.read(settingsDbProvider);
       final values = await db.itemsByKeys({settingsTreeNavWidthKey});
       if (_disposed) return;
       // A mutation (drag / keyboard / reset) that lands before the
@@ -155,10 +153,12 @@ class SettingsTreeNavWidth extends Notifier<double> {
 
   Future<void> _persist(double value) async {
     try {
-      await getIt<SettingsDb>().saveSettingsItem(
-        settingsTreeNavWidthKey,
-        value.toStringAsFixed(1),
-      );
+      await ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            settingsTreeNavWidthKey,
+            value.toStringAsFixed(1),
+          );
     } catch (error, stackTrace) {
       if (_disposed) return;
       _logger.error(

@@ -41,6 +41,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import 'screenshot_fonts.dart';
@@ -175,7 +176,7 @@ List<Override> _overrides() {
   AggregationType aggOf(String id) =>
       id == _measureBarId ? AggregationType.dailySum : AggregationType.none;
 
-  return [
+  return withServiceOverrides([
     // Measurement (bar, aggregated).
     measurableDataTypeControllerProvider(_measureBarId).overrideWithBuild(
       (ref, notifier) => _dataType(
@@ -267,7 +268,7 @@ List<Override> _overrides() {
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,
     )).overrideWithBuild((ref, notifier) => _series(74, 2)),
-  ];
+  ]);
 }
 
 Widget _cards() {
@@ -372,7 +373,7 @@ Future<void> _pump(
     RepaintBoundary(
       key: _boundaryKey,
       child: ProviderScope(
-        overrides: _overrides(),
+        overrides: withServiceOverrides(_overrides()),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,

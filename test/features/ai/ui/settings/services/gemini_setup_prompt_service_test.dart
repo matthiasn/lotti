@@ -10,6 +10,7 @@ import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -45,11 +46,11 @@ void main() {
 
   ProviderContainer createContainer() {
     return ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         // Override What's New to return no unseen releases
         whatsNewControllerProvider.overrideWith(_MockWhatsNewController.new),
-      ],
+      ]),
     );
   }
 

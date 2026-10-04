@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -17,12 +18,12 @@ void main() {
 
     ProviderContainer createContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentUpdateStreamProvider.overrideWith(
             (ref, agentId) => const Stream<Set<String>>.empty(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -188,12 +189,12 @@ void main() {
 
     ProviderContainer createContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentUpdateStreamProvider.overrideWith(
             (ref, agentId) => const Stream<Set<String>>.empty(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

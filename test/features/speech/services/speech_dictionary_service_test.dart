@@ -9,6 +9,7 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -147,12 +148,12 @@ void main() {
       'category and journal repositories',
       () {
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             categoryRepositoryProvider.overrideWithValue(
               mockCategoryRepository,
             ),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

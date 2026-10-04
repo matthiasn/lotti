@@ -14,6 +14,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../habit_completion_record_fixtures.dart';
 
@@ -83,10 +84,10 @@ void main() {
 
   ProviderContainer makeContainer() {
     return ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         habitsRepositoryProvider.overrideWithValue(mockRepository),
         habitsControllerProvider.overrideWith(_FilterController.new),
-      ],
+      ]),
     );
   }
 

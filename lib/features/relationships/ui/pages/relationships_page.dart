@@ -26,6 +26,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.d
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -69,7 +70,7 @@ class RelationshipsPage extends ConsumerWidget {
     final listPaneWidth = resolvedListPane.width;
     final paneController = ref.read(paneWidthControllerProvider.notifier);
 
-    final navService = getIt<NavService>();
+    final navService = ref.read(navServiceProvider);
     return ColoredBox(
       color: tokens.colors.background.level01,
       child: ListenableBuilder(

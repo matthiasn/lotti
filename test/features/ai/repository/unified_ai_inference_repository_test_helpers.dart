@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
@@ -128,7 +129,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
     });
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
         cloudInferenceRepositoryProvider.overrideWithValue(
@@ -145,7 +146,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
         checklistCompletionServiceProvider.overrideWith(
           () => testChecklistCompletionService,
         ),
-      ],
+      ]),
     );
 
     final ref = container.read(testRefProvider);

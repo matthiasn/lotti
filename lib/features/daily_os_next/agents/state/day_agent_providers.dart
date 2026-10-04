@@ -21,7 +21,6 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
@@ -147,7 +146,7 @@ DayAgentShutdownService dayAgentShutdownService(Ref ref) {
   final journalDb = ref.watch(journalDbProvider);
   return DayAgentShutdownService(
     journalDb: journalDb,
-    persistenceLogic: getIt<PersistenceLogic>(),
+    persistenceLogic: ref.read(persistenceLogicProvider),
     dayAgentService: ref.watch(dayAgentServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     captureService: ref.watch(dayAgentCaptureServiceProvider),

@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -35,7 +36,9 @@ void main() {
   });
 
   ProviderContainer makeContainer({List<Override> overrides = const []}) {
-    final container = ProviderContainer(overrides: overrides);
+    final container = ProviderContainer(
+      overrides: withServiceOverrides(overrides),
+    );
     addTearDown(container.dispose);
     return container;
   }

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'agent_providers_test_helpers.dart';
@@ -27,14 +28,14 @@ void main() {
     repository = MockAgentRepository();
 
     container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         agentTemplateServiceProvider.overrideWithValue(templateService),
         agentRepositoryProvider.overrideWithValue(repository),
         // The reactive rebuild hook; the queries only read it.
         agentUpdateStreamProvider.overrideWith(
           (ref, id) => const Stream<Set<String>>.empty(),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
   });
@@ -405,13 +406,13 @@ void main() {
 
         final setup = await setUpUpdateStreamTest(
           containerFactory: () => ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               agentTemplateServiceProvider.overrideWithValue(
                 mockTemplateService,
               ),
               agentServiceProvider.overrideWithValue(mockService),
               agentRepositoryProvider.overrideWithValue(mockRepository),
-            ],
+            ]),
           ),
         );
 
@@ -457,9 +458,9 @@ void main() {
           ).thenAnswer((_) async => [session2, session1]);
 
           final container = ProviderContainer(
-            overrides: [
+            overrides: withServiceOverrides([
               agentRepositoryProvider.overrideWithValue(mockRepository),
-            ],
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -480,9 +481,9 @@ void main() {
         ).thenAnswer((_) async => []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(mockRepository),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -672,13 +673,13 @@ void main() {
         ).thenAnswer((_) async => agents);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(repo),
             agentTemplateServiceProvider.overrideWithValue(templateService),
             agentUpdateStreamProvider.overrideWith(
               (ref, agentId) => const Stream.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
         return container;
@@ -929,12 +930,12 @@ void main() {
         ).thenAnswer((_) async => [report1, report2]);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(repo),
             agentUpdateStreamProvider.overrideWith(
               (ref, agentId) => const Stream.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -957,12 +958,12 @@ void main() {
         ).thenAnswer((_) async => []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentRepositoryProvider.overrideWithValue(repo),
             agentUpdateStreamProvider.overrideWith(
               (ref, agentId) => const Stream.empty(),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

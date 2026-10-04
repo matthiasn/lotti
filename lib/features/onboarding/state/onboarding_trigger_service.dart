@@ -104,7 +104,7 @@ final FutureProvider<bool> shouldAutoShowOnboardingProvider =
 final FutureProvider<void> onboardingRolloutBackfillProvider =
     FutureProvider<void>(
       (ref) {
-        final settingsDb = getIt<SettingsDb>();
+        final settingsDb = ref.read(settingsDbProvider);
         return applyOnboardingRolloutBackfill(
           readProviderReady: () =>
               ref.read(dailyOsOnboardingProviderReadyProvider.future),
@@ -144,7 +144,7 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
 
   await rolloutBackfillFuture;
 
-  final settingsDb = getIt<SettingsDb>();
+  final settingsDb = ref.read(settingsDbProvider);
   final stored = await settingsDb.itemsByKeys(const [
     onboardingWelcomeCompletedKey,
     onboardingWelcomeShownCountKey,
@@ -214,7 +214,7 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
   /// show once more than budgeted) -- never worth blocking the welcome for.
   Future<void> recordShown() async {
     try {
-      final settingsDb = getIt<SettingsDb>();
+      final settingsDb = ref.read(settingsDbProvider);
       final stored = await settingsDb.itemsByKeys(const [
         onboardingWelcomeShownCountKey,
         onboardingWelcomeFirstShownAtKey,

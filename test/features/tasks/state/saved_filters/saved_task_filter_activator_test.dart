@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -23,12 +24,12 @@ ProviderContainer _buildContainer({
   List<SavedTaskFilter> savedSeed = const <SavedTaskFilter>[],
 }) {
   final container = ProviderContainer(
-    overrides: [
+    overrides: withServiceOverrides([
       journalPageControllerProvider(true).overrideWith(() => fakeController),
       savedTaskFiltersControllerProvider.overrideWith(
         () => _StubSavedFiltersController(savedSeed),
       ),
-    ],
+    ]),
   );
   return container;
 }

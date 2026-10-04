@@ -9,6 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 
@@ -106,7 +107,7 @@ void main() {
       when(
         () => mocks.updateNotifications.updateStream,
       ).thenAnswer((_) => updates.stream);
-      container = ProviderContainer();
+      container = ProviderContainer(overrides: getItServiceOverrides());
     });
 
     tearDown(() async {
@@ -260,6 +261,7 @@ void main() {
             return Text(metadata.title ?? 'Resolving task');
           },
         ),
+        overrides: getItServiceOverrides(),
       ),
     );
     expect(find.text('Resolving task'), findsOneWidget);

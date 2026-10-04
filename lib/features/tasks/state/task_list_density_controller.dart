@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// SettingsDb key for the tasks-list density preference ('true' = compact).
 const taskListCompactModeSettingsKey = 'TASK_LIST_COMPACT_MODE';
@@ -28,9 +29,11 @@ class TaskListDensityController extends Notifier<bool> {
 
   Future<void> _load() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
-    final raw = await getIt<SettingsDb>().itemByKey(
-      taskListCompactModeSettingsKey,
-    );
+    final raw = await ref
+        .read(settingsDbProvider)
+        .itemByKey(
+          taskListCompactModeSettingsKey,
+        );
     if (!ref.mounted || _edited) return;
     state = raw == 'true';
   }
@@ -43,10 +46,12 @@ class TaskListDensityController extends Notifier<bool> {
     state = !state;
     if (!getIt.isRegistered<SettingsDb>()) return;
     unawaited(
-      getIt<SettingsDb>().saveSettingsItem(
-        taskListCompactModeSettingsKey,
-        state.toString(),
-      ),
+      ref
+          .read(settingsDbProvider)
+          .saveSettingsItem(
+            taskListCompactModeSettingsKey,
+            state.toString(),
+          ),
     );
   }
 }

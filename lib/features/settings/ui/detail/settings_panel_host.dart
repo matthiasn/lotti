@@ -32,7 +32,7 @@ class SettingsPanelHost extends StatelessWidget {
   final String nodeId;
 
   /// Test-only override for the route source. Production leaves it `null`
-  /// so the host reads from `getIt<NavService>()`.
+  /// so the host reads from `ref.read(navServiceProvider)`.
   @visibleForTesting
   final ValueListenable<DesktopSettingsRoute?>? listenable;
 

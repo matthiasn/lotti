@@ -26,6 +26,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/service_overrides.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../../github/github_token_status.dart';
@@ -91,10 +92,10 @@ void main() {
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
             ...extraOverrides,
-          ],
+          ]),
           child: makeTestableWidget2(
             Builder(
               builder: (context) => Scaffold(

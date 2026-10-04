@@ -349,11 +349,11 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
 
         // Rebuild runner with a container that has the trigger override.
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             automaticImageAnalysisTriggerProvider.overrideWithValue(
               mockTrigger,
             ),
-          ],
+          ]),
         );
         addTearDown(testContainer.dispose);
 
@@ -543,11 +543,11 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         ).thenAnswer((_) async => true);
 
         final testContainer = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             automaticImageAnalysisTriggerProvider.overrideWithValue(
               mockTrigger,
             ),
-          ],
+          ]),
         );
         addTearDown(testContainer.dispose);
 

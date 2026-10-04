@@ -26,6 +26,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -357,7 +358,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           OnboardingSettingsBody(demoGateway: gateway),
           mediaQueryData: mq,
-          overrides: overrides,
+          overrides: withServiceOverrides(overrides),
         ),
       );
       // Let the async demoProfileExists + funnel reads resolve.
@@ -371,7 +372,7 @@ void main() {
       when(
         () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
       ).thenAnswer((_) => Stream.value(providers));
-      return [
+      return withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(repository),
         demoSeedManifestProvider.overrideWith(
           (ref) async => DemoSeedManifest(
@@ -383,7 +384,7 @@ void main() {
             seededAiConfigIds: const ['fixture-provider'],
           ),
         ),
-      ];
+      ]);
     }
 
     testWidgets('without a gateway (no ProfileSwitcherScope) no demo rows '

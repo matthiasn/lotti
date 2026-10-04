@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -405,7 +406,7 @@ void main() {
         when(
           () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
         ).thenAnswer((_) => Stream.value(providers));
-        return [
+        return withServiceOverrides([
           profileContextProvider.overrideWithValue(
             ProfileContext.forProfile(
               profile: Profile(
@@ -437,7 +438,7 @@ void main() {
             entityId: testTaskEntity.id,
             linkedFromId: null,
           )).overrideWith((ref) => Future.value(testSkills)),
-        ];
+        ]);
       }
 
       AiConfig provider(String id) => AiConfig.inferenceProvider(

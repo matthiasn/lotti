@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Key for storing whether the Gemini setup prompt was permanently dismissed
 const _dismissedKey = 'gemini_setup_prompt_dismissed';
@@ -77,14 +76,14 @@ class GeminiSetupPromptService extends AsyncNotifier<bool> {
 
   /// Checks if the prompt was previously dismissed.
   Future<bool> _wasPromptDismissed() async {
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     final value = await settingsDb.itemByKey(_dismissedKey);
     return value == 'true';
   }
 
   /// Resets the dismissal state (useful for testing or user preference reset).
   Future<void> resetDismissal() async {
-    final settingsDb = getIt<SettingsDb>();
+    final settingsDb = ref.read(settingsDbProvider);
     await settingsDb.removeSettingsItem(_dismissedKey);
     ref.invalidateSelf();
   }

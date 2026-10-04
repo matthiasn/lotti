@@ -48,6 +48,7 @@ import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/service_overrides.dart';
 import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -780,11 +781,11 @@ void main() {
 
       // Create a container with pre-existing focus intent
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioRecorderControllerProvider.overrideWith(
             StubAudioRecorderController.new,
           ),
-        ],
+        ]),
       );
       final focusProvider = journalFocusControllerProvider(
         testTextEntry.meta.id,
@@ -876,11 +877,11 @@ void main() {
         () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           audioRecorderControllerProvider.overrideWith(
             StubAudioRecorderController.new,
           ),
-        ],
+        ]),
       );
       // Covers a failure before the explicit disposal below; disposing twice
       // is a no-op.
@@ -924,7 +925,7 @@ void main() {
         () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       final focusProvider = journalFocusControllerProvider(
         testTextEntry.meta.id,
       );
@@ -1510,7 +1511,7 @@ void main() {
         () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
 
       await tester.pumpWidget(
         UncontrolledProviderScope(

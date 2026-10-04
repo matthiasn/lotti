@@ -14,6 +14,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -68,7 +69,7 @@ void main() {
     test('initializes with empty habit definition for new habit', () {
       const testHabitId = 'new-habit-id';
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final state = container.read(
@@ -87,7 +88,7 @@ void main() {
 
       final completer = Completer<void>();
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final subscription = container.listen(
@@ -123,7 +124,7 @@ void main() {
     test('setDirty marks form as dirty', () {
       const testHabitId = 'test-habit-id';
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(
@@ -143,7 +144,7 @@ void main() {
       const testHabitId = 'test-habit-id';
       const categoryId = 'new-category-id';
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(
@@ -164,7 +165,7 @@ void main() {
       const testHabitId = 'test-habit-id';
       const rule = AutoCompleteRule.measurable(dataTypeId: 'water', minimum: 1);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final controller = container.read(
         habitSettingsControllerProvider(testHabitId).notifier,
@@ -190,7 +191,7 @@ void main() {
 
     test('setAutoCompleteNotify flips the flag and marks dirty', () {
       const testHabitId = 'test-habit-id';
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       final controller = container.read(
         habitSettingsControllerProvider(testHabitId).notifier,
@@ -215,7 +216,7 @@ void main() {
       const testHabitId = 'test-habit-id';
       final activeFrom = DateTime(2025, 1, 15);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(
@@ -236,7 +237,7 @@ void main() {
       const testHabitId = 'test-habit-id';
       final showFrom = DateTime(2025, 1, 1, 8);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(
@@ -261,7 +262,7 @@ void main() {
         const testHabitId = 'test-habit-id';
         final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final controller = container.read(
@@ -290,7 +291,7 @@ void main() {
         const testHabitId = 'test-habit-id';
         final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final controller = container.read(
@@ -319,7 +320,7 @@ void main() {
       () async {
         const testHabitId = 'test-habit-id';
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final controller = container.read(
@@ -346,7 +347,7 @@ void main() {
           () => mockJournalDb.getHabitById(habitFlossing.id),
         ).thenAnswer((_) async => null);
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
 
         final subscription = container.listen(
@@ -397,7 +398,7 @@ void main() {
         when(
           () => mockJournalDb.getHabitById(weeklyHabit.id),
         ).thenAnswer((_) async => weeklyHabit);
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: getItServiceOverrides());
         addTearDown(container.dispose);
         final provider = habitSettingsControllerProvider(weeklyHabit.id);
         final loaded = Completer<void>();
@@ -465,7 +466,7 @@ void main() {
       final showFrom = DateTime(2025, 1, 1, 8);
       final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(
@@ -492,7 +493,7 @@ void main() {
       final showFrom = DateTime(2025, 1, 1, 8);
       final alertAtTime = DateTime(2025, 1, 1, 9, 30);
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
 
       final controller = container.read(

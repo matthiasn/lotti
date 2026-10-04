@@ -15,6 +15,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -60,7 +61,7 @@ void main() {
         },
       );
       container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           taskLiveDataProvider.overrideWith(
             // ignore: avoid_redundant_argument_values
             (ref, taskId) => Future.value(null),
@@ -72,7 +73,7 @@ void main() {
           agentUpdateStreamProvider.overrideWith(
             (ref, agentId) => const Stream<Set<String>>.empty(),
           ),
-        ],
+        ]),
       );
     });
 

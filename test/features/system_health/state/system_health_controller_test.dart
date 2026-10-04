@@ -19,6 +19,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
@@ -76,7 +77,7 @@ void main() {
     SystemHealthAnalyzer? analyzer,
   }) {
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         systemHealthReportStoreProvider.overrideWithValue(store()),
         aiConfigRepositoryProvider.overrideWithValue(configs),
         taskAgentSetupOptionsProvider.overrideWith(
@@ -101,7 +102,7 @@ void main() {
                     },
               ),
         ),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container;
@@ -200,7 +201,9 @@ void main() {
         'store keeps reports in a system_health folder', () {
       getIt.registerSingleton<Directory>(logs);
       final container = ProviderContainer(
-        overrides: [aiConfigRepositoryProvider.overrideWithValue(configs)],
+        overrides: withServiceOverrides([
+          aiConfigRepositoryProvider.overrideWithValue(configs),
+        ]),
       );
       addTearDown(container.dispose);
 

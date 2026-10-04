@@ -9,6 +9,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -22,9 +23,9 @@ void main() {
 
     ProviderContainer createContainer() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+        ]),
       );
     }
 
@@ -101,11 +102,11 @@ void main() {
 
     ProviderContainer createContainer() {
       return ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(mockRepository),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           journalDbProvider.overrideWithValue(mockJournalDb),
-        ],
+        ]),
       );
     }
 

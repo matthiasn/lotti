@@ -14,6 +14,7 @@ import 'package:lotti/features/relationships/state/relationship_chat_controller.
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -23,10 +24,10 @@ void main() {
 
   ProviderContainer container({List<Override> extra = const []}) {
     final c = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         relationshipChatServiceProvider.overrideWithValue(service),
         ...extra,
-      ],
+      ]),
     );
     addTearDown(c.dispose);
     return c;

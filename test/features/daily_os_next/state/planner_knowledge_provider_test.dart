@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 PlannerKnowledgeEntity _entry({
@@ -50,10 +51,10 @@ void main() {
       () => knowledgeService.allFor('daily_os_planner'),
     ).thenAnswer((_) async => all);
     final container = ProviderContainer(
-      overrides: [
+      overrides: withServiceOverrides([
         updateNotificationsProvider.overrideWithValue(notifications),
         dayAgentKnowledgeServiceProvider.overrideWithValue(knowledgeService),
-      ],
+      ]),
     );
     addTearDown(container.dispose);
     return container.read(plannerKnowledgeProvider.future);

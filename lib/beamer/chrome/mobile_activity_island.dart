@@ -11,9 +11,8 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/time_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 // Only the numeric font features: the same tabular/slashed-zero set the task
 // action bar's Track time pill and the sidebar timer use, so every elapsed
 // clock in the app ticks without changing width.
@@ -173,7 +172,7 @@ class MobileActivityIsland extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timeService = getIt<TimeService>();
+    final timeService = ref.read(timeServiceProvider);
     AudioRecorderState? recording;
     try {
       final state = ref.watch(audioRecorderControllerProvider);

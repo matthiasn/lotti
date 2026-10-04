@@ -16,6 +16,7 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/hover_divider_harness.dart';
@@ -457,7 +458,9 @@ void main() {
         repository.watchHabitDefinitions,
       ).thenAnswer((_) => Stream.value([habitFlossing, inactive]));
       final container = ProviderContainer(
-        overrides: [habitsRepositoryProvider.overrideWithValue(repository)],
+        overrides: withServiceOverrides([
+          habitsRepositoryProvider.overrideWithValue(repository),
+        ]),
       );
       addTearDown(container.dispose);
       final subscription = container.listen(

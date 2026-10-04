@@ -20,6 +20,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
@@ -63,7 +64,7 @@ void main() {
       final mockLabelsRepository = MockLabelsRepository();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           journalDbProvider.overrideWithValue(mockJournalDb),
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -77,7 +78,7 @@ void main() {
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -131,7 +132,7 @@ void main() {
         ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -145,7 +146,7 @@ void main() {
             projectRepositoryProvider.overrideWithValue(
               MockProjectRepository(),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -200,7 +201,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
             journalDbProvider.overrideWithValue(mockJournalDb),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -214,7 +215,7 @@ void main() {
             projectRepositoryProvider.overrideWithValue(
               MockProjectRepository(),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -236,14 +237,14 @@ void main() {
       final mockLabelsRepository = MockLabelsRepository();
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           journalDbProvider.overrideWithValue(mockJournalDb),
           projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -300,7 +301,7 @@ void main() {
         ).thenReturn(null);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
             journalDbProvider.overrideWithValue(MockJournalDb()),
             projectRepositoryProvider.overrideWithValue(mockProjectRepository),
@@ -310,7 +311,7 @@ void main() {
               mockRecommendationService,
             ),
             domainLoggerProvider.overrideWithValue(mockLogger),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -371,7 +372,7 @@ void main() {
         ).thenReturn(null);
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
             journalDbProvider.overrideWithValue(MockJournalDb()),
             projectRepositoryProvider.overrideWithValue(mockProjectRepository),
@@ -381,7 +382,7 @@ void main() {
               mockRecommendationService,
             ),
             domainLoggerProvider.overrideWithValue(mockLogger),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 

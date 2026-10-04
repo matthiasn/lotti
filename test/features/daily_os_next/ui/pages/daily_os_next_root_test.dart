@@ -34,6 +34,7 @@ import 'package:lotti/utils/device_region.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
@@ -51,7 +52,7 @@ Widget _wrap(
   MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1280, 900)),
 }) {
   return ProviderScope(
-    overrides: [
+    overrides: withServiceOverrides([
       dailyOsActualTimeBlocksProvider.overrideWith(
         (ref, _) async => actualBlocks,
       ),
@@ -66,7 +67,7 @@ Widget _wrap(
             ),
       ),
       ...overrides,
-    ],
+    ]),
     child: makeTestableWidget2(child, mediaQueryData: mediaQueryData),
   );
 }
@@ -1090,7 +1091,7 @@ void main() {
               // A fresh scope per scale: without it the second pump reuses
               // the first scope's container and its already-shifted date.
               key: ValueKey(scale),
-              overrides: [
+              overrides: withServiceOverrides([
                 dailyOsActualTimeBlocksProvider.overrideWith(
                   (ref, _) async => const [],
                 ),
@@ -1106,7 +1107,7 @@ void main() {
                   () => CaptureController(recorder: _permissionlessRecorder()),
                 ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => null),
-              ],
+              ]),
               child: makeTestableWidget2(
                 const DailyOsNextRoot(),
                 mediaQueryData: MediaQueryData(

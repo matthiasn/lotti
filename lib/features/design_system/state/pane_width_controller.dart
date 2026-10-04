@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Settings keys for persisted pane widths.
 const sidebarWidthKey = 'PANE_WIDTH_SIDEBAR';
@@ -232,7 +231,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
 
   Future<void> _loadPersistedWidths() async {
     try {
-      final settingsDb = getIt<SettingsDb>();
+      final settingsDb = ref.read(settingsDbProvider);
       final values = await settingsDb.itemsByKeys({
         sidebarWidthKey,
         listPaneWidthKey,
@@ -538,7 +537,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
 
   Future<void> _persistString(String key, String value) async {
     try {
-      await getIt<SettingsDb>().saveSettingsItem(key, value);
+      await ref.read(settingsDbProvider).saveSettingsItem(key, value);
     } catch (error, stackTrace) {
       debugPrint(
         'PANE_WIDTH persistWidth:$key failed: $error\n$stackTrace',

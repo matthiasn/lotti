@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -39,14 +40,14 @@ void main() {
       ];
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(kTestTemplateId).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => sessions,
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -60,14 +61,14 @@ void main() {
 
     test('returns zero approvalRate when no sessions exist', () async {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(kTestTemplateId).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -84,7 +85,7 @@ void main() {
     test('returns completedAt for the newest completed session', () async {
       final completedAt = DateTime(2024, 3, 18, 12);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[
               makeTestEvolutionSession(
@@ -98,7 +99,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -112,7 +113,7 @@ void main() {
     test('falls back to createdAt when completedAt is missing', () async {
       final createdAt = DateTime(2024, 3, 17, 8);
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           evolutionSessionsProvider(kTestTemplateId).overrideWith(
             (ref) async => <AgentDomainEntity>[
               makeTestEvolutionSession(
@@ -122,7 +123,7 @@ void main() {
               ),
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -163,7 +164,7 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(kTestTemplateId).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
@@ -175,7 +176,7 @@ void main() {
               completed,
             ],
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -257,7 +258,7 @@ void main() {
         );
 
         final container = ProviderContainer(
-          overrides: [
+          overrides: withServiceOverrides([
             agentUpdateStreamProvider(kTestTemplateId).overrideWith(
               (ref) => const Stream<Set<String>>.empty(),
             ),
@@ -284,7 +285,7 @@ void main() {
                 ],
               ),
             ),
-          ],
+          ]),
         );
         addTearDown(container.dispose);
 
@@ -333,7 +334,7 @@ void main() {
       );
 
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentUpdateStreamProvider(kTestTemplateId).overrideWith(
             (ref) => const Stream<Set<String>>.empty(),
           ),
@@ -347,7 +348,7 @@ void main() {
           ).overrideWith(
             (ref) async => const TaskResolutionTimeSeries(dailyBuckets: []),
           ),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 

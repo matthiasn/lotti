@@ -25,6 +25,7 @@ import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -97,7 +98,7 @@ void main() {
     ThemeData? theme,
   }) {
     return ProviderScope(
-      overrides: [
+      overrides: withServiceOverrides([
         knowledgeGraphEntryPointEnabledProvider.overrideWithValue(
           showGraphEntryPoint,
         ),
@@ -110,7 +111,7 @@ void main() {
           taskAppBarControllerProvider(task.id).overrideWith(
             () => _FixedOffsetTaskAppBarController(initialOffset),
           ),
-      ],
+      ]),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         theme: theme ?? DesignSystemTheme.dark(),

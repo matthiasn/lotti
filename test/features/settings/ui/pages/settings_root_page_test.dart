@@ -15,6 +15,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -70,11 +71,11 @@ void main() {
     await getIt.reset();
   });
 
-  List<Override> buildOverrides() => [
+  List<Override> buildOverrides() => withServiceOverrides([
     journalDbProvider.overrideWithValue(mockJournalDb),
     whatsNewControllerProvider.overrideWith(_TestWhatsNewController.new),
     paneWidthControllerProvider.overrideWith(PaneWidthController.new),
-  ];
+  ]);
 
   Future<void> pumpRoot(
     WidgetTester tester, {
@@ -84,7 +85,7 @@ void main() {
       makeTestableWidgetNoScroll(
         const SettingsRootPage(),
         mediaQueryData: mediaQuery,
-        overrides: buildOverrides(),
+        overrides: withServiceOverrides(buildOverrides()),
       ),
     );
     await tester.pumpAndSettle();

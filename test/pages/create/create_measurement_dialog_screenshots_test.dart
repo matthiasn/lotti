@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../features/daily_os_next/screenshot_harness.dart';
 import '../../helpers/manual_demo_world.dart';
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
@@ -135,7 +136,7 @@ List<MeasurementEntry> _recentMeasurements() {
   ];
 }
 
-List<Override> _chartOverrides() => [
+List<Override> _chartOverrides() => withServiceOverrides([
   measurableDataTypeControllerProvider(_measurableId).overrideWithBuild(
     (ref, notifier) => _sardinesConsumed,
   ),
@@ -157,7 +158,7 @@ List<Override> _chartOverrides() => [
     rangeStart: _rangeStart,
     rangeEnd: _rangeEnd,
   )).overrideWithBuild((ref, notifier) => _hydrationRecordings()),
-];
+]);
 
 Future<void> _pumpDashboard(
   WidgetTester tester, {
@@ -170,7 +171,7 @@ Future<void> _pumpDashboard(
     RepaintBoundary(
       key: screenshotBoundaryKey,
       child: ProviderScope(
-        overrides: _chartOverrides(),
+        overrides: withServiceOverrides(_chartOverrides()),
         child: MaterialApp(
           builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,

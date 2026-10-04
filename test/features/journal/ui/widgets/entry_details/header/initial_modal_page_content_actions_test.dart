@@ -23,6 +23,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_linked_entries_controller.dart';
+import '../../../../../../helpers/service_overrides.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../widget_test_utils.dart';
 import 'initial_modal_page_content_test_helpers.dart';
@@ -90,7 +91,7 @@ void main() {
       required JournalEntity linkedParent,
     }) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(image.id).overrideWith(
             () => TestEntryController(image),
           ),
@@ -100,7 +101,7 @@ void main() {
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.value([]),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: image.id,
@@ -148,14 +149,14 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider(image.id).overrideWith(
               () => TestEntryController(image),
             ),
             labelsStreamProvider.overrideWith(
               (ref) => Stream<List<LabelDefinition>>.value([]),
             ),
-          ],
+          ]),
           child: makeTestableWidgetWithScaffold(
             InitialModalPageContent(
               entryId: image.id,
@@ -195,14 +196,14 @@ void main() {
 
     ProviderScope buildGeoWrapper(JournalEntry entry) {
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
           labelsStreamProvider.overrideWith(
             (ref) => Stream<List<LabelDefinition>>.value([]),
           ),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: entry.id,
@@ -255,7 +256,7 @@ void main() {
       ];
 
       return ProviderScope(
-        overrides: allOverrides,
+        overrides: withServiceOverrides(allOverrides),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: entry.id,
@@ -337,7 +338,7 @@ void main() {
         required JournalEntity linkedParent,
       }) {
         return ProviderScope(
-          overrides: [
+          overrides: withServiceOverrides([
             entryControllerProvider(audio.meta.id).overrideWith(
               () => TestEntryController(audio),
             ),
@@ -347,7 +348,7 @@ void main() {
             labelsStreamProvider.overrideWith(
               (ref) => Stream<List<LabelDefinition>>.value([]),
             ),
-          ],
+          ]),
           child: makeTestableWidgetWithScaffold(
             InitialModalPageContent(
               entryId: audio.meta.id,
@@ -407,7 +408,7 @@ void main() {
     }) {
       final entry = textEntry();
       return ProviderScope(
-        overrides: [
+        overrides: withServiceOverrides([
           entryControllerProvider(entry.id).overrideWith(
             () => TestEntryController(entry),
           ),
@@ -420,7 +421,7 @@ void main() {
           ratingControllerProvider(
             targetId: entry.id,
           ).overrideWith(_NoRatingController.new),
-        ],
+        ]),
         child: makeTestableWidgetWithScaffold(
           InitialModalPageContent(
             entryId: entry.id,

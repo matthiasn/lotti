@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provid
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../test_doubles/mock_day_agent.dart';
@@ -51,7 +52,7 @@ void main() {
       final outbox = MockDayProcessingOutboxRepository();
       final runtime = MockDayProcessingRuntime();
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentCaptureServiceProvider.overrideWithValue(captureService),
           dayAgentPlanServiceProvider.overrideWithValue(planService),
           dayAgentServiceProvider.overrideWithValue(dayAgentService),
@@ -60,7 +61,7 @@ void main() {
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
           dayProcessingRuntimeProvider.overrideWithValue(runtime),
           silenceAgentUpdates,
-        ],
+        ]),
       );
       addTearDown(container.dispose);
 
@@ -116,10 +117,10 @@ void main() {
 
     ProviderContainer makeContainer(DayAgentInterface agent) {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentProvider.overrideWithValue(agent),
           silenceAgentUpdates,
-        ],
+        ]),
       )..listen(currentDraftPlanProvider(asOf), (_, _) {});
       addTearDown(container.dispose);
       return container;
@@ -154,10 +155,10 @@ void main() {
 
     ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentRepositoryProvider.overrideWithValue(agentRepository),
           silenceAgentUpdates,
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;
@@ -246,11 +247,11 @@ void main() {
 
     ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           dayAgentServiceProvider.overrideWithValue(dayAgentService),
           agentRepositoryProvider.overrideWithValue(agentRepository),
           silenceAgentUpdates,
-        ],
+        ]),
       )..listen(capturesForDateProvider(forDate), (_, _) {});
       addTearDown(container.dispose);
       return container;
@@ -467,7 +468,7 @@ void main() {
       String? coordinatorWorkspaceKey,
     }) {
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           agentIsRunningProvider.overrideWith(
             (ref, agentId) => Stream.value(perDayRunningIds.contains(agentId)),
           ),
@@ -479,7 +480,7 @@ void main() {
                 workspaceKey == coordinatorWorkspaceKey;
             return Stream.value(matches);
           }),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       return container;

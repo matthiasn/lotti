@@ -1,12 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 /// Provides the shared [Maintenance] service. Must be overridden in [ProviderScope].
 final maintenanceProvider = Provider<Maintenance>(
@@ -63,6 +68,48 @@ final domainLoggerProvider = Provider<DomainLogger>(
 final entitiesCacheServiceProvider = Provider<EntitiesCacheService?>(
   (ref) => null,
   name: 'entitiesCacheServiceProvider',
+);
+
+/// Provides the shared [SettingsDb]. Must be overridden in [ProviderScope].
+final settingsDbProvider = Provider<SettingsDb>(
+  (ref) => throw UnimplementedError(
+    'settingsDbProvider must be overridden before use.',
+  ),
+  name: 'settingsDbProvider',
+);
+
+/// Provides the shared [PersistenceLogic]. Must be overridden in
+/// [ProviderScope].
+final persistenceLogicProvider = Provider<PersistenceLogic>(
+  (ref) => throw UnimplementedError(
+    'persistenceLogicProvider must be overridden before use.',
+  ),
+  name: 'persistenceLogicProvider',
+);
+
+/// Provides the shared [NavService]. Must be overridden in [ProviderScope].
+final navServiceProvider = Provider<NavService>(
+  (ref) => throw UnimplementedError(
+    'navServiceProvider must be overridden before use.',
+  ),
+  name: 'navServiceProvider',
+);
+
+/// Provides the shared [TimeService]. Must be overridden in [ProviderScope].
+final timeServiceProvider = Provider<TimeService>(
+  (ref) => throw UnimplementedError(
+    'timeServiceProvider must be overridden before use.',
+  ),
+  name: 'timeServiceProvider',
+);
+
+/// Provides the shared [VectorClockService]. Must be overridden in
+/// [ProviderScope].
+final vectorClockServiceProvider = Provider<VectorClockService>(
+  (ref) => throw UnimplementedError(
+    'vectorClockServiceProvider must be overridden before use.',
+  ),
+  name: 'vectorClockServiceProvider',
 );
 
 /// Provides the shared [OutboxService]. Must be overridden in [ProviderScope].

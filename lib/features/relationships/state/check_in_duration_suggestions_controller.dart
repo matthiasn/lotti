@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -50,7 +50,7 @@ class CheckInDurationSuggestionsController
   // Resolved on use, not in a field initializer: a test that overrides this
   // provider with a fixed row must be able to construct the notifier without
   // standing up a database.
-  JournalDb get _journalDb => getIt<JournalDb>();
+  JournalDb get _journalDb => ref.read(journalDbProvider);
 
   @override
   Future<List<Duration>> build() async {
