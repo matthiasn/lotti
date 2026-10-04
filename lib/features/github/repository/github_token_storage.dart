@@ -146,6 +146,16 @@ class GitHubTokenStorage {
     return record;
   });
 
+  /// [applyIfNewer] for an account sync delivered, in the shape the sync
+  /// event processor's `SyncedGitHubAccountSink` takes.
+  Future<bool> applySynced({
+    required int updatedAt,
+    String? token,
+    String? login,
+  }) => applyIfNewer(
+    GitHubAccountRecord(token: token, login: login, updatedAt: updatedAt),
+  );
+
   /// Stores [incoming], received from another device, if it is newer than
   /// what is held now; returns whether it was. It is not verified here yet,
   /// and nothing made here is owed any more: it was superseded.

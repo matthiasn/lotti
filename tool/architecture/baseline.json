@@ -3,8 +3,6 @@
   "files": {
     "lib/features/agents/state/agent_workflow_providers.dart": ["github"],
     "lib/features/ai/services/skill_inference_runner.dart": ["github"],
-    "lib/features/ai/state/skill_trigger_providers.dart": ["journal"],
-    "lib/features/categories/state/categories_list_controller.dart": ["lockdown"],
-    "lib/features/sync/matrix/sync_event_processor.dart": ["github"]
+    "lib/features/categories/state/categories_list_controller.dart": ["lockdown"]
   }
 }

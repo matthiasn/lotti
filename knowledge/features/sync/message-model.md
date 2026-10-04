@@ -183,7 +183,9 @@ copies as no-ops.
 
 `gitHubAccount` carries the user's GitHub token and its login, or a
 disconnection, into the receiver's keychain rather than a database
-(`GitHubTokenStorage.applyIfNewer`): one keystore value holds the token, the
+(`GitHubTokenStorage.applyIfNewer`, which the processor reaches through its
+`SyncedGitHubAccountSink`, wired in `get_it_sync.dart`, so sync does not
+depend on GitHub): one keystore value holds the token, the
 login and the stamp, so it is written in one step, and the later stamp wins,
 an equal one decided by content. The token is a `SyncSecret`, whose
 `toString` is redacted, so the message never prints it; the outbox and apply

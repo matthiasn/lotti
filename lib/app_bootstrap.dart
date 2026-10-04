@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/beamer/journal_card_wiring.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
@@ -342,6 +344,8 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     journalRelationshipNameProvider.overrideWith(
       relationshipNameFromRelationships,
     ),
+    // The AI skills menu reads its entity through journal's controller.
+    skillEntityProvider.overrideWith(skillEntityFromJournal),
     agentWakeRunnersProvider.overrideWith(
       (ref) => {
         ...ref.watch(dayAgentWakeRunnersProvider),

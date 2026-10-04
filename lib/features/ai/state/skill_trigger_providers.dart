@@ -17,11 +17,11 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart'
@@ -56,10 +56,7 @@ typedef SkillsAvailabilityParams = ({String entityId, String? linkedFromId});
 final availableSkillsForEntityProvider = FutureProvider.autoDispose
     .family<List<AiConfigSkill>, SkillsAvailabilityParams>(
       (ref, params) async {
-        final entryState = ref
-            .watch(entryControllerProvider(params.entityId))
-            .value;
-        final entity = entryState?.entry;
+        final entity = ref.watch(skillEntityProvider(params.entityId));
         if (entity == null) return [];
 
         final registry = ref.watch(skillRegistryProvider);

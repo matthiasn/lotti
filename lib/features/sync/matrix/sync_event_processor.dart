@@ -37,7 +37,6 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
-import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -137,6 +136,19 @@ class PendingSyncDescriptorException extends FileSystemException {
 /// a sink runs such work inline.
 typedef AfterCommitSink = void Function(Future<void> Function() action);
 
+/// Stores a GitHub account synced from another device when it is newer than
+/// the one held here, answering whether it was.
+///
+/// The github feature's token storage implements it
+/// (`GitHubTokenStorage.applySynced`, wired in `get_it_sync.dart`); sync does
+/// not depend on GitHub.
+typedef SyncedGitHubAccountSink =
+    Future<bool> Function({
+      required int updatedAt,
+      String? token,
+      String? login,
+    });
+
 class SyncEventProcessor {
   SyncEventProcessor({
     required this._loggingService,
@@ -157,7 +169,7 @@ class SyncEventProcessor {
     this._syncNodeProfileRepository,
     this._fts5Db,
     this._syncEventTrust,
-    this._gitHubTokenStorage,
+    this._gitHubAccountSink,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
        _journalEntityLoader =
@@ -213,7 +225,7 @@ class SyncEventProcessor {
   /// Where a received GitHub account lands: this world's keychain record.
   /// Optional so harnesses without one keep working; then a received
   /// account is acknowledged and dropped.
-  final GitHubTokenStorage? _gitHubTokenStorage;
+  final SyncedGitHubAccountSink? _gitHubAccountSink;
 
   // Cached local host id. Resolved lazily on the first event that carries
   // an `originatingHostId`. Vector-clock host ids are stable for the life

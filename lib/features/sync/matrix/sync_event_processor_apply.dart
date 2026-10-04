@@ -284,15 +284,13 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         }
         return null;
       case SyncGitHubAccount(:final token, :final login, :final updatedAt):
-        final storage = _gitHubTokenStorage;
-        if (storage == null) return null;
+        final applyAccount = _gitHubAccountSink;
+        if (applyAccount == null) return null;
         try {
-          final applied = await storage.applyIfNewer(
-            GitHubAccountRecord(
-              token: token?.value,
-              login: login,
-              updatedAt: updatedAt,
-            ),
+          final applied = await applyAccount(
+            token: token?.value,
+            login: login,
+            updatedAt: updatedAt,
           );
           if (!applied) return null;
 

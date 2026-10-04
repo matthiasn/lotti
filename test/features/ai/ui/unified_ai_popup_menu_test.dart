@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
@@ -167,6 +169,7 @@ void main() {
 
     defaultOverrides = [
       // Override entry controllers for all test entities
+      skillEntityProvider.overrideWith(skillEntityFromJournal),
       entryControllerProvider('task-1').overrideWith(
         () => FakeEntryController(testTaskEntity),
       ),

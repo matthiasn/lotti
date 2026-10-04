@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -232,6 +234,7 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([transcriptionSkill]),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(audioEntity),
         ]),
       );
@@ -265,6 +268,7 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(journalEntry),
         ]),
       );
@@ -574,6 +578,7 @@ void main() {
               transcriptionSkill,
               promptSkill,
             ]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(audioEntity),
           ]),
         );
@@ -633,6 +638,7 @@ void main() {
         final testContainer = ProviderContainer(
           overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([imageSkill, promptSkill]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(imageEntity),
           ]),
         );
@@ -697,6 +703,7 @@ void main() {
             audioOnlySkill,
             promptSkill,
           ]),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(taskEntity),
         ]),
       );
@@ -750,6 +757,7 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue([imageOnlySkill]),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(taskEntity),
         ]),
       );
@@ -794,6 +802,7 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(taskEntity),
         ]),
       );
@@ -845,6 +854,7 @@ void main() {
         final testContainer = ProviderContainer(
           overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([textSkill]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(measurementEntity),
           ]),
         );
@@ -880,6 +890,7 @@ void main() {
           final c = ProviderContainer(
             overrides: withServiceOverrides([
               skillRegistryProvider.overrideWithValue([textSkill]),
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               createEntryControllerOverride(entity),
             ]),
           );
@@ -1032,6 +1043,7 @@ void main() {
             coverArt,
             compactCoverArt,
           ]),
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           createEntryControllerOverride(audioEntity),
         ]),
       );
@@ -1133,6 +1145,7 @@ void main() {
               plainTranscribe,
               codingPrompt,
             ]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(audioEntity),
           ]),
         );
@@ -1196,6 +1209,7 @@ void main() {
         final testContainer = ProviderContainer(
           overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([coverArtSkill]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(taskEntity),
           ]),
         );
@@ -1221,6 +1235,7 @@ void main() {
         overrides: withServiceOverrides([
           skillRegistryProvider.overrideWithValue(const []),
           // No entry controller override — entity will not be found
+          skillEntityProvider.overrideWith(skillEntityFromJournal),
           entryControllerProvider('nonexistent').overrideWith(
             FakeEntryControllerNull.new,
           ),
@@ -1272,6 +1287,7 @@ void main() {
         final testContainer = ProviderContainer(
           overrides: withServiceOverrides([
             skillRegistryProvider.overrideWithValue([skill]),
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             createEntryControllerOverride(entity),
           ]),
         );

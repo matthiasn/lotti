@@ -121,6 +121,32 @@ void main() {
     );
 
     test(
+      'applySynced applies the account sync delivered as applyIfNewer',
+      () async {
+        await withClock(
+          Clock.fixed(t0),
+          () => storage.save(token: 'ghp_old', login: 'pingu'),
+        );
+
+        expect(
+          await storage.applySynced(
+            token: 'ghp_synced',
+            login: 'pingu',
+            updatedAt: stamp0 + 1,
+          ),
+          isTrue,
+        );
+        expect((await storage.read())!.token, 'ghp_synced');
+        // An older delivery changes nothing.
+        expect(
+          await storage.applySynced(token: 'ghp_stale', updatedAt: stamp0),
+          isFalse,
+        );
+        expect((await storage.read())!.token, 'ghp_synced');
+      },
+    );
+
+    test(
       'never overwrites a newer change made here while it was being '
       'compared (AtomicApply)',
       () async {
