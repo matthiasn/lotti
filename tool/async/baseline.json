@@ -43,7 +43,7 @@
     "lib/features/ai/repository/melious_inference_transcription.dart": 2,
     "lib/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart": 1,
     "lib/features/ai/service/embedding_service.dart": 1,
-    "lib/features/ai/services/skill_inference_runner.dart": 1,
+    "lib/features/ai/services/skill_inference_runner_media_runs.dart": 1,
     "lib/features/ai/state/ai_runtime_settings_controller.dart": 3,
     "lib/features/ai/ui/image_generation/cover_art_skill_modal.dart": 1,
     "lib/features/ai/ui/inference_profile_slot_field.dart": 1,
