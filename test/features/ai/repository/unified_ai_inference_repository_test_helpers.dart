@@ -21,13 +21,13 @@ import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
-import 'package:lotti/features/journal/repository/journal_repository.dart'
-    show journalRepositoryProvider;
 import 'package:lotti/features/labels/repository/labels_repository.dart'
     show labelsRepositoryProvider;
-import 'package:lotti/features/tasks/repository/checklist_repository.dart'
-    show checklistRepositoryProvider;
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart'
+    show checklistRepositoryProvider;
+import 'package:lotti/logic/repositories/journal_repository.dart'
+    show journalRepositoryProvider;
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';

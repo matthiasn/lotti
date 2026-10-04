@@ -3,7 +3,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
-import 'package:lotti/features/agents/model/agent_link_slot.dart';
+import 'package:lotti/classes/agents/agent_link_slot.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:mocktail/mocktail.dart';
 

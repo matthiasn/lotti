@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Migrates a single checklist item from a source task to a target task.

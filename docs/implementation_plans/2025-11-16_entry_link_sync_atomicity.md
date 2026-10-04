@@ -35,7 +35,7 @@ Analysis of logs (`docs/sync/lotti-2025-11-16_desktop.log` and `docs/sync/lotti-
 
 ### Current Implementation
 
-**Sender Side** (`lib/logic/persistence_logic.dart:417-422`, `lib/features/journal/repository/journal_repository.dart:256-261`):
+**Sender Side** (`lib/logic/persistence_logic.dart:417-422`, `lib/logic/repositories/journal_repository.dart:256-261`):
 ```dart
 // Entry link created separately
 await outboxService.enqueueMessage(

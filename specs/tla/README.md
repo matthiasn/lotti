@@ -2265,7 +2265,7 @@ backfill, the conflict page over a deletion — are examples in the suites of
 with its fix reverted.
 
 Checklist membership has one. In
-`test/features/tasks/repository/checklist_membership_model_conformance.dart`
+`test/logic/repositories/checklist_membership_model_conformance.dart`
 (a part of the `ChecklistRepository` suite), one task on a real in-memory
 `JournalDb` with the real `PersistenceLogic` is driven through generated
 traces of the spec's operations: the agent's `addItemToChecklist` and
@@ -2303,7 +2303,7 @@ two agents an older build left) each fail too. Without the startup pass,
 the legacy trace fails.
 
 `ChecklistReplication` has its own trace,
-`test/features/tasks/repository/checklist_replication_model_conformance.dart`
+`test/logic/repositories/checklist_replication_model_conformance.dart`
 (a part of the `ChecklistRepository` suite): two devices, each a real
 in-memory `JournalDb` and `SettingsDb` behind its own real
 `ChecklistRepository`, with a persistence
@@ -3331,7 +3331,7 @@ fields of their own (`entry_field_diff.dart`), and "Combine" takes each from
 the side the user picks (`buildMergedEntity`).
 
 The conformance trace is
-`test/features/journal/repository/task_field_writes_model_conformance.dart`:
+`test/logic/repositories/task_field_writes_model_conformance.dart`:
 a real in-memory `JournalDb` behind the real `PersistenceLogic`, the real
 `TaskStatusHandler`, `TaskTitleHandler` and `TaskPriorityHandler`, and the
 real `ConflictResolutionService`; the other device writes on its own copy

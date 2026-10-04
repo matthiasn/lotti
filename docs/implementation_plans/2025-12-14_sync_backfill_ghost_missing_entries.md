@@ -83,7 +83,7 @@ cannot be fulfilled by the current backfill protocol.
   - journal metadata: `createMetadata(...)` / `updateMetadata(...)`
   - entry links: `createLink(...)` / `updateLink(...)`
   - Files: `lib/logic/persistence_logic.dart`,
-    `lib/features/journal/repository/journal_repository.dart`
+    `lib/logic/repositories/journal_repository.dart`
 
 **What we confirmed in debugging**
 - For stuck missing `(hostId,counter)` rows, the originating device has **no**

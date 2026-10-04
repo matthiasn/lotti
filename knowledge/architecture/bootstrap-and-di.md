@@ -75,6 +75,14 @@ an unregistered kind falls through to the task-agent workflow — so the
 registrations are pinned by
 `test/app_bootstrap_test.dart` (the `agent runtime registrations` group).
 
+The getIt registrations in `lib/get_it.dart` carry one seam of the same kind:
+`RelationshipCascadeFactory`. The journal repository lives in `lib/logic`,
+below every feature, yet its generic delete path must still write people
+through the relationship repository (ADR 0037 §5). It resolves the factory,
+which the composition root registers as `buildRelationshipCascade`; a missing
+registration fails loudly, on the first delete of a person. The test harness
+registers the same factory.
+
 ```dart
 ProviderScope(
   key: ValueKey('profile-gen-$_generation'),

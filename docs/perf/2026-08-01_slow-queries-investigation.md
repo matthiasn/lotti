@@ -112,7 +112,7 @@ days). A batch query invoked with one id per call is an N+1 wearing a batch cost
 
 `sync.sqlite` is the only hot database opened with **no read pool** (`readPool: 0`);
 `db.sqlite` uses 4, `agent.sqlite` 2 (`lib/database/database.dart`,
-`lib/features/agents/database/agent_database.dart`). Reads therefore serialize behind
+`lib/database/agents/agent_database.dart`). Reads therefore serialize behind
 writes on a single isolate.
 
 The convoy signature at `2026-07-01 19:29:48` — nine queries that all *started* within
@@ -242,8 +242,8 @@ barely present in April — now dominates.
 - `lib/database/slow_query_logging.dart:234` — the `Stopwatch` whose semantics this doc turns on
 - `lib/database/database_data_queries.dart` — live habit heatmap query
   (`getHabitCompletionRecordsInRange`)
-- `lib/features/agents/database/agent_repo_core.dart:88` — by-id read (N+1)
-- `lib/features/agents/database/agent_repo_core.dart:162` — `latestEntitiesByAgentIds`
-- `lib/features/agents/database/agent_attention_projection.dart:430,524` — by-id reads (N+1)
-- `lib/features/agents/database/agent_database.drift:214,253` — `getAgentEntityById`, `getAllAgentIdentities`
+- `lib/database/agents/agent_repo_core.dart:88` — by-id read (N+1)
+- `lib/database/agents/agent_repo_core.dart:162` — `latestEntitiesByAgentIds`
+- `lib/database/agents/agent_attention_projection.dart:430,524` — by-id reads (N+1)
+- `lib/database/agents/agent_database.drift:214,253` — `getAgentEntityById`, `getAllAgentIdentities`
 - `lib/database/sync_db_tables.dart:26` — `idx_outbox_actionable_priority_created_at`

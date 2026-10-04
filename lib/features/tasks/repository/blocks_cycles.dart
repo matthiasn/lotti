@@ -1,6 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:meta/meta.dart';
 
 /// Whether [entity], as a blocker, releases what it blocks (ADR 0042 §4): a

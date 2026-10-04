@@ -33,11 +33,11 @@ sources:
     title: Membership list changes
     last_modified: 2026-09-26
   - id: repository
-    resource: ../../../lib/features/tasks/repository/checklist_repository.dart
+    resource: ../../../lib/logic/repositories/checklist_repository.dart
     title: ChecklistRepository — writes on the stored row
     last_modified: 2026-09-26
   - id: intents
-    resource: ../../../lib/features/tasks/repository/checklist_membership_intents.dart
+    resource: ../../../lib/logic/repositories/checklist_membership_intents.dart
     title: Checklist membership intent log
     last_modified: 2026-09-26
   - id: membership-spec

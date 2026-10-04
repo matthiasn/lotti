@@ -5,10 +5,10 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/database/agents/agent_db_conversions.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/database/agent_db_conversions.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart'
     show agentRepositoryProvider;
 import 'package:lotti/get_it.dart';

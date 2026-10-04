@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
-import 'package:lotti/features/agents/model/agent_link_slot.dart';
+import 'package:lotti/classes/agents/agent_link_slot.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';

@@ -4,8 +4,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Controller for fetching AI responses linked to a specific entry (e.g., audio).
