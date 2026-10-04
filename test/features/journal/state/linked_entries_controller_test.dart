@@ -546,7 +546,9 @@ void main() {
         ..registerSingleton<JournalDb>(db)
         ..registerSingleton<OutboxService>(outbox)
         ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<VectorClockService>(VectorClockService());
+        ..registerSingleton<VectorClockService>(
+          VectorClockService(settingsDb: settingsDb),
+        );
       await getIt<VectorClockService>().initialized;
     });
 

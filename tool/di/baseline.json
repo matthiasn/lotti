@@ -238,7 +238,7 @@
     "lib/logic/media/audio_metadata_extractor.dart": {"lookups": 1, "isRegistered": 1},
     "lib/logic/repositories/checklist_membership_intents.dart": {"lookups": 1},
     "lib/logic/repositories/checklist_repository.dart": {"lookups": 5, "isRegistered": 1},
-    "lib/logic/repositories/journal_repository.dart": {"lookups": 37},
+    "lib/logic/repositories/journal_repository.dart": {"lookups": 30},
     "lib/logic/repositories/project_repository.dart": {"lookups": 7, "isRegistered": 1},
     "lib/logic/repositories/saved_task_filters_repository.dart": {"lookups": 3},
     "lib/logic/repositories/speech_repository.dart": {"lookups": 11},
