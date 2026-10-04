@@ -932,10 +932,14 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.error, CaptureError.recordingSavedPendingTranscription);
-        // The job may stay claimed; the failure to record that is reported.
+        // The job may stay claimed; both the cause and the failure to record
+        // it are reported.
         expect(
           reported.map((d) => d.context?.toDescription()),
-          contains('while recording a failed job'),
+          containsAll([
+            'while completing foreground capture',
+            'while recording a failed job',
+          ]),
         );
         verify(
           () => outbox.markFailure(

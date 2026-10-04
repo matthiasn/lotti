@@ -531,7 +531,7 @@ class CaptureController extends Notifier<CaptureState> {
       }
       await outbox.markSucceeded(jobId: job.id, claimToken: claim.token);
       return true;
-    } catch (error) {
+    } catch (error, stackTrace) {
       try {
         await outbox.markFailure(
           jobId: job.id,
@@ -541,6 +541,9 @@ class CaptureController extends Notifier<CaptureState> {
           retryDelay: const Duration(seconds: 1),
         );
       } catch (markError, markStack) {
+        // The job row was meant to carry [error]; with that write gone too,
+        // report both so the cause is not lost with it.
+        _reportError(error, stackTrace, 'while completing foreground capture');
         _reportError(markError, markStack, 'while recording a failed job');
       }
       return false;

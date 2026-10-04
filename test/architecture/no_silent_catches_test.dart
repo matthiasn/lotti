@@ -1,16 +1,45 @@
 import 'dart:io';
 
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A catch clause whose parameters are all underscores and whose block is
-/// empty: `catch (_) {}`, `catch (_, _) {}`, and the same split over lines.
-final _silentCatch = RegExp(r'catch\s*\(\s*_+\s*(?:,\s*_+\s*)?\)\s*\{\s*\}');
+/// The 1-based lines in [source] where a silent catch starts: a catch clause
+/// whose parameters are all underscores and whose block holds neither a
+/// statement nor a comment.
+///
+/// It works on the parsed source, so a `catch (_) {}` quoted in a string or
+/// a doc comment never counts.
+List<int> silentCatchLines(String source) {
+  final result = parseString(content: source, throwIfDiagnostics: false);
+  final visitor = _SilentCatchVisitor();
+  result.unit.accept(visitor);
+  return [
+    for (final offset in visitor.offsets)
+      result.lineInfo.getLocation(offset).lineNumber,
+  ];
+}
 
-/// The 1-based lines in [source] where a silent catch starts.
-List<int> silentCatchLines(String source) => [
-  for (final match in _silentCatch.allMatches(source))
-    '\n'.allMatches(source.substring(0, match.start)).length + 1,
-];
+class _SilentCatchVisitor extends RecursiveAstVisitor<void> {
+  final offsets = <int>[];
+
+  static bool _discarded(CatchClauseParameter? parameter) =>
+      parameter == null || RegExp(r'^_+$').hasMatch(parameter.name.lexeme);
+
+  @override
+  void visitCatchClause(CatchClause node) {
+    final body = node.body;
+    if (node.exceptionParameter != null &&
+        _discarded(node.exceptionParameter) &&
+        _discarded(node.stackTraceParameter) &&
+        body.statements.isEmpty &&
+        body.rightBracket.precedingComments == null) {
+      offsets.add(node.offset);
+    }
+    super.visitCatchClause(node);
+  }
+}
 
 /// Every swallowed exception in `lib/` says why.
 ///
@@ -23,19 +52,24 @@ void main() {
   test('the matcher finds every underscore-only empty handler', () {
     expect(
       silentCatchLines('''
-try {} catch (_) {}
-try {} catch (_, _) {}
-try {} on StateError catch (_) {}
-try {} catch (_) {
+void f() {
+  try {} catch (_) {}
+  try {} catch (_, _) {}
+  try {} on StateError catch (_) {}
+  try {} catch (_) {
+  }
+  try {} catch (_) {
+    // A reason.
+  }
+  try {} catch (error) {
+    log(error);
+  }
+  try {} on StateError {}
 }
-try {} catch (_) {
-  // A reason.
-}
-try {} catch (error) {
-  log(error);
-}
+// try {} catch (_) {}
+const quoted = 'try {} catch (_) {}';
 '''),
-      [1, 2, 3, 4],
+      [2, 3, 4, 5],
     );
   });
 
