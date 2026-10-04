@@ -17,6 +17,7 @@ import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -484,6 +485,9 @@ void main() {
               entryControllerProvider(
                 'task-1',
               ).overrideWith(_NullEntryController.new),
+              // The flow reads the task from the journal database; nothing
+              // there for this id.
+              journalDbProvider.overrideWithValue(_emptyJournalDb()),
             ],
             child: WidgetTestBench(
               child: TaskFirstRunActions(task: buildTask()),
@@ -567,4 +571,11 @@ void main() {
       },
     );
   });
+}
+
+/// A journal database holding no entries.
+MockJournalDb _emptyJournalDb() {
+  final db = MockJournalDb();
+  when(() => db.journalEntityById(any())).thenAnswer((_) async => null);
+  return db;
 }
