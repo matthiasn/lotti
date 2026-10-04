@@ -94,8 +94,13 @@ class LinkedEntriesController extends AsyncNotifier<List<EntryLink>> {
         );
   }
 
-  Future<void> updateLink(EntryLink link) async {
-    await ref.read(journalRepositoryProvider).updateLink(link);
+  /// Hides or shows the link [linkId], set on the link as stored
+  /// (`JournalRepository.changeLink`): a card's copy rendered before the
+  /// link was removed must not bring it back.
+  Future<void> setLinkHidden(String linkId, {required bool hidden}) async {
+    await ref
+        .read(journalRepositoryProvider)
+        .changeLink(linkId, (stored) => stored.copyWith(hidden: hidden));
   }
 }
 

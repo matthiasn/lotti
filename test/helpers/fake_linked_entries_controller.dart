@@ -10,8 +10,8 @@ class FakeLinkedEntriesController extends LinkedEntriesController {
 
   final List<EntryLink> links;
 
-  /// Every link passed to [updateLink], in call order.
-  final List<EntryLink> updateLinkCalls = [];
+  /// Every `(linkId, hidden)` passed to [setLinkHidden], in call order.
+  final List<({String linkId, bool hidden})> setLinkHiddenCalls = [];
 
   /// Every `toId` passed to [removeLink], in call order.
   final List<String> removeLinkCalls = [];
@@ -20,8 +20,8 @@ class FakeLinkedEntriesController extends LinkedEntriesController {
   Future<List<EntryLink>> build() async => links;
 
   @override
-  Future<void> updateLink(EntryLink link) async {
-    updateLinkCalls.add(link);
+  Future<void> setLinkHidden(String linkId, {required bool hidden}) async {
+    setLinkHiddenCalls.add((linkId: linkId, hidden: hidden));
   }
 
   @override

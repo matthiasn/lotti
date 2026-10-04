@@ -1417,12 +1417,14 @@ decision is
 |----------|------|------|
 | `Converged` | invariant | once every write has reached every replica, all hold the same version |
 | `NoLostSuccessor` | invariant | a replica never holds a version that a write it received was made over, a ghost `saw` set per write: a removal takes away every version of the link its writer had seen, whatever id each carried |
+| `NoRevival` | invariant | an edit of a link's flags — a card's hide or collapse toggle — never makes a removed link live again: only linking does |
 
 | Configuration | Replicas | Legacy | Writes | Clock | Distinct states |
 |---------------|----------|--------|--------|-------|-----------------|
 | `EntryLinkIdentity` | 3 | none | 3 | 0..2, 1 tick skew | 83,931 |
 | `EntryLinkIdentityLegacy` | 3 | replica 3, writes | 3 | 0..2, 1 tick skew | 88,547 |
 | `EntryLinkIdentityLegacyReceiver` | 3 | replica 3, receives only | 3 | 0..2, 1 tick skew | 19,187 |
+| `EntryLinkIdentityEdits` | 2 | none; cards render and toggle the link | 3 | 0..2, 1 tick skew | 46,343 |
 
 | Switch | Old behaviour | Counterexample |
 |--------|---------------|----------------|
@@ -1431,6 +1433,21 @@ decision is
 
 Either switch alone passes `EntryLinkIdentity`, where every replica runs this
 build. The two legacy configurations each need one of them.
+
+A card renders the link and keeps that copy (`Read`); its hide or collapse
+toggle is an edit of the link (`Edit`, only in `EntryLinkIdentityEdits`).
+`EditOnStored` is the fix: set to `FALSE`, the toggle writes the card's copy
+through `updateLink`, whose clock extends the stored row's and whose
+`updatedAt` is never older — the newest version wherever it goes — and
+`NoRevival` fails in five states: the link is created, a card renders it, it
+is removed, and the card's toggle makes it live again on every replica. With
+it on, `JournalRepository.changeLink` applies the toggle to the link as
+stored, under a precondition that it is still stored as read, and leaves a
+removed link alone. `journal_repository_test.dart` checks `changeLink` over an
+in-memory journal (a flag set elsewhere is kept, a removed link stays
+removed), and `linked_entries_controller_test.dart` hides a link the
+controller loaded after another device's removal landed: with the toggle
+written from the controller's copy, the link comes back.
 
 What the model leaves out:
 
@@ -1443,6 +1460,9 @@ What the model leaves out:
 - Loss and backfill are `AgentLinks`' and `SyncPipeline`'s. A version that
   lost to another id is answered `deleted` by backfill, which settles the
   gap; the winner carries the link.
+- **The flags themselves.** The model's versions carry liveness, not
+  `hidden` or `collapsed`; `changeLink` building on the stored row is what
+  keeps a flag another device set, and it is pinned by example, not checked.
 
 ## `TaskLinkGraph` — what the task links say together
 

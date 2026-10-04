@@ -84,8 +84,7 @@ class ModernToggleHiddenItem extends ConsumerWidget {
           ? context.messages.journalShowLinkHint
           : context.messages.journalHideLinkHint,
       onTap: () {
-        final updatedLink = link.copyWith(hidden: !hidden);
-        notifier.updateLink(updatedLink);
+        notifier.setLinkHidden(link.id, hidden: !hidden);
         Navigator.of(context).pop();
       },
     );

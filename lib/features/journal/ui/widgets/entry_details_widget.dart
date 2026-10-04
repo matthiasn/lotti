@@ -400,11 +400,15 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             // Flip the displayed state immediately so the tap is responsive
             // even if the persist (below) lags behind a sync backlog.
             setState(() => _collapsedOverride = !isCollapsed);
+            final collapsed = !isCollapsed;
             try {
+              // Set on the link as stored: a copy rendered before the link
+              // was removed must not bring it back.
               await ref
                   .read(journalRepositoryProvider)
-                  .updateLink(
-                    currentLink.copyWith(collapsed: !isCollapsed),
+                  .changeLink(
+                    currentLink.id,
+                    (stored) => stored.copyWith(collapsed: collapsed),
                   );
             } catch (e, s) {
               _logger.error(

@@ -27,6 +27,12 @@
 (*             project unlink: the stored row's next version, tombstoned, *)
 (*             through `updateLink`                                        *)
 (*   Deliver   JournalDb.upsertEntryLink, in one transaction               *)
+(*   Read      a linked-entry card takes its copy of the link: the row it  *)
+(*             renders (LinkedEntriesController, EntryDetailsWidget)       *)
+(*   Edit      the card's hide or collapse toggle, a version of the link   *)
+(*             with that flag changed: from the card's copy through        *)
+(*             `updateLink`, or with EditOnStored applied to the stored    *)
+(*             link (`JournalRepository.changeLink`)                       *)
 (*                                                                         *)
 (* A legacy replica runs the build before this change: it mints a random  *)
 (* id for a fresh link and receives with the old duplicate rule. It is    *)
@@ -44,13 +50,18 @@ CONSTANTS
     MaxWrites,     \* local writes, across all replicas
     MaxTime,       \* the wall clock runs 0..MaxTime
     Skew,          \* how far a write's updatedAt may lag the clock
+    CardEdits,     \* do cards read and edit the link (Read, Edit)?
     \* Design switches: TRUE is the code after ADR 0096.
     DerivedId,         \* a fresh link takes the id derived from its triple
-    TripleIsIdentity   \* the receive orders every version of the triple
+    TripleIsIdentity,  \* the receive orders every version of the triple
+    EditOnStored       \* a card's edit is applied to the stored link and
+                       \* refused when that link is removed; FALSE is the
+                       \* former toggles, which wrote the card's copy
 
 R == 1..N
 ASSUME Legacy \subseteq R
-ASSUME \A b \in {LegacyWrites, DerivedId, TripleIsIdentity} : b \in BOOLEAN
+ASSUME \A b \in {LegacyWrites, DerivedId, TripleIsIdentity, CardEdits,
+                  EditOnStored} : b \in BOOLEAN
 
 Modern == R \ Legacy
 \* The replicas the guarantees cover: every one when legacy replicas only
@@ -67,10 +78,11 @@ Max(a, b) == IF a > b THEN a ELSE b
 CanonGt(a, b) == \E k \in R : a[k] > b[k] /\ \A j \in R : j < k => a[j] = b[j]
 
 \* A version: its write number (standing for its serialized content), link
-\* id, writer, live or tombstoned, clock, updatedAt, and -- a ghost -- the
-\* write numbers its writer had received or made when it wrote it.
+\* id, writer, live or tombstoned, clock, updatedAt, and -- ghosts -- the
+\* write numbers its writer had received or made when it wrote it, and
+\* whether it is an edit that made a removed link live again.
 Absent == [n |-> 0, id |-> 0, host |-> 0, live |-> FALSE, vc |-> Zero,
-           ts |-> 0, saw |-> {}]
+           ts |-> 0, saw |-> {}, revived |-> FALSE]
 
 \* ADR 0078's order: the later updatedAt, then the canonical clock, then
 \* the content.
@@ -84,9 +96,10 @@ VARIABLES
     sent,       \* every write ever made
     delivered,  \* per replica: the versions it has received or made
     now,        \* the wall clock
-    hc          \* per replica: the last counter VectorClockService issued
+    hc,         \* per replica: the last counter VectorClockService issued
+    snap        \* per replica: the copy of the link a card renders
 
-vars == <<row, sent, delivered, now, hc>>
+vars == <<row, sent, delivered, now, hc, snap>>
 
 Init ==
     /\ row = [r \in R |-> Absent]
@@ -94,6 +107,7 @@ Init ==
     /\ delivered = [r \in R |-> {}]
     /\ now = 0
     /\ hc = [r \in R |-> 0]
+    /\ snap = [r \in R |-> Absent]
 
 \* The row replica r keeps when version i arrives while it holds l.
 \* After the fix, one register per triple: the greater version stays,
@@ -123,14 +137,15 @@ Stamps == (IF now > Skew THEN now - Skew ELSE 0)..now
 NewVersion(r, live, t) ==
     [n |-> Cardinality(sent) + 1, id |-> IdFor(r), host |-> r, live |-> live,
      vc |-> [row[r].vc EXCEPT ![r] = hc[r] + 1],
-     ts |-> Max(t, row[r].ts), saw |-> {m.n : m \in delivered[r]}]
+     ts |-> Max(t, row[r].ts), saw |-> {m.n : m \in delivered[r]},
+     revived |-> FALSE]
 
 Commit(r, v) ==
     /\ sent' = sent \cup {v}
     /\ delivered' = [delivered EXCEPT ![r] = @ \cup {v}]
     /\ row' = [row EXCEPT ![r] = v]
     /\ hc' = [hc EXCEPT ![r] = @ + 1]
-    /\ UNCHANGED now
+    /\ UNCHANGED <<now, snap>>
 
 \* Creating the link: none is stored here, or the stored one is removed.
 Link(r) ==
@@ -150,16 +165,37 @@ Deliver(r) ==
     /\ \E m \in sent :
         /\ row' = [row EXCEPT ![r] = Receive(r, @, m)]
         /\ delivered' = [delivered EXCEPT ![r] = @ \cup {m}]
-    /\ UNCHANGED <<sent, now, hc>>
+    /\ UNCHANGED <<sent, now, hc, snap>>
 
 Tick ==
     /\ now < MaxTime
     /\ now' = now + 1
-    /\ UNCHANGED <<row, sent, delivered, hc>>
+    /\ UNCHANGED <<row, sent, delivered, hc, snap>>
+
+\* A card renders the link as stored, live or not, and keeps that copy
+\* until it renders again.
+Read(r) ==
+    /\ CardEdits
+    /\ snap[r] # row[r]
+    /\ snap' = [snap EXCEPT ![r] = row[r]]
+    /\ UNCHANGED <<row, sent, delivered, now, hc>>
+
+\* The card's hide or collapse toggle on the link it shows. Applied to the
+\* stored link, it is refused once that link is removed. Written from the
+\* copy, it is a live version under a clock that extends the stored row's
+\* and an updatedAt no older than it -- the newer version, wherever it goes.
+Edit(r) ==
+    /\ CardEdits
+    /\ r \in Writers
+    /\ Cardinality(sent) < MaxWrites
+    /\ snap[r].live
+    /\ EditOnStored => row[r].live
+    /\ \E t \in Stamps :
+          Commit(r, [NewVersion(r, TRUE, t) EXCEPT !.revived = ~row[r].live])
 
 Next ==
     \/ Tick
-    \/ \E r \in R : Link(r) \/ Unlink(r) \/ Deliver(r)
+    \/ \E r \in R : Link(r) \/ Unlink(r) \/ Deliver(r) \/ Read(r) \/ Edit(r)
 
 Spec == Init /\ [][Next]_vars
 
@@ -181,4 +217,8 @@ Converged == Quiescent => \A a, b \in Checked : row[a] = row[b]
 NoLostSuccessor ==
     \A r \in Checked : \A m \in delivered[r] :
         m.host \in Checked => row[r].n \notin m.saw
+
+\* An edit of a link's flags never brings back a removed link: only linking
+\* again does.
+NoRevival == \A m \in sent : ~m.revived
 =============================================================================

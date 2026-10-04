@@ -579,6 +579,9 @@ void registerAllFallbackValues() {
   registerFallbackValue(InsightLevel.info);
   registerFallbackValue(InsightType.log);
 
+  // The change `JournalRepository.changeLink` applies to the stored link.
+  registerFallbackValue((EntryLink stored) => stored);
+
   // EntryLink fallback (for sealed union matching with any())
   registerFallbackValue(
     EntryLink.basic(
