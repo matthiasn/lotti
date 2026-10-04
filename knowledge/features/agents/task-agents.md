@@ -436,7 +436,9 @@ These context details are load-bearing:
   request whose refresh failed appears by name only, with no state, so the
   agent cannot derive a checklist suggestion from stale data; the section's
   own guidance tells it to propose completions from current pull requests
-  through `update_checklist_items`, naming the pull request in the reason. The
+  through `update_checklist_items`, naming the pull request in the reason,
+  and to keep a merge item for every open pull request, checked only once it
+  is merged. The
   refresh runs inside the wake's agent-execution zone, so a changed snapshot it
   stores notifies the UI only and cannot wake the agent again. No section
   on a device without a GitHub token or without linked pull requests; a

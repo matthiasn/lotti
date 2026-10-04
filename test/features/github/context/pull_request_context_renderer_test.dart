@@ -107,6 +107,37 @@ void main() {
   );
 
   test(
+    'the agent is told to track every open pull request with a merge item, '
+    'checked only once it is merged, so a task cannot close on work that '
+    'never landed',
+    () {
+      final text = render(
+        PullRequestContextItem(ref: ref, snapshot: open, current: true),
+      );
+      expect(
+        text,
+        contains(
+          'every open pull request needs a checklist item to merge it, '
+          'naming the pull request',
+        ),
+      );
+      expect(text, contains('add_multiple_checklist_items'));
+      expect(
+        text,
+        contains('propose checking it only once the pull request is merged'),
+      );
+    },
+  );
+
+  test('the coding prompt carries no merge-item instruction', () {
+    final text = render(
+      PullRequestContextItem(ref: ref, snapshot: open, current: true),
+      audience: PullRequestContextAudience.codingPrompt,
+    );
+    expect(text, isNot(contains('add_multiple_checklist_items')));
+  });
+
+  test(
     'the agent never sees the state of a pull request whose refresh failed '
     '(SuggestRequiresRefresh)',
     () {

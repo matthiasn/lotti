@@ -44,8 +44,13 @@ const _agentGuidance =
     'shows an open checklist item done — merged, or its description and '
     'changes complete what the item asks — propose checking that item with '
     'update_checklist_items and name the pull request (owner/repo#number) '
-    'in the reason. A pull request marked not refreshed tells you nothing '
-    'about its state: never propose a checklist change from it. $_briefGuidance';
+    'in the reason. Work in an open pull request has not landed yet, so '
+    'every open pull request needs a checklist item to merge it, naming '
+    'the pull request: if the checklist has none, propose one with '
+    'add_multiple_checklist_items, and propose checking it only once the '
+    'pull request is merged. A pull request marked not refreshed tells you '
+    'nothing about its state: never propose a checklist change from it. '
+    '$_briefGuidance';
 
 const _codingPromptGuidance =
     'Pull requests linked to this task, refreshed from GitHub now. Treat '
