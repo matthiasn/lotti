@@ -206,7 +206,7 @@ void main() {
 
     expect(readBaseline(file), current);
     expect(encodeBaseline(readBaseline(file)), encodeBaseline(current));
-    expect(file.readAsStringSync(), contains('"_total": 3'));
+    expect(file.readAsStringSync(), isNot(contains('_total')));
   });
 
   test('every feature directory has a rank', () {

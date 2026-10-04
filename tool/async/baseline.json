@@ -1,6 +1,5 @@
 {
   "_comment": "unawaited(...) calls in lib/. Each file must match its entry: it may shrink, never grow, and a shrink is recorded with dart run tool/async/validate.dart --update-baseline.",
-  "_total": 578,
   "files": {
     "lib/beamer/beamer_app.dart": 4,
     "lib/beamer/chrome/mobile_activity_island.dart": 2,
@@ -43,7 +42,7 @@
     "lib/features/ai/repository/melious_inference_transcription.dart": 2,
     "lib/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart": 1,
     "lib/features/ai/service/embedding_service.dart": 1,
-    "lib/features/ai/services/skill_inference_runner.dart": 1,
+    "lib/features/ai/services/skill_inference_runner_media_runs.dart": 1,
     "lib/features/ai/state/ai_runtime_settings_controller.dart": 3,
     "lib/features/ai/ui/image_generation/cover_art_skill_modal.dart": 1,
     "lib/features/ai/ui/inference_profile_slot_field.dart": 1,

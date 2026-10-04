@@ -43,6 +43,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -206,12 +207,14 @@ void main() {
         expect(getIt.isRegistered<MatrixService>(), isFalse);
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
-        // The provider bridge omits matrixServiceProvider in guest mode:
-        // 19 overrides instead of the real profile's 20 (the entities cache and
-        // the settings, persistence, nav, time and vector-clock services are
-        // registered in both). Which providers those are is asserted in the
-        // 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(22));
+        // The provider bridge omits matrixServiceProvider in guest mode. The
+        // providers both worlds wire are asserted in the 'agent runtime
+        // registrations' group below; a count here changed with every seam
+        // and made every pull request that added one conflict with the rest.
+        expect(
+          buildProviderOverrides(context).map((override) => override.origin),
+          isNot(contains(matrixServiceProvider)),
+        );
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
@@ -284,7 +287,10 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(23));
+      expect(
+        buildProviderOverrides(context).map((override) => override.origin),
+        contains(matrixServiceProvider),
+      );
 
       // The slots and seams lower features declare resolve to the higher
       // features' implementations.

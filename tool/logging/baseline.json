@@ -1,6 +1,5 @@
 {
   "_comment": "dart:developer log calls outside lib/services/, still to move to DomainLogger. Regenerate with: dart run tool/logging/validate.dart --update-baseline. This number only ever goes down.",
-  "_total": 518,
   "files": {
     "lib/features/agents/genui/genui_event_handler.dart": 5,
     "lib/features/agents/service/agent_service.dart": 7,
@@ -88,8 +87,9 @@
     "lib/features/ai/repository/voxtral_inference_repository.dart": 10,
     "lib/features/ai/service/embedding_service.dart": 3,
     "lib/features/ai/services/checklist_completion_service.dart": 2,
-    "lib/features/ai/services/skill_inference_runner.dart": 3,
+    "lib/features/ai/services/skill_inference_runner.dart": 1,
     "lib/features/ai/services/skill_inference_runner_internals.dart": 4,
+    "lib/features/ai/services/skill_inference_runner_media_runs.dart": 2,
     "lib/features/ai/state/ai_config_initialization.dart": 7,
     "lib/features/ai/state/embedding_backfill_controller.dart": 2,
     "lib/features/ai/state/reference_image_selection_controller.dart": 3,
