@@ -156,6 +156,45 @@ void main() {
         );
       });
 
+      test(
+        'worker-isolate decodes run one at a time, so the limit is also '
+        'the most inflated output held at once',
+        () async {
+          resetWorkerDecodesPeak();
+          // Each takes the compute path, and they are started together.
+          final inputs = [
+            for (var i = 0; i < 3; i++)
+              Uint8List.fromList(
+                gzip.encode(_noise(256 * 1024, seed: i)),
+              ),
+          ];
+          expect(
+            inputs.every((c) => c.length >= 2 * 1024),
+            isTrue,
+            reason: 'compute path',
+          );
+
+          final decoded = await Future.wait([
+            for (final input in inputs) decode(input, 1024 * 1024),
+          ]);
+
+          expect(decoded.map((d) => d.length), everyElement(256 * 1024));
+          expect(workerDecodesPeak, 1);
+        },
+      );
+
+      test('a rejected worker decode still lets the next one run', () async {
+        resetWorkerDecodesPeak();
+        await expectLater(
+          decode(bomb(64 * 1024 * 1024), 1024 * 1024),
+          throwsA(isA<AttachmentTooLargeException>()),
+        );
+        final next = Uint8List.fromList(gzip.encode(_noise(64 * 1024)));
+        expect(next.length, greaterThanOrEqualTo(2 * 1024));
+
+        expect(await decode(next, 1024 * 1024), hasLength(64 * 1024));
+      });
+
       test('a payload exactly at the limit still decodes', () async {
         final original = List<int>.generate(4096, (i) => i % 251);
         final decoded = await decode(
@@ -657,4 +696,11 @@ extension _AnyAttachmentDecoding on glados.Any {
           compressed: compressed,
         ),
       );
+}
+
+/// Seeded pseudo-random bytes: they barely compress, so even a small payload
+/// takes the worker-isolate path, and every run sees the same bytes.
+List<int> _noise(int length, {int seed = 0}) {
+  final random = Random(seed);
+  return List<int>.generate(length, (_) => random.nextInt(256));
 }

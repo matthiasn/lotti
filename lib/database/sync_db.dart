@@ -671,8 +671,46 @@ class SyncDatabase extends _$SyncDatabase
         }
         if (from < 34) {
           await m.createTable(trustedSyncSenders);
+          // Rows queued before this version never passed the trust gate,
+          // which checks at enqueue (`SyncEventTrust`), and draining would
+          // apply them unchecked. Drop them, after lowering each room's
+          // resume floor to its oldest dropped row: the next resume walk then
+          // fetches those events again and they enter through the gate.
+          // Both tables exist on every real upgrade path by now; without a
+          // queue there is nothing to drop.
+          final tables = await customSelect(
+            'SELECT name FROM sqlite_master WHERE type = ? AND name IN (?, ?)',
+            variables: [
+              Variable.withString('table'),
+              Variable.withString('inbound_event_queue'),
+              Variable.withString('queue_markers'),
+            ],
+          ).get();
+          if (tables.length == 2) {
+            await _requeuePreTrustRows();
+          }
         }
       },
+    );
+  }
+
+  /// Drops inbound rows queued before the trust gate (schema v34) that were
+  /// never applied, after lowering each room's resume floor to the oldest of
+  /// them, so the next resume walk fetches those events again through the
+  /// gate. Applied rows stay: they are the dedup ledger that keeps the walk
+  /// from replaying history.
+  Future<void> _requeuePreTrustRows() async {
+    await customStatement('''
+      INSERT INTO queue_markers (room_id, resume_floor_ts)
+      SELECT room_id, MIN(origin_ts) FROM inbound_event_queue
+      WHERE status != 'applied'
+      GROUP BY room_id
+      ON CONFLICT(room_id) DO UPDATE SET resume_floor_ts =
+        MIN(COALESCE(queue_markers.resume_floor_ts, excluded.resume_floor_ts),
+            excluded.resume_floor_ts)
+    ''');
+    await customStatement(
+      "DELETE FROM inbound_event_queue WHERE status != 'applied'",
     );
   }
 }

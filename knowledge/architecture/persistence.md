@@ -745,6 +745,15 @@ path. Writers strip the metadata-only leading separator and construct physical
 paths with `path.join`; AI image readers resolve only this canonical location
 inside the documents directory.
 
+Image and audio directories and file names arrive by sync, so a peer can put
+`..` in them. The resolvers keep their plain normalized join, and these sinks
+refuse a path outside the documents directory rather than rewriting it: the
+attachment ingestor, the image-path migration, AI image inference, and the
+entry header's reveal-in-file-manager and share actions, which check with
+`isInsideDocuments` (`lib/utils/document_path_guard.dart`). That guard also
+refuses segments made only of dots and spaces, which `p.isWithin` accepts but
+Win32 trims back to `..`.
+
 `takeScreenshot` uses `ScreenshotHost` for commands, portal access and window
 operations, with `clock.now()` supplying the capture date. The command timeout
 covers output draining and process exit together; timeout kills the process

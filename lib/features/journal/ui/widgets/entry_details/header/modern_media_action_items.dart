@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
@@ -5,8 +7,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/document_path_guard.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
 import 'package:lotti/utils/platform.dart';
@@ -83,6 +88,14 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
           final filePath = entry is JournalImage
               ? getFullImagePath(entry)
               : await AudioUtils.getFullAudioPath(entry as JournalAudio);
+          // The directory and file name arrive by sync: a path a peer pointed
+          // outside the documents directory is refused, never revealed.
+          if (!isInsideDocuments(getDocumentsDirectory().path, filePath)) {
+            throw FileSystemException(
+              'media path resolves outside the documents directory',
+              filePath,
+            );
+          }
           final callback = onShowInFileManager;
           if (callback != null) {
             await callback(filePath);
@@ -148,6 +161,28 @@ class ModernShareItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // Captured now: the tap runs after the sheet pops, maybe after this
+    // widget is gone.
+    final logger = ref.watch(domainLoggerProvider);
+
+    // The directory and file name arrive by sync: a path a peer pointed
+    // outside the documents directory is refused, never handed to the share
+    // sheet, which would send that file out of the app.
+    Future<void> share(String filePath) async {
+      if (!isInsideDocuments(getDocumentsDirectory().path, filePath)) {
+        logger.error(
+          LogDomain.persistence,
+          StateError(
+            'shared media path resolves outside the documents '
+            'directory',
+          ),
+          subDomain: 'ModernShareItem',
+        );
+        return;
+      }
+      await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+    }
+
     return DsActionRow(
       icon: LottiIcons.share,
       title: context.messages.journalShareHint,
@@ -160,12 +195,10 @@ class ModernShareItem extends ConsumerWidget {
         }
 
         if (entry is JournalImage) {
-          final filePath = getFullImagePath(entry);
-          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+          await share(getFullImagePath(entry));
         }
         if (entry is JournalAudio) {
-          final filePath = await AudioUtils.getFullAudioPath(entry);
-          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+          await share(await AudioUtils.getFullAudioPath(entry));
         }
       },
     );
