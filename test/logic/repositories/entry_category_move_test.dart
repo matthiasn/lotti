@@ -211,6 +211,125 @@ void main() {
       expect(await intents.pending(), isEmpty);
     });
 
+    test(
+      'a root write reported failed that committed still moves the rest',
+      () async {
+        // The write answers false when work after its commit throws: the
+        // stored row decides.
+        when(
+          () => journalRepository.updateCategoryId(
+            testTask.meta.id,
+            categoryId: otherCategoryId,
+          ),
+        ).thenAnswer((_) async => false);
+        stored(taskIn(otherCategoryId));
+        final linkedEntry = testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta.copyWith(
+            id: 'linked_entry',
+            categoryId: projectCategoryId,
+          ),
+        );
+        linkedFrom(testTask.meta.id, [linkedEntry]);
+
+        expect(
+          await categoryMove.move(testTask.meta.id, otherCategoryId),
+          isTrue,
+        );
+
+        verifyWrote(linkedEntry.meta.id, otherCategoryId);
+        expect(await intents.pending(), isEmpty);
+      },
+    );
+
+    // A follower write that did not land keeps the move for the next start,
+    // unless its row is gone.
+    for (final (name, stillThere) in [
+      ('is kept for the next start', true),
+      ('is done when the row is gone', false),
+    ]) {
+      test(
+        'a move whose linked entry did not take the category $name',
+        () async {
+          stored(taskIn(otherCategoryId));
+          final linkedEntry = testTextEntryNoGeo.copyWith(
+            meta: testTextEntryNoGeo.meta.copyWith(
+              id: 'linked_entry',
+              categoryId: projectCategoryId,
+            ),
+          );
+          linkedFrom(testTask.meta.id, [linkedEntry]);
+          when(
+            () => journalRepository.updateCategoryId(
+              linkedEntry.meta.id,
+              categoryId: otherCategoryId,
+            ),
+          ).thenAnswer((_) async => false);
+          if (stillThere) stored(linkedEntry);
+
+          await categoryMove.move(testTask.meta.id, otherCategoryId);
+
+          expect(
+            await intents.pending(),
+            stillThere
+                ? {testTask.meta.id: (categoryId: otherCategoryId)}
+                : isEmpty,
+          );
+        },
+      );
+    }
+
+    test('a second move of the entry waits for the first, and its record '
+        'stands', () async {
+      final linkedEntry = testTextEntryNoGeo.copyWith(
+        meta: testTextEntryNoGeo.meta.copyWith(
+          id: 'linked_entry',
+          categoryId: projectCategoryId,
+        ),
+      );
+      linkedFrom(testTask.meta.id, [linkedEntry]);
+      final writes = <String?>[];
+      final firstFollower = Completer<bool>();
+      when(
+        () => journalRepository.updateCategoryId(
+          testTask.meta.id,
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((call) async {
+        final category = call.namedArguments[#categoryId] as String?;
+        writes.add('task:$category');
+        stored(taskIn(category));
+        return true;
+      });
+      when(
+        () => journalRepository.updateCategoryId(
+          linkedEntry.meta.id,
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((call) {
+        final category = call.namedArguments[#categoryId] as String?;
+        writes.add('entry:$category');
+        return writes.length == 2 ? firstFollower.future : Future.value(true);
+      });
+
+      final first = categoryMove.move(testTask.meta.id, otherCategoryId);
+      final second = categoryMove.move(testTask.meta.id, 'cat_third');
+      await pumpEventQueue();
+
+      // The second move has not begun while the first is in flight.
+      expect(writes, ['task:$otherCategoryId', 'entry:$otherCategoryId']);
+
+      firstFollower.complete(true);
+      await Future.wait([first, second]);
+
+      expect(writes, [
+        'task:$otherCategoryId',
+        'entry:$otherCategoryId',
+        'task:cat_third',
+        'entry:cat_third',
+      ]);
+      expect(await intents.pending(), isEmpty);
+    });
+
     // The checklists of a task and their items carry its category: a new
     // item takes its checklist's (`specs/tla/TaskCategoryMove.tla`,
     // ChecklistsFollow).
@@ -265,6 +384,30 @@ void main() {
 
           verifyNoWrite('cl_1');
           verifyNoWrite('item_1');
+        },
+      );
+
+      test(
+        'keep an item a shared checklist of the same task lists too',
+        () async {
+          stored(
+            taskIn(otherCategoryId, checklistIds: ['cl_own', 'cl_shared']),
+          );
+          stored(checklist('cl_own', items: ['item_both']));
+          stored(
+            checklist(
+              'cl_shared',
+              tasks: [testTask.meta.id, 'other_task'],
+              items: ['item_both'],
+            ),
+          );
+          stored(item('item_both', ['cl_own', 'cl_shared']));
+
+          await categoryMove.move(testTask.meta.id, otherCategoryId);
+
+          verifyWrote('cl_own', otherCategoryId);
+          verifyNoWrite('cl_shared');
+          verifyNoWrite('item_both');
         },
       );
 

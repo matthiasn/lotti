@@ -3298,8 +3298,10 @@ With both switches on, `EntryCategoryMove.move` records the move
 and removes the record after the last. `EntryCategoryMove.replay` runs at
 startup: a recorded move whose entry holds the recorded category is
 finished, skipping each write that landed, and any other record is dropped.
-A checklist another task shows, or an item another task's checklist lists,
-stays where it is.
+The record is cleared only once every row still there holds the category;
+a write that reports failure is checked against its stored row. A checklist
+another task shows stays where it is, and so does an item any such
+checklist lists. Moves of one entry run one at a time.
 
 `test/logic/repositories/entry_category_move_test.dart` drives the real code.
 The mocked repositories cover each step. A move whose linked entry's write
@@ -3310,9 +3312,9 @@ task's write had landed before the crash. Each fails with its fix reverted.
 
 What the model leaves out:
 
-- **Two moves of one task at once.** A second move replaces the first's
-  record; the replay finishes the later one, and the writes of both are
-  idempotent, but their interleaving is not modelled.
+- **Two moves of one task at once.** `EntryCategoryMove` runs them one
+  after the other, so they never interleave; the model has one move in
+  flight.
 - **Another device.** Its own moves arrive as synced rows; the replay guard
   (the entry must hold the recorded category) keeps a replay from undoing
   one, which the model checks only on this device.

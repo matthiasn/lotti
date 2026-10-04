@@ -44,11 +44,17 @@ category.
   began, or a later move overtook it, here or on another device, and a
   replay must not undo that.
 - **A task's checklists and their items follow it.** A checklist that
-  another task also shows stays where it is, and so does an item that
-  another task's checklist lists.
-- **Only the entry's own write decides the result.** If it does not land,
-  nothing else moves. A failure after it is logged and keeps the record for
-  the next start.
+  another task also shows stays where it is, and so does an item that any
+  checklist staying behind lists.
+- **The stored rows decide.** A write can report failure and still have
+  committed, when work after its commit throws. So the entry, and each
+  follower whose write reports failure, is checked against its stored row.
+  If the entry does not hold the category, nothing else moves. If a
+  follower that still exists does not hold it, or anything throws, the
+  record is kept for the next start and the problem is logged.
+- **Moves of one entry run one at a time.** A later move waits for the
+  earlier one, so the earlier one cannot clear the later one's record or
+  land its writes over the later one's.
 
 ## Consequences
 
