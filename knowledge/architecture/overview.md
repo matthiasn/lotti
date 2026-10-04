@@ -16,6 +16,10 @@ sources:
     resource: ../../pubspec.yaml
     title: Dependency manifest
     last_modified: 2026-07-26
+  - id: layer-guard
+    resource: ../../tool/architecture/layer_guard.dart
+    title: Layer order guard
+    last_modified: 2026-10-04
   - id: import-direction
     resource: ../../test/architecture/feature_import_direction_test.dart
     title: Feature import direction test
@@ -94,8 +98,44 @@ and common. The arrows forbid upward imports, not shortcuts downward.
 
 ## What is enforced
 
-Only a few directions are checked, by
-`test/architecture/feature_import_direction_test.dart`:
+**The layer order.** `tool/architecture/layer_guard.dart` gives every module a
+rank and holds every import in `lib/` to it; CI runs it in the analyze job, and
+`make layer_check` runs it locally:
+
+```mermaid
+flowchart BT
+  Foundation["Foundation — lib/classes, database, logic, services, utils, providers, map<br/>imports no feature"]
+  DS["design_system + shared UI — lib/widgets, themes, ui"]
+  Low["Lower features — categories, labels, ai_consumption, ai, journal …"]
+  Agents["agents — the runtime, above the AI layer it calls"]
+  Sync["sync — above the features whose entities it carries"]
+  High["Aggregators — settings, demo, tasks, projects, daily_os_next, onboarding …"]
+  Shell["Shell — lib/beamer, pages, app_root, get_it*, main<br/>may import anything"]
+  Foundation --> DS --> Low --> Agents --> Sync --> High --> Shell
+```
+
+Read the arrows as "is imported by". The full order is the `featureOrder` list
+in the guard, bottom to top: a feature may import the features before it,
+never the ones after, and the order is the one that left the fewest upward
+imports when the guard was introduced, adjusted by hand where the domain
+decides (sync above the features it carries, the agent runtime above AI).
+Two kinds of import break it:
+
+- **upward** — a file imports a feature ranked above its own, including any
+  foundation file importing a feature at all;
+- **ui** — non-UI code (models, repositories, services, state) imports another
+  feature's UI, whatever the ranks. A feature's UI is any file under one of its
+  `ui`, `widgets`, `pages`, `routing`, `view(s)` or `widgetbook` directories.
+
+The imports that already broke the order are listed in
+`tool/architecture/baseline.json`, whose `_total` is the number left to fix.
+A new break fails CI, and so does a listed one that no longer occurs, until
+`--update-baseline` drops it — so the list only ever shrinks, and the change
+that removes an import records it. A feature directory missing from the order
+also fails, which makes ranking a new feature an explicit decision.
+
+**Named rules.** `test/architecture/feature_import_direction_test.dart` keeps
+four rules that predate the order, two of them finer than a feature:
 
 | Rule | Why |
 |------|-----|
@@ -104,28 +144,14 @@ Only a few directions are checked, by
 | Nothing imports `features/settings_v2` | It was folded into `features/settings` and must not return as a second home |
 | `features/settings/{domain,state}` do not import `features/settings/{routing,ui}` | The route registry imports every settings page, so the tree would depend on all of them |
 
-The test checks direct imports only. A transitive check was tried and
+Both checks look at direct imports only. A transitive check was tried and
 rejected: almost everything reaches almost everything through
 `nav_service → beamer → app_root`, so it would have flagged dozens of paths
 that no single import can fix.
 
-Everything else is unenforced, and the tree does not yet match the intent.
-Counting files outside `lib/features/` that import a feature (generated files
-excluded):
-
-| Directory | Files importing a feature |
-|-----------|---------------------------|
-| `lib/widgets` | 49 of 87 |
-| `lib/logic` | 14 of 36 |
-| `lib/beamer` | 11 of 14 — expected: the shell sits above features |
-| `lib/classes` | 5 of 40 — sync, AI consumption and categories types among them |
-| `lib/database` | 5 of 42 — `database.dart` and `sync_db.dart` import sync, habits and GitHub |
-| `lib/services` | 5 of 26 |
-| `lib/utils` | 2 of 30 |
-
-Treat these as debt: move a shared type down rather than adding another upward
-import, and extend the architecture test when a direction is clean enough to
-lock.
+To remove a break, move the shared type down — into the lower feature or into
+`lib/` — or invert the dependency through an interface the lower layer owns,
+as the agent-runtime registries do.
 
 The [GetIt/Riverpod split](bootstrap-and-di.md) — process-wide services in
 GetIt, scoped state in Riverpod — is held by a ratchet rather than by

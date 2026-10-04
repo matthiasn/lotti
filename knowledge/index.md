@@ -87,6 +87,7 @@ README, this is the way in:
 | [`lib/utils/`](../lib/utils) | [Device location](architecture/device-location.md) | **`location.dart` only**; the rest are small helpers, read the code |
 | [`services/`](../services) | [Backend services](architecture/backend-services.md) | which service the app uses, which CI covers, and which are unmaintained; each service's own README covers running it |
 | [`test/`](../test) | [Testing conventions](conventions/testing.md) + [`test/README.md`](../test/README.md) | the whole tree |
+| [`tool/architecture/`](../tool/architecture) | [System overview](architecture/overview.md#what-is-enforced) | the layer order and its baseline |
 | [`tool/okf/`](../tool/okf) | [How this bundle is maintained](conventions/knowledge-bundle.md) | the whole tree |
 
 Where a row says "only", the concept describes that seam rather than the
