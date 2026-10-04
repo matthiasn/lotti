@@ -3,6 +3,7 @@ import 'dart:core';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Header for a generic health chart card: the configured health type's display

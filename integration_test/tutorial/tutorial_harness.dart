@@ -50,6 +50,7 @@ import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
@@ -64,7 +65,6 @@ import 'package:lotti/providers/service_providers.dart'
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,
-        matrixServiceProvider,
         outboxServiceProvider,
         syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';

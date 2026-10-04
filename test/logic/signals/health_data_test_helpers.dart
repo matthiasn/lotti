@@ -1,7 +1,7 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 
-import '../test_utils.dart';
+import '../../features/dashboards/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Generators for Glados property tests.

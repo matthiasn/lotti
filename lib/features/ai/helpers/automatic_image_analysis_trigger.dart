@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -9,7 +10,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// Uses the profile-driven automation path exclusively. When a task has an
 /// agent with a profile that includes an image analysis skill, the skill is
 /// invoked via [SkillInferenceRunner]. Otherwise, nothing happens.
-class AutomaticImageAnalysisTrigger {
+class AutomaticImageAnalysisTrigger implements ImageAnalysisTrigger {
   AutomaticImageAnalysisTrigger({
     required this.ref,
     required this.loggingService,
@@ -26,6 +27,7 @@ class AutomaticImageAnalysisTrigger {
   /// gets one; otherwise this logs and returns silently. [subjectId] is what
   /// lets a picture belonging to something other than a task — a person's
   /// check-in — resolve against that owner instead.
+  @override
   Future<void> triggerAutomaticImageAnalysis({
     required String imageEntryId,
     String? linkedTaskId,

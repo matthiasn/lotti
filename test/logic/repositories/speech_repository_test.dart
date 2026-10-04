@@ -2,14 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
+import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 /// Stubs [MockPersistenceLogic.createMetadata] for the `createAudioEntry`
 /// tests. Pass [returns] to resolve with a [Metadata], or [throws] to throw.

@@ -299,7 +299,7 @@ net-new work.** v1 ships three load-bearing beats; the rest defers to a polish p
 - Voice/listen: `lib/features/daily_os_next/ui/widgets/{voice_button,voice_orb_zone,live_waveform}.dart`,
   `lib/features/ai/ui/animation/ai_voice_input_shader.dart`,
   `lib/features/daily_os_next/state/{capture_controller,capture_dbfs}.dart`.
-- Capture persistence: `lib/features/speech/repository/speech_repository.dart` (`createAudioEntry`).
+- Capture persistence: `lib/logic/repositories/speech_repository.dart` (`createAudioEntry`).
 - Provider setup pattern: `lib/features/ai/ui/settings/services/gemini_ftue_setup.dart`;
   suppress auto-open in `.../ai_setup_prompt_service.dart`.
 - Task/checklist materialization: `lib/features/daily_os_next/agents/service/day_agent_capture_service.dart`

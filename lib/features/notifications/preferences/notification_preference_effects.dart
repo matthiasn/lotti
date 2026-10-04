@@ -2,6 +2,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/notifications/model/notification_kind_flags.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
+import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -17,7 +18,7 @@ import 'package:lotti/utils/consts.dart';
 /// runs, so a platform call that fails is logged and never turns into a
 /// setting reported as unsaved or a sync event left pending. A flag that is
 /// not a notification preference does nothing here.
-class NotificationPreferenceEffects {
+class NotificationPreferenceEffects implements ConfigFlagEffects {
   NotificationPreferenceEffects({
     required this._journalDb,
     required this._notificationService,
@@ -34,6 +35,7 @@ class NotificationPreferenceEffects {
   final DomainLogger _logger;
 
   /// Applies the consequence of [flag] having changed to `flag.status`.
+  @override
   Future<void> apply(ConfigFlag flag) async {
     switch (flag.name) {
       case enableNotificationsFlag:

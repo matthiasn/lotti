@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/dashboard_health_config.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/classes/observation.dart';
+import 'package:lotti/logic/signals/health_data.dart';
 
-import '../test_utils.dart';
+import '../../features/dashboards/test_utils.dart';
 import 'health_data_test_helpers.dart';
 
 void main() {

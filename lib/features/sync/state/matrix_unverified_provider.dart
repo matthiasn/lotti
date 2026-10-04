@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:matrix/matrix.dart';
 
 /// Exposes the current set of unverified Matrix devices for the

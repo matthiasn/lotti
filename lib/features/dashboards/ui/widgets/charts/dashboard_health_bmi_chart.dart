@@ -3,15 +3,15 @@ import 'dart:core';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/dashboard_health_config.dart';
+import 'package:lotti/classes/observation.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/logic/signals/health_data.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Header for the BMI/weight chart card. Titled "Weight" (the card actually

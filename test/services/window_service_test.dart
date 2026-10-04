@@ -71,7 +71,7 @@ void main() {
           callOrder.add('exit');
           exitCompleter.complete(code);
         },
-        playerDisposerOverride: () async {
+        playerDisposer: () async {
           callOrder.add('playerDispose');
         },
       ).onWindowClose();
@@ -91,7 +91,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
-        playerDisposerOverride: () async {
+        playerDisposer: () async {
           throw Exception('player disposal failed');
         },
       ).onWindowClose();
@@ -111,7 +111,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
-        playerDisposerOverride: () async {},
+        playerDisposer: () async {},
       ).onWindowClose();
 
       final exitCode = await exitCompleter.future;
@@ -128,7 +128,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
-        playerDisposerOverride: () async {},
+        playerDisposer: () async {},
       ).shutdown();
 
       verify(loggingService.flush).called(1);
@@ -151,7 +151,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
-        playerDisposerOverride: () async {
+        playerDisposer: () async {
           callOrder.add('playerDispose');
         },
         beforeLogFlush: () async {
@@ -176,7 +176,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
-        playerDisposerOverride: () async {
+        playerDisposer: () async {
           playerDisposed.complete();
         },
       ).didChangeAppLifecycleState(AppLifecycleState.detached);
@@ -194,7 +194,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) => exitCalls++,
-        playerDisposerOverride: () async {},
+        playerDisposer: () async {},
       );
 
       const [
@@ -226,7 +226,7 @@ void main() {
             exitCalls++;
             if (!firstExit.isCompleted) firstExit.complete();
           },
-          playerDisposerOverride: () async {
+          playerDisposer: () async {
             playerDisposeCalls++;
           },
         )..onWindowClose();
@@ -254,7 +254,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
-        playerDisposerOverride: () async {},
+        playerDisposer: () async {},
       );
 
       final first = service.shutdown();
@@ -276,7 +276,7 @@ void main() {
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
           exitOverride: (_) {},
-          playerDisposerOverride: () async {},
+          playerDisposer: () async {},
         );
 
         expect(service.closing.value, isFalse);
@@ -300,7 +300,7 @@ void main() {
             },
             isMacOSOverride: () => true,
             exitOverride: (_) => callOrder.add('exit'),
-            playerDisposerOverride: () async {},
+            playerDisposer: () async {},
           );
 
           final close = service.closeWindow();
@@ -324,7 +324,7 @@ void main() {
           closingFrameOverride: () async => throw StateError('no binding'),
           isMacOSOverride: () => true,
           exitOverride: exitCodes.add,
-          playerDisposerOverride: () async {},
+          playerDisposer: () async {},
         ).closeWindow();
 
         expect(exitCodes, [0]);
@@ -346,7 +346,7 @@ void main() {
           closingFrameOverride: () async => frames++,
           isMacOSOverride: () => true,
           exitOverride: (_) {},
-          playerDisposerOverride: () async {},
+          playerDisposer: () async {},
         );
 
         await Future.wait([service.closeWindow(), service.closeWindow()]);
@@ -362,7 +362,7 @@ void main() {
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
           exitOverride: (_) {},
-          playerDisposerOverride: () async {},
+          playerDisposer: () async {},
         );
 
         expect(await service.didRequestAppExit(), AppExitResponse.exit);
@@ -382,7 +382,7 @@ void main() {
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
           exitOverride: exitCodes.add,
-          playerDisposerOverride: () async {},
+          playerDisposer: () async {},
         );
 
         final close = service.closeWindow();
@@ -425,7 +425,7 @@ void main() {
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => false,
         exitOverride: (_) {},
-        playerDisposerOverride: () async {},
+        playerDisposer: () async {},
         prefsOverride: prefs,
       );
 
