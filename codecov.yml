@@ -67,6 +67,8 @@ ignore:
   # included and are exercised independently. Native scene validation is
   # recorded separately; this exclusion does not establish renderer coverage.
   - "lib/features/plaza/ui/plaza_view.dart"
+  # The renderer state split out of plaza_view.dart: same GPU-bound code.
+  - "lib/features/plaza/ui/plaza_view_internals.dart"
   # Integration glue that embeds the app's real task/entry detail widgets
   # (TaskForm / EntryDetailsWidget) in the graph's side panel. Those widgets
   # carry their own extensive tests and pull the whole app's provider/getIt
