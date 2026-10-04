@@ -948,6 +948,83 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'a failed transcription whose job failure cannot be recorded is '
+      'reported, not swallowed',
+      () async {
+        final outbox = MockDayProcessingOutboxRepository();
+        final job = DayProcessingJob(
+          id: DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
+          status: DayProcessingJobStatus.running,
+          dayId: 'dayplan-2026-07-20',
+          payload: TranscribeAudioPayload(
+            activityEntryId: audioActivityEntryIdForSession(_sessionId),
+            recordingSessionId: _sessionId,
+            audioId: 'audio_001',
+            audioPath: '/tmp/capture.m4a',
+          ),
+          createdAt: _now,
+          updatedAt: _now,
+          requestedAt: _now,
+          nextAttemptAt: _now,
+          attempts: 0,
+          generation: 1,
+        );
+        when(
+          () => outbox.enqueueAndClaimTranscription(
+            dayId: any(named: 'dayId'),
+            activityEntryId: any(named: 'activityEntryId'),
+            recordingSessionId: any(named: 'recordingSessionId'),
+            audioId: any(named: 'audioId'),
+            audioPath: any(named: 'audioPath'),
+            capturedAt: any(named: 'capturedAt'),
+          ),
+        ).thenAnswer(
+          (_) async => DayProcessingClaim(job: job, token: 'token-1'),
+        );
+        when(
+          () => outbox.markFailure(
+            jobId: any(named: 'jobId'),
+            claimToken: any(named: 'claimToken'),
+            failureClass: any(named: 'failureClass'),
+            error: any(named: 'error'),
+            retryAfter: any(named: 'retryAfter'),
+          ),
+        ).thenThrow(StateError('outbox gone too'));
+        bench.stubTranscribeThrows(const SocketException('offline'));
+        final reported = <FlutterErrorDetails>[];
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previousOnError);
+        final container = bench.aliveContainer(outbox: outbox);
+        addTearDown(container.dispose);
+        final controller = container.read(captureControllerProvider.notifier);
+
+        await controller.toggle();
+        await controller.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        // The job may stay claimed; the failure to record that is reported.
+        expect(
+          reported.map((d) => d.context?.toDescription()),
+          containsAll([
+            'while transcribing the day recording',
+            'while recording a failed job',
+          ]),
+        );
+        verify(
+          () => outbox.markFailure(
+            jobId: job.id,
+            claimToken: 'token-1',
+            failureClass: any(named: 'failureClass'),
+            error: any(named: 'error'),
+            retryAfter: any(named: 'retryAfter'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('CaptureController transcript attribution', () {
