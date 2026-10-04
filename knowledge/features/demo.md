@@ -211,7 +211,7 @@ keyed by the object's `sha256` so a replaced object loses its stale hash by
 itself, and the seeders copy it into `ImageData.thumbHash` — a nullable
 rendering hint that older entities and user photos simply lack. The widgets
 therefore never see the catalog:
-[`JournalImageResolver`](../../lib/widgets/media/journal_image_resolver.dart)
+[`JournalImageResolver`](../../lib/features/journal/ui/widgets/journal_image_resolver.dart)
 parses `ThumbHash.tryParse(entry.data.thumbHash)` (a corrupt hash is no hash)
 once, and `CoverArtThumbnail`, `CoverArtBackground` and `CardImageWidget` hand
 that and the file's `ImageProvider` — null while the file is missing — to

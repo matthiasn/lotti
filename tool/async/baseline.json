@@ -120,7 +120,7 @@
     "lib/features/projects/ui/widgets/project_recommendations_panel.dart": 7,
     "lib/features/ratings/ui/pulsating_rate_button.dart": 1,
     "lib/features/recent_searches/state/recent_searches_controller.dart": 2,
-    "lib/features/recent_searches/ui/recent_search_opener.dart": 3,
+    "lib/beamer/recent_search_opener.dart": 3,
     "lib/features/recent_searches/ui/recent_searches_section.dart": 1,
     "lib/features/relationships/service/check_in_transcription_service.dart": 4,
     "lib/features/relationships/service/relationship_agent_service.dart": 1,
@@ -212,14 +212,14 @@
     "lib/services/nav_service.dart": 4,
     "lib/services/notification_service.dart": 1,
     "lib/services/window_service.dart": 2,
-    "lib/widgets/create/suggest_measurement.dart": 1,
+    "lib/pages/create/suggest_measurement.dart": 1,
     "lib/widgets/media/file_image_size.dart": 2,
     "lib/widgets/media/file_watcher_mixin.dart": 1,
     "lib/widgets/media/image_viewer_orientation_scope.dart": 5,
     "lib/widgets/misc/contact_support_row.dart": 4,
-    "lib/widgets/misc/sidebar_audio_recording_section.dart": 1,
+    "lib/beamer/chrome/sidebar_audio_recording_section.dart": 1,
     "lib/widgets/misc/sidebar_timer_section.dart": 1,
-    "lib/widgets/nav_bar/mobile_activity_island.dart": 2,
+    "lib/beamer/chrome/mobile_activity_island.dart": 2,
     "lib/widgets/picker/entity_picker_sheet.dart": 3
   }
 }

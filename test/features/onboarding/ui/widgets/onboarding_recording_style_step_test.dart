@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +14,7 @@ import 'package:record/record.dart' show Amplitude;
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-import '../../state/recording_style_test_utils.dart';
+import '../../../speech/state/recording_style_test_utils.dart';
 
 void main() {
   AudioNote throwawayNote() => AudioNote(

@@ -151,7 +151,6 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/features/notifications/routing/notification_tap_router.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
@@ -215,6 +214,7 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';

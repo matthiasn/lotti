@@ -10,8 +10,8 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_utils/fake_journal_page_controller.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import 'entry_type_filter_test_helpers.dart';
 
 void main() {

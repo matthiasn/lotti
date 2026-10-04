@@ -330,7 +330,7 @@ String _getCategoryFiltersKey() {
 
 ### Current: EntryTypeFilter uses configFlagProvider
 
-`lib/widgets/search/entry_type_filter.dart:20` already uses Riverpod:
+`lib/features/journal/ui/widgets/entry_type_filter.dart:20` already uses Riverpod:
 
 ```dart
 final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
@@ -377,7 +377,7 @@ For this migration, **Option B** is safer - maintain internal stream subscriptio
 | `lib/features/tasks/ui/filtering/task_priority_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_label_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_label_quick_filter.dart` | BlocBuilder → Consumer, read scope |
-| `lib/widgets/search/entry_type_filter.dart:50` | BlocBuilder → Consumer, read scope |
+| `lib/features/journal/ui/widgets/entry_type_filter.dart:50` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_filter_icon.dart:25` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_sort_filter.dart` | BlocBuilder → Consumer, read scope |
 | `lib/features/tasks/ui/filtering/task_date_display_toggle.dart` | BlocBuilder → Consumer, read scope |

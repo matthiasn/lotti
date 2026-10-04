@@ -674,7 +674,7 @@ their integration with the app shell, docked and slid away. The contract:
   transparent gap between chips stays unblurred. An opaque chip passes
   `blurred: false` and skips the filter it could not show through.
 - `MobileActivityIsland`
-  ([mobile_activity_island.dart](../../../lib/widgets/nav_bar/mobile_activity_island.dart))
+  ([mobile_activity_island.dart](../../../lib/beamer/chrome/mobile_activity_island.dart))
   is the one capsule that floats above the launcher while a timer or a
   recording runs. It wears the same `DsGlassChipSurface`, `dsGlassChipFill`
   and `dsGlassChipBorder` as the launcher chips — one glass dialect, not a

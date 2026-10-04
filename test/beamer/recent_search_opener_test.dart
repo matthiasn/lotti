@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/recent_search_opener.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -8,14 +9,13 @@ import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
-import 'package:lotti/features/recent_searches/ui/recent_search_opener.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../mocks/mocks.dart';
-import '../../../test_utils/fake_journal_page_controller.dart';
-import '../../../widget_test_utils.dart';
-import '../../habits/test_utils.dart';
-import '../test_utils.dart';
+import '../features/habits/test_utils.dart';
+import '../features/recent_searches/test_utils.dart';
+import '../mocks/mocks.dart';
+import '../test_utils/fake_journal_page_controller.dart';
+import '../widget_test_utils.dart';
 
 /// Everything [openRecentSearch] can touch, faked, plus the container the
 /// real (dependency-free) projects filter lives in.

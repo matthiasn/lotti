@@ -5,12 +5,12 @@ import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
-import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The live first-task aha, end to end — hosted *inside* the onboarding panel

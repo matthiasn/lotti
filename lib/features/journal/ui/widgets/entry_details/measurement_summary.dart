@@ -1,9 +1,9 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/entry_tools.dart';
+import 'package:lotti/widgets/text/entry_text_widget.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Detail-view summary for a measurement entry: the entry's note text (if any)

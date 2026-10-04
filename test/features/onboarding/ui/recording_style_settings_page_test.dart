@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -16,7 +16,7 @@ import 'package:record/record.dart' show Amplitude;
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-import '../state/recording_style_test_utils.dart';
+import '../../speech/state/recording_style_test_utils.dart';
 
 /// A [AppPrefs.getString] that never resolves, to simulate the pref still
 /// loading.

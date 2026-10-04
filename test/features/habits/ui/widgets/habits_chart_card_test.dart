@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/habits/ui/charts/habit_completion_rate_chart.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
-import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:material_ui/material_ui.dart';
 

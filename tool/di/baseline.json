@@ -320,13 +320,13 @@
     "lib/widgets/app_bar/title_app_bar.dart": {"lookups": 1},
     "lib/widgets/markdown_link_utils.dart": {"lookups": 1, "isRegistered": 1},
     "lib/widgets/misc/contact_support_row.dart": {"lookups": 1, "isRegistered": 1},
-    "lib/widgets/misc/sidebar_activity_summary.dart": {"lookups": 1},
-    "lib/widgets/misc/sidebar_audio_recording_section.dart": {"lookups": 1},
+    "lib/beamer/chrome/sidebar_activity_summary.dart": {"lookups": 1},
+    "lib/beamer/chrome/sidebar_audio_recording_section.dart": {"lookups": 1},
     "lib/widgets/misc/sidebar_timer_section.dart": {"lookups": 1},
     "lib/widgets/misc/tasks_counts.dart": {"lookups": 2},
     "lib/widgets/modal/confirmation_progress_modal.dart": {"lookups": 1},
     "lib/widgets/nav_bar/bottom_nav_safe_navigator.dart": {"lookups": 1, "isRegistered": 1},
-    "lib/widgets/nav_bar/mobile_activity_island.dart": {"lookups": 1},
+    "lib/beamer/chrome/mobile_activity_island.dart": {"lookups": 1},
     "lib/widgets/pages/sliver_box_adapter_page.dart": {"lookups": 2}
   }
 }

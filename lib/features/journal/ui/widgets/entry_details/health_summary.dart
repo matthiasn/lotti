@@ -2,9 +2,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/text/entry_text_widget.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Detail-view summary for a quantitative (health) entry: an optional health

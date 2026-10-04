@@ -12,17 +12,17 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/habits/ui/charts/habit_completion_rate_chart.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
-import '../../../test_data/test_data.dart';
-import '../../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 // Minimal TitleMeta for testing title widget callbacks.
 TitleMeta _makeMeta() => TitleMeta(

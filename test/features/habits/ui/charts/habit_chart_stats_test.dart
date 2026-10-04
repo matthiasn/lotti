@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
-import 'package:lotti/widgets/charts/habits/habit_chart_stats.dart';
+import 'package:lotti/features/habits/ui/charts/habit_chart_stats.dart';
 
-import '../../../test_data/test_data.dart';
+import '../../../../test_data/test_data.dart';
 
 void main() {
   HabitsState stateWith({
