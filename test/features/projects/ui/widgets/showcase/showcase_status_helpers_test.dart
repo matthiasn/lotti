@@ -8,9 +8,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_helper.dart';

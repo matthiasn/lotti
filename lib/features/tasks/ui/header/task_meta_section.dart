@@ -10,7 +10,6 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
-import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_ai_cost_indicator.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/project_lookup_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/device_datetime.dart';

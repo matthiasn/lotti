@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/state/project_providers.dart';
-import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
+import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
+import 'package:lotti/providers/project_lookup_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../widget_test_utils.dart';
-import '../../test_utils.dart';
+import '../../../projects/test_utils.dart';
 
 void main() {
   const categoryId = 'cat-modal-1';

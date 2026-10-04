@@ -17,9 +17,6 @@
     "lib/features/habits/ui/sheets/habit_completion_sheet.dart": ["goals"],
     "lib/features/journal/state/entry_controller.dart": ["daily_os_next"],
     "lib/features/journal/ui/widgets/list_cards/journal_card.dart": ["relationships","tasks"],
-    "lib/features/sync/matrix/sync_event_processor.dart": ["github"],
-    "lib/features/tasks/ui/header/desktop_task_header_connector.dart": ["projects"],
-    "lib/features/tasks/ui/header/task_meta_pickers.dart": ["projects"],
-    "lib/features/tasks/ui/header/task_meta_section.dart": ["projects"]
+    "lib/features/sync/matrix/sync_event_processor.dart": ["github"]
   }
 }

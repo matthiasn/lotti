@@ -25,7 +25,6 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,6 +32,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 

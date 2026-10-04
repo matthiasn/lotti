@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/projects_overview_models.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
+import 'package:lotti/widgets/projects/project_status_attributes.dart';
 
 // ---------------------------------------------------------------------------
 // Generators

@@ -6,10 +6,10 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
-import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart'
     as estimate_picker;
+import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart'
     as due_date_picker;
 import 'package:lotti/features/tasks/ui/header/task_priority_modal_content.dart';
