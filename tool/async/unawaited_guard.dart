@@ -24,24 +24,53 @@ bool isGenerated(String path) =>
     path.endsWith('.freezed.dart') ||
     path.endsWith('.gr.dart');
 
-/// Counts calls of the top-level `unawaited(...)` in [source]: an invocation
-/// named `unawaited` with no target, so `foo.unawaited()` and comments or
-/// strings never count.
-int countUnawaited(String source) {
+/// Counts calls of `dart:async`'s `unawaited(...)` in [source]: an invocation
+/// named `unawaited` with no target, or behind a `dart:async` import prefix
+/// (`async.unawaited(...)`). A method of another object (`foo.unawaited()`)
+/// and comments or strings never count. A `part` file has no imports of its
+/// own — pass its library's source as [librarySource] and its prefixes apply.
+int countUnawaited(String source, {String? librarySource}) {
   final unit = parseString(content: source, throwIfDiagnostics: false).unit;
-  final visitor = _UnawaitedVisitor();
+  final importing = librarySource == null
+      ? unit
+      : parseString(content: librarySource, throwIfDiagnostics: false).unit;
+  final prefixes = {
+    for (final d in importing.directives.whereType<ImportDirective>())
+      if (d.uri.stringValue == 'dart:async' && d.prefix != null) d.prefix!.name,
+  };
+  final visitor = _UnawaitedVisitor(prefixes);
   unit.accept(visitor);
   return visitor.count;
 }
 
 class _UnawaitedVisitor extends RecursiveAstVisitor<void> {
+  _UnawaitedVisitor(this.prefixes);
+
+  /// The names `dart:async` is imported under in this library.
+  final Set<String> prefixes;
   int count = 0;
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
-    if (node.target == null && node.methodName.name == 'unawaited') count++;
+    final target = node.target;
+    if (node.methodName.name == 'unawaited' &&
+        (target == null ||
+            (target is SimpleIdentifier && prefixes.contains(target.name)))) {
+      count++;
+    }
     super.visitMethodInvocation(node);
   }
+}
+
+/// The source of the library [file] is a `part of`, or null if it is a
+/// library itself (or its library cannot be read).
+String? _librarySourceOf(File file, String source) {
+  final unit = parseString(content: source, throwIfDiagnostics: false).unit;
+  final partOf = unit.directives.whereType<PartOfDirective>().firstOrNull;
+  final uri = partOf?.uri?.stringValue;
+  if (uri == null) return null;
+  final library = File(p.join(p.dirname(file.path), uri));
+  return library.existsSync() ? library.readAsStringSync() : null;
 }
 
 /// A file whose count no longer matches its baseline entry.
@@ -87,7 +116,11 @@ GuardResult scan({
   for (final file in files) {
     final rel = p.posix.joinAll(p.split(p.relative(file.path, from: repoRoot)));
     if (isGenerated(rel)) continue;
-    final found = countUnawaited(file.readAsStringSync());
+    final source = file.readAsStringSync();
+    final found = countUnawaited(
+      source,
+      librarySource: _librarySourceOf(file, source),
+    );
     if (found > 0) counts[rel] = found;
   }
   final violations = <UnawaitedViolation>[];

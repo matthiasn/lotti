@@ -41,6 +41,31 @@ void f() {
     });
   });
 
+  group('countUnawaited — prefixes', () {
+    test('a dart:async import prefix counts, another object does not', () {
+      expect(
+        countUnawaited('''
+import 'dart:async' as async;
+void f() {
+  async.unawaited(a());
+  other.unawaited(b());
+}
+'''),
+        1,
+      );
+    });
+
+    test("a part file takes its library's prefix", () {
+      expect(
+        countUnawaited(
+          "part of 'lib.dart';\nvoid f() { async.unawaited(a()); }",
+          librarySource: "import 'dart:async' as async;\npart 'part.dart';",
+        ),
+        1,
+      );
+    });
+  });
+
   group('scan', () {
     const twoCalls = {
       'lib/a.dart': 'void f() { unawaited(x()); unawaited(y()); }',
