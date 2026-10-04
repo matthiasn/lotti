@@ -60,11 +60,23 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
 
   void _hit(TokenCategory c) => counts[c] = counts[c]! + 1;
 
-  /// Import prefixes are lowerCamelCase and types PascalCase, which is all
-  /// that tells `ui.Color` (prefix, type) from `EdgeInsets.all` (type,
-  /// constructor) in unresolved source.
-  static bool _isImportPrefix(String name) =>
-      name.isNotEmpty && name[0] == name[0].toLowerCase();
+  /// The constructor types the guard counts. Without resolution, `a.B(…)`
+  /// is either a prefixed constructor (`ui.Color(…)`) or a named one
+  /// (`EdgeInsets.all(…)`); whichever side names one of these types decides,
+  /// so an unidiomatic prefix such as `UI.Color` still counts.
+  static const _countedTypes = {
+    'Color',
+    'EdgeInsets',
+    'EdgeInsetsDirectional',
+    'SizedBox',
+    'TextStyle',
+  };
+
+  /// Whether `qualifier.name(…)` is a constructor of [name] behind the import
+  /// prefix [qualifier], rather than the named constructor [name] of
+  /// [qualifier].
+  static bool _isPrefixedType(String qualifier, String name) =>
+      _countedTypes.contains(name) && !_countedTypes.contains(qualifier);
 
   static bool _numeric(Expression e) {
     final unwrapped = e is NamedExpression ? e.expression : e;
@@ -126,14 +138,14 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
     final (type, member) = switch (target) {
       null => (method, null),
       // `ui.Color(…)`: a prefixed constructor, not a static call.
-      SimpleIdentifier(:final name) when _isImportPrefix(name) => (
+      SimpleIdentifier(:final name) when _isPrefixedType(name, method) => (
         method,
         null,
       ),
       SimpleIdentifier(:final name) => (name, method),
       // `ui.Color.fromARGB(…)`.
       PrefixedIdentifier(:final prefix, :final identifier)
-          when _isImportPrefix(prefix.name) =>
+          when _isPrefixedType(prefix.name, identifier.name) =>
         (identifier.name, method),
       _ => ('', null),
     };
@@ -151,7 +163,9 @@ class _RawValueVisitor extends RecursiveAstVisitor<void> {
     final (
       type,
       member,
-    ) = name.name == null && prefix != null && !_isImportPrefix(prefix)
+    ) = name.name == null &&
+            prefix != null &&
+            !_isPrefixedType(prefix, name.type.name.lexeme)
         ? (prefix, name.type.name.lexeme)
         : (name.type.name.lexeme, name.name?.name);
     _call(type, member, node.argumentList);

@@ -144,9 +144,10 @@ vanish but never rise, and a file absent from the baseline may introduce none.
 CI runs it in the analyze workflow and `make token_check` runs it locally;
 `--update-baseline` tightens it and refuses while any file is above its count.
 It works on the parsed source, so comments and strings never count; a
-constructor behind an import prefix (`ui.Color(…)`) counts like the bare one,
-told apart from `EdgeInsets.all(…)` by Dart's lowercase-prefix convention. It
-mirrors the [icon guard](icons.md).
+constructor behind an import prefix (`ui.Color(…)`, even `UI.Color(…)`) counts
+like the bare one, told apart from a named constructor such as
+`EdgeInsets.all(…)` by which side of the dot names a counted type. It mirrors
+the [icon guard](icons.md).
 
 # Two runtime theme paths
 

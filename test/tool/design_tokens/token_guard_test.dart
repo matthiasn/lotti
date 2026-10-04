@@ -116,6 +116,18 @@ void main() {
       expect(counts[TokenCategory.typography], 1);
     });
 
+    test('an unidiomatic uppercase prefix still counts', () {
+      final counts = count('''
+          const UI.Color(0xFF123456);
+          UI.Color(0xFF123456);
+          UI.Color.fromARGB(255, 0, 0, 0);
+          const W.EdgeInsets.all(8);
+          W.SizedBox(height: 4);
+        ''');
+      expect(counts[TokenCategory.color], 3);
+      expect(counts[TokenCategory.spacing], 2);
+    });
+
     test('comments and strings never count', () {
       expect(
         count('''
