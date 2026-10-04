@@ -13,6 +13,7 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -416,6 +417,9 @@ void main() {
         onSwitchStarted: () async => calls.add('splash'),
         onSwitchCompleted: () => calls.add('completed'),
         settleFrame: () async {},
+        bootstrapGeneration: () => bootstrapNextGeneration(holder),
+        disposeServices: (logError) =>
+            ServiceDisposer(getIt, logError).disposeAll(),
       );
       final snapshot = await ProfileBackupCoordinator(
         runClosed: switcher.runWithGenerationClosed,

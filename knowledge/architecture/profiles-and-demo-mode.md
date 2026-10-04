@@ -117,8 +117,15 @@ stateDiagram-v2
 4. **Teardown**: `ServiceDisposer.disposeAll()` (services then databases,
    settings last), bounded log flush, `getIt.reset()` (fires remaining
    dispose callbacks).
-5. **Bootstrap**: fresh process logging, `resolveActiveProfile()`,
-   `bootstrapProfileServices(restoreWindow: false)`, new app-exit listener.
+5. **Bootstrap**: `bootstrapNextGeneration` — fresh process logging,
+   `resolveActiveProfile()`, `bootstrapProfileServices(restoreWindow: false)`,
+   new app-exit listener.
+
+The switcher lives in `features/profiles`, below the shell, so it cannot call
+either of the shell's two halves itself: `LottiAppRoot` constructs it with
+`disposeServices` (the `ServiceDisposer` run, handed the switcher's error
+logger) and `bootstrapGeneration` (`bootstrapNextGeneration` in
+`lib/app_bootstrap.dart`).
 6. The root bumps its generation key; the new `ProviderScope` recomputes the
    getIt bridge overrides (`buildProviderOverrides`).
 

@@ -850,6 +850,8 @@ class MockRecordPlatform extends Mock implements record.RecordPlatform {}
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
+class MockBeamerDelegate extends Mock implements BeamerDelegate {}
+
 class MockNavService extends Mock implements NavService {
   /// Concrete default (mutable) so the many app-shell tests that predate
   /// the unified Goals tab don't each need a stub; a test exercising the

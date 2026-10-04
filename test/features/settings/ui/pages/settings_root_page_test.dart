@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -54,6 +55,7 @@ void main() {
     ).thenAnswer((_) async => 1);
 
     navService = NavService(
+      tabDelegates: appTabDelegates,
       journalDb: mockJournalDb,
       settingsDb: mockSettingsDb,
     );

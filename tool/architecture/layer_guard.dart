@@ -8,9 +8,11 @@
 /// below every feature, and the [shell] — router, composition root, app
 /// entry points — ranks above all of them.
 ///
-/// Two kinds of import break the order:
+/// Three kinds of import break the order:
 ///
 /// - **upward**: a file imports a feature ranked above its own;
+/// - **shell** / **shared_ui**: a file imports the [shell], or foundation code
+///   imports [sharedUi] — both rank above it. The [serviceLocator] is exempt;
 /// - **ui**: non-UI code (models, repositories, services, state) imports
 ///   another feature's UI, whatever the ranks.
 ///
@@ -103,7 +105,6 @@ const sharedUi = <String>['lib/themes/', 'lib/ui/', 'lib/widgets/'];
 /// may import any of them.
 const shell = <String>[
   'lib/beamer/',
-  'lib/pages/',
   'lib/widgetbook/',
   'lib/app_bootstrap.dart',
   'lib/app_root.dart',
@@ -185,9 +186,20 @@ List<String> lottiImports(String source) {
   ];
 }
 
+/// The service locator. Every layer still reads it while services move to
+/// providers and constructor arguments, so it is exempt here: `tool/di`
+/// counts those lookups instead, against a baseline of its own.
+const serviceLocator = 'lib/get_it.dart';
+
+/// The baseline entry for an upward import of a non-feature [target]:
+/// `shell` or `shared_ui`, after the layer it reaches into.
+String layerName(String target) =>
+    shell.any(target.startsWith) ? 'shell' : 'shared_ui';
+
 /// The layer-order breaks in the file at [path] with contents [source], as
-/// baseline entries: a bare feature name for an upward import, `<name>:ui`
-/// for non-UI code reaching another feature's UI.
+/// baseline entries: a bare feature name for an upward import of a feature,
+/// `shell` or `shared_ui` for one reaching into those layers, and
+/// `<name>:ui` for non-UI code reaching another feature's UI.
 Set<String> violationsIn(String path, String source) {
   final rank = rankOf(path);
   if (rank == null) return const {};
@@ -198,7 +210,14 @@ Set<String> violationsIn(String path, String source) {
   final found = <String>{};
   for (final target in lottiImports(source)) {
     final feature = featureOf(target);
-    if (feature == null || feature == ownFeature) continue;
+    if (feature == null) {
+      final targetRank = rankOf(target);
+      if (target != serviceLocator && targetRank != null && targetRank > rank) {
+        found.add(layerName(target));
+      }
+      continue;
+    }
+    if (feature == ownFeature) continue;
     final targetRank = featureOrder.indexOf(feature);
     if (targetRank > rank) found.add(feature);
     if (!fromUi && isUi(target) && rank < featureOrder.length) {
@@ -296,7 +315,8 @@ String encodeBaseline(Map<String, Set<String>> current) {
     ..writeln(
       '  "_comment": "Imports that break the layer order in '
       'tool/architecture/layer_guard.dart: a bare feature name is an upward '
-      "import, <feature>:ui is non-UI code reaching another feature's UI. "
+      'import, shell or shared_ui one reaching into those layers, and '
+      "<feature>:ui is non-UI code reaching another feature's UI. "
       'Delete an entry when the import goes; regenerate with dart run '
       'tool/architecture/validate.dart --update-baseline. It only ever '
       'shrinks.",',

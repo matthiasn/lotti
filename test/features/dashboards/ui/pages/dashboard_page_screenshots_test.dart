@@ -23,6 +23,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -240,7 +241,11 @@ void main() {
           ..unregister<JournalDb>()
           ..registerSingleton<JournalDb>(mockJournalDb)
           ..registerSingleton<EntitiesCacheService>(mockCache)
-          ..registerSingleton<NavService>(NavService())
+          ..registerSingleton<NavService>(
+            NavService(
+              tabDelegates: appTabDelegates,
+            ),
+          )
           ..registerSingleton<UserActivityService>(UserActivityService())
           ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
           ..registerSingleton<TimeService>(mockTimeService);

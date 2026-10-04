@@ -5,7 +5,7 @@
 /// page across mobile/desktop and light/dark themes.
 ///
 /// Run: `LOTTI_SCREENSHOT_DIR=/tmp/measure fvm flutter test \
-///   test/pages/create/create_measurement_dialog_screenshots_test.dart`
+///   test/features/dashboards/ui/create_measurement/create_measurement_dialog_screenshots_test.dart`
 library;
 
 import 'package:clock/clock.dart';
@@ -27,11 +27,11 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../features/daily_os_next/screenshot_harness.dart';
-import '../../helpers/manual_demo_world.dart';
-import '../../helpers/service_overrides.dart';
-import '../../mocks/mocks.dart';
-import '../../widget_test_utils.dart';
+import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/service_overrides.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
+import '../../../daily_os_next/screenshot_harness.dart';
 
 const _measurableId = 'manual-sardines-consumed';
 final _rangeStart = DateTime(2026, 6, 18);

@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' show GeneratedDatabase;
 import 'package:get_it/get_it.dart';
 import 'package:health/health.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
@@ -489,7 +490,7 @@ Future<void> registerSingletons({
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<Maintenance>(buildMaintenance())
     ..registerSingleton<NavService>(
-      NavService(),
+      NavService(tabDelegates: appTabDelegates),
       dispose: (service) => service.dispose(),
     )
     // Where a tapped OS notification lands. Registered before the launch

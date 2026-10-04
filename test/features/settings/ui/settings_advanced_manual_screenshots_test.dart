@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/database.dart';
@@ -276,7 +277,9 @@ void main() {
       ..registerSingleton<PersistenceLogic>(persistenceLogic)
       ..registerSingleton<OnboardingMetricsRepository>(metricsRepository);
 
-    navService = NavService();
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+    );
     getIt.registerSingleton<NavService>(navService);
     beamToNamedOverride = (_) {};
   });

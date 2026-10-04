@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
@@ -162,7 +163,9 @@ void main() {
     // NavService.initState (used by SettingsTreeUrlSync on the desktop
     // path) reads flags from getIt<JournalDb>; constructs cleanly with
     // the stub above. Register the real service.
-    navService = NavService();
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+    );
     getIt.registerSingleton<NavService>(navService);
 
     // Any tap handlers / build-time beam calls are inert.

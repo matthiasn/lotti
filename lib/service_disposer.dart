@@ -21,29 +21,14 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/service_disposal_failure.dart';
 import 'package:lotti/services/time_service.dart';
+
+export 'package:lotti/services/service_disposal_failure.dart';
 
 /// Default deadline for best-effort cleanup. Dependency-sensitive drains opt
 /// out because timing out a Future does not stop it from using its stores.
 const _perOperationTimeout = Duration(seconds: 3);
-
-/// One service or database that did not dispose cleanly: it threw, or it did
-/// not finish within its deadline (a [TimeoutException]).
-class ServiceDisposalFailure {
-  const ServiceDisposalFailure({
-    required this.service,
-    required this.error,
-    required this.stackTrace,
-  });
-
-  /// The registration that failed, e.g. `JournalDb`.
-  final String service;
-  final Object error;
-  final StackTrace stackTrace;
-
-  @override
-  String toString() => '$service: $error';
-}
 
 /// Disposes long-running services and databases in dependency-safe order.
 ///

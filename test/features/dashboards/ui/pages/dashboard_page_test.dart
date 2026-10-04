@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -68,7 +69,11 @@ void main() {
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<nav_service.NavService>(nav_service.NavService())
+        ..registerSingleton<nav_service.NavService>(
+          nav_service.NavService(
+            tabDelegates: appTabDelegates,
+          ),
+        )
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

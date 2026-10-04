@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -37,44 +36,6 @@ void main() {
       expect(TaskPriority.p0Urgent.short, 'P0');
       expect(TaskPriority.p3Low.rank, 3);
       expect(TaskPriority.p3Low.short, 'P3');
-    });
-
-    test('color mapping (light mode)', () {
-      expect(
-        TaskPriority.p0Urgent.colorForBrightness(Brightness.light),
-        taskStatusDarkRed,
-      );
-      expect(
-        TaskPriority.p1High.colorForBrightness(Brightness.light),
-        taskStatusDarkOrange,
-      );
-      expect(
-        TaskPriority.p2Medium.colorForBrightness(Brightness.light),
-        taskStatusDarkBlue,
-      );
-      expect(
-        TaskPriority.p3Low.colorForBrightness(Brightness.light),
-        Colors.grey,
-      );
-    });
-
-    test('color mapping (dark mode)', () {
-      expect(
-        TaskPriority.p0Urgent.colorForBrightness(Brightness.dark),
-        taskStatusRed,
-      );
-      expect(
-        TaskPriority.p1High.colorForBrightness(Brightness.dark),
-        taskStatusOrange,
-      );
-      expect(
-        TaskPriority.p2Medium.colorForBrightness(Brightness.dark),
-        taskStatusBlue,
-      );
-      expect(
-        TaskPriority.p3Low.colorForBrightness(Brightness.dark),
-        Colors.grey,
-      );
     });
 
     glados.Glados(

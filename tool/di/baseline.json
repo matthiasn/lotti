@@ -229,7 +229,7 @@
     "lib/logic/repositories/saved_task_filters_repository.dart": {"lookups": 3},
     "lib/logic/repositories/task_progress_repository.dart": {"lookups": 1},
     "lib/logic/signals/health_signal_refresh_service.dart": {"lookups": 1, "isRegistered": 1},
-    "lib/pages/create/create_measurement_dialog.dart": {"lookups": 1},
+    "lib/features/dashboards/ui/create_measurement/create_measurement_dialog.dart": {"lookups": 1},
     "lib/providers/agent_repository_providers.dart": {"lookups": 1},
     "lib/providers/manual_language_controller.dart": {"isRegistered": 2},
     "lib/providers/service_providers.dart": {"lookups": 1, "isRegistered": 1},

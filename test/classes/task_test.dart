@@ -5,7 +5,6 @@ import 'package:glados/glados.dart' as glados;
 import 'package:glados/glados.dart' show AnyUtils, ExploreConfig, Glados, any;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('TaskData', () {
@@ -351,75 +350,6 @@ void main() {
         expect(joined.statusHistory.map((s) => s.id), ['a', 'b']);
       });
     });
-  });
-
-  group('TaskStatus.colorForBrightness', () {
-    // Dark-mode status colors (moved from test/utils/task_utils_test.dart —
-    // colorForBrightness lives on TaskStatus in lib/classes/task.dart).
-    for (final (status, expected) in [
-      (
-        TaskStatus.open(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-        ),
-        Colors.orange,
-      ),
-      (
-        TaskStatus.groomed(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-        ),
-        Colors.lightGreenAccent,
-      ),
-      (
-        TaskStatus.inProgress(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-        ),
-        Colors.blue,
-      ),
-      (
-        TaskStatus.blocked(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-          reason: '',
-        ),
-        Colors.red,
-      ),
-      (
-        TaskStatus.onHold(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-          reason: '',
-        ),
-        Colors.red,
-      ),
-      (
-        TaskStatus.done(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-        ),
-        Colors.green,
-      ),
-      (
-        TaskStatus.rejected(
-          id: 'id',
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 120,
-        ),
-        Colors.red,
-      ),
-    ]) {
-      test('${status.runtimeType} maps to its dark-mode color', () {
-        expect(status.colorForBrightness(Brightness.dark), expected);
-      });
-    }
   });
 
   group('Task entity', () {

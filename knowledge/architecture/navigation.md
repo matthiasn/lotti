@@ -213,7 +213,11 @@ strand the user.
 # NavService owns the index
 
 `NavService` (a GetIt singleton) is the single source of truth for which tab is
-active. It exposes:
+active. It lives in `lib/services`, below the shell that defines the delegates,
+so it takes them as a
+[`TabDelegates`](../../lib/services/tab_delegates.dart) value: the composition
+root passes `appTabDelegates` from `lib/beamer/beamer_delegates.dart`. It
+exposes:
 
 - `beamerDelegates` — the ordered list of *enabled* delegates, cached and
   invalidated when navigation feature flags change.

@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -259,7 +260,9 @@ void main() {
 
   setUp(() async {
     await setUpTestGetIt();
-    navService = NavService();
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+    );
     getIt.registerSingleton<NavService>(navService);
     beamToNamedOverride = (_) {};
 

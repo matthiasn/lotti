@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -40,8 +39,24 @@ Future<void> awaitClosingNoticeFrame() async {
   await binding.endOfFrame.timeout(closingNoticeFrameBudget, onTimeout: () {});
 }
 
+/// Logs a service that failed to dispose, best effort: the logger may
+/// itself be torn down already.
+void logDisposalError(dynamic error, StackTrace stackTrace, String service) {
+  try {
+    getIt<DomainLogger>().error(
+      LogDomain.general,
+      error as Object,
+      stackTrace: stackTrace,
+      subDomain: 'dispose_$service',
+    );
+  } catch (_) {
+    // LoggingService itself may already be torn down.
+  }
+}
+
 class WindowService with WidgetsBindingObserver implements WindowListener {
   WindowService({
+    required this._disposeServices,
     @visibleForTesting ExitCallback? exitOverride,
     AsyncDisposer? playerDisposer,
     @visibleForTesting PlatformCheck? isMacOSOverride,
@@ -64,10 +79,12 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
       // that bypass the windowManager close path.
       WidgetsBinding.instance.addObserver(this);
     }
-    _disposer = ServiceDisposer(getIt, _logDisposalError);
   }
 
-  late final ServiceDisposer _disposer;
+  /// Stops the long-running services and closes every database, in
+  /// dependency-safe order. The composition root supplies it, since
+  /// what is running is the app's to know.
+  final AsyncDisposer _disposeServices;
   Future<void>? _shutdownFuture;
   Future<void>? _closeFuture;
   final ExitCallback _exitFn;
@@ -238,18 +255,18 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   Future<void> shutdown() => _shutdownFuture ??= _shutdown();
 
   Future<void> _shutdown() async {
-    await _disposer.disposeAll();
+    await _disposeServices();
 
     try {
       await _playerDisposer();
     } catch (e, s) {
-      _logDisposalError(e, s, 'audioPlayer');
+      logDisposalError(e, s, 'audioPlayer');
     }
 
     try {
       await _beforeLogFlush();
     } catch (e, s) {
-      _logDisposalError(e, s, 'frameworkErrorSummaries');
+      logDisposalError(e, s, 'frameworkErrorSummaries');
     }
 
     // Bounded so a hung file flush cannot indefinitely delay shutdown.
@@ -274,7 +291,7 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     try {
       await _awaitClosingFrame();
     } catch (e, s) {
-      _logDisposalError(e, s, 'closingNotice');
+      logDisposalError(e, s, 'closingNotice');
     }
     await shutdown();
     if (_isMacOS()) {
@@ -285,25 +302,8 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
       try {
         await windowManager.destroy();
       } catch (e, s) {
-        _logDisposalError(e, s, 'windowManager.destroy');
+        logDisposalError(e, s, 'windowManager.destroy');
       }
-    }
-  }
-
-  void _logDisposalError(
-    dynamic error,
-    StackTrace stackTrace,
-    String service,
-  ) {
-    try {
-      getIt<DomainLogger>().error(
-        LogDomain.general,
-        error as Object,
-        stackTrace: stackTrace,
-        subDomain: 'dispose_$service',
-      );
-    } catch (_) {
-      // LoggingService itself may already be torn down.
     }
   }
 

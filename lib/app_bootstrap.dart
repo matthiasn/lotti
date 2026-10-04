@@ -61,6 +61,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -205,18 +207,6 @@ Future<ProfileBootInfo> resolveActiveProfile() async {
   );
 }
 
-/// Owns the app-exit listener across generations. The listener is created
-/// after each bootstrap and disposed during window teardown (via the
-/// WindowService beforeLogFlush hook) or a profile switch.
-class AppLifecycleHolder {
-  AppLifecycleListener? listener;
-
-  void dispose() {
-    listener?.dispose();
-    listener = null;
-  }
-}
-
 /// Per-generation service bootstrap: registers the world-scoped singletons
 /// for the active profile and runs the full [registerSingletons] sequence
 /// against its root. Runs on cold boot and after every profile switch;
@@ -245,6 +235,8 @@ Future<ProfileContext> bootstrapProfileServices(
     ..registerSingleton<SettingsDb>(SettingsDb())
     ..registerSingleton<WindowService>(
       WindowService(
+        disposeServices: () =>
+            ServiceDisposer(getIt, logDisposalError).disposeAll(),
         // Stops a playing recording before the window closes.
         playerDisposer: AudioPlayerController.disposeActivePlayer,
         beforeLogFlush: () async {
@@ -417,3 +409,20 @@ List<Override> appFeatureWiringOverrides() => [
     DailyOsInferenceSetupSheet.show,
   ),
 ];
+
+/// Starts the next service generation for the active profile: after a
+/// profile switch, and after work that closed the running one (a backup or
+/// a restore). The window keeps its current geometry, and the app-exit
+/// listener is attached again for the new generation.
+Future<void> bootstrapNextGeneration(AppLifecycleHolder lifecycleHolder) async {
+  registerProcessLogging();
+  final info = await resolveActiveProfile();
+  await bootstrapProfileServices(
+    info,
+    lifecycleHolder: lifecycleHolder,
+    restoreWindow: false,
+  );
+  lifecycleHolder.listener = AppLifecycleListener(
+    onExitRequested: handleAppExitRequested,
+  );
+}

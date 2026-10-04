@@ -41,7 +41,7 @@ sources:
     title: Bottom navigation shell
     last_modified: 2026-09-15
   - id: measurement-capture
-    resource: ../../../lib/pages/create/create_measurement_dialog.dart
+    resource: ../../../lib/features/dashboards/ui/create_measurement/create_measurement_dialog.dart
     title: Measurement capture sheet — the hero value field and the box that focuses it
     last_modified: 2026-08-25
 ---

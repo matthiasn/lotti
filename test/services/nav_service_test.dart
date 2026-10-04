@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -192,7 +193,11 @@ class _NavFlagBench {
       };
     });
 
-    navService = NavService(journalDb: journalDb, settingsDb: this.settingsDb);
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+      journalDb: journalDb,
+      settingsDb: this.settingsDb,
+    );
     if (registerTeardown) {
       addTearDown(dispose);
     }
@@ -259,6 +264,7 @@ void main() {
       });
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       final navService = NavService(
+        tabDelegates: appTabDelegates,
         journalDb: journalDb,
         settingsDb: settingsDb,
       );
@@ -340,6 +346,7 @@ void main() {
       });
 
       final navService = NavService(
+        tabDelegates: appTabDelegates,
         journalDb: mockJournalDb,
         settingsDb: settingsDb,
       );
@@ -592,6 +599,7 @@ void main() {
       });
 
       final navService = NavService(
+        tabDelegates: appTabDelegates,
         journalDb: projectsDisabledDb,
         settingsDb: settingsDb,
       );
@@ -931,6 +939,7 @@ void main() {
           ).thenAnswer((_) => Stream<bool>.value(false));
 
           final navService = NavService(
+            tabDelegates: appTabDelegates,
             journalDb: localJournalDb,
             settingsDb: localSettingsDb,
           );
@@ -963,6 +972,7 @@ void main() {
         });
 
         final navService = NavService(
+          tabDelegates: appTabDelegates,
           journalDb: localJournalDb,
           settingsDb: localSettingsDb,
         );
@@ -1181,6 +1191,7 @@ void main() {
           });
 
           final navService = NavService(
+            tabDelegates: appTabDelegates,
             journalDb: localJournalDb,
             settingsDb: localSettingsDb,
           );
@@ -1728,6 +1739,7 @@ void main() {
       // `getIt.reset()` — a profile switch replaces this service, the
       // databases and the widget tree, but not them.
       NavService buildGeneration() => NavService(
+        tabDelegates: appTabDelegates,
         journalDb: mockJournalDb,
         settingsDb: settingsDb,
       );

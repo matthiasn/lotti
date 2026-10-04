@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/onboarding_event.dart';
@@ -294,7 +295,9 @@ void main() {
       );
     };
 
-    navService = NavService();
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+    );
     getIt.registerSingleton<NavService>(navService);
     beamToNamedOverride = (_) {};
   });

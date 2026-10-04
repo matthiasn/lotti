@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -119,7 +118,7 @@ class _ConflictDetailRouteState extends ConsumerState<ConflictDetailRoute> {
       tone: DesignSystemToastTone.success,
       title: context.messages.conflictResolvedToast,
     );
-    settingsBeamerDelegate.beamBack();
+    ref.read(navServiceProvider).settingsDelegate.beamBack();
   }
 
   @override

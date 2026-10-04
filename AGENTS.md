@@ -22,7 +22,7 @@
 - Follow `analysis_options.yaml` (Very Good Analysis). 2‑space indent, prefer `const` and `final`.
 - Files: `lower_snake_case.dart`; types (classes/enums): `PascalCase`; members: `lowerCamelCase`.
 - Keep hand-written files in `lib/` at or below 1,000 lines. `test/architecture/file_size_ratchet_test.dart` fails on a new file above that, and holds the files already above it at their current size (`file_size_baseline.json`): put new code in a file of its own, and lower or delete an entry when a file shrinks.
-- Imports in `lib/` follow the layer order in `tool/architecture/layer_guard.dart` (`make layer_check`): no feature imports one ranked above it, `lib/classes`, `database`, `services`, `logic` and `utils` import no feature, and non-UI code never imports another feature's UI. Existing breaks are baselined and may only shrink — move the shared type down or invert the dependency rather than adding one.
+- Imports in `lib/` follow the layer order in `tool/architecture/layer_guard.dart` (`make layer_check`): no feature imports one ranked above it, `lib/classes`, `database`, `services`, `logic` and `utils` import no feature, non-UI code never imports another feature's UI, and nothing below the shell imports it (the service locator excepted, which `tool/di` counts). Existing breaks are baselined and may only shrink — move the shared type down or invert the dependency rather than adding one.
 - Format before committing: `fvm dart format .`.
 - Do not modify generated code (`*.g.dart`, `*.freezed.dart`); regenerate via `make build_runner`.
 

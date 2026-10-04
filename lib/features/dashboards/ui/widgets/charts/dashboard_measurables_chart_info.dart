@@ -1,9 +1,9 @@
 import 'dart:core';
 
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/ui/create_measurement/create_measurement_dialog.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Header for a measurable chart card: the measurable's display name as title,

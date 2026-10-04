@@ -136,6 +136,49 @@ void main() {
       );
     });
 
+    test('reaching up into the shell breaks the order, from any layer', () {
+      for (final path in [
+        'lib/services/a.dart',
+        'lib/widgets/a.dart',
+        'lib/features/backup_restore/service/a.dart',
+      ]) {
+        expect(
+          violationsIn(
+            path,
+            imports(['beamer/beamer_delegates.dart', 'app_bootstrap.dart']),
+          ),
+          {'shell'},
+          reason: path,
+        );
+      }
+    });
+
+    test('the service locator is exempt: tool/di counts its lookups', () {
+      expect(
+        violationsIn('lib/classes/a.dart', imports(['get_it.dart'])),
+        isEmpty,
+      );
+      // Only the locator itself: its helpers are composition-root code.
+      expect(
+        violationsIn('lib/classes/a.dart', imports(['get_it_helpers.dart'])),
+        {'shell'},
+      );
+    });
+
+    test('foundation may not use shared UI; features above it may', () {
+      expect(
+        violationsIn('lib/classes/a.dart', imports(['themes/colors.dart'])),
+        {'shared_ui'},
+      );
+      expect(
+        violationsIn(
+          'lib/features/journal/state/a.dart',
+          imports(['themes/colors.dart', 'utils/b.dart']),
+        ),
+        isEmpty,
+      );
+    });
+
     test('exports count, and comments or strings do not', () {
       expect(
         violationsIn(

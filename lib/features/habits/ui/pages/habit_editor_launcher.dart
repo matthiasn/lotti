@@ -1,5 +1,5 @@
-import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/habits/habit_routes.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -17,9 +17,7 @@ import 'package:material_ui/material_ui.dart';
 void openHabitEditor(BuildContext context, {String? habitId}) {
   if (!isDesktopLayout(context)) {
     beamToNamed(
-      habitId == null
-          ? HabitsLocation.createPath
-          : HabitsLocation.editPath(habitId),
+      habitId == null ? habitCreatePath : habitEditPath(habitId),
     );
     return;
   }

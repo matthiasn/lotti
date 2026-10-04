@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -67,10 +68,14 @@ class _Bench {
     required this.db,
     required this.persistence,
     required this.controller,
+    required this.settingsDelegate,
   });
 
   final MockJournalDb db;
   final MockPersistenceLogic persistence;
+
+  /// The settings tab's navigator, which a resolved conflict beams back.
+  final MockBeamerDelegate settingsDelegate;
   final StreamController<List<Conflict>> controller;
 
   static Future<_Bench> create({
@@ -80,6 +85,10 @@ class _Bench {
     final persistence = MockPersistenceLogic();
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
+    final settingsDelegate = MockBeamerDelegate();
+    when(settingsDelegate.beamBack).thenReturn(true);
+    final navService = MockNavService();
+    when(() => navService.settingsDelegate).thenReturn(settingsDelegate);
     when(
       () => persistence.updateJournalEntity(
         any(),
@@ -92,7 +101,8 @@ class _Bench {
       additionalSetup: () {
         getIt
           ..registerSingleton<PersistenceLogic>(persistence)
-          ..registerSingleton<EntitiesCacheService>(cache);
+          ..registerSingleton<EntitiesCacheService>(cache)
+          ..registerSingleton<NavService>(navService);
       },
     );
 
@@ -105,7 +115,12 @@ class _Bench {
       () => db.journalEntityByIdIncludingDeleted(conflict.id),
     ).thenAnswer((_) async => localEntry);
 
-    return _Bench._(db: db, persistence: persistence, controller: controller);
+    return _Bench._(
+      db: db,
+      persistence: persistence,
+      controller: controller,
+      settingsDelegate: settingsDelegate,
+    );
   }
 
   Future<void> dispose() async {
@@ -268,6 +283,8 @@ void main() {
         ),
       ).captured;
       expect(_firstLineOf(captured.single as JournalEntity), 'Local title');
+      // Resolved, so the settings tab goes back to the conflict list.
+      verify(bench.settingsDelegate.beamBack).called(1);
     });
 
     testWidgets('Use from sync writes the remote side', (tester) async {

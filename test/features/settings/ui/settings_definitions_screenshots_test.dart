@@ -23,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/category_icon/category_icon.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -600,7 +601,9 @@ void main() {
 
     mocks = await setUpTestGetIt(
       additionalSetup: () {
-        navService = NavService();
+        navService = NavService(
+          tabDelegates: appTabDelegates,
+        );
         getIt
           // CategoryIconCompact (habits/dashboards rows), the habit
           // editor's category field, and label category chips all resolve
