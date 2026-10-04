@@ -85,6 +85,13 @@ getit_check:
 developer_log_check:
 	$(DART_CMD) run tool/logging/validate.dart
 
+# Checks that imports in lib/ follow the layer order in
+# tool/architecture/layer_guard.dart. After removing an upward import, tighten
+# the baseline with `dart run tool/architecture/validate.dart --update-baseline`.
+.PHONY: layer_check
+layer_check:
+	$(DART_CMD) run tool/architecture/validate.dart
+
 # Checks the unreleased release notes in changelog.d/ — one new file per pull
 # request instead of an edit to the top of CHANGELOG.md, which is what used to
 # leave every open PR conflicted the moment one of them merged. Also fails when

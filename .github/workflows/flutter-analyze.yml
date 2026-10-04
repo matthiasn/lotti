@@ -69,3 +69,8 @@ jobs:
       # lib/services/ where logging itself is implemented.
       - name: Check dart:developer logging only shrinks
         run: dart run tool/logging/validate.dart
+      # Every import in lib/ follows the layer order in
+      # tool/architecture/layer_guard.dart; the imports that already break it
+      # are baselined, and the baseline may only shrink.
+      - name: Check imports follow the layer order
+        run: dart run tool/architecture/validate.dart
