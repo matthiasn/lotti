@@ -69,3 +69,8 @@ jobs:
       # lib/services/ where logging itself is implemented.
       - name: Check dart:developer logging only shrinks
         run: dart run tool/logging/validate.dart
+      # Spacing, typography and colour come from the design-system tokens.
+      # Ratcheted like the icon check: a file's raw-value count per category
+      # may fall, never rise; the token definitions themselves are exempt.
+      - name: Check design-token discipline
+        run: dart run tool/design_tokens/validate.dart
