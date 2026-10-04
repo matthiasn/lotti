@@ -4,9 +4,7 @@
 /// Holds the on-disk layout (`/audio/<day>/` grouping, file-name timestamp
 /// format) and the per-method `LogDomain.speech` sub-domain strings used so
 /// log lines can be filtered by operation.
-class AudioRecorderConstants {
-  const AudioRecorderConstants._();
-
+abstract final class AudioRecorderConstants {
   // Recording configuration
   static const String audioDirectoryPrefix = '/audio/';
 
