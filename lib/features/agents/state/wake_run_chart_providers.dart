@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/task_resolution_time_series_utils.da
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series_utils.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
 /// Computes time-series chart data for a template's wake runs.

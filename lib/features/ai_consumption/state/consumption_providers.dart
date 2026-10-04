@@ -6,7 +6,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_bucketing.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/insights/logic/time_bucketing.dart'
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/utils/cache_extension.dart';

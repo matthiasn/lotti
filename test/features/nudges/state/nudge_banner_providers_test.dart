@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 

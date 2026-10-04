@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 
 final goalAssessmentServiceProvider = Provider<GoalAssessmentService>(

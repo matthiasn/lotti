@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

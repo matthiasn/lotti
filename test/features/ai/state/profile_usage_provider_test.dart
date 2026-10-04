@@ -4,9 +4,9 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';

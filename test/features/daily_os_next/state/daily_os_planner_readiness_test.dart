@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

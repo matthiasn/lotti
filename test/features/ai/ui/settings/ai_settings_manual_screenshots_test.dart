@@ -20,7 +20,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/inference_profile_detail_page.dart';
@@ -47,6 +46,7 @@ import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/device_region.dart';

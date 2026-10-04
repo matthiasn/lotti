@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/model/report_health_band.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Project Agent.
@@ -265,7 +265,7 @@ class ProjectAgentStrategy extends ConversationStrategy
     final healthRationale = healthRationaleValue is String
         ? healthRationaleValue.trim()
         : '';
-    final healthConfidence = parseHealthConfidence(
+    final healthConfidence = parseReportHealthConfidence(
       args[ProjectAgentReportToolArgs.healthConfidence],
     );
 

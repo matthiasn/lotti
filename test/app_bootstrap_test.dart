@@ -38,6 +38,7 @@ import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/domain_logging.dart';

@@ -22,7 +22,9 @@ import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.d
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// The Daily OS day-agent service.

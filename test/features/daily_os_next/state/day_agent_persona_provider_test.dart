@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
     as agent_providers;
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';

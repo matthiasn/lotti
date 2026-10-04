@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_call_ledger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

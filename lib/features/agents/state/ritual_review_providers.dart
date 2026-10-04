@@ -8,6 +8,7 @@ import 'package:lotti/database/agents/agent_database.dart' show WakeRunLogData;
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,

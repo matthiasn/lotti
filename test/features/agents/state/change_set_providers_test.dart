@@ -20,8 +20,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 

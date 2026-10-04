@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod/riverpod.dart';
 

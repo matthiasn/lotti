@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 

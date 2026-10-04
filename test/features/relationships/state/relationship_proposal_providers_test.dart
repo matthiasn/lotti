@@ -14,6 +14,7 @@ import 'package:lotti/features/relationships/service/relationship_proposal_servi
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';

@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 
 /// One pending proposal in the unified suggestion list.
 ///

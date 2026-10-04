@@ -13,6 +13,7 @@ import 'package:lotti/features/goals/service/goal_measurable_capture_service.dar
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

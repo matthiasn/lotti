@@ -6,12 +6,12 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 
 @immutable
 class GoalChatComposerState {

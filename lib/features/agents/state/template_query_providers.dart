@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/model/template_instance_overview.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// List all non-deleted agent templates.

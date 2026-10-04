@@ -29,6 +29,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';

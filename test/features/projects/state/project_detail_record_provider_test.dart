@@ -12,6 +12,7 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';

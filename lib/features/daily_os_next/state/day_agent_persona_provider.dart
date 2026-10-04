@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart'
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Observable persona state of the agent working one day (ADR 0032 §7):

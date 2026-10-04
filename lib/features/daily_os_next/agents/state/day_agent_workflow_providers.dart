@@ -11,8 +11,10 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/update_notifications_providers.dart';
 
 /// The Daily OS day-agent workflow with all dependencies resolved.
 ///

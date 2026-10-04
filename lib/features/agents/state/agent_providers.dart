@@ -12,8 +12,6 @@ import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
-import 'package:lotti/database/agents/agent_database.dart';
-import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -49,7 +47,9 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -87,31 +87,6 @@ void Function(String) persistedStateChangedNotifier(
   };
 }
 
-/// Optional UpdateNotifications service from GetIt.
-final maybeUpdateNotificationsProvider = Provider<UpdateNotifications?>(
-  maybeUpdateNotifications,
-  name: 'maybeUpdateNotificationsProvider',
-);
-UpdateNotifications? maybeUpdateNotifications(Ref ref) {
-  if (!getIt.isRegistered<UpdateNotifications>()) {
-    return null;
-  }
-  return getIt<UpdateNotifications>();
-}
-
-/// Required UpdateNotifications service for agent runtime wiring.
-final updateNotificationsProvider = Provider<UpdateNotifications>(
-  updateNotifications,
-  name: 'updateNotificationsProvider',
-);
-UpdateNotifications updateNotifications(Ref ref) {
-  final notifications = ref.watch(maybeUpdateNotificationsProvider);
-  if (notifications == null) {
-    throw StateError('UpdateNotifications is not registered in GetIt');
-  }
-  return notifications;
-}
-
 /// Optional sync processor dependency for cross-device agent wiring.
 final maybeSyncEventProcessorProvider = Provider<SyncEventProcessor?>(
   maybeSyncEventProcessor,
@@ -122,15 +97,6 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
     return null;
   }
   return getIt<SyncEventProcessor>();
-}
-
-/// The agent database instance (singleton via GetIt).
-final agentDatabaseProvider = Provider<AgentDatabase>(
-  agentDatabase,
-  name: 'agentDatabaseProvider',
-);
-AgentDatabase agentDatabase(Ref ref) {
-  return getIt<AgentDatabase>();
 }
 
 /// Reclaims the JSON sidecars of rows that have been hard-deleted or pruned.
@@ -147,18 +113,6 @@ AgentSidecarReclaimer agentSidecarReclaimer(Ref ref) => AgentSidecarReclaimer(
       : null,
   domainLogger: ref.watch(domainLoggerProvider),
 );
-
-/// The agent repository wrapping the database.
-final agentRepositoryProvider = Provider<AgentRepository>(
-  agentRepository,
-  name: 'agentRepositoryProvider',
-);
-AgentRepository agentRepository(Ref ref) {
-  return AgentRepository(
-    ref.watch(agentDatabaseProvider),
-    domainLogger: ref.watch(domainLoggerProvider),
-  );
-}
 
 /// Sync-aware write wrapper for agent entities and links.
 final agentSyncServiceProvider = Provider<AgentSyncService>(

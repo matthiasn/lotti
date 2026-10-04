@@ -26,8 +26,10 @@ import 'package:lotti/features/relationships/service/relationship_chat_service.d
 import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// The OS-reminder projection of the cadence verdict (ADR 0039, plan v2

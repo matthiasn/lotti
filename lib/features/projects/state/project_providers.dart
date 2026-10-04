@@ -17,6 +17,8 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Provider that fetches projects for a category and auto-rebuilds on changes.

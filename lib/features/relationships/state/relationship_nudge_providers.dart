@@ -15,6 +15,7 @@ import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/utils/consts.dart';
 

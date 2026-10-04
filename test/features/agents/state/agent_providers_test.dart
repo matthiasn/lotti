@@ -61,6 +61,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
         domainLoggerProvider,
@@ -68,6 +69,7 @@ import 'package:lotti/providers/service_providers.dart'
         journalDbProvider,
         loggingServiceProvider,
         outboxServiceProvider;
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
