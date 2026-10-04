@@ -303,12 +303,12 @@ void _registerRunningTimerConformance() {
         put<OutboxService>(outbox);
         put<NotificationService>(notifications);
         put<EditorStateService>(editorState);
-        put<VectorClockService>(VectorClockService());
+        put<VectorClockService>(VectorClockService(settingsDb: settingsDb));
         put<MetadataService>(
           MetadataService(vectorClockService: getIt<VectorClockService>()),
         );
         put<GeolocationService>(MockGeolocationService());
-        put<PersistenceLogic>(PersistenceLogic());
+        put<PersistenceLogic>(buildPersistenceLogic());
 
         final bench = _TimerBench(async, db)..setUp();
         try {

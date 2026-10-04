@@ -135,6 +135,8 @@ void main() {
 }
 
 class _TestPersistenceLogic extends PersistenceLogic {
+  _TestPersistenceLogic() : super(services: buildPersistenceServices());
+
   JournalEntity? _lastSaved;
   @override
   Future<bool?> updateDbEntity(

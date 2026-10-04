@@ -16,7 +16,8 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/get_it.dart' show getIt;
+import 'package:lotti/get_it.dart'
+    show buildPersistenceServices, buildVectorClockService, getIt;
 import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -4104,7 +4105,7 @@ void main() {
             ..registerSingleton<JournalDb>(db)
             ..registerSingleton<OutboxService>(outboxService)
             // The real service: the clock it reserves is what is under test.
-            ..registerSingleton<VectorClockService>(VectorClockService());
+            ..registerSingleton<VectorClockService>(buildVectorClockService());
         },
       );
       // A fresh device: its first counter is 0, which VectorClock.compare
@@ -4176,7 +4177,7 @@ void main() {
             ..unregister<JournalDb>()
             ..registerSingleton<JournalDb>(db)
             ..registerSingleton<OutboxService>(outboxService)
-            ..registerSingleton<VectorClockService>(VectorClockService());
+            ..registerSingleton<VectorClockService>(buildVectorClockService());
         },
       );
       await getIt<VectorClockService>().initialized;
@@ -4340,6 +4341,7 @@ void main() {
     Future<bool> link(_Device device) => device.act(
       () => PersistenceEntries(
         MockPersistenceLogic(),
+        buildPersistenceServices(),
       ).createLink(fromId: entryId, toId: 'note-id'),
     );
 
@@ -4534,7 +4536,7 @@ class _Device {
     final outbox = MockOutboxService();
     final device = _Device._(
       JournalDb(inMemoryDatabase: true),
-      VectorClockService(),
+      buildVectorClockService(),
       outbox,
     );
     when(() => outbox.enqueueMessage(any())).thenAnswer((invocation) async {

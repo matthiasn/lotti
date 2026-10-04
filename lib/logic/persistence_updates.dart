@@ -5,8 +5,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/services/geolocation_service.dart'
@@ -14,7 +12,6 @@ import 'package:lotti/logic/services/geolocation_service.dart'
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Update, geolocation and definition entry points of [PersistenceLogic].
@@ -24,7 +21,7 @@ import 'package:lotti/utils/file_utils.dart';
 /// label-preserving [updateJournalEntity], the core [updateDbEntity] writer
 /// and the definition-op wrappers.
 class PersistenceUpdates extends PersistenceCollaboratorBase {
-  PersistenceUpdates(super.logic);
+  PersistenceUpdates(super.logic, super.services);
 
   Future<bool> updateJournalEntityText(
     String journalEntityId,
@@ -229,7 +226,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
             updateNotifications.notify(ids);
           }
 
-          await getIt<Fts5Db>().insertText(
+          await fts5Db.insertText(
             journalEntity,
             removePrevious: true,
           );
@@ -250,7 +247,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
               // is claimed on disk. An outbox failure here must NOT release
               // the counter (that would let a subsequent reservation reuse
               // the same counter for a different entity).
-              getIt<DomainLogger>().error(
+              loggingService.error(
                 LogDomain.sync,
                 exception,
                 message:
@@ -262,7 +259,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
             }
           }
 
-          await getIt<NotificationService>().updateBadge();
+          await notificationService.updateBadge();
 
           return applied;
         },

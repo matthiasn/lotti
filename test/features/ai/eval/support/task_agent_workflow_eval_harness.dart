@@ -151,7 +151,7 @@ class TaskAgentWorkflowEvalHarness {
         put<AgentDatabase>(agentDb);
         put<OutboxService>(outboxService);
         put<NotificationService>(notificationService);
-        put<VectorClockService>(VectorClockService());
+        put<VectorClockService>(buildVectorClockService());
         put<TimeService>(TimeService());
         put<NavService>(navService);
         // Real, not mocked: `LinkedTaskContextBuilder` resolves every label
@@ -168,7 +168,7 @@ class TaskAgentWorkflowEvalHarness {
           MetadataService(vectorClockService: getIt<VectorClockService>()),
         );
         put<GeolocationService>(MockGeolocationService());
-        put<PersistenceLogic>(PersistenceLogic());
+        put<PersistenceLogic>(buildPersistenceLogic());
         additionalGetItSetup?.call();
       },
     );

@@ -102,7 +102,7 @@ void main() {
             ..registerSingleton<JournalDb>(journalDb)
             ..registerSingleton<OutboxService>(mockOutboxService)
             ..registerSingleton<NotificationService>(mockNotificationService)
-            ..registerSingleton<VectorClockService>(VectorClockService())
+            ..registerSingleton<VectorClockService>(buildVectorClockService())
             ..registerSingleton<MetadataService>(
               MetadataService(
                 vectorClockService: getIt<VectorClockService>(),
@@ -114,7 +114,7 @@ void main() {
             ..registerSingleton<EntitiesCacheService>(
               MockEntitiesCacheService(),
             )
-            ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+            ..registerSingleton<PersistenceLogic>(buildPersistenceLogic());
         },
       );
     });

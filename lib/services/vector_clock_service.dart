@@ -6,7 +6,6 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_keys.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -170,9 +169,25 @@ typedef VcBurnHandler = Future<void> Function(String hostId, int counter);
 const int firstVectorClockCounter = 1;
 
 class VectorClockService {
-  VectorClockService() {
+  /// [syncDatabase] and [domainLogger] are resolved on each use, not here:
+  /// the service is created before sync is wired, and a minimally wired
+  /// service (a unit test seeding the counter) has neither. Each returns null
+  /// while its service is absent, which skips the ledger write or the log.
+  VectorClockService({
+    required SettingsDb settingsDb,
+    SyncDatabase? Function()? syncDatabase,
+    DomainLogger? Function()? domainLogger,
+  }) : _settings = settingsDb,
+       _syncDatabase = syncDatabase ?? _absent,
+       _domainLogger = domainLogger ?? _absent {
     _initialized = init();
   }
+
+  static Null _absent() => null;
+
+  final SettingsDb _settings;
+  final SyncDatabase? Function() _syncDatabase;
+  final DomainLogger? Function() _domainLogger;
 
   static const Symbol _zoneKey = #_vcScope;
 
@@ -215,7 +230,7 @@ class VectorClockService {
   Future<void> get initialized => _initialized;
 
   Future<void> init() async {
-    final storedValues = await getIt<SettingsDb>().itemsByKeys({
+    final storedValues = await _settings.itemsByKeys({
       hostKey,
       nextAvailableCounterKey,
     });
@@ -244,7 +259,7 @@ class VectorClockService {
   Future<String> setNewHost() async {
     final host = uuid.v4();
 
-    await getIt<SettingsDb>().saveSettingsItem(hostKey, host);
+    await _settings.saveSettingsItem(hostKey, host);
     _host = host;
     _persistedCounter = firstVectorClockCounter;
     _nextAvailableCounter = firstVectorClockCounter;
@@ -479,33 +494,28 @@ class VectorClockService {
   /// release. The broadcast must attribute the burnt counter to the host
   /// that actually reserved it.
   Future<void> _onRelease(String hostId, int counter) async {
-    // DomainLogger may not be registered in some test harnesses / bootstrap
-    // paths; use the `isRegistered` guard so a release on a minimally-wired
-    // service (e.g. unit test seeding the SettingsDb counter) does not crash.
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        'VC reservation released host=$hostId counter=$counter '
-        '(counter already persisted; settling)',
-        subDomain: 'vc.burn',
-      );
-    }
+    // No logger on a minimally wired service (a unit test seeding the
+    // SettingsDb counter); the release still settles.
+    _domainLogger()?.error(
+      LogDomain.sync,
+      'VC reservation released host=$hostId counter=$counter '
+      '(counter already persisted; settling)',
+      subDomain: 'vc.burn',
+    );
     final handler = _burnHandler;
     if (handler == null) return;
     try {
       await handler(hostId, counter);
     } catch (error, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.sync,
-          error,
-          message:
-              'VC burn broadcast handler threw — counter $counter will fall back '
-              'to reactive backfill resolution',
-          stackTrace: stackTrace,
-          subDomain: 'vc.burn.handler',
-        );
-      }
+      _domainLogger()?.error(
+        LogDomain.sync,
+        error,
+        message:
+            'VC burn broadcast handler threw — counter $counter will fall back '
+            'to reactive backfill resolution',
+        stackTrace: stackTrace,
+        subDomain: 'vc.burn.handler',
+      );
     }
   }
 
@@ -537,14 +547,12 @@ class VectorClockService {
     final hostId = entry.key;
     final counter = entry.value;
 
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        'VC counter burnt host=$hostId counter=$counter '
-        '(unbound vector clock; $reason)',
-        subDomain: 'vc.burn.unbound',
-      );
-    }
+    _domainLogger()?.error(
+      LogDomain.sync,
+      'VC counter burnt host=$hostId counter=$counter '
+      '(unbound vector clock; $reason)',
+      subDomain: 'vc.burn.unbound',
+    );
     await _release(
       hostId,
       counter,
@@ -564,27 +572,26 @@ class VectorClockService {
     int counter,
     VcPayloadRef? payload,
   ) async {
-    if (!getIt.isRegistered<SyncDatabase>()) return;
+    final syncDatabase = _syncDatabase();
+    if (syncDatabase == null) return;
 
     try {
-      await getIt<SyncDatabase>().recordReservedSequenceCounter(
+      await syncDatabase.recordReservedSequenceCounter(
         hostId: hostId,
         counter: counter,
         entryId: payload?.id,
         payloadType: payload?.type,
       );
     } catch (error, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.sync,
-          error,
-          message:
-              'VC reservation ledger write failed host=$hostId counter=$counter; '
-              'recording it in the settings database until startup migrates it',
-          stackTrace: stackTrace,
-          subDomain: 'vc.reserve.ledger',
-        );
-      }
+      _domainLogger()?.error(
+        LogDomain.sync,
+        error,
+        message:
+            'VC reservation ledger write failed host=$hostId counter=$counter; '
+            'recording it in the settings database until startup migrates it',
+        stackTrace: stackTrace,
+        subDomain: 'vc.reserve.ledger',
+      );
       final records = await _unrecordedReservations();
       await _saveUnrecordedReservations([
         ...records.where(
@@ -616,7 +623,8 @@ class VectorClockService {
   /// many moved.
   Future<int> migrateUnrecordedReservations() async {
     await _initialized;
-    if (!getIt.isRegistered<SyncDatabase>()) return 0;
+    final syncDatabase = _syncDatabase();
+    if (syncDatabase == null) return 0;
     return _underReserveLock(() async {
       final records = await _unrecordedReservations();
       if (records.isEmpty) return 0;
@@ -625,7 +633,7 @@ class VectorClockService {
         try {
           // INSERT OR IGNORE: a row written since — a binding, a release —
           // already knows more than the fallback record.
-          await getIt<SyncDatabase>().recordReservedSequenceCounter(
+          await syncDatabase.recordReservedSequenceCounter(
             hostId: record.hostId,
             counter: record.counter,
             entryId: record.payload?.id,
@@ -633,17 +641,15 @@ class VectorClockService {
           );
         } catch (error, stackTrace) {
           kept.add(record);
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt<DomainLogger>().error(
-              LogDomain.sync,
-              error,
-              message:
-                  'VC reservation migration failed host=${record.hostId} '
-                  'counter=${record.counter}; retried on the next startup',
-              stackTrace: stackTrace,
-              subDomain: 'vc.reserve.migrate',
-            );
-          }
+          _domainLogger()?.error(
+            LogDomain.sync,
+            error,
+            message:
+                'VC reservation migration failed host=${record.hostId} '
+                'counter=${record.counter}; retried on the next startup',
+            stackTrace: stackTrace,
+            subDomain: 'vc.reserve.migrate',
+          );
         }
       }
       await _saveUnrecordedReservations(kept);
@@ -652,7 +658,7 @@ class VectorClockService {
   }
 
   Future<List<_UnrecordedReservation>> _unrecordedReservations() async {
-    final raw = await getIt<SettingsDb>().itemByKey(
+    final raw = await _settings.itemByKey(
       unrecordedReservationsKey,
     );
     if (raw == null || raw.isEmpty) return const [];
@@ -681,8 +687,7 @@ class VectorClockService {
   }
 
   void _logUnreadableFallback(Object error, StackTrace stackTrace) {
-    if (!getIt.isRegistered<DomainLogger>()) return;
-    getIt<DomainLogger>().error(
+    _domainLogger()?.error(
       LogDomain.sync,
       error,
       message: 'unreadable unrecorded-reservation record skipped',
@@ -694,7 +699,7 @@ class VectorClockService {
   Future<void> _saveUnrecordedReservations(
     List<_UnrecordedReservation> records,
   ) async {
-    final settings = getIt<SettingsDb>();
+    final settings = _settings;
     if (records.isEmpty) {
       await settings.removeSettingsItem(unrecordedReservationsKey);
       return;
@@ -710,32 +715,31 @@ class VectorClockService {
     int counter,
     VcPayloadRef? payload,
   ) async {
-    if (!getIt.isRegistered<SyncDatabase>()) return;
+    final syncDatabase = _syncDatabase();
+    if (syncDatabase == null) return;
 
     try {
-      await getIt<SyncDatabase>().markReservedSequenceCounterBurnPending(
+      await syncDatabase.markReservedSequenceCounterBurnPending(
         hostId: hostId,
         counter: counter,
         entryId: payload?.id,
         payloadType: payload?.type,
       );
     } catch (error, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.sync,
-          error,
-          message:
-              'VC burn-pending ledger write failed host=$hostId counter=$counter; '
-              'counter already persisted and will fall back to reactive backfill',
-          stackTrace: stackTrace,
-          subDomain: 'vc.burn.ledger',
-        );
-      }
+      _domainLogger()?.error(
+        LogDomain.sync,
+        error,
+        message:
+            'VC burn-pending ledger write failed host=$hostId counter=$counter; '
+            'counter already persisted and will fall back to reactive backfill',
+        stackTrace: stackTrace,
+        subDomain: 'vc.burn.ledger',
+      );
     }
   }
 
   Future<void> _persistCounter(int counter) async {
-    await getIt<SettingsDb>().saveSettingsItem(
+    await _settings.saveSettingsItem(
       nextAvailableCounterKey,
       counter.toString(),
     );

@@ -53,7 +53,7 @@ void main() {
       },
     );
     logic = MockPersistenceLogic();
-    entries = PersistenceEntries(logic);
+    entries = PersistenceEntries(logic, buildPersistenceServices());
 
     when(
       () => mocks.journalDb.updateJournalEntity(

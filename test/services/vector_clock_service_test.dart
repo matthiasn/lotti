@@ -29,7 +29,7 @@ void main() {
     await getIt.reset();
     settingsDb = SettingsDb(inMemoryDatabase: true);
     getIt.registerSingleton<SettingsDb>(settingsDb);
-    service = VectorClockService();
+    service = buildVectorClockService();
     await service.initialized;
   });
 
@@ -46,6 +46,21 @@ void main() {
       final counter = await service.getNextAvailableCounter();
       expect(counter, firstVectorClockCounter);
     });
+
+    test(
+      'without a sync database or logger it still reserves, and has no '
+      'ledger to migrate',
+      () async {
+        final bare = VectorClockService(settingsDb: settingsDb);
+        await bare.initialized;
+        final before = await bare.getNextAvailableCounter();
+
+        await bare.getNextVectorClock();
+
+        expect(await bare.getNextAvailableCounter(), before + 1);
+        expect(await bare.migrateUnrecordedReservations(), 0);
+      },
+    );
 
     test('setNewHost creates new host UUID', () async {
       final originalHost = await service.getHost();
@@ -92,7 +107,7 @@ void main() {
         getIt.registerSingleton<SettingsDb>(emptySettingsDb);
 
         // Create service and wait for init
-        final uninitializedService = VectorClockService();
+        final uninitializedService = buildVectorClockService();
         await uninitializedService.initialized;
 
         final hash = await uninitializedService.getHostHash();
@@ -143,7 +158,7 @@ void main() {
       await getIt.reset();
       final db = SettingsDb(inMemoryDatabase: true);
       getIt.registerSingleton<SettingsDb>(db);
-      final svc = VectorClockService();
+      final svc = buildVectorClockService();
       await svc.initialized;
       await svc.setNextAvailableCounter(localCounter);
       final host = await svc.getHost();
@@ -209,7 +224,7 @@ void main() {
       await service.setNextAvailableCounter(50);
 
       // Create new service instance
-      final newService = VectorClockService();
+      final newService = buildVectorClockService();
       await newService.initialized;
 
       final counter = await newService.getNextAvailableCounter();
@@ -223,7 +238,7 @@ void main() {
         await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
         await settingsDb.removeSettingsItem(nextAvailableCounterKey);
 
-        final newService = VectorClockService();
+        final newService = buildVectorClockService();
         await newService.initialized;
 
         expect(await newService.getHost(), 'penguin-host');
@@ -259,7 +274,7 @@ void main() {
           await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
           await settingsDb.saveSettingsItem(nextAvailableCounterKey, '0');
 
-          final restarted = VectorClockService();
+          final restarted = buildVectorClockService();
           await restarted.initialized;
           final vc = await restarted.getNextVectorClock();
 
@@ -275,7 +290,7 @@ void main() {
           await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
           await settingsDb.saveSettingsItem(nextAvailableCounterKey, '1');
 
-          final restarted = VectorClockService();
+          final restarted = buildVectorClockService();
           await restarted.initialized;
           final vc = await restarted.getNextVectorClock(
             previous: const VectorClock({'penguin-host': 0}),
@@ -290,7 +305,7 @@ void main() {
       final originalHost = await service.getHost();
 
       // Create new service instance
-      final newService = VectorClockService();
+      final newService = buildVectorClockService();
       await newService.initialized;
 
       final loadedHost = await newService.getHost();
@@ -396,7 +411,7 @@ void main() {
         expect(reservation.vc.vclock[host], 10);
 
         // Counter already persisted BEFORE the caller can run any write.
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 11);
 
@@ -425,7 +440,7 @@ void main() {
         expect(await service.getNextAvailableCounter(), 21);
 
         // Persisted watermark held at 21 through the release.
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 21);
 
@@ -609,7 +624,7 @@ void main() {
         await reservation.release(); // no-op — already finalized by commit
 
         expect(burnt, isEmpty);
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 51);
 
@@ -797,7 +812,7 @@ void main() {
           (payload: payload),
         );
         // It survives a restart: a fresh service reads the same record.
-        final restarted = VectorClockService();
+        final restarted = buildVectorClockService();
         await restarted.initialized;
         expect(
           await restarted.unrecordedReservation(hostId: host, counter: 70),
@@ -814,9 +829,12 @@ void main() {
       'when the settings database refuses the fallback too, reserving throws '
       'and leaves nothing pending — no write may use the counter',
       () async {
+        // A service on a settings database that holds this host at counter
+        // 70 but refuses the fallback record.
         final settings = MockSettingsDb();
-        await getIt.unregister<SettingsDb>();
-        getIt.registerSingleton<SettingsDb>(settings);
+        when(() => settings.itemsByKeys(any())).thenAnswer(
+          (_) async => {hostKey: host, nextAvailableCounterKey: '70'},
+        );
         when(() => settings.itemByKey(any())).thenAnswer((_) async => null);
         when(
           () => settings.saveSettingsItem(nextAvailableCounterKey, any()),
@@ -824,15 +842,22 @@ void main() {
         when(
           () => settings.saveSettingsItem(unrecordedReservationsKey, any()),
         ).thenThrow(StateError('settings database locked'));
+        final logger = getIt<DomainLogger>();
+        final refusing = VectorClockService(
+          settingsDb: settings,
+          syncDatabase: () => failingSyncDb,
+          domainLogger: () => logger,
+        );
+        await refusing.initialized;
 
         await expectLater(
-          service.getNextVectorClock(payload: payload),
+          refusing.getNextVectorClock(payload: payload),
           throwsStateError,
         );
 
-        expect(service.isPending(hostId: host, counter: 70), isFalse);
+        expect(refusing.isPending(hostId: host, counter: 70), isFalse);
         // The counter itself stays burnt: it is never handed out again.
-        expect(await service.getNextAvailableCounter(), 71);
+        expect(await refusing.getNextAvailableCounter(), 71);
       },
     );
 
@@ -962,7 +987,7 @@ void main() {
       });
 
       expect(result, [100, 101]);
-      final reloaded = VectorClockService();
+      final reloaded = buildVectorClockService();
       await reloaded.initialized;
       expect(await reloaded.getNextAvailableCounter(), 102);
     });
@@ -992,7 +1017,7 @@ void main() {
         expect(burnt, [201, 200]);
 
         // Persisted watermark stays at 202 (counters already on disk).
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 202);
 
@@ -1024,7 +1049,7 @@ void main() {
         expect(burnt, [301, 300]);
 
         // Persisted watermark stays at 302 — nothing we can rewind.
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 302);
 
@@ -1051,7 +1076,7 @@ void main() {
       });
 
       expect(result, 400 + 401);
-      final reloaded = VectorClockService();
+      final reloaded = buildVectorClockService();
       await reloaded.initialized;
       expect(await reloaded.getNextAvailableCounter(), 402);
     });
@@ -1063,7 +1088,7 @@ void main() {
         await service.setNextAvailableCounter(500);
         await service.getNextVectorClock();
 
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 501);
       },
@@ -1258,7 +1283,7 @@ void main() {
         expect(applied, isTrue);
         expect(burnt, isEmpty);
 
-        final reloaded = VectorClockService();
+        final reloaded = buildVectorClockService();
         await reloaded.initialized;
         expect(await reloaded.getNextAvailableCounter(), 601);
 

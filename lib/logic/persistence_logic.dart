@@ -10,6 +10,7 @@ import 'package:lotti/logic/persistence_create_ops.dart';
 import 'package:lotti/logic/persistence_definition_ops.dart';
 import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/persistence_logic_contract.dart';
+import 'package:lotti/logic/persistence_services.dart';
 import 'package:lotti/logic/persistence_update_ops.dart';
 import 'package:lotti/logic/persistence_updates.dart';
 
@@ -28,12 +29,14 @@ export 'package:lotti/logic/persistence_logic_contract.dart'
 /// [updateDbEntity] or [updateMetadata] on a subclass still intercepts the
 /// calls made from inside [updateJournalEntity], [createDbEntity], etc.
 class PersistenceLogic implements PersistenceLogicContract {
-  PersistenceLogic() {
-    _create = PersistenceCreateOps(this);
-    _definitions = PersistenceDefinitionOps(this);
-    _updateOps = PersistenceUpdateOps(this);
-    _entries = PersistenceEntries(this);
-    _updates = PersistenceUpdates(this);
+  /// [services] are handed to every collaborator; the composition root
+  /// builds them (`buildPersistenceServices`).
+  PersistenceLogic({required PersistenceServices services}) {
+    _create = PersistenceCreateOps(this, services);
+    _definitions = PersistenceDefinitionOps(this, services);
+    _updateOps = PersistenceUpdateOps(this, services);
+    _entries = PersistenceEntries(this, services);
+    _updates = PersistenceUpdates(this, services);
   }
 
   late final PersistenceCreateOps _create;

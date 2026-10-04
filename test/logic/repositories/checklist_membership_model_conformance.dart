@@ -915,7 +915,7 @@ void _registerChecklistMembershipConformance() {
       put<JournalDb>(db);
       put<OutboxService>(mockOutboxService);
       put<NotificationService>(mockNotificationService);
-      put<VectorClockService>(VectorClockService());
+      put<VectorClockService>(buildVectorClockService());
       put<TimeService>(MockTimeService());
       put<NavService>(MockNavService());
       put<EntitiesCacheService>(MockEntitiesCacheService());
@@ -924,7 +924,7 @@ void _registerChecklistMembershipConformance() {
         MetadataService(vectorClockService: getIt<VectorClockService>()),
       );
       put<GeolocationService>(MockGeolocationService());
-      put<PersistenceLogic>(PersistenceLogic());
+      put<PersistenceLogic>(buildPersistenceLogic());
     });
 
     tearDown(() async {

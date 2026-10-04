@@ -7,6 +7,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_update_ops.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,7 +32,7 @@ void main() {
     registerAllFallbackValues();
     mocks = await setUpTestGetIt();
     logic = MockPersistenceLogic();
-    ops = PersistenceUpdateOps(logic);
+    ops = PersistenceUpdateOps(logic, buildPersistenceServices());
 
     when(
       () => logic.updateMetadata(

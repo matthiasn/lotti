@@ -181,3 +181,66 @@ Future<void> _registerLateAndOptionalServices({
     getIt<StartupTasks>().track(_checkAndPopulateSequenceLog());
   }
 }
+
+/// The [VectorClockService] wired from the locator: the [SettingsDb] now, the
+/// [SyncDatabase] and [DomainLogger] on each use, since sync and logging may
+/// be registered after it (or, in a test, not at all).
+VectorClockService buildVectorClockService() => VectorClockService(
+  settingsDb: getIt<SettingsDb>(),
+  syncDatabase: () =>
+      getIt.isRegistered<SyncDatabase>() ? getIt<SyncDatabase>() : null,
+  domainLogger: () =>
+      getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null,
+);
+
+/// The [Maintenance] wired from the locator. The search index is resolved on
+/// use because rebuilding it registers a fresh one, and the integrity check
+/// covers whichever databases this build registered.
+Maintenance buildMaintenance() {
+  MaintainedStore? store<T extends GeneratedDatabase>(String name) =>
+      getIt.isRegistered<T>() ? (name: name, database: getIt<T>()) : null;
+  return Maintenance(
+    journalDb: getIt<JournalDb>(),
+    domainLogger: getIt<DomainLogger>(),
+    editorDb: getIt.get<EditorDb>,
+    syncDatabase: getIt.get<SyncDatabase>,
+    fts5Db: getIt.get<Fts5Db>,
+    replaceFts5Db: () {
+      getIt
+        ..unregister<Fts5Db>()
+        ..registerSingleton<Fts5Db>(Fts5Db());
+      return getIt<Fts5Db>();
+    },
+    integrityStores: () => [
+      ?store<JournalDb>('journal'),
+      ?store<SyncDatabase>('sync'),
+      ?store<AgentDatabase>('agent'),
+      ?store<EditorDb>('editor'),
+      ?store<Fts5Db>('search'),
+    ],
+    agentDatabase: () =>
+        getIt.isRegistered<AgentDatabase>() ? getIt<AgentDatabase>() : null,
+    editorStateService: () => getIt.isRegistered<EditorStateService>()
+        ? getIt<EditorStateService>()
+        : null,
+  );
+}
+
+/// The services the persistence collaborators reach, resolved from the
+/// locator on each use.
+PersistenceServices buildPersistenceServices() => PersistenceServices(
+  journalDb: getIt.get<JournalDb>,
+  metadataService: getIt.get<MetadataService>,
+  vectorClockService: getIt.get<VectorClockService>,
+  geolocationService: getIt.get<GeolocationService>,
+  domainLogger: getIt.get<DomainLogger>,
+  updateNotifications: getIt.get<UpdateNotifications>,
+  outboxService: getIt.get<OutboxService>,
+  fts5Db: getIt.get<Fts5Db>,
+  notificationService: getIt.get<NotificationService>,
+  configFlagEffects: getIt.get<ConfigFlagEffects>,
+);
+
+/// The [PersistenceLogic] facade over [buildPersistenceServices].
+PersistenceLogic buildPersistenceLogic() =>
+    PersistenceLogic(services: buildPersistenceServices());

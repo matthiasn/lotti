@@ -38,7 +38,7 @@ void main() {
       },
     );
     logic = MockPersistenceLogic();
-    updates = PersistenceUpdates(logic);
+    updates = PersistenceUpdates(logic, buildPersistenceServices());
   });
 
   tearDown(tearDownTestGetIt);

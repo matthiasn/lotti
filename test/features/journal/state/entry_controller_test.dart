@@ -396,7 +396,7 @@ void main() {
       ..registerSingleton<SecureStorage>(secureStorageMock)
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<VectorClockService>(VectorClockService())
+      ..registerSingleton<VectorClockService>(buildVectorClockService())
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<NavService>(mockNavService)
       ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))

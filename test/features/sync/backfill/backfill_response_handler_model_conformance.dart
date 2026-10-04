@@ -149,7 +149,7 @@ class _ConformanceBench {
   /// startup reconciliation `get_it_sync.dart` runs.
   Future<void> _startProcess() async {
     live.clear();
-    vc = VectorClockService();
+    vc = buildVectorClockService();
     await vc.initialized;
     host = (await vc.getHost())!;
     log = SyncSequenceLogService(
