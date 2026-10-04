@@ -63,7 +63,7 @@
 (*                when the tool call began (JournalRepository.             *)
 (*                updateJournalEntity)                                     *)
 (*   agLabels     the agent's label assignment (LabelsRepository.          *)
-(*                addLabels), through the same writer as uiMeta            *)
+(*                assignLabels), through the same writer as uiMeta         *)
 (*   Receive      sync applying a newer version from another device — an  *)
 (*                item and the checklist version listing it, or a new      *)
 (*                checklist and the task version listing it                *)

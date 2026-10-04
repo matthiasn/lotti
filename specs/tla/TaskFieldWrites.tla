@@ -45,7 +45,7 @@
 (*              (JournalRepository.updateCategoryId,                       *)
 (*              updateJournalEntityDate), the geolocation added after      *)
 (*              creation (GeolocationService) and the agent's label        *)
-(*              assignment (LabelsRepository.addLabels), each through      *)
+(*              assignment (LabelsRepository.assignLabels), each through   *)
 (*              PersistenceLogic.updateEntity                              *)
 (*   Resolve    the user resolves a conflict on the conflict screen: keeps *)
 (*              one side, or combines them, picking each field the screen  *)

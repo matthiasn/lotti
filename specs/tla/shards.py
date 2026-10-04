@@ -119,6 +119,7 @@ SECONDS = {
     "TaskFieldWritesAgents": 60,
     "TaskFieldWritesResolve": 25,
     "TaskCategoryMove": 2,
+    "TaskLabels": 2,
     "TaskFieldWritesStale": 60,
     # Local runs with 20 workers took 222s, 225s and 6s; budgeted for a
     # runner with fewer cores. Refresh from CI.

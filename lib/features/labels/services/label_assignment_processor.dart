@@ -15,9 +15,11 @@ import 'package:lotti/services/domain_logging.dart';
 /// Partitions the proposed IDs into three buckets: [assigned] (persisted),
 /// [invalid] (unknown or soft-deleted definitions), and [skipped] — each a
 /// `{id, reason}` map where reason is one of `out_of_scope`, `suppressed`,
-/// `already_assigned`, `over_cap`, `duplicate`, or `suppression_unknown` (the
-/// task could not be read as a task, so nothing was assigned). [toStructuredJson]
-/// renders this for return to the model.
+/// `already_assigned`, `over_cap`, `duplicate`, `suppression_unknown` (the
+/// task could not be read as a task, so nothing was assigned),
+/// `changed_since_read` (the task as written already had the label, or the
+/// user had taken it off since it was read) or `write_failed`.
+/// [toStructuredJson] renders this for return to the model.
 class LabelAssignmentResult {
   LabelAssignmentResult({
     required this.assigned,
@@ -68,9 +70,11 @@ class LabelAssignmentResult {
 /// category scope, and not be suppressed for the task). Pre-existing labels do
 /// not block new assignments — a suggested label is applied regardless of how
 /// many labels the task already carries. Survivors are persisted add-only
-/// through
-/// [LabelsRepository.addLabels]; the outcome is summarized via
-/// [LabelAssignmentResult.toStructuredJson] for return to the model.
+/// through [LabelsRepository.assignLabels], which decides on the task as
+/// written — a label the user took off after this read stays off — and
+/// [LabelAssignmentResult.assigned] lists what it added; the outcome is
+/// summarized via [LabelAssignmentResult.toStructuredJson] for return to the
+/// model.
 class LabelAssignmentProcessor {
   LabelAssignmentProcessor({
     JournalDb? db,
@@ -286,10 +290,20 @@ class LabelAssignmentProcessor {
     );
 
     if (assigned.isNotEmpty) {
-      await _repository.addLabels(
+      // The write decides again on the task as stored: what it did not add
+      // changed since this read (`specs/tla/TaskLabels.tla`,
+      // SuppressionAtWrite).
+      final added = await _repository.assignLabels(
         journalEntityId: taskId,
-        addedLabelIds: assigned,
+        labelIds: List.of(assigned),
       );
+      final reason = added == null ? 'write_failed' : 'changed_since_read';
+      skipped.addAll([
+        for (final id in assigned)
+          if (added == null || !added.contains(id))
+            <String, String>{'id': id, 'reason': reason},
+      ]);
+      assigned.retainWhere((id) => added?.contains(id) ?? false);
     }
 
     return LabelAssignmentResult(

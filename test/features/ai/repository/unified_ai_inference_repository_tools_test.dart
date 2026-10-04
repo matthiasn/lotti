@@ -125,9 +125,9 @@ void main() {
 
       // Assert: no persistence because both candidates suppressed
       verifyNever(
-        () => mockLabelsRepository.addLabels(
+        () => mockLabelsRepository.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       );
     });

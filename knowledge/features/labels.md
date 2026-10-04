@@ -5,8 +5,8 @@ description: A lightweight taxonomy with two separated concerns — definitions 
 resource: ../../lib/features/labels
 tags: [labels, taxonomy, ai-suggestions, assignment]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
+stale_after: 2027-01-04
 sources:
   - id: src
     resource: ../../lib/features/labels
@@ -15,7 +15,7 @@ sources:
   - id: repo
     resource: ../../lib/features/labels/repository/labels_repository.dart
     title: LabelsRepository — the write boundary
-    last_modified: 2026-06-16
+    last_modified: 2026-10-04
   - id: journal-replication-spec
     resource: ../../specs/tla/JournalReplication.tla
     title: TLA+ model of journal entry replication and conflicts
@@ -24,6 +24,18 @@ sources:
     resource: ../../docs/adr/0083-model-checked-journal-replication.md
     title: ADR 0083 — model-checked journal replication
     last_modified: 2026-09-25
+  - id: processor
+    resource: ../../lib/features/labels/services/label_assignment_processor.dart
+    title: LabelAssignmentProcessor — the agent's assignment and what it reports
+    last_modified: 2026-10-04
+  - id: task-labels-spec
+    resource: ../../specs/tla/TaskLabels.tla
+    title: TaskLabels — the picker's and the agent's label writes, model-checked
+    last_modified: 2026-10-04
+  - id: adr-0123
+    resource: ../../docs/adr/0123-each-label-writer-decides-on-the-stored-task.md
+    title: ADR 0123 — each label writer decides on the stored task
+    last_modified: 2026-10-04
 ---
 
 Labels are the app's lightweight taxonomy: more flexible than a single status,
@@ -69,8 +81,8 @@ categories.
 # The write boundary
 
 `LabelsRepository` handles streaming definitions, reading single labels,
-definition CRUD, add/replace assignment writes, and task suppression
-maintenance. Usage counts are read directly by `labelsListControllerProvider`
+definition CRUD, the two assignment writes (the agent's and the picker's),
+and task suppression maintenance. Usage counts are read directly by `labelsListControllerProvider`
 from the journal database's `labeled` lookup table.
 
 **Definition writes normalize category scope before persisting**: trim ids, drop
@@ -81,23 +93,33 @@ by category name for stable diffs**.
 
 ## Assignment writes are stricter than a chip picker
 
-- `addLabels()` appends only missing ids.
-- `setLabels()` replaces the full set, resolving each id **first against
-  `EntitiesCacheService`** — which retains soft-deleted definitions, so cached
-  deleted labels are kept — and otherwise against the DB, where only non-deleted
-  definitions are accepted. It dedupes and stores ids **sorted by label name**.
+- `assignLabels()` is the agent's write (the label assignment processor's).
+  It adds the ids the task **as stored** neither carries nor suppresses, leaves
+  the suppressed set alone, and returns what it added. A label the user took off
+  after the processor read the task stays off; the processor reports it skipped
+  as `changed_since_read`, and a failed write as `write_failed`.
+- `updateLabels()` is the label picker's write. It takes what the user
+  **added and removed** — the difference between the picker's selection and
+  the labels it opened with — and applies it to the labels as stored, so a label
+  another writer put on while the picker was open is kept. It resolves each id
+  **first against `EntitiesCacheService`** — which retains soft-deleted
+  definitions, so cached deleted labels are kept — and otherwise against the
+  DB, where only non-deleted definitions are accepted, and stores ids **sorted
+  by label name**. An edit that changes nothing writes nothing.
 
-For tasks, assignment writes also update suppression. `setLabels()` derives the
-removed and added ids from the old and replacement sets:
+For tasks, the picker's write also updates suppression, against the stored
+labels:
 
-- Removing a label **adds** it to `aiSuppressedLabelIds`.
-- Adding a label **removes** it from `aiSuppressedLabelIds`.
-- `setLabels()` computes the diff and updates suppression **in both directions**.
+- Taking a label off **adds** it to `aiSuppressedLabelIds`.
+- Putting a label on **removes** it from `aiSuppressedLabelIds`.
 
 **That coupling is deliberate.** "I removed this label from this task" is useful
-feedback for later AI suggestions.
+feedback for later AI suggestions. The agent's write never unsuppresses: only
+the user lifts a suppression. `specs/tla/TaskLabels.tla` checks both rules
+(`RemoveWins`, `NoSilentRemoval`); the decision is ADR 0123.
 
-`setLabels()` and `suppressLabelOnTask()` write through `_writeOnStored`: the
+All three writes — `assignLabels()`, `updateLabels()` and
+`suppressLabelOnTask()` — go through `_writeOnStored`: the
 change is built on the stored entry under a new vector clock and applied only
 while that entry is still the stored one (a `precondition` in the write's
 transaction). When another version synced in meanwhile, the change is built
@@ -123,8 +145,8 @@ sequenceDiagram
   Scope-->>Modal: available labels
   Modal->>Cache: resolve currently assigned definitions
   Modal-->>Modal: union(available, assigned)
-  UI->>Repo: apply selected IDs
-  Repo->>Entry: setLabels(...)
+  UI->>Repo: apply what was added and removed
+  Repo->>Entry: updateLabels(added, removed), on the stored labels
 ```
 
 The picker is the **shared** `EntityPickerSheet` — the same one categories use —

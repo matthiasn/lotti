@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -30,7 +29,8 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
 ///
 /// Owns label-definition CRUD (with category-scope normalization and
 /// soft-delete), visibility-aware definition streams, and assignment writes on
-/// entry metadata ([addLabels] / [setLabels]). For tasks, assignment writes
+/// entry metadata ([assignLabels] for the agent, [updateLabels] for the
+/// label picker). For tasks, assignment writes
 /// also maintain the per-task AI suppression set (`aiSuppressedLabelIds`) so
 /// rejected suggestions are not re-proposed. See the feature README for the
 /// suppression coupling rules.
@@ -240,108 +240,122 @@ class LabelsRepository {
     }
   }
 
-  /// Adds [addedLabelIds] to an entry's metadata (union, no removals).
+  /// Adds the agent's [labelIds] to the task [journalEntityId], decided on
+  /// the task as stored: a label already on it, or suppressed on it — taken
+  /// off by the user, perhaps after the assignment read the task — is
+  /// skipped, and the suppressed set is left alone (`specs/tla/TaskLabels.tla`,
+  /// SuppressionAtWrite). A label the user adds by hand is unsuppressed by
+  /// [updateLabels] instead.
   ///
-  /// For tasks, manually adding a label also unsuppresses it (removes it from
-  /// `aiSuppressedLabelIds`), reversing a prior rejection. The change is
-  /// built on the stored entry ([_writeOnStored]). Returns `true` on
-  /// success, `false` if the entry is missing, the write was refused, or on
-  /// error (logged), or `true` for an empty input. This is the persist path
-  /// used by the assignment processor.
-  Future<bool?> addLabels({
+  /// Returns the labels added, or `null` when the task is missing, the write
+  /// was refused, or it failed (logged). The persist path of the label
+  /// assignment processor.
+  Future<Set<String>?> assignLabels({
     required String journalEntityId,
-    required List<String> addedLabelIds,
+    required List<String> labelIds,
   }) async {
-    if (addedLabelIds.isEmpty) {
-      return true;
-    }
-
+    if (labelIds.isEmpty) return const <String>{};
+    var added = <String>{};
     try {
-      // Built on the entry as stored: a field set since the caller decided —
-      // a task's status, a checklist listed on it — is kept
-      // (`specs/tla/ChecklistMembership.tla`, MetaOnStored).
-      return await _writeOnStored(journalEntityId, (stored) async {
-        final updatedMetadata = await _persistenceLogic.updateMetadata(
-          addLabelsToMeta(stored.meta, addedLabelIds),
-        );
-        if (stored is! Task) return stored.copyWith(meta: updatedMetadata);
-
-        // Manual add implicitly unsuppresses corresponding labels on tasks
+      final written = await _writeOnStored(journalEntityId, (stored) async {
+        final present = {...?stored.meta.labelIds};
+        final suppressed = stored is Task
+            ? stored.data.aiSuppressedLabelIds ?? const <String>{}
+            : const <String>{};
+        added = {
+          for (final id in labelIds)
+            if (id.isNotEmpty &&
+                !present.contains(id) &&
+                !suppressed.contains(id))
+              id,
+        };
+        if (added.isEmpty) return null;
         return stored.copyWith(
-          meta: updatedMetadata,
-          data: stored.data.copyWith(
-            aiSuppressedLabelIds: _mergeSuppressed(
-              current: stored.data.aiSuppressedLabelIds ?? const <String>{},
-              remove: addedLabelIds.toSet(),
-            ),
+          meta: await _persistenceLogic.updateMetadata(
+            addLabelsToMeta(stored.meta, added.toList()),
           ),
         );
+      });
+      return written ? added : null;
+    } catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.labels,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'assignLabels',
+      );
+      return null;
+    }
+  }
+
+  /// Applies the user's edit in the label picker: [added] put on the entry,
+  /// [removed] taken off, against its labels as stored — a label another
+  /// writer put on while the picker was open is kept, not taken off and
+  /// suppressed as if the user had rejected it (`specs/tla/TaskLabels.tla`,
+  /// PickerDelta).
+  ///
+  /// The result is deduped, stripped of unknown or soft-deleted ids
+  /// (cache-first, DB fallback) and sorted by label name. For tasks, a label
+  /// taken off is suppressed and one put on unsuppressed, in the same write.
+  /// The change is built on the stored entry and, when another version syncs
+  /// in while it is written, built again on that one ([_writeOnStored]).
+  /// Returns whether the labels hold the edit; `false` if the entry is
+  /// missing or on error (logged).
+  Future<bool?> updateLabels({
+    required String journalEntityId,
+    Set<String> added = const <String>{},
+    Set<String> removed = const <String>{},
+  }) async {
+    try {
+      return await _writeOnStored(journalEntityId, (stored) async {
+        final current = stored.meta.labelIds ?? const <String>[];
+        final next = await _resolvedSorted({
+          for (final id in current)
+            if (!removed.contains(id)) id,
+          for (final id in added)
+            if (id.isNotEmpty) id,
+        });
+        if (_sameList(next, current)) return null;
+        return _withLabels(stored, next);
       });
     } catch (error, stackTrace) {
       _domainLogger.error(
         LogDomain.labels,
         error,
         stackTrace: stackTrace,
-        subDomain: 'addLabels',
+        subDomain: 'updateLabels',
       );
       return false;
     }
   }
 
-  /// Replaces an entry's full label set with [labelIds] (the manual editor's
-  /// commit path).
-  ///
-  /// Dedupes, drops unknown/soft-deleted IDs (cache-first, DB fallback), and
-  /// sorts by label name. For tasks, diffs against the previous set: removed
-  /// labels are suppressed and (re-)added labels are unsuppressed in one update.
-  /// The change is built on the stored entry and, when another version syncs
-  /// in while it is written, built again on that one ([_writeOnStored]) —
-  /// never forced over it. Returns whether the labels were written; `false`
-  /// if the entry is missing or on error (logged).
-  Future<bool?> setLabels({
-    required String journalEntityId,
-    required List<String> labelIds,
-  }) async {
-    try {
-      final normalized = LinkedHashSet<String>.from(
-        labelIds.where((id) => id.isNotEmpty),
-      );
-      final resolved = <String>[];
-      final nameLookup = <String, String>{};
-
-      for (final id in normalized) {
-        final cached = _entitiesCacheService.getLabelById(id);
-        if (cached != null) {
-          resolved.add(id);
-          nameLookup[id] = cached.name.toLowerCase();
-          continue;
-        }
-
-        final dbLabel = await _journalDb.getLabelDefinitionById(id);
-        if (dbLabel != null && dbLabel.deletedAt == null) {
-          resolved.add(id);
-          nameLookup[id] = dbLabel.name.toLowerCase();
-        }
+  /// [ids] without unknown or soft-deleted labels, sorted by label name.
+  Future<List<String>> _resolvedSorted(Set<String> ids) async {
+    final resolved = <String>[];
+    final nameLookup = <String, String>{};
+    for (final id in ids) {
+      final cached = _entitiesCacheService.getLabelById(id);
+      if (cached != null) {
+        resolved.add(id);
+        nameLookup[id] = cached.name.toLowerCase();
+        continue;
       }
-
-      final sorted = [...resolved]
-        ..sort(
-          (a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b),
-        );
-
-      return await _writeOnStored(
-        journalEntityId,
-        (stored) => _withLabels(stored, sorted),
-      );
-    } catch (error, stackTrace) {
-      _domainLogger.error(
-        LogDomain.labels,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'setLabels',
-      );
-      return false;
+      final dbLabel = await _journalDb.getLabelDefinitionById(id);
+      if (dbLabel != null && dbLabel.deletedAt == null) {
+        resolved.add(id);
+        nameLookup[id] = dbLabel.name.toLowerCase();
+      }
     }
+    return resolved
+      ..sort((a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b));
+  }
+
+  static bool _sameList(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// [stored] with its labels set to [sorted] under a new clock. For a task,

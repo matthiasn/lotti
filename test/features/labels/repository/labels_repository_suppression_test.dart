@@ -69,7 +69,7 @@ void main() {
     });
 
     test(
-      'setLabels suppresses removals and unsuppresses additions',
+      'updateLabels suppresses removals and unsuppresses additions',
       () async {
         // Arrange: a task with one assigned label 'a'
         final task = Task(
@@ -140,14 +140,14 @@ void main() {
         );
 
         // Act: remove 'a'
-        await repo.setLabels(journalEntityId: 't1', labelIds: const []);
+        await repo.updateLabels(journalEntityId: 't1', removed: {'a'});
         final afterRemove = current as Task;
 
         // Assert: suppression contains 'a'
         expect(afterRemove.data.aiSuppressedLabelIds, contains('a'));
 
         // Act: add 'a' back manually
-        await repo.setLabels(journalEntityId: 't1', labelIds: const ['a']);
+        await repo.updateLabels(journalEntityId: 't1', added: {'a'});
         final afterAdd = current as Task;
 
         // Assert: suppression no longer contains 'a'

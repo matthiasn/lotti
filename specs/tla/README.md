@@ -1878,7 +1878,7 @@ tombstone is [ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md).
 |---------------|---------|--------|------|--------|-----------------|
 | `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 5,883,088 |
 | `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 806,903 |
-| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 686,145 |
+| `JournalReplicationLabels` | 2 | 4 | `updateLabels` and `suppressLabelOnTask` | the same | 686,145 |
 | `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 134,132 |
 
 Every configuration also lets any device purge its deleted row at any point
@@ -2357,7 +2357,7 @@ landing through `JournalDb.updateJournalEntity` under a dominating clock —
 either between steps or armed to land right after a writer's first or second
 read of the row, the model's read/commit split. The task's metadata writers
 run through their real code (`task_meta_writers.dart`: the category and date
-changes, the geolocation, the agent's `addLabels`), with the agent's new
+changes, the geolocation, the agent's `assignLabels`), with the agent's new
 checklist armed to land inside each one's read and write. After every step
 `NoDuplicates`, `NoLostItem`, `NoStrayItem` and `NoLostChecklist` must hold,
 and `getChecklistItemsForTask` must return exactly the items the ghost state
@@ -3269,6 +3269,50 @@ Left out, deliberately: several pull requests per task, which share nothing;
 the GitHub list itself — a pull request closed between listing and picking
 still links, as a pasted URL would; and the snapshot each entry carries,
 which `PullRequestSnapshot` models.
+
+## `TaskLabels` — a task's labels, set by the picker and by the agent
+
+The label picker and the task agent's label assignment both decide on a read
+and write later. The picker shows the labels it read when it opened, and
+commits when the user closes it. The assignment reads the task's suppressed
+set (`aiSuppressedLabelIds`), validates its proposal against it, and writes
+later. A label the user takes off is suppressed, so the agent does not put it
+back. The decision is
+[ADR 0123](../../docs/adr/0123-each-label-writer-decides-on-the-stored-task.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `RemoveWins` | invariant | a label the user took off stays off until the user puts it back |
+| `NoSilentRemoval` | invariant | a label leaves the task only by the user's choice of one the picker showed |
+
+| Configuration | Labels | Picker commits | Agent assignments | Distinct states |
+|---------------|-------:|---------------:|------------------:|----------------:|
+| `TaskLabels` | 2 | 2 | 2 | 147 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `PickerDelta` | `LabelsRepository.setLabels` wrote the whole set the user chose, and diffed it against the stored set for suppression | `NoSilentRemoval`, five states: the agent reads, the picker opens, the agent adds a label, and the user's commit takes it off and suppresses it |
+| `SuppressionAtWrite` | the processor checked suppression on its read, and wrote through `addLabels`, the manual add, which checked nothing and unsuppressed what it added | `RemoveWins`: the agent reads a label as allowed, the user puts it on and takes it off again, and the agent's write puts it back, unsuppressed |
+
+With both switches on, the picker sends what the user added and removed
+(`LabelsRepository.updateLabels`), applied to the stored labels. The agent's
+write (`assignLabels`) adds only what the stored task neither carries nor
+suppresses, inside the write, and never unsuppresses. The processor reports a
+label the write did not add as `changed_since_read`.
+
+The tests drive the real code. `labels_repository_update_labels_test.dart`
+covers the stored task: a label put on while the picker was open is kept and
+not suppressed, and the agent skips a label suppressed on the stored task.
+`label_selection_modal_utils_test.dart` checks that the picker sends only
+the user's edit. `label_assignment_processor_test.dart` checks that the
+result reports what the write did. Each fails with its fix reverted.
+
+What the model leaves out:
+
+- **Another device.** Its label writes arrive as synced versions;
+  `JournalReplicationLabels` covers them.
+- **The agent's tool gate and category scope.** These are validated before
+  the write and cannot change the outcome this spec checks.
 
 ## `TaskCategoryMove` — a task's category move, across a crash
 

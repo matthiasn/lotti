@@ -165,12 +165,9 @@ void _registerIdempotency(_Db Function() fixture) {
     /// The user takes [labelId] off the task in the label editor.
     Future<void> userRemovesLabel(String labelId) async {
       expect(
-        await f.dispatcher.labelsRepository.setLabels(
+        await f.dispatcher.labelsRepository.updateLabels(
           journalEntityId: f.task.meta.id,
-          labelIds: [
-            for (final id in await taskLabels())
-              if (id != labelId) id,
-          ],
+          removed: {labelId},
         ),
         isTrue,
       );

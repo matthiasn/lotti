@@ -1327,10 +1327,12 @@ flowchart TD
   the query chat from the item data and `timeEntryFields` it loaded. It is a
   field of its own, not part of `base`, because a build that predates it
   would read an unknown `base` entry as an edit and apply nothing.
-- **A label add is remove-wins.** Taking a label off a task
-  (`LabelsRepository.setLabels`) suppresses it, and
-  `LabelAssignmentProcessor` reads the suppressed set fresh and skips it, so
-  a late add on a device that received the removal adds nothing.
+- **A label add is remove-wins.** Taking a label off a task in the picker
+  (`LabelsRepository.updateLabels`) suppresses it, and the agent's write
+  (`LabelsRepository.assignLabels`) skips a label suppressed on the task as
+  stored, in the write itself, so a late add — on a device that received the
+  removal, or here after the user took the label off since the processor read
+  the task — adds nothing (ADR 0123).
 - **An Undo that takes the effect back rekeys the item.** The project agent's
   Undo deletes the task its confirmation created and reopens the item through
   `reopenItem` with a revert, which writes the item under

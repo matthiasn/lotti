@@ -1,5 +1,4 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -34,12 +33,12 @@ import '../../../widget_test_utils.dart';
 class FakeLabelsRepository extends Fake implements LabelsRepository {
   List<String> lastAdded = const [];
   @override
-  Future<bool?> addLabels({
+  Future<Set<String>?> assignLabels({
     required String journalEntityId,
-    required List<String> addedLabelIds,
+    required List<String> labelIds,
   }) async {
-    lastAdded = List<String>.from(addedLabelIds);
-    return true;
+    lastAdded = List<String>.from(labelIds);
+    return labelIds.toSet();
   }
 }
 
@@ -433,11 +432,13 @@ void main() {
         () => mockDb.journalEntityById(any()),
       ).thenAnswer((_) async => _plainTask());
       when(
-        () => mockRepo.addLabels(
+        () => mockRepo.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+      );
       processor = LabelAssignmentProcessor(
         db: mockDb,
         repository: mockRepo,
@@ -488,12 +489,54 @@ void main() {
       expect(result.assigned, containsAll(['bug', 'p1']));
       expect(result.invalid, contains('del'));
       verify(
-        () => mockRepo.addLabels(
+        () => mockRepo.assignLabels(
           journalEntityId: 't1',
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       ).called(1);
     });
+
+    // The write decides again on the task as stored: a label the user took
+    // off after the processor read the task is not added, and is reported
+    // as changed since the read (`specs/tla/TaskLabels.tla`,
+    // SuppressionAtWrite). A write that fails assigns nothing.
+    for (final (name, added, reason) in [
+      (
+        'reports a label the write did not add as changed since the read',
+        {'bug'},
+        'changed_since_read',
+      ),
+      ('reports every label of a failed write', null, 'write_failed'),
+    ]) {
+      test(name, () async {
+        for (final id in ['bug', 'p1']) {
+          when(
+            () => mockDb.getLabelDefinitionById(id),
+          ).thenAnswer((_) async => makeLabel(id));
+        }
+        when(
+          () => mockRepo.assignLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => added);
+
+        final result = await processor.processAssignment(
+          taskId: 't1',
+          proposedIds: const ['bug', 'p1'],
+          existingIds: const [],
+        );
+
+        expect(result.assigned, added?.toList() ?? isEmpty);
+        expect(
+          result.skipped,
+          containsAll([
+            for (final id in ['bug', 'p1'])
+              if (!(added?.contains(id) ?? false)) {'id': id, 'reason': reason},
+          ]),
+        );
+      });
+    }
 
     test('caps at maximum labels per assignment', () async {
       // Prepare 7 valid labels; only first 5 should be considered
@@ -511,9 +554,9 @@ void main() {
 
       expect(result.assigned.length, lessThanOrEqualTo(5));
       verify(
-        () => mockRepo.addLabels(
+        () => mockRepo.assignLabels(
           journalEntityId: 't1',
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       ).called(1);
     });
@@ -527,9 +570,9 @@ void main() {
 
       expect(result.assigned, isEmpty);
       verifyNever(
-        () => mockRepo.addLabels(
+        () => mockRepo.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       );
     });
@@ -591,20 +634,6 @@ void main() {
         );
 
         final persistence = MockPersistenceLogic();
-        final bothPrepared = Completer<void>();
-        final releaseWrites = Completer<void>();
-        var prepared = 0;
-        when(() => persistence.updateMetadata(any())).thenAnswer((call) async {
-          if (++prepared == 2) bothPrepared.complete();
-          await releaseWrites.future;
-          return call.positionalArguments.first as Metadata;
-        });
-        when(() => persistence.updateDbEntity(any())).thenAnswer((call) async {
-          await db.updateJournalEntity(
-            call.positionalArguments.first as JournalEntity,
-          );
-          return true;
-        });
         final repository = LabelsRepository(
           persistence,
           db,
@@ -618,26 +647,25 @@ void main() {
           logging: mockLoggingEdge,
         );
 
-        // Both callers have a stale view without the already-persisted label.
-        // Hold both writes after the real repository has merged its metadata.
-        final f1 = processor.processAssignment(
-          taskId: 't1',
-          proposedIds: const ['a'],
-          existingIds: const [],
-        );
-        final f2 = processor.processAssignment(
-          taskId: 't1',
-          proposedIds: const ['a'],
-          existingIds: const [],
-        );
+        // Both callers have a stale view without the already-persisted
+        // label. The write decides on the task as stored, so neither adds
+        // it again, and each reports it changed since its read.
+        final results = await Future.wait([
+          for (var i = 0; i < 2; i++)
+            processor.processAssignment(
+              taskId: 't1',
+              proposedIds: const ['a'],
+              existingIds: const [],
+            ),
+        ]);
 
-        final resultsFuture = Future.wait([f1, f2]);
-        await bothPrepared.future;
-        expect(prepared, 2);
-        releaseWrites.complete();
-        final results = await resultsFuture;
-        expect(results[0].assigned, ['a']);
-        expect(results[1].assigned, ['a']);
+        for (final result in results) {
+          expect(result.assigned, isEmpty);
+          expect(result.skipped, [
+            {'id': 'a', 'reason': 'changed_since_read'},
+          ]);
+        }
+        verifyNever(() => persistence.updateMetadata(any()));
         final persisted = await db.journalEntityById('t1');
         expect(persisted!.meta.labelIds, ['a']);
         expect(await db.labeledForJournal('t1').get(), hasLength(1));
@@ -657,11 +685,13 @@ void main() {
           () => mockDbEdge.getLabelDefinitionById('a'),
         ).thenAnswer((_) async => makeLabelEdge('a'));
         when(
-          () => registeredRepo.addLabels(
+          () => registeredRepo.assignLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
+            labelIds: any(named: 'labelIds'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+        );
 
         final result =
             await LabelAssignmentProcessor(
@@ -674,9 +704,9 @@ void main() {
 
         expect(result.assigned, ['a']);
         verify(
-          () => registeredRepo.addLabels(
+          () => registeredRepo.assignLabels(
             journalEntityId: 't1',
-            addedLabelIds: ['a'],
+            labelIds: ['a'],
           ),
         ).called(1);
       },
@@ -689,24 +719,26 @@ void main() {
           () => mockDbEdge.getLabelDefinitionById('a'),
         ).thenAnswer((_) async => makeLabelEdge('a'));
         when(
-          () => mockRepoEdge.addLabels(
+          () => mockRepoEdge.assignLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
+            labelIds: any(named: 'labelIds'),
           ),
-        ).thenAnswer((_) async => false); // simulate deleted task
+        ).thenAnswer((_) async => null); // simulate deleted task
 
         final result = await processorEdge.processAssignment(
           taskId: 't1',
           proposedIds: const ['a'],
           existingIds: const [],
         );
-        // The processor reports the validated assignment even if persistence
-        // loses a race with task deletion.
-        expect(result.assigned, ['a']);
+        // A write that did not land assigns nothing, and says so.
+        expect(result.assigned, isEmpty);
+        expect(result.skipped, [
+          {'id': 'a', 'reason': 'write_failed'},
+        ]);
         verify(
-          () => mockRepoEdge.addLabels(
+          () => mockRepoEdge.assignLabels(
             journalEntityId: 't1',
-            addedLabelIds: ['a'],
+            labelIds: ['a'],
           ),
         ).called(1);
       },
@@ -721,11 +753,13 @@ void main() {
           ).thenAnswer((_) async => makeLabelEdge(id));
         }
         when(
-          () => mockRepoEdge.addLabels(
+          () => mockRepoEdge.assignLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
+            labelIds: any(named: 'labelIds'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+        );
 
         final result = await processorEdge.processAssignment(
           taskId: 't3',
@@ -916,9 +950,9 @@ void main() {
               {'id': 'S', 'reason': 'suppression_unknown'},
             ]);
             verifyNever(
-              () => repo.addLabels(
+              () => repo.assignLabels(
                 journalEntityId: any<String>(named: 'journalEntityId'),
-                addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
+                labelIds: any<List<String>>(named: 'labelIds'),
               ),
             );
             verify(
@@ -999,11 +1033,13 @@ void main() {
       ).thenAnswer((_) async => _plainTask());
 
       when(
-        () => mockRepoTelemetry.addLabels(
+        () => mockRepoTelemetry.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+      );
 
       // Define all labels as valid global labels
       Future<LabelDefinition> def(String id) async => LabelDefinition(
@@ -1120,11 +1156,13 @@ void main() {
         () => mockDbPhase2.getLabelDefinitionById('global_b'),
       ).thenAnswer((_) async => _labelDefinitionsById['global_b']);
       when(
-        () => mockRepoPhase2.addLabels(
+        () => mockRepoPhase2.assignLabels(
           journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
+          labelIds: any(named: 'labelIds'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+      );
 
       final result = await processorPhase2.processAssignment(
         taskId: 't1',
@@ -1138,9 +1176,9 @@ void main() {
       expect(result.invalid, isEmpty);
       expect(result.skipped, isEmpty);
       verify(
-        () => mockRepoPhase2.addLabels(
+        () => mockRepoPhase2.assignLabels(
           journalEntityId: 't1',
-          addedLabelIds: ['global_a', 'global_b'],
+          labelIds: ['global_a', 'global_b'],
         ),
       ).called(1);
 
@@ -1190,11 +1228,13 @@ void main() {
           (_) async => _labelDefinitionsById.values.toList(growable: false),
         );
         when(
-          () => localRepo.addLabels(
+          () => localRepo.assignLabels(
             journalEntityId: any<String>(named: 'journalEntityId'),
-            addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
+            labelIds: any<List<String>>(named: 'labelIds'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+        );
         when(
           () => localLogging.log(
             any<LogDomain>(),
@@ -1228,9 +1268,9 @@ void main() {
           expect(result.skipped, isEmpty, reason: '$scenario');
           expect(telemetry, isEmpty, reason: '$scenario');
           verifyNever(
-            () => localRepo.addLabels(
+            () => localRepo.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
           );
           return;
@@ -1242,16 +1282,16 @@ void main() {
 
         if (scenario.assigned.isEmpty) {
           verifyNever(
-            () => localRepo.addLabels(
+            () => localRepo.assignLabels(
               journalEntityId: any(named: 'journalEntityId'),
-              addedLabelIds: any(named: 'addedLabelIds'),
+              labelIds: any(named: 'labelIds'),
             ),
           );
         } else {
           verify(
-            () => localRepo.addLabels(
+            () => localRepo.assignLabels(
               journalEntityId: _GeneratedProcessorScenario.taskId,
-              addedLabelIds: scenario.assigned,
+              labelIds: scenario.assigned,
             ),
           ).called(1);
         }
@@ -1406,11 +1446,13 @@ void main() {
 
         // Expect addLabels called only with the valid new id 'G'
         when(
-          () => repo.addLabels(
+          () => repo.assignLabels(
             journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
+            labelIds: any<List<String>>(named: 'labelIds'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (call) async => {...call.namedArguments[#labelIds]! as List<String>},
+        );
 
         // Capture telemetry
         final telemetry = <String>[];
@@ -1451,9 +1493,9 @@ void main() {
 
         // Persisted labels
         final captured = verify(
-          () => repo.addLabels(
+          () => repo.assignLabels(
             journalEntityId: taskId,
-            addedLabelIds: captureAny(named: 'addedLabelIds'),
+            labelIds: captureAny(named: 'labelIds'),
           ),
         ).captured;
         final persisted = (captured.first as List).cast<String>();

@@ -59,7 +59,7 @@
 (*                 devices that create the same id hold one entity         *)
 (*   UserEdit      the user editing the field a set-style tool writes, or, *)
 (*                 with AddStyle, taking the added label off the task      *)
-(*                 (labels/repository/labels_repository.dart setLabels,    *)
+(*                 (labels/repository/labels_repository.dart updateLabels, *)
 (*                 which suppresses what it removes)                       *)
 (*                                                                         *)
 (* A change set syncs as one row. Every local write stamps the row with    *)

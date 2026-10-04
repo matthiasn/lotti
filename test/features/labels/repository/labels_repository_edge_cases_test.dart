@@ -126,7 +126,7 @@ void main() {
     expect(first.description, 'urgent');
   });
 
-  test('setLabels sorts ids alphabetically via cache service', () async {
+  test('updateLabels sorts ids alphabetically via cache service', () async {
     final entry = buildEntry(labelIds: const ['label-c']);
     when(
       () => journalDb.journalEntityById(entry.meta.id),
@@ -160,9 +160,10 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: entry.meta.id,
-      labelIds: const ['label-b', 'label-a'],
+      added: {'label-b', 'label-a'},
+      removed: {'label-c'},
     );
 
     expect(result, isTrue);
@@ -179,17 +180,17 @@ void main() {
     ).called(1);
   });
 
-  test('addLabels logs and returns false when db lookup fails', () async {
+  test('assignLabels logs and returns null when db lookup fails', () async {
     when(
       () => journalDb.journalEntityById(any()),
     ).thenThrow(Exception('offline'));
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: 'task-1',
-      addedLabelIds: const ['label-1'],
+      labelIds: const ['label-1'],
     );
 
-    expect(result, isFalse);
+    expect(result, isNull);
     verify(
       () => mockDomainLogger.error(
         any<LogDomain>(),
@@ -323,7 +324,7 @@ void main() {
     );
   });
 
-  test('setLabels deduplicates ids and sorts alphabetically', () async {
+  test('updateLabels adds to the stored labels, sorted by name', () async {
     final entry = buildEntry(labelIds: const ['label-a']);
     when(
       () => journalDb.journalEntityById(entry.meta.id),
@@ -354,9 +355,9 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: entry.meta.id,
-      labelIds: const ['label-b', 'label-a', 'label-a'],
+      added: {'label-b', 'label-a'},
     );
 
     expect(result, isTrue);
@@ -369,7 +370,7 @@ void main() {
     ).called(1);
   });
 
-  test('setLabels skips ids for labels deleted mid-assignment', () async {
+  test('updateLabels skips ids for labels deleted mid-assignment', () async {
     final entry = buildEntry();
     when(
       () => journalDb.journalEntityById(entry.meta.id),
@@ -404,9 +405,9 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: entry.meta.id,
-      labelIds: const ['label-live', 'label-zombie'],
+      added: {'label-live', 'label-zombie'},
     );
 
     expect(result, isTrue);

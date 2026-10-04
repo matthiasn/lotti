@@ -87,8 +87,8 @@ Future<void> runMetaWriter(
         getIt<UpdateNotifications>(),
       );
       expect(
-        await labels.addLabels(journalEntityId: taskId, addedLabelIds: [label]),
-        isTrue,
+        await labels.assignLabels(journalEntityId: taskId, labelIds: [label]),
+        {label},
       );
       expect((await stored(taskId))!.meta.labelIds, contains(label));
   }

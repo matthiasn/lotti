@@ -416,17 +416,18 @@ void main() {
     expect(await repository.getAllLabels(), [label]);
   });
 
-  test('addLabels short-circuits when no label ids provided', () async {
-    final result = await repository.addLabels(
+  test('assignLabels short-circuits when no label ids provided', () async {
+    final result = await repository.assignLabels(
       journalEntityId: 'entity-id',
-      addedLabelIds: const [],
+      labelIds: const [],
     );
 
-    expect(result, isTrue);
+    expect(result, isEmpty);
     verifyNever(() => journalDb.journalEntityById(any()));
   });
 
-  test('addLabels merges unique ids and persists entity', () async {
+  test('assignLabels adds the ids not yet on the entry and reports '
+      'them', () async {
     final entry = buildEntry(labelIds: const ['existing']);
 
     when(
@@ -459,30 +460,30 @@ void main() {
       return true;
     });
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: entry.meta.id,
-      addedLabelIds: const ['new', 'existing'],
+      labelIds: const ['new', 'existing'],
     );
 
-    expect(result, isTrue);
+    expect(result, {'new'});
     expect(capturedMetadata?.labelIds, unorderedEquals(['existing', 'new']));
     expect(capturedEntity?.meta.labelIds, unorderedEquals(['existing', 'new']));
   });
 
-  test('addLabels returns false when journal entity is missing', () async {
+  test('assignLabels returns null when journal entity is missing', () async {
     when(
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: 'missing',
-      addedLabelIds: const ['label'],
+      labelIds: const ['label'],
     );
 
-    expect(result, isFalse);
+    expect(result, isNull);
   });
 
-  test('addLabels returns false on exception', () async {
+  test('assignLabels returns null on exception', () async {
     final entry = buildEntry(labelIds: const ['a']);
     when(
       () => journalDb.journalEntityById(entry.meta.id),
@@ -497,18 +498,16 @@ void main() {
       ),
     ).thenThrow(Exception('db error'));
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: entry.meta.id,
-      addedLabelIds: const ['b'],
+      labelIds: const ['b'],
     );
 
-    expect(result, isFalse);
+    expect(result, isNull);
   });
 
-  test('addLabels logs an asynchronous task write failure', () async {
-    final task = buildTask(
-      aiSuppressedLabelIds: {'new-label', 'still-suppressed'},
-    );
+  test('assignLabels logs an asynchronous task write failure', () async {
+    final task = buildTask(aiSuppressedLabelIds: {'still-suppressed'});
     final expectedError = StateError('task write failed');
     when(
       () => journalDb.journalEntityById(task.meta.id),
@@ -527,25 +526,26 @@ void main() {
       return Future<bool?>.error(expectedError);
     });
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: task.meta.id,
-      addedLabelIds: const ['new-label'],
+      labelIds: const ['new-label'],
     );
 
-    expect(result, isFalse);
+    expect(result, isNull);
     expect(capturedTask?.meta.labelIds, ['new-label']);
+    // The agent's add leaves the suppressed set alone.
     expect(capturedTask?.data.aiSuppressedLabelIds, {'still-suppressed'});
     verify(
       () => domainLogger.error(
         LogDomain.labels,
         expectedError,
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: 'addLabels',
+        subDomain: 'assignLabels',
       ),
     ).called(1);
   });
 
-  test('addLabels does not modify original labelIds list', () async {
+  test('assignLabels does not modify original labelIds list', () async {
     final original = ['existing'];
     final entry = buildEntry(labelIds: original);
     when(
@@ -561,17 +561,17 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
 
-    await repository.addLabels(
+    await repository.assignLabels(
       journalEntityId: entry.meta.id,
-      addedLabelIds: const ['new'],
+      labelIds: const ['new'],
     );
 
     expect(original, equals(['existing']));
   });
 
-  test('addLabels builds on the entry as stored: a version stored while '
+  test('assignLabels builds on the entry as stored: a version stored while '
       'it wrote is built on again, its status and checklists kept', () async {
-    final task = buildTask(aiSuppressedLabelIds: {'new-label'});
+    final task = buildTask();
     // A checklist listed on the task after the call read it: a new version.
     final since = task.copyWith(
       meta: task.meta.copyWith(vectorClock: const VectorClock({'agent': 1})),
@@ -596,19 +596,18 @@ void main() {
       return written.length > 1;
     });
 
-    final result = await repository.addLabels(
+    final result = await repository.assignLabels(
       journalEntityId: task.meta.id,
-      addedLabelIds: const ['new-label'],
+      labelIds: const ['new-label'],
     );
 
-    expect(result, isTrue);
+    expect(result, {'new-label'});
     expect(written, hasLength(2));
     expect(written.last.data.checklistIds, ['listed-since']);
     expect(written.last.meta.labelIds, ['new-label']);
-    expect(written.last.data.aiSuppressedLabelIds ?? const <String>{}, isEmpty);
   });
 
-  test('setLabels handles empty list correctly', () async {
+  test('updateLabels taking every label off clears them', () async {
     final entry = buildEntry(labelIds: const ['a']);
     when(
       () => journalDb.journalEntityById(entry.meta.id),
@@ -633,15 +632,15 @@ void main() {
       return true;
     });
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: entry.meta.id,
-      labelIds: const [],
+      removed: {'a'},
     );
     expect(result, isTrue);
     expect(captured?.meta.labelIds, isNull);
   });
 
-  test('setLabels logs a failed write and returns false', () async {
+  test('updateLabels logs a failed write and returns false', () async {
     final entry = buildEntry(labelIds: const ['a']);
     final expectedError = StateError('write failed');
     when(
@@ -663,9 +662,9 @@ void main() {
       ),
     ).thenAnswer((_) => Future<bool?>.error(expectedError));
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: entry.meta.id,
-      labelIds: const [],
+      removed: {'a'},
     );
 
     expect(result, isFalse);
@@ -674,7 +673,7 @@ void main() {
         LogDomain.labels,
         expectedError,
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: 'setLabels',
+        subDomain: 'updateLabels',
       ),
     ).called(1);
   });
@@ -682,7 +681,7 @@ void main() {
   // ADR 0083: a label write that loses a race with a version syncing in is
   // built again on that version -- never forced over it.
   test(
-    'setLabels builds again on a version stored while it was written',
+    'updateLabels builds again on a version stored while it was written',
     () async {
       final entry = buildEntry(labelIds: const ['a']);
       final synced = JournalEntity.journalEntry(
@@ -733,9 +732,10 @@ void main() {
         () => journalDb.isStoredVersion(entry.meta.id, any()),
       ).thenAnswer((_) async => true);
 
-      final result = await repository.setLabels(
+      final result = await repository.updateLabels(
         journalEntityId: entry.meta.id,
-        labelIds: const ['b'],
+        added: {'b'},
+        removed: {'a'},
       );
 
       expect(result, isTrue);
@@ -756,7 +756,7 @@ void main() {
   // A refusal that finds the row as it was is not a race — the write
   // decision refused it for another reason — so it is not retried.
   test(
-    'setLabels stops when a refused write finds the row unchanged',
+    'updateLabels stops when a refused write finds the row unchanged',
     () async {
       final entry = buildEntry(labelIds: const ['a']);
       when(
@@ -778,9 +778,9 @@ void main() {
         ),
       ).thenAnswer((_) async => false);
 
-      final result = await repository.setLabels(
+      final result = await repository.updateLabels(
         journalEntityId: entry.meta.id,
-        labelIds: const [],
+        removed: {'a'},
       );
 
       expect(result, isFalse);
@@ -794,21 +794,21 @@ void main() {
     },
   );
 
-  test('setLabels returns false when the entry is missing', () async {
+  test('updateLabels returns false when the entry is missing', () async {
     when(
       () => journalDb.journalEntityById('missing'),
     ).thenAnswer((_) async => null);
 
-    final result = await repository.setLabels(
+    final result = await repository.updateLabels(
       journalEntityId: 'missing',
-      labelIds: const [],
+      added: {'a'},
     );
 
     expect(result, isFalse);
   });
 
   test(
-    'setLabels filters deleted labels from final list and sorts by name',
+    'updateLabels filters deleted labels from final list and sorts by name',
     () async {
       final entry = buildEntry(labelIds: const ['a']);
       when(
@@ -869,9 +869,10 @@ void main() {
         return true;
       });
 
-      final result = await repository.setLabels(
+      final result = await repository.updateLabels(
         journalEntityId: entry.meta.id,
-        labelIds: const ['keep1', 'deleted', 'missing', 'keep2'],
+        added: {'keep1', 'deleted', 'missing', 'keep2'},
+        removed: {'a'},
       );
       expect(result, isTrue);
       // Sorted by name: Alpha (keep2), Bravo (keep1)
