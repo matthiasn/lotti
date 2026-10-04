@@ -113,6 +113,7 @@ SECONDS = {
     "ChecklistMembershipCrash": 20,
     "ChecklistMembershipThree": 10,
     "ChecklistMembershipFailure": 10,
+    "RunningTimer": 10,
     "TaskFieldWrites": 20,
     "TaskFieldWritesAgents": 60,
     "TaskFieldWritesResolve": 25,

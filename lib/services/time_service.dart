@@ -25,9 +25,9 @@ class TimeService {
     _controller = StreamController<JournalEntity?>.broadcast();
   }
 
-  /// Persists the outgoing entry's end time when a running session is
-  /// implicitly stopped by [start]. Null when the service is constructed
-  /// without persistence (bare unit tests) — finalization is then skipped.
+  /// Persists a running session's end time when it stops — by [stop], or
+  /// by [start] replacing it. Null when the service is constructed without
+  /// persistence (bare unit tests) — finalization is then skipped.
   final PersistRunningTimer? _persistTimerStop;
 
   /// Persists the running entry every [_autosaveInterval] while it runs.
@@ -39,38 +39,26 @@ class TimeService {
   late final StreamController<JournalEntity?> _controller;
   JournalEntity? _current;
   JournalEntity? linkedFrom;
-  StreamSubscription<int>? _periodicSubscription;
+
+  /// Emits the running entry, ending now, once a second.
+  Timer? _ticker;
   Timer? _autosaveTimer;
 
+  /// Starts a timer on [journalEntity], for the entry [linked] it was
+  /// started from. A session still running is stopped first, its end written
+  /// ([stop]).
   Future<void> start(JournalEntity journalEntity, JournalEntity? linked) async {
-    final outgoing = _current;
-    if (outgoing != null) {
-      // A new session is replacing one that is still running. Persist the
-      // outgoing entry's real stop time before discarding it; otherwise it
-      // keeps the stale `dateTo` it was created with (≈ its start time) and
-      // the whole elapsed span is lost. The write is built on the stored
-      // entry, so its text is kept — or, when the user typed a draft, that
-      // draft is stored with it. A failure here must never block the new
-      // timer from starting.
-      await _persistSafely(
-        _persistTimerStop,
-        outgoing,
-        subDomain: 'finalizeRunningTimer',
-      );
+    if (_current != null) {
+      // A new session is replacing one that is still running. Its real stop
+      // time is persisted before it is discarded; otherwise it keeps the
+      // stale `dateTo` of its last save and the elapsed span is lost. A
+      // failure here must never block the new timer from starting.
       await stop();
     }
 
     _current = journalEntity;
     linkedFrom = linked;
-    const interval = Duration(seconds: 1);
-
-    int callback(int value) {
-      return value;
-    }
-
-    _periodicSubscription = Stream<int>.periodic(interval, callback).listen((
-      i,
-    ) {
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_current != null) {
         _controller.add(
           _current!.copyWith(
@@ -119,14 +107,43 @@ class TimeService {
     return _current;
   }
 
-  Future<void> stop() async {
-    if (_current != null) {
-      _current = null;
-      linkedFrom = null;
-      _autosaveTimer?.cancel();
-      _autosaveTimer = null;
-      _controller.add(null);
-      await _periodicSubscription?.cancel();
+  /// Starts a timer on [journalEntity] only while none runs, and answers
+  /// whether it did. The check and the start happen in one step — nothing
+  /// is awaited between them — so a timer the user starts while a caller
+  /// prepares its own is never replaced by it
+  /// (`specs/tla/RunningTimer.tla`, AgentStartAtomic).
+  Future<bool> startIfIdle(
+    JournalEntity journalEntity,
+    JournalEntity? linked,
+  ) async {
+    if (_current != null) return false;
+    await start(journalEntity, linked);
+    return true;
+  }
+
+  /// Stops the running timer, if any, and writes its entry's end time as now
+  /// ([persistEnd]): every way of stopping it — the entry's stop button, the
+  /// sidebar's, a profile switch, quitting the app, a new timer — keeps the
+  /// time tracked since the last autosave (`specs/tla/RunningTimer.tla`,
+  /// StopPersists). A caller that has just written the end itself, or whose
+  /// entry is deleted, passes `persistEnd: false`. A failed write is logged
+  /// and the timer stops all the same.
+  Future<void> stop({bool persistEnd = true}) async {
+    final outgoing = _current;
+    if (outgoing == null) return;
+    _current = null;
+    linkedFrom = null;
+    _autosaveTimer?.cancel();
+    _autosaveTimer = null;
+    _ticker?.cancel();
+    _ticker = null;
+    _controller.add(null);
+    if (persistEnd) {
+      await _persistSafely(
+        _persistTimerStop,
+        outgoing,
+        subDomain: 'finalizeRunningTimer',
+      );
     }
   }
 

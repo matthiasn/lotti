@@ -2304,12 +2304,15 @@ void main() {
             controller: notifier.controller,
           ),
         ).thenAnswer((_) async {});
-        when(mockTimeService.stop).thenAnswer((_) async {});
+        when(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        ).thenAnswer((_) async {});
 
         await notifier.save(stopRecording: true);
         await container.pump();
 
-        verify(mockTimeService.stop).called(1);
+        // The save wrote the end with the text; the stop does not again.
+        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
 
         // The full post-save transition: dirty cleared and the editor
         // toolbar hidden — not just the timer side effect.
@@ -2343,7 +2346,9 @@ void main() {
                 any(),
               ),
             ).thenAnswer((_) async => true);
-            when(mockTimeService.stop).thenAnswer((_) async {});
+            when(
+              () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+            ).thenAnswer((_) async {});
             when(mockTimeService.getCurrent).thenReturn(testTextEntry);
             when(
               () => mockTimeService.linkedFrom,

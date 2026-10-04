@@ -3,18 +3,38 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/time_entry_handler.dart';
+import 'package:lotti/features/journal/state/running_timer_persistence.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 import '../widget_test_utils.dart';
 
+part 'running_timer_model_conformance.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  _registerRunningTimerConformance();
 
   group('TimeService Tests', () {
     late TimeService timeService;
@@ -339,22 +359,70 @@ void main() {
       expect(finalized, isEmpty);
     });
 
+    // Every way of stopping a timer keeps the time tracked since its last
+    // autosave: the sidebar's stop, a profile switch and quitting the app
+    // call stop() alone (`specs/tla/RunningTimer.tla`, StopPersists).
+    test("an explicit stop writes the running entry's end", () async {
+      final finalized = <JournalEntity>[];
+      final service = TimeService(
+        persistTimerStop: (entry) async => finalized.add(entry),
+      );
+
+      await service.start(testTextEntry, null);
+      await service.stop();
+
+      expect(finalized.map((e) => e.id), [testTextEntry.id]);
+      expect(service.getCurrent(), isNull);
+    });
+
     test(
-      'does not persist on an explicit stop (already saved by the caller)',
+      'a stop whose caller already wrote the end does not write it again',
       () async {
-        // The Stop button persists `dateTo = now` via EntryController.save
-        // before calling stop(); finalizing again here would double-write.
+        // The entry page's Stop saves `dateTo = now` with the editor's text
+        // through EntryController.save before it stops the timer.
         final finalized = <JournalEntity>[];
         final service = TimeService(
           persistTimerStop: (entry) async => finalized.add(entry),
         );
 
         await service.start(testTextEntry, null);
-        await service.stop();
+        await service.stop(persistEnd: false);
 
         expect(finalized, isEmpty);
+        expect(service.getCurrent(), isNull);
       },
     );
+
+    test('a failing end write still stops the timer', () async {
+      final service = TimeService(
+        persistTimerStop: (_) async => throw Exception('db unavailable'),
+      );
+
+      await service.start(testTextEntry, null);
+      await service.stop();
+
+      expect(service.getCurrent(), isNull);
+    });
+
+    // The agent's time-entry tool checks for a running timer several awaits
+    // before it starts its own; startIfIdle repeats the check in the same
+    // step (`specs/tla/RunningTimer.tla`, AgentStartAtomic).
+    test('startIfIdle starts only while no timer runs, leaving a running one '
+        'alone', () async {
+      final finalized = <JournalEntity>[];
+      final service = TimeService(
+        persistTimerStop: (entry) async => finalized.add(entry),
+      );
+      addTearDown(service.stop);
+
+      expect(await service.startIfIdle(testTextEntry, null), isTrue);
+      expect(service.getCurrent()?.id, testTextEntry.id);
+
+      expect(await service.startIfIdle(testImageEntry, testTask), isFalse);
+      expect(service.getCurrent()?.id, testTextEntry.id);
+      expect(service.linkedFrom, isNull);
+      expect(finalized, isEmpty, reason: 'the running timer was not stopped');
+    });
 
     test('a failing finalize still starts the replacing timer', () async {
       final service = TimeService(

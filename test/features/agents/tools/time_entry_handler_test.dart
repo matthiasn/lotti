@@ -414,7 +414,7 @@ void main() {
           expect(result.errorMessage, 'createDbEntity returned false');
 
           // Timer must not start when persistence fails.
-          verifyNever(() => mockTimeService.start(any(), any()));
+          verifyNever(() => mockTimeService.startIfIdle(any(), any()));
         });
       });
 
@@ -462,7 +462,7 @@ void main() {
             ).called(1);
 
             // Verify TimeService was NOT started.
-            verifyNever(() => mockTimeService.start(any(), any()));
+            verifyNever(() => mockTimeService.startIfIdle(any(), any()));
           });
         },
       );
@@ -655,8 +655,8 @@ void main() {
         );
 
         when(
-          () => mockTimeService.start(any(), any()),
-        ).thenAnswer((_) async {});
+          () => mockTimeService.startIfIdle(any(), any()),
+        ).thenAnswer((_) async => true);
       });
 
       test(
@@ -676,21 +676,48 @@ void main() {
             expect(result.output, contains('running timer from 14:00'));
             expect(result.output, contains('Starting work on feature'));
 
-            // TimeService.start is called with the in-memory entity — no DB
+            // TimeService.startIfIdle is called with the in-memory entity — no DB
             // re-fetch needed since TimeService only stores it in memory.
             verify(
-              () => mockTimeService.start(any(), any()),
+              () => mockTimeService.startIfIdle(any(), any()),
             ).called(1);
           });
         },
       );
+
+      // The tool checks that no timer runs, then awaits the task, the
+      // metadata and the write; a timer the user starts in between keeps
+      // running, and the tool says its entry was saved but not started
+      // (`specs/tla/RunningTimer.tla`, AgentStartAtomic).
+      test('leaves a timer started meanwhile running, and reports its own '
+          'entry saved but not started', () async {
+        when(
+          () => mockTimeService.startIfIdle(any(), any()),
+        ).thenAnswer((_) async => false);
+
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T14:00:00',
+              'summary': 'Starting work on feature',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.errorMessage, 'Timer already running');
+          expect(result.mutatedEntityId, 'timer-entry-001');
+          expect(result.output, contains('not started'));
+          verifyNever(() => mockTimeService.start(any(), any()));
+        });
+      });
 
       test(
         'reports failure with the created id when the timer start throws '
         'after persistence',
         () async {
           when(
-            () => mockTimeService.start(any(), any()),
+            () => mockTimeService.startIfIdle(any(), any()),
           ).thenThrow(StateError('timer machinery offline'));
 
           await withClock(Clock.fixed(testNow), () async {
@@ -736,7 +763,7 @@ void main() {
 
             expect(result.success, isFalse);
             expect(result.output, contains('failed to persist'));
-            verifyNever(() => mockTimeService.start(any(), any()));
+            verifyNever(() => mockTimeService.startIfIdle(any(), any()));
           });
         },
       );
@@ -745,7 +772,7 @@ void main() {
         'returns error with mutatedEntityId when TimeService.start throws',
         () async {
           when(
-            () => mockTimeService.start(any(), any()),
+            () => mockTimeService.startIfIdle(any(), any()),
           ).thenThrow(StateError('stream already closed'));
 
           await withClock(Clock.fixed(testNow), () async {
@@ -806,8 +833,8 @@ void main() {
 
       test('logs running timer creation', () async {
         when(
-          () => mockTimeService.start(any(), any()),
-        ).thenAnswer((_) async {});
+          () => mockTimeService.startIfIdle(any(), any()),
+        ).thenAnswer((_) async => true);
 
         await withClock(Clock.fixed(testNow), () async {
           await handler.handle(
@@ -924,7 +951,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.mutatedEntityId, derivedId);
-        verifyNever(() => mockTimeService.start(any(), any()));
+        verifyNever(() => mockTimeService.startIfIdle(any(), any()));
         verifyNever(
           () => mockPersistenceLogic.createDbEntity(
             any(),

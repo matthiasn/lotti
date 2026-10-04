@@ -13,7 +13,6 @@ import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/startup_tasks.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/window_service.dart';
 
 /// The profile a closed generation belonged to, handed to the work that runs
@@ -318,13 +317,8 @@ class ProfileSwitcher {
         () => getIt<StartupTasks>().settle(),
       );
     }
-    if (getIt.isRegistered<TimeService>()) {
-      await _step(
-        failures,
-        'TimeService.stop',
-        () => getIt<TimeService>().stop(),
-      );
-    }
+    // A running timer is stopped, its end written, by the ServiceDisposer's
+    // first step, for a switch as for quitting the app.
     await _step(
       failures,
       'AudioPlayerController.disposeActivePlayer',

@@ -53,7 +53,14 @@ class _FakeTimeService implements TimeService {
   }
 
   @override
-  Future<void> stop() async {
+  Future<bool> startIfIdle(JournalEntity entity, JournalEntity? linked) async {
+    if (_current != null) return false;
+    await start(entity, linked);
+    return true;
+  }
+
+  @override
+  Future<void> stop({bool persistEnd = true}) async {
     stopCount++;
     _current = null;
     linkedFrom = null;

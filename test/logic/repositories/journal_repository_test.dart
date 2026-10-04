@@ -612,7 +612,9 @@ void main() {
         when(() => mockTimeService.getCurrent()).thenReturn(testEntity);
 
         // Mock TimeService.stop
-        when(() => mockTimeService.stop()).thenAnswer((_) async {});
+        when(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.deleteJournalEntity(journalEntityId);
@@ -635,7 +637,8 @@ void main() {
 
         // Verify timer was stopped
         verify(() => mockTimeService.getCurrent()).called(1);
-        verify(() => mockTimeService.stop()).called(1);
+        // A deleted entry has no end left to write.
+        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
       });
 
       test('does not stop timer when deleting a non-active entry', () async {
@@ -712,7 +715,9 @@ void main() {
 
         // Verify timer was NOT stopped (different ID)
         verify(() => mockTimeService.getCurrent()).called(1);
-        verifyNever(() => mockTimeService.stop());
+        verifyNever(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        );
       });
 
       test('handles null timer when deleting entry', () async {
@@ -779,7 +784,9 @@ void main() {
 
         // Verify timer was NOT stopped (no active timer)
         verify(() => mockTimeService.getCurrent()).called(1);
-        verifyNever(() => mockTimeService.stop());
+        verifyNever(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        );
       });
     });
 

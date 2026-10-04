@@ -223,10 +223,11 @@ class JournalRepository {
               null;
       if (!deleted) return false;
 
-      // Stop timer if the deleted entry is currently running
+      // Stop timer if the deleted entry is currently running; a deleted
+      // entry has no end left to write.
       final timeService = getIt<TimeService>();
       if (timeService.getCurrent()?.id == journalEntityId) {
-        await timeService.stop();
+        await timeService.stop(persistEnd: false);
       }
 
       await getIt<NotificationService>().updateBadge();

@@ -206,14 +206,35 @@ class TimeEntryHandler {
     final createdId = journalEntity.meta.id;
 
     // --- Start running timer if no endTime ---
-    // The pre-check above (getCurrent != null) and this start() call are not
-    // atomic, but Dart's single-threaded event loop means no concurrent call
-    // can race between them during synchronous execution.
+    // The pre-check above ran several awaits ago — the task lookup, the
+    // metadata, the write — and the user can start a timer in between. The
+    // start therefore checks again, in the same step (startIfIdle), and
+    // leaves a timer that runs by now alone (`specs/tla/RunningTimer.tla`,
+    // AgentStartAtomic).
     if (isRunningTimer) {
       // Use the already-created entity directly — TimeService only stores it
       // in memory and does not need a freshly-fetched DB copy.
       try {
-        await _timeService.start(journalEntity, sourceEntity);
+        final started = await _timeService.startIfIdle(
+          journalEntity,
+          sourceEntity,
+        );
+        if (!started) {
+          _domainLogger?.log(
+            LogDomain.agentWorkflow,
+            'Time entry ${DomainLogger.sanitizeId(createdId)} persisted but '
+            'not started: another timer started meanwhile',
+            subDomain: _sub,
+          );
+          return ToolExecutionResult(
+            success: false,
+            output:
+                'Time entry was saved ($createdId) but not started: a timer '
+                'was started meanwhile and keeps running',
+            errorMessage: 'Timer already running',
+            mutatedEntityId: createdId,
+          );
+        }
       } catch (e) {
         _domainLogger?.log(
           LogDomain.agentWorkflow,
