@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
@@ -169,6 +171,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -201,6 +204,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -247,6 +251,9 @@ void main() {
                 ),
               ),
             ),
+            overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
+            ],
           ),
         );
         await tester.pump();
@@ -301,6 +308,7 @@ void main() {
               ),
             ),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue([textSkill]),
             ],
           ),
@@ -365,6 +373,7 @@ void main() {
               inLinkedEntries: true,
             ),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue([textSkill]),
             ],
           ),
@@ -408,6 +417,7 @@ void main() {
               ),
             ),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue(const <AiConfigSkill>[]),
             ],
           ),
@@ -468,6 +478,7 @@ void main() {
               ),
             ),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue([textSkill]),
             ],
           ),
@@ -530,6 +541,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: ratingEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -569,6 +581,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: ratingEntry.meta.id),
           overrides: [
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             ratingRepositoryProvider.overrideWithValue(mockRatingRepository),
           ],
         ),
@@ -590,6 +603,7 @@ void main() {
           EntryDetailHeader(
             entryId: testTextEntry.meta.id,
           ),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -618,6 +632,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -639,6 +654,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -671,6 +687,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -716,6 +733,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: taskEntry.meta.id),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -739,6 +757,7 @@ void main() {
           EntryDetailHeader(
             entryId: testTextEntry.meta.id,
           ),
+          overrides: [skillEntityProvider.overrideWith(skillEntityFromJournal)],
         ),
       );
       await tester.pump();
@@ -776,6 +795,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             EntryDetailHeader(entryId: testTextEntry.meta.id),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue([textSkill]),
             ],
           ),
@@ -794,6 +814,7 @@ void main() {
           makeTestableWidgetWithScaffold(
             EntryDetailHeader(entryId: testTextEntry.meta.id),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue(const []),
             ],
           ),
@@ -883,6 +904,9 @@ void main() {
               EntryDetailHeader(
                 entryId: testImageEntry.meta.id,
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -909,6 +933,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -938,6 +965,9 @@ void main() {
                   isCollapsed: true,
                   onToggleCollapse: () {},
                 ),
+                overrides: [
+                  skillEntityProvider.overrideWith(skillEntityFromJournal),
+                ],
               ),
             );
             await tester.pump();
@@ -966,6 +996,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -994,6 +1027,9 @@ void main() {
                   isCollapsed: true,
                   onToggleCollapse: () {},
                 ),
+                overrides: [
+                  skillEntityProvider.overrideWith(skillEntityFromJournal),
+                ],
               ),
             );
             await tester.pump();
@@ -1021,6 +1057,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1050,6 +1089,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () => toggled = true,
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1080,6 +1122,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1121,6 +1166,9 @@ void main() {
                   isCollapsed: true,
                   onToggleCollapse: () {},
                 ),
+                overrides: [
+                  skillEntityProvider.overrideWith(skillEntityFromJournal),
+                ],
               ),
             );
             await tester.pump();
@@ -1164,6 +1212,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1190,6 +1241,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1224,6 +1278,9 @@ void main() {
                     );
                   },
                 ),
+                overrides: [
+                  skillEntityProvider.overrideWith(skillEntityFromJournal),
+                ],
               ),
             );
             await tester.pump();
@@ -1279,6 +1336,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1302,6 +1362,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1335,6 +1398,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1368,6 +1434,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1400,6 +1469,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1432,6 +1504,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1457,6 +1532,9 @@ void main() {
                   EntryDetailHeader(
                     entryId: entry.meta.id,
                   ),
+                  overrides: [
+                    skillEntityProvider.overrideWith(skillEntityFromJournal),
+                  ],
                 ),
               );
               await tester.pump();
@@ -1484,6 +1562,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1513,6 +1594,9 @@ void main() {
                 isCollapsed: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1544,6 +1628,9 @@ void main() {
                 isCollapsible: true,
                 onToggleCollapse: () {},
               ),
+              overrides: [
+                skillEntityProvider.overrideWith(skillEntityFromJournal),
+              ],
             ),
           );
           await tester.pump();
@@ -1644,6 +1731,9 @@ void main() {
               isCollapsed: true,
               onToggleCollapse: () {},
             ),
+            overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
+            ],
           ),
         );
         await tester.pump();
@@ -1788,6 +1878,7 @@ void main() {
             child: SizedBox(width: width, child: header),
           ),
           overrides: [
+            skillEntityProvider.overrideWith(skillEntityFromJournal),
             skillRegistryProvider.overrideWithValue(
               withSkill ? [skill] : const <AiConfigSkill>[],
             ),
@@ -1899,6 +1990,7 @@ void main() {
               ),
             ),
             overrides: [
+              skillEntityProvider.overrideWith(skillEntityFromJournal),
               skillRegistryProvider.overrideWithValue([skill]),
             ],
           ),

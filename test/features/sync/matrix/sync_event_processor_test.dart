@@ -2016,7 +2016,7 @@ void main() {
         aiConfigRepository: aiConfigRepository,
         savedTaskFiltersRepository: savedTaskFiltersRepository,
         settingsDb: settingsDb,
-        gitHubTokenStorage: storage,
+        gitHubAccountSink: storage.applySynced,
       );
     });
 
@@ -2092,7 +2092,10 @@ void main() {
           aiConfigRepository: aiConfigRepository,
           savedTaskFiltersRepository: savedTaskFiltersRepository,
           settingsDb: settingsDb,
-          gitHubTokenStorage: GitHubTokenStorage(failing, namespace: 'real'),
+          gitHubAccountSink: GitHubTokenStorage(
+            failing,
+            namespace: 'real',
+          ).applySynced,
         );
 
         await expectLater(

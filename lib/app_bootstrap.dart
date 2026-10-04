@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lotti/beamer/ai_skill_wiring.dart';
 import 'package:lotti/beamer/journal_card_wiring.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
@@ -276,14 +278,8 @@ Future<ProfileContext> bootstrapProfileServices(
 /// should fail loudly (UnimplementedError) instead of silently no-opping —
 /// every sync surface is expected to gate on [syncFeatureAvailableProvider].
 ///
-/// This is also where the agent runtime learns about the agent *kinds* other
-/// features own (`agentWakeRunnersProvider` and friends). `features/agents`
-/// cannot import those features without recreating the dependency cycle
-/// between them, so the composition root — the one place allowed to see both
-/// sides — supplies them. A kind whose override is missing here is simply
-/// absent at runtime: its wakes fall through to the task-agent default and its
-/// prompt records reconstruct unsectioned, so
-/// `test/app_bootstrap_test.dart` pins these registrations.
+/// The feature wiring every profile shares comes from
+/// [appFeatureWiringOverrides].
 List<Override> buildProviderOverrides(ProfileContext context) {
   return [
     profileContextProvider.overrideWithValue(context),
@@ -319,84 +315,105 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       entitiesCacheServiceProvider.overrideWithValue(
         getIt<EntitiesCacheService>(),
       ),
-    // Daily OS and Goals plug their agent kinds into the shared runtime.
-    // These are MERGES, not replacements: a kind missing from the map
-    // silently falls back to the task-agent workflow.
-    // The profile pinning picker lists the devices sync knows.
-    pairedSyncNodesProvider.overrideWith(knownSyncNodes),
-    // The Daily OS walkthrough waits behind the general welcome.
-    welcomeOnboardingOwedProvider.overrideWith(
-      (ref) => ref.watch(shouldAutoShowOnboardingProvider.future),
-    ),
-    // A habit's completion sheet offers the watching goals' reflections.
-    habitReflectionsProvider.overrideWithValue(goalHabitReflections),
-    // A renamed task renames its Daily OS planned blocks, where the agent
-    // store exists.
-    taskTitleChangedHooksProvider.overrideWith(
-      (ref) => [
-        if (getIt.isRegistered<AgentDatabase>()) dailyOsTaskTitleSync(ref),
-      ],
-    ),
-    // Journal cards show checklist progress and a check-in's person.
-    journalChecklistCountsProvider.overrideWith(checklistCountsFromTasks),
-    journalRelationshipNameProvider.overrideWith(
-      relationshipNameFromRelationships,
-    ),
-    agentWakeRunnersProvider.overrideWith(
-      (ref) => {
-        ...ref.watch(dayAgentWakeRunnersProvider),
-        ...ref.watch(goalAgentWakeRunnersProvider),
-        ...ref.watch(relationshipAgentWakeRunnersProvider),
-      },
-    ),
-    // A speech model download or removal re-advertises this node's
-    // capabilities to paired devices. Resolved per call: sync registers the
-    // broadcaster only for a profile that syncs.
-    localNodeCapabilitiesChangedProvider.overrideWithValue(
-      () => getIt<SyncNodeProfileBroadcaster>().broadcastIfChanged(),
-    ),
-    // AI profile automation reads agents and templates through ports.
-    automationSubjectAgentLookupProvider.overrideWith(
-      (ref) => ref.watch(subjectAgentResolverProvider).call,
-    ),
-    automationTemplateLookupProvider.overrideWith(
-      (ref) => ref.watch(agentTemplateServiceProvider),
-    ),
-    agentResolvedSetupResolversProvider.overrideWithValue({
-      AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
-    }),
-    agentRuntimeMaintenanceProvider.overrideWith(
-      (ref) => [
-        ...ref.watch(dailyOsRuntimeMaintenanceProvider),
-        ref.watch(goalRuntimeMaintenanceProvider),
-        ref.watch(relationshipRuntimeMaintenanceProvider),
-      ],
-    ),
-    // The banner dock renders every kind through one substrate; each kind
-    // registers its active-banner source here (ADR 0059 Decision 6). A
-    // source missing from this list simply never speaks.
-    nudgeBannerSourcesProvider.overrideWithValue(
-      [activeGoalNudgesProvider, activeRelationshipNudgesProvider],
-    ),
-    // Dashboards show the habits feature's completion card for a habit.
-    dashboardHabitChartBuilderProvider.overrideWithValue(
-      ({required habitId, required rangeStart, required rangeEnd}) =>
-          HabitCompletionCard(
-            habitId: habitId,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
-    ),
-    // The demo world's real-AI nudge intercepts the AI action.
-    aiActionInterceptorProvider.overrideWithValue(interceptForRealAiSetup),
-    // Journal surfaces show the tasks, checklist, event and GitHub widgets
-    // through slots; journal ranks below all of them.
-    journalDetailSlotsProvider.overrideWithValue(appJournalDetailSlots),
-    promptLogWrapRenderersProvider.overrideWithValue(
-      dayPromptLogWrapRenderers,
-    ),
-    dailyOsSetupSheetLauncherProvider.overrideWithValue(
-      DailyOsInferenceSetupSheet.show,
-    ),
+    ...appFeatureWiringOverrides(),
   ];
 }
+
+/// How the features plug into one another: every port and slot a lower
+/// feature exposes, bound to the higher feature that fills it.
+///
+/// A lower feature cannot import a higher one, so it declares a seam (a
+/// nullable or default provider) and the composition root — the one place
+/// allowed to see both sides — supplies the implementation here. This is also
+/// where the agent runtime learns about the agent *kinds* other features own
+/// (`agentWakeRunnersProvider` and friends). A seam whose override is missing
+/// is simply absent at runtime: a kind's wakes fall through to the task-agent
+/// default and its prompt records reconstruct unsectioned, so
+/// `test/app_bootstrap_test.dart` pins these registrations.
+///
+/// Every entry is a lazy binding rather than a getIt bridge, so the full-app
+/// integration harnesses spread this list too and exercise the wiring the app
+/// runs instead of a hand-kept copy that drifts.
+List<Override> appFeatureWiringOverrides() => [
+  // The profile pinning picker lists the devices sync knows.
+  pairedSyncNodesProvider.overrideWith(knownSyncNodes),
+  // The Daily OS walkthrough waits behind the general welcome.
+  welcomeOnboardingOwedProvider.overrideWith(
+    (ref) => ref.watch(shouldAutoShowOnboardingProvider.future),
+  ),
+  // A habit's completion sheet offers the watching goals' reflections.
+  habitReflectionsProvider.overrideWithValue(goalHabitReflections),
+  // A renamed task renames its Daily OS planned blocks, where the agent
+  // store exists.
+  taskTitleChangedHooksProvider.overrideWith(
+    (ref) => [
+      if (getIt.isRegistered<AgentDatabase>()) dailyOsTaskTitleSync(ref),
+    ],
+  ),
+  // Journal cards show checklist progress and a check-in's person.
+  journalChecklistCountsProvider.overrideWith(checklistCountsFromTasks),
+  journalRelationshipNameProvider.overrideWith(
+    relationshipNameFromRelationships,
+  ),
+  // The AI skills menu reads its entity through journal's controller.
+  skillEntityProvider.overrideWith(skillEntityFromJournal),
+  // Daily OS and Goals plug their agent kinds into the shared runtime.
+  // These are MERGES, not replacements: a kind missing from the map
+  // silently falls back to the task-agent workflow.
+  agentWakeRunnersProvider.overrideWith(
+    (ref) => {
+      ...ref.watch(dayAgentWakeRunnersProvider),
+      ...ref.watch(goalAgentWakeRunnersProvider),
+      ...ref.watch(relationshipAgentWakeRunnersProvider),
+    },
+  ),
+  // A speech model download or removal re-advertises this node's
+  // capabilities to paired devices. Resolved per call: sync registers the
+  // broadcaster only for a profile that syncs.
+  localNodeCapabilitiesChangedProvider.overrideWithValue(
+    () => getIt<SyncNodeProfileBroadcaster>().broadcastIfChanged(),
+  ),
+  // AI profile automation reads agents and templates through ports.
+  automationSubjectAgentLookupProvider.overrideWith(
+    (ref) => ref.watch(subjectAgentResolverProvider).call,
+  ),
+  automationTemplateLookupProvider.overrideWith(
+    (ref) => ref.watch(agentTemplateServiceProvider),
+  ),
+  agentResolvedSetupResolversProvider.overrideWithValue({
+    AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
+  }),
+  agentRuntimeMaintenanceProvider.overrideWith(
+    (ref) => [
+      ...ref.watch(dailyOsRuntimeMaintenanceProvider),
+      ref.watch(goalRuntimeMaintenanceProvider),
+      ref.watch(relationshipRuntimeMaintenanceProvider),
+    ],
+  ),
+  // The banner dock renders every kind through one substrate; each kind
+  // registers its active-banner source here (ADR 0059 Decision 6). A
+  // source missing from this list simply never speaks.
+  nudgeBannerSourcesProvider.overrideWithValue(
+    [activeGoalNudgesProvider, activeRelationshipNudgesProvider],
+  ),
+  // Dashboards show the habits feature's completion card for a habit.
+  dashboardHabitChartBuilderProvider.overrideWithValue(
+    ({required habitId, required rangeStart, required rangeEnd}) =>
+        HabitCompletionCard(
+          habitId: habitId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
+  ),
+  // The demo world's real-AI nudge intercepts the AI action.
+  aiActionInterceptorProvider.overrideWithValue(interceptForRealAiSetup),
+  // Journal surfaces show the tasks, checklist, event and GitHub widgets
+  // through slots; journal ranks below all of them.
+  journalDetailSlotsProvider.overrideWithValue(appJournalDetailSlots),
+  promptLogWrapRenderersProvider.overrideWithValue(
+    dayPromptLogWrapRenderers,
+  ),
+  dailyOsSetupSheetLauncherProvider.overrideWithValue(
+    DailyOsInferenceSetupSheet.show,
+  ),
+];
