@@ -3887,6 +3887,7 @@
   "journalDateTimeRangeTitle": "Data e hora",
   "journalDateToLabel": "Data para:",
   "journalDeleteConfirm": "Sim, excluir esta entrada",
+  "journalDeleteFailed": "Não foi possível eliminar a entrada — tenta novamente",
   "journalDeleteHint": "Excluir entrada",
   "journalDeleteQuestion": "Deseja excluir este lançamento contábil manual?",
   "journalDurationLabel": "Duração",

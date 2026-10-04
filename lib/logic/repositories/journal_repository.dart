@@ -168,18 +168,28 @@ class JournalRepository {
     }
   }
 
-  /// Soft-deletes an entity by stamping `deletedAt` on its metadata.
+  /// Soft-deletes an entity by stamping `deletedAt` on its metadata, on the
+  /// entry as stored ([writeOnStored]): a version stored meanwhile is built
+  /// on, not replaced by the copy read first.
   ///
   /// Also handles side effects: when deleting an image used as task cover art
   /// the references are cleared first, a relationship cascades to its
-  /// check-ins, the running timer is stopped if it is this entry, and the
-  /// app badge is refreshed. Returns false only when the entity does not
-  /// exist.
+  /// check-ins, and once the deletion is stored the running timer is stopped
+  /// if it is this entry and the app badge is refreshed.
+  ///
+  /// Returns whether the deletion is stored: false when the entity does not
+  /// exist, the write was refused, or it failed. Callers act on it — the
+  /// checklist membership intents keep an operation whose delete did not
+  /// land for the next start (`specs/tla/ChecklistMembership.tla`,
+  /// DeleteReportsFailure), and the entry page stays open on an entry that
+  /// is still there — so answering true for a write that never happened
+  /// would leave a deleted item alive and listed nowhere.
   Future<bool> deleteJournalEntity(String journalEntityId) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
+      final journalDb = getIt<JournalDb>();
 
-      final journalEntity = await getIt<JournalDb>().journalEntityById(
+      final journalEntity = await journalDb.journalEntityById(
         journalEntityId,
       );
 
@@ -203,14 +213,27 @@ class JournalRepository {
         await _clearImageReferences(journalEntityId, persistenceLogic);
       }
 
-      await persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(
+      final written = await writeOnStored(
+        journalDb: journalDb,
+        persistenceLogic: persistenceLogic,
+        id: journalEntityId,
+        build: (stored) async => stored.copyWith(
           meta: await persistenceLogic.updateMetadata(
-            journalEntity.meta,
+            stored.meta,
             deletedAt: DateTime.now(),
           ),
         ),
       );
+      // A write reported as failed can have committed: `updateDbEntity`
+      // answers null too when work after the commit throws (the search
+      // index, the badge). The stored row decides.
+      final deleted =
+          written ||
+          (await journalDb.journalEntityByIdIncludingDeleted(
+                journalEntityId,
+              ))?.meta.deletedAt !=
+              null;
+      if (!deleted) return false;
 
       // Stop timer if the deleted entry is currently running
       final timeService = getIt<TimeService>();
@@ -219,6 +242,7 @@ class JournalRepository {
       }
 
       await getIt<NotificationService>().updateBadge();
+      return true;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,
@@ -226,9 +250,8 @@ class JournalRepository {
         stackTrace: stackTrace,
         subDomain: 'deleteJournalEntity',
       );
+      return false;
     }
-
-    return true;
   }
 
   /// Persists `updated` (including its metadata) through `PersistenceLogic`.

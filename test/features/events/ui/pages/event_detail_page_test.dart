@@ -62,7 +62,11 @@ class _ErrorEntryController extends EntryController {
 /// page calls the controller (rather than bouncing to the old editor).
 class _RecordingEntryController extends FakeEntryController {
   // ignore: use_super_parameters, parent uses a private `_entity` field
-  _RecordingEntryController(JournalEvent entity) : super(entity);
+  _RecordingEntryController(JournalEvent entity, {this.deleted = true})
+    : super(entity);
+
+  /// What [delete] answers: whether the deletion was stored.
+  final bool deleted;
 
   final titles = <String>[];
   final ratings = <double>[];
@@ -104,7 +108,7 @@ class _RecordingEntryController extends FakeEntryController {
   @override
   Future<bool> delete({required bool beamBack}) async {
     deletes++;
-    return true;
+    return deleted;
   }
 }
 
@@ -399,26 +403,34 @@ void main() {
       expect(rec.statuses, [EventStatus.cancelled]);
     });
 
-    testWidgets('the overflow menu deletes the event through the controller', (
-      tester,
-    ) async {
-      final rec = _RecordingEntryController(_event());
-      await pumpResolved(
-        tester,
-        linked: const [],
-        controllerBuilder: () => rec,
+    for (final deleted in [true, false]) {
+      testWidgets(
+        'the overflow menu deletes the event through the controller'
+        '${deleted ? '' : ', and says so when the delete was not stored'}',
+        (tester) async {
+          final rec = _RecordingEntryController(_event(), deleted: deleted);
+          await pumpResolved(
+            tester,
+            linked: const [],
+            controllerBuilder: () => rec,
+          );
+
+          await tester.tap(find.byIcon(LottiIcons.more));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete event'));
+          await tester.pumpAndSettle();
+          // The destructive confirm action carries the warning glyph.
+          await tester.tap(find.byIcon(LottiIcons.warning));
+          await tester.pumpAndSettle();
+
+          expect(rec.deletes, 1);
+          expect(
+            find.text("Couldn't delete the entry — try again"),
+            deleted ? findsNothing : findsOneWidget,
+          );
+        },
       );
-
-      await tester.tap(find.byIcon(LottiIcons.more));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete event'));
-      await tester.pumpAndSettle();
-      // The destructive confirm action carries the warning glyph.
-      await tester.tap(find.byIcon(LottiIcons.warning));
-      await tester.pumpAndSettle();
-
-      expect(rec.deletes, 1);
-    });
+    }
 
     testWidgets('the overflow menu opens the cover picker and sets the cover', (
       tester,

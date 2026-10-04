@@ -2282,7 +2282,11 @@ lists. Writing the caller's `TaskData` in `updateTaskImpl` fails it in two
 steps (a checklist lands, then a task edit), building `updateChecklist` on a
 copy read before `writeOnStored` in two (an armed landing, then the agent's
 add), and writing the caller's task in `JournalRepository.updateJournalEntity`
-in two.
+in two. A delete's write can be made to fail — the database throws on the
+next tombstone (`failDelete`) — inside an item's or a checklist's deletion,
+after which the app restarts and replays; answering true for it in
+`deleteJournalEntity` leaves the item or the checklist alive in four steps,
+one pinned test each.
 
 Task-agent assignment has one. In
 `test/features/agents/service/task_agent_retirement_model_conformance.dart`
@@ -3198,7 +3202,8 @@ undo window, delete a checklist, edit a task field, sort the checklists) and
 the agent's (`addItemToChecklist`, `createChecklist`, its item and task field
 tools) split at every read and write; versions of any row landing by sync;
 and the app dying part-way through an operation, with the next start
-replaying what it recorded. Two devices writing these rows at once are
+replaying what it recorded; and a delete's write failing, its operation kept
+for the next start. Two devices writing these rows at once are
 [`ChecklistReplication`](#checklistreplication--a-tasks-checklists-on-two-devices)'s
 subject. The decision is
 [ADR 0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md).
@@ -3215,11 +3220,12 @@ subject. The decision is
 "Quiet" is: the app runs, no operation is running, and no recorded intent is
 left to replay.
 
-| Configuration | Checklists | Items | Operations | Receives | Crashes | Distinct states |
-|---------------|-----------:|------:|-----------:|---------:|--------:|----------------:|
-| `ChecklistMembership` | 2 | 3 | 4 | 2 | 0 | 3,762,956 |
-| `ChecklistMembershipThree` | 3 | 2 | 3 | 2 | 0 | 621,434 |
-| `ChecklistMembershipCrash` | 2 | 2 | 4 | 2 | 1 | 1,412,624 |
+| Configuration | Checklists | Items | Operations | Receives | Crashes | Failed deletes | Distinct states |
+|---------------|-----------:|------:|-----------:|---------:|--------:|---------------:|----------------:|
+| `ChecklistMembership` | 2 | 3 | 4 | 2 | 0 | 0 | 3,762,956 |
+| `ChecklistMembershipThree` | 3 | 2 | 3 | 2 | 0 | 0 | 621,434 |
+| `ChecklistMembershipCrash` | 2 | 2 | 4 | 2 | 1 | 0 | 1,412,624 |
+| `ChecklistMembershipFailure` | 2 | 2 | 4 | 1 | 0 | 1 | 163,956 |
 
 Every write replaced a whole row under a clock built on the row read just
 before it, so the write decision took it as the newer version — however old
@@ -3234,6 +3240,7 @@ each has a counterexample when set to `FALSE`:
 | `RebaseItems` | the item screens and the agent's item tools wrote the whole item they held (`updateChecklistItem` took the caller's data) | `BackLinkAgrees`, eight steps: another device moves an item to a second checklist; the item screen, not yet refreshed, saves a check from its state — and writes the old checklist back into the item's back-link |
 | `WidgetFollowsTask` | `ChecklistsWidget` rendered the order of the last drag until the user left the task | `PageShowsChecklists`, eight steps (`ChecklistMembershipThree`): the user sorts two checklists, a third syncs in and is stored on the task, and the page never shows it — the next drag saved that order and dropped it |
 | `IntentLog` | an operation that writes several rows — create an item and list it, move an item, delete an item across its undo window, create or delete a checklist — was lost half-way if the app died | `NoLostItem`, five steps (`ChecklistMembershipCrash`): the agent creates an item and the app dies before the checklist lists it — the item lives, listed nowhere |
+| `DeleteReportsFailure` | `JournalRepository.deleteJournalEntity` answered true whatever its tombstone write did, so an item or checklist deletion whose delete failed — it threw, or was refused — dropped its intent as done | `NoLostChecklist`, seven states (`ChecklistMembershipFailure`): a checklist syncs in, the user deletes it, the task stops listing it, and its delete fails — the checklist lives, listed nowhere, and nothing retries it. An item's deletion leaves the item alive and unlisted the same way |
 
 With every switch on, a row is changed, not replaced: the intent — add an
 id, remove one, show these in this order, set these fields — is applied to
@@ -3246,7 +3253,11 @@ in the settings database before its first write
 applies every intent left behind (`ChecklistRepository.replayMembershipIntents`)
 — each is a set of idempotent changes to stored rows, so replaying one that
 did finish, or a replay that dies too, is harmless. The spec's `Replay` and
-`Restart` are that.
+`Restart` are that. A delete whose write fails is reported as not deleted, so
+its operation stops with the intent kept, and the next start finishes it
+(`Fail`, then `Close` — the app closed later with the intent left behind).
+The tombstone is written on the stored row (`writeOnStored`), like every
+other write here.
 
 Assumptions the model states rather than checks:
 

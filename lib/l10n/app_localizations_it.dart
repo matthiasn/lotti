@@ -8990,6 +8990,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journalDeleteConfirm => 'Sì, elimina questa voce';
 
   @override
+  String get journalDeleteFailed => 'Impossibile eliminare la voce — riprova';
+
+  @override
   String get journalDeleteHint => 'Eliminare la voce';
 
   @override

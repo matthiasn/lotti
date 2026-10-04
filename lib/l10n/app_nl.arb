@@ -3887,6 +3887,7 @@
   "journalDateTimeRangeTitle": "Datum & tijd",
   "journalDateToLabel": "Datum tot:",
   "journalDeleteConfirm": "Ja, verwijder dit item",
+  "journalDeleteFailed": "Het item kon niet worden verwijderd — probeer het opnieuw",
   "journalDeleteHint": "item verwijderen",
   "journalDeleteQuestion": "Wilt u dit journaal item verwijderen?",
   "journalDurationLabel": "Duur",

@@ -82,6 +82,13 @@ distinct states; its change to `deleteChecklist` moves the three
 `ChecklistMembership` configurations to 5,797,014. TLC found eight bugs (P1×5,
 P2, P3×2). Not included in the historical totals above.
 
+The failed-delete follow-up ([#4684](https://github.com/matthiasn/lotti/pull/4684)) adds one configuration
+(`ChecklistMembershipFailure`, 163,956 distinct states), a fault (a delete's
+write failing) and one switch (`DeleteReportsFailure`) to `ChecklistMembership`
+without changing the other three configurations' counts. TLC found one bug
+and an audit of its callers one more (P2×2). Not included in the historical
+totals above.
+
 The `EnvelopeChain` design model (#4501) adds one spec, two configurations, six
 named properties and 145,926 distinct states. It models record provenance's
 signed chains before they are built, so it caught no shipped bug; its four
@@ -284,6 +291,8 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4623](https://github.com/matthiasn/lotti/pull/4623) | pending | github | `PullRequestAssignment` | 4 | 0 | — | — | The one-task rule revised before the code: a pull request may serve a second task once the user confirms it. A held pull request now raises a question; the confirmation re-checks this task under the same lock. `NoLocalDoubleAssignment` splits into `NoSameTaskDuplicate` and `NoUnconfirmedLocalDoubleAssignment`; the new switches `ConfirmElsewhere` and `RecheckAtConfirm` each have a counterexample — two questions open on one task, both confirmed, linked it twice. 574,162 states |
 | [#4625](https://github.com/matthiasn/lotti/pull/4625) | pending | github, sync | `GitHubAccountSync` | 4 | 3 (3) | P1×3 | [0117](../../docs/adr/0117-github-token-syncs-like-inference-keys.md) | A design model for the GitHub token syncing between devices, before the code's tests: one keychain record per device, changes there racing received ones under disagreeing clocks, re-sends and revocation. Review found three races the first draft modelled as single steps — an outbox that swallowed a refused row, a received version compared and written in two steps, and a GitHub check marking whatever was held when it answered; the model now splits each, and all six switches have a counterexample. 9,934,868 states |
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | pending | agents | `ProjectWakeGovernor` | 5 | 5 (5) | P2×2 P3×3 | [0113](../../docs/adr/0113-project-agents-update-in-synced-slots.md) | A project agent's report changes, synced to three devices, armed three device-local 06:00 fallbacks, and every sync arrival of the state repaired one more: each device ran its own paid inference for one report (`SyncedSlots = FALSE` breaks `StaleDoesNotTriggerWork` in five states). A change now only marks the report stale; one synced, leased update slot per agent refreshes it on one device. TLC rejected three drafts on the way — claiming offline, confirming a claim a connection drop never uploaded, and two devices arming different slots for one change |
+| [#4684](https://github.com/matthiasn/lotti/pull/4684) | pending | tasks | — | 1 | 2 (1) | P2×2 | — | `JournalRepository.deleteJournalEntity` answered true whatever its tombstone write did. A checklist item or checklist deletion whose delete failed dropped its recorded intent as done, so the item or checklist stayed alive, listed nowhere, and nothing retried it (`DeleteReportsFailure = FALSE`: `NoLostChecklist`, seven states); the entry page closed on an entry that was still there. The delete now writes on the stored row and reports what it did; the operation keeps its intent for the next start, and the page stays and says the delete failed |
+
 ## Sync follow-up evidence, 2026-09-26
 
 This supplements the historical totals above; it does not add repeated model
@@ -615,6 +624,8 @@ The P0 and P1 bugs:
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | P3 | yes | A draft claimed update slots while offline, where its claim settled unseen |
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | P3 | yes | A draft confirmed a claim written before a connection drop and never uploaded |
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | P3 | yes | A draft let two devices arm different slots for one change, and each fired its own |
+| [#4684](https://github.com/matthiasn/lotti/pull/4684) | P2 | yes | A checklist item or checklist whose delete write failed stayed alive, listed nowhere: the deletion dropped its intent as done, and nothing retried it |
+| [#4684](https://github.com/matthiasn/lotti/pull/4684) | P2 | no | Deleting an entry whose delete write failed closed its page as if it were gone; it was still there |
 
 </details>
 

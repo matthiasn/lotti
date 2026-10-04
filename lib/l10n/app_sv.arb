@@ -3888,6 +3888,7 @@
   "journalDateTimeRangeTitle": "Datum och tid",
   "journalDateToLabel": "Datum till:",
   "journalDeleteConfirm": "Ja, ta bort denna post",
+  "journalDeleteFailed": "Posten kunde inte raderas — försök igen",
   "journalDeleteHint": "Ta bort posten",
   "journalDeleteQuestion": "Vill du ta bort denna journalpost?",
   "journalDurationLabel": "Varaktighet",

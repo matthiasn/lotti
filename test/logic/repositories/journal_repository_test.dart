@@ -373,7 +373,12 @@ void main() {
         // layer writes nothing for the person itself.
         expect(result, isFalse);
         expect(cascade.deleted, ['rel-1']);
-        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+        verifyNever(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        );
       });
 
       test('routes a RelationshipEntry through the check-in cascade — the '
@@ -405,6 +410,10 @@ void main() {
         when(
           () => mockJournalDb.getAllCheckInsForRelationship('rel-1'),
         ).thenAnswer((_) async => [checkIn]);
+        // The check-in holds no entries of its own to tombstone with it.
+        when(
+          () => mockJournalDb.linksFromIds(['check-1']),
+        ).thenReturn(MockSelectable<LinkedDbEntry>(const []));
         when(
           () => mockPersistenceLogic.updateMetadata(
             any(),
@@ -438,7 +447,7 @@ void main() {
       });
 
       test(
-        'logs to DomainLogger and returns true when the lookup throws',
+        'logs to DomainLogger and returns false when the lookup throws',
         () async {
           when(
             () => mockJournalDb.journalEntityById(any()),
@@ -446,8 +455,9 @@ void main() {
 
           final result = await repository.deleteJournalEntity('boom-id');
 
-          // The method catches, logs, and reports success like its siblings.
-          expect(result, isTrue);
+          // Nothing was deleted, and the callers act on that: a checklist
+          // operation keeps its intent, the entry page stays open.
+          expect(result, isFalse);
           verify(
             () => mockDomainLogger.error(
               LogDomain.persistence,
@@ -458,6 +468,134 @@ void main() {
           ).called(1);
         },
       );
+
+      // A delete that does not land is reported: the checklist membership
+      // intents keep the operation for the next start, and the page stays
+      // open (`specs/tla/ChecklistMembership.tla`, DeleteReportsFailure).
+      for (final (name, outcome) in [
+        ('refused', Future<bool?>.value(false)),
+        ('fails', Future<bool?>.value()),
+      ]) {
+        test('a tombstone write that is $name is reported as not deleted, '
+            'and leaves the running timer alone', () async {
+          final entry = testJournalEntry();
+          when(
+            () => mockJournalDb.journalEntityById(entry.id),
+          ).thenAnswer((_) async => entry);
+          when(
+            () => mockPersistenceLogic.updateMetadata(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                invocation.positionalArguments.first as Metadata,
+          );
+          when(
+            () => mockPersistenceLogic.updateDbEntity(
+              any(),
+              precondition: any(named: 'precondition'),
+            ),
+          ).thenAnswer((_) => outcome);
+          when(() => mockTimeService.getCurrent()).thenReturn(entry);
+          // The stored row is still live: nothing was deleted.
+          when(
+            () => mockJournalDb.journalEntityByIdIncludingDeleted(entry.id),
+          ).thenAnswer((_) async => entry);
+
+          expect(await repository.deleteJournalEntity(entry.id), isFalse);
+          verifyNever(() => mockTimeService.stop());
+          verifyNever(() => mockNotificationService.updateBadge());
+        });
+      }
+
+      test('a tombstone that committed although work after the write threw '
+          'is reported as deleted', () async {
+        // updateDbEntity answers null too when the search index or the
+        // badge throws after the row was written.
+        final entry = testJournalEntry();
+        when(
+          () => mockJournalDb.journalEntityById(entry.id),
+        ).thenAnswer((_) async => entry);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.first as Metadata,
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entry.id),
+        ).thenAnswer(
+          (_) async => entry.copyWith(
+            meta: entry.meta.copyWith(deletedAt: DateTime(2024, 3, 15, 11)),
+          ),
+        );
+        when(() => mockTimeService.getCurrent()).thenReturn(entry);
+        when(
+          () => mockTimeService.stop(),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
+
+        expect(await repository.deleteJournalEntity(entry.id), isTrue);
+        verify(() => mockTimeService.stop()).called(1);
+      });
+
+      test('the tombstone is built on the entry as stored: a version stored '
+          'while it was written is built on again', () async {
+        final entry = testJournalEntry();
+        final since = entry.copyWith(
+          meta: entry.meta.copyWith(
+            starred: true,
+            vectorClock: const VectorClock({'agent': 1}),
+          ),
+        );
+        var reads = 0;
+        when(
+          () => mockJournalDb.journalEntityById(entry.id),
+        ).thenAnswer((_) async => reads++ < 2 ? entry : since);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              (invocation.positionalArguments.first as Metadata).copyWith(
+                deletedAt: DateTime(2024, 3, 15, 11),
+              ),
+        );
+        final written = <JournalEntity>[];
+        when(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((invocation) async {
+          written.add(invocation.positionalArguments.first as JournalEntity);
+          // The first write is refused: the row moved under it.
+          return written.length > 1;
+        });
+        when(() => mockTimeService.getCurrent()).thenReturn(null);
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
+
+        expect(await repository.deleteJournalEntity(entry.id), isTrue);
+        expect(written, hasLength(2));
+        expect(written.last.meta.starred, isTrue);
+        expect(written.last.meta.deletedAt, isNotNull);
+      });
 
       test('marks the entity as deleted and returns true on success', () async {
         // Arrange
@@ -485,7 +623,10 @@ void main() {
 
         // Mock the updateDbEntity call
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
@@ -499,15 +640,17 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).called(1);
         verify(() => mockNotificationService.updateBadge()).called(1);
       });
 
@@ -525,16 +668,18 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
         verifyNever(
           () => mockPersistenceLogic.updateMetadata(
             any(),
             deletedAt: any(named: 'deletedAt'),
           ),
         );
-        verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+        verifyNever(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        );
         verifyNever(() => mockNotificationService.updateBadge());
       });
 
@@ -568,7 +713,10 @@ void main() {
 
         // Mock the updateDbEntity call
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
@@ -588,15 +736,17 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).called(1);
         verify(() => mockNotificationService.updateBadge()).called(1);
 
         // Verify timer was stopped
@@ -640,7 +790,10 @@ void main() {
 
         // Mock the updateDbEntity call
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
@@ -660,15 +813,17 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).called(1);
         verify(() => mockNotificationService.updateBadge()).called(1);
 
         // Verify timer was NOT stopped (different ID)
@@ -702,7 +857,10 @@ void main() {
 
         // Mock the updateDbEntity call
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
@@ -722,15 +880,17 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockJournalDb.journalEntityById(journalEntityId),
-        ).called(1);
-        verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
-        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).called(1);
         verify(() => mockNotificationService.updateBadge()).called(1);
 
         // Verify timer was NOT stopped (no active timer)
@@ -2463,7 +2623,10 @@ void main() {
               ),
         );
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
         when(
           () => mockNotificationService.updateBadge(),
@@ -2472,7 +2635,10 @@ void main() {
 
         expect(await repository.deleteJournalEntity(imageId), isTrue);
         return verify(
-          () => mockPersistenceLogic.updateDbEntity(captureAny()),
+          () => mockPersistenceLogic.updateDbEntity(
+            captureAny(),
+            precondition: any(named: 'precondition'),
+          ),
         ).captured.cast<JournalEntity>();
       }
 
@@ -2534,11 +2700,13 @@ void main() {
           when(
             () => mockPersistenceLogic.updateDbEntity(
               any(that: isA<RelationshipEntry>()),
+              precondition: any(named: 'precondition'),
             ),
           ).thenAnswer((_) async => false);
           when(
             () => mockPersistenceLogic.updateDbEntity(
               any(that: isA<JournalImage>()),
+              precondition: any(named: 'precondition'),
             ),
           ).thenAnswer((_) async => true);
           when(
@@ -2549,7 +2717,10 @@ void main() {
           expect(await repository.deleteJournalEntity(imageId), isTrue);
 
           final written = verify(
-            () => mockPersistenceLogic.updateDbEntity(captureAny()),
+            () => mockPersistenceLogic.updateDbEntity(
+              captureAny(),
+              precondition: any(named: 'precondition'),
+            ),
           ).captured.cast<JournalEntity>();
           expect(
             written.whereType<JournalImage>().single.meta.deletedAt,
@@ -2740,7 +2911,10 @@ void main() {
 
         // Mock the updateDbEntity call for the image
         when(
-          () => mockPersistenceLogic.updateDbEntity(any()),
+          () => mockPersistenceLogic.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
@@ -2758,7 +2932,6 @@ void main() {
         expect(result, isTrue);
 
         // Verify the image was looked up
-        verify(() => mockJournalDb.journalEntityById(imageId)).called(1);
 
         // Verify that we looked for tasks that link to this image
         verify(() => mockJournalDb.getLinkedToEntities(imageId)).called(1);

@@ -3888,6 +3888,7 @@
   "journalDateTimeRangeTitle": "Data e ora",
   "journalDateToLabel": "Data di:",
   "journalDeleteConfirm": "Sì, elimina questa voce",
+  "journalDeleteFailed": "Impossibile eliminare la voce — riprova",
   "journalDeleteHint": "Eliminare la voce",
   "journalDeleteQuestion": "Vuoi eliminare questa voce del diario?",
   "journalDurationLabel": "Durata",

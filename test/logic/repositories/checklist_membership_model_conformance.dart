@@ -18,7 +18,10 @@ part of 'checklist_repository_test.dart';
 // its new checklist lands between another writer's read and write). And the app
 // dies part-way through a multi-row operation (Crash): its intent is
 // recorded, only a prefix of its writes happen, and the next start replays
-// what was recorded (Replay, Restart).
+// what was recorded (Replay, Restart). A delete's write can fail too
+// (failDelete: it throws inside an item's or a checklist's deletion); the app
+// is closed later, and the next start replays what the operation kept
+// (Fail, Close).
 //
 // After every step — each one quiet, a crash included once replayed — the
 // trace checks NoDuplicates, NoLostItem, NoStrayItem, BackLinkAgrees and
@@ -46,6 +49,7 @@ enum _MembershipOp {
   armAgentItem,
   armAgentChecklist,
   crash,
+  failDelete,
 }
 
 class _MembershipStep {
@@ -138,6 +142,29 @@ class _RacingJournalDb extends JournalDb {
 
   /// The stored row, read without landing anything.
   Future<JournalEntity?> peek(String id) => super.journalEntityById(id);
+
+  /// Fails the next write of a deletion — a soft delete's tombstone — as a
+  /// full disk or a locked database would (Fail).
+  bool failNextDelete = false;
+
+  @override
+  Future<JournalUpdateResult> updateJournalEntity(
+    JournalEntity updated, {
+    bool overwrite = true,
+    bool fromThisDevice = false,
+    Future<bool> Function()? precondition,
+  }) {
+    if (failNextDelete && updated.meta.deletedAt != null) {
+      failNextDelete = false;
+      throw StateError('the delete write failed');
+    }
+    return super.updateJournalEntity(
+      updated,
+      overwrite: overwrite,
+      fromThisDevice: fromThisDevice,
+      precondition: precondition,
+    );
+  }
 
   @override
   Future<JournalEntity?> journalEntityById(String id) async {
@@ -513,7 +540,49 @@ class _MembershipBench {
         db.arm(taskId, arg % 3, _agentList);
       case _MembershipOp.crash:
         await _crash(kind: arg % 5, progress: arg ~/ 5);
+      case _MembershipOp.failDelete:
+        await _failDelete(arg);
     }
+  }
+
+  /// A deletion whose delete write fails: an item's, once its undo window
+  /// has closed, or a checklist's, after it was unlisted from the task. The
+  /// app is closed later, and the next start replays what the operation
+  /// kept; the user's deletion then stands (Fail, Close, Replay).
+  Future<void> _failDelete(int arg) async {
+    db.failNextDelete = true;
+    try {
+      if (arg.isEven) {
+        final shown = _shownItem(arg ~/ 2);
+        if (shown == null) return;
+        final (:checklistId, :itemId) = shown;
+        final key = await _withoutUndoTimer(
+          () => repository.beginItemDeletion(
+            itemId: itemId,
+            checklistId: checklistId,
+            undoWindow: _undoWindow,
+          ),
+        );
+        expect(key, isNotNull, reason: 'beginItemDeletion($itemId)');
+        await repository.completeItemDeletion(key: key!, itemId: itemId);
+        home.remove(itemId);
+        deletedItems.add(itemId);
+      } else {
+        final candidates = _shownLists.skip(1).toList();
+        if (candidates.isEmpty) return;
+        final checklistId = candidates[(arg ~/ 2) % candidates.length];
+        await repository.deleteChecklist(
+          checklistId: checklistId,
+          taskId: taskId,
+        );
+        _deleteList(checklistId);
+      }
+    } finally {
+      db.failNextDelete = false;
+    }
+    await repository.replayMembershipIntents();
+    expect(await intents.pending(), isEmpty, reason: 'replay finishes all');
+    await _snapshot();
   }
 
   /// ChecklistRepository.addItemToChecklist (agAdd).
@@ -855,26 +924,42 @@ void _registerChecklistMembershipConformance() {
       await settingsDb.close();
     });
 
+    Future<void> replay(List<_MembershipStep> trace) async {
+      // Each trace has its own task, checklists and items in the one
+      // database, and starts with no intent left over from another.
+      final bench = _MembershipBench(db..disarm());
+      for (final key in (await bench.intents.pending()).keys) {
+        await bench.intents.clear(key);
+      }
+      await bench.setUp();
+      await bench.check(trace);
+      for (final step in trace) {
+        await bench.run(step);
+        await bench.check(trace);
+      }
+    }
+
+    // A delete that fails is kept for the next start, which deletes it: the
+    // item, and the checklist the user had already unlisted.
+    for (final (name, arg) in [('an item', 0), ('a checklist', 1)]) {
+      test('$name whose delete write fails is deleted at the next start '
+          '(NoLostItem, NoLostChecklist, DeleteReportsFailure)', () async {
+        await replay([
+          const _MembershipStep(_MembershipOp.syncChecklist, 0),
+          const _MembershipStep(_MembershipOp.agentAdd, 0),
+          const _MembershipStep(_MembershipOp.snapshot, 0),
+          _MembershipStep(_MembershipOp.failDelete, arg),
+        ]);
+      });
+    }
+
     glados.Glados(
       glados.any.membershipTrace,
       glados.ExploreConfig(numRuns: 150),
     ).test(
       'the screen, the agent, sync and a crash never drop an item from its '
       'checklist or a checklist from its task',
-      (trace) async {
-        // Each trace has its own task, checklists and items in the one
-        // database, and starts with no intent left over from another.
-        final bench = _MembershipBench(db..disarm());
-        for (final key in (await bench.intents.pending()).keys) {
-          await bench.intents.clear(key);
-        }
-        await bench.setUp();
-        await bench.check(trace);
-        for (final step in trace) {
-          await bench.run(step);
-          await bench.check(trace);
-        }
-      },
+      replay,
       timeout: const Timeout(Duration(minutes: 4)),
       tags: 'glados',
     );

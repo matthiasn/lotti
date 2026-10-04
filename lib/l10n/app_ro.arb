@@ -3437,6 +3437,7 @@
   "journalDateTimeRangeTitle": "Dată și oră",
   "journalDateToLabel": "Până la:",
   "journalDeleteConfirm": "Da, ștergeți această intrare",
+  "journalDeleteFailed": "Intrarea nu a putut fi ștearsă — încercați din nou",
   "journalDeleteHint": "Ștergeți intrarea",
   "journalDeleteQuestion": "Sigur doriți să ștergeți această intrare în jurnal?",
   "journalDurationLabel": "Durată",

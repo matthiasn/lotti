@@ -8900,6 +8900,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalDeleteConfirm => 'Ja, verwijder dit item';
 
   @override
+  String get journalDeleteFailed =>
+      'Het item kon niet worden verwijderd — probeer het opnieuw';
+
+  @override
   String get journalDeleteHint => 'item verwijderen';
 
   @override

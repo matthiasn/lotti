@@ -3888,6 +3888,7 @@
   "journalDateTimeRangeTitle": "Dato og Tid",
   "journalDateToLabel": "Dato til:",
   "journalDeleteConfirm": "Ja, slet denne post",
+  "journalDeleteFailed": "Indlægget kunne ikke slettes — prøv igen",
   "journalDeleteHint": "Slet post",
   "journalDeleteQuestion": "Vil du slette denne dagbogspost?",
   "journalDurationLabel": "Varighed",

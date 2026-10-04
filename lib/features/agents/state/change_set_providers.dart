@@ -172,18 +172,14 @@ final projectRecommendationServiceProvider =
       },
     );
 
-/// Soft-deletes a task and reports whether it is gone.
-///
-/// The repository delete logs and swallows a failed write, so its return
-/// value is not proof; the tombstone is. `journalEntityById` filters deleted
-/// rows, so a null read means the task is gone — also when it was gone
-/// before the call, which makes an Undo's retry safe after a reopen that
+/// Soft-deletes a task and reports whether it is gone: deleted now, or
+/// already — `journalEntityById` filters deleted rows, so a null read means
+/// the task is gone, which makes an Undo's retry safe after a reopen that
 /// failed once the task was removed (ADR 0097).
-ProjectTaskRemover projectTaskRemover(Ref ref) => (taskId) async {
-  await ref.read(journalRepositoryProvider).deleteJournalEntity(taskId);
-  final remaining = await ref.read(journalDbProvider).journalEntityById(taskId);
-  return remaining == null;
-};
+ProjectTaskRemover projectTaskRemover(Ref ref) =>
+    (taskId) async =>
+        await ref.read(journalRepositoryProvider).deleteJournalEntity(taskId) ||
+        await ref.read(journalDbProvider).journalEntityById(taskId) == null;
 
 /// Decisions on the project agent's proposed changes, with Undo. Kept alive
 /// for the session so a confirmed proposal's effect stays undoable across

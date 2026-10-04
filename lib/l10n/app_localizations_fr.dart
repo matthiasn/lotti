@@ -9023,6 +9023,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalDeleteConfirm => 'Oui, supprimer cette entrée';
 
   @override
+  String get journalDeleteFailed =>
+      'Impossible de supprimer l\'entrée — réessaie';
+
+  @override
   String get journalDeleteHint => 'Supprimer l\'entrée';
 
   @override

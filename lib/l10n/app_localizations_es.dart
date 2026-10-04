@@ -9002,6 +9002,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalDeleteConfirm => 'Sí, borrar esta entrada';
 
   @override
+  String get journalDeleteFailed =>
+      'No se pudo eliminar la entrada — inténtalo de nuevo';
+
+  @override
   String get journalDeleteHint => 'Borrar entrada';
 
   @override

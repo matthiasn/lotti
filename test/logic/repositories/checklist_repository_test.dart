@@ -18,6 +18,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/shown_checklist_items.dart';
 import 'package:lotti/features/sync/state/conflict_resolution_service.dart';

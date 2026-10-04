@@ -3437,6 +3437,7 @@
   "journalDateTimeRangeTitle": "Date et heure",
   "journalDateToLabel": "Date de fin :",
   "journalDeleteConfirm": "Oui, supprimer cette entrée",
+  "journalDeleteFailed": "Impossible de supprimer l'entrée — réessaie",
   "journalDeleteHint": "Supprimer l'entrée",
   "journalDeleteQuestion": "Veux-tu vraiment supprimer cette entrée ?",
   "journalDurationLabel": "Durée",
