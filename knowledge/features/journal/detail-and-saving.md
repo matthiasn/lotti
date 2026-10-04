@@ -179,8 +179,9 @@ or sync set since the page loaded is kept (see
 
 # Every stop writes the end
 
-Whichever way a timer stops, its entry ends when it stopped; only a crash
-loses time, at most one autosave interval. The decision, and why the agent's
+Whichever way a timer stops, its entry ends when it stopped. Only a crash,
+or an end write that fails (logged; the timer stops all the same), loses
+time: at most one autosave interval. The decision, and why the agent's
 tool starts a timer only while none runs, is
 [ADR 0120](../../../docs/adr/0120-every-stop-writes-the-timers-end.md); the
 model is `specs/tla/RunningTimer.tla`. At runtime: `TimeService.stop` writes

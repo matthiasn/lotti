@@ -48,8 +48,10 @@ tool's start replacing the user's timer (`NoStolenTimer`).
 
 ## Consequences
 
-- No way of stopping a timer loses tracked time; a crash still loses up to
-  one autosave interval, and a timer still does not resume after a restart.
+- No way of stopping a timer loses tracked time while its end write
+  succeeds. A failed end write is logged and leaves the stored end at its
+  last successful write, the previous autosave at most one interval back; a
+  crash loses the same. A timer still does not resume after a restart.
 - Quitting with a timer running stops it, ending its entry at the quit.
 - The agent's tool can leave a zero-length entry when the user's timer won
   the race; it says so in its result.
