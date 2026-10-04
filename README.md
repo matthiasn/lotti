@@ -42,7 +42,7 @@ I have tracked around 11,000 hours of my own work in it since 2022.
 Most personal software treats your life as content to be stored on someone
 else's computer and mined. Lotti starts from the opposite premise: your
 memories are a *record*, and a record is only worth something if it is
-complete, unaltered, and yours. Three principles follow from that.
+complete, unaltered, and yours. Four principles follow from that.
 
 ### 1. Your memories live only on your devices
 
@@ -58,12 +58,14 @@ one costs you nothing as long as another survives. Your data is a file you
 already have, with a documented schema, so there is no export wizard and
 nothing to unlock.
 
-### 2. Sync is end-to-end encrypted, between your own devices
+### 2. End-to-end encrypted sync through a zero-trust relay
 
-Devices talk to each other through an encrypted relay rather than a storage
-service. The relay is a [Matrix](https://matrix.org) homeserver (Synapse) that
-you, or someone you trust, operates. It forwards ciphertext between your
-devices and never holds a key that could read it.
+Devices talk to each other through a relay rather than a storage service: a
+[Matrix](https://matrix.org) homeserver (Synapse). The relay is a zero-trust
+component. Whoever operates it — you, a friend, a hosting company — never holds
+a key, so they cannot read your memories, and they cannot slip changes into
+your record either. You do not have to trust the operator with your data; you
+only rely on them to keep the relay running.
 
 ```mermaid
 flowchart LR
@@ -73,7 +75,7 @@ flowchart LR
     subgraph D2["Your phone"]
         L2[(Local SQLite<br/>+ attachments)]
     end
-    R{{"Matrix homeserver<br/>you choose<br/>(ciphertext only)"}}
+    R{{"Matrix homeserver<br/>zero-trust relay<br/>(ciphertext only)"}}
     L1 -- "Megolm-encrypted events<br/>AES-256-CTR attachments" --> R
     R -- "delivered only to<br/>verified devices" --> L2
     L2 -- "the same, in reverse" --> R
@@ -95,9 +97,14 @@ How it works:
   and incoming events from unverified devices — or anything sent in plaintext —
   are dropped rather than applied, so whoever operates the server cannot inject
   changes into your record.
-- **The server never sees plaintext.** What it can see is metadata: the account
-  ID and room name, which device synced and when, IP addresses, device display
-  names, and the size of events and files. Not their content.
+- **Trust comes from verification, not from the server.** The emoji
+  comparison is what stops a relay from posing as one of your devices: verify
+  only devices you are holding, and the operator never gets a key.
+- **What zero trust does not cover.** The operator never sees plaintext, but
+  can see metadata: the account ID and room name, which device synced and when,
+  IP addresses, device display names, and the size of events and files. They
+  also control availability — they can delay, withhold or delete ciphertext,
+  but not read or alter it, and your devices still hold the full record.
 - **The relay is not an archive.** Sync rooms carry a 30-day
   `m.room.retention` policy. Synapse only enforces that when the operator turns
   retention on (and media retention separately); the optional
@@ -137,6 +144,24 @@ approved. Entries are not signed yet.
 
 See [Two databases](#two-databases-human-in-the-loop-by-construction) for how
 the separation is enforced.
+
+### 4. Inference that keeps nothing — and eventually runs on your own devices
+
+Agents need a model, and today the most capable models mostly run in a
+datacenter. Lotti has no inference backend of its own: every request goes to a
+provider you configured, under your own key, routed per category. Ideally that
+is a provider with a **zero-data-retention** policy, one that processes the
+request and keeps neither the prompt nor the response, so that inference leaves
+no copy of your memories behind. Lotti cannot verify a provider's retention
+terms; choosing one is your due diligence, covered under
+[Your inference is a routing decision](#your-inference-is-a-routing-decision).
+
+The long-term direction is inference on your own devices, as they become
+powerful enough to run capable models. The record and the reasoning over it
+would then both stay at home. Part of that is already here: speech recognition
+runs fully offline with Whisper or Voxtral, and a local model can drive the
+agents on a well-equipped laptop today — see
+[Running it all locally](#running-it-all-locally).
 
 ---
 
@@ -356,10 +381,9 @@ with FUSE, which desktops ship by default; where FUSE is missing, run it with
 
 ### Sync and data
 
-- End-to-end encrypted sync across your devices, backed by a Synapse
-  homeserver you or someone you trust operates — see
-  [the vision](#2-sync-is-end-to-end-encrypted-between-your-own-devices) for
-  how it works.
+- End-to-end encrypted sync across your devices, relayed by a Synapse
+  homeserver whose operator never holds a key — see
+  [the vision](#2-end-to-end-encrypted-sync-through-a-zero-trust-relay) for how it works.
 - The first device is set up against a homeserver with the included
   [`tools/matrix_provisioner`](tools/matrix_provisioner) CLI or the optional
   [provisioning service](services/matrix-provisioning-service/README.md), which
@@ -467,18 +491,20 @@ lands, give Lotti's on-device data the same care you would give any personal
 app on the same machine, and weigh that before putting your most sensitive
 categories in it.
 
-### Your sync infrastructure is yours
+### Your sync relay does not need your trust
 
-Sync runs over Matrix with Vodozemac for end-to-end encryption, against a
-Synapse homeserver you or someone you trust operates. The relay only ever
-handles ciphertext, keys go only to devices you verified, and both databases
-sync this way. The details are in
-[the vision](#2-sync-is-end-to-end-encrypted-between-your-own-devices).
+Sync runs over Matrix with Vodozemac for end-to-end encryption, through a
+Synapse homeserver you can run yourself or rent from anyone. Its operator does
+not need to be trusted with your data: the relay only ever handles ciphertext,
+keys go only to devices you verified, and events from anything else are
+dropped. Both databases sync this way. The details are in
+[the vision](#2-end-to-end-encrypted-sync-through-a-zero-trust-relay).
 
-*What this does not protect against:* metadata. Whoever runs the homeserver can
-observe your account, which devices synced and under what device names, from
-which IP addresses, when, and roughly how much. Not what. And how long the relay
-keeps ciphertext depends on whether its operator enables retention.
+*What this does not protect against:* metadata and availability. Whoever runs
+the homeserver can observe your account, which devices synced and under what
+device names, from which IP addresses, when, and roughly how much. Not what.
+They can also stop relaying, and how long the relay keeps ciphertext depends on
+whether its operator enables retention.
 
 ### Your inference is a routing decision
 
@@ -486,6 +512,12 @@ Lotti has no inference backend. Every AI call goes to a provider you
 configured, under your own account and API key, and you choose per category
 which provider that is. Work can go to a frontier model while a journal stays
 on a local one. That granularity is the entire point.
+
+**Prefer zero data retention.** The provider you route a category to sees what
+that category sends it. The safest cloud choice is a provider whose terms
+commit to zero data retention — no prompts or responses kept after the request,
+no training on them. Many providers offer that only on request or on specific
+plans, so read the terms rather than the marketing page.
 
 **Onboarding highlights a European route.** [Melious.ai](https://melious.ai) is
 a German company routing open-weight models across a network of EU
@@ -538,7 +570,9 @@ Hybrid is the realistic answer, and it is how I run it: a local model for the
 private categories, a cheap cloud model such as Gemini Flash for open-source
 work and everyday task management. Speech is fully offline via Whisper or
 Voxtral either way. Image generation is the one thing with no local path yet —
-cover art goes through Gemini or Alibaba.
+cover art goes through Gemini or Alibaba. As personal hardware gets faster, the
+local share is meant to grow until a cloud provider is a choice rather than a
+necessity.
 
 ### Energy is a routing decision too
 
