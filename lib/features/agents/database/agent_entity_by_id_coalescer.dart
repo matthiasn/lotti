@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 
 /// Signature of the batched read the coalescer folds single-id loads into.
 /// Returns the found entities keyed by id; absent ids are simply missing.

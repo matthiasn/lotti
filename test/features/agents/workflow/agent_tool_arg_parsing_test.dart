@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 
 /// Concrete host for the [ObservationRecordParsing] mixin under test.

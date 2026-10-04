@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
     show CloudInferenceRepository;
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';

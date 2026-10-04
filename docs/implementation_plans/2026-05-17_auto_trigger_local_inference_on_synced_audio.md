@@ -52,7 +52,7 @@ The dispatcher does **not** call `AutomaticPromptTrigger` at any point. It would
 ## 1. Data model changes
 
 ### 1a. `AiConfigInferenceProfile` — add pinning
-`lib/features/ai/model/ai_config.dart`
+`lib/classes/ai/ai_config.dart`
 - Add `String? pinnedHostId` (single host id, the VC host UUID — not the Matrix device id). Recommend single rather than `List<String>` to avoid tie-break complexity for v1.
 - Regenerate `ai_config.freezed.dart` / `ai_config.g.dart` via `make build_runner`.
 - No DB migration: configs are stored as JSON blobs in `ai_configs` (`lib/features/ai/database/ai_config_db.dart`); `json_serializable` ignores unknown keys, so older clients still deserialize new profiles, and newer clients default the field to null.
@@ -65,18 +65,18 @@ The dispatcher does **not** call `AutomaticPromptTrigger` at any point. It would
 - **Not on `ResolvedProfile`.** `ResolvedProfile` is built by `ProfileResolver`, which sets unresolved optional slots to null, so a slot that *references* a non-local provider but whose provider config has been deleted/renamed would disappear from `ResolvedProfile` and a getter there would report `isLocal: true` incorrectly.
 
 ### 1c. `SyncNodeProfile` — new freezed model
-`lib/features/sync/model/sync_node_profile.dart` (new)
+`lib/classes/sync/sync_node_profile.dart` (new)
 - Fields: `String hostId`, `String displayName`, `String platform` (`macos`/`linux`/`windows`/`ios`/`android`), `String? cpuModel`, `int? ramMb`, `String? gpuModel`, `List<NodeCapability> capabilities`, `DateTime updatedAt`.
 - `enum NodeCapability { mlxAudio, ollamaLlm, voxtral, whisper }` plus an **explicit** `NodeCapability.providerType` getter and a top-level `nodeCapabilityFromProviderType(InferenceProviderType)` function. Mapping is **not** by string match — `ollamaLlm` ↔ `InferenceProviderType.ollama` deliberately don't share a name (keeps the capability name semantic-future-proof should Ollama embeddings ever need a separate token). Cloud provider types map to null.
 
 ### 1d. New `SyncMessage` variant
-`lib/features/sync/model/sync_message.dart` — add `SyncMessage.syncNodeProfile(SyncNodeProfile profile)`. Regenerate freezed/json.
+`lib/classes/sync/sync_message.dart` — add `SyncMessage.syncNodeProfile(SyncNodeProfile profile)`. Regenerate freezed/json.
 
 ## 2. New files
 
 | Path | Responsibility |
 |---|---|
-| `lib/features/sync/model/sync_node_profile.dart` | Freezed model + `NodeCapability` enum. |
+| `lib/classes/sync/sync_node_profile.dart` | Freezed model + `NodeCapability` enum. |
 | `lib/features/sync/repository/sync_node_profile_repository.dart` | Read/write local node profile (`sync_node_profile_self` key) and directory (`sync_node_profile_directory` map) in `SettingsDb`. |
 | `lib/features/sync/services/sync_node_profile_broadcaster.dart` | Two entry points: `broadcast()` (unconditional, called on every startup so late-joining peers always converge) and `broadcastIfChanged()` (diff-only, called from the rename UI to suppress no-op renames). |
 | `lib/features/sync/services/sync_node_capability_probe.dart` | The actual capability detector. `makeDefaultSyncNodeCapabilityProbe({ollamaProbe})` returns a probe that claims `mlxAudio` on macOS (the MLX channel is macOS-only) and `ollamaLlm` when a short HTTP request to `127.0.0.1:11434/api/version` succeeds inside a 300ms timeout. Voxtral and Whisper require local binaries the app does not manage — explicitly **not** auto-claimed; the user opts in via the sync-node settings UI (PR4) so a false-positive doesn't surface broken pin choices. `ollamaProbe` is injected so tests stub the HTTP probe without spinning up a real server. |
@@ -88,8 +88,8 @@ The dispatcher does **not** call `AutomaticPromptTrigger` at any point. It would
 
 ## 3. Modifications to existing files
 
-- `lib/features/ai/model/ai_config.dart` — add `pinnedHostId` to `AiConfigInferenceProfile`. Regenerate.
-- `lib/features/sync/model/sync_message.dart` — add `syncNodeProfile` variant.
+- `lib/classes/ai/ai_config.dart` — add `pinnedHostId` to `AiConfigInferenceProfile`. Regenerate.
+- `lib/classes/sync/sync_message.dart` — add `syncNodeProfile` variant.
 - `lib/features/ai/helpers/profile_automation_resolver.dart` — add a `Future<String?> resolveProfileIdForTask(String taskId)` method that runs the *exact same* resolution chain as `resolveForTask` (agent → `version.profileId` → `template.profileId` → `task.data.profileId`) but returns the raw profile id string instead of a `ResolvedProfile`. The dispatcher uses this so it can load the raw `AiConfigInferenceProfile` (for `pinnedHostId` and `profileIsLocal`) and skip the silent-drop bug that `ResolvedProfile` has for unresolved slots. The new method MUST honor the existing precedence — agent-level overrides win over the task-level fallback win over the category default — so a category edit after task creation cannot retroactively change which device claims an entry.
 - `lib/features/sync/matrix/sync_event_processor.dart` (+ part files in `sync_event_processor_*.dart`) — add a new handler that upserts the directory via `SyncNodeProfileRepository`. Surface in the `apply()` switch. No journal write, no `UpdateNotifications.notify` (directory changes are not journal mutations; the repository's own stream is the reactivity source).
 - `lib/features/sync/outbox/outbox_service.dart` — add a `_enqueueSyncNodeProfile` arm so the broadcaster can route through the existing `enqueueMessage` path.
@@ -141,8 +141,8 @@ PRs 1–4 are non-load-bearing on their own (no behavior change for users until 
 
 Mirror source paths under `test/`. Per AGENTS.md: meaningful assertions, no `findsOneWidget`-only smoke tests, no `Future.delayed` / `sleep` in tests, deterministic dates, use `test/mocks/mocks.dart` and `test/widget_test_utils.dart`.
 
-- `test/features/ai/model/ai_config_test.dart` — `pinnedHostId` round-trips; deserializing legacy JSON (without the field) yields null.
-- `test/features/sync/model/sync_node_profile_test.dart` — serialization round-trip; `capabilities` list order is stable across JSON round-trip; equality.
+- `test/classes/ai/ai_config_test.dart` — `pinnedHostId` round-trips; deserializing legacy JSON (without the field) yields null.
+- `test/classes/sync/sync_node_profile_test.dart` — serialization round-trip; `capabilities` list order is stable across JSON round-trip; equality.
 - `test/features/sync/repository/sync_node_profile_repository_test.dart` — self read/write; directory upsert is keyed by `hostId`; an upsert with an older `updatedAt` is ignored.
 - `test/features/sync/services/sync_node_profile_broadcaster_test.dart` — `broadcast()` always enqueues a message; `broadcastIfChanged()` enqueues on first run and on any field diff, skips on identical re-probe; `displayNameOverride` beats probe defaults; skips when VC host is missing.
 - `test/features/sync/services/sync_node_capability_probe_test.dart` — probe claims `ollamaLlm` iff the injected `ollamaProbe` returns true; claims `mlxAudio` iff `Platform.isMacOS`; never claims `voxtral`/`whisper` from auto-detection; deterministic output across repeated probes; preserves user-supplied displayName.
@@ -187,7 +187,7 @@ Add an entry under the current `pubspec.yaml` version (do **not** bump the versi
 
 ## 10. Critical files
 
-- `lib/features/ai/model/ai_config.dart` — `pinnedHostId` on `AiConfigInferenceProfile`
+- `lib/classes/ai/ai_config.dart` — `pinnedHostId` on `AiConfigInferenceProfile`
 - `lib/features/ai/helpers/profile_locality.dart` (new) — `profileIsLocal(AiConfigInferenceProfile, AiConfigRepository)`, fail-closed
 - `lib/features/ai/helpers/prompt_capability_filter.dart` — extend `isLocalOnlyProviderType` to include `mlxAudio`
 - `lib/features/ai/services/skill_inference_runner.dart` — **invoked directly by the dispatcher** (not via `AutomaticPromptTrigger`)
@@ -195,7 +195,7 @@ Add an entry under the current `pubspec.yaml` version (do **not** bump the versi
 - `lib/services/db_notification.dart` — add `syncUpdateStream`
 - `lib/services/vector_clock_service.dart` — `getHost()` returns the local host id used for self-echo and pin matching
 - `lib/features/sync/matrix/sync_event_processor.dart` and part files — entry point for receiving sync messages; handler for the new variant
-- `lib/features/sync/model/sync_message.dart` — `syncNodeProfile` variant
+- `lib/classes/sync/sync_message.dart` — `syncNodeProfile` variant
 - `lib/features/ai/util/profile_resolver.dart` — used by the dispatcher (`resolveByProfileId`) to build the `ResolvedProfile` passed to `runTranscription`; **no `isLocal` getter here**
 
 `AutomaticPromptTrigger` and `ProfileAutomationService` are deliberately **not** on the synced-audio path — they remain the right abstraction for on-device-recorded audio where falling back to any configured transcription model is the correct behavior.

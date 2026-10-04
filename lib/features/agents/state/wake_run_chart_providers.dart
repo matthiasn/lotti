@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     show WakeRunLogData;
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series_utils.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';

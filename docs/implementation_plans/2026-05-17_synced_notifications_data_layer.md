@@ -50,7 +50,7 @@ Add a new top-level synced entity `NotificationEntity` — **not** a `JournalEnt
 ### Why a separate entity, not a `JournalEntity` variant
 
 - Notifications are ephemeral system state, not user-authored content. Mixing them into `journal` pollutes every journal query and the polymorphic discriminator.
-- Precedent: `aiConfig` (`lib/features/sync/model/sync_message.dart:70`) and `themingSelection` (`:79`) are independent `SyncMessage` variants with their own persistence.
+- Precedent: `aiConfig` (`lib/classes/sync/sync_message.dart:70`) and `themingSelection` (`:79`) are independent `SyncMessage` variants with their own persistence.
 
 ### Why monotonic state flags
 
@@ -194,7 +194,7 @@ Because this is a brand-new Drift database (not a new table in `JournalDb`), the
 
 Following the path the sync layer already uses for new entity types:
 
-### 1. `lib/features/sync/model/sync_message.dart`
+### 1. `lib/classes/sync/sync_message.dart`
 
 Add two variants:
 

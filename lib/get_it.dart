@@ -100,6 +100,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';

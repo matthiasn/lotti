@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
 import 'package:mocktail/mocktail.dart';
 

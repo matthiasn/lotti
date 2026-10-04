@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// Identifier for a single capture submission (one spoken check-in).
 @immutable
@@ -23,7 +23,7 @@ class CaptureId {
 
 // `ParsedItemConfidence` (low | medium | high) and `ParsedItemKind`
 // (newTask | matched | update) are the canonical agent-side enums.
-// They live in `lib/features/agents/model/agent_enums.dart` and are
+// They live in `lib/classes/agents/agent_enums.dart` and are
 // re-exported by the library file so the UI sees them via this models file.
 
 /// A category exposed to the day-agent layer. Mirrors the shape of

@@ -1,12 +1,12 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// The read-flip outcome of one wake's memory pipeline

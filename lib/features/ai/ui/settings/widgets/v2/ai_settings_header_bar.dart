@@ -1,6 +1,6 @@
 import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';

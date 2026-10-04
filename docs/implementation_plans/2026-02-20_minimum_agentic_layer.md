@@ -993,10 +993,10 @@ lib/features/agents/
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
-1. ~~Create `lib/features/agents/model/agent_enums.dart` with all enums.~~ DONE
-2. ~~Create `lib/features/agents/model/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.~~ DONE
-3. ~~Create `lib/features/agents/model/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.~~ DONE
-4. ~~Create `lib/features/agents/model/agent_link.dart` with the `AgentLink` sealed union.~~ DONE
+1. ~~Create `lib/classes/agents/agent_enums.dart` with all enums.~~ DONE
+2. ~~Create `lib/classes/agents/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.~~ DONE
+3. ~~Create `lib/classes/agents/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.~~ DONE
+4. ~~Create `lib/classes/agents/agent_link.dart` with the `AgentLink` sealed union.~~ DONE
 5. ~~Create `lib/features/agents/model/agent_tool_call.dart` with `AgentToolCall` and `AgentToolResult`.~~ SKIPPED — tool call types handled inline by executor
 6. ~~Run build_runner to generate freezed/json code.~~ DONE
 7. ~~Write unit tests for serialization roundtrips (all variants).~~ DONE (46 tests)

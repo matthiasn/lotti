@@ -17,7 +17,7 @@ sources:
     title: Query profile resolution and runtime wiring
     last_modified: 2026-09-11
   - id: models
-    resource: ../../../lib/features/agents/model/query_chat_models.dart
+    resource: ../../../lib/classes/agents/query_chat_models.dart
     title: Query scope, evidence and chat events
     last_modified: 2026-09-12
   - id: crawler

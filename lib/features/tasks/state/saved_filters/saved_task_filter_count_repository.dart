@@ -1,6 +1,6 @@
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Computes the number of tasks matching a [TasksFilter].

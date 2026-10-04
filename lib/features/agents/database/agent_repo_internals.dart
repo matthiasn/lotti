@@ -1,6 +1,6 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
 /// Shared internal constants and pure helpers for the [AgentRepository]
 /// collaborators in this directory. These were previously top-level privates

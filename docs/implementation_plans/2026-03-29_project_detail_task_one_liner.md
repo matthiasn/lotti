@@ -61,7 +61,7 @@ Relevant code:
 - [lib/features/agents/tools/agent_tool_registry.dart](/Users/mn/github/lotti3/lib/features/agents/tools/agent_tool_registry.dart)
 - [lib/features/agents/workflow/task_agent_strategy.dart](/Users/mn/github/lotti3/lib/features/agents/workflow/task_agent_strategy.dart)
 - [lib/features/agents/workflow/task_agent_workflow.dart](/Users/mn/github/lotti3/lib/features/agents/workflow/task_agent_workflow.dart)
-- [lib/features/agents/model/agent_domain_entity.dart](/Users/mn/github/lotti3/lib/features/agents/model/agent_domain_entity.dart)
+- [lib/classes/agents/agent_domain_entity.dart](/Users/mn/github/lotti3/lib/classes/agents/agent_domain_entity.dart)
 
 `AgentReportEntity` already stores `tldr`, but there is no dedicated
 subtitle/tagline field today.
@@ -181,7 +181,7 @@ Planned changes:
 
 Expected touched files:
 
-- [lib/features/agents/model/agent_domain_entity.dart](/Users/mn/github/lotti3/lib/features/agents/model/agent_domain_entity.dart)
+- [lib/classes/agents/agent_domain_entity.dart](/Users/mn/github/lotti3/lib/classes/agents/agent_domain_entity.dart)
 - [lib/features/agents/database/agent_db_conversions.dart](/Users/mn/github/lotti3/lib/features/agents/database/agent_db_conversions.dart) if migration helpers or tests need adjustment
 - generated files via `build_runner`
 
@@ -283,7 +283,7 @@ Likely files:
 - [test/features/agents/tools/agent_tool_registry_test.dart](/Users/mn/github/lotti3/test/features/agents/tools/agent_tool_registry_test.dart)
 - [test/features/agents/workflow/task_agent_strategy_test.dart](/Users/mn/github/lotti3/test/features/agents/workflow/task_agent_strategy_test.dart)
 - [test/features/agents/workflow/task_agent_workflow_test.dart](/Users/mn/github/lotti3/test/features/agents/workflow/task_agent_workflow_test.dart)
-- [test/features/agents/model/agent_domain_entity_test.dart](/Users/mn/github/lotti3/test/features/agents/model/agent_domain_entity_test.dart)
+- [test/classes/agents/agent_domain_entity_test.dart](/Users/mn/github/lotti3/test/classes/agents/agent_domain_entity_test.dart)
 - [test/features/agents/database/agent_db_conversions_test.dart](/Users/mn/github/lotti3/test/features/agents/database/agent_db_conversions_test.dart)
 
 ### Project detail/provider coverage

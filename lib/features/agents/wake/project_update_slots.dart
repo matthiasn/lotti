@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 
 /// The update slots of a project agent: the instants at which its stale
 /// report may be refreshed on its own (`specs/tla/ProjectWakeGovernor.tla`).

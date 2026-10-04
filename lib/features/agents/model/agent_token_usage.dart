@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:meta/meta.dart';
 
 /// Aggregated token usage summary for a single model.

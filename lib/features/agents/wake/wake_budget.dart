@@ -1,6 +1,6 @@
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/g_counter.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 
 /// The per-agent daily wake budget: how many wakes an agent may run on one
 /// calendar day, counted across every device that syncs it.

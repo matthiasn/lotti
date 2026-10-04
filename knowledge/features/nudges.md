@@ -17,7 +17,7 @@ sources:
     title: The kind-agnostic nudge vocabulary
     last_modified: 2026-08-16
   - id: entity
-    resource: ../../lib/features/agents/model/agent_domain_entity.dart
+    resource: ../../lib/classes/agents/agent_domain_entity.dart
     title: goalNudge and relationshipNudge variants
     last_modified: 2026-08-16
   - id: resolver

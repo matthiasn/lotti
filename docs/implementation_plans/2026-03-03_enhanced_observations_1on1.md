@@ -808,7 +808,7 @@ place because:
 ### Phase 1: Schema & Tool Update (Foundation)
 
 **Files to modify:**
-- `lib/features/agents/model/agent_enums.dart` — Add `ObservationPriority`, `ObservationCategory`
+- `lib/classes/agents/agent_enums.dart` — Add `ObservationPriority`, `ObservationCategory`
 - `lib/features/agents/tools/agent_tool_registry.dart` — Update `record_observations` schema
 - `lib/features/agents/workflow/task_agent_strategy.dart` — Handle structured observation items
 - `lib/features/agents/workflow/task_agent_workflow.dart` — Persist priority/category in payload

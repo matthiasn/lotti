@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repo_retention.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/service/observation_prune_plan.dart';
 
 /// One agent's worth of pruning, and what it removed.

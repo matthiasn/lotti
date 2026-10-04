@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/get_it.dart';
 
 /// Stores the local node's own profile and the directory of profiles received

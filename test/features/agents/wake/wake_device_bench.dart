@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';

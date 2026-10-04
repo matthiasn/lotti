@@ -2,14 +2,14 @@
 type: Feature Module
 title: Sync message model
 description: The twenty-five SyncMessage families, which seven are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
-resource: ../../../lib/features/sync/model/sync_message.dart
+resource: ../../../lib/classes/sync/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
 generated: { by: codex/gpt-6, at: 2026-09-26T12:13:54Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
-    resource: ../../../lib/features/sync/model/sync_message.dart
+    resource: ../../../lib/classes/sync/sync_message.dart
     title: SyncMessage freezed union
     last_modified: 2026-08-10
   - id: payload-type

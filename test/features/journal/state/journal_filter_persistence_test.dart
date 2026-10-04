@@ -4,8 +4,8 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:mocktail/mocktail.dart';
 

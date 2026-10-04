@@ -1,7 +1,7 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/retired_tool_calls.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/retired_tool_calls.dart';
 
 /// A single row in the proposal ledger — one `ChangeItem` the agent has
 /// ever produced for a given task, annotated with its current lifecycle

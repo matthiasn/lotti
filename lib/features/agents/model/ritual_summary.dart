@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 
 /// Wake runs that occurred on a single calendar [date], for the per-day bars
 /// of the ritual summary's wake-activity chart.

@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:meta/meta.dart';
 
 /// A slot that shows at most one live link: a template's soul

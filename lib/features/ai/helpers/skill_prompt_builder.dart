@@ -1,4 +1,5 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_type.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 /// Assembles final system/user messages from an [AiConfigSkill]'s prose

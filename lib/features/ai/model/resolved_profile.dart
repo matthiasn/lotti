@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai/skill_assignment.dart';
 import 'package:meta/meta.dart';
 
 /// Runtime-resolved inference profile with provider references for each slot.

@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Provider colour identity + the two layout constants still used by the AI

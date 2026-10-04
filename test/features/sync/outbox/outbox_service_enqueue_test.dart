@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
 
+import 'package:lotti/classes/sync/sync_secret.dart';
 import 'package:lotti/database/outbox_status.dart';
-import 'package:lotti/features/sync/model/sync_secret.dart';
 import 'package:path/path.dart' as path;
 
 import 'outbox_service_test_harness.dart';

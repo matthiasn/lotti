@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/agent_instances_page.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';

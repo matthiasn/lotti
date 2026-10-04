@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_strategy.dart';

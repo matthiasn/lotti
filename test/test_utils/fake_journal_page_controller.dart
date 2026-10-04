@@ -1,5 +1,5 @@
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
 
 /// Shared fake controller for testing widgets that depend on JournalPageController.
 ///

@@ -2,18 +2,18 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 

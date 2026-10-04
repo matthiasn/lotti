@@ -393,4 +393,4 @@ Sources cited above, grouped by thread. (arXiv IDs in the 2602/2605 range are 20
 
 ---
 
-*Grounding files referenced: [`lib/classes/vector_clock.dart`](../lib/classes/vector_clock.dart), [`lib/features/agents/model/agent_link.dart`](../lib/features/agents/model/agent_link.dart), [`lib/features/agents/README.md`](../lib/features/agents/README.md), [`lib/features/daily_os_next/README.md`](../lib/features/daily_os_next/README.md).*
+*Grounding files referenced: [`lib/classes/vector_clock.dart`](../lib/classes/vector_clock.dart), [`lib/classes/agents/agent_link.dart`](../lib/classes/agents/agent_link.dart), [`lib/features/agents/README.md`](../lib/features/agents/README.md), [`lib/features/daily_os_next/README.md`](../lib/features/daily_os_next/README.md).*

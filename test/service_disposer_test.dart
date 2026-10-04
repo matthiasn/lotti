@@ -21,8 +21,8 @@ import 'package:lotti/features/habits/service/habit_auto_completion_service.dart
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';

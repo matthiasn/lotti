@@ -43,7 +43,7 @@ if (agentAssignmentFilter != all) {
 
 ### Step 1: Add `AgentAssignmentFilter` enum and state fields
 
-**File**: `lib/features/journal/state/journal_page_state.dart`
+**File**: `lib/classes/journal_page_state.dart`
 
 - Add a new enum:
   ```dart
@@ -164,7 +164,7 @@ if (agentAssignmentFilter != all) {
 
 | File | Change |
 |------|--------|
-| `lib/features/journal/state/journal_page_state.dart` | Add enum + fields |
+| `lib/classes/journal_page_state.dart` | Add enum + fields |
 | `lib/features/agents/database/agent_database.drift` | Add named query |
 | `lib/features/agents/database/agent_repository.dart` | Add `getTaskIdsWithAgentLink()` |
 | `lib/features/journal/state/journal_page_controller.dart` | Filter logic + persistence |

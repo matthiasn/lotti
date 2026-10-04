@@ -1,5 +1,5 @@
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 /// What the band shows for one step: the durable status, read the way the
 /// user decided it. A resolved step that recorded its task was *added*; a

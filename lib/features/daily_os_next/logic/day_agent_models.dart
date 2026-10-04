@@ -21,7 +21,7 @@ library;
 
 // Re-exported so UI consumers can `import 'day_agent_models.dart'` and
 // reach the canonical agent-side enums without a second import.
-export 'package:lotti/features/agents/model/agent_enums.dart'
+export 'package:lotti/classes/agents/agent_enums.dart'
     show ParsedItemConfidence, ParsedItemKind;
 export 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
 export 'package:lotti/features/daily_os_next/logic/day_agent_learning_models.dart';

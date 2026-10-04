@@ -2,12 +2,13 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:genui/genui.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -33,8 +33,8 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 part 'soul_evolution_workflow.dart';
-part 'template_evolution_session.dart';
 part 'template_evolution_helpers.dart';
+part 'template_evolution_session.dart';
 
 // Library-private helpers shared by the workflow and its extension parts.
 const _uuid = Uuid();

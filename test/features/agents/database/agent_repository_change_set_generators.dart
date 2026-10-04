@@ -7,7 +7,7 @@
 library;
 
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 
 enum GeneratedChangeAgentSlot { target, other }
 

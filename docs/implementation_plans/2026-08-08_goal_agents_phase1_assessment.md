@@ -21,7 +21,7 @@ feature before any new design work:
    Goal agents should be built as that ADR's producer side, at deliberately finer granularity
    (per goal, not per scope; §5), rather than as an unrelated feature.
 2. **`StandingAgreementEntity` is a fully modeled goal container that nothing writes**
-   (`lib/features/agents/model/agent_domain_entity.dart:516` — scope incl. `fitness`/`sleep`,
+   (`lib/classes/agents/agent_domain_entity.dart:516` — scope incl. `fitness`/`sleep`,
    cadence daily…yearly, `minCount`/`minMinutes` quotas, enforcement tiers, evidence refs). It is
    read by the day-planner context builder and by nothing else. The goal agent becomes its first
    writer — as a *derived projection* of the goal spec, not as the goal record itself (§6.4).

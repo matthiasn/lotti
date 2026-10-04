@@ -13,7 +13,7 @@ sources:
     title: AI feature source
     last_modified: 2026-07-26
   - id: config
-    resource: ../../../lib/features/ai/model/ai_config.dart
+    resource: ../../../lib/classes/ai/ai_config.dart
     title: AiConfig variants
     last_modified: 2026-07-25
   - id: skills
