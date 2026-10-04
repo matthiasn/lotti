@@ -67,6 +67,10 @@
 (*                ChecklistMembershipIntents.replay at the next start,     *)
 (*                which finishes every operation whose intent it recorded  *)
 (*                before its first write                                   *)
+(*   Fail         a delete's write fails — it throws, or is refused —      *)
+(*                and JournalRepository.deleteJournalEntity reports it;    *)
+(*                the operation stops with its intent kept, and the app,   *)
+(*                closed later (Close), replays it at the next start       *)
 (***************************************************************************)
 EXTENDS Naturals, Sequences, FiniteSets
 
@@ -77,14 +81,19 @@ CONSTANTS
     MaxOps,            \* operations started, both processes together
     MaxReceives,       \* versions sync lands
     MaxCrashes,        \* times the app dies mid-operation
+    MaxFailures,       \* deletes whose write fails
     RebaseLists,       \* checklist lists are written on the stored row
     RebaseTask,        \* the task's list is written on the stored row, and
                        \* every other task write keeps the stored list
     RebaseItems,       \* item writes are built on the stored item
     WidgetFollowsTask, \* ChecklistsWidget drops its own order when the
                        \* task's list changes
-    IntentLog          \* a multi-row operation records its intent first,
+    IntentLog,         \* a multi-row operation records its intent first,
                        \* and the next start finishes it
+    DeleteReportsFailure \* a failed delete is reported as one, so its
+                       \* operation keeps its intent; FALSE is the former
+                       \* deleteJournalEntity, which answered true whatever
+                       \* its write did
 
 ASSUME First \in Lists /\ Lists \cap Items = {}
 
@@ -106,10 +115,11 @@ VARIABLES
     up,         \* the app runs
     ops,
     receives,
-    crashes
+    crashes,
+    failures
 
 vars == <<task, cl, item, home, uiList, uiItem, uiTask, widget, proc,
-          intents, up, ops, receives, crashes>>
+          intents, up, ops, receives, crashes, failures>>
 
 -----------------------------------------------------------------------------
 \* Lists as the code manipulates them.
@@ -221,11 +231,15 @@ Init ==
     /\ ops = 0
     /\ receives = 0
     /\ crashes = 0
+    /\ failures = 0
 
 \* An operation starts; with IntentLog, its intent is recorded first.
 Start(p, steps, intent) ==
     /\ up
     /\ proc[p] = Idle
+    \* A process holds one recorded intent at a time: one a failed delete
+    \* left waits for the next start.
+    /\ intents[p] = NoIntent
     /\ ops < MaxOps
     /\ proc' = [proc EXCEPT ![p] = [Idle EXCEPT !.steps = steps]]
     /\ intents' = IF IntentLog /\ intent # NoIntent
@@ -293,7 +307,7 @@ AgentStarts ==
 Begin ==
     /\ (UserStarts \/ AgentStarts)
     /\ UNCHANGED <<task, cl, item, uiList, uiItem, uiTask, widget, up,
-                   receives, crashes>>
+                   receives, crashes, failures>>
 
 \* The widget shows the order the checklists were dragged into from the
 \* moment of the drag, and saves it.
@@ -303,7 +317,7 @@ BeginSort ==
           /\ Start("ui", UiSort(c), NoIntent)
           /\ widget' = [set |-> TRUE, ids |-> ToFront(View, c)]
     /\ UNCHANGED <<task, cl, item, home, uiList, uiItem, uiTask, up,
-                   receives, crashes>>
+                   receives, crashes, failures>>
 
 \* The value a write is built on, from where the writer takes it.
 Source(r, src) ==
@@ -390,7 +404,7 @@ Step(p) ==
               /\ proc' = Done(p)
               /\ Finish(p)
               /\ UNCHANGED <<task, cl, home, uiList, uiItem>>
-    /\ UNCHANGED <<uiTask, widget, up, ops, receives, crashes>>
+    /\ UNCHANGED <<uiTask, widget, up, ops, receives, crashes, failures>>
 
 \* Sync lands a version another device wrote after it had everything this
 \* device wrote: it applies as the newer version.
@@ -411,7 +425,7 @@ Receive ==
              /\ task' = [ids |-> AppendNew(task.ids, c), ver |-> task.ver + 1]
              /\ UNCHANGED <<item, home>>
     /\ UNCHANGED <<uiList, uiItem, uiTask, widget, proc, intents, up, ops,
-                   crashes>>
+                   crashes, failures>>
 
 \* An update notification reaches a screen, which re-reads its row. With
 \* WidgetFollowsTask, ChecklistsWidget drops its own order when the task's
@@ -421,14 +435,14 @@ RefreshList(c) ==
     /\ uiList[c] # cl[c].items
     /\ uiList' = [uiList EXCEPT ![c] = cl[c].items]
     /\ UNCHANGED <<task, cl, item, home, uiItem, uiTask, widget, proc,
-                   intents, up, ops, receives, crashes>>
+                   intents, up, ops, receives, crashes, failures>>
 
 RefreshItem(i) ==
     /\ up
     /\ uiItem[i] # item[i].back
     /\ uiItem' = [uiItem EXCEPT ![i] = item[i].back]
     /\ UNCHANGED <<task, cl, item, home, uiList, uiTask, widget, proc,
-                   intents, up, ops, receives, crashes>>
+                   intents, up, ops, receives, crashes, failures>>
 
 RefreshTask ==
     /\ up
@@ -437,7 +451,7 @@ RefreshTask ==
     /\ widget' = IF WidgetFollowsTask THEN [set |-> FALSE, ids |-> <<>>]
                  ELSE widget
     /\ UNCHANGED <<task, cl, item, home, uiList, uiItem, proc, intents, up,
-                   ops, receives, crashes>>
+                   ops, receives, crashes, failures>>
 
 \* The app dies with an operation part-way: what it wrote stays written,
 \* the recorded intents stay recorded, and everything in memory is gone.
@@ -449,7 +463,35 @@ Crash ==
     /\ crashes' = crashes + 1
     /\ proc' = [p \in Procs |-> Idle]
     /\ UNCHANGED <<task, cl, item, home, uiList, uiItem, uiTask, widget,
-                   intents, ops, receives>>
+                   intents, ops, receives, failures>>
+
+\* A delete's write fails: nothing is written. Reported, the operation
+\* stops there and its intent stays for the next start; answered as a
+\* success, the operation goes on as if the row were deleted, and its last
+\* step drops the intent.
+Fail(p) ==
+    /\ up
+    /\ failures < MaxFailures
+    /\ proc[p] # Idle
+    /\ proc[p].steps[proc[p].pc].act \in {"kill", "killItem"}
+    /\ failures' = failures + 1
+    /\ IF DeleteReportsFailure
+       THEN /\ proc' = [proc EXCEPT ![p] = Idle]
+            /\ UNCHANGED intents
+       ELSE /\ proc' = Done(p)
+            /\ Finish(p)
+    /\ UNCHANGED <<task, cl, item, home, uiList, uiItem, uiTask, widget, up,
+                   ops, receives, crashes>>
+
+\* The app is closed with nothing running and an intent left behind; the
+\* next start replays it.
+Close ==
+    /\ up
+    /\ \A p \in Procs : proc[p] = Idle
+    /\ \E p \in Procs : intents[p] # NoIntent
+    /\ up' = FALSE
+    /\ UNCHANGED <<task, cl, item, home, uiList, uiItem, uiTask, widget, proc,
+                   intents, ops, receives, crashes, failures>>
 
 \* At the next start, ChecklistMembershipIntents.replay finishes one
 \* recorded operation. Every step is idempotent and written on the stored
@@ -500,7 +542,7 @@ Replay(p) ==
               /\ UNCHANGED item
     /\ intents' = [intents EXCEPT ![p] = NoIntent]
     /\ UNCHANGED <<home, uiList, uiItem, uiTask, widget, proc, up, ops,
-                   receives, crashes>>
+                   receives, crashes, failures>>
 
 \* Once every intent is replayed the app runs again, and its screens load
 \* the rows afresh.
@@ -513,7 +555,7 @@ Restart ==
     /\ uiTask' = task.ids
     /\ widget' = [set |-> FALSE, ids |-> <<>>]
     /\ UNCHANGED <<task, cl, item, home, proc, intents, ops, receives,
-                   crashes>>
+                   crashes, failures>>
 
 Next ==
     \/ Begin
@@ -524,6 +566,8 @@ Next ==
     \/ \E i \in Items : RefreshItem(i)
     \/ RefreshTask
     \/ Crash
+    \/ \E p \in Procs : Fail(p)
+    \/ Close
     \/ \E p \in Procs : Replay(p)
     \/ Restart
 
@@ -544,6 +588,7 @@ TypeOK ==
     /\ ops \in 0..MaxOps
     /\ receives \in 0..MaxReceives
     /\ crashes \in 0..MaxCrashes
+    /\ failures \in 0..MaxFailures
 
 \* No list names an id twice.
 NoDuplicates ==

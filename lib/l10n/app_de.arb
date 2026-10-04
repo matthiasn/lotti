@@ -3437,6 +3437,7 @@
   "journalDateTimeRangeTitle": "Datum & Uhrzeit",
   "journalDateToLabel": "Datum bis:",
   "journalDeleteConfirm": "Ja, diesen Eintrag löschen",
+  "journalDeleteFailed": "Der Eintrag konnte nicht gelöscht werden — versuch es noch einmal",
   "journalDeleteHint": "Eintrag löschen",
   "journalDeleteQuestion": "Möchtest du diesen Journaleintrag löschen?",
   "journalDurationLabel": "Dauer",

@@ -669,11 +669,13 @@ class EntryController extends AsyncNotifier<EntryState?> {
     final res = await ref
         .read(journalRepositoryProvider)
         .deleteJournalEntity(id);
+    // Not deleted: the entry is still there, and so is its page.
+    if (!res) return false;
     if (beamBack) {
       getIt<NavService>().beamBack();
     }
     state = const AsyncData(null);
-    return res;
+    return true;
   }
 
   void toggleMapVisible() {

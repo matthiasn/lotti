@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
@@ -131,7 +133,14 @@ class EventDetailPage extends ConsumerWidget {
         ],
       );
       if (result == deleteKey) {
-        await controller.delete(beamBack: true);
+        final deleted = await controller.delete(beamBack: true);
+        // Not deleted: the event is still there, and the user is told so.
+        if (!deleted && context.mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.journalDeleteFailed,
+          );
+        }
       }
     }
 

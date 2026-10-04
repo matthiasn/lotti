@@ -18,6 +18,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
@@ -1191,8 +1192,44 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(controller.deleteCalls, equals(1));
+        expect(find.byType(DesignSystemToast), findsNothing);
       },
     );
+
+    // A delete that did not land — its write failed or was refused — leaves
+    // the entry where it was, and says so rather than looking done.
+    testWidgets('a delete that was not stored shows an error toast', (
+      tester,
+    ) async {
+      final controller = _DeletingFakeEntryController(
+        buildTextEntry(),
+        deleted: false,
+      );
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [
+            entryControllerProvider('entry-1').overrideWith(() => controller),
+          ],
+          child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.tap(find.byType(DsActionRow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Yes, delete this entry'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(controller.deleteCalls, 1);
+      final toast = tester.widget<DesignSystemToast>(
+        find.byType(DesignSystemToast),
+      );
+      expect(toast.tone, DesignSystemToastTone.error);
+      expect(toast.title, "Couldn't delete the entry — try again");
+    });
 
     testWidgets(
       'dismissing the modal without confirming does not call delete',
@@ -2782,14 +2819,17 @@ class _FakeSharePlatform extends SharePlatform with MockPlatformInterfaceMixin {
 /// Fake EntryController that tracks [delete] calls.
 class _DeletingFakeEntryController extends FakeEntryController {
   // ignore: use_super_parameters
-  _DeletingFakeEntryController(JournalEntity entity) : super(entity);
+  _DeletingFakeEntryController(JournalEntity entity, {this.deleted = true})
+    : super(entity);
 
+  /// What [delete] answers: whether the deletion was stored.
+  final bool deleted;
   int deleteCalls = 0;
 
   @override
   Future<bool> delete({required bool beamBack}) async {
     deleteCalls++;
-    return true;
+    return deleted;
   }
 }
 

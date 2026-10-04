@@ -9051,6 +9051,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDeleteConfirm => 'Da, ștergeți această intrare';
 
   @override
+  String get journalDeleteFailed =>
+      'Intrarea nu a putut fi ștearsă — încercați din nou';
+
+  @override
   String get journalDeleteHint => 'Ștergeți intrarea';
 
   @override

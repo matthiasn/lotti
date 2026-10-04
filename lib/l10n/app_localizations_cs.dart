@@ -8976,6 +8976,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalDeleteConfirm => 'Ano, smazat tento záznam';
 
   @override
+  String get journalDeleteFailed =>
+      'Záznam se nepodařilo smazat — zkus to znovu';
+
+  @override
   String get journalDeleteHint => 'Smazat záznam';
 
   @override

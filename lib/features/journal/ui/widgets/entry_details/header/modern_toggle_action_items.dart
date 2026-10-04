@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -84,7 +86,16 @@ class ModernDeleteItem extends ConsumerWidget {
       );
 
       if (result == deleteKey) {
-        await ref.read(provider.notifier).delete(beamBack: beamBack);
+        final deleted = await ref
+            .read(provider.notifier)
+            .delete(beamBack: beamBack);
+        // Not deleted: the entry is still there, and the user is told so.
+        if (!deleted && context.mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.journalDeleteFailed,
+          );
+        }
       }
     }
 

@@ -729,6 +729,39 @@ void main() {
       );
     });
 
+    // Not deleted — the write failed or was refused — the entry is still
+    // there: the page stays, showing it, and the caller is told.
+    test('a delete that was not stored keeps the page on the entry', () async {
+      final localMockJournalRepository = MockJournalRepository();
+      final entryId = testTextEntry.meta.id;
+      when(
+        () => localMockJournalRepository.deleteJournalEntity(entryId),
+      ).thenAnswer((_) async => false);
+      when(
+        () => localMockJournalRepository.getLinkedEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+      final container = makeProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(
+            localMockJournalRepository,
+          ),
+        ],
+      );
+      final testEntryProvider = entryControllerProvider(entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+      await container.read(testEntryProvider.future);
+
+      expect(await notifier.delete(beamBack: true), isFalse);
+
+      verifyNever(mockNavService.beamBack);
+      expect(
+        (await container.read(testEntryProvider.future))?.entry,
+        testTextEntry,
+      );
+    });
+
     test('delete entry & beam back', () async {
       reset(mockPersistenceLogic);
       final localMockJournalRepository = MockJournalRepository();

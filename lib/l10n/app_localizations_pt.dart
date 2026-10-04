@@ -8964,6 +8964,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get journalDeleteConfirm => 'Sim, excluir esta entrada';
 
   @override
+  String get journalDeleteFailed =>
+      'Não foi possível eliminar a entrada — tenta novamente';
+
+  @override
   String get journalDeleteHint => 'Excluir entrada';
 
   @override

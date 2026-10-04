@@ -112,6 +112,7 @@ SECONDS = {
     "ChecklistMembership": 60,
     "ChecklistMembershipCrash": 20,
     "ChecklistMembershipThree": 10,
+    "ChecklistMembershipFailure": 10,
     "TaskFieldWrites": 20,
     "TaskFieldWritesAgents": 60,
     "TaskFieldWritesResolve": 25,

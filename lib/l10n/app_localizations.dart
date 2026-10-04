@@ -14958,6 +14958,12 @@ abstract class AppLocalizations {
   /// **'Yes, delete this entry'**
   String get journalDeleteConfirm;
 
+  /// Toast when deleting an entry did not land (the write failed or was refused); the entry is still there.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the entry — try again'**
+  String get journalDeleteFailed;
+
   /// No description provided for @journalDeleteHint.
   ///
   /// In en, this message translates to:

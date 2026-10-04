@@ -3444,6 +3444,7 @@
   "journalDateTimeRangeTitle": "Datum a čas",
   "journalDateToLabel": "Datum do:",
   "journalDeleteConfirm": "Ano, smazat tento záznam",
+  "journalDeleteFailed": "Záznam se nepodařilo smazat — zkus to znovu",
   "journalDeleteHint": "Smazat záznam",
   "journalDeleteQuestion": "Opravdu chcete smazat tento deníkový záznam?",
   "journalDurationLabel": "Doba trvání",

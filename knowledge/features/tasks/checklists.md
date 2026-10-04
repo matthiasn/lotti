@@ -5,7 +5,7 @@ description: The checklist subsystem, how its membership lists are written and r
 resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T15:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
@@ -35,7 +35,7 @@ sources:
   - id: repository
     resource: ../../../lib/logic/repositories/checklist_repository.dart
     title: ChecklistRepository — writes on the stored row
-    last_modified: 2026-09-26
+    last_modified: 2026-10-04
   - id: intents
     resource: ../../../lib/logic/repositories/checklist_membership_intents.dart
     title: Checklist membership intent log
@@ -43,7 +43,7 @@ sources:
   - id: membership-spec
     resource: ../../../specs/tla/ChecklistMembership.tla
     title: ChecklistMembership TLA+ spec
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
   - id: shown-items
     resource: ../../../lib/database/shown_checklist_items.dart
     title: The items a checklist shows
@@ -145,7 +145,10 @@ of a deleted checklist each save a device-local settings row
 (`ChecklistMembershipIntents`) before their first write and remove it after
 their last. At startup `ChecklistRepository.replayMembershipIntents` finishes
 whatever the app died in the middle of; each intent is a set of idempotent
-changes to stored rows, so replaying a finished one is harmless.
+changes to stored rows, so replaying a finished one is harmless. An operation
+whose delete did not land — `JournalRepository.deleteJournalEntity` reports a
+tombstone write that failed or was refused — keeps its intent too, and the
+next start finishes it.
 
 ```mermaid
 stateDiagram-v2
@@ -153,6 +156,7 @@ stateDiagram-v2
   Recorded --> Applying: operation writes its rows
   Applying --> [*]: clear(key) after the last write
   Applying --> Pending: app dies
+  Applying --> Pending: a delete is not stored (kept)
   Recorded --> Pending: app dies
   Pending --> Replayed: next start, replayMembershipIntents
   Replayed --> [*]: clear(key)

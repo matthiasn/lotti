@@ -318,26 +318,33 @@ void main() {
       );
     });
 
-    for (final gone in [true, false]) {
+    // The delete reports whether its tombstone landed; a task that was gone
+    // before the call is gone too, which keeps an Undo's retry safe after a
+    // failed reopen (ADR 0097).
+    for (final (deleted, stillThere, gone) in [
+      (true, false, true),
+      (false, false, true),
+      (false, true, false),
+    ]) {
       test(
-        'removes a task through the journal and reports '
-        '${gone ? 'success once the tombstone reads back' : 'failure while the task still reads'}',
+        'removes a task through the journal: delete '
+        '${deleted ? 'stored' : 'not stored'}, task '
+        '${stillThere ? 'still there' : 'gone'} — reports ${gone ? 'success' : 'failure'}',
         () async {
           final journal = MockJournalRepository();
           final journalDb = MockJournalDb();
           when(
             () => journal.deleteJournalEntity('task-1'),
-          ).thenAnswer((_) async => true);
-          when(
-            () => journalDb.journalEntityById('task-1'),
-          ).thenAnswer((_) async => gone ? null : makeTestTask(id: 'task-1'));
+          ).thenAnswer((_) async => deleted);
+          when(() => journalDb.journalEntityById('task-1')).thenAnswer(
+            (_) async => stillThere ? makeTestTask(id: 'task-1') : null,
+          );
           final container = build(journal: journal, journalDb: journalDb);
 
           final service = container.read(projectProposalServiceProvider);
 
           expect(await service.taskRemover('task-1'), gone);
           verify(() => journal.deleteJournalEntity('task-1')).called(1);
-          verify(() => journalDb.journalEntityById('task-1')).called(1);
         },
       );
     }
@@ -420,19 +427,27 @@ void main() {
       expect(service, isA<ProjectRecommendationService>());
     });
 
-    for (final gone in [true, false]) {
+    // The delete reports whether its tombstone landed; a task that was gone
+    // before the call is gone too, which keeps an Undo's retry safe after a
+    // failed reopen (ADR 0097).
+    for (final (deleted, stillThere, gone) in [
+      (true, false, true),
+      (false, false, true),
+      (false, true, false),
+    ]) {
       test(
-        'undoing a created task deletes it through the journal and reports '
-        '${gone ? 'success once the tombstone reads back' : 'failure while the task still reads'}',
+        'undoing a created task deletes it through the journal: delete '
+        '${deleted ? 'stored' : 'not stored'}, task '
+        '${stillThere ? 'still there' : 'gone'} — reports ${gone ? 'success' : 'failure'}',
         () async {
           final journal = MockJournalRepository();
           final journalDb = MockJournalDb();
           when(
             () => journal.deleteJournalEntity('task-1'),
-          ).thenAnswer((_) async => true);
-          when(
-            () => journalDb.journalEntityById('task-1'),
-          ).thenAnswer((_) async => gone ? null : makeTestTask(id: 'task-1'));
+          ).thenAnswer((_) async => deleted);
+          when(() => journalDb.journalEntityById('task-1')).thenAnswer(
+            (_) async => stillThere ? makeTestTask(id: 'task-1') : null,
+          );
           final container = ProviderContainer(
             overrides: [
               agentSyncServiceProvider.overrideWithValue(
@@ -450,7 +465,6 @@ void main() {
 
           expect(await service.taskRemover!('task-1'), gone);
           verify(() => journal.deleteJournalEntity('task-1')).called(1);
-          verify(() => journalDb.journalEntityById('task-1')).called(1);
         },
       );
     }

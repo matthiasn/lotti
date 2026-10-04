@@ -8892,6 +8892,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalDeleteConfirm => 'Ja, ta bort denna post';
 
   @override
+  String get journalDeleteFailed => 'Posten kunde inte raderas — försök igen';
+
+  @override
   String get journalDeleteHint => 'Ta bort posten';
 
   @override

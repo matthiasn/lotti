@@ -8942,6 +8942,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalDeleteConfirm => 'Ja, diesen Eintrag löschen';
 
   @override
+  String get journalDeleteFailed =>
+      'Der Eintrag konnte nicht gelöscht werden — versuch es noch einmal';
+
+  @override
   String get journalDeleteHint => 'Eintrag löschen';
 
   @override

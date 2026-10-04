@@ -8877,6 +8877,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalDeleteConfirm => 'Ja, slet denne post';
 
   @override
+  String get journalDeleteFailed => 'Indlægget kunne ikke slettes — prøv igen';
+
+  @override
   String get journalDeleteHint => 'Slet post';
 
   @override
