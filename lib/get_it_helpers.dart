@@ -244,6 +244,7 @@ PersistenceServices buildPersistenceServices() => PersistenceServices(
 /// The [PersistenceLogic] facade over [buildPersistenceServices].
 PersistenceLogic buildPersistenceLogic() =>
     PersistenceLogic(services: buildPersistenceServices());
+
 /// [LiveWorldServices] over getIt, which always holds the generation that is
 /// live right now — so each read follows a profile switch.
 final class GetItLiveWorldServices implements LiveWorldServices {
@@ -280,9 +281,12 @@ final class GetItLiveWorldServices implements LiveWorldServices {
 /// service is registered lazily and ahead of the router, and
 /// `registerSingletons` rebuilds the router for every profile generation, so a
 /// tap has to find the router that is live *now*. A tap with nowhere to go is
-/// logged, never thrown: this runs inside the plugin's channel handler.
+/// logged, never thrown: this runs inside the plugin's channel handler. During
+/// a profile switch the locator can be empty, logger included, and such a tap
+/// is dropped silently.
 void routeNotificationTap(String payload) {
   if (!getIt.isRegistered<NotificationTapHandler>()) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
     getIt<DomainLogger>().log(
       LogDomain.notifications,
       'a notification tap arrived before the tap router was registered',

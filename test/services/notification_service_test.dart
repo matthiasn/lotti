@@ -1343,6 +1343,23 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('a tap while a profile switch has emptied the locator is dropped, '
+        'not thrown', () async {
+      // Mid-switch, `getIt.reset()` has removed the logger as well. Called
+      // directly: the plugin's channel handler would swallow a throw.
+      getIt.unregister<DomainLogger>();
+
+      expect(() => routeNotificationTap('/people/rel-1'), returnsNormally);
+      verifyNever(
+        () => domainLogger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      );
+    });
   });
 
   group('launchNotificationPayload', () {
