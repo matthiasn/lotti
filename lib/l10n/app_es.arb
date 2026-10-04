@@ -2862,7 +2862,7 @@
   "githubSummaryFailed": "No se pudo escribir el resumen. Inténtalo de nuevo.",
   "githubSummaryHeading": "En resumen",
   "githubSummaryNoModel": "No hay ningún modelo configurado para el agente de esta tarea, así que nada puede escribir el resumen.",
-  "githubSummaryOnNextRefresh": "Se escribirá un resumen la próxima vez que se actualice esta pull request.",
+  "githubSummaryOnNextRefresh": "Se escribirá un resumen la próxima vez que se actualice esta pull request, o resúmela ahora.",
   "githubTokenHide": "Ocultar token",
   "githubTokenIntro": "Lotti lee las pull requests que vinculas a tus tareas con tu propio token de acceso personal. Crea un token fine-grained para los repositorios en los que trabajas, con acceso de solo lectura a \"Pull requests\" y \"Commit statuses\". GitHub no deja que ese token lea los check runs de un repositorio privado, así que allí la CI puede estar incompleta; un token clásico con el scope \"repo\" sí puede leerlos.",
   "githubTokenLabel": "Token de acceso personal",

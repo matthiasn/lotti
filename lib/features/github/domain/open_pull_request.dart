@@ -51,3 +51,32 @@ OpenPullRequest openPullRequestFrom(
     draft: json['draft'] == true,
   );
 }
+
+/// How much a pull request changes: the lines it adds and removes.
+typedef PullRequestSize = ({int additions, int deletions});
+
+/// The sizes in a response to the open pull request size query, by number.
+///
+/// Nodes GitHub could not resolve come back null, and are skipped. Throws
+/// [FormatException] when the response does not carry the list at all —
+/// a GraphQL error is answered with a 200 and `errors` in place of `data`.
+Map<int, PullRequestSize> openPullRequestSizesFrom(Object? json) {
+  final nodes = switch (json) {
+    {
+      'data': {
+        'repository': {'pullRequests': {'nodes': final List<dynamic> nodes}},
+      },
+    } =>
+      nodes,
+    _ => throw const FormatException('no pull request sizes'),
+  };
+  return {
+    for (final node in nodes)
+      if (node case {
+        'number': final int number,
+        'additions': final int additions,
+        'deletions': final int deletions,
+      })
+        number: (additions: additions, deletions: deletions),
+  };
+}

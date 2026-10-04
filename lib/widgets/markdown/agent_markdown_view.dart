@@ -16,6 +16,7 @@ class AgentMarkdownView extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.onLinkTap,
+    this.subordinateHeadings = false,
     super.key,
   });
 
@@ -36,6 +37,12 @@ class AgentMarkdownView extends StatelessWidget {
   /// Optional owner routing for links such as answer-local evidence citations.
   final void Function(String url, String title)? onLinkTap;
 
+  /// Keeps every heading at the body's size, set apart by weight alone: for
+  /// Markdown shown under a surface's own section labels — a pull request's
+  /// description in its details — whose `## Why` would otherwise outrank the
+  /// label it sits under.
+  final bool subordinateHeadings;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -45,12 +52,21 @@ class AgentMarkdownView extends StatelessWidget {
     final bodyStyle = style ?? styles.body.bodySmall.copyWith(color: textColor);
 
     final legacyTheme = legacyMaterialTheme(theme);
+    final strongBody = bodyStyle.copyWith(
+      fontWeight: tokens.typography.weight.semiBold,
+    );
     final markdownTheme = GptMarkdownThemeData(
       brightness: theme.brightness,
-      h1: styles.heading.heading3.copyWith(color: textColor),
-      h2: styles.subtitle.subtitle1.copyWith(color: textColor),
-      h3: styles.subtitle.subtitle2.copyWith(color: textColor),
-      h4: bodyStyle.copyWith(fontWeight: tokens.typography.weight.semiBold),
+      h1: subordinateHeadings
+          ? strongBody
+          : styles.heading.heading3.copyWith(color: textColor),
+      h2: subordinateHeadings
+          ? strongBody
+          : styles.subtitle.subtitle1.copyWith(color: textColor),
+      h3: subordinateHeadings
+          ? strongBody
+          : styles.subtitle.subtitle2.copyWith(color: textColor),
+      h4: strongBody,
       h5: bodyStyle,
       h6: styles.others.caption.copyWith(color: textColor),
     );

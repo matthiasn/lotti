@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 import 'package:material_ui/material_ui.dart';
@@ -34,6 +35,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.emphasizeTrailingIcon = false,
+    this.trailingIconBusy = false,
     this.onTrailingIconTap,
     this.trailingIconTooltip,
     this.trailingIconKey,
@@ -66,8 +68,14 @@ class DesignSystemTextInput extends StatefulWidget {
   final IconData? leadingIcon;
   final IconData? trailingIcon;
 
-  /// Filled action treatment for a composer ready to send.
+  /// Filled action treatment for a composer ready to send: round in a pill
+  /// composer; in a rounded field, a rounded square seated inside it, inset
+  /// from its border and concentric with its corners.
   final bool emphasizeTrailingIcon;
+
+  /// The trailing action is running: a spinner takes the glyph's place in
+  /// the same slot, and the action is inert until it finishes.
+  final bool trailingIconBusy;
   final VoidCallback? onTrailingIconTap;
 
   /// Accessible name and tooltip for the actionable [trailingIcon].
@@ -306,6 +314,18 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     final iconData = widget.trailingIcon;
     if (iconData == null) return null;
 
+    if (widget.trailingIconBusy) {
+      // In the seated action's own box, so progress lands on the centre
+      // the action held.
+      return Padding(
+        padding: EdgeInsetsDirectional.only(end: tokens.spacing.step2),
+        child: SizedBox.square(
+          dimension: spec.fieldHeight - tokens.spacing.step2 * 2,
+          child: Center(child: DesignSystemSpinner(size: spec.iconSize)),
+        ),
+      );
+    }
+
     final icon = Icon(
       iconData,
       size: spec.iconSize,
@@ -331,17 +351,50 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
         child: Tooltip(
           message: label,
           excludeFromSemantics: true,
-          child: IconButton(
-            style: widget.emphasizeTrailingIcon
-                ? IconButton.styleFrom(
-                    backgroundColor: tokens.colors.interactive.enabled,
-                    foregroundColor: tokens.colors.text.onInteractiveAlert,
-                  )
-                : null,
-            padding: EdgeInsets.zero,
-            icon: icon,
-            onPressed: widget.enabled ? onTap : null,
-          ),
+          child: switch ((widget.emphasizeTrailingIcon, widget.shape)) {
+            // A rounded field seats its action: inset by step2 all round,
+            // its corners the field's less that inset, so the border runs
+            // unbroken around it instead of the fill jamming into the focus
+            // ring.
+            (true, DesignSystemTextInputShape.rounded) => Padding(
+              padding: EdgeInsetsDirectional.only(end: tokens.spacing.step2),
+              child: IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: tokens.colors.interactive.enabled,
+                  foregroundColor: tokens.colors.text.onInteractiveAlert,
+                  fixedSize: Size.square(
+                    spec.fieldHeight - tokens.spacing.step2 * 2,
+                  ),
+                  minimumSize: Size.square(
+                    spec.fieldHeight - tokens.spacing.step2 * 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      spec.borderRadius - tokens.spacing.step2,
+                    ),
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+                icon: icon,
+                onPressed: widget.enabled ? onTap : null,
+              ),
+            ),
+            // A pill composer keeps its round send button.
+            (true, DesignSystemTextInputShape.pill) => IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: tokens.colors.interactive.enabled,
+                foregroundColor: tokens.colors.text.onInteractiveAlert,
+              ),
+              padding: EdgeInsets.zero,
+              icon: icon,
+              onPressed: widget.enabled ? onTap : null,
+            ),
+            (false, _) => IconButton(
+              padding: EdgeInsets.zero,
+              icon: icon,
+              onPressed: widget.enabled ? onTap : null,
+            ),
+          },
         ),
       ),
     );

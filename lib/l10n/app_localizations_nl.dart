@@ -6929,7 +6929,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd.';
+      'Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd, of vat hem nu samen.';
 
   @override
   String get githubTokenHide => 'Token verbergen';

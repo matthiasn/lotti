@@ -3950,7 +3950,7 @@
   "@githubSummaryNoModel": {
     "description": "Toast when a summary is asked for but no model resolves for the task agent."
   },
-  "githubSummaryOnNextRefresh": "A summary is written the next time this pull request is refreshed.",
+  "githubSummaryOnNextRefresh": "A summary is written the next time this pull request is refreshed, or summarize it now.",
   "@githubSummaryOnNextRefresh": {
     "description": "Shown under the empty TL;DR in a pull request's details when a summary will be written automatically."
   },

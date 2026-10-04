@@ -6977,7 +6977,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubSummaryOnNextRefresh =>
-      'Shrnutí se napíše při příští aktualizaci tohoto pull requestu.';
+      'Shrnutí se napíše při příští aktualizaci tohoto pull requestu, nebo ho shrň hned teď.';
 
   @override
   String get githubTokenHide => 'Skrýt token';

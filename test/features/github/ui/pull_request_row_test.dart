@@ -77,9 +77,9 @@ void main() {
       expect(parts, [
         ('Open', PullRequestTone.neutral),
         ('3 min ago', PullRequestTone.neutral),
-        ('Checks passing', PullRequestTone.good),
+        ('Checks passing', PullRequestTone.neutral),
         ('Behind base branch', PullRequestTone.attention),
-        ('Approved', PullRequestTone.good),
+        ('Approved', PullRequestTone.neutral),
       ]);
     });
 
@@ -160,9 +160,9 @@ void main() {
           [
             ('Open', PullRequestTone.neutral),
             ('3 min ago', PullRequestTone.neutral),
-            ('Checks passing', PullRequestTone.good),
+            ('Checks passing', PullRequestTone.neutral),
             ('Blocked by branch rules', PullRequestTone.attention),
-            ('Approved', PullRequestTone.good),
+            ('Approved', PullRequestTone.neutral),
           ],
         );
         // No checks reported and no review asked for explain nothing either.
@@ -489,10 +489,14 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await pump(tester, entry);
+          // Refresh lives in the row's menu.
           await tester.tap(
-            find.byKey(ValueKey('pull-request-refresh-${entry.id}')),
+            find.byKey(ValueKey('pull-request-menu-${entry.id}')),
           );
           await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Refresh pull request'));
+          await tester.pump(const Duration(seconds: 1));
           await tester.pump();
         });
 
@@ -522,7 +526,7 @@ void main() {
         );
 
         final flagged = find.textContaining(
-          'Also linked to another task · Open',
+          'Also linked to another task ·\u00A0Open',
           findRichText: true,
         );
         expect(flagged, findsOneWidget);
@@ -547,7 +551,7 @@ void main() {
 
         expect(
           find.textContaining(
-            'Also linked to “Teach the chicks” · Open',
+            'Also linked to “Teach the chicks” ·\u00A0Open',
             findRichText: true,
           ),
           findsOneWidget,
@@ -619,7 +623,10 @@ void main() {
         expect(
           line,
           'Tracks pull requests on tasks.\n'
-          'Open · 3 min ago · +444 −221 · Checks running',
+          // Each dot bound to the part it introduces, and the size to
+          // itself: a wrapping line never ends on a dot or splits the size.
+          // The size ends the first line; checks and reviews start the next.
+          'Open ·\u00A03 min ago ·\u00A0+444\u00A0−221\nChecks running',
         );
         expect(
           find.textContaining(
@@ -640,7 +647,7 @@ void main() {
           .widgetList<RichText>(find.byType(RichText))
           .map((r) => r.text.toPlainText(includeSemanticsLabels: false))
           .firstWhere((text) => text.contains('Open'));
-      expect(line, 'Open · 3 min ago · Checks running');
+      expect(line, 'Open ·\u00A03 min ago ·\u00A0Checks running');
     });
 
     testWidgets('the menu opens the pull request on GitHub', (tester) async {
@@ -678,7 +685,7 @@ void main() {
       });
 
       expect(find.byType(PullRequestDetails), findsOneWidget);
-      expect(find.text('matthiasn/lotti#42'), findsOneWidget);
+      expect(find.text('matthiasn/lotti'), findsOneWidget);
     });
 
     testWidgets(

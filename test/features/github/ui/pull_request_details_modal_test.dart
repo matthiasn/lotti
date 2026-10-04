@@ -78,12 +78,12 @@ void main() {
     (tester) async {
       await pump(tester);
 
-      expect(find.text('Track pull requests'), findsOneWidget);
+      expect(find.text('#42 Track pull requests'), findsOneWidget);
       expect(
         find.textContaining(
           // As a screen reader hears it: the size's spoken label stands in
           // for its signs.
-          'Merged · 3 min ago · 444 lines added, 221 removed',
+          'Merged ·\u00A03 min ago ·\u00A0444 lines added, 221 removed',
           findRichText: true,
         ),
         findsOneWidget,
@@ -142,7 +142,8 @@ void main() {
     ),
     (
       null,
-      'A summary is written the next time this pull request is refreshed.',
+      'A summary is written the next time this pull request is refreshed, '
+          'or summarize it now.',
     ),
   ]) {
     testWidgets(
@@ -253,7 +254,8 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    expect(find.text('matthiasn/lotti#42'), findsOneWidget);
+    // The bar names the repository; the number leads the title.
+    expect(find.text('matthiasn/lotti'), findsOneWidget);
     await tester.tap(find.byKey(PullRequestDetailsKeys.openOnGitHub));
     await tester.pump();
 

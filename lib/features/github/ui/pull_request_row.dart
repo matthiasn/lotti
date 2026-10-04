@@ -4,17 +4,18 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
 import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/features/github/ui/pull_request_details_modal.dart';
+import 'package:lotti/features/github/ui/pull_request_glyph.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
@@ -87,7 +88,12 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         messages.githubStatusMerged,
         PullRequestTone.good,
       ),
-      PullRequestStatus.closed => (messages.githubStatusClosed, neutral),
+      // Red, as GitHub inks it: closed unmerged is the state a user most
+      // needs to tell apart from merged, and a neutral word hid it.
+      PullRequestStatus.closed => (
+        messages.githubStatusClosed,
+        PullRequestTone.bad,
+      ),
     },
     if (pullRequestStateTime(snapshot) case final at?)
       (
@@ -104,8 +110,11 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
     ],
     if (open)
       ...switch (checks.rollup) {
+        // Neutral: colour on this line marks what needs a look. Passing
+        // checks in green beside the teal one-liner made a row of hues
+        // where nothing was wrong.
         PullRequestCheckRollup.passing => [
-          (messages.githubChecksPassing, PullRequestTone.good),
+          (messages.githubChecksPassing, neutral),
         ],
         PullRequestCheckRollup.failing => [
           (messages.githubChecksFailing(checks.failed), PullRequestTone.bad),
@@ -135,7 +144,7 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
     if (open)
       ...switch (snapshot.reviews.decision) {
         PullRequestReviewDecision.approved => [
-          (messages.githubReviewApproved, PullRequestTone.good),
+          (messages.githubReviewApproved, neutral),
         ],
         PullRequestReviewDecision.changesRequested => [
           (messages.githubReviewChangesRequested, PullRequestTone.bad),
@@ -147,6 +156,32 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
       },
   ];
 }
+
+/// The words of an open pull request's line in the picker, in the order of
+/// a linked one's status line: draft first when it is one, then its author,
+/// its age and its size — once [size] is known.
+List<(String, PullRequestTone)> openPullRequestParts(
+  AppLocalizations messages, {
+  required OpenPullRequest pr,
+  required DateTime now,
+  PullRequestSize? size,
+}) => [
+  if (pr.draft) (messages.githubStatusDraft, PullRequestTone.neutral),
+  if (pr.authorLogin case final login?) ('@$login', PullRequestTone.neutral),
+  (
+    relativeAgeOrDateLabel(
+      messages,
+      at: pr.createdAt,
+      now: now,
+      withWeekday: true,
+    ),
+    PullRequestTone.neutral,
+  ),
+  if (size case (:final additions, :final deletions)) ...[
+    ('+$additions', PullRequestTone.added),
+    ('−$deletions', PullRequestTone.removed),
+  ],
+];
 
 /// Whether the status line already shows what usually blocks a merge:
 /// checks failing or still running, or a review outstanding.
@@ -166,6 +201,12 @@ bool _blockExplained(PullRequestSnapshot snapshot) =>
 /// its tone, separated by a dot — except the two halves of the size, which
 /// read as one: `+444 −221`. The size carries a spoken label, so a screen
 /// reader says what the signs mean.
+///
+/// The size ends the first line: what follows it — checks, what keeps the
+/// pull request from merging, reviews — starts a second, so the line breaks
+/// where its meaning does rather than wherever the width runs out. Should a
+/// line still wrap, it breaks before a dot, never after one and never inside
+/// the size: each dot is bound to the part it introduces.
 List<TextSpan> pullRequestStatusSpans(
   BuildContext context,
   List<(String, PullRequestTone)> parts,
@@ -181,7 +222,7 @@ List<TextSpan> pullRequestStatusSpans(
     PullRequestTone.removed => tokens.colors.alert.error.ink,
   };
   final separator = TextSpan(
-    text: ' · ',
+    text: ' ·\u00A0',
     style: caption.copyWith(color: tokens.colors.text.lowEmphasis),
   );
   return [
@@ -189,7 +230,9 @@ List<TextSpan> pullRequestStatusSpans(
       if (i > 0 &&
           parts[i].$2 == PullRequestTone.removed &&
           parts[i - 1].$2 == PullRequestTone.added)
-        const TextSpan(text: ' ')
+        const TextSpan(text: '\u00A0')
+      else if (i > 0 && parts[i - 1].$2 == PullRequestTone.removed)
+        const TextSpan(text: '\n')
       else if (i > 0)
         separator,
       TextSpan(
@@ -343,60 +386,59 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
           entry: entry,
         ),
       ),
-      title: title,
-      titleMaxLines: 2,
-      // The list item's own subtitle style, recoloured per part: the spans
-      // keep its type and change only the ink.
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      titleContent: PullRequestTitle(
+        number: snapshot == null ? null : entry.data.number,
+        title: snapshot?.title ?? title,
+        style: pullRequestTitleStyle(context),
+        maxLines: 3,
+      ),
+      // Three lines, three voices: the title, the one-liner in the teal of
+      // agent-written text, then the status line. The one-liner keeps a line
+      // of its own, so its teal never sits beside the green of an addition.
       subtitleSpans: [
         if (oneLiner != null)
           TextSpan(
             text: '$oneLiner\n',
-            style: caption.copyWith(color: tokens.colors.text.highEmphasis),
+            style: caption.copyWith(color: tokens.colors.aiCard.accent),
           ),
         ...pullRequestStatusSpans(context, parts),
       ],
       subtitleMaxLines: oneLiner == null ? 3 : 5,
       size: DesignSystemListItemSize.small,
-      leading: Icon(
-        LottiIcons.merge,
-        size: IconSizes.m,
-        color: switch (snapshot?.status) {
-          PullRequestStatus.merged => tokens.colors.alert.success.ink,
-          PullRequestStatus.closed => tokens.colors.text.lowEmphasis,
-          PullRequestStatus.open || null => tokens.colors.interactive.enabled,
-        },
+      // Both rails at the title, as the details header holds them: centred
+      // on a four-line row, the glyph sat beside the summary line instead.
+      leading: Align(
+        alignment: Alignment.topCenter,
+        child: PullRequestGlyph(
+          status: snapshot?.status,
+          draft: snapshot?.draft ?? false,
+        ),
       ),
-      trailingExtra: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (refresh.refreshing)
-            Padding(
-              padding: EdgeInsets.all(tokens.spacing.step3),
-              child: DesignSystemSpinner(
-                key: const Key('pull-request-refreshing'),
-                size: IconSizes.m,
-                strokeWidth: BorderWidths.emphasis,
-                semanticsLabel: messages.githubRefreshingPullRequest,
-              ),
-            )
-          else
-            DesignSystemButton(
-              key: ValueKey('pull-request-refresh-${entry.id}'),
-              label: '',
-              semanticsLabel: messages.githubRefreshPullRequest,
-              variant: DesignSystemButtonVariant.tertiary,
-              leadingIcon: LottiIcons.refresh,
-              onPressed: _refresh,
+      // Refresh lives in the menu: a stale pull request refreshes on its
+      // own when the task opens, so the manual refresh is the row's least
+      // frequent action, and on a phone its own button cost the title a
+      // third of its width. A refresh shows in the menu's own slot, so the
+      // row never reflows when one starts.
+      // A glyph-tall slot, as the linked-tasks rows reserve: the menu's
+      // dots centre on the state glyph rather than on its 48pt button box.
+      trailingExtra: Align(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          height: tokens.spacing.step7,
+          child: Center(
+            child: _PullRequestMenu(
+              entryId: entry.id,
+              refreshing: refresh.refreshing,
+              onRefresh: () => unawaited(_refresh()),
+              onOpen: () =>
+                  handleMarkdownLinkTap(pullRequestWebUrl(entry), title),
+              onUnlink: () => ref
+                  .read(pullRequestRepositoryProvider)
+                  .unlink(taskId: widget.taskId, ref: entry.data.ref),
             ),
-          _PullRequestMenu(
-            entryId: entry.id,
-            onOpen: () =>
-                handleMarkdownLinkTap(pullRequestWebUrl(entry), title),
-            onUnlink: () => ref
-                .read(pullRequestRepositoryProvider)
-                .unlink(taskId: widget.taskId, ref: entry.data.ref),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -405,11 +447,18 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
 class _PullRequestMenu extends StatelessWidget {
   const _PullRequestMenu({
     required this.entryId,
+    required this.refreshing,
+    required this.onRefresh,
     required this.onOpen,
     required this.onUnlink,
   });
 
   final String entryId;
+
+  /// A refresh is running: the menu shows it in place of its own glyph, and
+  /// offers no second one meanwhile.
+  final bool refreshing;
+  final VoidCallback onRefresh;
   final VoidCallback onOpen;
   final Future<bool> Function() onUnlink;
 
@@ -418,17 +467,22 @@ class _PullRequestMenu extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    PopupMenuItem<String> item(String value, IconData icon, String label) =>
-        PopupMenuItem<String>(
-          value: value,
-          child: Row(
-            children: [
-              Icon(icon, size: tokens.spacing.step5),
-              SizedBox(width: tokens.spacing.step3),
-              Flexible(child: Text(label)),
-            ],
-          ),
-        );
+    PopupMenuItem<String> item(
+      String value,
+      IconData icon,
+      String label, {
+      bool enabled = true,
+    }) => PopupMenuItem<String>(
+      value: value,
+      enabled: enabled,
+      child: Row(
+        children: [
+          Icon(icon, size: IconSizes.m),
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(child: Text(label)),
+        ],
+      ),
+    );
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -443,14 +497,22 @@ class _PullRequestMenu extends StatelessWidget {
       child: PopupMenuButton<String>(
         key: ValueKey('pull-request-menu-$entryId'),
         tooltip: messages.githubPullRequestActions,
-        icon: Icon(
-          LottiIcons.moreVertical,
-          color: tokens.colors.text.mediumEmphasis,
-          size: tokens.spacing.step5,
-        ),
+        icon: refreshing
+            ? DesignSystemSpinner(
+                key: const Key('pull-request-refreshing'),
+                size: IconSizes.m,
+                semanticsLabel: messages.githubRefreshingPullRequest,
+              )
+            : Icon(
+                LottiIcons.moreVertical,
+                color: tokens.colors.text.mediumEmphasis,
+                size: IconSizes.m,
+              ),
         position: PopupMenuPosition.under,
         onSelected: (value) {
           switch (value) {
+            case 'refresh':
+              onRefresh();
             case 'open':
               onOpen();
             case 'unlink':
@@ -458,6 +520,12 @@ class _PullRequestMenu extends StatelessWidget {
           }
         },
         itemBuilder: (context) => [
+          item(
+            'refresh',
+            LottiIcons.refresh,
+            messages.githubRefreshPullRequest,
+            enabled: !refreshing,
+          ),
           item('open', LottiIcons.openExternal, messages.githubOpenOnGitHub),
           item('unlink', LottiIcons.linkOff, messages.githubUnlinkPullRequest),
         ],

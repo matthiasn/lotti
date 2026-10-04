@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -328,6 +329,18 @@ openPullRequestsProvider = FutureProvider.autoDispose
       (ref, repository) =>
           ref.watch(pullRequestServiceProvider).openPullRequests(repository),
       name: 'openPullRequestsProvider',
+    );
+
+/// The size of the open pull requests of `repository`, by number — read
+/// apart from [openPullRequestsProvider], so the picker lists them without
+/// waiting, and without them if it cannot be read.
+final FutureProviderFamily<Map<int, PullRequestSize>, GitHubRepository>
+openPullRequestSizesProvider = FutureProvider.autoDispose
+    .family<Map<int, PullRequestSize>, GitHubRepository>(
+      (ref, repository) => ref
+          .watch(pullRequestServiceProvider)
+          .openPullRequestSizes(repository),
+      name: 'openPullRequestSizesProvider',
     );
 
 /// The summary of pull request entry `entryId`'s current content, or null

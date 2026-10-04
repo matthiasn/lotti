@@ -2869,7 +2869,7 @@
   "githubSummaryFailed": "Shrnutí se nepodařilo napsat. Zkus to znovu.",
   "githubSummaryHeading": "Ve zkratce",
   "githubSummaryNoModel": "Agent tohoto úkolu nemá nastavený model, takže shrnutí nemá kdo napsat.",
-  "githubSummaryOnNextRefresh": "Shrnutí se napíše při příští aktualizaci tohoto pull requestu.",
+  "githubSummaryOnNextRefresh": "Shrnutí se napíše při příští aktualizaci tohoto pull requestu, nebo ho shrň hned teď.",
   "githubTokenHide": "Skrýt token",
   "githubTokenIntro": "Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.",
   "githubTokenLabel": "Osobní přístupový token",

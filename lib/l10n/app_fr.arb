@@ -2862,7 +2862,7 @@
   "githubSummaryFailed": "Le résumé n'a pas pu être rédigé. Réessaie.",
   "githubSummaryHeading": "En bref",
   "githubSummaryNoModel": "Aucun modèle n'est configuré pour l'agent de cette tâche, donc rien ne peut rédiger le résumé.",
-  "githubSummaryOnNextRefresh": "Un résumé sera rédigé à la prochaine actualisation de cette pull request.",
+  "githubSummaryOnNextRefresh": "Un résumé sera rédigé à la prochaine actualisation de cette pull request, ou résume-la maintenant.",
   "githubTokenHide": "Masquer le jeton",
   "githubTokenIntro": "Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.",
   "githubTokenLabel": "Jeton d'accès personnel",

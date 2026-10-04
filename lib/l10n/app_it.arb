@@ -3207,7 +3207,7 @@
   "githubSummaryFailed": "Non è stato possibile scrivere il riassunto. Riprova.",
   "githubSummaryHeading": "In breve",
   "githubSummaryNoModel": "Non c'è nessun modello configurato per l'agente di questa attività, quindi niente può scrivere il riassunto.",
-  "githubSummaryOnNextRefresh": "Un riassunto verrà scritto al prossimo aggiornamento di questa pull request.",
+  "githubSummaryOnNextRefresh": "Un riassunto verrà scritto al prossimo aggiornamento di questa pull request, oppure riassumila ora.",
   "githubTokenHide": "Nascondi token",
   "githubTokenIntro": "Lotti legge le pull request che colleghi alle attività con il tuo token di accesso personale. Crea un token fine-grained per i repository in cui lavori, con accesso in sola lettura a \"Pull requests\" e \"Commit statuses\". GitHub non permette a un token del genere di leggere i check run di un repository privato, quindi lì la CI può essere incompleta; un token classico con lo scope \"repo\" può leggerli.",
   "githubTokenLabel": "Token di accesso personale",

@@ -45,9 +45,15 @@ class TaskPullRequestsSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
+                // On the rows' content edges: their inset, their padding and
+                // the focus border they reserve, so the title starts over the
+                // row text and the + centres over the rows' menus.
                 padding: EdgeInsets.only(
-                  left: tokens.spacing.step5,
-                  right: tokens.spacing.step3,
+                  left: tokens.spacing.step2 + tokens.spacing.step5,
+                  right:
+                      tokens.spacing.step2 +
+                      tokens.spacing.step5 +
+                      tokens.spacing.step1,
                   top: tokens.spacing.step4,
                 ),
                 child: Row(
@@ -63,13 +69,20 @@ class TaskPullRequestsSection extends ConsumerWidget {
                       ),
                     ),
                     if (entries.isNotEmpty)
-                      DesignSystemButton(
-                        key: const ValueKey('pull-requests-link'),
-                        label: '',
-                        semanticsLabel: messages.githubLinkPullRequestTitle,
-                        variant: DesignSystemButtonVariant.tertiary,
-                        leadingIcon: LottiIcons.add,
-                        onPressed: link,
+                      // The menus' own width, the glyph centred in it, so the
+                      // two share a centre line.
+                      SizedBox(
+                        width: tokens.spacing.step9,
+                        child: Center(
+                          child: DesignSystemButton(
+                            key: const ValueKey('pull-requests-link'),
+                            label: '',
+                            semanticsLabel: messages.githubLinkPullRequestTitle,
+                            variant: DesignSystemButtonVariant.tertiary,
+                            leadingIcon: LottiIcons.add,
+                            onPressed: link,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -86,19 +99,44 @@ class TaskPullRequestsSection extends ConsumerWidget {
                   size: DesignSystemListItemSize.small,
                   leading: Icon(
                     LottiIcons.link,
-                    size: tokens.spacing.step5,
+                    size: IconSizes.m,
                     color: tokens.colors.interactive.enabled,
                   ),
                 )
               else
-                for (var i = 0; i < entries.length; i++) ...[
-                  if (i > 0) const DesignSystemDivider(),
-                  PullRequestRow(
-                    key: ValueKey(entries[i].id),
-                    taskId: taskId,
-                    entry: entries[i],
+                // Inset, so each row's rounded hover fill floats inside the
+                // card's edge instead of running square into it.
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step2,
+                    0,
+                    tokens.spacing.step2,
+                    tokens.spacing.step2,
                   ),
-                ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < entries.length; i++) ...[
+                        // A hairline between rows, the linked-tasks card's
+                        // separator, spanning the width a row's hover fill
+                        // does; held a step off the rows so a fill's rounded
+                        // corners never butt against it.
+                        if (i > 0)
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: tokens.spacing.step1,
+                            ),
+                            child: const DesignSystemDivider(),
+                          ),
+                        PullRequestRow(
+                          key: ValueKey(entries[i].id),
+                          taskId: taskId,
+                          entry: entries[i],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
