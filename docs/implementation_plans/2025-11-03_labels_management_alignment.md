@@ -331,7 +331,7 @@ Updated/Added test files
     - Private toggle updates state; Save persists via repository; snackbar shows and page pops.
     - Delete (edit mode): confirm dialog uses label name; confirm deletes and pops.
 - Category details regression (UPDATE existing file)
-  - `test/features/categories/ui/pages/category_details_page_test.dart`
+  - `test/features/settings/ui/pages/categories/category_details_page_test.dart`
     - Add assertions that top‑right Save is removed; bottom bar present with Delete/Cancel/Save; Save enabled only when `hasChanges`.
 - Form bottom bar
   - `test/widgets/ui/form_bottom_bar_test.dart` (new): SafeArea present; updated padding applied.

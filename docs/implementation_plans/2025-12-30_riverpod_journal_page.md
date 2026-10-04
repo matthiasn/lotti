@@ -412,7 +412,7 @@ For this migration, **Option B** is safer - maintain internal stream subscriptio
 | `test/blocs/journal/journal_page_state_test.dart` | Update imports only |
 | `test/features/journal/ui/pages/infinite_journal_page_test.dart:6,46` | Update imports, use ProviderScope overrides, update `entryTypes` import |
 | `test/features/calendar/state/calendar_category_visibility_controller_test.dart:6` | Update TasksFilter import path |
-| `test/widgets/search/entry_type_filter_test.dart:6` | Update imports, use ProviderScope overrides |
+| `test/features/journal/ui/widgets/entry_type_filter_test.dart:6` | Update imports, use ProviderScope overrides |
 | `test/features/ai_chat/ui/pages/chat_modal_page_test.dart:8` | Update imports, use ProviderScope overrides |
 | Widget tests in `test/features/tasks/ui/filtering/` | Update imports, use ProviderScope overrides |
 

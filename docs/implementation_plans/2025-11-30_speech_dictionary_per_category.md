@@ -297,4 +297,4 @@ document.
 
 - `test/features/speech/ui/widgets/recording/audio_recording_modal_test.dart` - Added `speechDictionary` to FakeCategoryDefinition
 - `test/features/speech/ui/widgets/recording/audio_recording_modal_coverage_test.dart` - Added `speechDictionary` to FakeCategoryDefinition
-- `test/features/categories/ui/pages/category_details_page_test.dart` - Fixed widget count expectations
+- `test/features/settings/ui/pages/categories/category_details_page_test.dart` - Fixed widget count expectations

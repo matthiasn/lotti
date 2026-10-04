@@ -122,7 +122,7 @@ dots. The Figma shows ~16 preset colors in a horizontal wrap.
 5. Update bottom bar to Cancel + Save only
 6. Adjust section header styling to match Figma
 
-### Tests — `test/features/categories/ui/pages/category_details_page_test.dart`
+### Tests — `test/features/settings/ui/pages/categories/category_details_page_test.dart`
 
 | Test | What it verifies |
 |------|-----------------|
@@ -164,7 +164,7 @@ Same layout as edit mode but with:
 3. AI settings section: show toggles with defaults (off), no profile row until saved
 4. Remove bottom bar in create mode; use header buttons
 
-### Tests — `test/features/categories/ui/pages/category_details_page_test.dart` (create mode group)
+### Tests — `test/features/settings/ui/pages/categories/category_details_page_test.dart` (create mode group)
 
 | Test | What it verifies |
 |------|-----------------|

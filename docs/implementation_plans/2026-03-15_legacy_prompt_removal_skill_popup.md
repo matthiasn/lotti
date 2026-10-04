@@ -344,7 +344,7 @@ Rename to `hasAvailableAiActionsProvider` (or keep name but update logic):
    - `test/features/ai/helpers/automatic_image_analysis_trigger_test.dart`
    - `test/features/ai/ui/unified_ai_popup_menu_test.dart`
    - `test/features/ai/services/skill_inference_runner_test.dart`
-   - `test/features/categories/ui/pages/category_details_page_test.dart`
+   - `test/features/settings/ui/pages/categories/category_details_page_test.dart`
    - `test/features/categories/ui/widgets/category_automatic_prompts_test.dart`
 4. **New tests**: Add tests for:
    - `availableSkillsForEntityProvider` filtering logic
