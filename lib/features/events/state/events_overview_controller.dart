@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/events/state/events_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Paged, filterable state for the Events overview: the events loaded so far
@@ -79,7 +79,9 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   Future<EventsOverviewState> build() async {
     _requestedQuery = '';
     _requestedCategoryIds = const {};
-    final sub = getIt<UpdateNotifications>().updateStream.listen((affected) {
+    final sub = ref.read(updateNotificationsProvider).updateStream.listen((
+      affected,
+    ) {
       final loadedEventIds = state.value?.events
           .map((resolved) => resolved.event.meta.id)
           .toSet();

@@ -20,6 +20,7 @@ import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -496,7 +497,7 @@ final aiInputRepositoryProvider = Provider<AiInputRepository>(
 );
 AiInputRepository aiInputRepository(Ref ref) {
   final agentRepository = getIt.isRegistered<AgentDatabase>()
-      ? AgentRepository(getIt<AgentDatabase>())
+      ? AgentRepository(ref.read(agentDatabaseProvider))
       : null;
   return AiInputRepository(
     ref,

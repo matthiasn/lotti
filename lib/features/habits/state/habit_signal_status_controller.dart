@@ -12,7 +12,7 @@ import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/logic/signals/signal_reader.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// What a habit's signals look like today: the two-week window the sheet
@@ -71,7 +71,7 @@ class HabitSignalStatusController extends AsyncNotifier<HabitSignalStatus?> {
     if (rule == null) return null;
 
     final tokens = SignalNeeds.of(rule).notificationTokens;
-    _subscription = getIt<UpdateNotifications>().updateStream.listen((
+    _subscription = ref.read(updateNotificationsProvider).updateStream.listen((
       affectedIds,
     ) {
       if (tokens.intersection(affectedIds).isNotEmpty) unawaited(refresh());

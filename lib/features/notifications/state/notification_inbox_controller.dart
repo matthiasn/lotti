@@ -5,6 +5,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/model/notification_inbox_projection.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Reactive count of unseen notifications that should pulse the bell badge.
@@ -35,7 +36,9 @@ class UnseenNotificationCount extends AsyncNotifier<int> {
   @override
   Future<int> build() async {
     ref.onDispose(() => _sub?.cancel());
-    _sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
+    _sub = ref.read(updateNotificationsProvider).updateStream.listen((
+      affectedIds,
+    ) {
       if (affectedIds.contains(inboxNotification)) {
         unawaited(_refresh());
       }
@@ -87,7 +90,9 @@ class InboxNotifications extends AsyncNotifier<List<NotificationEntity>> {
   @override
   Future<List<NotificationEntity>> build() async {
     ref.onDispose(() => _sub?.cancel());
-    _sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
+    _sub = ref.read(updateNotificationsProvider).updateStream.listen((
+      affectedIds,
+    ) {
       if (affectedIds.contains(inboxNotification)) {
         unawaited(_refresh());
       }

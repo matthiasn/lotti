@@ -4,9 +4,9 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
@@ -19,7 +19,7 @@ final StreamProvider<List<MeasurableDataType>>
 measurableDataTypesStreamProvider =
     StreamProvider.autoDispose<List<MeasurableDataType>>(
       (ref) => notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
+        notifications: ref.read(updateNotificationsProvider),
         notificationKeys: {measurablesNotification, privateToggleNotification},
         fetcher: ref.read(journalDbProvider).getAllMeasurableDataTypes,
       ),

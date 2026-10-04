@@ -9,6 +9,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -126,25 +127,29 @@ class ThemingController extends Notifier<ThemingState> {
   }
 
   void _watchThemePrefsUpdates() {
-    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
-      (ids) async {
-        if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
-          _isApplyingSyncedChanges = true;
-          try {
-            await _loadThemeMode();
-          } catch (e, st) {
-            _logger.error(
-              LogDomain.theming,
-              e,
-              stackTrace: st,
-              subDomain: 'theme_prefs_reload',
-            );
-            // Keep current theme if reload fails
-          }
-          _isApplyingSyncedChanges = false;
-        }
-      },
-    );
+    _settingsNotificationSub = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen(
+          (ids) async {
+            if (ids.contains(settingsNotification) &&
+                !_isApplyingSyncedChanges) {
+              _isApplyingSyncedChanges = true;
+              try {
+                await _loadThemeMode();
+              } catch (e, st) {
+                _logger.error(
+                  LogDomain.theming,
+                  e,
+                  stackTrace: st,
+                  subDomain: 'theme_prefs_reload',
+                );
+                // Keep current theme if reload fails
+              }
+              _isApplyingSyncedChanges = false;
+            }
+          },
+        );
   }
 
   Future<void> _loadThemeMode() async {

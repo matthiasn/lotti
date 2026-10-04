@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task_progress_state.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/task_progress_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -52,16 +52,19 @@ class TaskProgressController extends AsyncNotifier<TaskProgressState?> {
   /// service ticker). Called once at the end of [build]; subscriptions are
   /// torn down via `ref.onDispose`.
   void listen() {
-    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
-      affectedIds,
-    ) async {
-      if (affectedIds.intersection(_subscribedIds).isNotEmpty) {
-        final latest = await _fetch();
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      }
-    });
+    _updateSubscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen((
+          affectedIds,
+        ) async {
+          if (affectedIds.intersection(_subscribedIds).isNotEmpty) {
+            final latest = await _fetch();
+            if (latest != state.value) {
+              state = AsyncData(latest);
+            }
+          }
+        });
 
     _timeServiceSubscription = _timeService.getStream().listen((journalEntity) {
       if (journalEntity != null) {

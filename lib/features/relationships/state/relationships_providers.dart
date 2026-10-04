@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
@@ -32,13 +32,15 @@ class RelationshipsListController
 
   @override
   Future<List<RelationshipListItem>> build() {
-    _subscription ??= getIt<UpdateNotifications>().updateStream.listen((
-      affectedIds,
-    ) {
-      if (_touchesRelationships(affectedIds)) {
-        ref.invalidateSelf();
-      }
-    });
+    _subscription ??= ref.read(updateNotificationsProvider).updateStream.listen(
+      (
+        affectedIds,
+      ) {
+        if (_touchesRelationships(affectedIds)) {
+          ref.invalidateSelf();
+        }
+      },
+    );
     ref.onDispose(() {
       unawaited(_subscription?.cancel());
       _subscription = null;
@@ -59,17 +61,20 @@ final FutureProviderFamily<String?, String> relationshipNameProvider =
       ref,
       relationshipId,
     ) async {
-      final subscription = getIt<UpdateNotifications>().updateStream.listen((
-        affectedIds,
-      ) {
-        if (affectedIds.contains(relationshipId) ||
-            affectedIds.contains(privateToggleNotification) ||
-            affectedIds.contains(
-              relationshipEntityUpdateNotification(relationshipId),
-            )) {
-          ref.invalidateSelf();
-        }
-      });
+      final subscription = ref
+          .read(updateNotificationsProvider)
+          .updateStream
+          .listen((
+            affectedIds,
+          ) {
+            if (affectedIds.contains(relationshipId) ||
+                affectedIds.contains(privateToggleNotification) ||
+                affectedIds.contains(
+                  relationshipEntityUpdateNotification(relationshipId),
+                )) {
+              ref.invalidateSelf();
+            }
+          });
       ref.onDispose(subscription.cancel);
       final person = await ref
           .watch(relationshipRepositoryProvider)
@@ -131,27 +136,29 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
       })
       ..cacheFor(entryCacheDuration);
 
-    _subscription ??= getIt<UpdateNotifications>().updateStream.listen((
-      affectedIds,
-    ) {
-      // A check-in's affectedIds carry its relationship id (the wake-token
-      // delta from plan v2 D1), and every entity's affectedIds carry its own
-      // id, so the membership tests cover relationship edits, check-in
-      // writes, link writes and linked-task edits — local or synced. The
-      // private toggle is separate:
-      // this page's person and their check-ins are private-filtered reads,
-      // so hiding private entries must resolve an open private person to
-      // "no longer tracked" straight away.
-      if (affectedIds.contains(_relationshipId) ||
-          affectedIds.contains(privateToggleNotification) ||
-          affectedIds.contains(
-            relationshipEntityUpdateNotification(_relationshipId),
-          ) ||
-          affectedIds.any(_linkedTaskIds.contains) ||
-          affectedIds.any(_checkInEntryIds.contains)) {
-        ref.invalidateSelf();
-      }
-    });
+    _subscription ??= ref.read(updateNotificationsProvider).updateStream.listen(
+      (
+        affectedIds,
+      ) {
+        // A check-in's affectedIds carry its relationship id (the wake-token
+        // delta from plan v2 D1), and every entity's affectedIds carry its own
+        // id, so the membership tests cover relationship edits, check-in
+        // writes, link writes and linked-task edits — local or synced. The
+        // private toggle is separate:
+        // this page's person and their check-ins are private-filtered reads,
+        // so hiding private entries must resolve an open private person to
+        // "no longer tracked" straight away.
+        if (affectedIds.contains(_relationshipId) ||
+            affectedIds.contains(privateToggleNotification) ||
+            affectedIds.contains(
+              relationshipEntityUpdateNotification(_relationshipId),
+            ) ||
+            affectedIds.any(_linkedTaskIds.contains) ||
+            affectedIds.any(_checkInEntryIds.contains)) {
+          ref.invalidateSelf();
+        }
+      },
+    );
 
     final repository = ref.read(relationshipRepositoryProvider);
     final relationship = await repository.getRelationshipById(_relationshipId);

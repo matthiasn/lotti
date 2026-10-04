@@ -10,6 +10,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -269,25 +270,28 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   /// already-open Daily OS surface reflects a name set on another device.
   void _watchSyncedUserName() {
     if (!getIt.isRegistered<UpdateNotifications>()) return;
-    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
-      (ids) async {
-        // Reload on every settings notification. Each reload reads the current
-        // stored value, so overlapping notifications never strand the
-        // controller on a stale name — there is no in-flight guard to drop a
-        // newer update.
-        if (!ids.contains(settingsNotification)) return;
-        try {
-          await _reloadUserNameFromSettings();
-        } catch (e, st) {
-          _logger.error(
-            LogDomain.dailyOs,
-            e,
-            stackTrace: st,
-            subDomain: 'reload',
-          );
-        }
-      },
-    );
+    _settingsNotificationSub = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen(
+          (ids) async {
+            // Reload on every settings notification. Each reload reads the current
+            // stored value, so overlapping notifications never strand the
+            // controller on a stale name — there is no in-flight guard to drop a
+            // newer update.
+            if (!ids.contains(settingsNotification)) return;
+            try {
+              await _reloadUserNameFromSettings();
+            } catch (e, st) {
+              _logger.error(
+                LogDomain.dailyOs,
+                e,
+                stackTrace: st,
+                subDomain: 'reload',
+              );
+            }
+          },
+        );
   }
 
   Future<void> _reloadUserNameFromSettings() async {

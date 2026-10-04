@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -19,7 +20,7 @@ final plazaRepositoryProvider = Provider<PlazaRepository>(
 );
 
 final plazaUpdatesProvider = Provider<Stream<Set<String>>>(
-  (ref) => getIt<UpdateNotifications>().updateStream,
+  (ref) => ref.read(updateNotificationsProvider).updateStream,
 );
 
 /// Attention uses UTC calendar days. Share one clock per visible plaza route

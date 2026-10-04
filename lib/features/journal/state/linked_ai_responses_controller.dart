@@ -4,8 +4,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Controller for fetching AI responses linked to a specific entry (e.g., audio).
@@ -27,7 +27,7 @@ class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
 
   @override
   Future<List<AiResponseEntry>> build() async {
-    _updateNotifications = getIt<UpdateNotifications>();
+    _updateNotifications = ref.read(updateNotificationsProvider);
     ref.onDispose(() => _updateSubscription?.cancel());
     _listen();
     final results = await _fetch();

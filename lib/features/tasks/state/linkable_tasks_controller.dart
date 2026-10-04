@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Whether any task other than the one being viewed exists to be linked to.
@@ -55,9 +55,12 @@ class LinkableTasksController extends AsyncNotifier<bool> {
     // Any journal write can be the app's second task — including one this
     // page itself creates through "Create new linked task" — so the card has
     // to appear without a reload once one exists.
-    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen(
-      (_) => unawaited(_refresh()),
-    );
+    _updateSubscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen(
+          (_) => unawaited(_refresh()),
+        );
     return _fetch();
   }
 

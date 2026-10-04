@@ -16,7 +16,7 @@ import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -136,7 +136,7 @@ class JournalPageController extends Notifier<JournalPageState>
     final db = ref.read(journalDbProvider);
     final settingsDb = ref.read(settingsDbProvider);
     final fts5Db = getIt<Fts5Db>();
-    final updateNotifications = getIt<UpdateNotifications>();
+    final updateNotifications = ref.read(updateNotificationsProvider);
     final entitiesCacheService = getIt<EntitiesCacheService>();
 
     // Initialize delegates

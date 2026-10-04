@@ -54,8 +54,7 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
-import 'package:lotti/services/db_notification.dart'
-    show UpdateNotifications, agentNotification;
+import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -143,7 +142,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
-    updateNotifications: getIt<UpdateNotifications>(),
+    updateNotifications: ref.read(updateNotificationsProvider),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     offTrackAlerts: ref.watch(goalOffTrackAlertServiceProvider),
@@ -313,7 +312,7 @@ final Provider<GoalCheckInNotifier?> goalCheckInNotifierProvider =
       return GoalCheckInNotifier(
         goalRepository: repository,
         agentService: ref.watch(agentServiceProvider),
-        updateNotifications: getIt<UpdateNotifications>(),
+        updateNotifications: ref.read(updateNotificationsProvider),
       );
     }, name: 'goalCheckInNotifierProvider');
 

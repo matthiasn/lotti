@@ -8,10 +8,9 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/membership_list.dart';
 import 'package:lotti/database/shown_checklist_items.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:meta/meta.dart';
 
@@ -65,32 +64,35 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   List<String> _listed = const [];
 
   void _listen() {
-    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
-      affectedIds,
-    ) async {
-      final hit = affectedIds.intersection(subscribedIds);
-      if (hit.isEmpty) return;
-      developer.log(
-        'notify received id=$id hit=$hit subscribed=$subscribedIds',
-        name: 'ChecklistController',
-      );
-      if (!ref.mounted) return;
-      final latest = await _fetch();
-      if (!ref.mounted) return;
-      subscribedIds
-        ..clear()
-        ..add(id);
-      if (latest != null) {
-        subscribedIds
-          ..addAll(latest.data.linkedChecklistItems)
-          ..addAll(_listed);
-      }
-      developer.log(
-        'state updated id=$id items=${latest?.data.linkedChecklistItems.length}',
-        name: 'ChecklistController',
-      );
-      state = AsyncData(latest);
-    });
+    _updateSubscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .listen((
+          affectedIds,
+        ) async {
+          final hit = affectedIds.intersection(subscribedIds);
+          if (hit.isEmpty) return;
+          developer.log(
+            'notify received id=$id hit=$hit subscribed=$subscribedIds',
+            name: 'ChecklistController',
+          );
+          if (!ref.mounted) return;
+          final latest = await _fetch();
+          if (!ref.mounted) return;
+          subscribedIds
+            ..clear()
+            ..add(id);
+          if (latest != null) {
+            subscribedIds
+              ..addAll(latest.data.linkedChecklistItems)
+              ..addAll(_listed);
+          }
+          developer.log(
+            'state updated id=$id items=${latest?.data.linkedChecklistItems.length}',
+            name: 'ChecklistController',
+          );
+          state = AsyncData(latest);
+        });
   }
 
   /// The checklist as the screen shows it: the stored row with

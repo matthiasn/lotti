@@ -217,7 +217,9 @@ class GitHubTokenStatusController extends AsyncNotifier<GitHubTokenStatus> {
   /// be asked — it is not offered for tracking.
   @override
   Future<GitHubTokenStatus> build() async {
-    final changes = getIt<UpdateNotifications>().updateStream
+    final changes = ref
+        .read(updateNotificationsProvider)
+        .updateStream
         .where((ids) => ids.contains(gitHubAccountNotification))
         .listen((_) => ref.invalidateSelf());
     ref.onDispose(changes.cancel);
@@ -301,7 +303,7 @@ taskGitHubRepositoryProvider = StreamProvider.autoDispose
     .family<GitHubRepository?, String>((ref, taskId) {
       final db = ref.watch(journalDbProvider);
       return notificationDrivenItemStream<GitHubRepository>(
-        notifications: getIt<UpdateNotifications>(),
+        notifications: ref.read(updateNotificationsProvider),
         notificationKeys: {
           taskId,
           categoriesNotification,
@@ -426,7 +428,8 @@ pullRequestHoldersProvider = StreamProvider.autoDispose
       Future<Set<String>> read() async =>
           (await repository.holdersOf([pr]))[pr.key] ?? const <String>{};
       yield await read();
-      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+      await for (final ids
+          in ref.read(updateNotificationsProvider).updateStream) {
         if (ids.contains(pullRequestNotification) ||
             ids.contains(linkNotification)) {
           yield await read();
@@ -450,7 +453,8 @@ final StreamProviderFamily<String?, String> pullRequestHolderTitleProvider =
         taskId,
       })).whereType<Task>().firstOrNull?.data.title;
       yield await read();
-      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+      await for (final ids
+          in ref.read(updateNotificationsProvider).updateStream) {
         if (ids.contains(privateToggleNotification) || ids.contains(taskId)) {
           yield null;
           yield await read();
@@ -497,7 +501,9 @@ class GitHubAccountController extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async {
     // A token connected, disconnected or received elsewhere: read again.
-    final changes = getIt<UpdateNotifications>().updateStream
+    final changes = ref
+        .read(updateNotificationsProvider)
+        .updateStream
         .where((ids) => ids.contains(gitHubAccountNotification))
         .listen((_) => ref.invalidateSelf());
     ref.onDispose(changes.cancel);
@@ -562,7 +568,7 @@ class GitHubAccountController extends AsyncNotifier<String?> {
   /// Tells whoever follows the account — the token status — that the token
   /// changed here, as sync does for one received from another device.
   void _announce() =>
-      getIt<UpdateNotifications>().notify({gitHubAccountNotification});
+      ref.read(updateNotificationsProvider).notify({gitHubAccountNotification});
 
   /// Sends the token held here to the user's other devices again — one
   /// connected before tokens synced, or that a device joining later missed.
