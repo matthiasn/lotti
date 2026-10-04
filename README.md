@@ -165,9 +165,10 @@ terms; choosing one is your due diligence, covered under
 The long-term direction is inference on your own devices, as they become
 powerful enough to run capable models. The record and the reasoning over it
 would then both stay at home. Part of that is already here: speech recognition
-runs fully offline with Whisper or Voxtral, and a local model can drive the
-agents on a well-equipped laptop today — see
-[Running it all locally](#running-it-all-locally).
+runs fully offline with Whisper or Voxtral, and lighter jobs run on a local
+model. The agents still need a larger class of model than personal hardware runs
+well — see
+[Local models and the sweet spot for agents](#local-models-and-the-sweet-spot-for-agents).
 
 ---
 
@@ -560,24 +561,41 @@ terms say. Nothing in Lotti can verify that, and neither can anyone else from
 the outside. What Lotti can do is show you every request it made, where it
 went, and what it cost.
 
-### Running it all locally
+### Local models and the sweet spot for agents
 
-Local inference is finally good enough to drive the agents. **Qwen 3.6 35B A3B**
-is the model validated in daily use here — 35B parameters with roughly 3B active
-per token, which is what makes it practical on a personal machine while still
-being smart enough for the agentic loop. Others probably work too.
+Some of Lotti runs well on your own machine today. Speech is fully offline via
+Whisper or Voxtral, and Ollama or any other OpenAI-compatible local server
+handles lighter jobs.
 
-It is power-hungry. Tested extensively on an M4 Max with 128 GB of RAM, the
-laptop is audible under sustained agent load and the battery drains noticeably
-faster than during normal work. Feasible, not free.
+The agents are a different matter. Their sweet spot right now is models of the
+size and capability of **DeepSeek V4.1 Flash** and **GLM 5.3 Flash**, both of
+which perform particularly well on Lotti's agent workloads. The models people
+typically run locally do not cut it yet: Qwen 3.8 27B, for example, scores
+below both, spends most of its output on reasoning that does not improve the
+answer, and is too slow for the day planner's 30-second budget, so it is [not a candidate for any agent route](docs/evaluations/lotti-gym-2026-09-21.md).
+Local inference is also power-hungry: under sustained agent load on an M4 Max
+with 128 GB of RAM, the laptop is audible and the battery drains noticeably
+faster than during normal work.
 
-Hybrid is the realistic answer, and it is how I run it: a local model for the
-private categories, a cheap cloud model such as Gemini Flash for open-source
-work and everyday task management. Speech is fully offline via Whisper or
-Voxtral either way. Image generation is the one thing with no local path yet —
-cover art goes through Gemini or Alibaba. As personal hardware gets faster, the
-local share is meant to grow until a cloud provider is a choice rather than a
-necessity.
+**LottiGym is how new models are judged.** Models enter the market every few
+weeks, and a benchmark score says little about whether one can run a task
+agent. [LottiGym](knowledge/features/ai/model-evaluation.md) runs a candidate
+through Lotti's real agent harnesses — task, goal, relationship, Daily OS
+planning and query exercises, several samples each — grades the results, and
+records correctness, cost and latency side by side
+([recent results](docs/evaluations/)). A new model earns a recommendation by
+passing it:
+
+```sh
+python3 tool/lotti_gym.py assess --model MODEL_ID
+```
+
+Hybrid is the realistic answer today: speech offline, lighter jobs on a local
+model if you like, and the agents on a sweet-spot-class model from a provider
+with zero data retention. Image generation has no local path yet — cover art
+goes through Gemini or Alibaba. As personal hardware gets faster, models of
+that class are expected to move onto your own devices, until a cloud provider
+is a choice rather than a necessity.
 
 ### Energy is a routing decision too
 
