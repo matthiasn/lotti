@@ -234,6 +234,29 @@ void main() {
     });
 
     group('database reset helpers', () {
+      test('clearEditorDb needs no editor state service', () async {
+        final editorDb = EditorDb(inMemoryDatabase: true);
+        addTearDown(editorDb.close);
+        await editorDb.insertDraftState(
+          entryId: 'entry-1',
+          lastSaved: DateTime(2026, 9, 5),
+          draftDeltaJson: '{"ops":[]}',
+        );
+        final bare = Maintenance(
+          journalDb: getIt<JournalDb>(),
+          domainLogger: getIt<DomainLogger>(),
+          editorDb: () => editorDb,
+          syncDatabase: getIt.get<SyncDatabase>,
+          fts5Db: getIt.get<Fts5Db>,
+          replaceFts5Db: getIt.get<Fts5Db>,
+          integrityStores: () => const [],
+        );
+
+        await bare.clearEditorDb();
+
+        expect(await editorDb.select(editorDb.editorDrafts).get(), isEmpty);
+      });
+
       test(
         'clearEditorDb empties the drafts through the live connection and '
         'leaves it usable',

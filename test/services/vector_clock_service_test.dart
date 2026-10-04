@@ -47,6 +47,21 @@ void main() {
       expect(counter, firstVectorClockCounter);
     });
 
+    test(
+      'without a sync database or logger it still reserves, and has no '
+      'ledger to migrate',
+      () async {
+        final bare = VectorClockService(settingsDb: settingsDb);
+        await bare.initialized;
+        final before = await bare.getNextAvailableCounter();
+
+        await bare.getNextVectorClock();
+
+        expect(await bare.getNextAvailableCounter(), before + 1);
+        expect(await bare.migrateUnrecordedReservations(), 0);
+      },
+    );
+
     test('setNewHost creates new host UUID', () async {
       final originalHost = await service.getHost();
       final newHost = await service.setNewHost();
