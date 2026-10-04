@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
+import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart'
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
@@ -209,7 +211,7 @@ void main() {
         // the settings, persistence, nav, time and vector-clock services are
         // registered in both). Which providers those are is asserted in the
         // 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(21));
+        expect(buildProviderOverrides(context), hasLength(22));
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
@@ -282,7 +284,7 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(22));
+      expect(buildProviderOverrides(context), hasLength(23));
 
       // The slots and seams lower features declare resolve to the higher
       // features' implementations.
@@ -301,6 +303,10 @@ void main() {
       expect(
         wired.read(aiActionInterceptorProvider),
         same(interceptForRealAiSetup),
+      );
+      expect(
+        wired.read(journalDetailSlotsProvider),
+        same(appJournalDetailSlots),
       );
 
       // The startup node-profile broadcast reaches the outbox: real sync

@@ -43,3 +43,14 @@ class TrackPullRequestsItem extends ConsumerWidget {
     );
   }
 }
+
+/// The github feature's create-entry action for a task (wired into
+/// `JournalDetailSlots.taskCreateAction`): offers pull request tracking while
+/// GitHub tracking is available and the task does not show its pull requests
+/// yet. Once the section shows, the section is the way in and the row stands
+/// down.
+Widget? pullRequestTrackingAction(WidgetRef ref, String taskId) =>
+    ref.watch(gitHubTrackingAvailableProvider) &&
+        !ref.watch(taskShowsPullRequestsProvider(taskId))
+    ? TrackPullRequestsItem(taskId)
+    : null;

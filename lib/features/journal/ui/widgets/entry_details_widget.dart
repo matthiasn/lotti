@@ -11,9 +11,9 @@ import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/entry_summary_providers.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -31,8 +31,6 @@ import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dar
 import 'package:lotti/features/journal/util/audio_entry_one_liner.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -157,7 +155,9 @@ class EntryDetailsWidget extends ConsumerWidget {
       if (!eventsEnabled) return const SizedBox.shrink();
       return Padding(
         padding: cardMargin,
-        child: LinkedEventCard(event: item),
+        child:
+            ref.watch(journalDetailSlotsProvider).linkedEventCard?.call(item) ??
+            const SizedBox.shrink(),
       );
     }
 
@@ -351,6 +351,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       _ => false,
     };
 
+    final slots = ref.watch(journalDetailSlotsProvider);
     final detailSection = switch (item) {
       JournalAudio() => AudioPlayerWidget(item),
       WorkoutEntry() => WorkoutSummary(item),
@@ -367,21 +368,24 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         item,
         fadeOut: true,
       ),
-      Checklist() => ChecklistCardWrapper(
-        entryId: item.meta.id,
-        taskId: item.data.linkedTasks.first,
-      ),
+      Checklist() =>
+        slots.checklistBody?.call(
+              checklistId: item.meta.id,
+              taskId: item.data.linkedTasks.first,
+            ) ??
+            const SizedBox.shrink(),
       // Standalone rendering — no parent task/checklist context available.
       // Standalone rendering — use the parent task id when available so
       // row actions/providers get proper task-scoped context.
-      ChecklistItem() => ChecklistItemRow(
-        itemId: item.id,
-        checklistId: item.data.linkedChecklists.isEmpty
-            ? ''
-            : item.data.linkedChecklists.first,
-        taskId: linkedFrom is Task ? linkedFrom.id : '',
-        index: 0,
-      ),
+      ChecklistItem() =>
+        slots.checklistItemBody?.call(
+              itemId: item.id,
+              checklistId: item.data.linkedChecklists.isEmpty
+                  ? ''
+                  : item.data.linkedChecklists.first,
+              taskId: linkedFrom is Task ? linkedFrom.id : '',
+            ) ??
+            const SizedBox.shrink(),
       RatingEntry() => RatingSummary(item),
       _ => null,
     };

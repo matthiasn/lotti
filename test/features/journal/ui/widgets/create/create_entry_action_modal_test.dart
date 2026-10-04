@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -94,6 +96,8 @@ void main() {
         ProviderScope(
           overrides: withServiceOverrides([
             journalDbProvider.overrideWithValue(mockDb),
+            // The app's wiring, so the GitHub row appears as in production.
+            journalDetailSlotsProvider.overrideWithValue(appJournalDetailSlots),
             ...extraOverrides,
           ]),
           child: makeTestableWidget2(

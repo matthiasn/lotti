@@ -6,25 +6,25 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/state/task_app_bar_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_from_task_widget.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
-import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
-import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
-import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
-import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
@@ -258,7 +258,10 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                                   ),
                                   LinkedFromEntriesWidget(item),
                                   if (item is ChecklistItem)
-                                    LinkedFromChecklistWidget(item),
+                                    ?ref
+                                        .watch(journalDetailSlotsProvider)
+                                        .linkedFromChecklist
+                                        ?.call(item),
                                   if (item is Checklist)
                                     LinkedFromTaskWidget(item),
                                 ],

@@ -74,6 +74,19 @@ The layer operates on `JournalEntity` **variants**, not one canonical entry type
 **That breadth is why the feature is large.** It is not "the text note feature" —
 it is the shared create/edit/browse substrate for a whole family of entry types.
 
+# Slots for what higher features own
+
+Journal ranks below tasks, events and GitHub, yet its surfaces show their
+widgets: a checklist's card and an item's row in the entry details, the
+"linked from" checklists of an item, an event's card, a task's full page in
+the knowledge graph sidebar, and GitHub's row in a task's Add sheet. Journal
+declares each as a builder in `JournalDetailSlots`
+(`lib/features/journal/state/journal_detail_slots.dart`), read through
+`journalDetailSlotsProvider`. The composition root overrides it with
+`appJournalDetailSlots` (`lib/beamer/journal_detail_slots_wiring.dart`),
+which builds the real widgets. An unwired slot renders nothing, and the
+task page falls back to the plain entry page.
+
 # Split layout and routing
 
 `journal_root_page.dart` is the responsive entry point at `/journal`.

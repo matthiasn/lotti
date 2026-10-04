@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/checklist/ui/correction_undo_snackbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -33,7 +34,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
-import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';

@@ -2,14 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
-import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Right-side overlay that opens the focused graph node's FULL details by
-/// embedding the app's actual detail page — [TaskDetailsPage] for tasks,
+/// embedding the app's actual detail page — `TaskDetailsPage` for tasks,
 /// [EntryDetailsPage] for any other entry — at a narrow, mobile-style width.
 /// Rendered above the navigational inspector; [onClose] dismisses it.
 ///
@@ -78,7 +78,13 @@ class EntryDetailSidebar extends ConsumerWidget {
                           tokens: tokens,
                         );
                       }
-                      return _EmbeddedDetailPage(item: item, entryId: entryId);
+                      return _EmbeddedDetailPage(
+                        item: item,
+                        entryId: entryId,
+                        taskDetailPage: ref
+                            .watch(journalDetailSlotsProvider)
+                            .taskDetailPage,
+                      );
                     },
                   ),
                 ),
@@ -165,10 +171,18 @@ class _Message extends StatelessWidget {
 /// own Scaffold + chrome and are exercised by their own tests, so this thin
 /// embedding shell is excluded from coverage.
 class _EmbeddedDetailPage extends StatelessWidget {
-  const _EmbeddedDetailPage({required this.item, required this.entryId});
+  const _EmbeddedDetailPage({
+    required this.item,
+    required this.entryId,
+    required this.taskDetailPage,
+  });
 
   final JournalEntity item;
   final String entryId;
+
+  /// The tasks feature's details page, or null when unwired; a task then
+  /// opens in the plain entry page.
+  final TaskDetailPageBuilder? taskDetailPage;
 
   @override
   Widget build(BuildContext context) {
@@ -181,9 +195,9 @@ class _EmbeddedDetailPage extends StatelessWidget {
       ],
       child: Navigator(
         onGenerateRoute: (_) => MaterialPageRoute<void>(
-          builder: (_) => item is Task
-              ? TaskDetailsPage(taskId: entryId)
-              : EntryDetailsPage(itemId: entryId),
+          builder: (_) =>
+              (item is Task ? taskDetailPage?.call(entryId) : null) ??
+              EntryDetailsPage(itemId: entryId),
         ),
       ),
     );
