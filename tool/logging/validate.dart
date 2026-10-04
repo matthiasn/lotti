@@ -61,6 +61,29 @@ void main(List<String> args) {
     exit(1);
   }
 
+  // Self-tightening: a file below its entry fails until the baseline records
+  // it, so the change that moves a call to DomainLogger locks it in.
+  if (!updating) {
+    final baseline = readBaseline(baselineFile);
+    final behind = [
+      for (final MapEntry(key: path, value: was) in baseline.entries)
+        if ((result.counts[path] ?? 0) < was) path,
+    ]..sort();
+    if (behind.isNotEmpty) {
+      stderr
+        ..writeln(
+          'dart:developer logging check failed — the baseline is behind the '
+          'tree:\n',
+        )
+        ..writeln(behind.map((p) => '  $p').join('\n'))
+        ..writeln(
+          '\nTighten the baseline: dart run tool/logging/validate.dart '
+          '--update-baseline',
+        );
+      exit(1);
+    }
+  }
+
   if (updating) baselineFile.writeAsStringSync(encodeBaseline(result.counts));
   stdout.writeln(
     '${updating ? 'Baseline updated' : 'dart:developer logging check passed'}: '

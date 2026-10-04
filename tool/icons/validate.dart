@@ -66,6 +66,27 @@ void main(List<String> args) {
             .toList()
       : result.violations;
 
+  // Self-tightening: a file below its entry fails until the baseline records
+  // it, so the change that migrates an icon locks the migration in.
+  final behind = updating
+      ? const <String>[]
+      : [
+          for (final MapEntry(key: path, value: was) in readBaseline(
+            baselineFile,
+          ).entries)
+            if ((result.debt[path] ?? 0) < was) path,
+        ];
+  if (blocking.isEmpty && behind.isNotEmpty) {
+    stderr
+      ..writeln('Icon check failed — the baseline is behind the tree:\n')
+      ..writeln((behind..sort()).map((p) => '  $p').join('\n'))
+      ..writeln(
+        '\nTighten the baseline: dart run tool/icons/validate.dart '
+        '--update-baseline',
+      );
+    exit(1);
+  }
+
   if (blocking.isEmpty) {
     stdout.writeln(
       'Icon check passed. ${result.debt.length} files still to migrate '

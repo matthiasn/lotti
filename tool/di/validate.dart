@@ -65,6 +65,28 @@ void main(List<String> args) {
     exit(1);
   }
 
+  // Self-tightening: a file below its entry fails until the baseline records
+  // it, so the change that removes a lookup is the one that locks it in.
+  if (!updating) {
+    final baseline = readBaseline(baselineFile);
+    final behind = [
+      for (final MapEntry(key: path, value: was) in baseline.entries)
+        if ((result.debt[path]?.lookups ?? 0) < was.lookups ||
+            (result.debt[path]?.isRegistered ?? 0) < was.isRegistered)
+          path,
+    ]..sort();
+    if (behind.isNotEmpty) {
+      stderr
+        ..writeln('getIt check failed — the baseline is behind the tree:\n')
+        ..writeln(behind.map((p) => '  $p').join('\n'))
+        ..writeln(
+          '\nThese files shed getIt use. Tighten the baseline: dart run '
+          'tool/di/validate.dart --update-baseline',
+        );
+      exit(1);
+    }
+  }
+
   if (updating) {
     baselineFile.writeAsStringSync(encodeBaseline(result.debt));
   }
