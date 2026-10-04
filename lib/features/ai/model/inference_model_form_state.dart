@@ -1,5 +1,5 @@
 import 'package:formz/formz.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Validation failures surfaced by the inference-model edit form. Mapped to

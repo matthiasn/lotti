@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:async/async.dart' show StreamGroup;
 import 'package:drift/drift.dart' show Value;
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_diff.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:uuid/uuid.dart';
 

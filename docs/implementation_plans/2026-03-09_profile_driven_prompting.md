@@ -452,8 +452,8 @@ SkillAssignment(skillId: 'skill-transcribe-001', automate: true),
 ### Phase 1: Data Model & Skill Entity
 
 1. **Add `SkillType` and `ContextPolicy` enums** to `lib/features/ai/state/consts.dart`
-2. **Add `SkillAssignment` freezed class** to new file `lib/features/ai/model/skill_assignment.dart`
-3. **Add `AiConfig.skill` variant** to `lib/features/ai/model/ai_config.dart`
+2. **Add `SkillAssignment` freezed class** to new file `lib/classes/ai/skill_assignment.dart`
+3. **Add `AiConfig.skill` variant** to `lib/classes/ai/ai_config.dart`
 4. **Add `skillAssignments` to `AiConfigInferenceProfile`** (keep legacy fields)
 5. **Add `AiConfigType.skill`** to the enum
 6. **Update all exhaustive switch/map sites** that handle `AiConfig` cases. Adding a new sealed-class variant breaks compilation at every exhaustive pattern match. Known sites:
@@ -629,7 +629,7 @@ This is the standard risk for any new defaulted field in a last-write-wins sync 
 
 | File | Purpose |
 |------|---------|
-| `lib/features/ai/model/skill_assignment.dart` | `SkillAssignment` freezed class |
+| `lib/classes/ai/skill_assignment.dart` | `SkillAssignment` freezed class |
 | `lib/features/ai/util/skill_seeding_service.dart` | Preconfigured skill seeding |
 | `lib/features/ai/helpers/skill_prompt_builder.dart` | Assembles final prompts from skill instructions + runtime context |
 | `lib/features/ai/helpers/profile_automation_resolver.dart` | Resolve profile for task's agent |
@@ -639,7 +639,7 @@ This is the standard risk for any new defaulted field in a last-write-wins sync 
 
 | File | Change |
 |------|--------|
-| `lib/features/ai/model/ai_config.dart` | Add `AiConfig.skill`, add `skillAssignments` to profile |
+| `lib/classes/ai/ai_config.dart` | Add `AiConfig.skill`, add `skillAssignments` to profile |
 | `lib/features/ai/state/consts.dart` | Add `SkillType`, `ContextPolicy` enums |
 | `lib/features/ai/database/ai_config_db.dart` | Handle `skill` case in exhaustive `config.map(...)` for persistence |
 | `lib/features/ai/repository/ai_config_repository.dart` | Query filtering for skill type |

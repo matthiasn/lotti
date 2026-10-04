@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:lotti/services/outbox_service.dart';
+
 import 'outbox_service_test_harness.dart';
 
 void main() {

@@ -83,7 +83,7 @@ if (from < 2) {
 
 ### Phase 2: Message Types
 
-**File: `/lib/features/sync/model/sync_message.dart`**
+**File: `/lib/classes/sync/sync_message.dart`**
 
 Add two new factory constructors:
 
@@ -474,7 +474,7 @@ Wire up `BackfillRequestService.start()` when sync is initialized.
 | Action | File |
 |--------|------|
 | Modify | `/lib/database/sync_db.dart` |
-| Modify | `/lib/features/sync/model/sync_message.dart` |
+| Modify | `/lib/classes/sync/sync_message.dart` |
 | Modify | `/lib/features/sync/tuning.dart` |
 | Modify | `/lib/features/sync/matrix/sync_event_processor.dart` |
 | Modify | `/lib/features/sync/outbox/outbox_service.dart` |

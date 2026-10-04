@@ -1,9 +1,9 @@
 import 'package:json_schema_builder/json_schema_builder.dart';
+import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/agents/retired_tool_calls.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/directed_relation.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
-import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';

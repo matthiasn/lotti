@@ -38,11 +38,11 @@ Both task-level widgets are mounted sequentially inside `TaskForm` (`lib/feature
 
 ### 2.2 Persistence & state
 
-- `ChangeItem` (Freezed, `lib/features/agents/model/change_set.dart`) — `{toolName, args, humanSummary, status, groupId?}` plus static `fingerprint(ChangeItem)` and `fingerprintFromParts(toolName, args)`.
-- `ChangeItemStatus` enum (`lib/features/agents/model/agent_enums.dart`): `pending`, `confirmed`, `rejected`, `deferred`.
+- `ChangeItem` (Freezed, `lib/classes/agents/change_set.dart`) — `{toolName, args, humanSummary, status, groupId?}` plus static `fingerprint(ChangeItem)` and `fingerprintFromParts(toolName, args)`.
+- `ChangeItemStatus` enum (`lib/classes/agents/agent_enums.dart`): `pending`, `confirmed`, `rejected`, `deferred`.
 - `ChangeSetStatus` enum: `pending`, `partiallyResolved`, `resolved`, `expired`.
 - `ChangeDecisionVerdict` enum: `confirmed`, `rejected`, `deferred`.
-- `ChangeSetEntity` / `ChangeDecisionEntity` — variants of `AgentDomainEntity` (`lib/features/agents/model/agent_domain_entity.dart`), persisted via Drift in `agent.sqlite`.
+- `ChangeSetEntity` / `ChangeDecisionEntity` — variants of `AgentDomainEntity` (`lib/classes/agents/agent_domain_entity.dart`), persisted via Drift in `agent.sqlite`.
 - One pending `ChangeSetEntity` per `(agentId, taskId)` today: `ChangeSetBuilder.build()` merges new items into an existing pending set instead of creating a second one.
 
 ### 2.3 Context passed to the agent each wake
@@ -288,7 +288,7 @@ The panel replaces **both** `TaskAgentReportSection` and `ChangeSetSummaryCard` 
 
 ### 4.1 Enum extensions
 
-`lib/features/agents/model/agent_enums.dart`:
+`lib/classes/agents/agent_enums.dart`:
 
 ```dart
 enum ChangeItemStatus {
@@ -314,7 +314,7 @@ enum DecisionActor { // NEW enum
 
 ### 4.2 ChangeDecisionEntity extension
 
-`lib/features/agents/model/agent_domain_entity.dart` — add two fields to the `changeDecision` factory:
+`lib/classes/agents/agent_domain_entity.dart` — add two fields to the `changeDecision` factory:
 
 - `DecisionActor actor` (default `user` so pre-existing rows deserialize cleanly).
 - `String? reason` (the free-text justification supplied either by user rejection reason or by the agent on retraction). The rejection-reason code path already populates this today; we are reusing the slot.
@@ -643,8 +643,8 @@ Follow `test/README.md` on `fakeAsync`, deterministic `DateTime(2026, 4, 18)`, n
 
 | File | Change |
 |---|---|
-| `lib/features/agents/model/agent_enums.dart` | Add `retracted` to `ChangeItemStatus` / `ChangeDecisionVerdict`; add `DecisionActor` enum |
-| `lib/features/agents/model/agent_domain_entity.dart` | Add `actor`, `reason` to `changeDecision` factory |
+| `lib/classes/agents/agent_enums.dart` | Add `retracted` to `ChangeItemStatus` / `ChangeDecisionVerdict`; add `DecisionActor` enum |
+| `lib/classes/agents/agent_domain_entity.dart` | Add `actor`, `reason` to `changeDecision` factory |
 | `lib/features/agents/database/agent_database.dart` | Schema bump + migration for new columns |
 | `lib/features/agents/database/agent_repository.dart` | Add `getProposalLedger`, `markItemRetracted`; add `ProposalLedger` / `LedgerEntry` types |
 | `lib/features/agents/service/change_set_confirmation_service.dart` | Populate `actor=user` on decision records |

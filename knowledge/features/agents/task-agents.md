@@ -33,7 +33,7 @@ sources:
     title: TimeEntryUpdateHandler — one text/range edit for every time entry
     last_modified: 2026-09-22
   - id: retired-tools
-    resource: ../../../lib/features/agents/model/retired_tool_calls.dart
+    resource: ../../../lib/classes/agents/retired_tool_calls.dart
     title: upgradeRetiredTaskAgentToolCall — the retired running-timer tool
     last_modified: 2026-09-22
   - id: checklist-provenance

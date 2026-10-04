@@ -49,7 +49,7 @@ sources:
     title: Per-host gap-free watermarks a claim carries
     last_modified: 2026-09-27
   - id: enums
-    resource: ../../../lib/features/agents/model/agent_enums.dart
+    resource: ../../../lib/classes/agents/agent_enums.dart
     title: WakeReason
     last_modified: 2026-08-11
   - id: runtime-settings

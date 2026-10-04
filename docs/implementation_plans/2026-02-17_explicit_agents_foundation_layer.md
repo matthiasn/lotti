@@ -35,7 +35,7 @@ Constraints:
 3. Journal entry links are first-class, typed, and syncable (reference architecture only; agent links are forked into an agent-native model).
    - `lib/classes/entry_link.dart`
    - `lib/database/database.drift`
-   - `lib/features/sync/model/sync_message.dart`
+   - `lib/classes/sync/sync_message.dart`
 
 4. Vector-clock-style monotonic counters already exist (hostId -> counter map).
    - `lib/classes/vector_clock.dart`

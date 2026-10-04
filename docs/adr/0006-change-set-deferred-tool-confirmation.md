@@ -206,6 +206,6 @@ during provider rebuilds.
 - `lib/features/agents/ui/change_set_summary_card.dart` — confirmation UI
 - `lib/features/agents/state/change_set_providers.dart` — Riverpod providers
 - `lib/features/agents/workflow/task_tool_dispatcher.dart` — tool dispatch at confirmation time
-- `lib/features/agents/model/change_set.dart` — `ChangeItem` value type
-- `lib/features/agents/model/agent_domain_entity.dart` — `ChangeSetEntity`, `ChangeDecisionEntity`
+- `lib/classes/agents/change_set.dart` — `ChangeItem` value type
+- `lib/classes/agents/agent_domain_entity.dart` — `ChangeSetEntity`, `ChangeDecisionEntity`
 - ADR 0004: Tool execution policy (immediate path)

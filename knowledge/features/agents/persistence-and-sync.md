@@ -53,11 +53,11 @@ sources:
     title: AgentProposalLedger
     last_modified: 2026-08-01
   - id: constants
-    resource: ../../../lib/features/agents/model/agent_constants.dart
+    resource: ../../../lib/classes/agents/agent_constants.dart
     title: AgentLinkTypes
     last_modified: 2026-07-24
   - id: entity-model
-    resource: ../../../lib/features/agents/model/agent_domain_entity.dart
+    resource: ../../../lib/classes/agents/agent_domain_entity.dart
     title: AgentDomainEntity
     last_modified: 2026-08-12
   - id: db-conversions

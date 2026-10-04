@@ -9,7 +9,7 @@ import 'package:glados/glados.dart'
         Glados,
         IntAnys,
         any;
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 
 class _GeneratedHeadingReport {

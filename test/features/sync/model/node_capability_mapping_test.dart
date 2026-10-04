@@ -5,8 +5,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 
 extension _AnyNodeCapabilityMapping on glados.Any {
   glados.Generator<InferenceProviderType> get inferenceProviderType =>

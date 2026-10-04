@@ -1,0 +1,122 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+
+part 'sync_node_profile.freezed.dart';
+part 'sync_node_profile.g.dart';
+
+/// AI inference capabilities that a sync node advertises.
+///
+/// The mapping from [InferenceProviderType] is **explicit**, not by string
+/// match — see [nodeCapabilityFromProviderType].
+/// `ollamaLlm` deliberately carries a semantic suffix because future Ollama
+/// integrations (embeddings, image) may warrant separate capability tokens
+/// without requiring a `NodeCapability.ollama` rename across stored snapshots.
+/// `omlxLlm` follows the same pattern for the local OpenAI-compatible oMLX
+/// runtime.
+enum NodeCapability { omlxLlm, ollamaLlm, voxtral, whisper, sherpa }
+
+/// Resolves the [NodeCapability] that advertises support for [providerType],
+/// or null when the provider is cloud-only (no node-capability token exists
+/// for cloud providers — they don't need to be advertised).
+NodeCapability? nodeCapabilityFromProviderType(
+  InferenceProviderType providerType,
+) {
+  switch (providerType) {
+    case InferenceProviderType.omlx:
+      return NodeCapability.omlxLlm;
+    case InferenceProviderType.ollama:
+      return NodeCapability.ollamaLlm;
+    case InferenceProviderType.voxtral:
+      return NodeCapability.voxtral;
+    case InferenceProviderType.sherpa:
+      return NodeCapability.sherpa;
+    case InferenceProviderType.whisper:
+      return NodeCapability.whisper;
+    case InferenceProviderType.alibaba:
+    case InferenceProviderType.anthropic:
+    case InferenceProviderType.gemini:
+    case InferenceProviderType.genericOpenAi:
+    case InferenceProviderType.melious:
+    case InferenceProviderType.mistral:
+    case InferenceProviderType.nebiusAiStudio:
+    case InferenceProviderType.openAi:
+    case InferenceProviderType.openRouter:
+      return null;
+  }
+}
+
+/// A node's self-description published over Matrix.
+///
+/// Each device broadcasts its own profile on startup (and whenever the
+/// detected capability set changes). Receivers store the latest snapshot per
+/// `hostId` in a local directory, used by:
+/// - the inference-profile pinning UI (to show "pin to which device?")
+/// - the auto-trigger dispatcher (to decide whether the local node is the
+///   pinned host for an incoming local-only audio entry).
+///
+/// `hostId` is the `VectorClockService` host UUID — the same identifier used
+/// for `SyncMessage.originatingHostId` and `VectorClock` keys.
+///
+/// `updatedAt` is the broadcast timestamp; receivers compare it on upsert and
+/// ignore older snapshots for the same `hostId`.
+@freezed
+abstract class SyncNodeProfile with _$SyncNodeProfile {
+  const factory SyncNodeProfile({
+    required String hostId,
+    required String displayName,
+    required String platform,
+    required List<NodeCapability> capabilities,
+    required DateTime updatedAt,
+    String? osVersion,
+    String? cpuModel,
+    int? ramMb,
+    String? gpuModel,
+    String? appVersion,
+  }) = _SyncNodeProfile;
+
+  factory SyncNodeProfile.fromJson(Map<String, dynamic> json) =>
+      _$SyncNodeProfileFromJson(json);
+}
+
+/// Keeps legacy peers' closed capability enum readable on the sync wire.
+/// New peers prefer the extensible complete list and ignore unknown tokens;
+/// older peers read only the original four tokens in `capabilities`.
+class SyncNodeProfileWireConverter
+    implements JsonConverter<SyncNodeProfile, Map<String, dynamic>> {
+  const SyncNodeProfileWireConverter();
+
+  static const Set<NodeCapability> _legacyCapabilities = {
+    NodeCapability.omlxLlm,
+    NodeCapability.ollamaLlm,
+    NodeCapability.voxtral,
+    NodeCapability.whisper,
+  };
+
+  @override
+  SyncNodeProfile fromJson(Map<String, dynamic> json) {
+    final tokens =
+        (json['capabilitiesV2'] ?? json['capabilities']) as List<dynamic>;
+    final known = NodeCapability.values
+        .map((capability) => capability.name)
+        .toSet();
+    return SyncNodeProfile.fromJson({
+      ...json,
+      'capabilities': tokens.where(known.contains).toList(),
+    });
+  }
+
+  @override
+  Map<String, dynamic> toJson(SyncNodeProfile profile) => {
+    ...profile.toJson(),
+    'capabilities': profile.capabilities
+        .where(_legacyCapabilities.contains)
+        .map((capability) => capability.name)
+        .toList(),
+    if (profile.capabilities.any(
+      (capability) => !_legacyCapabilities.contains(capability),
+    ))
+      'capabilitiesV2': profile.capabilities
+          .map((capability) => capability.name)
+          .toList(),
+  };
+}

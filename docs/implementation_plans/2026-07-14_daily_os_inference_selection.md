@@ -593,7 +593,7 @@ lib/features/daily_os_next/agents/service/day_agent_service.dart
 lib/features/daily_os_next/ui/pages/daily_os_next_root.dart
 lib/features/daily_os_next/ui/pages/day_page.dart
 lib/features/daily_os_next/ui/pages/day_page_header.dart
-lib/features/agents/model/agent_config.dart
+lib/classes/agents/agent_config.dart
 lib/features/agents/state/task_agent_model_providers.dart
 lib/features/ai/ui/widgets/inference_profile_picker_modal.dart
 lib/features/ai/ui/widgets/inference_provider_model_picker_modal.dart

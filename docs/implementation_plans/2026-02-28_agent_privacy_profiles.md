@@ -48,7 +48,7 @@ database alongside providers, models, and prompts.
 ### 3.1 New Freezed Variant: `AiConfig.inferenceProfile`
 
 Add a new variant to the existing `AiConfig` sealed union in
-`lib/features/ai/model/ai_config.dart`:
+`lib/classes/ai/ai_config.dart`:
 
 ```dart
 const factory AiConfig.inferenceProfile({
@@ -657,9 +657,9 @@ local transcription + cloud thinking).
 
 | File | Changes |
 |---|---|
-| `lib/features/ai/model/ai_config.dart` | Add `inferenceProfile` variant, `AiConfigType.inferenceProfile` |
-| `lib/features/agents/model/agent_domain_entity.dart` | Add `profileId` to `agentTemplate` and `agentTemplateVersion` |
-| `lib/features/agents/model/agent_config.dart` | Add `profileId` to `AgentConfig` |
+| `lib/classes/ai/ai_config.dart` | Add `inferenceProfile` variant, `AiConfigType.inferenceProfile` |
+| `lib/classes/agents/agent_domain_entity.dart` | Add `profileId` to `agentTemplate` and `agentTemplateVersion` |
+| `lib/classes/agents/agent_config.dart` | Add `profileId` to `AgentConfig` |
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Use `ProfileResolver` instead of direct `resolveInferenceProvider` |
 | `lib/features/agents/util/inference_provider_resolver.dart` | Keep for legacy fallback, call from `ProfileResolver` |
 | `lib/features/agents/service/agent_template_service.dart` | Accept `profileId` in `createTemplate`/`updateTemplate` |

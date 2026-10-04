@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 
 /// Normalizes a stored provider type string to a valid
 /// [InferenceProviderType] name.

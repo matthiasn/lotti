@@ -429,7 +429,7 @@ class CoverArtBackground extends ConsumerWidget {
 ## Phase 5: Filter Toggle
 
 ### 5.1 Add showCoverArt to state
-**File:** `lib/features/journal/state/journal_page_state.dart`
+**File:** `lib/classes/journal_page_state.dart`
 
 Add to JournalPageState:
 ```dart
@@ -563,7 +563,7 @@ Add to PROMPT STRUCTURE GUIDELINES after "Technical" (around line 606):
 7. `lib/features/journal/ui/widgets/list_cards/modern_task_card.dart` - Add thumbnail display
 8. `lib/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart` - Pass showCoverArt
 9. `lib/features/tasks/ui/task_app_bar.dart` - Add expandable SliverAppBar (2:1 ratio)
-10. `lib/features/journal/state/journal_page_state.dart` - Add showCoverArt field
+10. `lib/classes/journal_page_state.dart` - Add showCoverArt field
 11. `lib/features/journal/state/journal_page_controller.dart` - Add setShowCoverArt method
 12. `lib/features/tasks/ui/filtering/task_filter_content.dart` - Add toggle
 13. `lib/features/ai/util/preconfigured_prompts.dart` - Add composition guidance

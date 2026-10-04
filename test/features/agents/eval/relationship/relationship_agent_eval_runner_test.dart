@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
 

@@ -539,7 +539,7 @@ Test cases:
 | `lib/features/agents/workflow/change_set_builder.dart` | Add `ExistingChecklistTitlesResolver`, `_checkAddRedundancy()`, extend `build()` for rejection history, same-wake title tracking |
 | `lib/features/agents/workflow/task_agent_workflow.dart` | Wire up the new resolver, query recent rejections, pass to `build()` |
 | `lib/features/agents/workflow/change_proposal_filter.dart` | No changes needed (metadata redundancy is separate) |
-| `lib/features/agents/model/agent_domain_entity.dart` | Add `args` field to `ChangeDecisionEntity` (if not present) |
+| `lib/classes/agents/agent_domain_entity.dart` | Add `args` field to `ChangeDecisionEntity` (if not present) |
 | `lib/features/agents/service/change_set_confirmation_service.dart` | Persist `args` on decision creation |
 | `test/features/agents/workflow/change_set_builder_test.dart` | New/extended tests for all dedup layers |
 

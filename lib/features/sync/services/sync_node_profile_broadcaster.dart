@@ -1,9 +1,9 @@
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/model/sync_node_profile.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Probes the local node's capabilities, persists the snapshot as the "self"

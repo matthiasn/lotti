@@ -98,11 +98,11 @@ cheap typed scan. Sub-models live beside the union in
 
 Mechanical, following the audited recipe:
 
-- `lib/features/agents/model/agent_domain_entity.dart`: two new `const
+- `lib/classes/agents/agent_domain_entity.dart`: two new `const
   factory` variants + sub-model freezed classes; regenerate.
-- `lib/features/agents/model/agent_constants.dart`: `AgentEntityTypes.dayDirective
+- `lib/classes/agents/agent_constants.dart`: `AgentEntityTypes.dayDirective
   = 'day_directive'`, `dayStatusEvent = 'day_status_event'`.
-- `lib/features/agents/model/agent_enums.dart`: `DayStatusKind`,
+- `lib/classes/agents/agent_enums.dart`: `DayStatusKind`,
   `DayStatusReason`, `DayCommitmentSource` enums (forward-compatible unknown
   handling like existing enums).
 - Compile-forced maps: `agent_db_conversions.dart` (deletedAt / entityType /

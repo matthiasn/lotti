@@ -22,10 +22,10 @@ SQLite databases, there is no Lotti cloud service and no telemetry, and the
 only way data leaves a device is the optional end-to-end encrypted Matrix
 sync between the user's own devices, with keys exchanged via QR code and
 never transmitted. Journal entities sync payload-agnostically
-(`SyncMessage.journalEntity` in `lib/features/sync/model/sync_message.dart`),
+(`SyncMessage.journalEntity` in `lib/classes/sync/sync_message.dart`),
 so new entity types inherit this posture automatically. AI inference can run
 fully locally (Ollama, OMLX/MLX — `InferenceProviderType` in
-`lib/features/ai/model/ai_config.dart`) or against a cloud provider the user
+`lib/classes/ai/ai_config.dart`) or against a cloud provider the user
 configured with their own API key.
 
 Under GDPR, a private individual keeping personal notes about their own

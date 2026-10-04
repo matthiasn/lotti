@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:uuid/uuid.dart';
 

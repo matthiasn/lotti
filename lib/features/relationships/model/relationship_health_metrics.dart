@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/report_health_band.dart';
 
 /// User-facing relationship health bands (ADR 0040 Decision 3), parsed

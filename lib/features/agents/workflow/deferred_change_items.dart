@@ -1,4 +1,4 @@
-import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/classes/agents/change_set.dart';
 
 /// Builds the [ChangeItem]s for a pending change set from a strategy's
 /// accumulated deferred tool calls.

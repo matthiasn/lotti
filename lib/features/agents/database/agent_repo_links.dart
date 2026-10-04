@@ -1,17 +1,16 @@
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart' show AgentLinkSelection;
+import 'package:lotti/classes/agents/agent_link.dart' as model;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repo_internals.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
-import 'package:lotti/features/agents/model/agent_link.dart'
-    show AgentLinkSelection;
 import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;

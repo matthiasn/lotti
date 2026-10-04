@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/demo/ai/demo_real_ai_wiring.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';

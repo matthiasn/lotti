@@ -22,8 +22,8 @@
     `lib/features/theming/ui/theming_page.dart:107` (segmented ThemeMode, light/dark
     pickers).
 - Sync message envelope and processing:
-  - Freezed union for message types: `lib/features/sync/model/sync_message.dart:12`–
-    `lib/features/sync/model/sync_message.dart:46`.
+  - Freezed union for message types: `lib/classes/sync/sync_message.dart:12`–
+    `lib/classes/sync/sync_message.dart:46`.
   - Outbox enqueues messages and subjects per variant:
     `lib/features/sync/outbox/outbox_service.dart:86`–
     `lib/features/sync/outbox/outbox_service.dart:259`.
@@ -65,7 +65,7 @@
 ## Changes by Component
 
 - Sync models
-  - Add union variant to `lib/features/sync/model/sync_message.dart`:
+  - Add union variant to `lib/classes/sync/sync_message.dart`:
     - `const factory SyncMessage.themingSelection({ required String lightThemeName, required String darkThemeName, required String themeMode, required int updatedAt, required SyncEntryStatus status, }) = SyncThemingSelection;`
     - Run codegen to update `*.g.dart` and `*.freezed.dart`.
 
@@ -136,7 +136,7 @@
 ## Files to Modify / Add
 
 - Modify
-  - `lib/features/sync/model/sync_message.dart` — add `SyncThemingSelection` variant.
+  - `lib/classes/sync/sync_message.dart` — add `SyncThemingSelection` variant.
   - `lib/features/sync/outbox/outbox_service.dart` — handle theming selection in `enqueueMessage`
     and set subject.
   - `lib/features/sync/matrix/sync_event_processor.dart` — add apply case for theming; persist to

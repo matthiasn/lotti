@@ -1,4 +1,4 @@
-import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 
 /// Whether a [SyncJournalEntity] payload carries its media file (the image or
 /// audio blob) alongside the JSON, rather than the JSON alone.

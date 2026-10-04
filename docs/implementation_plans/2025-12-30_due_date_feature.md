@@ -23,7 +23,7 @@ Implement enhanced Due Date functionality for task management, including:
 ### Phase 1: State Layer Updates
 
 #### 1.1 JournalPageState
-**File:** `lib/features/journal/state/journal_page_state.dart`
+**File:** `lib/classes/journal_page_state.dart`
 
 Add to `JournalPageState`:
 ```dart
@@ -326,7 +326,7 @@ Update existing tests to cover `showDueDate`:
 - `test/features/tasks/ui/header/task_due_date_widget_test.dart`
 
 ### Modified Files
-- `lib/features/journal/state/journal_page_state.dart`
+- `lib/classes/journal_page_state.dart`
 - `lib/features/journal/state/journal_page_controller.dart`
 - `lib/features/journal/state/entry_controller.dart`
 - `lib/features/journal/ui/widgets/list_cards/modern_task_card.dart`

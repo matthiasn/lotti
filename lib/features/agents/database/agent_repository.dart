@@ -1,3 +1,7 @@
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/agents/agent_link.dart' as model;
+import 'package:lotti/classes/agents/attention_negotiation.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_attention_projection.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -8,11 +12,7 @@ import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repo_observation_retention.dart';
 import 'package:lotti/features/agents/database/agent_repo_queries.dart';
 import 'package:lotti/features/agents/database/agent_repo_retention.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/agent_link_slot.dart';
-import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
 
