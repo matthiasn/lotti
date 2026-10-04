@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_pro
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
         domainLoggerProvider,

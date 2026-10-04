@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 
 /// The task-agent-specific service.
 final taskAgentServiceProvider = Provider<TaskAgentService>(

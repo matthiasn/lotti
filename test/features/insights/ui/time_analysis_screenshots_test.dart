@@ -22,7 +22,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/features/insights/state/insights_preferences_controller.da
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';

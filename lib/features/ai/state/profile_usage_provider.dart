@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/util/profile_usage.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 
 /// The inference profile ids some category default or agent setup routes
 /// through — the source of the Profiles tab's "in use" badge.

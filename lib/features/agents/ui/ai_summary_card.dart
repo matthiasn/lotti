@@ -34,6 +34,7 @@ import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 

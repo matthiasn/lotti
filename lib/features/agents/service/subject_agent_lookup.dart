@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 
 /// The agent↔subject link types, in resolution order.
 ///

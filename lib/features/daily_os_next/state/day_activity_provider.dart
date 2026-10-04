@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/services/day_activity_repository.da
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Emits a strictly increasing tick per outbox mutation.

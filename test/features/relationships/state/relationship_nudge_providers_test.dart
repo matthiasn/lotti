@@ -14,6 +14,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 

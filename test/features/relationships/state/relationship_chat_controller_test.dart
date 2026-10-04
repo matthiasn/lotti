@@ -6,12 +6,12 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_chat_controller.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';

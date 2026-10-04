@@ -12,6 +12,7 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Composes the read-model ([ProjectRecord]) that `ProjectDetailsPage` renders.

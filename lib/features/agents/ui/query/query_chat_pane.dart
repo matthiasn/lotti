@@ -13,7 +13,6 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
@@ -37,14 +36,15 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-part 'query_chat_pane_rename_part.dart';
 part 'query_chat_pane_actions_part.dart';
+part 'query_chat_pane_rename_part.dart';
 part 'query_chat_pane_sections_part.dart';
 
 /// A scoped conversation hosted in a companion or a standalone detail view.
