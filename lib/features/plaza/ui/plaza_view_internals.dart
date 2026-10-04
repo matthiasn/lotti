@@ -2,34 +2,6 @@ part of 'plaza_view.dart';
 
 /// Private helpers of [_PlazaViewState] that hold no state of their own; kept beside the class as an extension so the library stays readable.
 extension _PlazaViewStateInternals on _PlazaViewState {
-  void _recordEngineFrames(List<FrameTiming> timings) {
-    _engineFrames += timings.length;
-    _engineFramesSinceTrace += timings.length;
-    final readyFrame = _tourReadyFrameMicros;
-    if (readyFrame != null &&
-        timings.any(
-          (frame) =>
-              frame.timestampInMicroseconds(FramePhase.vsyncStart) >=
-              readyFrame,
-        )) {
-      // Raster timings acknowledge the frame that includes the captured
-      // surfaces. Announcing during _onTick races the X11 screenshot reader.
-      debugPrint(_tourReadyReport);
-      _tourReadyFrameMicros = null;
-      _tourReadyReport = null;
-      _tourAnnounced = true;
-      _tourClock = _PlazaViewState._tourSettleSeconds;
-      final stop = _tourStop;
-      if (widget.shotDir != null && stop >= 0) {
-        unawaited(
-          _writeShot(plazaTourStops[stop].name).catchError((Object error) {
-            debugPrint('PLAZA_SHOT failed: $error');
-          }),
-        );
-      }
-    }
-  }
-
   void _onPace(Duration elapsed) {
     final last = _lastPaint;
     final seconds = elapsed.inMicroseconds / 1e6;

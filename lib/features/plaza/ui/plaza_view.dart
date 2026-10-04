@@ -902,4 +902,33 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       ),
     );
   }
+
+  // An instance method, not an extension member: it is registered and removed as a timings callback, and two tear-offs of an extension method are never equal, so removal would miss.
+  void _recordEngineFrames(List<FrameTiming> timings) {
+    _engineFrames += timings.length;
+    _engineFramesSinceTrace += timings.length;
+    final readyFrame = _tourReadyFrameMicros;
+    if (readyFrame != null &&
+        timings.any(
+          (frame) =>
+              frame.timestampInMicroseconds(FramePhase.vsyncStart) >=
+              readyFrame,
+        )) {
+      // Raster timings acknowledge the frame that includes the captured
+      // surfaces. Announcing during _onTick races the X11 screenshot reader.
+      debugPrint(_tourReadyReport);
+      _tourReadyFrameMicros = null;
+      _tourReadyReport = null;
+      _tourAnnounced = true;
+      _tourClock = _PlazaViewState._tourSettleSeconds;
+      final stop = _tourStop;
+      if (widget.shotDir != null && stop >= 0) {
+        unawaited(
+          _writeShot(plazaTourStops[stop].name).catchError((Object error) {
+            debugPrint('PLAZA_SHOT failed: $error');
+          }),
+        );
+      }
+    }
+  }
 }
