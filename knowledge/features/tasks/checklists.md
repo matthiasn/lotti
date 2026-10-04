@@ -29,7 +29,7 @@ sources:
     title: Checklist sorting controller
     last_modified: 2026-08-02
   - id: membership
-    resource: ../../../lib/features/tasks/model/membership_list.dart
+    resource: ../../../lib/classes/membership_list.dart
     title: Membership list changes
     last_modified: 2026-09-26
   - id: repository
@@ -45,7 +45,7 @@ sources:
     title: ChecklistMembership TLA+ spec
     last_modified: 2026-09-27
   - id: shown-items
-    resource: ../../../lib/features/tasks/repository/shown_checklist_items.dart
+    resource: ../../../lib/database/shown_checklist_items.dart
     title: The items a checklist shows
     last_modified: 2026-09-27
   - id: replication-spec
@@ -95,7 +95,7 @@ on; the item lists only order.
 **A membership write states an intent, never a whole list.** Add an id
 (`withMember`), remove one (`withoutMember`), or show these in this order
 (`inVisibleOrder`, which keeps ids the screen never saw) — the pure helpers in
-`lib/features/tasks/model/membership_list.dart`. The intent is applied to the
+`lib/classes/membership_list.dart`. The intent is applied to the
 list *as stored*, through `writeOnStored` (`lib/logic/write_on_stored.dart`):
 
 ```mermaid
@@ -191,7 +191,7 @@ agree (`specs/tla/ChecklistReplication.tla`,
   `idx_journal_checklist_item_home` — listed ones first in list order, the
   others after, oldest first (`shownItemIds`,
   `readShownChecklistItems` in
-  `lib/features/tasks/repository/shown_checklist_items.dart`). Every reader
+  `lib/database/shown_checklist_items.dart`). Every reader
   goes through it: the checklist screen, completion counts,
   `getChecklistItemsForTask`, the Plaza, the AI and agent contexts, the graph.
   An item names one checklist, so it is shown and counted once. A move writes

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 
 import '../../../widget_test_utils.dart';
 

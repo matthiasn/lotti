@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
-import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';

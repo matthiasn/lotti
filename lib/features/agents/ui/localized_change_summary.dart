@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart'
     show isValidDueDateWireValue;
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 /// Rebuilds a proposal's display text in the reader's language from the tool

@@ -65,7 +65,7 @@ This plan specifically targets the “activity gating policy” gap and aligns t
   - Additional scroll listeners exist on core surfaces, e.g.:
     - `lib/features/journal/ui/pages/infinite_journal_page.dart`
     - `lib/features/tasks/ui/pages/task_details_page.dart`
-    - `lib/features/settings/ui/pages/sliver_box_adapter_page.dart`
+    - `lib/widgets/pages/sliver_box_adapter_page.dart`
     - `lib/features/habits/ui/habits_page.dart`
   - These listeners make activity updates very frequent during scroll/pan; idle timers reset on every pointer move.
 

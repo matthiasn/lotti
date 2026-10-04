@@ -25,7 +25,7 @@ sources:
     title: Selected plan-view projection, held across day changes
     last_modified: 2026-08-02
   - id: onboarding-events
-    resource: ../../../lib/features/onboarding/model/onboarding_event.dart
+    resource: ../../../lib/classes/onboarding_event.dart
     title: Shared onboarding event vocabulary
     last_modified: 2026-08-01
   - id: actual-lane

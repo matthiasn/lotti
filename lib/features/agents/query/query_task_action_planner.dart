@@ -1,5 +1,6 @@
 import 'package:json_schema_builder/json_schema_builder.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/model/retired_tool_calls.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 
 /// Live task state offered to action planning, never a neighbour's raw notes.
 class QueryTaskActionContext {

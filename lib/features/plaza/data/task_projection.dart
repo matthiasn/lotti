@@ -1,9 +1,9 @@
+import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
-import 'package:lotti/features/tasks/model/directed_relation.dart';
 
 /// Projects only relationships whose two tasks are already visible in scope.
 /// Hidden/deleted edges and self-links are omitted. Symmetric associations
