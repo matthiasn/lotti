@@ -125,6 +125,30 @@ Two rules produce the Dart form, and they are easy to conflate:
 
 Everything else is lower-camel-cased with `/` and `-` treated as word breaks.
 
+## Raw values are ratcheted
+
+AGENTS.md makes the tokens mandatory, but for a long time nothing checked, and
+hundreds of numeric `EdgeInsets`, `SizedBox` gaps, `TextStyle`s and colour
+literals accumulated beside them. `tool/design_tokens/validate.dart` now counts
+three categories per file, everywhere in `lib/` except the token definitions
+(`lib/features/design_system/theme/`) and generated code:
+
+| Category | Counts |
+|----------|--------|
+| spacing | `EdgeInsets` / `EdgeInsetsDirectional` calls with a numeric argument; `SizedBox` with a numeric `width` or `height`; `SizedBox.square` with a numeric `dimension` |
+| typography | `TextStyle(...)`, and `fontSize:` outside one (a `copyWith`) |
+| color | `Color(<literal>)`, `Color.fromARGB` / `fromRGBO` with literals, `Colors.*` except `Colors.transparent` |
+
+Each file is held to `tool/design_tokens/baseline.json`: a category may fall or
+vanish but never rise, and a file absent from the baseline may introduce none.
+CI runs it in the analyze workflow and `make token_check` runs it locally;
+`--update-baseline` tightens it and refuses while any file is above its count.
+It works on the parsed source, so comments and strings never count; a
+constructor behind an import prefix (`ui.Color(…)`, even `UI.Color(…)`) counts
+like the bare one, told apart from a named constructor such as
+`EdgeInsets.all(…)` by which side of the dot names a counted type. It mirrors
+the [icon guard](icons.md).
+
 # Two runtime theme paths
 
 | Path | Purpose |
