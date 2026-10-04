@@ -180,7 +180,7 @@
     "lib/features/knowledge_graph/ui/entry_detail_sidebar.dart": {"color":1},
     "lib/features/knowledge_graph/ui/graph_style.dart": {"color":1},
     "lib/features/knowledge_graph/ui/knowledge_graph_painter.dart": {"typography":1,"color":1},
-    "lib/features/knowledge_graph/ui/knowledge_graph_view.dart": {"spacing":2},
+    "lib/features/knowledge_graph/ui/knowledge_graph_view_chrome_part.dart": {"spacing":2},
     "lib/features/labels/ui/pages/labels_list_page.dart": {"spacing":1},
     "lib/features/labels/ui/widgets/label_chip.dart": {"spacing":1,"typography":1,"color":1},
     "lib/features/labels/ui/widgets/label_editor_sheet.dart": {"spacing":14,"color":1},

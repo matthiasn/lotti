@@ -34,6 +34,10 @@ import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+part 'knowledge_graph_view_chrome_part.dart';
+part 'knowledge_graph_view_images_part.dart';
+part 'knowledge_graph_view_motion_part.dart';
+
 typedef GraphImageLoader =
     Future<ui.Image> Function(String path, int targetExtent);
 
@@ -304,53 +308,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _hops = _bfs(_focusId);
   }
 
-  void _requestImageLoad(GraphVisualSpec visualSpec) {
-    final targetExtent =
-        (visualSpec.mediaDecodeLogicalExtent *
-                MediaQuery.devicePixelRatioOf(context))
-            .ceil();
-    if (targetExtent <= _requestedImageTargetExtent) return;
-    _requestedImageTargetExtent = targetExtent;
-    if (!_imageLoadActive) {
-      unawaited(_drainImageLoads());
-    }
-  }
-
-  /// Decode task covers, entry images, and aggregate thumbnails off the main
-  /// work. Larger requests are serialized and replace existing thumbnails only
-  /// after the new batch is ready.
-  Future<void> _drainImageLoads() async {
-    _imageLoadActive = true;
-    try {
-      while (mounted &&
-          _loadedImageTargetExtent < _requestedImageTargetExtent) {
-        final targetExtent = _requestedImageTargetExtent;
-        final loaded = await _loadImages(targetExtent);
-        if (!mounted) {
-          _disposeImages(loaded.images.values, retained: _images.values);
-          return;
-        }
-        _installImages(
-          loaded.images,
-          loaded.signatures,
-          loaded.evictions,
-          targetExtent,
-        );
-        _loadedImageTargetExtent = targetExtent;
-      }
-    } finally {
-      _imageLoadActive = false;
-    }
-  }
-
-  Set<String> _scenarioImagePaths() => {
-    for (final node in _scenario.nodes) ...[
-      if (node.imagePath case final path? when path.isNotEmpty) path,
-      if (node.coverImagePath case final path? when path.isNotEmpty) path,
-      ...node.mediaPaths.where((path) => path.isNotEmpty),
-    ],
-  };
-
   /// Content signature (size + mtime) of the file at [path], or null when it
   /// cannot be stat'ed (missing file, synthetic test path). Media files are
   /// overwritten in place at deterministic paths (photo re-import, sync
@@ -365,61 +322,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     } on Object {
       return null;
     }
-  }
-
-  Future<
-    ({
-      Map<String, ui.Image> images,
-      Map<String, String?> signatures,
-      Set<String> evictions,
-    })
-  >
-  _loadImages(int targetExtent) async {
-    final loaded = <String, ui.Image>{};
-    final signatures = <String, String?>{};
-    final evictions = <String>{};
-    final loadImage = widget.imageLoader ?? decodeGraphImageFile;
-    for (final path in _scenarioImagePaths()) {
-      // Cached thumbnails survive remounts via the shared cache — only decode
-      // what is missing, too small for the current device-pixel target, or
-      // whose source file changed since it was decoded. An unavailable
-      // signature falls back to the extent-only check (test loaders use
-      // synthetic paths), EXCEPT when the entry was decoded from a real file
-      // (it has a signature) and that file is now gone — then the entry is
-      // evicted so a deleted photo falls back to the type glyph instead of
-      // rendering its stale thumbnail forever.
-      final signature = _fileSignatureOf(path);
-      if (signature == null && _thumbnails.signatureOf(path) != null) {
-        evictions.add(path);
-      } else {
-        final cachedFresh =
-            _thumbnails.decodedExtentOf(path) >= targetExtent &&
-            (signature == null || signature == _thumbnails.signatureOf(path));
-        if (cachedFresh) continue;
-      }
-      try {
-        final image = await loadImage(path, targetExtent);
-        if (!mounted) {
-          // Disposed mid-decode — release what we decoded and bail.
-          // coverage:ignore-start
-          _disposeImages(
-            [...loaded.values, image],
-            retained: _images.values,
-          );
-          return (
-            images: const <String, ui.Image>{},
-            signatures: const <String, String?>{},
-            evictions: const <String>{},
-          );
-          // coverage:ignore-end
-        }
-        loaded[path] = image;
-        signatures[path] = signature;
-      } on Object {
-        // Missing/unreadable file — fall back to the type glyph.
-      }
-    }
-    return (images: loaded, signatures: signatures, evictions: evictions);
   }
 
   void _installImages(
@@ -455,22 +357,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _disposeImages(replaced, retained: _images.values);
   }
 
-  void _disposeImages(
-    Iterable<ui.Image> images, {
-    Iterable<ui.Image> retained = const [],
-  }) {
-    final disposed = <ui.Image>[];
-    for (final image in images) {
-      final shouldDispose =
-          !retained.any((candidate) => identical(candidate, image)) &&
-          !disposed.any((candidate) => identical(candidate, image));
-      if (shouldDispose) {
-        image.dispose();
-        disposed.add(image);
-      }
-    }
-  }
-
   @override
   void dispose() {
     _cam.dispose();
@@ -484,100 +370,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       _thumbnails.dispose();
     }
     super.dispose();
-  }
-
-  void _rebuildLocalGraph() {
-    _projection = buildLocalGraphProjection(
-      raw: _scenario,
-      focusId: _focusId,
-      maxNodes:
-          _visualSpec?.nodeLimit(_viewport.value.density) ??
-          GraphVisualSpec.defaultNodeLimit(_viewport.value.density),
-      clusterPreviewLimit: GraphVisualSpec.defaultClusterPreviewLimit,
-      clusterCollapseThreshold: GraphVisualSpec.defaultClusterCollapseThreshold,
-      filters: _viewport.value.filters,
-      expandedAggregateIds: _viewport.value.expandedAggregateIds,
-    );
-    _displayScenario = _projection.scenario;
-    if (!_displayScenario.nodes.any(
-      (node) => node.id == _viewport.value.selectedId,
-    )) {
-      _viewport.selectNode(_focusId);
-    }
-    _degrees = degreeMap(_displayScenario.edges);
-    _displayAdjacency = _adjacencyFor(_displayScenario);
-    final layoutHops = _bfs(_focusId);
-    final collisionRadii = {
-      for (final node in _displayScenario.nodes)
-        node.id:
-            KnowledgeGraphPainter.nodeRadiusFor(
-              node: node,
-              scenario: _displayScenario,
-              degrees: _degrees,
-              focusId: _focusId,
-              hops: layoutHops,
-              scale: _minimumFramedScale,
-              visualSpec: _visualSpec,
-            ) /
-            _minimumFramedScale,
-    };
-    _layout = computeGraphLayout(
-      _displayScenario,
-      iterations: 140,
-      collisionRadii: collisionRadii,
-    );
-  }
-
-  Map<String, List<String>> _adjacencyFor(GraphScenario scenario) {
-    final adjacency = {
-      for (final node in scenario.nodes) node.id: <String>[],
-    };
-    for (final edge in scenario.edges) {
-      adjacency[edge.fromId]?.add(edge.toId);
-      adjacency[edge.toId]?.add(edge.fromId);
-    }
-    return adjacency;
-  }
-
-  Map<String, int> _bfs(String from) {
-    final hops = <String, int>{from: 0};
-    final queue = <String>[from];
-    var head = 0;
-    while (head < queue.length) {
-      final cur = queue[head++];
-      for (final nb in _displayAdjacency[cur] ?? const <String>[]) {
-        if (!hops.containsKey(nb)) {
-          hops[nb] = hops[cur]! + 1;
-          queue.add(nb);
-        }
-      }
-    }
-    return hops;
-  }
-
-  /// Shortest path of node ids from [from] to [to] (inclusive).
-  List<String> _path(String from, String to) {
-    final parent = <String, String>{from: from};
-    final queue = <String>[from];
-    var head = 0;
-    while (head < queue.length) {
-      final cur = queue[head++];
-      if (cur == to) break;
-      for (final nb in _rawAdjacency[cur] ?? const <String>[]) {
-        if (!parent.containsKey(nb)) {
-          parent[nb] = cur;
-          queue.add(nb);
-        }
-      }
-    }
-    if (!parent.containsKey(to)) return const [];
-    final path = <String>[to];
-    var cur = to;
-    while (cur != from) {
-      cur = parent[cur]!;
-      path.add(cur);
-    }
-    return path.reversed.toList();
   }
 
   void _tickCamera() {
@@ -597,14 +389,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       _pan = screenFocus - _focusWorld * s;
     });
   }
-
-  /// Whether the docked inspector panel is shown (desktop-width only).
-  bool _inspectorVisible(Size size) =>
-      widget.showInspector && size.width >= 720;
-
-  /// Width of the docked inspector / detail panel — a fraction of the viewport,
-  /// clamped to a comfortable range.
-  double _inspectorWidth(double width) => (width * 0.30).clamp(320.0, 400.0);
 
   /// Measures the floating chrome (toolbar, title card, legend, minimap) in the
   /// canvas's own coordinate space after a frame, and re-frames the opening
@@ -659,16 +443,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       }
     });
   }
-
-  /// Rects the label solver must treat as occupied, and the camera must frame
-  /// around. Falls back to the historical estimates only for the first frame,
-  /// before the chrome has been measured.
-  List<Rect> _chromeRects(Size size) => <Rect>[
-    ?_toolbarRect,
-    ?_titleRect,
-    ?_legendRect,
-    ?_minimapRect,
-  ];
 
   /// Insets the framing keeps clear of floating chrome.
   ({double top, double bottom, double right}) _chromeReserve(Size size) {
@@ -813,27 +587,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     setState(() {});
   }
 
-  void _back() {
-    if (!_viewport.value.canGoBack) return;
-    final fromId = _focusId;
-    _viewport.goBack();
-    _applyFocusChange(fromId);
-  }
-
-  void _forward() {
-    if (!_viewport.value.canGoForward) return;
-    final fromId = _focusId;
-    _viewport.goForward();
-    _applyFocusChange(fromId);
-  }
-
-  void _jumpTo(String id) {
-    if (id == _focusId) return;
-    final fromId = _focusId;
-    _viewport.jumpTo(id);
-    _applyFocusChange(fromId);
-  }
-
   void _applyFocusChange(String fromId) {
     _userAdjustedCamera = true;
     _previousFocusId = fromId;
@@ -918,141 +671,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     });
   }
 
-  Offset? _displayWorldPosition(String id) {
-    final rest = _layout.positions[id];
-    if (rest == null) return null;
-    return _motion.displayPosition(id, rest);
-  }
-
-  void _syncMotionWindow(String focusId) {
-    final hops = _bfs(focusId);
-    final ids = [..._displayScenario.nodes]
-      ..sort((a, b) {
-        final hop = (hops[a.id] ?? 99).compareTo(hops[b.id] ?? 99);
-        if (hop != 0) return hop;
-        return (_degrees[b.id] ?? 0).compareTo(_degrees[a.id] ?? 0);
-      });
-    _motion.configureForceIsland(
-      restPositions: _layout.positions,
-      edges: _displayScenario.edges,
-      activeIds: ids
-          .where((node) => (hops[node.id] ?? 99) <= 2)
-          .take(_maxMotionNodes)
-          .map((node) => node.id),
-    );
-  }
-
-  double _worldPixels(double px) => px / math.max(_scale, 0.45);
-
-  void _kickWalkMotion(String fromId, String toId) {
-    final from = _layout.positions[fromId];
-    final to = _layout.positions[toId];
-    final direction = from == null || to == null ? Offset.zero : to - from;
-    _motion
-      ..kick(
-        toId,
-        direction: direction,
-        distance: _worldPixels(28),
-        velocity: _worldPixels(260),
-        dampingScale: 0.48,
-      )
-      ..kick(
-        fromId,
-        direction: -direction,
-        distance: _worldPixels(7),
-        velocity: _worldPixels(65),
-      );
-    _kickNeighborMotion(
-      toId,
-      exclude: {fromId, toId},
-      distancePx: 6,
-      velocityPx: 58,
-    );
-  }
-
-  void _kickTouchMotion(
-    String id, {
-    Offset? localPosition,
-    Offset? direction,
-  }) {
-    final rest = _layout.positions[id];
-    if (rest == null) return;
-    final screenCenter = (_displayWorldPosition(id) ?? rest) * _scale + _pan;
-    final push =
-        direction ??
-        (localPosition == null ? Offset.zero : screenCenter - localPosition);
-    _motion.kick(
-      id,
-      direction: push,
-      distance: _worldPixels(10),
-      velocity: _worldPixels(90),
-    );
-    _kickNeighborMotion(
-      id,
-      exclude: {id},
-      distancePx: 3.5,
-      velocityPx: 28,
-    );
-  }
-
-  void _kickPanMotion(Offset screenVelocity) {
-    if (screenVelocity.distance < 120) return;
-    final strength = (screenVelocity.distance / 1400).clamp(0.25, 1).toDouble();
-    _motion.kick(
-      _focusId,
-      direction: screenVelocity,
-      distance: _worldPixels(6 * strength),
-      velocity: _worldPixels(70 * strength),
-    );
-    _kickNeighborMotion(
-      _focusId,
-      exclude: {_focusId},
-      distancePx: 2.5 * strength,
-      velocityPx: 28 * strength,
-    );
-  }
-
-  void _kickNeighborMotion(
-    String id, {
-    required Set<String> exclude,
-    required double distancePx,
-    required double velocityPx,
-  }) {
-    final origin = _layout.positions[id];
-    if (origin == null) return;
-
-    var count = 0;
-    for (final neighborId in _displayAdjacency[id] ?? const <String>[]) {
-      if (exclude.contains(neighborId)) continue;
-      final neighbor = _layout.positions[neighborId];
-      if (neighbor == null) continue;
-      _motion.kick(
-        neighborId,
-        direction: neighbor - origin,
-        distance: _worldPixels(distancePx),
-        velocity: _worldPixels(velocityPx),
-      );
-      count++;
-      if (count >= 16) break;
-    }
-  }
-
-  void _onScaleStart(ScaleStartDetails d) {
-    _userAdjustedCamera = true;
-    _cam.stop();
-    _fromScale = _scale;
-    _fromPan = _pan;
-    _gestureStartScale = _scale;
-    _gestureStartPan = _pan;
-    // LOCAL coordinates, never global: the painter's `world * scale + pan`
-    // transform lives in the canvas's own space. In the real app the canvas
-    // sits below/right of surrounding chrome (sidebar, header), so the global
-    // focal is offset by a constant K — and anchoring on it makes the zoom
-    // fixed point miss the cursor by K/scale, a scale-DEPENDENT error that
-    // visibly slides the content under the cursor while zooming.
-    _gestureStartFocal = d.localFocalPoint;
-  }
-
   double _gestureStartScale = 1;
   Offset _gestureStartPan = Offset.zero;
   Offset _gestureStartFocal = Offset.zero;
@@ -1069,41 +687,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       _scale = newScale;
       _pan = d.localFocalPoint - worldUnderFocal * newScale;
     });
-  }
-
-  void _onScaleEnd(ScaleEndDetails d) {
-    _kickPanMotion(d.velocity.pixelsPerSecond);
-  }
-
-  void _onTapUp(TapUpDetails d) {
-    _graphFocusNode.requestFocus();
-    final local = d.localPosition;
-    String? hit;
-    var best = double.infinity;
-    for (final node in _displayScenario.nodes) {
-      final world = _displayWorldPosition(node.id);
-      if (world == null) continue;
-      final screen = world * _scale + _pan;
-      final dist = (local - screen).distance;
-      final hitRadius = math.max(
-        30,
-        KnowledgeGraphPainter.nodeRadiusFor(
-          node: node,
-          scenario: _displayScenario,
-          degrees: _degrees,
-          focusId: _focusId,
-          hops: _hops,
-          scale: _scale,
-          visualSpec: _visualSpec,
-        ),
-      );
-      if (dist <= hitRadius && dist < best) {
-        best = dist;
-        hit = node.id;
-      }
-    }
-    if (hit == null) return;
-    _activateNode(hit, localPosition: local);
   }
 
   KeyEventResult _onGraphKeyEvent(FocusNode node, KeyEvent event) {
@@ -1154,26 +737,6 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     }
   }
 
-  /// Direct neighbors of [id] (the other endpoint of every edge touching it),
-  /// most-recent first — the inspector renders these as a tappable timeline of
-  /// the focused node's linked entries.
-  List<GraphNode> _neighborsOf(String id) {
-    final byId = {for (final n in _scenario.nodes) n.id: n};
-    final ids = <String>{};
-    for (final e in _scenario.edges) {
-      if (e.fromId == id) {
-        ids.add(e.toId);
-      } else if (e.toId == id) {
-        ids.add(e.fromId);
-      }
-    }
-    final list = [
-      for (final nid in ids)
-        if (byId[nid] != null) byId[nid]!,
-    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -1195,50 +758,12 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           // chip is only shown when the inspector is absent (phone), avoiding a
           // redundant/contradictory second identity.
           final inspectorVisible = _inspectorVisible(size);
-          final displayLabels = <String, String>{
-            for (final node in _displayScenario.nodes)
-              node.id: switch (node.aggregateKind) {
-                GraphAggregateKind.photos =>
-                  '${context.messages.knowledgeGraphNodeTypePhoto} · '
-                      '${node.aggregateCount}',
-                GraphAggregateKind.relation =>
-                  '${context.messages.knowledgeGraphMoreLinks} · '
-                      '${node.aggregateCount}',
-                null => node.label,
-              },
-          };
-          final measuredChrome = _chromeRects(size);
-          final reservedLabelRects = <Rect>[
-            if (inspectorVisible)
-              Rect.fromLTWH(
-                size.width -
-                    _inspectorWidth(size.width) -
-                    tokens.spacing.step5 * 2,
-                0,
-                _inspectorWidth(size.width) + tokens.spacing.step5 * 2,
-                size.height,
-              ),
-            // Real toolbar / title / legend / minimap rects once measured. The
-            // estimate below only covers the very first frame: it assumed the
-            // legend was exactly one minimap tall and ignored the toolbar
-            // entirely, which is why callouts printed under the mode chips.
-            ...measuredChrome,
-            if (measuredChrome.isEmpty)
-              Rect.fromLTWH(
-                0,
-                size.height -
-                    visualSpec.minimapHeight -
-                    tokens.spacing.step5 * 2 -
-                    (widget.showLegend ? visualSpec.minimapHeight : 0),
-                math.max(
-                      visualSpec.minimapWidth,
-                      visualSpec.legendMaxWidth,
-                    ) +
-                    tokens.spacing.step5 * 2,
-                visualSpec.minimapHeight * (widget.showLegend ? 2 : 1) +
-                    tokens.spacing.step5 * 2,
-              ),
-          ];
+          final displayLabels = _displayLabels(context);
+          final reservedLabelRects = _reservedLabelRects(
+            context,
+            size,
+            inspectorVisible: inspectorVisible,
+          );
           // Chrome sizes are content-dependent (the legend wraps, the toolbar
           // reflows), so re-measure after every frame; [_measureChrome] no-ops
           // unless something actually moved.
@@ -1460,364 +985,4 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       ),
     );
   }
-}
-
-/// Defers the nested detail navigator until after the graph's layout callback.
-///
-/// [KnowledgeGraphView] builds its responsive workspace from a [LayoutBuilder].
-/// [EntryDetailSidebar] activates a nested [Navigator] route through Flutter's
-/// overlay portal. Activating that subtree while the layout builder is inside
-/// `performLayout` can reattach one of the task page's own layout builders and
-/// trip Flutter's render-object mutation guard. The first frame reserves the
-/// panel slot; the post-frame rebuild activates the navigator in the normal
-/// build phase.
-class _DeferredEntryDetailSidebar extends StatefulWidget {
-  const _DeferredEntryDetailSidebar({
-    required this.entryId,
-    required this.onClose,
-    required this.tokens,
-    super.key,
-  });
-
-  final String entryId;
-  final VoidCallback onClose;
-  final DsTokens tokens;
-
-  @override
-  State<_DeferredEntryDetailSidebar> createState() =>
-      _DeferredEntryDetailSidebarState();
-}
-
-class _DeferredEntryDetailSidebarState
-    extends State<_DeferredEntryDetailSidebar> {
-  bool _active = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _active = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_active) return const SizedBox.expand();
-    return EntryDetailSidebar(
-      entryId: widget.entryId,
-      onClose: widget.onClose,
-      tokens: widget.tokens,
-    );
-  }
-}
-
-class _TitleCard extends StatelessWidget {
-  const _TitleCard({
-    required this.focus,
-    required this.total,
-    required this.explorable,
-    required this.tokens,
-  });
-
-  final GraphNode focus;
-  final int total;
-  final bool explorable;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step3,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            focus.label,
-            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          Text(
-            explorable
-                ? context.messages.knowledgeGraphWalkHint(total)
-                : context.messages.knowledgeGraphNodeCount(total),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendBar extends StatelessWidget {
-  const _LegendBar({
-    required this.scenario,
-    required this.style,
-    required this.categoryNames,
-    required this.tokens,
-    super.key,
-  });
-
-  final GraphScenario scenario;
-  final GraphStyle style;
-  final Map<String, String> categoryNames;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final relations = relStylesIn(scenario);
-    final categories = scenario.nodes.map((n) => n.categoryId).toSet().toList()
-      ..sort(
-        (a, b) => categoryOrder.indexOf(a).compareTo(categoryOrder.indexOf(b)),
-      );
-    final channelColor = tokens.colors.text.mediumEmphasis;
-    final freshHsl = HSLColor.fromColor(style.focusRing);
-    final agedDot = freshHsl
-        .withLightness((freshHsl.lightness * 0.42).clamp(0.0, 1.0))
-        .withSaturation((freshHsl.saturation * 0.7).clamp(0.0, 1.0))
-        .toColor();
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step3,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-      ),
-      child: Wrap(
-        spacing: tokens.spacing.step5,
-        runSpacing: tokens.spacing.step3,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          for (final rel in relations)
-            _LegendItem(
-              label: relStyleLabel(context.messages, rel),
-              tokens: tokens,
-              swatch: SizedBox(
-                width: 24,
-                height: 10,
-                child: CustomPaint(
-                  painter: _EdgeSwatchPainter(visual: style.edgeVisual(rel)),
-                ),
-              ),
-            ),
-          for (final cat in categories)
-            _LegendItem(
-              label: graphCategoryLabel(context.messages, categoryNames, cat),
-              tokens: tokens,
-              swatch: Container(
-                width: 11,
-                height: 11,
-                decoration: BoxDecoration(
-                  color: style.categoryColor(cat),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          _LegendItem(
-            label: context.messages.knowledgeGraphMoreLinks,
-            tokens: tokens,
-            swatch: _DotsSwatch(dots: [(7, channelColor), (13, channelColor)]),
-          ),
-          _LegendItem(
-            label: context.messages.knowledgeGraphRecentToOlder,
-            tokens: tokens,
-            swatch: _DotsSwatch(dots: [(11, style.focusRing), (11, agedDot)]),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  const _LegendItem({
-    required this.label,
-    required this.swatch,
-    required this.tokens,
-  });
-
-  final String label;
-  final Widget swatch;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        swatch,
-        SizedBox(width: tokens.spacing.step2),
-        Text(
-          label,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A row of circles of given (diameter, color) — keys the size and brightness
-/// encodings in the legend.
-class _DotsSwatch extends StatelessWidget {
-  const _DotsSwatch({required this.dots});
-
-  final List<(double, Color)> dots;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final (diameter, color) in dots)
-          Padding(
-            padding: const EdgeInsets.only(right: 3),
-            child: Container(
-              width: diameter,
-              height: diameter,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// Back + recenter controls for the walk (only shown in explorable worlds).
-class _Controls extends StatelessWidget {
-  const _Controls({
-    required this.canGoBack,
-    required this.canGoForward,
-    required this.onBack,
-    required this.onForward,
-    required this.onRecenter,
-    required this.tokens,
-  });
-
-  final bool canGoBack;
-  final bool canGoForward;
-  final VoidCallback onBack;
-  final VoidCallback onForward;
-  final VoidCallback onRecenter;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _CircleButton(
-          icon: LottiIcons.back,
-          tooltip: context.messages.knowledgeGraphBack,
-          enabled: canGoBack,
-          onTap: onBack,
-          tokens: tokens,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        _CircleButton(
-          icon: LottiIcons.forward,
-          tooltip: context.messages.knowledgeGraphForward,
-          enabled: canGoForward,
-          onTap: onForward,
-          tokens: tokens,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        _CircleButton(
-          icon: LottiIcons.focus,
-          tooltip: context.messages.knowledgeGraphRecenter,
-          enabled: true,
-          onTap: onRecenter,
-          tokens: tokens,
-        ),
-      ],
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.enabled,
-    required this.onTap,
-    required this.tokens,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final bool enabled;
-  final VoidCallback onTap;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: tokens.colors.background.level02.withValues(alpha: 0.86),
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step3),
-            child: Icon(
-              icon,
-              size: 18,
-              color: enabled
-                  ? tokens.colors.text.highEmphasis
-                  : tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EdgeSwatchPainter extends CustomPainter {
-  _EdgeSwatchPainter({required this.visual});
-
-  final EdgeVisual visual;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final y = size.height / 2;
-    final paint = Paint()
-      ..color = visual.color
-      ..strokeWidth = visual.width
-      ..strokeCap = StrokeCap.round;
-    final dash = visual.dash;
-    if (dash != null) {
-      var x = 0.0;
-      while (x < size.width) {
-        canvas.drawLine(
-          Offset(x, y),
-          Offset(math.min(x + dash[0], size.width), y),
-          paint,
-        );
-        x += dash[0] + dash[1];
-      }
-    } else {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_EdgeSwatchPainter old) => old.visual != visual;
 }
