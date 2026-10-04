@@ -472,6 +472,26 @@ void main() {
       // A suggestion for a task deleted since can never apply: the failure
       // is final, so the confirmation retracts the item instead of putting
       // it back to pending.
+      test('a task restored between the two reads stays retryable', () async {
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
+        // The second read finds the task live again.
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(taskId),
+        ).thenAnswer((_) async => _makeTestTask(taskId));
+
+        final result = await dispatcher.dispatch(
+          'set_task_title',
+          {'title': 'New Title'},
+          taskId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Task lookup failed');
+        expect(result.nonRetryable, isFalse);
+      });
+
       test('returns a final failure when the task was deleted', () async {
         when(
           () => mockJournalDb.journalEntityById(taskId),

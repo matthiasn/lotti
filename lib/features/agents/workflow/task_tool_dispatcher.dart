@@ -109,10 +109,13 @@ class TaskToolDispatcher {
       // A task deleted since the proposal was made can never take it, here
       // or on any device: the failure is final, so the item is retracted
       // instead of going back to pending, where every confirmation would
-      // fail again and the suggestion would stay counted forever.
-      final deleted =
-          storedTask == null &&
-          await journalDb.journalEntityByIdIncludingDeleted(taskId) is Task;
+      // fail again and the suggestion would stay counted forever. The
+      // second read must still find the tombstone: a task restored between
+      // the two reads is live, and its failure stays retryable.
+      final tombstone = storedTask == null
+          ? await journalDb.journalEntityByIdIncludingDeleted(taskId)
+          : null;
+      final deleted = tombstone is Task && tombstone.meta.deletedAt != null;
       return deleted
           ? ToolExecutionResult(
               success: false,
