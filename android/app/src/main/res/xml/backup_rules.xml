@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 and lower (android:fullBackupContent).
+  Android 12+ reads data_extraction_rules.xml; keep the two in step.
+
+  Everything else stays in the backup: the journal databases and media are the
+  user's data. Excluded:
+  - app_flutter/matrix in the `root` domain: Flutter's documents directory on
+    Android is Context.getDir("flutter"), i.e. <dataDir>/app_flutter, not
+    under <dataDir>/files (the `file` domain). The Matrix SDK store there
+    (lib/features/sync/matrix/client.dart, matrixDatabaseDirectoryName) holds
+    this device's E2EE keys unencrypted at rest; restoring it elsewhere would
+    let a second install act as this Matrix device.
+  - flutter_secure_storage's preference files (values, the wrapped key, and
+    its legacy and namespaced configuration): the key that unwraps them lives
+    in the Android Keystore, which is never backed up, so a restored copy
+    cannot be decrypted (the plugin's README asks for this exclusion).
+-->
+<full-backup-content>
+    <exclude domain="root" path="app_flutter/matrix" />
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration:FlutterSecureStorage.xml" />
+</full-backup-content>
