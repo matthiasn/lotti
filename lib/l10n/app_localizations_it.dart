@@ -3920,10 +3920,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è possibile applicare la risoluzione';
 
   @override
-  String get conflictEntryChangedTitle =>
-      'La voce è cambiata nel frattempo — controlla di nuovo la differenza';
-
-  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4007,6 +4003,10 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get conflictEntryChangedTitle =>
+      'La voce è cambiata nel frattempo — controlla di nuovo la differenza';
 
   @override
   String get conflictFieldBody => 'Corpo';

@@ -3915,10 +3915,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Konflikt se nepodařilo vyřešit';
 
   @override
-  String get conflictEntryChangedTitle =>
-      'Záznam se mezitím změnil — zkontroluj rozdíl znovu';
-
-  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4004,6 +4000,10 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get conflictEntryChangedTitle =>
+      'Záznam se mezitím změnil — zkontroluj rozdíl znovu';
 
   @override
   String get conflictFieldBody => 'Text';

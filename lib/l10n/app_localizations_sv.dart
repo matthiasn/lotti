@@ -3875,10 +3875,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Kunde inte applicera upplösning';
 
   @override
-  String get conflictEntryChangedTitle =>
-      'Posten har ändrats under tiden — kontrollera skillnaden igen';
-
-  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3962,6 +3958,10 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get conflictEntryChangedTitle =>
+      'Posten har ändrats under tiden — kontrollera skillnaden igen';
 
   @override
   String get conflictFieldBody => 'Kaross';

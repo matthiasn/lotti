@@ -3851,10 +3851,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictApplyFailedTitle => 'Couldn\'t apply resolution';
 
   @override
-  String get conflictEntryChangedTitle =>
-      'The entry changed meanwhile — check the difference again';
-
-  @override
   String conflictBannerAgoDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3938,6 +3934,10 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get conflictEntryChangedTitle =>
+      'The entry changed meanwhile — check the difference again';
 
   @override
   String get conflictFieldBody => 'Body';
