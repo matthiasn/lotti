@@ -33,6 +33,8 @@ tool's start replacing the user's timer (`NoStolenTimer`).
   with the editor's draft — before it returns. A caller that has written the
   end itself (the entry page's save) or whose entry is deleted passes
   `persistEnd: false`. A failed write is logged; the timer stops all the same.
+  Deleting the task a timer runs for stops it too, writing the end: the
+  entry stays, with the time tracked until the deletion.
 - **Shutdown stops the timer first.** `ServiceDisposer`'s first step is
   `TimeService.stop`, while the journal and the outbox are open; quitting and
   a profile switch both run it, so `_quiesce` no longer stops the timer

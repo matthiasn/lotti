@@ -9,3 +9,6 @@
   started a timer for a task while you started one yourself, its timer
   replaced yours. It now leaves a running timer alone and says that its own
   time entry was saved but not started.
+- **Deleting a task left its timer running.** A timer kept counting for a
+  task you had deleted. Deleting the task now stops its timer and keeps the
+  time tracked until then.

@@ -187,7 +187,10 @@ model is `specs/tla/RunningTimer.tla`. At runtime: `TimeService.stop` writes
 the end through the same `persistRunningTimerEnd` the autosave uses, so the
 sidebar, a profile switch and quitting (`ServiceDisposer`'s first step) go
 through it. The entry page's stop saves the end with the editor's text, then
-stops its own timer, if it still runs, with `persistEnd: false`.
+stops its own timer, if it still runs, with `persistEnd: false`. Deleting the
+running entry stops it without writing; deleting the task it runs for
+(`TimeService.linkedFrom`) stops it and writes the end, since the entry stays
+(`JournalRepository.deleteJournalEntity`).
 
 ```mermaid
 stateDiagram-v2
@@ -195,7 +198,7 @@ stateDiagram-v2
   Idle --> Running: start / startIfIdle
   Running --> Running: autosave (every 5 min), end written
   Running --> Running: start (another entry), old end written
-  Running --> Idle: stop(), end written
+  Running --> Idle: stop(), end written, also when its task is deleted
   Running --> Idle: stop(persistEnd: false), end written by the caller or entry deleted
   Running --> [*]: crash, end of last autosave kept
 ```
