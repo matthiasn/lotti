@@ -139,6 +139,7 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
   final processor = ref.watch(dayProcessingOutboxProcessorProvider);
   final outbox = ref.watch(dayProcessingOutboxRepositoryProvider);
   ref.watch(dayAudioReviewFenceProvider);
+  final vectorClockService = ref.read(vectorClockServiceProvider);
   final runtime = DayProcessingRuntime(
     repository: outbox,
     drain: () => drainDayProcessingLanes(processor),
@@ -150,9 +151,7 @@ final Provider<DayProcessingRuntime> dayProcessingRuntimeProvider = Provider((
       await outbox.pruneTerminalBefore(
         DateTime.now().subtract(dayProcessingLedgerRetention),
       );
-      final currentHostId = await ref
-          .read(vectorClockServiceProvider)
-          .getHost();
+      final currentHostId = await vectorClockService.getHost();
       return DayProcessingOutboxRepair(
         repository: outbox,
         journalDb: getIt(),

@@ -426,7 +426,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
       if (stopRecording) {
         await Future<void>.delayed(stopRecordingDelay).then((_) {
-          ref.read(timeServiceProvider).stop();
+          timeService.stop();
         });
       }
     }
@@ -665,11 +665,13 @@ class EntryController extends AsyncNotifier<EntryState?> {
   Future<bool> delete({
     required bool beamBack,
   }) async {
+    // Read before the delete: removing the entry can dispose this controller.
+    final navService = ref.read(navServiceProvider);
     final res = await ref
         .read(journalRepositoryProvider)
         .deleteJournalEntity(id);
     if (beamBack) {
-      ref.read(navServiceProvider).beamBack();
+      navService.beamBack();
     }
     state = const AsyncData(null);
     return res;

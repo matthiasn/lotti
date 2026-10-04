@@ -365,6 +365,7 @@ class AiConfigDeleteService {
     AiConfigInferenceProvider provider,
     CascadeDeletionResult result,
   ) async {
+    final domainLogger = ref.read(domainLoggerProvider);
     try {
       await ref
           .read(aiConfigRepositoryProvider)
@@ -373,15 +374,13 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        ref
-            .read(domainLoggerProvider)
-            .log(
-              LogDomain.ai,
-              'Undo provider deletion failed: ${provider.name} (${provider.id}), '
-              '${result.deletedModels.length} models, error: $error',
-              subDomain: 'DELETE_SERVICE',
-              level: InsightLevel.warn,
-            );
+        domainLogger.log(
+          LogDomain.ai,
+          'Undo provider deletion failed: ${provider.name} (${provider.id}), '
+          '${result.deletedModels.length} models, error: $error',
+          subDomain: 'DELETE_SERVICE',
+          level: InsightLevel.warn,
+        );
       } catch (_) {
         // LoggingService not available (e.g., in tests) - ignore
       }
@@ -390,6 +389,7 @@ class AiConfigDeleteService {
 
   /// Undoes config deletion by restoring the configuration
   Future<void> _undoConfigDeletion(WidgetRef ref, AiConfig config) async {
+    final domainLogger = ref.read(domainLoggerProvider);
     try {
       final repository = ref.read(aiConfigRepositoryProvider);
       if (config is AiConfigPrompt || config is AiConfigSkill) {
@@ -407,15 +407,13 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        ref
-            .read(domainLoggerProvider)
-            .log(
-              LogDomain.ai,
-              'Undo config deletion failed: ${config.name} (${config.id}), '
-              'type: ${config.runtimeType}, error: $error',
-              subDomain: 'DELETE_SERVICE',
-              level: InsightLevel.warn,
-            );
+        domainLogger.log(
+          LogDomain.ai,
+          'Undo config deletion failed: ${config.name} (${config.id}), '
+          'type: ${config.runtimeType}, error: $error',
+          subDomain: 'DELETE_SERVICE',
+          level: InsightLevel.warn,
+        );
       } catch (_) {
         // LoggingService not available (e.g., in tests) - ignore
       }

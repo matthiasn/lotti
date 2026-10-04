@@ -591,6 +591,9 @@ Future<void> _createNewLinkedTask(
 
   final entryState = ref.read(entryControllerProvider(taskId)).value;
   final categoryId = entryState?.entry?.meta.categoryId;
+  // Read before any await: the typed link must still land if the user leaves
+  // the task while the new one is being created.
+  final persistence = ref.read(persistenceLogicProvider);
 
   final newTask = await createTask(
     linkedId: taskId,
@@ -606,13 +609,11 @@ Future<void> _createNewLinkedTask(
     // removing first would leave the freshly created task with no link back
     // to its parent at all.
     final swap = selection.inverse;
-    final created = await ref
-        .read(persistenceLogicProvider)
-        .createLink(
-          fromId: swap ? newTask.meta.id : taskId,
-          toId: swap ? taskId : newTask.meta.id,
-          linkType: selection.type,
-        );
+    final created = await persistence.createLink(
+      fromId: swap ? newTask.meta.id : taskId,
+      toId: swap ? taskId : newTask.meta.id,
+      linkType: selection.type,
+    );
     if (created) {
       await ref
           .read(journalRepositoryProvider)

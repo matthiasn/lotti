@@ -251,15 +251,14 @@ class SystemHealthController extends Notifier<SystemHealthState> {
     // Hold the auto-disposed analyzer (and the inference repository behind
     // it) for the whole run; a bare read could let it close mid-stream.
     final subscription = ref.listen(systemHealthAnalyzerProvider, (_, _) {});
+    final journalDb = ref.read(journalDbProvider);
     try {
       final request = SystemHealthRequest(
         range: state.rangeAt(clock.now()),
         domains: await _enabledDomains(),
-        includeSlowQueries: await ref
-            .read(journalDbProvider)
-            .getConfigFlag(
-              logSlowQueriesFlag,
-            ),
+        includeSlowQueries: await journalDb.getConfigFlag(
+          logSlowQueriesFlag,
+        ),
         model: await _resolveModel(),
       );
       final report = await subscription.read().analyze(request);
