@@ -1,0 +1,760 @@
+part of 'agent_concurrent_resolver.dart';
+
+/// Which of two concurrent versions of the same entity/link id should win.
+enum ConcurrentWinner {
+  /// Keep the version already stored locally.
+  local,
+
+  /// Apply the version received over sync.
+  incoming,
+}
+
+/// Deterministically resolves two **concurrent** versions of one id into a
+/// single winner, so every replica converges on the same version regardless of
+/// arrival order.
+///
+/// Consulted only when [VectorClock.compare] returns `VclockStatus.concurrent`
+/// (neither version dominates). Resolution order:
+///
+/// 1. **Last-writer-wins on `updatedAt`** — the strictly-newer write wins.
+/// 2. **Equal `updatedAt` → stable tiebreak** — a replica-independent canonical
+///    comparison of the two vector clocks. Both replicas hold both clocks, so
+///    both compute the same winner; on genuinely concurrent clocks this always
+///    discriminates. The degenerate equal-clock case falls back to `local` so
+///    the result is total.
+///
+/// Pure: depends only on its arguments and performs no I/O, so identical inputs
+/// yield the same winner on every device — the convergence guarantee. (Bounding
+/// a skewed physical clock that wins outright by a strictly-greater `updatedAt`
+/// is a separate concern requiring a monotonic/hybrid clock; out of scope here.)
+///
+/// **Whole-version winner for non-counter fields.** This picks one version and
+/// discards the loser's *non-counter* fields, so a concurrent non-counter edit
+/// is LWW-lossy (the tiebreak only makes the loser agree across replicas). The
+/// *cumulative* counters — `AgentStateEntity`'s `wakeCounter` and the `slots`
+/// session counters — are per-host G-counters and are instead merged
+/// element-wise by [mergeAgentStateCounters] (PR 2b), so no increment is ever
+/// lost. (`processedCounterByHost` relocates to the sequence layer in PR 4.)
+ConcurrentWinner resolveConcurrent({
+  required VectorClock localVc,
+  required VectorClock incomingVc,
+  required DateTime localUpdatedAt,
+  required DateTime incomingUpdatedAt,
+}) {
+  if (incomingUpdatedAt.isAfter(localUpdatedAt)) {
+    return ConcurrentWinner.incoming;
+  }
+  if (localUpdatedAt.isAfter(incomingUpdatedAt)) {
+    return ConcurrentWinner.local;
+  }
+  return VectorClock.compareCanonically(incomingVc, localVc) > 0
+      ? ConcurrentWinner.incoming
+      : ConcurrentWinner.local;
+}
+
+/// Whether message [ancestorId] is a proper ancestor of [descendantId] in
+/// the replica's local `messagePrev` DAG. `false` also means "not known
+/// here": the rows that would show it may not have synced yet.
+typedef MessageAncestry = bool Function(String ancestorId, String descendantId);
+
+/// A [MessageAncestry] that knows no order at all.
+bool noKnownAncestry(String ancestorId, String descendantId) => false;
+
+/// The agent's head pointer after merging two state versions' heads
+/// (ADR 0076). The head is a register over the message DAG, not a
+/// last-writer-wins field:
+///
+/// - an unset head carries no information, so the other one stands;
+/// - of two heads, the one that descends from the other wins, so a merge
+///   never moves the head back to an ancestor of the one it replaces;
+/// - two heads with no order known here — a true fork, or messages and
+///   edges still in flight — go by id, the greater first: the same pair
+///   gives the same head on every replica, never by clock or arrival order.
+///   The fork healer joins a true fork; an append chains off a tip past
+///   whichever head this leaves (`AgentMessageDag.tipFrom`), so a head left
+///   on a row whose child (and its edge) arrives later forks nothing.
+String? mergeAgentHeads({
+  required String? local,
+  required String? incoming,
+  required MessageAncestry isAncestor,
+}) {
+  if (incoming == null || incoming == local) return local;
+  if (local == null) return incoming;
+  if (isAncestor(local, incoming)) return incoming;
+  if (isAncestor(incoming, local)) return local;
+  return local.compareTo(incoming) >= 0 ? local : incoming;
+}
+
+/// The row a replica holding [local] persists after receiving [incoming]:
+/// [local] itself (identical) when the local row stands, otherwise the row
+/// to write in its place. This is the whole receive-path decision, shared by
+/// `SyncEventProcessor` and the local write path in `AgentSyncService` so the
+/// two can never resolve the same pair differently (ADR 0068).
+///
+/// - A missing clock on either side applies [incoming] — for agent state
+///   with the two heads merged ([mergeAgentHeads]) — as does a known
+///   variant arriving over a payload-less [AgentUnknownEntity] stub (unless
+///   that would resurrect the stub's tombstone).
+/// - Causal dominance decides next; a dominating [incoming] still has
+///   [local]'s convergent fields joined in ([joinConvergentAgentFields]),
+///   and keeps [local]'s agent head when that head is known ([isAncestor])
+///   to descend from its own, or its own is unset (ADR 0076).
+/// - A concurrent pair goes to [mergeConcurrentAgentEntities].
+///
+/// [isAncestor] answers for the local message DAG; the caller reads it
+/// before the merge (`AgentMessageDag.ancestryOf`), so this stays pure: the
+/// same pair and the same answers yield the same row on every device.
+/// Throws [VclockException] for a malformed clock, which the caller handles.
+AgentDomainEntity resolveAgentEntityVersions({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+  MessageAncestry isAncestor = noKnownAncestry,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) {
+    // An unclocked (legacy) version still applies, but its head is merged
+    // like any other: an old build's row must not move the head back.
+    if (local is! AgentStateEntity || incoming is! AgentStateEntity) {
+      return incoming;
+    }
+    final head = mergeAgentHeads(
+      local: local.recentHeadMessageId,
+      incoming: incoming.recentHeadMessageId,
+      isAncestor: isAncestor,
+    );
+    return head == incoming.recentHeadMessageId
+        ? incoming
+        : incoming.copyWith(recentHeadMessageId: head);
+  }
+  // A local row that decodes as the forward-compat `unknown` fallback is a
+  // payload-less stub: an older build received a variant it did not know,
+  // kept only the envelope fields, and re-serialized the row as `unknown`
+  // with the incoming clock intact. A known incoming variant strictly refines
+  // it regardless of clock order — keeping the stub would pin the stripped
+  // row forever, because a re-delivery of the version it stubbed compares
+  // `equal`. The one thing a stub carries faithfully is its tombstone, so a
+  // deletion is never resurrected by an older live payload.
+  if (local is AgentUnknownEntity &&
+      incoming is! AgentUnknownEntity &&
+      (local.deletedAt == null || incoming.deletedAt != null)) {
+    return incoming;
+  }
+  final resolved = switch (VectorClock.compare(localVc, incomingVc)) {
+    VclockStatus.a_gt_b || VclockStatus.equal => local,
+    VclockStatus.b_gt_a => _keepDescendantHead(
+      joinConvergentAgentFields(winner: incoming, other: local),
+      local: local,
+      isAncestor: isAncestor,
+    ),
+    VclockStatus.concurrent => mergeConcurrentAgentEntities(
+      local: local,
+      incoming: incoming,
+      isAncestor: isAncestor,
+    ),
+  };
+  return resolved == local ? local : resolved;
+}
+
+/// [dominating] — a received agent-state version that causally dominates
+/// [local] — with [local]'s head kept when that head is known to descend
+/// from the dominating one's, or the dominating one has none. A replica can
+/// hold a head newer than the version that succeeds its row: a merge of a
+/// concurrent pair keeps the winner's clock, and a head it took from the
+/// other side is not covered by that clock. Other variants come back as
+/// they are.
+AgentDomainEntity _keepDescendantHead(
+  AgentDomainEntity dominating, {
+  required AgentDomainEntity local,
+  required MessageAncestry isAncestor,
+}) {
+  if (dominating is! AgentStateEntity || local is! AgentStateEntity) {
+    return dominating;
+  }
+  final localHead = local.recentHeadMessageId;
+  final head = dominating.recentHeadMessageId;
+  if (localHead == null || localHead == head) return dominating;
+  if (head != null && !isAncestor(head, localHead)) return dominating;
+  return dominating.copyWith(recentHeadMessageId: localHead);
+}
+
+/// Resolves two **concurrent** versions of one entity into the row to keep:
+/// the type's override ([resolveConcurrentAgentEntityOverride]), then
+/// [resolveConcurrent], with the per-type convergent fields joined — agent
+/// state's G-counters ([mergeAgentStateCounters]) and head
+/// ([mergeAgentHeads], ordered by [isAncestor]), and the nudge accumulators
+/// ([mergeNudgeAccumulators]) — and change sets merged item by item
+/// ([mergeConcurrentChangeSets]). A missing clock counts as empty.
+AgentDomainEntity mergeConcurrentAgentEntities({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+  MessageAncestry isAncestor = noKnownAncestry,
+}) {
+  final winnerSide =
+      resolveConcurrentAgentEntityOverride(local: local, incoming: incoming) ??
+      resolveConcurrent(
+        localVc: local.vectorClock ?? _emptyClock,
+        incomingVc: incoming.vectorClock ?? _emptyClock,
+        localUpdatedAt: local.effectiveUpdatedAt,
+        incomingUpdatedAt: incoming.effectiveUpdatedAt,
+      );
+  final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
+  return switch ((local, incoming)) {
+    (final AgentStateEntity l, final AgentStateEntity i) =>
+      mergeAgentStateCounters(
+        winner: winner as AgentStateEntity,
+        local: l,
+        incoming: i,
+      ).copyWith(
+        recentHeadMessageId: mergeAgentHeads(
+          local: l.recentHeadMessageId,
+          incoming: i.recentHeadMessageId,
+          isAncestor: isAncestor,
+        ),
+      ),
+    (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
+      mergeGoalNudgeAccumulators(
+        winner: winner as GoalNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final RelationshipNudgeEntity l, final RelationshipNudgeEntity i) =>
+      mergeRelationshipNudgeAccumulators(
+        winner: winner as RelationshipNudgeEntity,
+        local: l,
+        incoming: i,
+      ),
+    (final ChangeSetEntity l, final ChangeSetEntity i) =>
+      mergeConcurrentChangeSets(local: l, incoming: i) ?? winner,
+    (final AgentIdentityEntity l, final AgentIdentityEntity i) =>
+      joinIdentityDecisions(
+        winner: winner as AgentIdentityEntity,
+        other: identical(winner, l) ? i : l,
+        otherWinsLifecycleTie:
+            VectorClock.compareCanonically(
+              (identical(winner, l) ? i : l).vectorClock ?? _emptyClock,
+              winner.vectorClock ?? _emptyClock,
+            ) >
+            0,
+      ),
+    // A cross-variant pair (a goal nudge and a relationship nudge sharing an
+    // id) is unreachable — their id shapes are disjoint at mint time — and
+    // keeps the plain winner rather than joining histories across kinds.
+    _ => winner,
+  };
+}
+
+/// [winner] with [other]'s convergent fields joined in: for agent state the
+/// G-counters by element-wise max and the report watermarks by latest
+/// instant; for an agent identity the lifecycle and the user's stop and
+/// resume by their stamps ([joinIdentityDecisions]). Other variants come
+/// back unchanged.
+///
+/// Applied even when [winner] causally dominates [other]. A concurrent merge
+/// joins these fields into a row without moving its clock, so a version that
+/// succeeds one side of that merge need not carry the other side's; letting
+/// it overwrite the merged row would lose them.
+AgentDomainEntity joinConvergentAgentFields({
+  required AgentDomainEntity winner,
+  required AgentDomainEntity other,
+}) => switch ((winner, other)) {
+  (final AgentStateEntity w, final AgentStateEntity o) =>
+    mergeAgentStateCounters(winner: w, local: o, incoming: w),
+  (final AgentIdentityEntity w, final AgentIdentityEntity o) =>
+    joinIdentityDecisions(winner: w, other: o),
+  _ => winner,
+};
+
+/// When [identity]'s lifecycle was last decided: its stamp, or `updatedAt`
+/// for a row written before the stamp existed.
+DateTime identityLifecycleAt(AgentIdentityEntity identity) =>
+    identity.lifecycleUpdatedAt ?? identity.updatedAt;
+
+/// A decision stamp for a write at [now] that supersedes [supersedes]: [now],
+/// or a microsecond past the latest of [supersedes] when [now] is not later
+/// (ADR 0111). The stamps are wall-clock times from several devices, and a
+/// peer whose clock runs ahead leaves one this device's clock has not
+/// reached; a decision built on it must still outrank it, or the merge would
+/// hand its successor's field back to it.
+DateTime decisionStampAfter(DateTime now, Iterable<DateTime?> supersedes) {
+  var at = now;
+  for (final stamp in supersedes) {
+    if (stamp != null && !at.isAfter(stamp)) {
+      at = stamp.add(const Duration(microseconds: 1));
+    }
+  }
+  return at;
+}
+
+/// [winner] with the later decisions of [winner] and [other] (ADR 0111):
+///
+/// - the lifecycle (and its `destroyedAt`) of the side with the later
+///   [identityLifecycleAt]; on equal stamps [winner]'s, or [other]'s when
+///   [otherWinsLifecycleTie] — the concurrent merge breaks that tie by the
+///   canonical clock order, so both replicas pick the same side;
+/// - the user's stop with the later `userStoppedAt` (on equal stamps the
+///   more final lifecycle), and the later `userResumedAt`.
+///
+/// Every other field is [winner]'s. Each joined field only ever moves to a
+/// later stamp, and a lifecycle stamp only grows along a causal chain, so
+/// joining on every receive converges whatever the arrival order
+/// (`specs/tla/RelationshipAgentLifecycle.tla`, FieldMerge).
+AgentIdentityEntity joinIdentityDecisions({
+  required AgentIdentityEntity winner,
+  required AgentIdentityEntity other,
+  bool otherWinsLifecycleTie = false,
+}) {
+  final winnerAt = identityLifecycleAt(winner);
+  final otherAt = identityLifecycleAt(other);
+  final lifecycleFromOther =
+      otherAt.isAfter(winnerAt) ||
+      (otherAt == winnerAt && otherWinsLifecycleTie);
+  final lifecycleSide = lifecycleFromOther ? other : winner;
+  final stopSide = _laterUserStop(winner, other);
+  final resumedAt = _later(winner.userResumedAt, other.userResumedAt);
+  final joined = winner.copyWith(
+    lifecycle: lifecycleSide.lifecycle,
+    lifecycleUpdatedAt: lifecycleFromOther
+        ? otherAt
+        : winner.lifecycleUpdatedAt,
+    destroyedAt: lifecycleSide.destroyedAt,
+    userStoppedAt: stopSide.userStoppedAt,
+    userStopLifecycle: stopSide.userStopLifecycle,
+    userResumedAt: resumedAt,
+  );
+  return joined == winner ? winner : joined;
+}
+
+AgentIdentityEntity _laterUserStop(
+  AgentIdentityEntity a,
+  AgentIdentityEntity b,
+) {
+  final atA = a.userStoppedAt;
+  final atB = b.userStoppedAt;
+  if (atB == null) return a;
+  if (atA == null || atB.isAfter(atA)) return b;
+  if (atA.isAfter(atB)) return a;
+  return (b.userStopLifecycle?.index ?? -1) > (a.userStopLifecycle?.index ?? -1)
+      ? b
+      : a;
+}
+
+DateTime? _later(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return b.isAfter(a) ? b : a;
+}
+
+/// [write]'s lifecycle stamp, set against the row it replaces (ADR 0111).
+///
+/// A writer that changes the lifecycle, or records the user's stop or
+/// resume, stamps `lifecycleUpdatedAt` itself. This covers every other write:
+///
+/// - a new row ([persisted] null or another variant) is stamped with its
+///   `updatedAt`;
+/// - a write built on [persisted] ([covered]) that changed the lifecycle or
+///   a user decision without a newer stamp is stamped with its `updatedAt`,
+///   pushed past [persisted]'s stamp when a peer's clock ran ahead
+///   ([decisionStampAfter]) — it succeeds that decision and must outrank it;
+///   one that changed neither (a rename, a config edit) keeps [persisted]'s
+///   stamp, so it never competes as a lifecycle decision;
+/// - a write built on an older snapshot keeps the stamp it read. Without one
+///   (a row from before the stamp) it is stamped with its `createdAt`, so the
+///   lifecycle it carried from that snapshot never beats a newer decision.
+AgentDomainEntity stampAgentIdentityWrite({
+  required AgentDomainEntity write,
+  required AgentDomainEntity? persisted,
+  bool covered = true,
+}) {
+  if (write is! AgentIdentityEntity) return write;
+  final base = persisted is AgentIdentityEntity ? persisted : null;
+  final DateTime at;
+  if (base == null) {
+    at = write.lifecycleUpdatedAt ?? write.updatedAt;
+  } else if (covered) {
+    final baseAt = identityLifecycleAt(base);
+    final stamped = write.lifecycleUpdatedAt;
+    final decided =
+        write.lifecycle != base.lifecycle ||
+        _isNewer(write.userStoppedAt, base.userStoppedAt) ||
+        _isNewer(write.userResumedAt, base.userResumedAt);
+    at = stamped != null && stamped.isAfter(baseAt)
+        ? stamped
+        : decided
+        ? decisionStampAfter(write.updatedAt, [baseAt])
+        : baseAt;
+  } else {
+    at = write.lifecycleUpdatedAt ?? write.createdAt;
+  }
+  return write.lifecycleUpdatedAt == at
+      ? write
+      : write.copyWith(lifecycleUpdatedAt: at);
+}
+
+bool _isNewer(DateTime? candidate, DateTime? than) =>
+    candidate != null && (than == null || candidate.isAfter(than));
+
+/// The row a **local** write of [write] persists over [persisted] (ADR
+/// 0068). The caller stamps it with a clock that covers both [write]'s and
+/// [persisted]'s, so every replica takes it as a successor of [persisted];
+/// this function makes the fields match what the replicas then agree on.
+///
+/// - A write built on [persisted]'s clock (or a newer one) keeps its fields.
+///   A write built on an older snapshot, or on no clock at all, did not see
+///   [persisted]; its fields are resolved against it as if the two were
+///   concurrent, so a stale write can neither revive a retraction nor beat
+///   a newer timestamp it never saw.
+/// - Agent state never lowers a G-counter or a report watermark. Its head
+///   needs no ancestry here: every local head writer reads [persisted] in
+///   the same transaction and builds on its head, so a write that moves the
+///   head always covers [persisted] (ADR 0076).
+/// - `updatedAt` never moves backwards, so the successor sorts after the row
+///   it replaces on every replica, whatever the writer's clock says.
+/// - A live row built afresh (no clock) over a removed one is a re-creation
+///   under the same id — a day plan drafted again for a day whose plan was
+///   deleted. Its writer read no row (reads hide tombstones), so it could not
+///   build on the tombstone's clock; it keeps its fields, and the stamped
+///   clock makes it the removal's successor everywhere (ADR 0081, addendum).
+/// - An agent identity's lifecycle stamp is set against [persisted] first
+///   ([stampAgentIdentityWrite]), so a rename never competes with a lifecycle
+///   decision and a stale write never beats a newer one (ADR 0111).
+///
+/// Append-only variants (last-writer-wins on `createdAt`) and a stub or
+/// different variant in [persisted] keep [write]'s fields unchanged.
+AgentDomainEntity resolveLocalAgentWrite({
+  required AgentDomainEntity persisted,
+  required AgentDomainEntity write,
+}) {
+  if (persisted is AgentUnknownEntity ||
+      persisted.runtimeType != write.runtimeType ||
+      !write.lwwOnUpdatedAt) {
+    return stampAgentIdentityWrite(write: write, persisted: null);
+  }
+  final recreates =
+      persisted.deletedAt != null &&
+      write.deletedAt == null &&
+      write.vectorClock == null;
+  final covered =
+      recreates || _covers(write.vectorClock, persisted.vectorClock);
+  final stamped = stampAgentIdentityWrite(
+    write: write,
+    persisted: recreates ? null : persisted,
+    covered: covered,
+  );
+  final fields = covered
+      ? stamped
+      : mergeConcurrentAgentEntities(local: persisted, incoming: stamped);
+  return joinConvergentAgentFields(
+    winner: fields,
+    other: persisted,
+  ).withUpdatedAtNotBefore(persisted.effectiveUpdatedAt);
+}
+
+const _emptyClock = VectorClock(<String, int>{});
+
+/// Whether a write built on [base] saw everything in [seen]. A malformed
+/// clock proves nothing, so it does not cover.
+bool _covers(VectorClock? base, VectorClock? seen) {
+  if (seen == null) return true;
+  if (base == null) return false;
+  try {
+    return switch (VectorClock.compare(base, seen)) {
+      VclockStatus.a_gt_b || VclockStatus.equal => true,
+      VclockStatus.b_gt_a || VclockStatus.concurrent => false,
+    };
+  } on VclockException {
+    return false;
+  }
+}
+
+/// The nudge lifecycle dominance rules, shared by every nudge variant and
+/// applied per-variant by [resolveConcurrentAgentEntityOverride] (ADR 0055
+/// semantics, generalized by ADR 0059). Returns null to defer to LWW.
+ConcurrentWinner? resolveConcurrentNudgeLifecycle({
+  required NudgeStatus localStatus,
+  required NudgeStatus incomingStatus,
+  required int localActivationCount,
+  required int incomingActivationCount,
+}) {
+  // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
+  // must not be revived by a concurrent re-activation or bookkeeping
+  // write on another device — a fresh dismissal is a request for quiet.
+  final localDismissed = localStatus == NudgeStatus.dismissed;
+  final incomingDismissed = incomingStatus == NudgeStatus.dismissed;
+  if (localDismissed != incomingDismissed) {
+    return localDismissed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  // Supersession is the subject itself moving on (a revised goal spec, a
+  // changed relationship state) and outranks EVERYTHING below, including a
+  // higher activation: an offline rerun of a stale banner must not
+  // resurrect it beside the revised subject. (Only revision sweeps write
+  // `superseded`, and superseded rows can never re-enter the rerun path,
+  // so this cannot mask a legitimate same-subject reactivation.)
+  final localSuperseded = localStatus == NudgeStatus.superseded;
+  final incomingSuperseded = incomingStatus == NudgeStatus.superseded;
+  if (localSuperseded != incomingSuperseded) {
+    return localSuperseded ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  // The HIGHER activation is the newer run: its lifecycle metadata
+  // (activatedAt, staleAt, runKey) must win whole-row selection, or a
+  // peer's bookkeeping write for the PREVIOUS activation could win LWW
+  // and stamp the fresh rerun with the old deadline. This also covers
+  // genuine reactivation beating a same-subject terminal write.
+  if (localActivationCount != incomingActivationCount) {
+    return localActivationCount > incomingActivationCount
+        ? ConcurrentWinner.local
+        : ConcurrentWinner.incoming;
+  }
+  // Same activation: terminal states dominate concurrent live writes —
+  // a device that retired/expired/superseded the banner must not lose to a
+  // stale exposure flush or rating that copied the old `active` row.
+  final localTerminal = _terminalNudgeStatuses.contains(localStatus);
+  final incomingTerminal = _terminalNudgeStatuses.contains(incomingStatus);
+  if (localTerminal != incomingTerminal) {
+    return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  return null;
+}
+
+/// The ordinal in a spec version id (`agent:spec-v3-9f2c1a08` → 3), or
+/// null for foreign id shapes — those fall back to LWW. Shared with the
+/// goal-progress recompute, which must not build on a newer spec's row.
+int? specVersionOrdinal(String specVersionId) {
+  final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
+  return match == null ? null : int.tryParse(match.group(1)!);
+}
+
+/// How final an evolution session status is: a concurrent pair keeps the
+/// more final one ([resolveConcurrentAgentEntityOverride]).
+int _evolutionSessionRank(EvolutionSessionStatus status) => switch (status) {
+  EvolutionSessionStatus.active => 0,
+  EvolutionSessionStatus.abandoned => 1,
+  EvolutionSessionStatus.completed => 2,
+};
+
+/// The version of one agent link a replica keeps: [local], the row it
+/// holds — a tombstone included — or [incoming], the version it received.
+/// Returns [local] itself when it stands.
+///
+/// Causal dominance decides first; a concurrent pair goes to
+/// [resolveConcurrent] (the later `updatedAt`, then the canonical clock).
+/// A version without a clock carries no order and applies. The local write
+/// path stamps every write as a successor of the row it replaces, tombstone
+/// included, and never earlier than it (`AgentSyncService.upsertLink`), so
+/// this order agrees with causality and every replica keeps the same
+/// version in any arrival order (ADR 0081, `specs/tla/AgentLinks.tla`).
+/// Pure, like [resolveAgentEntityVersions]. Throws [VclockException] for a
+/// malformed clock, which the caller handles.
+AgentLink resolveAgentLinkVersions({
+  required AgentLink local,
+  required AgentLink incoming,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) return incoming;
+  return switch (VectorClock.compare(localVc, incomingVc)) {
+    VclockStatus.a_gt_b || VclockStatus.equal => local,
+    VclockStatus.b_gt_a => incoming,
+    VclockStatus.concurrent =>
+      resolveConcurrent(
+                localVc: localVc,
+                incomingVc: incomingVc,
+                localUpdatedAt: local.updatedAt,
+                incomingUpdatedAt: incoming.updatedAt,
+              ) ==
+              ConcurrentWinner.local
+          ? local
+          : incoming,
+  };
+}
+
+const Set<NudgeStatus> _terminalNudgeStatuses = {
+  NudgeStatus.retired,
+  NudgeStatus.expired,
+  NudgeStatus.superseded,
+  NudgeStatus.failed,
+};
+
+/// Merges two **concurrent** versions of one change set item by item — the
+/// change-set case of [mergeConcurrentAgentEntities] (ADR 0067).
+///
+/// A change set is edited on every device that shows it, and a whole-row
+/// winner would drop the other device's decisions: an item confirmed and
+/// applied there would read `pending` again everywhere and could be applied
+/// a second time. For each index:
+///
+/// - the version that changed the item last wins — the higher
+///   [ChangeItem.revision];
+/// - at the same revision, or when either side carries no revision (an
+///   older build wrote it, and drops the field), the more final status wins
+///   ([ChangeItem.statusRank]): a confirm took effect, so it beats a
+///   concurrent rejection or retraction, and any decision beats `pending`;
+/// - on a status tie, the side that has a revision, which changed the item,
+///   beats an older build's copy without one;
+/// - otherwise a fixed order on the item's content decides.
+///
+/// Items one version appended beyond the other's are kept. The set status is
+/// derived from the merged items — two closed versions (`resolved`,
+/// `expired`) stay closed, so a row retired before retirement retracted its
+/// items is not reopened — and `resolvedAt` is the later of the two (the
+/// set's `createdAt` when neither had resolved it). The vector clock is the
+/// join of both, so the merged row covers both versions: a later write on
+/// either device dominates it, and a version that succeeds only one side is
+/// concurrent with it and merges again.
+///
+/// Nothing here depends on the clocks' canonical order, only on the two
+/// rows' contents, so the merged row does not depend on the order in which a
+/// replica received the versions — the trap ADR 0068 names for a joined
+/// clock under a clock tiebreak.
+///
+/// Returns `null` when the versions cannot be merged item by item — either
+/// is a tombstone, or they disagree on which proposal an index holds — and
+/// the whole-row winner decides.
+ChangeSetEntity? mergeConcurrentChangeSets({
+  required ChangeSetEntity local,
+  required ChangeSetEntity incoming,
+}) {
+  if (local.deletedAt != null || incoming.deletedAt != null) return null;
+  final common = local.items.length < incoming.items.length
+      ? local.items.length
+      : incoming.items.length;
+  for (var i = 0; i < common; i++) {
+    final a = local.items[i];
+    final b = incoming.items[i];
+    if (a.toolName != b.toolName || a.humanSummary != b.humanSummary) {
+      return null;
+    }
+  }
+  final longer = local.items.length >= incoming.items.length ? local : incoming;
+  final items = [
+    for (var i = 0; i < longer.items.length; i++)
+      if (i < common)
+        _mergeChangeItem(local.items[i], incoming.items[i])
+      else
+        longer.items[i],
+  ];
+  final bothClosed =
+      !_isOpenChangeSetStatus(local.status) &&
+      !_isOpenChangeSetStatus(incoming.status);
+  final status = bothClosed
+      ? (local.status.index >= incoming.status.index
+            ? local.status
+            : incoming.status)
+      : ChangeItem.deriveSetStatus(items);
+  final resolvedAt = status == ChangeSetStatus.resolved
+      ? _latestInstant(local.resolvedAt, incoming.resolvedAt) ?? local.createdAt
+      : null;
+  return local.copyWith(
+    items: items,
+    status: status,
+    resolvedAt: resolvedAt,
+    vectorClock: VectorClock.merge(local.vectorClock, incoming.vectorClock),
+  );
+}
+
+bool _isOpenChangeSetStatus(ChangeSetStatus status) =>
+    status == ChangeSetStatus.pending ||
+    status == ChangeSetStatus.partiallyResolved;
+ChangeItem _mergeChangeItem(ChangeItem local, ChangeItem incoming) {
+  final localRevision = local.revision;
+  final incomingRevision = incoming.revision;
+  // An item without a revision was last written by an older build, which
+  // drops the field: its revision says nothing about order, so only the
+  // status can decide.
+  if (localRevision != null &&
+      incomingRevision != null &&
+      localRevision != incomingRevision) {
+    return localRevision > incomingRevision ? local : incoming;
+  }
+  final byRank =
+      ChangeItem.statusRank(local.status) -
+      ChangeItem.statusRank(incoming.status);
+  if (byRank != 0) return byRank > 0 ? local : incoming;
+  // Same status, and only one side counted its change: that side changed
+  // the item — a follow-up task's target rewrite, say — while the older
+  // build's copy is the item as it was.
+  if ((localRevision == null) != (incomingRevision == null)) {
+    return localRevision != null ? local : incoming;
+  }
+  // A fixed order on content, not on clocks: the same pair gives the same
+  // item on every replica, however the replica came to hold it.
+  return jsonEncode(local.toJson()).compareTo(jsonEncode(incoming.toJson())) >=
+          0
+      ? local
+      : incoming;
+}
+
+/// Merges the convergent (per-host G-counter) fields of two **concurrent**
+/// [AgentStateEntity] versions into [winner]: each counter becomes the
+/// element-wise max (CRDT join) of [local] and [incoming], so no increment from
+/// either device is lost, while every *non-counter* field stays as the
+/// deterministic LWW winner ([winner], chosen by [resolveConcurrent]).
+///
+/// The report freshness watermarks are also merged by maximum timestamp. They
+/// represent observed events, so allowing the LWW loser to erase a newer
+/// change/refresh watermark could incorrectly present an old report as fresh.
+/// So are the wake outcome watermarks, `lastWakeAt` and `lastWakeFailedAt`
+/// (ADR 0115): each names when the last wake of its kind ended, and the pair
+/// says whether the last outcome was a failure; left to the LWW winner, a
+/// later unrelated write of the row carried an older outcome over a newer
+/// one, and the person page said *failed* beside a good briefing.
+///
+/// The winner's vector clock is kept deliberately: a future update that causally
+/// dominates it necessarily saw — and (since every replica applies this same
+/// merge symmetrically) merged — both sides, so its counters are a superset and
+/// a later whole-row overwrite on the `b_gt_a` path loses nothing. Pure: same
+/// inputs → same result on every device.
+AgentStateEntity mergeAgentStateCounters({
+  required AgentStateEntity winner,
+  required AgentStateEntity local,
+  required AgentStateEntity incoming,
+}) {
+  return winner.copyWith(
+    wakeCounter: local.wakeCounter.merge(incoming.wakeCounter),
+    dailyWakes: local.dailyWakes.merge(incoming.dailyWakes),
+    reportStaleAt: _latestInstant(
+      local.reportStaleAt,
+      incoming.reportStaleAt,
+    ),
+    reportFreshAt: _latestInstant(
+      local.reportFreshAt,
+      incoming.reportFreshAt,
+    ),
+    lastWakeAt: _latestInstant(local.lastWakeAt, incoming.lastWakeAt),
+    lastWakeFailedAt: _latestInstant(
+      local.lastWakeFailedAt,
+      incoming.lastWakeFailedAt,
+    ),
+    slots: winner.slots.copyWith(
+      totalSessionsCompleted: local.slots.totalSessionsCompleted.merge(
+        incoming.slots.totalSessionsCompleted,
+      ),
+      weeklyReviewCount: local.slots.weeklyReviewCount.merge(
+        incoming.slots.weeklyReviewCount,
+      ),
+    ),
+  );
+}
+
+/// The accumulator and visibility fields every nudge variant shares — the
+/// working set of [mergeNudgeAccumulators]. The variants are siblings in a
+/// freezed union with no common nudge supertype, so thin per-variant
+/// adapters ([mergeGoalNudgeAccumulators],
+/// [mergeRelationshipNudgeAccumulators]) project into this view and apply
+/// the merged view back via `copyWith`; the merge rules themselves exist
+/// exactly once (ADR 0059).
+typedef NudgeAccumulatorView = ({
+  VectorClock? vectorClock,
+  int activationCount,
+  List<NudgeRating> ratings,
+  List<NudgeSnooze> snoozeHistory,
+  DateTime? snoozedUntil,
+  NudgeBannerSnoozeDuration? lastSnoozeDuration,
+  List<NudgeDayDismissal> dismissalHistory,
+  DateTime? dismissedForDayAt,
+  DateTime? staleAt,
+  GCounter totalVisibleMs,
+  GCounter impressionCount,
+  DateTime? firstShownAt,
+  DateTime? lastShownAt,
+});
