@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/time_service.dart';
 
 /// Default deadline for best-effort cleanup. Dependency-sensitive drains opt
 /// out because timing out a Future does not stop it from using its stores.
@@ -80,6 +81,18 @@ class ServiceDisposer {
   }
 
   Future<void> _disposeServices() async {
+    // A running timer stops with the app, and its end is written first,
+    // while the journal and the outbox are still open: otherwise the entry
+    // keeps the end of its last autosave, and the time since is lost
+    // (`specs/tla/RunningTimer.tla`, ShutdownPersists). Drained, not timed
+    // out: a timeout would leave the write running against the stores
+    // closed below.
+    await _disposeAsyncSafely<TimeService>(
+      (s) => s.stop(),
+      'TimeService',
+      timeout: null,
+    );
+
     // Recovery can still enqueue a resend or a burn marker. Drain it before
     // closing the outbox and the stores whose durable intents it reconciles.
     // A timeout would leave that work running against closed dependencies.

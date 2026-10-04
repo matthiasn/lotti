@@ -347,8 +347,8 @@ void main() {
 
   group('buildPersistingTimeService', () {
     /// Runs [body] against a fresh service under a fake clock starting at
-    /// [now], then stops the service outside the fake zone — awaiting the
-    /// ticker's cancellation never settles inside it.
+    /// [now], then stops the service without writing its end, so the writes
+    /// left are the ones [body] caused.
     Future<void> runService(
       void Function(TimeService service, FakeAsync async) body,
     ) async {
@@ -357,8 +357,9 @@ void main() {
       try {
         body(service, async);
       } finally {
-        await service.stop();
-        async.flushMicrotasks();
+        async
+          ..run((_) => unawaited(service.stop(persistEnd: false)))
+          ..flushMicrotasks();
       }
     }
 
@@ -395,6 +396,26 @@ void main() {
       final written = writtenEntities().single;
       expect(written.entryText?.quill, draft);
       expect(written.meta.dateTo, now.add(const Duration(minutes: 5)));
+    });
+
+    // Every stop writes the end: the sidebar's, a profile switch's and
+    // quitting the app's (`specs/tla/RunningTimer.tla`, StopPersists).
+    test('a stopped timer gets its stop time written', () async {
+      await runService((service, async) {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, testTask)))
+          ..elapse(const Duration(minutes: 7))
+          ..run((_) => unawaited(service.stop()))
+          ..flushMicrotasks();
+      });
+
+      expect(
+        writtenEntities().map((entity) => (entity.id, entity.meta.dateTo)),
+        [
+          (timerId, now.add(const Duration(minutes: 5))),
+          (timerId, now.add(const Duration(minutes: 7))),
+        ],
+      );
     });
 
     test(

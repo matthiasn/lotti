@@ -5,7 +5,7 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T21:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: app-bootstrap
@@ -247,9 +247,14 @@ plugin may ask the OS for, and when, is in
 
 # Shutdown
 
-`ServiceDisposer` stops `HabitAutoCompletionService` first — it holds a
-journal-update subscription and timers that must not fire into a closing
-database — before the sync stack and then every Drift database in order.
+`ServiceDisposer` first stops a running timer (`TimeService.stop`), whose end
+is written while the journal and the outbox are still open — otherwise the
+time since its last autosave is lost
+([detail and saving](../features/journal/detail-and-saving.md#every-stop-writes-the-end)).
+It then stops `HabitAutoCompletionService` — it holds a journal-update
+subscription and timers that must not fire into a closing database — before
+the sync stack and then every Drift database in order. A profile switch runs
+the same disposer, so it stops the timer the same way.
 
 Desktop close paths converge on one ordered teardown. `AppLifecycleListener`'s
 `onExitRequested` and the window-manager close event both call

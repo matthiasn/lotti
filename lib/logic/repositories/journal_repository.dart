@@ -163,7 +163,8 @@ class JournalRepository {
   /// Also handles side effects: when deleting an image used as task cover art
   /// the references are cleared first, a relationship cascades to its
   /// check-ins, and once the deletion is stored the running timer is stopped
-  /// if it is this entry and the app badge is refreshed.
+  /// if it is this entry, or runs for this task, and the app badge is
+  /// refreshed.
   ///
   /// Returns whether the deletion is stored: false when the entity does not
   /// exist, the write was refused, or it failed. Callers act on it — the
@@ -223,9 +224,15 @@ class JournalRepository {
               null;
       if (!deleted) return false;
 
-      // Stop timer if the deleted entry is currently running
+      // Stop the timer when the deleted entry is the one running — a
+      // deleted entry has no end left to write — or the task it runs for:
+      // its entry stays, and keeps the time tracked until now.
       final timeService = getIt<TimeService>();
-      if (timeService.getCurrent()?.id == journalEntityId) {
+      final running = timeService.getCurrent();
+      if (running?.id == journalEntityId) {
+        await timeService.stop(persistEnd: false);
+      } else if (running != null &&
+          timeService.linkedFrom?.id == journalEntityId) {
         await timeService.stop();
       }
 

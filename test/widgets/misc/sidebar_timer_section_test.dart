@@ -29,6 +29,9 @@ class _FakeTimeService extends TimeService {
   JournalEntity? _linkedFrom;
   int stopCalls = 0;
 
+  /// The `persistEnd` of every stop: whether it asked for the end written.
+  final persistEnds = <bool>[];
+
   @override
   Stream<JournalEntity?> getStream() => _controller.stream;
 
@@ -41,8 +44,9 @@ class _FakeTimeService extends TimeService {
   }
 
   @override
-  Future<void> stop() async {
+  Future<void> stop({bool persistEnd = true}) async {
     stopCalls += 1;
+    persistEnds.add(persistEnd);
     _linkedFrom = null;
     _controller.add(null);
   }
@@ -294,6 +298,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(timeService.stopCalls, equals(1));
+    // The sidebar's stop writes the end, as every stop does: the time
+    // since the last autosave is kept (specs/tla/RunningTimer.tla).
+    expect(timeService.persistEnds, [true]);
     verifyNever(() => navService.beamToNamed(any()));
     // After stopping, the section collapses
     expect(find.byIcon(LottiIcons.timer), findsNothing);

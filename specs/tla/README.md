@@ -4082,3 +4082,70 @@ What the model leaves out, deliberately or as a residual:
   a check-in's: created near midnight, two zones disagree about the tracking
   start as they do about a check-in. The configurations create the person at
   noon so the counterexamples show the check-in.
+
+## `RunningTimer` — the tracked time a stop keeps
+
+The running timer on one device: an entry whose `dateTo` is moved to now
+while it runs, so a task's tracked time grows. The timer lives in memory
+(`TimeService`); the entry's stored end is the time that counts, on this
+device and, through sync, on every other one. The user starts timers and
+stops them from the entry page, the desktop sidebar, a profile switch or by
+quitting the app; the autosave writes the end every five minutes; the app can
+crash; and the task agent's time-entry tool checks that no timer runs, then
+starts its own several awaits later. The decision is
+[ADR 0120](../../docs/adr/0120-every-stop-writes-the-timers-end.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLostTime` | invariant | a timer stopped — by the user, by a new timer, by quitting — has its entry ending when it stopped |
+| `CrashLossBounded` | invariant | a timer lost to a crash keeps all but the last autosave interval |
+| `NoStolenTimer` | invariant | the agent's tool never stops a timer the user started after it checked |
+
+| Configuration | Entries | Moments | Autosave every | Crashes | Distinct states |
+|---------------|--------:|--------:|---------------:|--------:|----------------:|
+| `RunningTimer` | 3 | 6 | 2 | 1 | 81,204 |
+
+Each switch has a counterexample when set to `FALSE`:
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `StopPersists` | `TimeService.stop` only cleared memory: the sidebar's stop and a profile switch left the entry at its last autosave, losing up to five minutes each time | `NoLostTime`, five states: the user starts a timer, a minute passes, and the sidebar stops it |
+| `ShutdownPersists` | quitting the app wrote nothing for a running timer | `NoLostTime`, five states: the same with a quit |
+| `AgentStartAtomic` | the tool checked for a running timer, read the task, minted the metadata and wrote its entry, then started its timer over whatever ran by then — which finalised and replaced the user's | `NoStolenTimer`, five states: the tool checks, the user starts a timer, the tool's start replaces it |
+
+With every switch on, `TimeService.stop` writes the running entry's end
+through `persistRunningTimerEnd` — on the stored row, with the editor's draft
+— unless its caller already did (`stop(persistEnd: false)`: the entry page's
+save, a deleted entry). `ServiceDisposer` stops the timer as its first step,
+for quitting and for a profile switch, while the journal and the outbox are
+open. The tool starts its timer with `TimeService.startIfIdle`, which checks
+and starts in one step and leaves a running timer alone; the tool then
+reports its entry saved but not started.
+
+The conformance trace is `test/services/running_timer_model_conformance.dart`
+(a part of the `TimeService` suite): under fake time, the app's
+`buildPersistingTimeService` with the real `PersistenceLogic` over an
+in-memory `JournalDb`, and the real `TimeEntryHandler`, through generated
+starts, waits across the autosave, stops by every path, quits, crashes and
+agent starts — one with the user's start landing on the tool's read of the
+task. After every step it checks the three properties against the stored
+rows. With `stop` back to clearing memory, the pinned sidebar and quit traces
+fail; with the tool back on `start`, the pinned race fails; the Glados
+property fails for each. `service_disposer_test.dart` pins the timer as the
+disposer's first step. Writing the trace showed the one-second ticker's
+`Stream.periodic` cancellation could never be awaited under fake time; the
+ticker is a `Timer.periodic` now, whose cancel is synchronous.
+
+What the model leaves out:
+
+- **Resuming after a restart.** A timer does not survive the process; after
+  a crash its entry ends at the last autosave, and nothing restarts it.
+- **Two devices.** Running is per device: another device's edit of a
+  running entry's range races its autosave as `TaskFieldWrites`-style
+  versions, which `JournalReplication` covers.
+- **The agent re-confirming its tool call** after a start that found a timer
+  running: the entry exists, so the call reports it and starts nothing.
+- **The entry page's short delay.** Its stop saves the end, waits
+  `stopRecordingDelay`, then stops the timer — only if its own entry still
+  runs, so a timer started in that moment is left to write its own end. The
+  model takes the save and the stop as one step.

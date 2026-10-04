@@ -286,7 +286,7 @@ void main() {
         expect(playerDisposals, 1);
         for (final failedStep in [
           'profileSwitch_StartupTasks.settle',
-          'profileSwitch_TimeService.stop',
+          'profileSwitch_TimeService',
           'profileSwitch_AudioPlayerController.disposeActivePlayer',
           'profileSwitch_WindowService.detachForRestart',
         ]) {
@@ -409,7 +409,7 @@ void main() {
           isA<ProfileQuiescenceException>().having(
             (e) => e.failures.map((f) => f.service),
             'failed steps',
-            ['TimeService.stop'],
+            ['TimeService'],
           ),
         ),
       );

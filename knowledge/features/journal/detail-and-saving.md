@@ -5,13 +5,13 @@ description: The two-state detail machine, Markdown-aware rich-text paste, the s
 resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-15T00:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-09-29
+    last_modified: 2026-10-04
   - id: editor-tools
     resource: ../../../lib/features/journal/ui/widgets/editor/editor_tools.dart
     title: Editor conversion helpers
@@ -27,11 +27,11 @@ sources:
   - id: time-service
     resource: ../../../lib/services/time_service.dart
     title: TimeService
-    last_modified: 2026-09-28
+    last_modified: 2026-10-04
   - id: running-timer-persistence
     resource: ../../../lib/features/journal/state/running_timer_persistence.dart
     title: Running timer persistence
-    last_modified: 2026-09-28
+    last_modified: 2026-10-04
 ---
 
 `EntryController` is the detail-side brain for **one** entry. It loads the
@@ -144,8 +144,9 @@ or sync set since the page loaded is kept (see
 
 - **Updating a category from the detail controller also propagates that category
   to currently linked outgoing entries.**
-- Saving with `stopRecording: true` updates the text first, then stops the timer
-  after a short delay.
+- Saving with `stopRecording: true` updates the text and the end first, then
+  stops the timer after a short delay, without writing the end again
+  (`stop(persistEnd: false)`).
 - When an external update arrives and the entry is **not** dirty, the editor
   controller is rebuilt from the saved value — **but only when the stored text
   differs from what the editor shows**. An update that leaves the text alone (a
@@ -176,10 +177,37 @@ or sync set since the page loaded is kept (see
   text, drops focus, hides the toolbar, and clears the dirty flag. The toolbar
   surfaces it beside Save only while there are unsaved changes.
 
+# Every stop writes the end
+
+Whichever way a timer stops, its entry ends when it stopped. Only a crash,
+or an end write that fails (logged; the timer stops all the same), loses
+time: at most one autosave interval. The decision, and why the agent's
+tool starts a timer only while none runs, is
+[ADR 0120](../../../docs/adr/0120-every-stop-writes-the-timers-end.md); the
+model is `specs/tla/RunningTimer.tla`. At runtime: `TimeService.stop` writes
+the end through the same `persistRunningTimerEnd` the autosave uses, so the
+sidebar, a profile switch and quitting (`ServiceDisposer`'s first step) go
+through it. The entry page's stop saves the end with the editor's text, then
+stops its own timer, if it still runs, with `persistEnd: false`. Deleting the
+running entry stops it without writing; deleting the task it runs for
+(`TimeService.linkedFrom`) stops it and writes the end, since the entry stays
+(`JournalRepository.deleteJournalEntity`).
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Running: start / startIfIdle
+  Running --> Running: autosave (every 5 min), end written
+  Running --> Running: start (another entry), old end written
+  Running --> Idle: stop(), end written, also when its task is deleted
+  Running --> Idle: stop(persistEnd: false), end written by the caller or entry deleted
+  Running --> [*]: crash, end of last autosave kept
+```
+
 # A running timer autosaves
 
 While a timer runs, only `TimeService` knows how long it has been going: the
-live duration ticks from its one-second stream, and the stored `dateTo` stays
+live duration ticks from its one-second ticker, and the stored `dateTo` stays
 where the entry was last saved. Every calendar — this device's, and every
 other device's through sync — reads the stored value, so without help a
 two-hour session shows as a sliver until the timer is stopped.

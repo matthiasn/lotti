@@ -425,8 +425,13 @@ class EntryController extends AsyncNotifier<EntryState?> {
       }
 
       if (stopRecording) {
+        // The save above wrote the end time, with the editor's text. Only
+        // this entry's timer is stopped: one started in the delay keeps
+        // running, and writes its own end when it stops.
         await Future<void>.delayed(stopRecordingDelay).then((_) {
-          timeService.stop();
+          if (timeService.getCurrent()?.id == id) {
+            timeService.stop(persistEnd: false);
+          }
         });
       }
     }

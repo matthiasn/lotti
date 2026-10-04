@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
@@ -139,6 +140,14 @@ void main() {
     test('disposeAll calls services and databases in expected order', () async {
       final order = <String>[];
 
+      // A running timer stops first, writing its end while the journal and
+      // the outbox are still open (`specs/tla/RunningTimer.tla`,
+      // ShutdownPersists).
+      final timeService = MockTimeService();
+      when(timeService.stop).thenAnswer((_) async {
+        order.add('TimeService');
+      });
+
       final autoCompletionNotifier = MockHabitAutoCompletionNotifier();
       when(autoCompletionNotifier.dispose).thenAnswer((_) {
         order.add('HabitAutoCompletionNotifier');
@@ -214,6 +223,7 @@ void main() {
       });
 
       testGetIt
+        ..registerSingleton<TimeService>(timeService)
         ..registerSingleton<HabitAutoCompletionNotifier>(
           autoCompletionNotifier,
         )
@@ -238,6 +248,7 @@ void main() {
       await disposer.disposeAll();
 
       expect(order, [
+        'TimeService',
         'HabitAutoCompletionNotifier',
         'HabitAutoCompletionService',
         'BackfillRequestService',

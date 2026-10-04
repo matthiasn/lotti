@@ -425,14 +425,14 @@ void main() {
         );
         when(() => mockTimeService.getCurrent()).thenReturn(entry);
         when(
-          () => mockTimeService.stop(),
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
         ).thenAnswer((_) async {});
         when(
           () => mockNotificationService.updateBadge(),
         ).thenAnswer((_) async {});
 
         expect(await repository.deleteJournalEntity(entry.id), isTrue);
-        verify(() => mockTimeService.stop()).called(1);
+        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
       });
 
       test('the tombstone is built on the entry as stored: a version stored '
@@ -612,7 +612,9 @@ void main() {
         when(() => mockTimeService.getCurrent()).thenReturn(testEntity);
 
         // Mock TimeService.stop
-        when(() => mockTimeService.stop()).thenAnswer((_) async {});
+        when(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.deleteJournalEntity(journalEntityId);
@@ -635,7 +637,8 @@ void main() {
 
         // Verify timer was stopped
         verify(() => mockTimeService.getCurrent()).called(1);
-        verify(() => mockTimeService.stop()).called(1);
+        // A deleted entry has no end left to write.
+        verify(() => mockTimeService.stop(persistEnd: false)).called(1);
       });
 
       test('does not stop timer when deleting a non-active entry', () async {
@@ -712,8 +715,75 @@ void main() {
 
         // Verify timer was NOT stopped (different ID)
         verify(() => mockTimeService.getCurrent()).called(1);
-        verifyNever(() => mockTimeService.stop());
+        verifyNever(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        );
       });
+
+      // The timer's entry stays when its task is deleted: the timer stops
+      // and writes the end, so the time tracked until the deletion is kept
+      // and nothing keeps running for a task that is gone.
+      for (final forThisTask in [true, false]) {
+        test(
+          'deleting a task ${forThisTask ? 'stops' : 'leaves'} the timer '
+          'running ${forThisTask ? 'for it' : 'for another task'}',
+          () async {
+            const taskId = 'task-with-timer';
+            final task = testJournalEntry(
+              plainText: 'The task',
+              meta: testMeta(id: taskId),
+            );
+            final timerEntry = testJournalEntry(
+              plainText: 'Timer',
+              meta: testMeta(id: 'timer-entry'),
+            );
+            when(
+              () => mockJournalDb.journalEntityById(taskId),
+            ).thenAnswer((_) async => task);
+            when(
+              () => mockPersistenceLogic.updateMetadata(
+                task.meta,
+                deletedAt: any(named: 'deletedAt'),
+              ),
+            ).thenAnswer(
+              (_) async => task.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+            );
+            when(
+              () => mockPersistenceLogic.updateDbEntity(
+                any(),
+                precondition: any(named: 'precondition'),
+              ),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockNotificationService.updateBadge(),
+            ).thenAnswer((_) async {});
+            when(() => mockTimeService.getCurrent()).thenReturn(timerEntry);
+            when(() => mockTimeService.linkedFrom).thenReturn(
+              forThisTask
+                  ? task
+                  : testJournalEntry(
+                      plainText: 'Another task',
+                      meta: testMeta(id: 'another-task'),
+                    ),
+            );
+            when(
+              () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+            ).thenAnswer((_) async {});
+
+            expect(await repository.deleteJournalEntity(taskId), isTrue);
+
+            if (forThisTask) {
+              // The end is written: the default.
+              verify(() => mockTimeService.stop()).called(1);
+            } else {
+              verifyNever(
+                () =>
+                    mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+              );
+            }
+          },
+        );
+      }
 
       test('handles null timer when deleting entry', () async {
         // Arrange
@@ -779,7 +849,9 @@ void main() {
 
         // Verify timer was NOT stopped (no active timer)
         verify(() => mockTimeService.getCurrent()).called(1);
-        verifyNever(() => mockTimeService.stop());
+        verifyNever(
+          () => mockTimeService.stop(persistEnd: any(named: 'persistEnd')),
+        );
       });
     });
 

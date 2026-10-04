@@ -89,6 +89,11 @@ without changing the other three configurations' counts. TLC found one bug
 and an audit of its callers one more (P2×2). Not included in the historical
 totals above.
 
+The `RunningTimer` model ([#4685](https://github.com/matthiasn/lotti/pull/4685)) adds one spec, one configuration, three named
+properties and 81,204 distinct states. TLC reproduced all three bugs it came
+with (P1×2, P2), each through its switch. Not included in the historical
+totals above.
+
 The task-writes follow-up ([#4681](https://github.com/matthiasn/lotti/pull/4681)) adds one configuration
 (`TaskFieldWritesStale`, 15,183,786 distinct states) and three switches
 (`MetaOnStored` in `ChecklistMembership` and `TaskFieldWrites`,
@@ -300,6 +305,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4602](https://github.com/matthiasn/lotti/pull/4602) | pending | agents | `ProjectWakeGovernor` | 5 | 5 (5) | P2×2 P3×3 | [0113](../../docs/adr/0113-project-agents-update-in-synced-slots.md) | A project agent's report changes, synced to three devices, armed three device-local 06:00 fallbacks, and every sync arrival of the state repaired one more: each device ran its own paid inference for one report (`SyncedSlots = FALSE` breaks `StaleDoesNotTriggerWork` in five states). A change now only marks the report stale; one synced, leased update slot per agent refreshes it on one device. TLC rejected three drafts on the way — claiming offline, confirming a claim a connection drop never uploaded, and two devices arming different slots for one change |
 | [#4684](https://github.com/matthiasn/lotti/pull/4684) | pending | tasks | — | 1 | 2 (1) | P2×2 | — | `JournalRepository.deleteJournalEntity` answered true whatever its tombstone write did. A checklist item or checklist deletion whose delete failed dropped its recorded intent as done, so the item or checklist stayed alive, listed nowhere, and nothing retried it (`DeleteReportsFailure = FALSE`: `NoLostChecklist`, seven states); the entry page closed on an entry that was still there. The delete now writes on the stored row and reports what it did; the operation keeps its intent for the next start, and the page stays and says the delete failed |
 | [#4681](https://github.com/matthiasn/lotti/pull/4681) | pending | tasks, sync | — | 1 | 5 (5) | P1×3 P2×2 | [0119](../../docs/adr/0119-every-task-write-is-a-change-of-the-stored-row.md) | The task writes ADRs 0089 and 0103 left: the star, flag and private toggles, the category and date changes, the geolocation added after creation and the agent's label assignment each wrote the whole row it had read a few awaits earlier, so a status the agent set or a checklist `createChecklist` listed meanwhile was put back (`MetaOnStored = FALSE`: `NoLostChecklist` in five steps, `NoLostFieldEdit` in five states). The conflict screen resolved against the pair it read on opening and overwrote a field the agent set while it was open (`ResolveOnStored = FALSE`: ten states). Every task write is now a change of the stored entry (`PersistenceLogic.updateEntity`), and a resolution applies only over the side it showed |
+| [#4685](https://github.com/matthiasn/lotti/pull/4685) | pending | tasks, agents | `RunningTimer` | 1 | 3 (3) | P1×2 P2 | [0120](../../docs/adr/0120-every-stop-writes-the-timers-end.md) | `TimeService.stop` only cleared memory, so stopping a timer from the desktop sidebar, switching profiles or quitting the app left its entry at the last five-minute autosave, losing the time since (`StopPersists`, `ShutdownPersists`: `NoLostTime`, five states each). The agent's time-entry tool checked for a running timer, awaited three reads and writes, then started its own over a timer the user had started meanwhile (`AgentStartAtomic`: `NoStolenTimer`, five states). Every stop now writes the end, shutdown stops the timer first, and the tool starts only an idle timer |
 
 ## Sync follow-up evidence, 2026-09-26
 
@@ -639,6 +645,9 @@ The P0 and P1 bugs:
 | [#4681](https://github.com/matthiasn/lotti/pull/4681) | P1 | yes | Resolving a conflict wrote the pair the screen read when it opened, putting back a field the agent set while it was open |
 | [#4681](https://github.com/matthiasn/lotti/pull/4681) | P2 | yes | Starring, flagging or making a task private wrote the task it had just read, putting back a field or checklist stored in between |
 | [#4681](https://github.com/matthiasn/lotti/pull/4681) | P2 | yes | Changing a task's category or date wrote the task it had just read, putting back a field or checklist stored in between |
+| [#4685](https://github.com/matthiasn/lotti/pull/4685) | P1 | yes | Stopping a timer from the desktop sidebar or switching profiles lost the time tracked since its last autosave, up to five minutes each time |
+| [#4685](https://github.com/matthiasn/lotti/pull/4685) | P1 | yes | Quitting the app with a timer running lost the time tracked since its last autosave |
+| [#4685](https://github.com/matthiasn/lotti/pull/4685) | P2 | yes | The agent's time-entry tool replaced a timer the user started while it prepared its own |
 
 </details>
 
