@@ -22,6 +22,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/ui/inference_profile_detail_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
@@ -42,7 +43,6 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
-import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -414,7 +414,7 @@ void main() {
     journalDbProvider.overrideWithValue(mocks.journalDb),
     aiConfigRepositoryProvider.overrideWithValue(aiRepository),
     templatesPendingReviewProvider.overrideWith((ref) async => <String>{}),
-    knownSyncNodesProvider.overrideWith((ref) => const Stream.empty()),
+    pairedSyncNodesProvider.overrideWith((ref) => const Stream.empty()),
     localVectorClockHostIdProvider.overrideWith((ref) async => null),
     consumptionRepositoryProvider.overrideWithValue(consumptionRepository),
     consumptionRefetchThrottleProvider.overrideWithValue(null),

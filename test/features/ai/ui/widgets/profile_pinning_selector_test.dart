@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_node_profile.dart';
+import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
-import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -84,7 +84,7 @@ Widget _harness({
       ),
     ),
     overrides: [
-      knownSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
+      pairedSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
       localVectorClockHostIdProvider.overrideWith((_) async => localHostId),
       aiConfigByTypeControllerProvider(
         AiConfigType.model,

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_node_profile.dart';
+import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -65,7 +65,7 @@ class ProfilePinningSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     final theme = Theme.of(context);
-    final directoryAsync = ref.watch(knownSyncNodesProvider);
+    final directoryAsync = ref.watch(pairedSyncNodesProvider);
     final localHostAsync = ref.watch(localVectorClockHostIdProvider);
     final modelsAsync = ref.watch(
       aiConfigByTypeControllerProvider(AiConfigType.model),

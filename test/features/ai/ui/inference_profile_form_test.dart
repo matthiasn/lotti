@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -96,7 +96,7 @@ void main() {
         }),
         // Stub the pinning selector's data sources so the form's existing
         // tests don't need to register a real sync stack.
-        knownSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
+        pairedSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
         localVectorClockHostIdProvider.overrideWith((_) async => null),
       ],
     );

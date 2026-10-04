@@ -16,7 +16,7 @@
     "lib/database/fts5_db.dart": {"lookups": 1},
     "lib/features/agents/query/query_audio_timing_service.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/agents/query/query_chat_providers.dart": {"lookups": 2, "isRegistered": 1},
-    "lib/features/agents/state/agent_providers.dart": {"lookups": 4, "isRegistered": 4},
+    "lib/features/agents/state/agent_providers.dart": {"lookups": 2, "isRegistered": 2},
     "lib/features/agents/state/agent_workflow_providers.dart": {"lookups": 3, "isRegistered": 3},
     "lib/features/agents/state/change_set_providers.dart": {"lookups": 4, "isRegistered": 1},
     "lib/features/agents/sync/agent_sync_service.dart": {"lookups": 3},
