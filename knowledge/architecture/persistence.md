@@ -103,7 +103,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 |----------|------|--------|------|
 | `JournalDb` | `db.sqlite` | 51 | Journal entities, tasks, links, tags, config flags — the primary store |
 | `SyncDatabase` | `sync.sqlite` | 34 | Outbox, sequence log, host activity, inbound event queue, queue markers, onboarding rounds, deep-backfill requests, trusted sync senders |
-| `AgentDatabase` | `agent.sqlite` | 23 | Agent state, reports, observations, change proposals, wake history |
+| `AgentDatabase` | `agent.sqlite` | 24 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 4 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |

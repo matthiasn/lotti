@@ -14,6 +14,7 @@ Cross-cutting runtime structure — the parts no single feature owns.
 * [Success semantics](success-semantics.md) - the deterministic goal and habit verdicts as definitions, the theorems they satisfy, and the checks that prove each.
 * [Day indicators](day-indicators.md) - the shared day-mark model and the cells, strip, track geometry and legend goals and habits draw their per-day squares with.
 * [Shared widgets](shared-widgets.md) - the widgets that belong to no single feature.
+* [Backend services](backend-services.md) - what lives under services/: the local inference servers the app can use, the sync provisioning stack, and the billing proof of concept reachable only as an optional generic provider.
 * [Platform targets, CI and release](platform-and-release.md) - every platform target from one codebase, the checks each branch runs, and the tag that triggers the release pipelines.
 
 # Related

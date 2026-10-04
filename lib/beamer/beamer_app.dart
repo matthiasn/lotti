@@ -601,8 +601,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
     if (!mounted) return false;
     final targetDate = ref.read(dailyOsNextSelectedDateProvider);
-    // Daily OS is always available (no config flag), so only the current tab
-    // gates the switch.
+    // Eligibility already requires the Daily OS page flag, so only the
+    // current tab gates the switch.
     if (navService.index != navService.calendarIndex) {
       navService.tapIndex(navService.calendarIndex);
     }
