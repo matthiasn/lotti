@@ -19,7 +19,6 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
-import 'package:lotti/features/agents/ui/query/query_rename_dialog.dart';
 import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -43,6 +42,8 @@ import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
+
+part 'query_chat_pane_rename_part.dart';
 
 /// Turns bare answer citations into local links without changing Markdown's
 /// code spans/blocks, existing links, or numeric reference definitions.
@@ -327,7 +328,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         chat.private || ref.read(configFlagProvider('private')).value == true;
     final result = await ModalUtils.showSinglePageModal<String>(
       context: context,
-      builder: (context) => QueryRenameDialog(
+      builder: (context) => _QueryRenameDialog(
         controller: controller,
         chat: chat,
         private: authoredPrivate,

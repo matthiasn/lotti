@@ -20,11 +20,13 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
@@ -326,6 +328,14 @@ void main() {
       same(detail),
     );
     expect(find.text(testProject.data.title), findsWidgets);
+    // The page hands the chat its entry view: journal's details, without a
+    // back button of its own.
+    final companion = tester.widget<QueryCompanion>(
+      find.byType(QueryCompanion),
+    );
+    final view = companion.entryViewBuilder('entry-1') as EntryDetailsPage;
+    expect(view.itemId, 'entry-1');
+    expect(view.showBackButton, isFalse);
   });
 
   testWidgets('project explorer opens only the selected project and returns', (
