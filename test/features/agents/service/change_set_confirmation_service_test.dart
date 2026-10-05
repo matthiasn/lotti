@@ -3210,7 +3210,7 @@ void main() {
         settingsDb = SettingsDb(inMemoryDatabase: true);
         intents = ChangeDispatchIntents(
           scope: 'task',
-          settingsDb: () => settingsDb,
+          settingsDb: settingsDb,
         );
       });
       tearDown(() => settingsDb.close());

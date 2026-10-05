@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:flutter/semantics.dart';
@@ -18,7 +17,9 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'proposal_row_content_part.dart';
@@ -499,6 +500,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final textDirection = Directionality.of(context);
     final view = View.of(context);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     try {
       final result =
           await (widget.onConfirm?.call() ??
@@ -545,11 +547,13 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
         widget.onResolveEnd?.call(suggestion, removed: false);
         if (mounted) setState(() => _busy = false);
       }
-    } catch (e) {
-      developer.log(
-        'confirmItem failed',
-        name: 'AiSummaryCard',
-        error: e.runtimeType,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'AiSummaryCard',
+        message: 'confirmItem failed',
       );
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,
@@ -575,6 +579,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final textDirection = Directionality.of(context);
     final view = View.of(context);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     try {
       final applied =
           await (widget.onReject?.call() ??
@@ -609,11 +614,13 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
         widget.onResolveEnd?.call(suggestion, removed: false);
         if (mounted) setState(() => _busy = false);
       }
-    } catch (e) {
-      developer.log(
-        'rejectItem failed',
-        name: 'AiSummaryCard',
-        error: e.runtimeType,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'AiSummaryCard',
+        message: 'rejectItem failed',
       );
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,

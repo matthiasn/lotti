@@ -126,7 +126,7 @@ void main() {
       ]) {
         final intents = ChangeDispatchIntents(
           scope: scope,
-          settingsDb: () => settingsDb,
+          settingsDb: settingsDb,
         );
         await intents.record((changeSetId: 'set-$scope', itemIndex: 0));
 
@@ -135,6 +135,70 @@ void main() {
         expect(await intents.pending(), isEmpty, reason: scope);
         verify(() => mockRepository.getEntity('set-$scope')).called(1);
       }
+    });
+
+    // The suggestion card reads the autoDispose service once and nothing
+    // keeps listening, so its provider is disposed before the confirmation
+    // records its dispatch. The record must not reach back into that `Ref`.
+    test('a confirmation records its dispatch after the provider that built '
+        'its service was disposed', () async {
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      addTearDown(settingsDb.close);
+      final mockSyncService = MockAgentSyncService()
+        // Stops the confirmation at its claim, right after the record.
+        ..transactionDelegate = <T>(_) async => throw StateError('claim');
+      when(() => mockSyncService.repository).thenReturn(mockRepository);
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          settingsDbProvider.overrideWithValue(settingsDb),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+          journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
+          checklistRepositoryProvider.overrideWithValue(
+            MockChecklistRepository(),
+          ),
+          labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          projectRepositoryProvider.overrideWithValue(MockProjectRepository()),
+        ]),
+      );
+      addTearDown(container.dispose);
+      final changeSet = makeTestChangeSet(
+        id: 'set-disposed',
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Set priority to P1',
+          ),
+        ],
+      );
+
+      final service = container.read(changeSetConfirmationServiceProvider);
+      await container.pump();
+
+      await expectLater(
+        service.confirmItem(changeSet, 0),
+        throwsA(
+          isA<StateError>().having((e) => e.message, 'message', 'claim'),
+        ),
+      );
+      expect(
+        await ChangeDispatchIntents(
+          scope: taskDispatchScope,
+          settingsDb: settingsDb,
+        ).pending(),
+        {
+          '${ChangeDispatchIntents.keyPrefix}$taskDispatchScope:0:'
+              'set-disposed': (
+            changeSetId: 'set-disposed',
+            itemIndex: 0,
+          ),
+        },
+      );
     });
 
     test(

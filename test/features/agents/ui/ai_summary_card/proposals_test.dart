@@ -18,6 +18,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -37,6 +39,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(makeTestChangeSet());
     registerFallbackValue(<String>{});
+    registerFallbackValue(StackTrace.empty);
   });
   group('AiSummaryCard – Proposals', () {
     testWidgets('omits the whole section when nothing is pending', (
@@ -675,10 +678,12 @@ void main() {
         () => service.confirmItem(any(), any()),
       ).thenAnswer((_) async => Future.error(Exception('boom')));
       final notifier = MockUpdateNotifications();
+      final logger = MockDomainLogger();
       final bench = AgentTestBench(
         confirmationService: service,
         updateNotifications: notifier,
         suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        extraOverrides: [domainLoggerProvider.overrideWithValue(logger)],
       );
 
       await tester.pumpWidget(bench.build());
@@ -691,6 +696,15 @@ void main() {
 
       expect(find.text('Failed to apply change'), findsWidgets);
       expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'AiSummaryCard',
+          message: 'confirmItem failed',
+        ),
+      ).called(1);
     });
 
     testWidgets('rejectItem returning false surfaces an error toast', (
@@ -781,9 +795,11 @@ void main() {
         () => service.confirmAll(any()),
       ).thenAnswer((_) async => Future.error(Exception('boom')));
       final notifier = MockUpdateNotifications();
+      final logger = MockDomainLogger();
       final bench = AgentTestBench(
         confirmationService: service,
         updateNotifications: notifier,
+        extraOverrides: [domainLoggerProvider.overrideWithValue(logger)],
         suggestions: UnifiedSuggestionList(
           open: [
             PendingSuggestion(
@@ -813,6 +829,15 @@ void main() {
 
       expect(find.text('Failed to apply change'), findsWidgets);
       verify(() => notifier.notify(any())).called(1);
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'AiSummaryCard',
+          message: 'confirmAll failed',
+        ),
+      ).called(1);
     });
 
     testWidgets('confirmAll partial failure surfaces an error toast', (

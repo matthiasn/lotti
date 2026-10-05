@@ -27,9 +27,10 @@ class ChangeDispatchIntents {
   /// them again.
   final String scope;
 
-  /// The settings database the dispatches are recorded in, read when first
-  /// used.
-  final SettingsDb Function() _settingsDb;
+  /// The settings database the dispatches are recorded in. Held, not looked
+  /// up on use: a confirmation outlives the provider that built its service,
+  /// whose `Ref` is disposed by the time the dispatch is recorded.
+  final SettingsDb _settingsDb;
 
   /// The settings key prefix of every recorded dispatch.
   static const keyPrefix = 'changeDispatchIntent:';
@@ -40,17 +41,17 @@ class ChangeDispatchIntents {
   /// names the item, so recording it again is the same record.
   Future<String> record(ChangeDispatch dispatch) async {
     final key = '$_scopePrefix${dispatch.itemIndex}:${dispatch.changeSetId}';
-    await _settingsDb().saveSettingsItem(key, '');
+    await _settingsDb.saveSettingsItem(key, '');
     return key;
   }
 
   /// Removes the dispatch recorded under [key]: its outcome is written.
-  Future<void> clear(String key) => _settingsDb().removeSettingsItem(key);
+  Future<void> clear(String key) => _settingsDb.removeSettingsItem(key);
 
   /// Every dispatch of this [scope] still recorded, by key; `null` for a key
   /// this build cannot read, which the caller drops.
   Future<Map<String, ChangeDispatch?>> pending() async {
-    final rows = await _settingsDb().itemsWithKeyPrefix(_scopePrefix);
+    final rows = await _settingsDb.itemsWithKeyPrefix(_scopePrefix);
     return {for (final key in rows.keys) key: _decode(key)};
   }
 

@@ -6,7 +6,7 @@ void main() {
   late SettingsDb settingsDb;
 
   ChangeDispatchIntents intentsOf(String scope) =>
-      ChangeDispatchIntents(scope: scope, settingsDb: () => settingsDb);
+      ChangeDispatchIntents(scope: scope, settingsDb: settingsDb);
 
   setUp(() => settingsDb = SettingsDb(inMemoryDatabase: true));
   tearDown(() => settingsDb.close());
