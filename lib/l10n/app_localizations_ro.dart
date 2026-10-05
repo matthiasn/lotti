@@ -6554,9 +6554,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
 
   @override
-  String get eventsAddLabel => 'Adăugați';
-
-  @override
   String get eventsChangeCover => 'Schimbați coperta';
 
   @override
@@ -6643,10 +6640,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Rezumat';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Asociați o sarcină de pregătire sau de urmărire';
 
   @override
   String get eventsTasksSection => 'Sarcini';

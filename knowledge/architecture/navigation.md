@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
 stale_after: 2027-04-03
 sources:
   - id: route-mirror
@@ -448,7 +448,7 @@ page's pop target rebuilds exactly the stack beneath it. The mechanism is in
 
 # Chrome rules are pure functions of router state
 
-Mobile chrome decisions are derived, not stored. Four pure functions of router
+Mobile chrome decisions are derived, not stored. Pure functions of router
 state decide what the bottom edge belongs to, following one product rule:
 **menus keep the bar, terminal destinations take the bottom edge.**
 
@@ -456,6 +456,7 @@ state decide what the bottom edge belongs to, following one product rule:
 | --- | --- | --- |
 | `isTaskDetailRoute` | `/tasks/<uuid>` | Bar **unmounted** — `TaskActionBar` replaces it outright |
 | `isLogbookEntryDetailRoute` | `/journal/<uuid>`, journal tab active | Bar **unmounted** — `EntryActionBar` replaces it outright |
+| `isEventDetailRoute` | `/events/<uuid>`, events tab active | Bar **unmounted** — the same `EntryActionBar` replaces it outright |
 | `settingsRouteHidesBottomNav` | AI and Agents sections, settings leaves (except Sections), entity editors | Bar **slides away** |
 | `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
 | `goalsRouteHidesBottomNav` | `/goals/create`, `/goals/details/<id>[/chat\|/edit]` | Bar **slides away** |
@@ -817,18 +818,17 @@ Two deliberate divergences from what the floating button did:
   query, and a chip arriving one beat late would pop into the row under the
   user's thumb; on its own layer in the corner the same delay cost nothing.
 
-Route sensitivity is needed in one place only. Projects, Goals, Habits and
-People slide the whole launcher away on their detail routes (`slideNavAway`), so a
-stale action there is off screen anyway, and the journal tab unmounts it on an
-entry's page (`isLogbookEntryDetailRoute`), where the page docks its own
-`EntryActionBar` — add a linked task, record, and the Add sheet the floating
-button used to open — exactly as a task's page does. The events tab keeps the
-bar on an event's page, where a new-event plus would read as adding to that
-event, so `isEventDetailRoute` drops its action there. Opening an entry or an
+The dock-action switch itself is not route-sensitive. Projects, Goals, Habits
+and People slide the whole launcher away on their detail routes
+(`slideNavAway`), so a stale action there is off screen anyway, and the journal
+and events tabs unmount it on an entry's or an event's page
+(`isLogbookEntryDetailRoute`, `isEventDetailRoute`), where the page docks its
+own `EntryActionBar` — add a linked task, record, and the Add sheet the floating
+button used to open — exactly as a task's page does. Opening an entry or an
 event moves only that tab's delegate, not the tab index, which is why
 `navService.journalDelegate` and `navService.eventsDelegate` both join
-`_routeChangeListenable` — without them the launcher would neither leave an
-entry's page nor drop the list's action beside an event's.
+`_routeChangeListenable` — without them the launcher would never leave an
+entry's or an event's page.
 
 The row's states are [the menu button's](#the-menu-button) diagram.
 

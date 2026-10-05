@@ -980,86 +980,40 @@ void main() {
     },
   );
 
-  testWidgets(
-    "the events tab's create action leaves the launcher on an event's page "
-    'and comes back on the overview',
-    (tester) async {
-      final indexController = StreamController<int>.broadcast();
-      addTearDown(indexController.close);
-      final eventsDelegate = BeamerDelegate(
-        setBrowserTabTitle: false,
-        initialPath: '/events',
-        locationBuilder: (routeInformation, _) =>
-            _TestEventsLocation(routeInformation),
-      );
-      addTearDown(eventsDelegate.dispose);
-      await eventsDelegate.setNewRoutePath(
-        RouteInformation(uri: Uri.parse('/events')),
-      );
-      final nav = MockNavService()..relationshipsPageEnabled = true;
-      await _stubNavService(
-        nav,
-        indexStream: indexController.stream,
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-        isUnifiedGoalsEnabled: true,
-        isEventsEnabled: () => true,
-        eventsDelegate: eventsDelegate,
-      );
-      // Events sits at destination 8 (see the destination order above).
-      when(() => nav.index).thenReturn(8);
-      await _registerAppScreenGetIt(nav);
-      addTearDown(tearDownTestGetIt);
-      await _pumpAppScreen(tester, navService: nav);
-      indexController.add(8);
-      await tester.pumpAndSettle();
-
-      MobileNavDockAction? docked() => tester
-          .widget<MobileNavigationLauncher>(
-            find.byType(MobileNavigationLauncher),
-          )
-          .pageAction;
-      final newEvent = tester
-          .element(find.byType(MobileNavigationLauncher))
-          .messages
-          .eventsNewEvent;
-
-      expect(docked()?.label, newEvent);
-
-      // Only the events delegate moves — no tab switch — so the launcher
-      // has to hear about it from the route listener.
-      eventsDelegate.beamToNamed('/events/${const Uuid().v4()}');
-      await tester.pumpAndSettle();
-      expect(docked(), isNull);
-
-      eventsDelegate.beamToNamed('/events');
-      await tester.pumpAndSettle();
-      expect(docked()?.label, newEvent);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
-
-  Future<BeamerDelegate> journalDelegateAt(String path) async {
+  /// A delegate for one tab, parked at [path], whose test location keeps the
+  /// production path patterns but renders empty pages.
+  Future<BeamerDelegate> delegateAt(
+    String initialPath,
+    String path,
+    BeamLocation<BeamState> Function(RouteInformation) locationBuilder,
+  ) async {
     final delegate = BeamerDelegate(
       setBrowserTabTitle: false,
-      initialPath: '/journal',
+      initialPath: initialPath,
       locationBuilder: (routeInformation, _) =>
-          _TestJournalLocation(routeInformation),
+          locationBuilder(routeInformation),
     );
     await delegate.setNewRoutePath(RouteInformation(uri: Uri.parse(path)));
     return delegate;
   }
 
+  Future<BeamerDelegate> journalDelegateAt(String path) =>
+      delegateAt('/journal', path, _TestJournalLocation.new);
+
+  Future<BeamerDelegate> eventsDelegateAt(String path) =>
+      delegateAt('/events', path, _TestEventsLocation.new);
+
   // Destination order with every tab enabled: Tasks, Daily OS, Projects,
   // Goals, Habits, Dashboards, People, Logbook, Events, Settings.
   const logbookDestination = 7;
+  const eventsDestination = 8;
 
+  /// The shell with every tab enabled; the tab under test hands in the
+  /// delegate whose route the test moves.
   Future<MockNavService> stubEveryTab(
     Stream<int> indexStream, {
-    required BeamerDelegate journalDelegate,
+    BeamerDelegate? journalDelegate,
+    BeamerDelegate? eventsDelegate,
   }) async {
     final nav = MockNavService()..relationshipsPageEnabled = true;
     await _stubNavService(
@@ -1072,9 +1026,94 @@ void main() {
       isUnifiedGoalsEnabled: true,
       isEventsEnabled: () => true,
       journalDelegate: journalDelegate,
+      eventsDelegate: eventsDelegate,
     );
     return nav;
   }
+
+  testWidgets(
+    "the launcher leaves on an event's page, where the page docks its own "
+    'action bar, and comes back on the overview with its create action',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final eventsDelegate = await eventsDelegateAt('/events');
+      addTearDown(eventsDelegate.dispose);
+      final nav = await stubEveryTab(
+        indexController.stream,
+        eventsDelegate: eventsDelegate,
+      );
+      when(() => nav.index).thenReturn(eventsDestination);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(eventsDestination);
+      await tester.pumpAndSettle();
+
+      final launcher = find.byType(MobileNavigationLauncher);
+      final newEvent = tester.element(launcher).messages.eventsNewEvent;
+      expect(launcher, findsOneWidget);
+      expect(_menuButton, findsOneWidget);
+      expect(
+        tester.widget<MobileNavigationLauncher>(launcher).pageAction?.label,
+        newEvent,
+      );
+
+      // Only the events delegate moves — no tab switch — so the shell has
+      // to hear about it from the route listener. Unmounted outright, like
+      // an entry's page: the EntryActionBar takes the bottom edge.
+      eventsDelegate.beamToNamed('/events/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+      expect(launcher, findsNothing);
+      expect(_menuButton, findsNothing);
+      expect(find.byType(MobileActivityIsland), findsNothing);
+
+      eventsDelegate.beamToNamed('/events');
+      await tester.pumpAndSettle();
+      expect(launcher, findsOneWidget);
+      expect(_menuButton, findsOneWidget);
+      expect(
+        tester.widget<MobileNavigationLauncher>(launcher).pageAction?.label,
+        newEvent,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    "an event's page left open on the events tab does not hide the "
+    'launcher while another tab is active',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final eventsDelegate = await eventsDelegateAt('/events');
+      addTearDown(eventsDelegate.dispose);
+      final nav = await stubEveryTab(
+        indexController.stream,
+        eventsDelegate: eventsDelegate,
+      );
+      when(() => nav.index).thenReturn(0);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(0);
+      await tester.pumpAndSettle();
+
+      // The events delegate sits on an event's page while Tasks is the
+      // active tab — the state a user leaves behind by opening an event and
+      // then switching tabs.
+      eventsDelegate.beamToNamed('/events/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+
+      expect(isEventDetailRoute(eventsDelegate.currentBeamLocation), isTrue);
+      // Tasks is up: its own launcher, with the Add a task chip, stays.
+      expect(find.byType(MobileNavigationLauncher), findsOneWidget);
+      expect(_menuButton, findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     "the launcher leaves on an entry's page, where the page docks its own "
@@ -1215,6 +1254,11 @@ void main() {
         isEventDetailRoute(eventsAt('/events/${const Uuid().v4()}')),
         isTrue,
       );
+    });
+
+    test('a non-uuid segment is not — the location renders the overview for '
+        'it, and the overview keeps its launcher', () {
+      expect(isEventDetailRoute(eventsAt('/events/not-an-id')), isFalse);
     });
 
     test("another tab's location is not", () {

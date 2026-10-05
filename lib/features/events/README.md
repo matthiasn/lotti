@@ -12,8 +12,11 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 - **Collects everything about it.** Photos, notes and voice memos added to the
   event link straight back to it and appear on its timeline. Photos open in a
   swipeable full-screen gallery that follows phone rotation on iOS and Android.
-- **Turns into work when needed.** A task can be created from an event and stays
-  linked to it.
+- **Grows from one bar.** An event's page ends in the same bar an entry's page
+  has: **Add a task** creates a preparation or follow-up task linked to the
+  event and opens it, the record button captures a voice memo for it, and the
+  plus opens the full **Add** menu for photos, notes and the rest. The
+  **Tasks** section appears once the first task is linked.
 - **Finds a moment fast.** The overview's search field matches event titles and
   notes as you type, and the filter narrows to one or more categories — the
   same header, filter sheet and removable chips as the Tasks tab.
@@ -43,14 +46,14 @@ infrastructure without inheriting task behaviour.
 
 ```text
 lib/features/events/
-├── model/ · state/
-└── ui/{pages,widgets}
+├── state/
+└── ui/{model,pages,widgets}
 ```
 
 ## How it works
 
 Why events are their own entity, the pure view layer with locale resolved at the
-presentation boundary, and the hero interaction surface are documented in the
-knowledge bundle:
+presentation boundary, the hero interaction surface and the docked action bar
+are documented in the knowledge bundle:
 
 **→ [knowledge/features/events.md](../../../knowledge/features/events.md)**

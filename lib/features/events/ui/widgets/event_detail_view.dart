@@ -20,14 +20,18 @@ part 'event_detail_view_hero_content_part.dart';
 
 /// The redesigned event detail surface: a photographic hero header carrying the
 /// event's identity (cover, title, when/where, status, rating), followed by an
-/// AI summary, a vertical timeline of linked entries, and the associated
-/// prep/follow-up tasks. On wide screens the body splits into a main column
-/// (summary + timeline) and a tasks rail; on phones it stacks.
+/// AI summary, a vertical timeline of linked entries and — once the event has
+/// any — its prep/follow-up tasks. On wide screens with tasks the body splits
+/// into a main column (summary + timeline) and a tasks rail; otherwise it is
+/// one column.
 ///
 /// Editing happens inline: the title is tap-to-rename, the category/status pills
-/// and the rating open pickers, and each section can add linked entries — so the
-/// page never bounces to a separate editor. The empty event still shows its
-/// section scaffolding with "add" affordances rather than a blank void. All
+/// and the rating open pickers — so the page never bounces to a separate
+/// editor. Adding to the event is the job of the [bottomBar] the page docks
+/// along the bottom edge (add a linked task, record, the Add sheet), the same
+/// bar an entry's page ends in: the sections carry no add buttons of their own,
+/// and the Tasks section appears only once a task is linked. An empty timeline
+/// shows a quiet hint pointing at that bar rather than a blank void. All
 /// mutations are surfaced as callbacks; with none wired the view is read-only.
 class EventDetailView extends StatelessWidget {
   const EventDetailView({
@@ -43,11 +47,10 @@ class EventDetailView extends StatelessWidget {
     this.onSetCover,
     this.onDelete,
     this.onRegenerateSummary,
-    this.onAddToTimeline,
-    this.onAddTask,
     this.onOpenTimelineEntry,
     this.onOpenTask,
     this.aiSummaryCard,
+    this.bottomBar,
     super.key,
   });
 
@@ -82,8 +85,6 @@ class EventDetailView extends StatelessWidget {
   final VoidCallback? onDelete;
 
   final VoidCallback? onRegenerateSummary;
-  final VoidCallback? onAddToTimeline;
-  final VoidCallback? onAddTask;
 
   /// Opens a timeline beat's source journal entry. When null, the rows render
   /// as static (and drop the trailing "open" chevron) so the affordance always
@@ -99,6 +100,14 @@ class EventDetailView extends StatelessWidget {
   /// card; when null the view falls back to the passive summary.
   final Widget? aiSummaryCard;
 
+  /// The sticky action bar for the bottom edge — the page docks the shared
+  /// `EntryActionBar` here (add a linked task, record, the Add sheet). It sits
+  /// in the Scaffold's `bottomNavigationBar` slot over an extended body, so
+  /// its glass blur samples the scrolling content, and a trailing sliver
+  /// consumes its height so the last section scrolls clear of it. Null leaves
+  /// the bottom edge bare, for read-only renders.
+  final Widget? bottomBar;
+
   /// Content cap so the body doesn't sprawl on very wide screens.
   static const double _contentMaxWidth = 1080;
 
@@ -111,46 +120,69 @@ class EventDetailView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: dsPageSurface(context),
-      body: CustomScrollView(
-        slivers: [
-          _HeroSliver(
-            card: data.card,
-            whenLabel: data.whenLabel,
-            onBack: onBack,
-            onDelete: onDelete,
-            onChangeCover: onChangeCover,
-            onRenameTitle: onRenameTitle,
-            onTapCategory: onTapCategory,
-            onTapStatus: onTapStatus,
-            onTapDateTime: onTapDateTime,
-            onSetRating: onSetRating,
-            onAddCover: onAddCover,
-          ),
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.spacing.step4,
-                    tokens.spacing.step4,
-                    tokens.spacing.step4,
-                    tokens.spacing.step10,
+      // extendBody so the backdrop blur inside [bottomBar]'s glass strip has
+      // body content underneath to sample. The Scaffold then publishes the
+      // bar's height as the body's bottom inset, which the trailing sliver
+      // below consumes — no magic-number bottom padding.
+      extendBody: true,
+      bottomNavigationBar: bottomBar,
+      // Builder so MediaQuery.paddingOf reads the Scaffold-modified value.
+      body: Builder(
+        builder: (context) => CustomScrollView(
+          slivers: [
+            _HeroSliver(
+              card: data.card,
+              whenLabel: data.whenLabel,
+              onBack: onBack,
+              onDelete: onDelete,
+              onChangeCover: onChangeCover,
+              onRenameTitle: onRenameTitle,
+              onTapCategory: onTapCategory,
+              onTapStatus: onTapStatus,
+              onTapDateTime: onTapDateTime,
+              onSetRating: onSetRating,
+              onAddCover: onAddCover,
+            ),
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: _contentMaxWidth,
                   ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final twoColumn =
-                          constraints.maxWidth >= _twoColumnBreakpoint;
-                      return twoColumn
-                          ? _twoColumnBody(context)
-                          : _oneColumnBody(context);
-                    },
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step4,
+                      tokens.spacing.step4,
+                      tokens.spacing.step4,
+                      tokens.spacing.step10,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        // The tasks rail exists only once there are tasks;
+                        // an event without any reads as one column at every
+                        // width instead of a column beside an empty rail.
+                        final twoColumn =
+                            data.tasks.isNotEmpty &&
+                            constraints.maxWidth >= _twoColumnBreakpoint;
+                        return twoColumn
+                            ? _twoColumnBody(context)
+                            : _oneColumnBody(context);
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            // The docked bar's height — or, with none, the home-indicator
+            // inset — so the last section can scroll fully clear of the
+            // bottom edge instead of ending behind it.
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -161,7 +193,7 @@ class EventDetailView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._mainColumn(context),
-        ..._tasksBlock(context),
+        if (data.tasks.isNotEmpty) ..._tasksBlock(context),
         SizedBox(height: tokens.spacing.step2),
       ],
     );
@@ -204,20 +236,15 @@ class EventDetailView extends StatelessWidget {
         _SectionHeader(
           title: context.messages.eventsPhotosSection,
           count: data.photos.length,
-          onAdd: onAddToTimeline,
         ),
         EventPhotoGrid(photos: data.photos, onSetCover: onSetCover),
       ],
       _SectionHeader(
         title: context.messages.eventsTimelineSection,
         count: data.timeline.length,
-        onAdd: onAddToTimeline,
       ),
       if (data.timeline.isEmpty)
-        _EmptyHint(
-          label: context.messages.eventsTimelineEmpty,
-          onTap: onAddToTimeline,
-        )
+        _EmptyTimelineHint(label: context.messages.eventsTimelineEmpty)
       else
         TimelineView(
           groups: [
@@ -233,20 +260,15 @@ class EventDetailView extends StatelessWidget {
     ];
   }
 
+  /// The Tasks section. Only ever built with at least one task: the bar adds
+  /// the first one, so an empty section would only repeat what the bar says.
   List<Widget> _tasksBlock(BuildContext context) {
     return [
       _SectionHeader(
         title: context.messages.eventsTasksSection,
         count: data.tasks.length,
-        onAdd: onAddTask,
       ),
-      if (data.tasks.isEmpty)
-        _EmptyHint(
-          label: context.messages.eventsTasksEmpty,
-          onTap: onAddTask,
-        )
-      else
-        for (final task in data.tasks) _TaskRow(task: task, onOpen: onOpenTask),
+      for (final task in data.tasks) _TaskRow(task: task, onOpen: onOpenTask),
     ];
   }
 }

@@ -37,6 +37,7 @@ import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/events_overview_view.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -48,6 +49,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -435,6 +437,10 @@ void main() {
       _detailEventId,
     ).overrideWithValue(detailLinkedEntries),
     eventAgentProvider(_detailEventId).overrideWith((ref) async => null),
+    // The page docks the entry action bar, whose mic watches the recorder.
+    audioRecorderControllerProvider.overrideWith(
+      StubAudioRecorderController.new,
+    ),
   ];
 
   Future<void> pumpSurface(

@@ -6527,9 +6527,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Añadir foto de portada';
 
   @override
-  String get eventsAddLabel => 'Añadir';
-
-  @override
   String get eventsChangeCover => 'Cambiar portada';
 
   @override
@@ -6614,10 +6611,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Resumen';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Vincula una tarea de preparación o seguimiento';
 
   @override
   String get eventsTasksSection => 'Tareas';

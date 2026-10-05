@@ -5,7 +5,7 @@ description: The shared entry substrate — two controller centers, the split-pa
 resource: ../../../lib/features/journal
 tags: [journal, entries, routing, split-pane]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-02T21:30:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
 stale_after: 2027-04-02
 sources:
   - id: src
@@ -208,6 +208,8 @@ float above the bar, and consumes the bar's height with a trailing
 its launcher on `/journal/<uuid>`, as on `/tasks/<uuid>`, so the bar docks
 flush with the home indicator
 ([navigation](../../architecture/navigation.md#chrome-rules-are-pure-functions-of-router-state)).
+An event's page docks this very bar, since an event is an entry
+([events](../events.md#adding-to-an-event)).
 
 Clipboard images are read in one place,
 [`clipboard_images.dart`](../../../lib/features/journal/repository/clipboard_images.dart):

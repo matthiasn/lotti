@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,10 +13,10 @@ import 'package:lotti/features/events/ui/widgets/event_ai_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
-import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/get_it.dart';
@@ -36,8 +35,16 @@ import 'package:material_ui/material_ui.dart';
 /// Resolves the [JournalEvent] and its outgoing linked entries, maps them into
 /// an [EventDetailView] via [eventDetailDataFromEntities], and wires the view's
 /// inline-edit callbacks to [EntryController] mutations and the shared
-/// pickers/create flows — so editing an event never leaves this page. AI summary
-/// regeneration and explicit cover selection are follow-ups.
+/// pickers — so editing an event never leaves this page. Adding to the event
+/// happens from the [EntryActionBar] docked along the bottom edge, the same
+/// bar an entry's page ends in: a task linked to the event, a voice note, or
+/// the Add sheet for everything else. The mobile shell unmounts its launcher
+/// on `/events/<uuid>` so that bar docks flush with the home indicator.
+///
+/// Toasts raised on the page — the delete-failed line, anything the recap or
+/// change-set cards show — are scoped to a nested [ScaffoldMessenger] so they
+/// float above the bar rather than at the window's bottom edge, which the bar
+/// would cover.
 class EventDetailPage extends ConsumerWidget {
   const EventDetailPage({required this.eventId, super.key});
 
@@ -71,6 +78,24 @@ class EventDetailPage extends ConsumerWidget {
     }
 
     final linked = ref.watch(resolvedOutgoingLinkedEntriesProvider(eventId));
+
+    // Every provider the page depends on is watched above, in its own build.
+    // The Builder exists only to hand the resolved view — and the toasts its
+    // callbacks raise — a context beneath the nested messenger.
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) =>
+            _resolvedView(context, ref, entry: entry, linked: linked),
+      ),
+    );
+  }
+
+  Widget _resolvedView(
+    BuildContext context,
+    WidgetRef ref, {
+    required JournalEvent entry,
+    required List<JournalEntity> linked,
+  }) {
     final category = getIt<EntitiesCacheService>().getCategoryById(
       entry.meta.categoryId,
     );
@@ -144,28 +169,18 @@ class EventDetailPage extends ConsumerWidget {
       }
     }
 
-    // Opens the shared create-entry menu scoped to this event, so a new note /
-    // photo / audio / task is linked back to it (and the first linked photo
-    // becomes the cover automatically). Used for both timeline and cover adds.
-    void addLinkedEntry() => CreateEntryModal.show(
-      context: context,
-      linkedFromId: eventId,
-      categoryId: entry.meta.categoryId,
-    );
-
-    // Creates a prep/follow-up task linked from this event, assigns the
-    // category's default agent (mirroring the linked-tasks flow), then opens
-    // the new task — landing on its fresh detail page, where the event shows
-    // under "Linked from".
-    Future<void> addTask() async {
-      final task = await createTask(
-        linkedId: eventId,
-        categoryId: entry.meta.categoryId,
-      );
-      if (task == null || !context.mounted) return;
-      unawaited(autoAssignCategoryAgent(ref, task));
-      beamToNamed('/tasks/${task.meta.id}');
-    }
+    // Opens the shared create-entry menu scoped to this event, so a new photo
+    // is linked back to it and — the first linked photo — becomes the cover
+    // automatically. Only the cover affordances use it: everything else the
+    // event collects is added from the action bar along the bottom edge.
+    // Through the same service as that bar's plus, so the two cannot drift.
+    void addLinkedEntry() => ref
+        .read(entryCreationServiceProvider)
+        .showCreateEntryModal(
+          context,
+          linkedFromId: eventId,
+          categoryId: entry.meta.categoryId,
+        );
 
     // The event's linked photos, any of which can become the cover. Only wired
     // up (via onChangeCover) once a cover exists, which implies at least one
@@ -219,8 +234,6 @@ class EventDetailPage extends ConsumerWidget {
       onChangeCover: data.card.coverImage == null ? null : changeCover,
       onSetCover: controller.updateEventCover,
       onDelete: confirmDelete,
-      onAddToTimeline: addLinkedEntry,
-      onAddTask: addTask,
       // Preserve the parent event in the route so the standalone entry menu
       // can offer the existing confirmed unlink action for this exact link.
       onOpenTimelineEntry: (entryId) => beamToNamed(
@@ -230,6 +243,10 @@ class EventDetailPage extends ConsumerWidget {
         ).toString(),
       ),
       onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
+      // The one place the event grows from: a task linked to it, a voice
+      // memo, or the Add sheet for the rest — the same bar an entry's page
+      // ends in, so what was learnt there carries over.
+      bottomBar: EntryActionBar(entry: entry),
     );
   }
 }

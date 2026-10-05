@@ -6,6 +6,7 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
+import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils.dart';
@@ -282,32 +283,93 @@ void main() {
       expect(find.byType(EventPhotoGrid), findsNothing);
     });
 
-    testWidgets('an empty event shows section scaffolding with add hints', (
-      tester,
-    ) async {
-      final timelineAdds = <int>[];
-      final taskAdds = <int>[];
+    testWidgets(
+      'an empty event keeps the Timeline header over a quiet hint and shows '
+      'no Tasks section',
+      (tester) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: _emptyData()),
+          size: _tallMobile,
+        );
+
+        expect(find.text('Timeline'), findsOneWidget);
+        final hint = find.text('Add photos, notes or a voice memo');
+        expect(hint, findsOneWidget);
+        // The hint points at the bottom bar; it is not an add button itself.
+        expect(
+          find.ancestor(of: hint, matching: find.byType(InkWell)),
+          findsNothing,
+        );
+        expect(find.byIcon(LottiIcons.add), findsNothing);
+        // The hint spans the column like the cards above it, not a pill
+        // hugging its sentence.
+        final hintRect = tester.getRect(
+          find.ancestor(of: hint, matching: find.byType(Material)).first,
+        );
+        final viewRect = tester.getRect(find.byType(EventDetailView));
+        final inset = tester.element(hint).designTokens.spacing.step4;
+        expect(hintRect.left, viewRect.left + inset);
+        expect(hintRect.right, viewRect.right - inset);
+        // Nothing to list, nothing to invite: the section waits for the
+        // first task, which the bar adds.
+        expect(find.text('Tasks'), findsNothing);
+        expect(find.text('Link a prep or follow-up task'), findsNothing);
+      },
+    );
+
+    testWidgets('no section carries an add button of its own', (tester) async {
       await pumpEventScreen(
         tester,
         EventDetailView(
-          data: _emptyData(),
-          onAddToTimeline: () => timelineAdds.add(1),
-          onAddTask: () => taskAdds.add(1),
+          data: buildEventDetailData(photos: [EventPhoto(testImage())]),
         ),
         size: _tallMobile,
       );
 
-      // Both sections render even with nothing in them, with tappable hints.
+      // Photos, Timeline and Tasks all render — none with an "Add".
+      expect(find.text('Photos'), findsOneWidget);
       expect(find.text('Timeline'), findsOneWidget);
       expect(find.text('Tasks'), findsOneWidget);
-      expect(find.text('Add photos, notes or a voice memo'), findsOneWidget);
-      expect(find.text('Link a prep or follow-up task'), findsOneWidget);
-
-      await tester.tap(find.text('Add photos, notes or a voice memo'));
-      await tester.tap(find.text('Link a prep or follow-up task'));
-      expect(timelineAdds, [1]);
-      expect(taskAdds, [1]);
+      expect(find.text('Add'), findsNothing);
     });
+
+    testWidgets(
+      'a wide body splits into a tasks rail only once there are tasks',
+      (tester) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: buildEventDetailData()),
+          size: _tallDesktop,
+        );
+        final tokens = tester
+            .element(find.byType(EventDetailView))
+            .designTokens;
+        // The 1080 content cap minus the body's side insets; the rail is its
+        // fixed 320 plus the gutter beside it.
+        final contentWidth = 1080 - 2 * tokens.spacing.step4;
+        final railWidth = 320 + tokens.spacing.step6;
+
+        // Tasks beside the timeline, which gives up the rail's width.
+        expect(
+          tester.getRect(find.text('Tasks')).left,
+          greaterThan(tester.getRect(find.text('Timeline')).right),
+        );
+        expect(
+          tester.getSize(find.byType(TimelineView)).width,
+          contentWidth - railWidth,
+        );
+
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: buildEventDetailData(tasks: const [])),
+          size: _tallDesktop,
+        );
+        // No tasks: one column at full width, no empty rail beside it.
+        expect(find.text('Tasks'), findsNothing);
+        expect(tester.getSize(find.byType(TimelineView)).width, contentWidth);
+      },
+    );
 
     testWidgets('offers an add-cover affordance only when there is no cover', (
       tester,
@@ -576,13 +638,9 @@ void main() {
       expect(changes, 1);
     });
 
-    testWidgets('wires back, regenerate and section add callbacks', (
-      tester,
-    ) async {
+    testWidgets('wires the back and regenerate callbacks', (tester) async {
       var back = false;
       var regen = false;
-      var addTimeline = false;
-      var addTask = false;
 
       await pumpEventScreen(
         tester,
@@ -590,21 +648,15 @@ void main() {
           data: buildEventDetailData(),
           onBack: () => back = true,
           onRegenerateSummary: () => regen = true,
-          onAddToTimeline: () => addTimeline = true,
-          onAddTask: () => addTask = true,
         ),
         size: _tallMobile,
       );
 
       await tester.tap(find.byIcon(LottiIcons.back));
       await tester.tap(find.byIcon(LottiIcons.refresh));
-      await tester.tap(find.text('Add').first);
-      await tester.tap(find.text('Add').last);
 
       expect(back, isTrue);
       expect(regen, isTrue);
-      expect(addTimeline, isTrue);
-      expect(addTask, isTrue);
     });
 
     testWidgets('shows no row chevron when timeline rows are not openable', (
@@ -678,6 +730,85 @@ void main() {
       await tester.tap(find.text('No id task'));
       await tester.pump();
       expect(opens, 0);
+    });
+
+    group('bottom bar', () {
+      const barKey = ValueKey('bar');
+      const barHeight = 72.0;
+
+      Scaffold scaffoldOf(WidgetTester tester) => tester.widget<Scaffold>(
+        find.descendant(
+          of: find.byType(EventDetailView),
+          matching: find.byType(Scaffold),
+        ),
+      );
+
+      /// The bottom inset the scroll view reserves: its last sliver.
+      double reservedBottom(WidgetTester tester) {
+        final scrollView = tester.widget<CustomScrollView>(
+          find.descendant(
+            of: find.byType(EventDetailView),
+            matching: find.byType(CustomScrollView),
+          ),
+        );
+        final trailing = scrollView.slivers.last;
+        expect(trailing, isA<SliverPadding>());
+        return ((trailing as SliverPadding).padding as EdgeInsets).bottom;
+      }
+
+      testWidgets(
+        "docks the bar in the Scaffold's bottom slot over an extended body, "
+        'flush with the bottom edge',
+        (tester) async {
+          await pumpEventScreen(
+            tester,
+            EventDetailView(
+              data: buildEventDetailData(),
+              bottomBar: const SizedBox(key: barKey, height: barHeight),
+            ),
+            size: _tallMobile,
+          );
+
+          final scaffold = scaffoldOf(tester);
+          // The bar's glass blur samples the body painting behind it.
+          expect(scaffold.extendBody, isTrue);
+          expect(scaffold.bottomNavigationBar, isA<SizedBox>());
+          final viewRect = tester.getRect(find.byType(EventDetailView));
+          final barRect = tester.getRect(find.byKey(barKey));
+          expect(barRect.bottom, viewRect.bottom);
+          expect(barRect.left, viewRect.left);
+          expect(barRect.right, viewRect.right);
+        },
+      );
+
+      testWidgets("the trailing sliver consumes exactly the bar's height", (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(
+            data: buildEventDetailData(),
+            bottomBar: const SizedBox(key: barKey, height: barHeight),
+          ),
+          size: _tallMobile,
+        );
+
+        // With extendBody the Scaffold publishes the bar's height as the
+        // body's bottom inset; the last section scrolls clear of the bar.
+        expect(reservedBottom(tester), barHeight);
+      });
+
+      testWidgets('without a bar the bottom edge is bare and nothing is '
+          'reserved', (tester) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(data: buildEventDetailData()),
+          size: _tallMobile,
+        );
+
+        expect(scaffoldOf(tester).bottomNavigationBar, isNull);
+        expect(reservedBottom(tester), 0);
+      });
     });
 
     testWidgets('hides summary when none is provided', (tester) async {

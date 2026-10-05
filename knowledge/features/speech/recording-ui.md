@@ -5,7 +5,7 @@ description: "Two interchangeable level visualizations over one dBFS stream, plu
 resource: ../../../lib/features/speech/ui/widgets/recording
 tags: [speech, ui, vu-meter, visualization]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-02T22:30:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
 stale_after: 2027-04-02
 sources:
   - id: src
@@ -35,7 +35,7 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 | Recording modal | The full visualizer (VU meter or orb), elapsed time, record/stop/discard |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
-| Task and entry action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task or entry is recording or paused — **no level, no time** |
+| Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused — **no level, no time** |
 
 The desktop row is intentionally inert to level: it is ambient status in a
 navigation rail, and a reacting meter there would pull attention away from

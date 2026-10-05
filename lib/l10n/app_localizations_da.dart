@@ -6444,9 +6444,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Tilføj forsidefoto';
 
   @override
-  String get eventsAddLabel => 'Tilføj';
-
-  @override
   String get eventsChangeCover => 'Skift omslag';
 
   @override
@@ -6531,10 +6528,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Resumé';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Link til en forberedelses- eller opfølgende opgave';
 
   @override
   String get eventsTasksSection => 'Opgaver';

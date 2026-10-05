@@ -6470,9 +6470,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Hoesfoto toevoegen';
 
   @override
-  String get eventsAddLabel => 'Toevoegen';
-
-  @override
   String get eventsChangeCover => 'Omslag wijzigen';
 
   @override
@@ -6557,9 +6554,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Samenvatting';
-
-  @override
-  String get eventsTasksEmpty => 'Koppel een voorbereidings- of vervolgtaak';
 
   @override
   String get eventsTasksSection => 'Taken';
