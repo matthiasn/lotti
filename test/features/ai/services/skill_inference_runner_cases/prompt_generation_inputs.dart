@@ -423,6 +423,41 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
       );
 
       test(
+        'with no pull request source wired, the coding prompt goes out '
+        'without the section',
+        () async {
+          stubLinkedPrompt();
+          // The seam's default: nothing binds GitHub to the AI layer.
+          final bare = ProviderContainer(
+            overrides: withServiceOverrides([
+              aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+            ]),
+          );
+          addTearDown(bare.dispose);
+          late final Ref bareRef;
+          bare.read(Provider<void>((ref) => bareRef = ref));
+          final unwired = SkillInferenceRunner(
+            ref: bareRef,
+            cloudRepository: mockCloudRepo,
+            aiInputRepository: mockAiInputRepo,
+            journalRepository: mockJournalRepo,
+            loggingService: mockLoggingService,
+            promptBuilderHelper: mockPromptBuilderHelper,
+            taskSummaryResolver: mockTaskSummaryResolver,
+          );
+
+          await unwired.runPromptGeneration(
+            entryId: 'text-pr',
+            automationResult: codingPrompt(),
+            linkedTaskId: 'task-pr',
+          );
+
+          expect(await capturedUserMessage(), isNot(contains('Pull Requests')));
+          verifyZeroInteractions(mockPullRequestContext);
+        },
+      );
+
+      test(
         'the design and research prompts never ask, though they share the '
         "coding prompt's skill type",
         () async {

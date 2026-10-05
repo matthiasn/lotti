@@ -24,7 +24,9 @@ import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/ai/state/skill_entity_provider.dart';
+import 'package:lotti/features/categories/state/category_scope_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
@@ -34,6 +36,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
 import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
@@ -41,6 +44,7 @@ import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/task_title_hooks.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
@@ -407,6 +411,17 @@ List<Override> appFeatureWiringOverrides() => [
   dailyOsSetupSheetLauncherProvider.overrideWithValue(
     DailyOsInferenceSetupSheet.show,
   ),
+  // The coding prompt and the task agent read a task's pull requests from
+  // GitHub, which ranks above both.
+  pullRequestContextSourceProvider.overrideWith(
+    (ref) => ref.watch(pullRequestContextServiceProvider),
+  ),
+  // An active lockdown scopes every category list; categories ranks below
+  // lockdown.
+  categoryScopeProvider.overrideWith((ref) {
+    final lockdown = ref.watch(lockdownControllerProvider);
+    return lockdown.isActive ? lockdown.allows : null;
+  }),
 ];
 
 /// Starts the next service generation for the active profile: after a

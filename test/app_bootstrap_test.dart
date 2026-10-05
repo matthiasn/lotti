@@ -26,11 +26,14 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/categories/state/category_scope_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
@@ -38,6 +41,8 @@ import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/task_title_hooks.dart';
+import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
@@ -66,6 +71,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 
+import 'features/lockdown/lockdown_test_utils.dart';
 import 'helpers/db_settle.dart';
 import 'helpers/entity_factories.dart';
 import 'helpers/service_overrides.dart';
@@ -903,6 +909,51 @@ void main() {
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dashboardHabitChartBuilderProvider), isNotNull);
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
+    });
+
+    test('the coding prompt and the task agent read pull requests from '
+        'GitHub', () {
+      final service = MockPullRequestContextService();
+      final container = ProviderContainer(
+        overrides: [
+          ...appFeatureWiringOverrides(),
+          pullRequestContextServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        identical(container.read(pullRequestContextSourceProvider), service),
+        isTrue,
+      );
+    });
+
+    test('an active lockdown scopes the category lists, an idle one does '
+        'not', () {
+      ProviderContainer containerFor(LockdownState state) {
+        final container = ProviderContainer(
+          overrides: [
+            ...appFeatureWiringOverrides(),
+            lockdownControllerProvider.overrideWith(
+              () => TestLockdownController(state),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      final allows = containerFor(
+        const LockdownState(categoryIds: {'work'}),
+      ).read(categoryScopeProvider);
+      expect(allows, isNotNull);
+      expect(allows!('work'), isTrue);
+      expect(allows('health'), isFalse);
+
+      expect(
+        containerFor(LockdownState.inactive).read(categoryScopeProvider),
+        isNull,
+      );
     });
   });
 }

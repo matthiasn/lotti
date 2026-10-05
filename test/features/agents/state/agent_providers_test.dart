@@ -50,9 +50,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -531,7 +531,7 @@ void main() {
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
-          pullRequestContextServiceProvider.overrideWithValue(
+          pullRequestContextSourceProvider.overrideWithValue(
             mockPullRequestContextService,
           ),
         ]),

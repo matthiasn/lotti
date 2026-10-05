@@ -15,7 +15,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/github/state/github_providers.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -112,7 +112,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     embeddingRepository: embeddingRepository,
     taskAgentService: ref.watch(taskAgentServiceProvider),
     projectRepository: ref.watch(projectRepositoryProvider),
-    pullRequestContextService: ref.watch(pullRequestContextServiceProvider),
+    pullRequestContextService: ref.watch(pullRequestContextSourceProvider),
     changeSetNotificationService: notificationService,
     inputCaptureService: AgentInputCaptureService(
       syncService: ref.watch(agentSyncServiceProvider),

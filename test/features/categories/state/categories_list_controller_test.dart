@@ -5,13 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
-import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
-import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/features/categories/state/category_scope_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
-import '../../lockdown/lockdown_test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -71,19 +69,16 @@ void main() {
     expect(state.hasError, isTrue);
   });
 
-  test('emits only the locked categories while lockdown is active', () async {
+  test('emits only the categories the scope allows while one is set', () async {
     final work = CategoryTestUtils.createTestCategory(id: 'work', name: 'Work');
     final health = CategoryTestUtils.createTestCategory(
       id: 'health',
       name: 'Health',
     );
-    final lockdown = TestLockdownController(
-      const LockdownState(categoryIds: {'work'}),
-    );
     final locked = ProviderContainer(
       overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(repository),
-        lockdownControllerProvider.overrideWith(() => lockdown),
+        categoryScopeProvider.overrideWithValue((id) => id == 'work'),
       ]),
     );
     addTearDown(locked.dispose);
