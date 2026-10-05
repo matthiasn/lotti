@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Provider that returns task counts for all categories in a single query.
@@ -13,7 +13,7 @@ import 'package:lotti/services/db_notification.dart';
 final categoryTaskCountsProvider = FutureProvider.autoDispose<Map<String, int>>(
   (ref) async {
     final repository = ref.watch(categoryRepositoryProvider);
-    final notifications = getIt<UpdateNotifications>();
+    final notifications = ref.read(updateNotificationsProvider);
 
     final sub = notifications.updateStream
         .where(

@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
@@ -115,7 +115,9 @@ class TaskLinkGroupsController extends AsyncNotifier<TaskLinkGroups> {
   final String taskId;
 
   StreamSubscription<Set<String>>? _updateSubscription;
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+  late final UpdateNotifications _updateNotifications = ref.read(
+    updateNotificationsProvider,
+  );
   final _watchedIds = <String>{};
 
   void _listen() {
