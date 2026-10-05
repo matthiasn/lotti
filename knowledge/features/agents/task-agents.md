@@ -5,8 +5,8 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
-stale_after: 2027-01-04
+generated: { by: claude-code/opus-5.5, at: 2026-10-05T16:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: report-policy
     resource: ../../../lib/features/agents/workflow/task_agent_report_policy.dart
@@ -67,7 +67,7 @@ sources:
   - id: dispatch-intents
     resource: ../../../lib/features/agents/service/change_dispatch_intents.dart
     title: ChangeDispatchIntents — confirmations in flight, resumed at the next start
-    last_modified: 2026-10-04
+    last_modified: 2026-10-05
   - id: change-dispatch-recovery-spec
     resource: ../../../specs/tla/ChangeDispatchRecovery.tla
     title: ChangeDispatchRecovery — a confirmed change applied whole, across a crash
