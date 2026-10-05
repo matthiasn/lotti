@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 // Get the getIt instance to inject our mocks
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -34,6 +35,7 @@ import '../../features/sync/matrix/sync_event_processor_test_helpers.dart'
 import '../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../helpers/entity_factories.dart';
 import '../../helpers/fallbacks.dart';
+import '../../helpers/service_overrides.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
@@ -126,7 +128,11 @@ void main() {
         },
       );
 
-      repository = buildJournalRepository();
+      // Through the app's provider, so every service reaches the repository
+      // the way it does in the app: each provider bridged to the mocks above.
+      final container = ProviderContainer(overrides: withServiceOverrides([]));
+      addTearDown(container.dispose);
+      repository = container.read(journalRepositoryProvider);
     });
 
     tearDown(() async {

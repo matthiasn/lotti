@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -135,6 +138,7 @@ Future<void> _pump(
   WidgetTester tester,
   String conflictId, {
   String? versionKey,
+  List<Override> overrides = const [],
 }) async {
   await tester.binding.setSurfaceSize(_size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -142,6 +146,7 @@ Future<void> _pump(
     makeTestableWidgetNoScroll(
       ConflictDetailRoute(conflictId: conflictId, versionKey: versionKey),
       mediaQueryData: const MediaQueryData(size: _size),
+      overrides: overrides,
     ),
   );
 }
@@ -150,9 +155,10 @@ Future<void> _pump(
 Future<void> _showConflict(
   WidgetTester tester,
   _Bench bench,
-  Conflict c,
-) async {
-  await _pump(tester, c.id);
+  Conflict c, {
+  List<Override> overrides = const [],
+}) async {
+  await _pump(tester, c.id, overrides: overrides);
   bench.controller.add([c]);
   await tester.pumpAndSettle();
 }
@@ -286,6 +292,58 @@ void main() {
       // Resolved, so the settings tab goes back to the conflict list.
       verify(bench.settingsDelegate.beamBack).called(1);
     });
+
+    testWidgets(
+      'a checklist conflict is resolved through the checklist repository',
+      (tester) async {
+        Checklist checklistOf(String title, Map<String, int> clock) =>
+            Checklist(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: VectorClock(clock),
+              ),
+              data: ChecklistData(
+                title: title,
+                linkedChecklistItems: const [],
+                linkedTasks: const ['task-1'],
+              ),
+            );
+        final local = checklistOf('Local list', const {'a': 9});
+        final conflict = _conflict(
+          remote: checklistOf('Remote list', const {'a': 13}),
+        );
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        final checklists = MockChecklistRepository();
+        when(
+          () => checklists.resolveConflict(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        await _showConflict(
+          tester,
+          bench,
+          conflict,
+          overrides: [
+            checklistRepositoryProvider.overrideWithValue(checklists),
+          ],
+        );
+        await _tap(tester, l10n.conflictPickerUseThisDevice);
+
+        final resolved =
+            verify(
+                  () => checklists.resolveConflict(captureAny(), any()),
+                ).captured.single
+                as Checklist;
+        expect(resolved.data.title, 'Local list');
+      },
+    );
 
     testWidgets('Use from sync writes the remote side', (tester) async {
       final local = _entry(title: 'Local title', clock: const {'a': 9});

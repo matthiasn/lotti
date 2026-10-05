@@ -63,6 +63,7 @@ import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/vector_clock_keys.dart';
@@ -327,6 +328,13 @@ void main() {
         wired.read(aiActionInterceptorProvider),
         same(interceptForRealAiSetup),
       );
+      // The notification service registers itself on first use; the bridge
+      // reads it lazily and hands over the locator's instance.
+      final notifications = MockNotificationService();
+      getIt
+        ..unregister<NotificationService>()
+        ..registerSingleton<NotificationService>(notifications);
+      expect(wired.read(notificationServiceProvider), same(notifications));
       expect(
         wired.read(journalDetailSlotsProvider),
         same(appJournalDetailSlots),
