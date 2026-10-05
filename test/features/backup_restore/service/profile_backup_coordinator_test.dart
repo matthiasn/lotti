@@ -417,9 +417,8 @@ void main() {
         onSwitchStarted: () async => calls.add('splash'),
         onSwitchCompleted: () => calls.add('completed'),
         settleFrame: () async {},
-        bootstrapGeneration: () => bootstrapNextGeneration(holder),
-        disposeServices: (logError) =>
-            ServiceDisposer(getIt, logError).disposeAll(),
+        bootstrapGeneration: bootstrapNextGeneration,
+        disposeServices: disposeGeneration,
       );
       final snapshot = await ProfileBackupCoordinator(
         runClosed: switcher.runWithGenerationClosed,

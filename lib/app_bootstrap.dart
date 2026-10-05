@@ -235,8 +235,7 @@ Future<ProfileContext> bootstrapProfileServices(
     ..registerSingleton<SettingsDb>(SettingsDb())
     ..registerSingleton<WindowService>(
       WindowService(
-        disposeServices: () =>
-            ServiceDisposer(getIt, logDisposalError).disposeAll(),
+        disposeServices: () => disposeGeneration(logDisposalError),
         // Stops a playing recording before the window closes.
         playerDisposer: AudioPlayerController.disposeActivePlayer,
         beforeLogFlush: () async {
@@ -426,3 +425,10 @@ Future<void> bootstrapNextGeneration(AppLifecycleHolder lifecycleHolder) async {
     onExitRequested: handleAppExitRequested,
   );
 }
+
+/// Stops the running generation's services and closes its databases in
+/// dependency-safe order, logging each failure through [logError] and
+/// returning every one.
+Future<List<ServiceDisposalFailure>> disposeGeneration(
+  DisposalErrorLogger logError,
+) => ServiceDisposer(getIt, logError).disposeAll();

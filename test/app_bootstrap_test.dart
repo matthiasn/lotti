@@ -56,7 +56,6 @@ import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -136,7 +135,7 @@ void main() {
 
   tearDown(() async {
     await settlePendingDbWork();
-    await ServiceDisposer(getIt, (e, s, n) {}).disposeAll();
+    await disposeGeneration((e, s, n) {});
     await getIt.reset();
     unmockChannels();
     if (osRoot.existsSync()) {

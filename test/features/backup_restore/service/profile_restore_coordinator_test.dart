@@ -483,9 +483,8 @@ void main() {
         onSwitchStarted: () async => switcherCalls.add('splash'),
         onSwitchCompleted: () => switcherCalls.add('completed'),
         settleFrame: () async {},
-        bootstrapGeneration: () => bootstrapNextGeneration(holder),
-        disposeServices: (logError) =>
-            ServiceDisposer(getIt, logError).disposeAll(),
+        bootstrapGeneration: bootstrapNextGeneration,
+        disposeServices: disposeGeneration,
       );
     });
 

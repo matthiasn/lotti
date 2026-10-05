@@ -97,7 +97,8 @@ class ProfileSwitcher {
     required this.lifecycleHolder,
     required this.onSwitchStarted,
     required this.onSwitchCompleted,
-    required Future<void> Function() bootstrapGeneration,
+    required Future<void> Function(AppLifecycleHolder lifecycleHolder)
+    bootstrapGeneration,
     required this._disposeServices,
     @visibleForTesting Future<void> Function()? settleFrame,
     // Test seam (also forwarded by LottiAppRoot's own); production callers
@@ -127,10 +128,10 @@ class ProfileSwitcher {
   /// Closes the running generation and returns every step that failed.
   late final Future<List<ServiceDisposalFailure>> Function() _teardown;
 
-  /// Starts the next generation for the active profile. The composition
-  /// root supplies it, since what a generation registers is the app's to
-  /// know.
-  final Future<void> Function() _bootstrap;
+  /// Starts the next generation for the active profile, attaching its
+  /// app-exit listener to [lifecycleHolder]. The composition root supplies
+  /// it, since what a generation registers is the app's to know.
+  final Future<void> Function(AppLifecycleHolder lifecycleHolder) _bootstrap;
 
   /// Stops the generation's services and closes its databases, returning
   /// every one that did not close cleanly. Supplied by the composition root.
@@ -170,7 +171,7 @@ class ProfileSwitcher {
       // A switch is best effort: whatever failed to close is logged, and the
       // next world boots regardless.
       await _teardown();
-      await _bootstrap();
+      await _bootstrap(lifecycleHolder);
 
       onSwitchCompleted();
     } finally {
@@ -247,7 +248,7 @@ class ProfileSwitcher {
       }
       final workChangedProfile = failures.isEmpty && workError == null;
       try {
-        await _bootstrap();
+        await _bootstrap(lifecycleHolder);
         if (workChangedProfile) await verifyRestarted?.call();
       } catch (e, st) {
         if (!workChangedProfile || rollBack == null) {
@@ -284,7 +285,7 @@ class ProfileSwitcher {
       final failures = await _teardown();
       if (failures.isNotEmpty) throw ProfileQuiescenceException(failures);
       await rollBack();
-      await _bootstrap();
+      await _bootstrap(lifecycleHolder);
     } catch (e, st) {
       throw ProfileRestartException(e, st);
     }

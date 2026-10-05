@@ -177,6 +177,35 @@ void main() {
       ]);
     });
 
+    test(
+      'a failing summary drain is logged and the log still flushes',
+      () async {
+        final loggingService = MockLoggingService();
+        when(loggingService.flush).thenAnswer((_) async {});
+        getIt.registerSingleton<LoggingService>(loggingService);
+        final failure = StateError('drain failed');
+
+        await WindowService(
+          disposeServices: _disposeAll,
+          skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {},
+          beforeLogFlush: () async => throw failure,
+        ).shutdown();
+
+        verify(
+          () => getIt<DomainLogger>().error(
+            LogDomain.general,
+            failure,
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'dispose_frameworkErrorSummaries',
+          ),
+        ).called(1);
+        verify(loggingService.flush).called(1);
+      },
+    );
+
     test('detached lifecycle event triggers macOS shutdown sequence', () async {
       final exitCompleter = Completer<int>();
       final playerDisposed = Completer<void>();

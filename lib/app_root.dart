@@ -7,7 +7,6 @@ import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/profiles/service/profile_switcher_scope.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -60,11 +59,11 @@ class LottiAppRootState extends State<LottiAppRoot> {
           _switching = false;
         });
       },
-      bootstrapGeneration:
-          widget.bootstrapOverride ??
-          () => bootstrapNextGeneration(widget.lifecycleHolder),
-      disposeServices: (logError) =>
-          ServiceDisposer(getIt, logError).disposeAll(),
+      bootstrapGeneration: switch (widget.bootstrapOverride) {
+        null => bootstrapNextGeneration,
+        final override => (_) => override(),
+      },
+      disposeServices: disposeGeneration,
       teardownOverride: widget.teardownOverride,
     );
   }

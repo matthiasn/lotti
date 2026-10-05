@@ -16,7 +16,7 @@ void main() {
       onSwitchCompleted: () {},
       settleFrame: () async {},
       teardownOverride: () async {},
-      bootstrapGeneration: () async {},
+      bootstrapGeneration: (_) async {},
       // Never called: the teardown seam replaces the whole teardown.
       disposeServices: (_) async => const [],
     );
@@ -42,6 +42,42 @@ void main() {
       );
 
       expect(identical(resolved, switcher), isTrue);
+    });
+
+    testWidgets('maybeOf() is null without a scope and the switcher within', (
+      tester,
+    ) async {
+      final root = Directory.systemTemp.createTempSync('lotti_scope_');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final switcher = buildSwitcher(root);
+      ProfileSwitcher? outside;
+      ProfileSwitcher? inside;
+
+      await tester.pumpWidget(
+        Column(
+          textDirection: TextDirection.ltr,
+          children: [
+            Builder(
+              builder: (context) {
+                outside = ProfileSwitcherScope.maybeOf(context);
+                return const SizedBox.shrink();
+              },
+            ),
+            ProfileSwitcherScope(
+              switcher: switcher,
+              child: Builder(
+                builder: (context) {
+                  inside = ProfileSwitcherScope.maybeOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+
+      expect(outside, isNull);
+      expect(identical(inside, switcher), isTrue);
     });
 
     testWidgets('updateShouldNotify fires only on a new switcher instance', (
