@@ -1127,10 +1127,9 @@ void main() {
 
       expect(find.text('Private Project'), findsOneWidget);
       expect(find.text('Public Project'), findsNothing);
-      expect(
-        find.byType(DesignSystemSelectionRow),
-        findsNWidgets(2),
-      );
+      // The task is in no project, so the picker offers nothing to unlink:
+      // the one compatible project is the only row.
+      expect(find.byType(DesignSystemSelectionRow), findsOneWidget);
     });
 
     testWidgets(

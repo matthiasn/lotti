@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/widgets
     title: Shared widgets source
-    last_modified: 2026-08-05
+    last_modified: 2026-10-05
   - id: startup-orientation
     resource: ../../lib/main.dart
     title: App startup orientation policy
@@ -39,7 +39,7 @@ composition and app-shell chrome.
 | `modal/` | `ModalUtils` over `wolt_modal_sheet`, the confirmation modal, and small list/card animation widgets |
 | `selection/` | Reusable selection-modal primitives and the unified toggle family |
 | `settings/` | The settings page grid and detail scaffold every editor sits on |
-| `picker/` | `EntityPickerSheet`, shared by categories, labels and the task link pickers |
+| `picker/` | `EntityPickerSheet`, shared by categories, labels, projects and the task link pickers |
 | `nav_bar/` | The bottom navigation shell and its FAB clearance wrapper |
 | `media/` | The lifecycle scope that temporarily permits landscape in full-screen image viewers |
 | `day_indicators/` | The `DayMark` model and the day cells, strip and track geometry goals and habits share |
@@ -132,13 +132,13 @@ They now share one option anatomy, which is also what
 
 # The entity picker shows one query's answer at a time
 
-`EntityPickerSheet` is the search-and-pick body behind the category, label and
-task-link modals. Its rows, its "create from search" row, its empty message and
+`EntityPickerSheet` is the search-and-pick body behind the category, label,
+project and task-link modals. Its rows, its "create from search" row, its empty message and
 what Enter acts on are all derived from **one** query — the *settled* query,
 which is not necessarily what is in the field right now.
 
-That distinction only matters for a picker whose results need loading. Category
-and label pickers filter a list already in memory, pass no
+That distinction only matters for a picker whose results need loading. The
+category, label and project pickers filter a list already in memory, pass no
 `onQueryResolve`, and apply every keystroke immediately. The task pickers
 (`TaskSearchPickerBody`) need a full-text lookup, supply the hook, and get this
 instead:
