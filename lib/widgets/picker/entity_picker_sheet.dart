@@ -59,8 +59,8 @@ class PickerItem {
 
 /// The shared, feature-agnostic picker body: a [DesignSystemSearch] field, a
 /// scrollable list of rows (built per query by [entriesBuilder]), an appended
-/// "create from search" row, and an empty state. Categories and labels both
-/// compose this so they look and behave identically.
+/// "create from search" row, and an empty state. Categories, labels and
+/// projects all compose this so they look and behave identically.
 ///
 /// This widget renders the BODY only; multi-select callers add the glass Apply
 /// footer themselves via [buildPickerApplyFooter] as the modal's sticky action

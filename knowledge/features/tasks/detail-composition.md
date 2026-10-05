@@ -11,7 +11,7 @@ sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header, metadata section, fly-out and details column
-    last_modified: 2026-09-03
+    last_modified: 2026-10-05
   - id: linked-task-row
     resource: ../../../lib/features/tasks/ui/linked_tasks/linked_task_row.dart
     title: Linked task row
@@ -289,6 +289,21 @@ and the dashed offer never coexist. A project is scoped to a category —
 uncategorized task cannot acquire one, and the connector passes a null
 `onProjectTap`; the separator and the project segment appear only once a
 category is set.
+
+**The project picker is the project adapter over the shared
+`EntityPickerSheet`** (`ProjectSelectionModalContent`), so it looks and
+behaves like the category and label pickers rather than being a bare row
+list: a design-system search field filters the category's
+privacy-compatible projects by title, the project the task is in is pinned
+first and ticked, and a "No project" row to unlink sits under it — offered
+only while the task *has* a project, and suppressed when a search has
+filtered that project out, the same rule the category picker applies to its
+Clear row. Each project row carries its status chip, folded into the row's
+accessible name. A pick writes through `ProjectRepository`, and a write the
+repository refuses (category or privacy no longer agree) keeps the picker
+open with an inline error callout above the search field instead of closing
+on a link that did not happen. A category with no projects says so in the
+sheet's empty state rather than reporting a search that found nothing.
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:

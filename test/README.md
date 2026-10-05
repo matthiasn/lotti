@@ -4,7 +4,7 @@
 
 - Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses. Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
 - Iterate on a single file with `fvm flutter test test/path/foo_test.dart` (optionally `--plain-name '<test name>'`). Run targeted files, not the whole suite — the full run is slow.
-- **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
+- **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit. To check one source file's coverage from its own suite without touching that report, write the data elsewhere — `--coverage --coverage-path=<scratch>/lcov.info` — then `lcov --extract <scratch>/lcov.info '*<file>.dart'` and list it (`lcov --list`), or print the `DA:` lines with zero hits.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
 
 When scoping `dart-mcp.analyze_files`, pass **absolute file paths** in
