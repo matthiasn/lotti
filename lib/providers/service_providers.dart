@@ -9,6 +9,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -96,6 +97,15 @@ final navServiceProvider = Provider<NavService>(
 );
 
 /// Provides the shared [TimeService]. Must be overridden in [ProviderScope].
+/// The app's [NotificationService]. Bridged from getIt by the composition
+/// root, lazily: the service registers itself on first use.
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => throw UnimplementedError(
+    'notificationServiceProvider must be overridden before use.',
+  ),
+  name: 'notificationServiceProvider',
+);
+
 final timeServiceProvider = Provider<TimeService>(
   (ref) => throw UnimplementedError(
     'timeServiceProvider must be overridden before use.',

@@ -95,6 +95,7 @@ import 'package:lotti/logic/repositories/category_move_intents.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository_services.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
@@ -510,14 +511,18 @@ Future<void> registerSingletons({
   // Finish checklist operations the app died in the middle of — an item
   // created but not yet listed, a move or a deletion half done — from the
   // intents they recorded (ADR 0089). Tracked, so a profile switch waits.
-  getIt<StartupTasks>().track(ChecklistRepository().replayMembershipIntents());
+  getIt<StartupTasks>().track(
+    ChecklistRepository(
+      journalRepository: buildJournalRepository(),
+    ).replayMembershipIntents(),
+  );
 
   // Finish category moves the app died in the middle of — an entry moved,
   // but not yet its linked entries, its checklists or its project link
   // (ADR 0122). Tracked, so a profile switch waits.
   getIt<StartupTasks>().track(
     EntryCategoryMove(
-      journalRepository: JournalRepository(),
+      journalRepository: buildJournalRepository(),
       journalDb: getIt<JournalDb>(),
       projectRepository: ProjectRepository(
         journalDb: getIt<JournalDb>(),

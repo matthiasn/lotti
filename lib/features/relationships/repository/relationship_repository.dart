@@ -853,10 +853,7 @@ class RelationshipRepository implements RelationshipCascade {
 final relationshipRepositoryProvider = Provider<RelationshipRepository>(
   (ref) => RelationshipRepository(
     journalDb: ref.read(journalDbProvider),
-    // Constructed bare like every other JournalRepository call site — the
-    // class resolves its own dependencies via getIt and is not itself
-    // registered there.
-    journalRepository: JournalRepository(),
+    journalRepository: ref.watch(journalRepositoryProvider),
     persistenceLogic: ref.read(persistenceLogicProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
   ),

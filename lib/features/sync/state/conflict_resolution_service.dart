@@ -43,18 +43,18 @@ class ConflictPair {
 class ConflictResolutionService {
   ConflictResolutionService({
     required this._journalDb,
+    required ChecklistRepository Function() checklistRepository,
     PersistenceLogic? persistenceLogic,
-    ChecklistRepository? checklistRepository,
   }) : _persistence = persistenceLogic ?? getIt<PersistenceLogic>(),
-       _checklistRepositoryOverride = checklistRepository;
+       _checklistRepositoryOf = checklistRepository;
 
   final PersistenceLogic _persistence;
   final JournalDb _journalDb;
-  final ChecklistRepository? _checklistRepositoryOverride;
+  final ChecklistRepository Function() _checklistRepositoryOf;
 
-  /// Built on first use: only a checklist's resolution needs it.
+  /// Resolved on first use: only a checklist's resolution needs it.
   late final ChecklistRepository _checklistRepository =
-      _checklistRepositoryOverride ?? ChecklistRepository();
+      _checklistRepositoryOf();
 
   /// "Keep this device" / "Keep other device".
   Future<bool> keepSide(ConflictPair pair, ConflictSide side) {

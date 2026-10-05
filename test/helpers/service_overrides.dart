@@ -5,9 +5,11 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -32,6 +34,12 @@ List<Override> getItServiceOverrides() => [
     ),
     navServiceProvider.overrideWith((ref) => _fromGetIt<NavService>()),
     timeServiceProvider.overrideWith((ref) => _fromGetIt<TimeService>()),
+    notificationServiceProvider.overrideWith(
+      (ref) => _fromGetIt<NotificationService>(),
+    ),
+    relationshipCascadeFactoryProvider.overrideWith(
+      (ref) => _fromGetIt<RelationshipCascadeFactory>(),
+    ),
     vectorClockServiceProvider.overrideWith(
       (ref) => _fromGetIt<VectorClockService>(),
     ),

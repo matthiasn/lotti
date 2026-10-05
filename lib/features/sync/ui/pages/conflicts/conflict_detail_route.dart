@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_resolution_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
@@ -45,6 +46,7 @@ class _ConflictDetailRouteState extends ConsumerState<ConflictDetailRoute> {
   late final JournalDb _db = ref.read(journalDbProvider);
   late final ConflictResolutionService _service = ConflictResolutionService(
     journalDb: _db,
+    checklistRepository: () => ref.read(checklistRepositoryProvider),
   );
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;

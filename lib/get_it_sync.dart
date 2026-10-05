@@ -98,7 +98,10 @@ Future<String? Function()> _registerMatrixSyncStack({
           ).applySynced,
         )
         ..consumptionRepository = consumptionRepository
-        ..onJournalEntityApplied = ChecklistRepository.settlerForReceived();
+        ..onJournalEntityApplied = ChecklistRepository.settlerForReceived(
+          create: () =>
+              ChecklistRepository(journalRepository: buildJournalRepository()),
+        );
 
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 

@@ -29,8 +29,10 @@ final checklistRepositoryProvider = Provider<ChecklistRepository>(
   name: 'checklistRepositoryProvider',
 );
 
-ChecklistRepository checklistRepository(Ref _) {
-  return ChecklistRepository();
+ChecklistRepository checklistRepository(Ref ref) {
+  return ChecklistRepository(
+    journalRepository: ref.watch(journalRepositoryProvider),
+  );
 }
 
 /// Persistence boundary for checklists and checklist items.
@@ -50,13 +52,18 @@ ChecklistRepository checklistRepository(Ref _) {
 /// dies half-way ([replayMembershipIntents]). ADR 0089 and
 /// `specs/tla/ChecklistMembership.tla` say why.
 class ChecklistRepository {
-  ChecklistRepository({ChecklistMembershipIntents? intents})
-    : _intents = intents ?? ChecklistMembershipIntents();
+  ChecklistRepository({
+    required this._journalRepository,
+    ChecklistMembershipIntents? intents,
+  }) : _intents = intents ?? ChecklistMembershipIntents();
 
   final JournalDb _journalDb = getIt<JournalDb>();
   final DomainLogger _loggingService = getIt<DomainLogger>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final ChecklistMembershipIntents _intents;
+
+  /// Deletes an entity with the journal's cleanup (cover art, links).
+  final JournalRepository _journalRepository;
 
   /// Creates a new checklist and optionally populates it with items.
   ///
@@ -709,13 +716,12 @@ class ChecklistRepository {
   /// items only, and builds its repository on first use, since the
   /// persistence it writes through is registered after the processor.
   static Future<void> Function(JournalEntity) settlerForReceived({
-    ChecklistRepository Function()? create,
+    required ChecklistRepository Function() create,
   }) {
     ChecklistRepository? repository;
     return (entity) async {
       if (entity is! Checklist && entity is! ChecklistItem) return;
-      await (repository ??= (create ?? ChecklistRepository.new)())
-          .settleReceived(entity);
+      await (repository ??= create()).settleReceived(entity);
     };
   }
 
@@ -811,7 +817,7 @@ class ChecklistRepository {
   }
 
   Future<bool> _deleteEntity(String id) =>
-      JournalRepository().deleteJournalEntity(id);
+      _journalRepository.deleteJournalEntity(id);
 
   /// Finishes every membership operation the app died in the middle of, from
   /// the intents it recorded ([ChecklistMembershipIntents]). Each is applied

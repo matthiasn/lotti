@@ -16,8 +16,7 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/get_it.dart'
-    show buildPersistenceServices, buildVectorClockService, getIt;
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -127,7 +126,7 @@ void main() {
         },
       );
 
-      repository = JournalRepository();
+      repository = buildJournalRepository();
     });
 
     tearDown(() async {
@@ -3119,7 +3118,7 @@ void main() {
         ..registerSingleton<OutboxService>(collapsedMockOutboxService)
         ..registerSingleton<TimeService>(MockTimeService());
 
-      collapsedRepository = JournalRepository();
+      collapsedRepository = buildJournalRepository();
 
       registerFallbackValue(
         testMeta(),
@@ -4135,7 +4134,7 @@ void main() {
         expect(await db.upsertEntryLink(fromDeviceA), 1);
 
         expect(
-          await JournalRepository().updateLink(
+          await buildJournalRepository().updateLink(
             fromDeviceA.copyWith(collapsed: true),
           ),
           isTrue,
@@ -4188,7 +4187,7 @@ void main() {
       );
 
       expect(
-        await JournalRepository().changeLink(
+        await buildJournalRepository().changeLink(
           'card-link',
           (stored) => stored.copyWith(hidden: true),
         ),
@@ -4211,7 +4210,7 @@ void main() {
       expect(await db.upsertEntryLink(removal), 1);
 
       expect(
-        await JournalRepository().changeLink(
+        await buildJournalRepository().changeLink(
           'card-link',
           (stored) => stored.copyWith(collapsed: true),
         ),
@@ -4226,14 +4225,14 @@ void main() {
       expect(await db.upsertEntryLink(storedLink(collapsed: true)), 1);
 
       expect(
-        await JournalRepository().changeLink(
+        await buildJournalRepository().changeLink(
           'card-link',
           (stored) => stored.copyWith(collapsed: true),
         ),
         isTrue,
       );
       expect(
-        await JournalRepository().changeLink(
+        await buildJournalRepository().changeLink(
           'no-such-link',
           (stored) => stored.copyWith(collapsed: true),
         ),
@@ -4296,7 +4295,7 @@ void main() {
         await db.upsertEntryLink(stored('basic', EntryLinkType.basic));
         await db.upsertEntryLink(stored('blocks', EntryLinkType.blocks));
 
-        final removed = await JournalRepository().removeTypedLink(
+        final removed = await buildJournalRepository().removeTypedLink(
           fromId: 'task-a',
           toId: 'task-b',
           linkType: 'BlocksLink',
@@ -4350,7 +4349,7 @@ void main() {
         );
         await db.upsertEntryLink(earlier);
 
-        final removed = await JournalRepository().removeLink(
+        final removed = await buildJournalRepository().removeLink(
           fromId: 'task-a',
           toId: 'task-b',
         );
@@ -4374,7 +4373,7 @@ void main() {
           stored('blocks', EntryLinkType.blocks, deletedAt: DateTime(2024, 2)),
         );
 
-        final removed = await JournalRepository().removeTypedLink(
+        final removed = await buildJournalRepository().removeTypedLink(
           fromId: 'task-a',
           toId: 'task-b',
           linkType: 'BlocksLink',
@@ -4430,7 +4429,7 @@ void main() {
     );
 
     Future<int> unlink(_Device device) => device.act(
-      () => JournalRepository().removeTypedLink(
+      () => buildJournalRepository().removeTypedLink(
         fromId: entryId,
         toId: 'note-id',
         linkType: 'BasicLink',

@@ -41,6 +41,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
@@ -362,6 +363,9 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
     navServiceProvider.overrideWithValue(getIt<NavService>()),
     timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    notificationServiceProvider.overrideWith(
+      (ref) => getIt<NotificationService>(),
+    ),
     vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     ...appFeatureWiringOverrides(),
   ];

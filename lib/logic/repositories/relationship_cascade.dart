@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -27,3 +28,12 @@ typedef RelationshipCascadeFactory =
       JournalRepository journalRepository,
       PersistenceLogic persistenceLogic,
     );
+
+/// The [RelationshipCascadeFactory] the journal repository's deletes use.
+/// The composition root binds the relationships feature's builder here.
+final relationshipCascadeFactoryProvider = Provider<RelationshipCascadeFactory>(
+  (ref) => throw UnimplementedError(
+    'relationshipCascadeFactoryProvider must be overridden before use.',
+  ),
+  name: 'relationshipCascadeFactoryProvider',
+);

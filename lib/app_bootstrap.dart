@@ -62,6 +62,7 @@ import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -71,6 +72,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
@@ -303,6 +305,10 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       navServiceProvider.overrideWithValue(getIt<NavService>()),
     if (getIt.isRegistered<TimeService>())
       timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    // Lazy: the notification service registers itself on first use.
+    notificationServiceProvider.overrideWith(
+      (ref) => getIt<NotificationService>(),
+    ),
     if (getIt.isRegistered<VectorClockService>())
       vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
@@ -410,6 +416,11 @@ List<Override> appFeatureWiringOverrides() => [
   ),
   dailyOsSetupSheetLauncherProvider.overrideWithValue(
     DailyOsInferenceSetupSheet.show,
+  ),
+  // A journal delete cascades into a person's own writes through the
+  // relationships feature's repository.
+  relationshipCascadeFactoryProvider.overrideWithValue(
+    buildRelationshipCascade,
   ),
   // The coding prompt and the task agent read a task's pull requests from
   // GitHub, which ranks above both.

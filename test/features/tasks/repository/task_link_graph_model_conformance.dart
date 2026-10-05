@@ -116,7 +116,7 @@ class _GraphDevice {
   final JournalDb db;
   final SettingsDb settings;
   final MockOutboxService outbox;
-  final journal = JournalRepository();
+  final JournalRepository journal = buildJournalRepository();
   late final VectorClockService clocks;
   late final PersistenceLogic persistence;
   late final ProjectRepository projects;

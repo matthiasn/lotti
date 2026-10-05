@@ -17,7 +17,6 @@ import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -102,7 +101,7 @@ void main() {
     repository = PullRequestRepository(
       journalDb: journalDb,
       persistenceLogic: getIt<PersistenceLogic>(),
-      journalRepository: JournalRepository(),
+      journalRepository: buildJournalRepository(),
     );
     await getIt<PersistenceLogic>().createDbEntity(testTask);
   });
@@ -150,7 +149,7 @@ void main() {
         expect(after.data.title, before.data.title);
 
         // A screen that read the task before tracking was on saves a rename.
-        await JournalRepository().updateJournalEntity(
+        await buildJournalRepository().updateJournalEntity(
           before.copyWith(data: before.data.copyWith(title: 'Renamed')),
         );
         final renamed = await storedTask();

@@ -230,6 +230,7 @@ class _ReplicaChecklistBench {
       await initConfigFlags(device.db, inMemoryDatabase: true);
       use(device);
       device.repository = ChecklistRepository(
+        journalRepository: buildJournalRepository(),
         intents: ChecklistMembershipIntents(settingsDb: device.settings),
       );
     }
@@ -346,7 +347,7 @@ class _ReplicaChecklistBench {
     await ConflictResolutionService(
       journalDb: device.db,
       persistenceLogic: device.persistence,
-      checklistRepository: device.repository,
+      checklistRepository: () => device.repository,
     ).keepSide(
       ConflictPair(local: local, remote: remote),
       arg.isEven ? ConflictSide.local : ConflictSide.remote,

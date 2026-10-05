@@ -736,6 +736,9 @@ class TutorialAppHarness {
     persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
     navServiceProvider.overrideWithValue(getIt<NavService>()),
     timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    notificationServiceProvider.overrideWith(
+      (ref) => getIt<NotificationService>(),
+    ),
     vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     ...appFeatureWiringOverrides(),
   ];

@@ -26,8 +26,10 @@ import 'package:lotti/features/labels/repository/labels_repository.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart'
     show checklistRepositoryProvider;
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart'
     show journalRepositoryProvider;
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';

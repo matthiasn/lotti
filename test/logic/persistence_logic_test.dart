@@ -917,7 +917,7 @@ void main() {
 
       // unlink comment from task
       expect(
-        await JournalRepository().removeLink(
+        await buildJournalRepository().removeLink(
           fromId: task.meta.id,
           toId: comment.meta.id,
         ),

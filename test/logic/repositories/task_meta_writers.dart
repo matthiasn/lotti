@@ -9,7 +9,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -41,7 +40,7 @@ Future<void> runMetaWriter(
   required Future<JournalEntity?> Function(String id) stored,
 }) async {
   final persistence = getIt<PersistenceLogic>();
-  final repository = JournalRepository();
+  final repository = buildJournalRepository();
   switch (which % metaWriterCount) {
     case 0:
       final category = 'category-$which';

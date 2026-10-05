@@ -45,14 +45,10 @@ class OnboardingCaptureToTaskService {
     required this._metricsRepository,
     required this._categoryRepository,
     required this._taskAgentService,
+    required this._journalRepository,
     PersistenceLogic? persistenceLogic,
-    JournalRepository? journalRepository,
     DateTime Function()? clock,
   }) : _persistenceLogic = persistenceLogic ?? getIt<PersistenceLogic>(),
-       // `journalRepositoryProvider` is itself just `JournalRepository()` (the
-       // repo is stateless and resolves its DB via getIt), so this fallback is
-       // equivalent to the injected instance — not a divergent graph.
-       _journalRepository = journalRepository ?? JournalRepository(),
        _clock = clock ?? DateTime.now;
 
   final OnboardingTaskStructuringService _structuringService;

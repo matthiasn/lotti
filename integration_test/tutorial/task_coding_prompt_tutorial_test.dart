@@ -42,6 +42,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -531,7 +532,9 @@ void main() {
         categoryId: harness.world.category.id,
       );
       expect(task, isNotNull);
-      await ChecklistRepository().createChecklist(
+      await ChecklistRepository(
+        journalRepository: buildJournalRepository(),
+      ).createChecklist(
         taskId: task!.meta.id,
         title: localized(
           en: 'Requirements',
