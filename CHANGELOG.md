@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.43]
+
+### Added
+
+- **Search the projects when moving a task into one.** Changing a task's
+  project from its breadcrumb or its details used to show every project in the
+  category as one long list, with nothing to narrow it. The picker now opens on
+  the same search field the category and label pickers use, so typing part of a
+  project's title finds it at once. The project the task is in sits ticked at
+  the top with "No project" under it to unlink, every project still shows its
+  status, and a category without projects says so.
+
+### Changed
+
+- **An event's page now ends in the same sticky action bar an entry's page
+  has.** The small *Add* buttons beside *Photos*, *Timeline* and *Tasks*, the
+  empty *Tasks* section inviting a first task, and the menu button that stayed
+  on the page are gone. A glass bar along the bottom edge now holds *Add a
+  task*, which creates a follow-up linked to the event and opens it, the
+  record button for a voice memo, and a plus that opens the *Add* sheet for
+  photos, notes and everything else. The *Tasks* section appears once the
+  first task is linked, and an empty timeline simply says what the bar adds.
+  Go back to reach the Events overview and its menu, as on a task or an
+  entry.
+
+### Fixed
+
+- **Accepting an agent's suggestion failed every time.** Since 1.1.42,
+  confirming a proposed change on a task showed "Failed to apply change" and
+  left it pending. Suggestions can be accepted again, and when one does
+  fail, the reason is now written to the app's error log.
+- **Applying the label picker could remove a label the agent had just
+  added.** The picker saved the whole set of labels you chose, so a label the
+  task agent added while it was open was taken off again and remembered as
+  one you had rejected. The picker now saves only the labels you added or
+  removed.
+- **A label you removed could come back.** If the task agent had decided to
+  add a label just before you took it off, its write put it back. The agent
+  now checks the task as it is when it writes, and a label you removed stays
+  off.
+
 ## [1.1.42]
 
 ### Changed
