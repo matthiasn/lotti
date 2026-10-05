@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/semantics.dart';
@@ -34,7 +33,9 @@ import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -396,6 +397,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     final messages = context.messages;
 
     final distinctSets = <String, ChangeSetEntity>{
@@ -422,11 +424,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         );
       }
     } catch (e, stackTrace) {
-      developer.log(
-        'confirmAll failed',
-        name: 'AiSummaryCard',
-        error: e.runtimeType,
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: stackTrace,
+        subDomain: 'AiSummaryCard',
+        message: 'confirmAll failed',
       );
       if (mounted) {
         context.showToast(

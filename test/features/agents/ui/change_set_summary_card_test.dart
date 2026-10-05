@@ -6,7 +6,9 @@ import 'package:lotti/features/agents/service/change_set_confirmation_service.da
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,10 +30,12 @@ void main() {
 
   late MockChangeSetConfirmationService mockConfirmationService;
   late MockUpdateNotifications mockUpdateNotifications;
+  late MockDomainLogger mockLogger;
 
   setUp(() async {
     mockConfirmationService = MockChangeSetConfirmationService();
     mockUpdateNotifications = MockUpdateNotifications();
+    mockLogger = MockDomainLogger();
 
     when(() => mockUpdateNotifications.notify(any())).thenReturn(null);
 
@@ -51,6 +55,7 @@ void main() {
           mockConfirmationService,
         ),
         updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
+        domainLoggerProvider.overrideWithValue(mockLogger),
       ],
     );
   }
@@ -278,6 +283,15 @@ void main() {
         await _pumpUi(tester);
 
         expect(find.text('Failed to apply change'), findsOneWidget);
+        verify(
+          () => mockLogger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'ChangeSetSummaryCard',
+            message: 'confirmItem failed',
+          ),
+        ).called(1);
       },
     );
 
@@ -375,6 +389,15 @@ void main() {
       await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
+      verify(
+        () => mockLogger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ChangeSetSummaryCard',
+          message: 'rejectItem failed',
+        ),
+      ).called(1);
     });
 
     testWidgets(
@@ -436,6 +459,15 @@ void main() {
         await _pumpUi(tester);
 
         expect(find.text('Failed to apply change'), findsOneWidget);
+        verify(
+          () => mockLogger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'ChangeSetSummaryCard',
+            message: 'confirmAll failed',
+          ),
+        ).called(1);
       },
     );
 

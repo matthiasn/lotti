@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -21,6 +23,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(makeTestChangeSet());
     registerFallbackValue(<String>{});
+    registerFallbackValue(StackTrace.empty);
   });
 
   group('AiSummaryCard – action button separation (motor safety)', () {
@@ -177,9 +180,11 @@ void main() {
           () => service.rejectItem(any(), any()),
         ).thenAnswer((_) async => Future.error(Exception('reject boom')));
         final notifier = MockUpdateNotifications();
+        final logger = MockDomainLogger();
         final bench = AgentTestBench(
           confirmationService: service,
           updateNotifications: notifier,
+          extraOverrides: [domainLoggerProvider.overrideWithValue(logger)],
           suggestions: UnifiedSuggestionList(
             open: [pending],
             activity: const [],
@@ -196,6 +201,15 @@ void main() {
 
         verify(() => service.rejectItem(any(), any())).called(1);
         expect(find.text('Failed to apply change'), findsWidgets);
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'AiSummaryCard',
+            message: 'rejectItem failed',
+          ),
+        ).called(1);
       },
     );
   });

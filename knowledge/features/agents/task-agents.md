@@ -1171,6 +1171,13 @@ is not recorded. `specs/tla/ChangeDispatchRecovery.tla` checks that an item
 shown confirmed, with nothing in flight, has its whole effect
 (`ConfirmedMeansComplete`); the decision is ADR 0121.
 
+`ChangeDispatchIntents` holds the settings database itself, resolved when
+the provider builds the service, never looked up through the provider's
+`Ref` on use. The task service's provider is `autoDispose` and the
+suggestion card reads it once, so its `Ref` is already disposed when a
+confirmation records its dispatch after the first `await`; a lookup there
+throws `UnmountedRefException` and fails every confirmation before its claim.
+
 ## The whole set, and every device showing it
 
 The claim protects one item from its own concurrent confirms. The set has more

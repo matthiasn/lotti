@@ -143,7 +143,7 @@ final eventChangeSetConfirmationServiceProvider =
         domainLogger: logger,
         dispatchIntents: ChangeDispatchIntents(
           scope: eventDispatchScope,
-          settingsDb: () => ref.read(settingsDbProvider),
+          settingsDb: ref.watch(settingsDbProvider),
         ),
       );
     });
@@ -242,7 +242,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
     onChangeSetResolved: notificationService?.syncAfterUserDecision,
     dispatchIntents: ChangeDispatchIntents(
       scope: taskDispatchScope,
-      settingsDb: () => ref.read(settingsDbProvider),
+      settingsDb: ref.watch(settingsDbProvider),
     ),
   );
 }
@@ -290,7 +290,7 @@ final projectChangeSetConfirmationServiceProvider =
         domainLogger: logger,
         dispatchIntents: ChangeDispatchIntents(
           scope: projectDispatchScope,
-          settingsDb: () => ref.read(settingsDbProvider),
+          settingsDb: ref.watch(settingsDbProvider),
         ),
         onConfirmedDecision:
             ({

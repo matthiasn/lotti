@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -17,7 +15,9 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -236,6 +236,7 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
     // access ref after the widget is unmounted.
     final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     final agentId = widget.changeSet.agentId;
 
     try {
@@ -264,11 +265,13 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
           );
         }
       }
-    } catch (e) {
-      developer.log(
-        'confirmAll failed',
-        name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'ChangeSetSummaryCard',
+        message: 'confirmAll failed',
       );
       if (context.mounted) {
         context.showToast(
@@ -429,6 +432,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     // Capture ref-dependent values before the async gap.
     final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     final agentId = _changeSet.agentId;
 
     try {
@@ -458,11 +462,13 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
           replaceCurrent: true,
         );
       }
-    } catch (e) {
-      developer.log(
-        'confirmItem failed',
-        name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'ChangeSetSummaryCard',
+        message: 'confirmItem failed',
       );
       if (context.mounted) {
         context.showToast(
@@ -483,6 +489,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     // Capture ref-dependent values before the async gap.
     final service = ref.read(widget.confirmationProvider);
     final notifier = ref.read(updateNotificationsProvider);
+    final logger = ref.read(domainLoggerProvider);
     final agentId = _changeSet.agentId;
 
     try {
@@ -500,11 +507,13 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
           replaceCurrent: true,
         );
       }
-    } catch (e) {
-      developer.log(
-        'rejectItem failed',
-        name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'ChangeSetSummaryCard',
+        message: 'rejectItem failed',
       );
       if (context.mounted) {
         context.showToast(
