@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -40,6 +41,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
@@ -279,7 +281,11 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     ..registerSingleton<LinkService>(LinkService());
 
   final maintenance = buildMaintenance();
-  final navService = NavService(journalDb: journalDb, settingsDb: settingsDb);
+  final navService = NavService(
+    tabDelegates: appTabDelegates,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+  );
   getIt
     ..registerSingleton<Maintenance>(maintenance)
     ..registerSingleton<NavService>(navService)
@@ -357,6 +363,9 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
     navServiceProvider.overrideWithValue(getIt<NavService>()),
     timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    notificationServiceProvider.overrideWith(
+      (ref) => getIt<NotificationService>(),
+    ),
     vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     ...appFeatureWiringOverrides(),
   ];

@@ -60,6 +60,7 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.da
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -188,7 +189,7 @@ class _FieldBench {
 
   final _RacingJournalDb db;
   final PersistenceLogic persistence = getIt<PersistenceLogic>();
-  final JournalRepository repository = JournalRepository();
+  final JournalRepository repository = buildJournalRepository();
   late final String taskId;
 
   /// Ghost: the fields as the last write that won set them.
@@ -391,6 +392,8 @@ class _FieldBench {
     final applied = await ConflictResolutionService(
       journalDb: db,
       persistenceLogic: persistence,
+      checklistRepository: () =>
+          ChecklistRepository(journalRepository: buildJournalRepository()),
     ).keepSide(page, side);
     expect(
       applied,
@@ -588,6 +591,8 @@ class _FieldBench {
     final service = ConflictResolutionService(
       journalDb: db,
       persistenceLogic: persistence,
+      checklistRepository: () =>
+          ChecklistRepository(journalRepository: buildJournalRepository()),
     );
     if (!combine) {
       expect(await service.keepSide(pair, side), isTrue);

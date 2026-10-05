@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_detail_cards.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/task_colors.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';

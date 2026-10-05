@@ -241,6 +241,26 @@ PersistenceServices buildPersistenceServices() => PersistenceServices(
   configFlagEffects: getIt.get<ConfigFlagEffects>,
 );
 
+/// The services [JournalRepository] reaches, resolved from the locator on
+/// each use.
+JournalRepositoryServices buildJournalRepositoryServices() =>
+    JournalRepositoryServices(
+      journalDb: getIt.get<JournalDb>,
+      persistenceLogic: getIt.get<PersistenceLogic>,
+      domainLogger: getIt.get<DomainLogger>,
+      timeService: getIt.get<TimeService>,
+      notificationService: getIt.get<NotificationService>,
+      vectorClockService: getIt.get<VectorClockService>,
+      updateNotifications: getIt.get<UpdateNotifications>,
+      outboxService: getIt.get<OutboxService>,
+      relationshipCascade: getIt.get<RelationshipCascadeFactory>,
+    );
+
+/// A [JournalRepository] over [buildJournalRepositoryServices], for the
+/// composition root's own wiring.
+JournalRepository buildJournalRepository() =>
+    JournalRepository(buildJournalRepositoryServices());
+
 /// The [PersistenceLogic] facade over [buildPersistenceServices].
 PersistenceLogic buildPersistenceLogic() =>
     PersistenceLogic(services: buildPersistenceServices());

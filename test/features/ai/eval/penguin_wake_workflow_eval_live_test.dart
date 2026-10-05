@@ -21,7 +21,6 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -168,8 +167,10 @@ void main() {
         cloudInferenceRepository: container.read(
           cloudInferenceRepositoryProvider,
         ),
-        journalRepository: JournalRepository(),
-        checklistRepository: ChecklistRepository(),
+        journalRepository: buildJournalRepository(),
+        checklistRepository: ChecklistRepository(
+          journalRepository: buildJournalRepository(),
+        ),
         labelsRepository: LabelsRepository(
           getIt<PersistenceLogic>(),
           harness.journalDb,

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Lightweight provider that keeps a single [Task] up-to-date by listening
@@ -19,7 +19,7 @@ final FutureProviderFamily<Task?, String> taskLiveDataProvider = FutureProvider
       taskId,
     ) async {
       final db = ref.read(journalDbProvider);
-      final notifications = getIt<UpdateNotifications>();
+      final notifications = ref.read(updateNotificationsProvider);
 
       final sub = notifications.updateStream.listen((affectedIds) {
         if (affectedIds.contains(taskId)) {

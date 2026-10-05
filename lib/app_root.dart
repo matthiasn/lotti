@@ -5,7 +5,9 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/profiles/service/profile_switcher_scope.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Root widget above the ProviderScope. Deliberately Riverpod-free: on a
@@ -57,8 +59,12 @@ class LottiAppRootState extends State<LottiAppRoot> {
           _switching = false;
         });
       },
+      bootstrapGeneration: switch (widget.bootstrapOverride) {
+        null => bootstrapNextGeneration,
+        final override => (_) => override(),
+      },
+      disposeServices: disposeGeneration,
       teardownOverride: widget.teardownOverride,
-      bootstrapOverride: widget.bootstrapOverride,
     );
   }
 
@@ -110,36 +116,4 @@ class ProfileSwitchSplash extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Exposes the [ProfileSwitcher] to the widget tree. Mounted ABOVE the
-/// ProviderScope, so it survives generation rebuilds and can be reached
-/// from any generation's widgets.
-class ProfileSwitcherScope extends InheritedWidget {
-  const ProfileSwitcherScope({
-    required this.switcher,
-    required super.child,
-    super.key,
-  });
-
-  final ProfileSwitcher switcher;
-
-  static ProfileSwitcher of(BuildContext context) {
-    final scope = context
-        .dependOnInheritedWidgetOfExactType<ProfileSwitcherScope>();
-    assert(scope != null, 'No ProfileSwitcherScope found in context');
-    return scope!.switcher;
-  }
-
-  /// Like [of], but null when no scope is mounted — for surfaces that also
-  /// build in bare test harnesses without profile plumbing.
-  static ProfileSwitcher? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<ProfileSwitcherScope>()
-        ?.switcher;
-  }
-
-  @override
-  bool updateShouldNotify(ProfileSwitcherScope oldWidget) =>
-      switcher != oldWidget.switcher;
 }

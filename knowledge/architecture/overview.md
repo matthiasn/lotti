@@ -111,7 +111,7 @@ flowchart BT
   Sync["sync — above the features whose entities it carries"]
   High["Aggregators — demo, tasks, projects, daily_os_next, onboarding …"]
   Settings["settings — hosts every feature's settings pages"]
-  Shell["Shell — lib/beamer, pages, app_root, get_it*, main<br/>may import anything"]
+  Shell["Shell — lib/beamer, app_root, app_bootstrap, get_it*, main<br/>may import anything"]
   Foundation --> DS --> Low --> Agents --> Sync --> High --> Settings --> Shell
 ```
 
@@ -121,10 +121,17 @@ never the ones after, and the order is the one that left the fewest upward
 imports when the guard was introduced, adjusted by hand where the domain
 decides (sync above the features it carries, the agent runtime above AI,
 settings above every feature whose settings pages its route table hosts).
-Two kinds of import break it:
+Three kinds of import break it:
 
 - **upward** — a file imports a feature ranked above its own, including any
   foundation file importing a feature at all;
+- **shell and shared UI** — code below the shell imports the shell (router,
+  composition root, app entry points), or a foundation file imports shared UI.
+  The service locator, `lib/get_it.dart`, is the one exemption: `tool/di`
+  counts its lookups against a baseline of its own. What the shell owns
+  reaches lower code as an injected value or callback instead: the tab
+  navigators as `TabDelegates`, service disposal and the next generation's
+  bootstrap as functions the composition root passes in;
 - **ui** — non-UI code (models, repositories, services, state) imports another
   feature's UI, whatever the ranks. A feature's UI is any file under one of its
   `ui`, `widgets`, `pages`, `routing`, `view(s)` or `widgetbook` directories.

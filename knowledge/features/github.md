@@ -571,7 +571,12 @@ entry stores, which is why the diagram has no transition into them.
 feature's `PullRequestContextSource` port
 (`lib/features/ai/model/pull_request_context_source.dart`, which also owns
 `PullRequestContextAudience`), so the task agent workflow takes the port
-rather than the GitHub service. Whenever one is built it
+rather than the GitHub service. Both readers reach it through the AI
+feature's seam,
+[`pullRequestContextSourceProvider`](../../lib/features/ai/state/pull_request_context_source_provider.dart),
+which `appFeatureWiringOverrides()` binds to this service: AI and agents rank
+below GitHub. Unbound (a bare test), a prompt goes out without the section.
+Whenever one is built it
 refreshes every linked pull request, in parallel, waiting at most eight
 seconds for each — a slower refresh finishes and is stored afterwards, but the
 context goes without it. The context uses what its own refresh read, unless

@@ -24,7 +24,7 @@ void _registerDbTests() {
     late String itemId;
 
     EntryCategoryMove realMove() => EntryCategoryMove(
-      journalRepository: JournalRepository(),
+      journalRepository: buildJournalRepository(),
       journalDb: db,
       projectRepository: projects,
       intents: CategoryMoveIntents(settingsDb: settings),
@@ -119,17 +119,20 @@ void _registerDbTests() {
       );
       await logic.createDbEntity(entry, linkedId: task.meta.id);
       entryId = entry.meta.id;
-      final created = await ChecklistRepository().createChecklist(
-        taskId: task.meta.id,
-        items: [
-          const ChecklistItemData(
-            title: 'Rotate the key',
-            isChecked: false,
-            linkedChecklists: [],
-          ),
-        ],
-        title: 'Launch checks',
-      );
+      final created =
+          await ChecklistRepository(
+            journalRepository: buildJournalRepository(),
+          ).createChecklist(
+            taskId: task.meta.id,
+            items: [
+              const ChecklistItemData(
+                title: 'Rotate the key',
+                isChecked: false,
+                linkedChecklists: [],
+              ),
+            ],
+            title: 'Launch checks',
+          );
       checklistId = created.checklist!.meta.id;
       itemId = created.createdItems.single.id;
       expect(await categoryOf(checklistId), from);
@@ -155,7 +158,7 @@ void _registerDbTests() {
       // task's own category.
       await CategoryMoveIntents(settingsDb: settings).record(task.meta.id, to);
       expect(
-        await JournalRepository().updateCategoryId(
+        await buildJournalRepository().updateCategoryId(
           task.meta.id,
           categoryId: to,
         ),

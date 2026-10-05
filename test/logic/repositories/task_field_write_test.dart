@@ -119,7 +119,7 @@ void main() {
       },
     );
     persistence = getIt<PersistenceLogic>();
-    repository = JournalRepository();
+    repository = buildJournalRepository();
   });
 
   tearDown(() async {

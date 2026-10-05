@@ -32,7 +32,6 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -151,17 +150,20 @@ void main() {
       reason: 'seed task must be retrievable before the dispatcher runs',
     );
 
-    final created = await ChecklistRepository().createChecklist(
-      taskId: task.meta.id,
-      items: [
-        const ChecklistItemData(
-          title: 'Interview five customers',
-          isChecked: false,
-          linkedChecklists: [],
-        ),
-      ],
-      title: 'Launch checks',
-    );
+    final created =
+        await ChecklistRepository(
+          journalRepository: buildJournalRepository(),
+        ).createChecklist(
+          taskId: task.meta.id,
+          items: [
+            const ChecklistItemData(
+              title: 'Interview five customers',
+              isChecked: false,
+              linkedChecklists: [],
+            ),
+          ],
+          title: 'Launch checks',
+        );
     expect(
       created.createdItems,
       isNotEmpty,
@@ -172,8 +174,10 @@ void main() {
 
     dispatcher = TaskToolDispatcher(
       journalDb: journalDb,
-      journalRepository: JournalRepository(),
-      checklistRepository: ChecklistRepository(),
+      journalRepository: buildJournalRepository(),
+      checklistRepository: ChecklistRepository(
+        journalRepository: buildJournalRepository(),
+      ),
       labelsRepository: LabelsRepository(
         getIt<PersistenceLogic>(),
         journalDb,
@@ -297,7 +301,7 @@ void main() {
     test('a suggestion for a task deleted since fails for good, writing '
         'nothing', () async {
       expect(
-        await JournalRepository().deleteJournalEntity(task.meta.id),
+        await buildJournalRepository().deleteJournalEntity(task.meta.id),
         isTrue,
       );
 
@@ -346,12 +350,16 @@ void main() {
     );
 
     setUp(() async {
-      memoItemId = (await ChecklistRepository().addItemToChecklist(
-        checklistId: checklistId,
-        title: 'Draft the launch memo',
-        isChecked: false,
-        categoryId: task.meta.categoryId,
-      ))!.id;
+      memoItemId =
+          (await ChecklistRepository(
+                journalRepository: buildJournalRepository(),
+              ).addItemToChecklist(
+                checklistId: checklistId,
+                title: 'Draft the launch memo',
+                isChecked: false,
+                categoryId: task.meta.categoryId,
+              ))!
+              .id;
 
       // The chat's own authorization reads the task through query access.
       bench = QueryPersistenceBench();
@@ -488,7 +496,9 @@ void main() {
 
         // 4. The user's own later edit — even back to the approved title —
         //    ends the approval, and the agent may propose again.
-        final repository = ChecklistRepository();
+        final repository = ChecklistRepository(
+          journalRepository: buildJournalRepository(),
+        );
         for (final title in ['Send the memo', 'Send the launch memo']) {
           await repository.updateChecklistItem(
             checklistItemId: memoItemId,

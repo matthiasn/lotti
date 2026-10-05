@@ -9,6 +9,7 @@ import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/features/backup_restore/service/profile_root_swap.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';

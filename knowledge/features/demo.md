@@ -81,7 +81,8 @@ be hot-switched into.
 
 [`DemoModeGateway`](../../lib/features/demo/state/demo_mode_gateway.dart) is
 deliberately **not** in getIt (getIt is reset by the switch it drives); the
-UI builds it on demand from the ambient `ProfileSwitcherScope` via
+UI builds it on demand from the ambient
+[`ProfileSwitcherScope`](../../lib/features/profiles/service/profile_switcher_scope.dart) via
 `demoModeGatewayOf`/`maybeDemoModeGatewayOf`.
 
 For the same reason it never holds a generation's services. It reads them

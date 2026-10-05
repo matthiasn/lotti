@@ -3,7 +3,6 @@
   "files": {
     "lib/beamer/chrome/sidebar_audio_recording_section.dart": {"spacing":1},
     "lib/classes/event_status.dart": {"color":8},
-    "lib/classes/task.dart": {"color":1},
     "lib/features/agents/genui/ab_comparison_card.dart": {"spacing":9},
     "lib/features/agents/genui/binary_choice_prompt_card.dart": {"spacing":5},
     "lib/features/agents/genui/category_ratings_card.dart": {"spacing":12},
@@ -270,6 +269,7 @@
     "lib/features/whats_new/ui/whats_new_modal.dart": {"spacing":5,"typography":2,"color":3},
     "lib/features/whats_new/ui/whats_new_navigation_footer.dart": {"spacing":2,"typography":1},
     "lib/themes/colors.dart": {"color":26},
+    "lib/themes/task_colors.dart": {"color":1},
     "lib/themes/theme_overrides.dart": {"spacing":3,"typography":9},
     "lib/themes/theme_text_styles.dart": {"typography":11},
     "lib/ui/app_fonts.dart": {"typography":2},

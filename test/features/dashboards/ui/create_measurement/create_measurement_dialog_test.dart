@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/create_measurement/create_measurement_dialog.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -17,15 +18,14 @@ import 'package:lotti/features/design_system/components/time_pickers/design_syst
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../helpers/fallbacks.dart';
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../test_utils/material_ui_finders.dart';
-import '../../widget_test_utils.dart';
+import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
+import '../../../../widget_test_utils.dart';
 import 'test_utils.dart';
 
 const _openKey = ValueKey<String>('open-measurement-capture');

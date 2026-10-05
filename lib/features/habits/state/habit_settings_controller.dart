@@ -7,10 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'habit_settings_controller.freezed.dart';
@@ -260,7 +258,9 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     // `createHabitCompletionEntryImpl` guards the same call for the same
     // reason.
     try {
-      await getIt<NotificationService>().scheduleHabitNotification(dataType);
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleHabitNotification(dataType);
     } catch (exception, stackTrace) {
       _logger.error(
         LogDomain.habits,

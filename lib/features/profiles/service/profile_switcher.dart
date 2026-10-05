@@ -2,16 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/main.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
-import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/service_disposal_failure.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/window_service.dart';
 
@@ -98,19 +97,21 @@ class ProfileSwitcher {
     required this.lifecycleHolder,
     required this.onSwitchStarted,
     required this.onSwitchCompleted,
+    required Future<void> Function(AppLifecycleHolder lifecycleHolder)
+    bootstrapGeneration,
+    required this._disposeServices,
     @visibleForTesting Future<void> Function()? settleFrame,
-    // Test seams (also forwarded by LottiAppRoot's own seams); production
-    // callers must leave these null.
+    // Test seam (also forwarded by LottiAppRoot's own); production callers
+    // must leave it null.
     Future<void> Function()? teardownOverride,
-    Future<void> Function()? bootstrapOverride,
-  }) : _settleFrame = settleFrame ?? _endOfFrame {
+  }) : _bootstrap = bootstrapGeneration,
+       _settleFrame = settleFrame ?? _endOfFrame {
     _teardown = teardownOverride == null
         ? _defaultTeardown
         : () async {
             await teardownOverride();
             return const <ServiceDisposalFailure>[];
           };
-    _bootstrap = bootstrapOverride ?? _bootstrapGeneration;
   }
 
   final ProfileRegistry registry;
@@ -126,7 +127,18 @@ class ProfileSwitcher {
 
   /// Closes the running generation and returns every step that failed.
   late final Future<List<ServiceDisposalFailure>> Function() _teardown;
-  late final Future<void> Function() _bootstrap;
+
+  /// Starts the next generation for the active profile, attaching its
+  /// app-exit listener to [lifecycleHolder]. The composition root supplies
+  /// it, since what a generation registers is the app's to know.
+  final Future<void> Function(AppLifecycleHolder lifecycleHolder) _bootstrap;
+
+  /// Stops the generation's services and closes its databases, returning
+  /// every one that did not close cleanly. Supplied by the composition root.
+  final Future<List<ServiceDisposalFailure>> Function(
+    DisposalErrorLogger logError,
+  )
+  _disposeServices;
 
   bool _switching = false;
   bool get isSwitching => _switching;
@@ -159,7 +171,7 @@ class ProfileSwitcher {
       // A switch is best effort: whatever failed to close is logged, and the
       // next world boots regardless.
       await _teardown();
-      await _bootstrap();
+      await _bootstrap(lifecycleHolder);
 
       onSwitchCompleted();
     } finally {
@@ -236,7 +248,7 @@ class ProfileSwitcher {
       }
       final workChangedProfile = failures.isEmpty && workError == null;
       try {
-        await _bootstrap();
+        await _bootstrap(lifecycleHolder);
         if (workChangedProfile) await verifyRestarted?.call();
       } catch (e, st) {
         if (!workChangedProfile || rollBack == null) {
@@ -273,7 +285,7 @@ class ProfileSwitcher {
       final failures = await _teardown();
       if (failures.isNotEmpty) throw ProfileQuiescenceException(failures);
       await rollBack();
-      await _bootstrap();
+      await _bootstrap(lifecycleHolder);
     } catch (e, st) {
       throw ProfileRestartException(e, st);
     }
@@ -337,7 +349,7 @@ class ProfileSwitcher {
   Future<void> _teardownGeneration(
     List<ServiceDisposalFailure> failures,
   ) async {
-    failures.addAll(await ServiceDisposer(getIt, _logError).disposeAll());
+    failures.addAll(await _disposeServices(_logError));
 
     // Best-effort final flush of the outgoing generation's log sink before
     // getIt.reset() disposes the LoggingService.
@@ -357,20 +369,6 @@ class ProfileSwitcher {
     // so there is no double-close. A failure here propagates rather than
     // being recorded: bootstrapping onto a half-reset container is never safe.
     await getIt.reset();
-  }
-
-  Future<void> _bootstrapGeneration() async {
-    registerProcessLogging();
-    final info = await resolveActiveProfile();
-    await bootstrapProfileServices(
-      info,
-      lifecycleHolder: lifecycleHolder,
-      // The window keeps its current geometry across an in-app switch.
-      restoreWindow: false,
-    );
-    lifecycleHolder.listener = AppLifecycleListener(
-      onExitRequested: handleAppExitRequested,
-    );
   }
 
   void _logError(dynamic error, StackTrace stackTrace, String service) {

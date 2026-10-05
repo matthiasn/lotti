@@ -56,6 +56,8 @@ void main() {
     service = ConflictResolutionService(
       persistenceLogic: persistence,
       journalDb: journalDb,
+      // Entry conflicts never reach the checklist repository.
+      checklistRepository: () => throw StateError('no checklist repository'),
     );
     when(
       () => persistence.updateJournalEntity(
@@ -210,7 +212,7 @@ void main() {
       );
       service = ConflictResolutionService(
         persistenceLogic: persistence,
-        checklistRepository: checklists,
+        checklistRepository: () => checklists,
         journalDb: journalDb,
       );
     });

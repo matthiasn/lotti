@@ -1,8 +1,5 @@
 {
-  "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
+  "_comment": "Imports that break the layer order in tool/architecture/layer_guard.dart: a bare feature name is an upward import, shell or shared_ui one reaching into those layers, and <feature>:ui is non-UI code reaching another feature's UI. Delete an entry when the import goes; regenerate with dart run tool/architecture/validate.dart --update-baseline. It only ever shrinks.",
   "files": {
-    "lib/features/agents/state/agent_workflow_providers.dart": ["github"],
-    "lib/features/ai/services/skill_inference_runner.dart": ["github"],
-    "lib/features/categories/state/categories_list_controller.dart": ["lockdown"]
   }
 }

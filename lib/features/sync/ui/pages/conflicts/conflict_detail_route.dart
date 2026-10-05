@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_resolution_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:material_ui/material_ui.dart';
@@ -46,6 +46,7 @@ class _ConflictDetailRouteState extends ConsumerState<ConflictDetailRoute> {
   late final JournalDb _db = ref.read(journalDbProvider);
   late final ConflictResolutionService _service = ConflictResolutionService(
     journalDb: _db,
+    checklistRepository: () => ref.read(checklistRepositoryProvider),
   );
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
@@ -119,7 +120,7 @@ class _ConflictDetailRouteState extends ConsumerState<ConflictDetailRoute> {
       tone: DesignSystemToastTone.success,
       title: context.messages.conflictResolvedToast,
     );
-    settingsBeamerDelegate.beamBack();
+    ref.read(navServiceProvider).settingsDelegate.beamBack();
   }
 
   @override

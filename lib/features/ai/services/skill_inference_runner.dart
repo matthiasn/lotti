@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
+import 'package:lotti/features/ai/model/pull_request_context_source.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
@@ -36,12 +37,11 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
-import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -56,9 +56,9 @@ import 'package:lotti/utils/transcript_term_corrector.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';
-part 'skill_inference_runner_transcription.dart';
 part 'skill_inference_runner_media_runs.dart';
 part 'skill_inference_runner_text_runs.dart';
+part 'skill_inference_runner_transcription.dart';
 
 const _logTag = 'SkillInferenceRunner';
 
@@ -142,16 +142,17 @@ class SkillInferenceRunner {
       skill.id == skillPromptGenId;
 
   /// The task's pull requests for a coding prompt, refreshed now, or null
-  /// when there are none. A failure here never fails the prompt: it is
-  /// logged, and the prompt goes out without the section.
+  /// when there are none or nothing supplies them. A failure here never
+  /// fails the prompt: it is logged, and the prompt goes out without the
+  /// section.
   Future<String?> _pullRequestContext(String taskId) async {
+    final source = _ref.read(pullRequestContextSourceProvider);
+    if (source == null) return null;
     try {
-      final text = await _ref
-          .read(pullRequestContextServiceProvider)
-          .contextFor(
-            taskId,
-            audience: PullRequestContextAudience.codingPrompt,
-          );
+      final text = await source.contextFor(
+        taskId,
+        audience: PullRequestContextAudience.codingPrompt,
+      );
       return text.isEmpty ? null : text;
     } catch (error, stackTrace) {
       _loggingService.error(

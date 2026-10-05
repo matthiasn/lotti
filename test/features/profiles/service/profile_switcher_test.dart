@@ -12,6 +12,7 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/startup_tasks.dart';
@@ -54,7 +55,8 @@ void main() {
     onSwitchCompleted: () => calls.add('completed'),
     settleFrame: () async => calls.add('settle'),
     teardownOverride: () async => calls.add('teardown'),
-    bootstrapOverride: () async => calls.add('bootstrap'),
+    bootstrapGeneration: (_) async => calls.add('bootstrap'),
+    disposeServices: disposeGeneration,
   );
 
   group('ProfileSwitcher.switchTo', () {
@@ -72,7 +74,8 @@ void main() {
           calls.add('teardown');
           markerAtTeardown = (await registry.load()).activeProfileId;
         },
-        bootstrapOverride: () async => calls.add('bootstrap'),
+        bootstrapGeneration: (_) async => calls.add('bootstrap'),
+        disposeServices: disposeGeneration,
       );
 
       await switcher.switchTo(guest.id);
@@ -120,7 +123,8 @@ void main() {
             // A second switch fired mid-flight must be dropped by the guard.
             await switcher.switchTo(Profile.realProfileId);
           },
-          bootstrapOverride: () async => calls.add('bootstrap'),
+          bootstrapGeneration: (_) async => calls.add('bootstrap'),
+          disposeServices: disposeGeneration,
         );
 
         await switcher.switchTo(guest.id);
@@ -194,6 +198,8 @@ void main() {
           onSwitchStarted: () async => calls.add('splash'),
           onSwitchCompleted: () => calls.add('completed'),
           settleFrame: () async {},
+          bootstrapGeneration: bootstrapNextGeneration,
+          disposeServices: disposeGeneration,
         );
 
         await switcher.switchTo(guest2.id);
@@ -275,7 +281,8 @@ void main() {
           onSwitchCompleted: () {},
           settleFrame: () async {},
           // Default teardown path: quiesce + dispose + getIt.reset.
-          bootstrapOverride: () async => bootstrapped = true,
+          bootstrapGeneration: (_) async => bootstrapped = true,
+          disposeServices: disposeGeneration,
         );
 
         await switcher.switchTo(guest.id);
@@ -315,7 +322,8 @@ void main() {
           attempts++;
           if (attempts == 1) throw StateError('teardown boom');
         },
-        bootstrapOverride: () async {},
+        bootstrapGeneration: (_) async {},
+        disposeServices: disposeGeneration,
       );
 
       await expectLater(switcher.switchTo(guest.id), throwsStateError);
@@ -363,7 +371,10 @@ void main() {
           onSwitchStarted: () async => calls.add('splash'),
           onSwitchCompleted: () => calls.add('completed'),
           settleFrame: () async => calls.add('settle'),
-          bootstrapOverride: bootstrap ?? () async => calls.add('bootstrap'),
+          bootstrapGeneration: bootstrap == null
+              ? (_) async => calls.add('bootstrap')
+              : (_) => bootstrap(),
+          disposeServices: disposeGeneration,
         );
 
     test('closes, runs the work against the closed root, and restarts the '
@@ -499,7 +510,8 @@ void main() {
         onSwitchCompleted: () => calls.add('completed'),
         settleFrame: () async {},
         teardownOverride: () async => calls.add('teardown'),
-        bootstrapOverride: () async => throw StateError('boot failed'),
+        bootstrapGeneration: (_) async => throw StateError('boot failed'),
+        disposeServices: disposeGeneration,
       );
 
       await expectLater(
@@ -528,7 +540,8 @@ void main() {
         onSwitchCompleted: () => calls.add('completed'),
         settleFrame: () async {},
         teardownOverride: () async => throw StateError('reset failed'),
-        bootstrapOverride: () async => calls.add('bootstrap'),
+        bootstrapGeneration: (_) async => calls.add('bootstrap'),
+        disposeServices: disposeGeneration,
       );
 
       await expectLater(
@@ -552,10 +565,11 @@ void main() {
           onSwitchCompleted: () => calls.add('completed'),
           settleFrame: () async {},
           teardownOverride: () async => calls.add('teardown'),
-          bootstrapOverride: () async {
+          bootstrapGeneration: (_) async {
             calls.add('bootstrap');
             if (failuresLeft-- > 0) throw StateError('boot failed');
           },
+          disposeServices: disposeGeneration,
         );
       }
 
@@ -700,10 +714,11 @@ void main() {
           settleFrame: () async {},
           // Default (strict) teardown. The restarted generation registers a
           // service that refuses to stop.
-          bootstrapOverride: () async {
+          bootstrapGeneration: (_) async {
             boots++;
             getIt.registerSingleton<TimeService>(timeService);
           },
+          disposeServices: disposeGeneration,
         );
 
         await expectLater(
@@ -802,7 +817,8 @@ void main() {
             closedDuringSwitch = e;
           }
         },
-        bootstrapOverride: () async {},
+        bootstrapGeneration: (_) async {},
+        disposeServices: disposeGeneration,
       );
 
       await switcher.switchTo(guest.id);

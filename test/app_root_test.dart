@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
@@ -15,9 +14,10 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
-import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/profiles/service/profile_switcher_scope.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -332,66 +332,6 @@ void main() {
       expect(chrome.hasCapture, isFalse);
       expect(chrome.background, dsTokensDark.colors.background.level01);
       expect(chrome.brightness, Brightness.dark);
-    });
-  });
-
-  group('ProfileSwitcherScope', () {
-    ProfileSwitcher buildSwitcher(Directory root) => ProfileSwitcher(
-      registry: ProfileRegistry(realRoot: root),
-      lifecycleHolder: AppLifecycleHolder(),
-      onSwitchStarted: () async {},
-      onSwitchCompleted: () {},
-      settleFrame: () async {},
-      teardownOverride: () async {},
-      bootstrapOverride: () async {},
-    );
-
-    testWidgets('of() resolves the switcher from above the scope', (
-      tester,
-    ) async {
-      final root = Directory.systemTemp.createTempSync('lotti_scope_');
-      addTearDown(() => root.deleteSync(recursive: true));
-      final switcher = buildSwitcher(root);
-      late ProfileSwitcher resolved;
-
-      await tester.pumpWidget(
-        ProfileSwitcherScope(
-          switcher: switcher,
-          child: Builder(
-            builder: (context) {
-              resolved = ProfileSwitcherScope.of(context);
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      expect(identical(resolved, switcher), isTrue);
-    });
-
-    testWidgets('updateShouldNotify fires only on a new switcher instance', (
-      tester,
-    ) async {
-      final root = Directory.systemTemp.createTempSync('lotti_scope_');
-      addTearDown(() => root.deleteSync(recursive: true));
-      final switcherA = buildSwitcher(root);
-      final switcherB = buildSwitcher(root);
-
-      final scopeA = ProfileSwitcherScope(
-        switcher: switcherA,
-        child: const SizedBox.shrink(),
-      );
-      final scopeSameSwitcher = ProfileSwitcherScope(
-        switcher: switcherA,
-        child: const SizedBox.shrink(),
-      );
-      final scopeB = ProfileSwitcherScope(
-        switcher: switcherB,
-        child: const SizedBox.shrink(),
-      );
-
-      expect(scopeSameSwitcher.updateShouldNotify(scopeA), isFalse);
-      expect(scopeB.updateShouldNotify(scopeA), isTrue);
     });
   });
 }

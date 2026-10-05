@@ -27,7 +27,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_membership_intents.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -149,7 +148,9 @@ void main() {
 
     // Create ProviderContainer
     container = ProviderContainer();
-    repository = ChecklistRepository();
+    repository = ChecklistRepository(
+      journalRepository: buildJournalRepository(),
+    );
   });
 
   tearDown(() async {

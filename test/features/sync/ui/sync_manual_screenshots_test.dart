@@ -22,6 +22,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -670,7 +671,9 @@ void main() {
     unverifiedDevice = MockDeviceKeys();
     verificationRunner = MockKeyVerificationRunner();
     verificationStream = StreamController<KeyVerificationRunner>.broadcast();
-    navService = NavService();
+    navService = NavService(
+      tabDelegates: appTabDelegates,
+    );
 
     when(
       () => mocks.journalDb.watchConfigFlag(any()),

@@ -189,7 +189,9 @@ class _MembershipBench {
   _MembershipBench(this.db);
 
   final _RacingJournalDb db;
-  final repository = ChecklistRepository();
+  final repository = ChecklistRepository(
+    journalRepository: buildJournalRepository(),
+  );
   final intents = ChecklistMembershipIntents();
   final PersistenceLogic persistence = getIt<PersistenceLogic>();
   late final String taskId;
@@ -512,7 +514,7 @@ class _MembershipBench {
         // an overwrite; either way the stored lists must hold.
         final screenTask = _screenTask;
         if (screenTask == null) return;
-        await JournalRepository().updateJournalEntity(
+        await buildJournalRepository().updateJournalEntity(
           screenTask.copyWith(
             data: screenTask.data.copyWith(title: _nextTitle('agent title')),
           ),

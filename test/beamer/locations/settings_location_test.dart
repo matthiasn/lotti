@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
@@ -116,6 +117,7 @@ void main() {
       ).thenAnswer((_) async => 1);
 
       navService = NavService(
+        tabDelegates: appTabDelegates,
         journalDb: mockJournalDb,
         settingsDb: mockSettingsDb,
       );

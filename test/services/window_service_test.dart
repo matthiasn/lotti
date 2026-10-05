@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -20,6 +21,10 @@ import '../mocks/mocks.dart';
 
 /// Stands in for the real frame wait, which needs a rendering binding.
 Future<void> noClosingFrame() async {}
+
+/// The disposer the composition root injects, over the test's registrations.
+Future<void> _disposeAll() =>
+    ServiceDisposer(getIt, logDisposalError).disposeAll();
 
 void main() {
   setUpAll(() {
@@ -64,6 +69,7 @@ void main() {
       });
 
       WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -87,6 +93,7 @@ void main() {
       final exitCompleter = Completer<int>();
 
       WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -107,6 +114,7 @@ void main() {
       final exitCompleter = Completer<int>();
 
       WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -124,6 +132,7 @@ void main() {
       getIt.registerSingleton<LoggingService>(loggingService);
 
       await WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -147,6 +156,7 @@ void main() {
       getIt.registerSingleton<LoggingService>(loggingService);
 
       await WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -167,11 +177,41 @@ void main() {
       ]);
     });
 
+    test(
+      'a failing summary drain is logged and the log still flushes',
+      () async {
+        final loggingService = MockLoggingService();
+        when(loggingService.flush).thenAnswer((_) async {});
+        getIt.registerSingleton<LoggingService>(loggingService);
+        final failure = StateError('drain failed');
+
+        await WindowService(
+          disposeServices: _disposeAll,
+          skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {},
+          beforeLogFlush: () async => throw failure,
+        ).shutdown();
+
+        verify(
+          () => getIt<DomainLogger>().error(
+            LogDomain.general,
+            failure,
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'dispose_frameworkErrorSummaries',
+          ),
+        ).called(1);
+        verify(loggingService.flush).called(1);
+      },
+    );
+
     test('detached lifecycle event triggers macOS shutdown sequence', () async {
       final exitCompleter = Completer<int>();
       final playerDisposed = Completer<void>();
 
       WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -190,6 +230,7 @@ void main() {
       var exitCalls = 0;
 
       final service = WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -219,6 +260,7 @@ void main() {
         final firstExit = Completer<void>();
 
         final service = WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
@@ -250,6 +292,7 @@ void main() {
       });
 
       final service = WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
@@ -272,6 +315,7 @@ void main() {
     group('closing notice', () {
       test('closing is false until a quit starts', () {
         final service = WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
@@ -293,6 +337,7 @@ void main() {
           });
 
           service = WindowService(
+            disposeServices: _disposeAll,
             skipWindowManagerSetup: true,
             closingFrameOverride: () async {
               callOrder.add('frame(closing=${service.closing.value})');
@@ -320,6 +365,7 @@ void main() {
         final exitCodes = <int>[];
 
         await WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: () async => throw StateError('no binding'),
           isMacOSOverride: () => true,
@@ -342,6 +388,7 @@ void main() {
       test('the frame is awaited once even when quit fires twice', () async {
         var frames = 0;
         final service = WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: () async => frames++,
           isMacOSOverride: () => true,
@@ -358,6 +405,7 @@ void main() {
     group('didRequestAppExit', () {
       test('answers exit at once when no quit is in progress', () async {
         final service = WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
@@ -378,6 +426,7 @@ void main() {
         });
         final exitCodes = <int>[];
         final service = WindowService(
+          disposeServices: _disposeAll,
           skipWindowManagerSetup: true,
           closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
@@ -421,6 +470,7 @@ void main() {
       );
 
       WindowService buildService(AppPrefs prefs) => WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => false,
@@ -498,6 +548,7 @@ void main() {
       });
 
       WindowService(
+        disposeServices: _disposeAll,
         skipWindowManagerSetup: true,
         closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => false,

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/app_root.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -18,6 +17,7 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/demo_world_creator.dart';
+import 'package:lotti/features/profiles/service/profile_switcher_scope.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';

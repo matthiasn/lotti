@@ -324,37 +324,6 @@ void main() {
       );
     });
 
-    test(
-      'defaults to a real JournalRepository when none is injected',
-      () async {
-        stubStructureSuccess(
-          const OnboardingStructuredTask(
-            title: 'Defaulted',
-            checklistItems: [],
-          ),
-        );
-        stubCreateTask(TestTaskFactory.create(id: 'task-1'));
-        final defaulted = OnboardingCaptureToTaskService(
-          structuringService: structuring,
-          metricsRepository: metrics,
-          categoryRepository: categoryRepository,
-          taskAgentService: taskAgentService,
-          persistenceLogic: persistence,
-          clock: () => fixedNow,
-        );
-
-        // The typed path (no audioId) never touches the journal repository, so
-        // the constructor default is exercised without hitting getIt.
-        final result = await defaulted.createTaskFromTranscript(
-          transcript: 'hello',
-          categoryId: categoryId,
-        );
-
-        expect(result.task != null, isTrue);
-        expect(result.title, 'Defaulted');
-      },
-    );
-
     test('keeps the task when the link write throws', () async {
       stubStructureSuccess(
         const OnboardingStructuredTask(title: 'Resilient', checklistItems: []),

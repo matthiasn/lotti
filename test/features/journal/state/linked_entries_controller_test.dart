@@ -17,6 +17,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'linked_entries_controller_test_helpers.dart';
@@ -576,11 +577,11 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
+        overrides: withServiceOverrides([
           includeHiddenControllerProvider(
             entryId,
           ).overrideWith(() => FakeIncludeHiddenController(false)),
-        ],
+        ]),
       );
       addTearDown(container.dispose);
       final controller = container.read(

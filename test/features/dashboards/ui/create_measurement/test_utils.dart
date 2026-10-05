@@ -1,7 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-import '../../test_data/test_data.dart';
+import '../../../../test_data/test_data.dart';
 
 List<MeasurementEntry> measurementSuggestionFixture() {
   MeasurementEntry entry(String id, num value, DateTime at) => MeasurementEntry(

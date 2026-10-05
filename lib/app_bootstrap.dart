@@ -24,7 +24,9 @@ import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/ai/state/skill_entity_provider.dart';
+import 'package:lotti/features/categories/state/category_scope_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
@@ -34,6 +36,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
 import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
@@ -41,6 +44,7 @@ import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/task_title_hooks.dart';
+import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/demo_ai_setup_sheet.dart';
@@ -58,13 +62,17 @@ import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/service_disposer.dart';
+import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
@@ -205,18 +213,6 @@ Future<ProfileBootInfo> resolveActiveProfile() async {
   );
 }
 
-/// Owns the app-exit listener across generations. The listener is created
-/// after each bootstrap and disposed during window teardown (via the
-/// WindowService beforeLogFlush hook) or a profile switch.
-class AppLifecycleHolder {
-  AppLifecycleListener? listener;
-
-  void dispose() {
-    listener?.dispose();
-    listener = null;
-  }
-}
-
 /// Per-generation service bootstrap: registers the world-scoped singletons
 /// for the active profile and runs the full [registerSingletons] sequence
 /// against its root. Runs on cold boot and after every profile switch;
@@ -245,6 +241,7 @@ Future<ProfileContext> bootstrapProfileServices(
     ..registerSingleton<SettingsDb>(SettingsDb())
     ..registerSingleton<WindowService>(
       WindowService(
+        disposeServices: () => disposeGeneration(logDisposalError),
         // Stops a playing recording before the window closes.
         playerDisposer: AudioPlayerController.disposeActivePlayer,
         beforeLogFlush: () async {
@@ -308,6 +305,10 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       navServiceProvider.overrideWithValue(getIt<NavService>()),
     if (getIt.isRegistered<TimeService>())
       timeServiceProvider.overrideWithValue(getIt<TimeService>()),
+    // Lazy: the notification service registers itself on first use.
+    notificationServiceProvider.overrideWith(
+      (ref) => getIt<NotificationService>(),
+    ),
     if (getIt.isRegistered<VectorClockService>())
       vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
@@ -416,4 +417,44 @@ List<Override> appFeatureWiringOverrides() => [
   dailyOsSetupSheetLauncherProvider.overrideWithValue(
     DailyOsInferenceSetupSheet.show,
   ),
+  // A journal delete cascades into a person's own writes through the
+  // relationships feature's repository.
+  relationshipCascadeFactoryProvider.overrideWithValue(
+    buildRelationshipCascade,
+  ),
+  // The coding prompt and the task agent read a task's pull requests from
+  // GitHub, which ranks above both.
+  pullRequestContextSourceProvider.overrideWith(
+    (ref) => ref.watch(pullRequestContextServiceProvider),
+  ),
+  // An active lockdown scopes every category list; categories ranks below
+  // lockdown.
+  categoryScopeProvider.overrideWith((ref) {
+    final lockdown = ref.watch(lockdownControllerProvider);
+    return lockdown.isActive ? lockdown.allows : null;
+  }),
 ];
+
+/// Starts the next service generation for the active profile: after a
+/// profile switch, and after work that closed the running one (a backup or
+/// a restore). The window keeps its current geometry, and the app-exit
+/// listener is attached again for the new generation.
+Future<void> bootstrapNextGeneration(AppLifecycleHolder lifecycleHolder) async {
+  registerProcessLogging();
+  final info = await resolveActiveProfile();
+  await bootstrapProfileServices(
+    info,
+    lifecycleHolder: lifecycleHolder,
+    restoreWindow: false,
+  );
+  lifecycleHolder.listener = AppLifecycleListener(
+    onExitRequested: handleAppExitRequested,
+  );
+}
+
+/// Stops the running generation's services and closes its databases in
+/// dependency-safe order, logging each failure through [logError] and
+/// returning every one.
+Future<List<ServiceDisposalFailure>> disposeGeneration(
+  DisposalErrorLogger logError,
+) => ServiceDisposer(getIt, logError).disposeAll();

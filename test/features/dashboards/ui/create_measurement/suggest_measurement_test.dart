@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/create_measurement/suggest_measurement.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/suggest_measurement.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../test_data/test_data.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 import 'test_utils.dart';
 
 void main() {

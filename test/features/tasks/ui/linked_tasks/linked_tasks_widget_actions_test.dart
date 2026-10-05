@@ -179,6 +179,7 @@ void main() {
   }
 
   late MockNavService mockNavService;
+  late MockBeamerDelegate tasksDelegate;
   late MockFts5Db mockFts5Db;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockEntitiesCacheService mockEntitiesCacheService;
@@ -189,6 +190,8 @@ void main() {
 
   setUp(() async {
     mockNavService = MockNavService();
+    tasksDelegate = MockBeamerDelegate();
+    when(() => mockNavService.tasksDelegate).thenReturn(tasksDelegate);
     mockFts5Db = MockFts5Db();
     mockPersistenceLogic = MockPersistenceLogic();
     mockEntitiesCacheService = MockEntitiesCacheService();
@@ -473,6 +476,8 @@ void main() {
           ),
         ).captured;
         expect(captured, ['task-main', 'cat-1']);
+        // The tasks tab opens the new task.
+        verify(() => tasksDelegate.beamToNamed('/tasks/new-task')).called(1);
       },
     );
 

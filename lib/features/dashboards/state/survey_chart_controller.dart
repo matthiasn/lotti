@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
@@ -43,7 +43,9 @@ class SurveyChartDataController extends AsyncNotifier<List<JournalEntity>> {
   JournalDb get _journalDb => ref.read(journalDbProvider);
 
   StreamSubscription<Set<String>>? _updateSubscription;
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+  late final UpdateNotifications _updateNotifications = ref.read(
+    updateNotificationsProvider,
+  );
 
   /// Subscribes to survey update notifications and re-fetches on change.
   /// Called once from `build`; cancelled on dispose.

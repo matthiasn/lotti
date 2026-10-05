@@ -425,7 +425,7 @@
     {
       "id": "measurements/capture",
       "title": "Measurement capture editor",
-      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "sourceTest": "test/features/dashboards/ui/create_measurement/create_measurement_dialog_screenshots_test.dart",
       "variants": {
         "mobile-light": "measurement_capture_editor_mobile_light.png",
         "mobile-dark": "measurement_capture_editor_mobile_dark.png",
@@ -436,7 +436,7 @@
     {
       "id": "measurements/date",
       "title": "Measurement observed date",
-      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "sourceTest": "test/features/dashboards/ui/create_measurement/create_measurement_dialog_screenshots_test.dart",
       "variants": {
         "mobile-light": "measurement_capture_date_mobile_light.png",
         "mobile-dark": "measurement_capture_date_mobile_dark.png",
@@ -447,7 +447,7 @@
     {
       "id": "measurements/time",
       "title": "Measurement observed time",
-      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "sourceTest": "test/features/dashboards/ui/create_measurement/create_measurement_dialog_screenshots_test.dart",
       "variants": {
         "mobile-light": "measurement_capture_time_mobile_light.png",
         "mobile-dark": "measurement_capture_time_mobile_dark.png",

@@ -38,7 +38,8 @@ flowchart TD
   Ctrl --> Habits["HabitsController<br/>restrict(selectedCategoryIds)"]
   Ctrl --> Dash["dashboards providers<br/>restrict(selection), scoped picker"]
   Ctrl --> Goals["UnifiedGoalsPage<br/>identity.allowedCategoryIds"]
-  Ctrl --> CatStream["categoriesStreamProvider<br/>(scoped)"]
+  Ctrl --> Scope["categoryScopeProvider<br/>(bound in the composition root)"]
+  Scope --> CatStream["categoriesStreamProvider<br/>(scoped)"]
   Ctrl --> Shell["AppScreen desktop layout"]
   Cache --> Pickers["sortedCategories → every picker, chip,<br/>'all categories' expansion"]
   JPC --> Query["Tasks + Logbook queries<br/>category IN (locked)"]
@@ -91,7 +92,11 @@ Restart is therefore always an exit.
   goal card's rows — is intersected with `lockdown.allows(habit.categoryId)`
   too, so an unclaimed habit from another category cannot surface there.
 - **`categoriesStreamProvider`** emits only locked categories while active, so
-  the goal-creation wizard and the logo menu inherit the scope.
+  the goal-creation wizard and the logo menu inherit the scope. Categories
+  ranks below lockdown, so it reads the scope through its own seam,
+  [`categoryScopeProvider`](../../lib/features/categories/state/category_scope_provider.dart),
+  which `appFeatureWiringOverrides()` binds to `LockdownState.allows` while a
+  lockdown is active.
 - **`EntitiesCacheService.sortedCategories`** drops categories outside the
   locked set while `lockedCategoryIds` is non-empty. `getCategoryById` is
   **not** scoped: the locked category's own content still has to resolve its

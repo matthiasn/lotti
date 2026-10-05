@@ -9,6 +9,7 @@ import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+import 'package:lotti/services/tab_delegates.dart';
 
 final habitsBeamerDelegate = BeamerDelegate(
   initialPath: '/habits',
@@ -137,4 +138,18 @@ final relationshipsBeamerDelegate = BeamerDelegate(
     }
     return NotFound(path: routeInformation.uri.path);
   },
+);
+
+/// Every tab's navigator, as the navigation service takes them.
+final appTabDelegates = TabDelegates(
+  tasks: tasksBeamerDelegate,
+  projects: projectsBeamerDelegate,
+  calendar: calendarBeamerDelegate,
+  habits: habitsBeamerDelegate,
+  goals: goalsBeamerDelegate,
+  dashboards: dashboardsBeamerDelegate,
+  journal: journalBeamerDelegate,
+  events: eventsBeamerDelegate,
+  relationships: relationshipsBeamerDelegate,
+  settings: settingsBeamerDelegate,
 );

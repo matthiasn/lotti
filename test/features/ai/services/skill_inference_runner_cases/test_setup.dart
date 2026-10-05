@@ -342,7 +342,7 @@ class _SkillInferenceTestSetup {
       container = ProviderContainer(
         overrides: withServiceOverrides([
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          pullRequestContextServiceProvider.overrideWithValue(
+          pullRequestContextSourceProvider.overrideWithValue(
             mockPullRequestContext,
           ),
         ]),

@@ -14,7 +14,6 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -279,7 +278,10 @@ void main() {
 
     test('buildRelationshipCascade is the relationship repository', () {
       expect(
-        buildRelationshipCascade(JournalRepository(), MockPersistenceLogic()),
+        buildRelationshipCascade(
+          buildJournalRepository(),
+          MockPersistenceLogic(),
+        ),
         isA<RelationshipRepository>(),
       );
     });

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -13,7 +15,9 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -67,10 +71,14 @@ class _Bench {
     required this.db,
     required this.persistence,
     required this.controller,
+    required this.settingsDelegate,
   });
 
   final MockJournalDb db;
   final MockPersistenceLogic persistence;
+
+  /// The settings tab's navigator, which a resolved conflict beams back.
+  final MockBeamerDelegate settingsDelegate;
   final StreamController<List<Conflict>> controller;
 
   static Future<_Bench> create({
@@ -80,6 +88,10 @@ class _Bench {
     final persistence = MockPersistenceLogic();
     final cache = MockEntitiesCacheService();
     when(() => cache.getCategoryById(any())).thenReturn(null);
+    final settingsDelegate = MockBeamerDelegate();
+    when(settingsDelegate.beamBack).thenReturn(true);
+    final navService = MockNavService();
+    when(() => navService.settingsDelegate).thenReturn(settingsDelegate);
     when(
       () => persistence.updateJournalEntity(
         any(),
@@ -92,7 +104,8 @@ class _Bench {
       additionalSetup: () {
         getIt
           ..registerSingleton<PersistenceLogic>(persistence)
-          ..registerSingleton<EntitiesCacheService>(cache);
+          ..registerSingleton<EntitiesCacheService>(cache)
+          ..registerSingleton<NavService>(navService);
       },
     );
 
@@ -105,7 +118,12 @@ class _Bench {
       () => db.journalEntityByIdIncludingDeleted(conflict.id),
     ).thenAnswer((_) async => localEntry);
 
-    return _Bench._(db: db, persistence: persistence, controller: controller);
+    return _Bench._(
+      db: db,
+      persistence: persistence,
+      controller: controller,
+      settingsDelegate: settingsDelegate,
+    );
   }
 
   Future<void> dispose() async {
@@ -120,6 +138,7 @@ Future<void> _pump(
   WidgetTester tester,
   String conflictId, {
   String? versionKey,
+  List<Override> overrides = const [],
 }) async {
   await tester.binding.setSurfaceSize(_size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -127,6 +146,7 @@ Future<void> _pump(
     makeTestableWidgetNoScroll(
       ConflictDetailRoute(conflictId: conflictId, versionKey: versionKey),
       mediaQueryData: const MediaQueryData(size: _size),
+      overrides: overrides,
     ),
   );
 }
@@ -135,9 +155,10 @@ Future<void> _pump(
 Future<void> _showConflict(
   WidgetTester tester,
   _Bench bench,
-  Conflict c,
-) async {
-  await _pump(tester, c.id);
+  Conflict c, {
+  List<Override> overrides = const [],
+}) async {
+  await _pump(tester, c.id, overrides: overrides);
   bench.controller.add([c]);
   await tester.pumpAndSettle();
 }
@@ -268,7 +289,61 @@ void main() {
         ),
       ).captured;
       expect(_firstLineOf(captured.single as JournalEntity), 'Local title');
+      // Resolved, so the settings tab goes back to the conflict list.
+      verify(bench.settingsDelegate.beamBack).called(1);
     });
+
+    testWidgets(
+      'a checklist conflict is resolved through the checklist repository',
+      (tester) async {
+        Checklist checklistOf(String title, Map<String, int> clock) =>
+            Checklist(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: VectorClock(clock),
+              ),
+              data: ChecklistData(
+                title: title,
+                linkedChecklistItems: const [],
+                linkedTasks: const ['task-1'],
+              ),
+            );
+        final local = checklistOf('Local list', const {'a': 9});
+        final conflict = _conflict(
+          remote: checklistOf('Remote list', const {'a': 13}),
+        );
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        final checklists = MockChecklistRepository();
+        when(
+          () => checklists.resolveConflict(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        await _showConflict(
+          tester,
+          bench,
+          conflict,
+          overrides: [
+            checklistRepositoryProvider.overrideWithValue(checklists),
+          ],
+        );
+        await _tap(tester, l10n.conflictPickerUseThisDevice);
+
+        final resolved =
+            verify(
+                  () => checklists.resolveConflict(captureAny(), any()),
+                ).captured.single
+                as Checklist;
+        expect(resolved.data.title, 'Local list');
+      },
+    );
 
     testWidgets('Use from sync writes the remote side', (tester) async {
       final local = _entry(title: 'Local title', clock: const {'a': 9});

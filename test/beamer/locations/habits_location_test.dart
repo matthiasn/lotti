@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
+import 'package:lotti/features/habits/habit_routes.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:material_ui/material_ui.dart';
@@ -73,9 +74,12 @@ void main() {
       expect(pages.single.child, isA<HabitsTabPage>());
     });
 
-    test('editPath and createPath are the routes the location serves', () {
-      expect(HabitsLocation.createPath, '/habits/create');
-      expect(HabitsLocation.editPath('x'), '/habits/edit/x');
+    test('the habit routes are the ones the location serves', () {
+      expect(pagesFor(habitCreatePath).last.child, isA<HabitEditorPage>());
+      expect(
+        pagesFor(habitEditPath('x'), params: {'habitId': 'x'}).last.child,
+        isA<HabitEditorPage>(),
+      );
     });
   });
 }

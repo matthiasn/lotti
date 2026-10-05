@@ -20,6 +20,7 @@ void main() {
     'navServiceProvider': navServiceProvider,
     'timeServiceProvider': timeServiceProvider,
     'vectorClockServiceProvider': vectorClockServiceProvider,
+    'notificationServiceProvider': notificationServiceProvider,
   };
 
   for (final entry in providers.entries) {

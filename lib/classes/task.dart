@@ -2,7 +2,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -54,17 +53,6 @@ extension TaskPriorityExt on TaskPriority {
 
   /// Numerical rank used for ordering (lower is higher priority).
   int get rank => index; // 0..3
-
-  /// Color aligned with task status theme tokens.
-  Color colorForBrightness(Brightness brightness) {
-    final isLight = brightness == Brightness.light;
-    return switch (this) {
-      TaskPriority.p0Urgent => isLight ? taskStatusDarkRed : taskStatusRed,
-      TaskPriority.p1High => isLight ? taskStatusDarkOrange : taskStatusOrange,
-      TaskPriority.p2Medium => isLight ? taskStatusDarkBlue : taskStatusBlue,
-      TaskPriority.p3Low => Colors.grey,
-    };
-  }
 }
 
 @freezed
@@ -331,19 +319,4 @@ extension TaskStatusExtension on TaskStatus {
     TaskDone() => 'DONE',
     TaskRejected() => 'REJECTED',
   };
-
-  Color colorForBrightness(Brightness brightness) {
-    final isLight = brightness == Brightness.light;
-
-    return switch (this) {
-      TaskOpen() => isLight ? taskStatusDarkOrange : taskStatusOrange,
-      TaskGroomed() =>
-        isLight ? taskStatusDarkGreen : taskStatusLightGreenAccent,
-      TaskInProgress() => isLight ? taskStatusDarkBlue : taskStatusBlue,
-      TaskBlocked() => isLight ? taskStatusDarkRed : taskStatusRed,
-      TaskOnHold() => isLight ? taskStatusDarkRed : taskStatusRed,
-      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
-      TaskRejected() => isLight ? taskStatusDarkRed : taskStatusRed,
-    };
-  }
 }

@@ -14,20 +14,19 @@ import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/journal_repository_services.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
 import 'package:lotti/logic/write_on_stored.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/outbox_service.dart';
-import 'package:lotti/services/time_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 
 /// App-facing facade for journal entity reads, writes, links, and deletes.
 ///
-/// A thin coordination layer over the `getIt`-resolved `JournalDb`,
-/// `PersistenceLogic`, and sync services (it is a facade, not DI-wired — deps
-/// are looked up via `getIt`, not injected). Owns single- and bulk-ID loads,
+/// A thin coordination layer over `JournalDb`, `PersistenceLogic` and the
+/// sync services, which it reaches through the [JournalRepositoryServices] it
+/// is given, each resolved on use. Owns single- and bulk-ID loads,
 /// entity create/update, entry-link writes (under a vector-clock scope), and
 /// cascading cleanup such as clearing cover-art, avatar and banner references
 /// on image delete.
@@ -36,7 +35,9 @@ import 'package:lotti/services/vector_clock_service.dart';
 typedef ImageEntryResult = ({JournalEntity entry, bool created});
 
 class JournalRepository {
-  JournalRepository();
+  JournalRepository(this._services);
+
+  final JournalRepositoryServices _services;
 
   /// The writes to a person that a delete cascades into — the person's own
   /// deletion, and clearing a deleted image off their avatar or banner — over
@@ -44,10 +45,10 @@ class JournalRepository {
   /// edit of a person stays on the relationship repository's single write
   /// path without this layer importing it.
   /// The journal the link methods read and write.
-  JournalDb get _journalDb => getIt<JournalDb>();
+  JournalDb get _journalDb => _services.journalDb();
 
   RelationshipCascade _relationships(PersistenceLogic persistenceLogic) =>
-      getIt<RelationshipCascadeFactory>()(this, persistenceLogic);
+      _services.relationshipCascade()(this, persistenceLogic);
 
   /// Clears references to a deleted image from the entities that point at it,
   /// so nothing is left rendering an id whose file and entry are gone.
@@ -60,7 +61,7 @@ class JournalRepository {
     String imageId,
     PersistenceLogic persistenceLogic,
   ) async {
-    final db = getIt<JournalDb>();
+    final db = _services.journalDb();
     // Entities that link TO this image — the ones able to reference it.
     final linkedFromEntities = await db.getLinkedToEntities(imageId);
 
@@ -95,7 +96,7 @@ class JournalRepository {
         // deletion the user asked for goes ahead; the miss is recorded so it
         // can be found rather than silently outliving the image.
         if (!cleared) {
-          getIt<DomainLogger>().log(
+          _services.domainLogger().log(
             LogDomain.persistence,
             'Could not clear image $imageId from relationship ${entity.id} '
             'before tombstoning it',
@@ -109,7 +110,7 @@ class JournalRepository {
 
   /// Loads a single entity by id, or null if it does not exist.
   Future<JournalEntity?> getJournalEntityById(String id) async {
-    return getIt<JournalDb>().journalEntityById(id);
+    return _services.journalDb().journalEntityById(id);
   }
 
   /// Bulk-fetch entities by id. Use this whenever the caller has more than
@@ -120,7 +121,7 @@ class JournalRepository {
   ) async {
     final idSet = ids.toSet();
     if (idSet.isEmpty) return const <JournalEntity>[];
-    return getIt<JournalDb>().getJournalEntitiesForIdsUnordered(idSet);
+    return _services.journalDb().getJournalEntitiesForIdsUnordered(idSet);
   }
 
   /// Updates only the `categoryId` on a single entity's metadata (pass null to
@@ -142,14 +143,14 @@ class JournalRepository {
     try {
       // Built on the entry as stored, so a field set since — a task's
       // status, a checklist listed on it — is kept (MetaOnStored).
-      return await getIt<PersistenceLogic>().updateEntity(
+      return await _services.persistenceLogic().updateEntity(
         journalEntityId,
         (stored) => stored.copyWith(
           meta: stored.meta.copyWith(categoryId: categoryId),
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _services.domainLogger().error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -178,8 +179,8 @@ class JournalRepository {
   /// would leave a deleted item alive and listed nowhere.
   Future<bool> deleteJournalEntity(String journalEntityId) async {
     try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-      final journalDb = getIt<JournalDb>();
+      final persistenceLogic = _services.persistenceLogic();
+      final journalDb = _services.journalDb();
 
       final journalEntity = await journalDb.journalEntityById(
         journalEntityId,
@@ -230,7 +231,7 @@ class JournalRepository {
       // Stop the timer when the deleted entry is the one running — a
       // deleted entry has no end left to write — or the task it runs for:
       // its entry stays, and keeps the time tracked until now.
-      final timeService = getIt<TimeService>();
+      final timeService = _services.timeService();
       final running = timeService.getCurrent();
       if (running?.id == journalEntityId) {
         await timeService.stop(persistEnd: false);
@@ -239,10 +240,10 @@ class JournalRepository {
         await timeService.stop();
       }
 
-      await getIt<NotificationService>().updateBadge();
+      await _services.notificationService().updateBadge();
       return true;
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _services.domainLogger().error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -275,8 +276,8 @@ class JournalRepository {
     bool onlyIfUnchanged = false,
   }) async {
     try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-      final journalDb = getIt<JournalDb>();
+      final persistenceLogic = _services.persistenceLogic();
+      final journalDb = _services.journalDb();
       if (updated is Task &&
           await journalDb.journalEntityById(updated.id) is Task) {
         return await writeOnStored(
@@ -304,7 +305,7 @@ class JournalRepository {
             : null,
       );
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _services.domainLogger().error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -326,7 +327,7 @@ class JournalRepository {
     String taskId,
     TaskData Function(TaskData stored) change, {
     bool Function(Task stored)? onlyIf,
-  }) => getIt<PersistenceLogic>().updateTask(
+  }) => _services.persistenceLogic().updateTask(
     journalEntityId: taskId,
     change: change,
     onlyIf: onlyIf,
@@ -344,16 +345,16 @@ class JournalRepository {
   }) async {
     try {
       JournalEntity? updated;
-      final stored = await getIt<PersistenceLogic>().updateEntity(
+      final stored = await _services.persistenceLogic().updateEntity(
         journalEntityId,
         (stored) => updated = stored.copyWith(
           meta: stored.meta.copyWith(dateFrom: dateFrom, dateTo: dateTo),
         ),
       );
-      if (stored) getIt<TimeService>().updateCurrent(updated);
+      if (stored) _services.timeService().updateCurrent(updated);
       return stored;
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _services.domainLogger().error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -509,14 +510,14 @@ class JournalRepository {
     // exists), release the reservation and let the burn handler broadcast
     // an unresolvable hint so peers skip the gap instead of round-tripping
     // via backfill.
-    return getIt<VectorClockService>().withVcScope<bool>(() async {
+    return _services.vectorClockService().withVcScope<bool>(() async {
       final updated = link.copyWith(
         updatedAt: linkEditTimestamp(existing, DateTime.now()),
         // An update carries every counter of the version it replaces, so it
         // dominates that version on every device: `upsertEntryLink` refuses
         // a link whose stored clock dominates it, and a clock of this host's
         // counter alone would merely be concurrent with the stored one.
-        vectorClock: await getIt<VectorClockService>().getNextVectorClock(
+        vectorClock: await _services.vectorClockService().getNextVectorClock(
           previous: VectorClock.merge(existing?.vectorClock, link.vectorClock),
           payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
         ),
@@ -529,20 +530,20 @@ class JournalRepository {
                   await precondition() ? journalDb.upsertEntryLink(updated) : 0,
             );
       if (res == 0) return false;
-      getIt<UpdateNotifications>().notify({
+      _services.updateNotifications().notify({
         link.fromId,
         link.toId,
         linkNotification,
       });
       try {
-        await getIt<OutboxService>().enqueueMessage(
+        await _services.outboxService().enqueueMessage(
           SyncMessage.entryLink(
             entryLink: updated,
             status: SyncEntryStatus.update,
           ),
         );
       } catch (error, stackTrace) {
-        getIt<DomainLogger>().error(
+        _services.domainLogger().error(
           LogDomain.sync,
           error,
           message:
@@ -805,14 +806,32 @@ class JournalRepository {
   ) async {
     final idSet = ids.toSet();
     if (idSet.isEmpty) return const <JournalEntity>[];
-    final rows = await getIt<JournalDb>().entriesForIds(idSet.toList()).get();
+    final rows = await _services
+        .journalDb()
+        .entriesForIds(idSet.toList())
+        .get();
     return rows.map(fromDbEntity).toList();
   }
 }
 
+/// The app's [JournalRepository], its services read from their providers on
+/// use. Kept alive: a repository a long-lived object took from it resolves
+/// through this provider's ref, which an auto-dispose provider would drop.
 final Provider<JournalRepository> journalRepositoryProvider =
-    Provider.autoDispose<JournalRepository>(
+    Provider<JournalRepository>(
       journalRepository,
       name: 'journalRepositoryProvider',
     );
-JournalRepository journalRepository(Ref ref) => JournalRepository();
+JournalRepository journalRepository(Ref ref) => JournalRepository(
+  JournalRepositoryServices(
+    journalDb: () => ref.read(journalDbProvider),
+    persistenceLogic: () => ref.read(persistenceLogicProvider),
+    domainLogger: () => ref.read(domainLoggerProvider),
+    timeService: () => ref.read(timeServiceProvider),
+    notificationService: () => ref.read(notificationServiceProvider),
+    vectorClockService: () => ref.read(vectorClockServiceProvider),
+    updateNotifications: () => ref.read(updateNotificationsProvider),
+    outboxService: () => ref.read(outboxServiceProvider),
+    relationshipCascade: () => ref.read(relationshipCascadeFactoryProvider),
+  ),
+);

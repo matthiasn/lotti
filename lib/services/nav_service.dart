@@ -3,12 +3,12 @@ import 'dart:convert';
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/config_flag_placement.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/tab_delegates.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -16,9 +16,19 @@ part 'nav_service_nav_state_snapshot_part.dart';
 
 class NavService {
   NavService({
+    required TabDelegates tabDelegates,
     JournalDb? journalDb,
     SettingsDb? settingsDb,
-  }) {
+  }) : habitsDelegate = tabDelegates.habits,
+       dashboardsDelegate = tabDelegates.dashboards,
+       journalDelegate = tabDelegates.journal,
+       eventsDelegate = tabDelegates.events,
+       projectsDelegate = tabDelegates.projects,
+       tasksDelegate = tabDelegates.tasks,
+       calendarDelegate = tabDelegates.calendar,
+       settingsDelegate = tabDelegates.settings,
+       goalsDelegate = tabDelegates.goals,
+       relationshipsDelegate = tabDelegates.relationships {
     _journalDb = journalDb ?? getIt<JournalDb>();
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
     resetTabsToRoots();
@@ -223,20 +233,21 @@ class NavService {
 
   int index = 0;
 
-  final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
-  final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
-  final BeamerDelegate journalDelegate = journalBeamerDelegate;
-  final BeamerDelegate eventsDelegate = eventsBeamerDelegate;
-  final BeamerDelegate projectsDelegate = projectsBeamerDelegate;
-  final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
-  final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
-  final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
-  final BeamerDelegate goalsDelegate = goalsBeamerDelegate;
-  final BeamerDelegate relationshipsDelegate = relationshipsBeamerDelegate;
+  final BeamerDelegate habitsDelegate;
+  final BeamerDelegate dashboardsDelegate;
+  final BeamerDelegate journalDelegate;
+  final BeamerDelegate eventsDelegate;
+  final BeamerDelegate projectsDelegate;
+  final BeamerDelegate tasksDelegate;
+  final BeamerDelegate calendarDelegate;
+  final BeamerDelegate settingsDelegate;
+  final BeamerDelegate goalsDelegate;
+  final BeamerDelegate relationshipsDelegate;
 
   /// Sends every tab back to its root path and selects Tasks.
   ///
-  /// The per-tab [BeamerDelegate]s are top-level finals, so they OUTLIVE
+  /// The per-tab [BeamerDelegate]s are top-level finals in the shell, so
+  /// they OUTLIVE
   /// `getIt.reset()` — a profile switch replaces this service, the databases
   /// and the whole widget tree, but not them. Without this, a tab kept the
   /// route it held in the previous world: exit the demo after opening a

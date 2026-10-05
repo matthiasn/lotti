@@ -1,13 +1,11 @@
 import 'package:beamer/beamer.dart';
+import 'package:lotti/features/habits/habit_routes.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:material_ui/material_ui.dart';
 
 class HabitsLocation extends BeamLocation<BeamState> {
   HabitsLocation(RouteInformation super.routeInformation);
-
-  static const createPath = '/habits/create';
-  static String editPath(String habitId) => '/habits/edit/$habitId';
 
   @override
   List<String> get pathPatterns => [
@@ -25,7 +23,7 @@ class HabitsLocation extends BeamLocation<BeamState> {
         title: 'Habits',
         child: HabitsTabPage(),
       ),
-      if (state.uri.path == createPath)
+      if (state.uri.path == habitCreatePath)
         const BeamPage(
           key: ValueKey('habits-create'),
           title: 'Habits',

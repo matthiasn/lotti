@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -638,7 +637,10 @@ Future<void> _createNewLinkedTask(
 
   if (newTask != null && context.mounted) {
     unawaited(autoAssignCategoryAgent(ref, newTask));
-    tasksBeamerDelegate.beamToNamed('/tasks/${newTask.meta.id}');
+    ref
+        .read(navServiceProvider)
+        .tasksDelegate
+        .beamToNamed('/tasks/${newTask.meta.id}');
   }
 }
 

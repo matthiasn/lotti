@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/task_colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:material_ui/material_ui.dart';

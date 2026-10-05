@@ -55,7 +55,7 @@ void _registerIdempotency(_Db Function() fixture) {
     /// The user edits the task on this device.
     Future<void> userEdit(TaskData Function(TaskData data) edit) async {
       final current = await storedTask();
-      await JournalRepository().updateJournalEntity(
+      await buildJournalRepository().updateJournalEntity(
         current.copyWith(data: edit(current.data)),
       );
     }
@@ -81,23 +81,30 @@ void _registerIdempotency(_Db Function() fixture) {
 
     /// A new unchecked item in the task's checklist.
     Future<String> newItem(String title) async =>
-        (await ChecklistRepository().addItemToChecklist(
-          checklistId: f.checklistId,
-          title: title,
-          isChecked: false,
-          categoryId: f.task.meta.categoryId,
-        ))!.meta.id;
+        (await ChecklistRepository(
+              journalRepository: buildJournalRepository(),
+            ).addItemToChecklist(
+              checklistId: f.checklistId,
+              title: title,
+              isChecked: false,
+              categoryId: f.task.meta.categoryId,
+            ))!
+            .meta
+            .id;
 
     /// The user edits the checklist item [id] on this device.
     Future<void> userEditsItem(
       String id,
       ChecklistItemData Function(ChecklistItemData data) edit,
     ) async {
-      final written = await ChecklistRepository().updateChecklistItem(
-        checklistItemId: id,
-        change: edit,
-        taskId: f.task.meta.id,
-      );
+      final written =
+          await ChecklistRepository(
+            journalRepository: buildJournalRepository(),
+          ).updateChecklistItem(
+            checklistItemId: id,
+            change: edit,
+            taskId: f.task.meta.id,
+          );
       expect(written, isNotNull);
     }
 
@@ -345,18 +352,18 @@ void _registerIdempotency(_Db Function() fixture) {
               // Its tombstone counts as the item existing: the replay
               // neither brings it back nor gives it a new checklist.
               expect(
-                await JournalRepository().deleteJournalEntity(itemId),
+                await buildJournalRepository().deleteJournalEntity(itemId),
                 isTrue,
               );
             }
             final derived = MetadataService.deterministicId(input);
             // The user deletes the checklist, which also takes it off the task.
             expect(
-              await JournalRepository().deleteJournalEntity(derived),
+              await buildJournalRepository().deleteJournalEntity(derived),
               isTrue,
             );
             final withChecklist = await storedTask(taskId);
-            await JournalRepository().updateJournalEntity(
+            await buildJournalRepository().updateJournalEntity(
               withChecklist.copyWith(
                 data: withChecklist.data.copyWith(checklistIds: const []),
               ),
@@ -423,7 +430,9 @@ void _registerIdempotency(_Db Function() fixture) {
         expect(first.success, isTrue, reason: first.output);
         // Sync delivers the copy before the source's archive: the source
         // reads unarchived on the late device.
-        await ChecklistRepository().updateChecklistItem(
+        await ChecklistRepository(
+          journalRepository: buildJournalRepository(),
+        ).updateChecklistItem(
           checklistItemId: f.checklistItemId,
           change: (stored) => stored.copyWith(isArchived: false),
           taskId: f.task.meta.id,
@@ -854,7 +863,9 @@ void _registerIdempotency(_Db Function() fixture) {
           args,
         );
         expect(
-          await JournalRepository().deleteJournalEntity(first.mutatedEntityId!),
+          await buildJournalRepository().deleteJournalEntity(
+            first.mutatedEntityId!,
+          ),
           isTrue,
         );
 
@@ -885,7 +896,7 @@ void _registerIdempotency(_Db Function() fixture) {
           );
           // The Undo removes the task and reopens the item under a new key.
           expect(
-            await JournalRepository().deleteJournalEntity(
+            await buildJournalRepository().deleteJournalEntity(
               first.mutatedEntityId!,
             ),
             isTrue,
@@ -1003,8 +1014,10 @@ void _registerIdempotency(_Db Function() fixture) {
         );
         final dispatcher = TaskToolDispatcher(
           journalDb: f.db,
-          journalRepository: JournalRepository(),
-          checklistRepository: ChecklistRepository(),
+          journalRepository: buildJournalRepository(),
+          checklistRepository: ChecklistRepository(
+            journalRepository: buildJournalRepository(),
+          ),
           labelsRepository: f.dispatcher.labelsRepository,
           persistenceLogic: getIt<PersistenceLogic>(),
           timeService: getIt<TimeService>(),
