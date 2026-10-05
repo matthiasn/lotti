@@ -5,13 +5,13 @@ description: A first-class destination for meaningful moments — its own entity
 resource: ../../lib/features/events
 tags: [events, memories, view-models, localization]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
-stale_after: 2027-02-22
+generated: { by: claude-code/fable-5.1, at: 2026-10-05T12:00:00Z }
+stale_after: 2027-04-05
 sources:
   - id: src
     resource: ../../lib/features/events
     title: Events feature source
-    last_modified: 2026-09-23
+    last_modified: 2026-10-05
 ---
 
 Events are the meaningful moments — a birthday, a trip, a wedding, an upcoming
@@ -47,6 +47,7 @@ flowchart TD
       EC[entryControllerProvider] --> DP[EventDetailPage]
       RLE[resolvedOutgoingLinkedEntriesProvider] --> DP
       DP -->|eventTimelineEntryFor<br/>eventTaskRefFor| DV[EventDetailView]
+      DP -->|bottomBar| BAR[EntryActionBar<br/>add a task · record · Add sheet]
     end
 
     DB --> ESP
@@ -119,8 +120,9 @@ narrowings up — the query counts as one — a **Clear all** chip ends the sess
 
 **New event** is the page's `DesignSystemFloatingActionButton`, a bare glyph
 like Projects'. On phones the navigation launcher docks it instead
-(`eventsTabDockAction`), and takes it away on an event's own page
-(`isEventDetailRoute`), where a plus would read as adding to that event.
+(`eventsTabDockAction`). The launcher itself leaves on an event's own page
+(`isEventDetailRoute`), which docks the entry action bar in its place — see
+[Adding to an event](#adding-to-an-event).
 
 # One way in
 
@@ -200,14 +202,45 @@ and exposes the existing confirmed unlink action; once removed, the link
 notification updates the event timeline, gallery, and overview cover without
 deleting the photo entry.
 
-*Add task* mirrors the linked-tasks flow — create the task linked from the event
-(so the event surfaces under the task's "Linked from"), auto-assign the category's
-default agent, then beam to the new task.
-
 **When a callback is null the corresponding control is read-only or hidden**, so
-the same widget renders cleanly in screenshots and tests. Empty events still
-render the Timeline and Tasks scaffolding with tappable hints rather than a blank
-void.
+the same widget renders cleanly in screenshots and tests. An empty event renders
+the Timeline header over a quiet hint naming what the bar below adds — and no
+Tasks section at all.
+
+# Adding to an event
+
+An event is a `JournalEntity`, so its page ends in the very same
+`EntryActionBar` an entry's page does ([journal
+overview](journal/overview.md#create-import-and-paste)): `EventDetailPage` hands
+it to `EventDetailView.bottomBar`, which docks it in the Scaffold's
+`bottomNavigationBar` slot over an extended body and consumes its height with a
+trailing `SliverPadding`, exactly as `EntryDetailsPage` does. Left to right:
+
+* **Add a task** — `EntryCreationService.createTaskAndOpen` creates the task
+  linked *from* the event and in its category (so the event shows under the
+  task's "Linked from"), hands it the category's default agent and opens it. A
+  task made here is the event's preparation or follow-up.
+* **Record** — the shared `GlassRecordButton`
+  ([recording UI](speech/recording-ui.md)), lit while a recording linked to
+  *this* event is in progress. A recording made here is the event's voice memo.
+* **Plus** — the Add sheet (`CreateEntryModal`) with `linkedFromId` set to the
+  event, for photos, notes and the long tail.
+
+The sections carry **no add buttons of their own** any more, and the **Tasks
+section exists only once a task is linked** — on a wide body the tasks rail
+appears with the first task, and an event without one reads as a single column
+at every width. The one add affordance outside the bar is the hero's cover pill
+while there is no cover ("Add cover photo", which opens the same Add sheet),
+because the cover is the hero's own concern.
+
+Two consequences follow the entry page's lead. The page nests a
+`ScaffoldMessenger` so a toast raised on it — the delete-failed line, anything
+the recap or change-set cards show — floats above the bar rather than at the
+window's bottom edge under it. And the mobile shell **unmounts the launcher on
+`/events/<uuid>`** — menu button, docked create action and activity island
+alike — so the bar docks flush with the home indicator
+([navigation](../architecture/navigation.md#chrome-rules-are-pure-functions-of-router-state)).
+Go back to reach the overview and its launcher, as on a task or an entry.
 
 # Related
 

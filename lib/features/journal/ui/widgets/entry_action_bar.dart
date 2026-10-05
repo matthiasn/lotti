@@ -8,12 +8,15 @@ import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Sticky action bar pinned to the bottom of the entry details page.
+/// Sticky action bar pinned to the bottom of the entry details page, and of
+/// an event's page.
 ///
 /// The logbook counterpart of the task page's `TaskActionBar`: the same
 /// edge-to-edge glass strip (top hairline + backdrop blur + soft top→bottom
 /// gradient), the same 48 px chips on the same `step4` rhythm, carrying the
-/// three things a reader does from an entry. Left to right:
+/// three things a reader does from an entry. An event is an entry too, so
+/// `EventDetailPage` docks this very bar: a task created there is the event's
+/// follow-up, a recording its voice memo. Left to right:
 ///
 /// * **Add a task** — the bar's one filled primary. Creates a task linked to
 ///   this entry and categorized like it, hands it the category's default
@@ -30,15 +33,16 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// It replaces the linked-entry floating button, which floated well above the
 /// bottom edge on a phone to clear the mobile launcher's row, and the launcher
-/// itself: the shell unmounts the launcher on `/journal/<uuid>` as it does on
-/// `/tasks/<uuid>`, so this bar docks flush with the home indicator.
+/// itself: the shell unmounts the launcher on `/journal/<uuid>` and
+/// `/events/<uuid>` as it does on `/tasks/<uuid>`, so this bar docks flush
+/// with the home indicator.
 ///
 /// The host page must use `Scaffold.extendBody: true` so body content paints
 /// behind the strip — that is what the backdrop filter samples — and consume
 /// the bar's height at the end of its scrollable so the last card can scroll
-/// clear of it (see `EntryDetailsPage`). The row is a [Wrap], so large
-/// accessibility text folds the chips onto another line instead of clipping
-/// their hit targets.
+/// clear of it (see `EntryDetailsPage` and `EventDetailView`). The row is a
+/// [Wrap], so large accessibility text folds the chips onto another line
+/// instead of clipping their hit targets.
 class EntryActionBar extends ConsumerWidget {
   const EntryActionBar({
     required this.entry,

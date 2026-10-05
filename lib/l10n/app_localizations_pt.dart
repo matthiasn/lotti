@@ -6512,9 +6512,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Adicionar foto de capa';
 
   @override
-  String get eventsAddLabel => 'Adicionar';
-
-  @override
   String get eventsChangeCover => 'Alterar capa';
 
   @override
@@ -6600,10 +6597,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Resumo';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Vincule uma tarefa de preparação ou acompanhamento';
 
   @override
   String get eventsTasksSection => 'Tarefas';

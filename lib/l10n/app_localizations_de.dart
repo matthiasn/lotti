@@ -6489,9 +6489,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Titelbild hinzufügen';
 
   @override
-  String get eventsAddLabel => 'Hinzufügen';
-
-  @override
   String get eventsChangeCover => 'Titelbild ändern';
 
   @override
@@ -6577,10 +6574,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Zusammenfassung';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Verknüpfe eine Vorbereitungs- oder Folgeaufgabe';
 
   @override
   String get eventsTasksSection => 'Aufgaben';

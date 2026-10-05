@@ -577,11 +577,10 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.count, this.onAdd});
+  const _SectionHeader({required this.title, required this.count});
 
   final String title;
   final int count;
-  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -607,89 +606,40 @@ class _SectionHeader extends StatelessWidget {
               color: cs.outline,
             ),
           ),
-          const Spacer(),
-          if (onAdd != null) _AddButton(onTap: onAdd),
         ],
       ),
     );
   }
 }
 
-/// Explicit, always-legible "Add" affordance (a generic [TextButton.icon]
-/// rendered as a near-invisible pill against the dark card surface).
-class _AddButton extends StatelessWidget {
-  const _AddButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step2,
-            vertical: tokens.spacing.step1,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(LottiIcons.add, size: 18, color: cs.primary),
-              SizedBox(width: tokens.spacing.step1),
-              Text(
-                context.messages.eventsAddLabel,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Tappable placeholder shown when a section has no content yet, so a fresh
-/// event always offers something to do instead of a blank gap.
-class _EmptyHint extends StatelessWidget {
-  const _EmptyHint({required this.label, this.onTap});
+/// Quiet placeholder under the Timeline header while nothing is linked yet.
+/// It names what the action bar along the bottom edge adds — photos, notes,
+/// a voice memo — so a fresh event reads as an invitation rather than a blank
+/// gap, without being a second add button competing with that bar.
+class _EmptyTimelineHint extends StatelessWidget {
+  const _EmptyTimelineHint({required this.label});
 
   final String label;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
-    return Material(
-      color: dsCardSurface(context),
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    // Full width, like the summary card above it, rather than a pill hugging
+    // its sentence.
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: dsCardSurface(context),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.step4),
-          child: Row(
-            children: [
-              Icon(LottiIcons.add, size: 18, color: cs.onSurfaceVariant),
-              SizedBox(width: tokens.spacing.step2),
-              Expanded(
-                child: Text(
-                  label,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ),
       ),

@@ -22,6 +22,9 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -32,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/service_overrides.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -240,6 +244,7 @@ void main() {
       EntryController Function()? controllerBuilder,
       List<Override> extraOverrides = const [],
       Size size = const Size(500, 2400),
+      bool hostScaffold = false,
     }) async {
       tester.view
         ..physicalSize = size
@@ -247,8 +252,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      const page = EventDetailPage(eventId: _eventId);
       // The scope wraps the whole app, as in production, so sheets pushed
-      // onto the root navigator can read providers too.
+      // onto the root navigator can read providers too. The page's action
+      // bar watches the recorder, which no widget test can boot.
       await tester.pumpWidget(
         ProviderScope(
           overrides: withServiceOverrides([
@@ -258,10 +265,16 @@ void main() {
             resolvedOutgoingLinkedEntriesProvider(
               _eventId,
             ).overrideWithValue(linked),
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
             ...extraOverrides,
           ]),
           child: makeTestableWidget2(
-            const EventDetailPage(eventId: _eventId),
+            // An outer Scaffold stands in for the app shell's, so a toast
+            // that escaped to the root messenger would land on it — at the
+            // window's bottom edge, under the bar.
+            hostScaffold ? const Scaffold(body: page) : page,
             mediaQueryData: MediaQueryData(size: size),
           ),
         ),
@@ -414,6 +427,7 @@ void main() {
             tester,
             linked: const [],
             controllerBuilder: () => rec,
+            hostScaffold: true,
           );
 
           await tester.tap(find.byIcon(LottiIcons.more));
@@ -425,10 +439,18 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(rec.deletes, 1);
-          expect(
-            find.text("Couldn't delete the entry — try again"),
-            deleted ? findsNothing : findsOneWidget,
-          );
+          final toast = find.text("Couldn't delete the entry — try again");
+          expect(toast, deleted ? findsNothing : findsOneWidget);
+          if (!deleted) {
+            // Raised through the page's nested messenger: the toast floats
+            // above the docked bar, not at the host's bottom edge under it.
+            expect(
+              tester.getRect(find.byType(SnackBar)).bottom,
+              lessThanOrEqualTo(
+                tester.getRect(find.byType(EntryActionBar)).top,
+              ),
+            );
+          }
         },
       );
     }
@@ -504,35 +526,10 @@ void main() {
       expect(find.byType(EventCoverPicker), findsOneWidget);
     });
 
-    testWidgets('the back button is wired to maybePop', (tester) async {
-      await pumpResolved(tester, linked: const []);
-      await tester.tap(find.byIcon(LottiIcons.back));
-      await tester.pump();
-      // maybePop on the root no-ops, but the handler ran without leaving.
-      expect(find.byType(EventDetailView), findsOneWidget);
-    });
-
-    testWidgets('the Tasks "+ Add" creates a task linked to the event', (
-      tester,
-    ) async {
-      await pumpResolved(tester, linked: const []);
-      // Empty event → Timeline + Tasks each show "+ Add"; the last is Tasks.
-      await tester.tap(find.text('Add').last);
-      await tester.pump();
-
-      verify(
-        () => persistence.createTaskEntry(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          linkedId: _eventId,
-          categoryId: any(named: 'categoryId'),
-        ),
-      ).called(1);
-    });
-
     testWidgets(
-      'the Timeline "+ Add" opens the create menu linked to the event',
+      "the hero's Add cover photo opens the Add sheet linked to the event",
       (tester) async {
+        // No linked photo, so the hero offers the cover pill.
         await pumpResolved(
           tester,
           linked: const [],
@@ -545,9 +542,136 @@ void main() {
         );
         expect(find.byType(CreateTextItem), findsNothing);
 
-        // Empty event → Timeline + Tasks each show "+ Add"; the first is
-        // the Timeline.
-        await tester.tap(find.text('Add').first);
+        await tester.tap(find.text('Add cover photo'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // The same sheet the bar's plus opens, scoped to this event.
+        final textItem = tester.widget<CreateTextItem>(
+          find.byType(CreateTextItem),
+        );
+        expect(textItem.linkedFromId, _eventId);
+        expect(textItem.categoryId, 'cat-1');
+      },
+    );
+
+    testWidgets('the back button is wired to maybePop', (tester) async {
+      await pumpResolved(tester, linked: const []);
+      await tester.tap(find.byIcon(LottiIcons.back));
+      await tester.pump();
+      // maybePop on the root no-ops, but the handler ran without leaving.
+      expect(find.byType(EventDetailView), findsOneWidget);
+    });
+
+    group('action bar', () {
+      testWidgets(
+        "docks the shared entry action bar for the event along the page's "
+        'bottom edge',
+        (tester) async {
+          await pumpResolved(tester, linked: const []);
+
+          final scaffold = tester.widget<Scaffold>(
+            find.descendant(
+              of: find.byType(EventDetailView),
+              matching: find.byType(Scaffold),
+            ),
+          );
+          expect(scaffold.extendBody, isTrue);
+          expect(scaffold.bottomNavigationBar, isA<EntryActionBar>());
+          final bar = tester.widget<EntryActionBar>(
+            find.byType(EntryActionBar),
+          );
+          expect(bar.entry.meta.id, _eventId);
+          final pageRect = tester.getRect(find.byType(EventDetailPage));
+          final barRect = tester.getRect(find.byType(EntryActionBar));
+          expect(barRect.bottom, pageRect.bottom);
+          expect(barRect.left, pageRect.left);
+          expect(barRect.right, pageRect.right);
+        },
+      );
+
+      testWidgets(
+        'an event with nothing linked shows no Tasks section and no add '
+        'buttons: the bar is where it grows from',
+        (tester) async {
+          await pumpResolved(tester, linked: const []);
+
+          expect(find.text('Timeline'), findsOneWidget);
+          expect(find.text('Tasks'), findsNothing);
+          expect(find.text('Add'), findsNothing);
+          expect(find.text('Link a prep or follow-up task'), findsNothing);
+          expect(find.byKey(EntryActionBar.addTaskKey), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        "the bar's Add a task creates a task linked to the event in its "
+        'category and opens it',
+        (tester) async {
+          // The created task is returned (not null), so the shared journey
+          // runs its post-create glue: resolving the category agent and
+          // beaming to the new task's detail page.
+          when(
+            () => persistence.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => testTask);
+
+          final beamed = <String>[];
+          beamToNamedOverride = beamed.add;
+          final taskAgentService = MockTaskAgentService();
+
+          await pumpResolved(
+            tester,
+            linked: const [],
+            extraOverrides: [
+              taskAgentServiceProvider.overrideWithValue(taskAgentService),
+            ],
+          );
+
+          await tester.tap(find.byKey(EntryActionBar.addTaskKey));
+          await tester.pump();
+
+          verify(
+            () => persistence.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              linkedId: _eventId,
+              categoryId: 'cat-1',
+            ),
+          ).called(1);
+          expect(beamed, ['/tasks/${testTask.meta.id}']);
+          // The event's category ('cat-1', Friends) has no default task
+          // template, so no agent is created — but the service was resolved.
+          verifyNever(
+            () => taskAgentService.createTaskAgent(
+              taskId: any(named: 'taskId'),
+              templateId: any(named: 'templateId'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+
+      testWidgets("the bar's plus opens the Add sheet linked to the event", (
+        tester,
+      ) async {
+        await pumpResolved(
+          tester,
+          linked: const [],
+          extraOverrides: [
+            imagePasteControllerProvider((
+              linkedFromId: _eventId,
+              categoryId: 'cat-1',
+            )).overrideWithBuild((ref, notifier) async => false),
+          ],
+        );
+        expect(find.byType(CreateTextItem), findsNothing);
+
+        await tester.tap(find.byKey(EntryActionBar.addKey));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
@@ -557,53 +681,21 @@ void main() {
         );
         expect(textItem.linkedFromId, _eventId);
         expect(textItem.categoryId, 'cat-1');
-      },
-    );
+      });
 
-    testWidgets(
-      'creating a task assigns the category agent and beams to the new task',
-      (tester) async {
-        // The created task is returned (not null), so the page runs the
-        // post-create glue: auto-assigning the category agent and beaming to
-        // the new task's detail page.
-        when(
-          () => persistence.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => testTask);
+      testWidgets("the bar's record button is scoped to this event", (
+        tester,
+      ) async {
+        await pumpResolved(tester, linked: const []);
 
-        final beamed = <String>[];
-        beamToNamedOverride = beamed.add;
-
-        final taskAgentService = MockTaskAgentService();
-
-        await pumpResolved(
-          tester,
-          linked: const [],
-          extraOverrides: [
-            taskAgentServiceProvider.overrideWithValue(taskAgentService),
-          ],
+        final mic = tester.widget<GlassRecordButton>(
+          find.byType(GlassRecordButton),
         );
-
-        await tester.tap(find.text('Add').last); // the Tasks "+ Add"
-        await tester.pump();
-
-        // The page navigates to the freshly created task's detail page.
-        expect(beamed, ['/tasks/${testTask.meta.id}']);
-        // The event's category ('cat-1', Friends) has no default task
-        // template, so no agent is created — but the service was resolved.
-        verifyNever(
-          () => taskAgentService.createTaskAgent(
-            taskId: any(named: 'taskId'),
-            templateId: any(named: 'templateId'),
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-          ),
-        );
-      },
-    );
+        // A recording started here is the event's voice memo, and the mic
+        // lights only for a session linked to this very event.
+        expect(mic.linkedId, _eventId);
+      });
+    });
 
     testWidgets('tapping a linked task opens its task detail page', (
       tester,

@@ -6515,9 +6515,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Přidat titulní fotku';
 
   @override
-  String get eventsAddLabel => 'Přidat';
-
-  @override
   String get eventsChangeCover => 'Změnit obálku';
 
   @override
@@ -6604,9 +6601,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Souhrn';
-
-  @override
-  String get eventsTasksEmpty => 'Propoj přípravný nebo navazující úkol';
 
   @override
   String get eventsTasksSection => 'Úkoly';

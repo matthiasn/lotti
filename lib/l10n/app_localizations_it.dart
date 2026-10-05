@@ -6528,9 +6528,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Aggiungi foto di copertina';
 
   @override
-  String get eventsAddLabel => 'Aggiungi';
-
-  @override
   String get eventsChangeCover => 'Cambia la copertina';
 
   @override
@@ -6615,10 +6612,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Sintesi';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Collegare un\'attività di preparazione o follow-up';
 
   @override
   String get eventsTasksSection => 'Compiti';

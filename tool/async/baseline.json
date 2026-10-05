@@ -77,7 +77,6 @@
     "lib/features/design_system/components/task_filters/design_system_filter_modal.dart": 4,
     "lib/features/design_system/state/pane_width_controller.dart": 8,
     "lib/features/events/state/events_overview_controller.dart": 1,
-    "lib/features/events/ui/pages/event_detail_page.dart": 1,
     "lib/features/events/ui/pages/events_overview_page.dart": 7,
     "lib/features/github/service/pull_request_service.dart": 1,
     "lib/features/github/state/github_providers.dart": 4,

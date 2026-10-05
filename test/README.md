@@ -14,7 +14,13 @@ without reporting their diagnostics; CI's `flutter analyze` still finds them.
 Run desktop integration tests and VM unit tests sequentially in the same
 checkout. Both materialize native libraries under `build/native_assets/`;
 overlapping builds can remove a library while another test process is loading
-it. Use separate checkouts for concurrent desktop and VM runs.
+it. Use separate checkouts for concurrent desktop and VM runs. The same goes
+for two `flutter test` runs started together in one checkout: both compile the
+shaders under `build/unit_test_assets/shaders/`, and the race can leave
+`ink_sparkle.frag` with only its Vulkan stage, after which every test that taps
+a Material ripple fails with "does not contain appropriate runtime stage data
+for current backend (SkSL)" until `build/unit_test_assets/` is deleted and the
+tests run again, one process at a time.
 
 The provenance tests sign with libsodium, which the `sodium` package's build
 hook compiles from bundled source on the first `flutter test` in a checkout —
@@ -235,9 +241,10 @@ so their mic can show a recording in progress. The real controller subscribes
 to the `record` plugin's amplitude stream, which starts a periodic timer and
 calls a platform channel no widget test hosts — the failure reads as pending
 timers or a `MissingPluginException` from `_AmplitudeMixin`, after the test
-body passed. Every host that renders `TaskDetailsPage` or `EntryDetailsPage`,
-directly or through a pane that embeds it (the journal split, the query chat
-pane, the screenshot harnesses), therefore overrides the provider with
+body passed. Every host that renders `TaskDetailsPage`, `EntryDetailsPage` or
+`EventDetailPage` (which docks the entry bar too), directly or through a pane
+that embeds it (the journal split, the query chat pane, the screenshot
+harnesses), therefore overrides the provider with
 `StubAudioRecorderController` from `test/helpers/stub_audio_recorder_controller.dart`
 on every pump — through the pump helper's `overrides`, or on the
 `ProviderContainer` when the page is hosted under an `UncontrolledProviderScope`.

@@ -29,12 +29,16 @@ bool isLogbookEntryDetailRoute(BeamLocation<dynamic>? location) {
 /// Whether the events tab is showing one event's page rather than the
 /// overview.
 ///
-/// The overview's "new event" action docks on the mobile navigation
-/// launcher, which stays up on an event's page — where a plus would read as
-/// adding to *that* event, so the overview's action must leave the rail.
+/// An event's page docks the same sticky action bar an entry's page does
+/// (`EntryActionBar`: add a linked task, record, and the Add sheet) at the
+/// bottom edge, so the mobile shell unmounts the launcher there — menu
+/// button, docked create action and activity island alike — exactly as it
+/// does for [isLogbookEntryDetailRoute]. Only a uuid counts: `EventsLocation`
+/// renders the overview for anything else, and the overview keeps its
+/// launcher.
 bool isEventDetailRoute(BeamLocation<dynamic>? location) {
   if (location is! EventsLocation) return false;
-  return location.state.pathParameters['eventId'] != null;
+  return isUuid(location.state.pathParameters['eventId']);
 }
 
 /// Layout allowance for the docked day-view column on the desktop shell:

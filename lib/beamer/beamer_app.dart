@@ -252,13 +252,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.goalsDelegate,
     navService.habitsDelegate,
     navService.relationshipsDelegate,
-    // So the launcher unmounts on an entry's page, where the page docks its
-    // own action bar, and comes back when the page pops. See
-    // [isLogbookEntryDetailRoute].
+    // So the launcher unmounts on an entry's or an event's page, where the
+    // page docks its own action bar, and comes back when the page pops. See
+    // [isLogbookEntryDetailRoute] and [isEventDetailRoute].
     navService.journalDelegate,
-    // Not for hiding the bar — the events tab keeps it on an event's page —
-    // but so the launcher drops the events tab's create action there. See
-    // [isEventDetailRoute].
     navService.eventsDelegate,
   ]);
 
@@ -665,12 +662,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, journal, projects, settings, goals, habits
-        // and relationships delegates so the mobile shell rebuilds when
-        // their routes change (push to / pop from task, entry, project, goal
-        // or person details, into / out of settings entity editors). That's
-        // how we know whether to hide the mobile bottom nav. See
-        // [_isTaskDetailRoute], [_isLogbookEntryDetailRoute],
+        // Listen to the tasks, journal, events, projects, settings, goals,
+        // habits and relationships delegates so the mobile shell rebuilds
+        // when their routes change (push to / pop from task, entry, event,
+        // project, goal or person details, into / out of settings entity
+        // editors). That's how we know whether to hide the mobile bottom
+        // nav. See [_isTaskDetailRoute], [_isLogbookEntryDetailRoute],
+        // [_isEventDetailRoute],
         // [projectsRouteHidesBottomNav], [settingsRouteHidesBottomNav],
         // [goalsRouteHidesBottomNav], [habitsRouteHidesBottomNav] and
         // [peopleRouteHidesBottomNav].

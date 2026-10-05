@@ -6417,9 +6417,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Add cover photo';
 
   @override
-  String get eventsAddLabel => 'Add';
-
-  @override
   String get eventsChangeCover => 'Change cover';
 
   @override
@@ -6504,9 +6501,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Summary';
-
-  @override
-  String get eventsTasksEmpty => 'Link a prep or follow-up task';
 
   @override
   String get eventsTasksSection => 'Tasks';

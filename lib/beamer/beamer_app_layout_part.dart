@@ -15,6 +15,14 @@ extension _AppScreenLayout on _AppScreenState {
       activeKind == _AppNavigationDestinationKind.journal &&
       isLogbookEntryDetailRoute(navService.journalDelegate.currentBeamLocation);
 
+  /// Whether the active tab is Events and it is showing an event's page.
+  /// Same shape as [_isLogbookEntryDetailRoute]: opening an event moves only
+  /// the events delegate, so its location alone would also match while
+  /// another tab is up.
+  bool _isEventDetailRoute(_AppNavigationDestinationKind activeKind) =>
+      activeKind == _AppNavigationDestinationKind.events &&
+      isEventDetailRoute(navService.eventsDelegate.currentBeamLocation);
+
   Widget _buildDesktopLayout({
     required BuildContext context,
     required int index,
@@ -240,14 +248,15 @@ extension _AppScreenLayout on _AppScreenState {
   }) {
     // Visibility is a pure function of the active beamer route. Routes
     // that take over the bottom edge with their own sticky surface
-    // (`/tasks/<uuid>` with TaskActionBar, `/journal/<uuid>` with
-    // EntryActionBar) suppress the nav pill — including the activity island
-    // that floats above it — so the page-owned bar can dock flush against
-    // the home indicator. The enclosing ListenableBuilder ensures we rebuild
-    // on every route change.
+    // (`/tasks/<uuid>` with TaskActionBar, `/journal/<uuid>` and
+    // `/events/<uuid>` with EntryActionBar) suppress the nav pill — including
+    // the activity island that floats above it — so the page-owned bar can
+    // dock flush against the home indicator. The enclosing ListenableBuilder
+    // ensures we rebuild on every route change.
     final showBottomNav =
         !_isTaskDetailRoute(index) &&
-        !_isLogbookEntryDetailRoute(destinations[index].kind);
+        !_isLogbookEntryDetailRoute(destinations[index].kind) &&
+        !_isEventDetailRoute(destinations[index].kind);
 
     // Settings *detail* routes — terminal pages you navigate to rather than
     // menus you navigate from (the whole AI & Agents sections, every Sync and
@@ -446,11 +455,11 @@ extension _AppScreenLayout on _AppScreenState {
   /// people lists word their actions, the lists whose own heading says what
   /// gets added keep the bare glyph (see [MobileNavDockAction]).
   ///
-  /// Route-sensitive only where a tab's detail page keeps the bar *and* owns
-  /// a different action: an event's page is not where a new event is made.
-  /// The projects, goals, habits and people tabs slide the whole launcher
-  /// away on their detail routes, and an entry's page unmounts it for its
-  /// own action bar, so their actions need no such check.
+  /// Not route-sensitive: no tab's detail page keeps the launcher while
+  /// owning a different action. The projects, goals, habits and people tabs
+  /// slide the whole launcher away on their detail routes, and an entry's or
+  /// an event's page unmounts it for its own action bar, so a stale action is
+  /// never on screen.
   MobileNavDockAction? _launcherDockAction(
     BuildContext context,
     _AppNavigationDestinationKind kind,
@@ -464,10 +473,7 @@ extension _AppScreenLayout on _AppScreenState {
       ref,
     ),
     _AppNavigationDestinationKind.people => peopleTabDockAction(context),
-    _AppNavigationDestinationKind.events =>
-      isEventDetailRoute(navService.eventsDelegate.currentBeamLocation)
-          ? null
-          : eventsTabDockAction(context),
+    _AppNavigationDestinationKind.events => eventsTabDockAction(context),
     _AppNavigationDestinationKind.dailyOs ||
     _AppNavigationDestinationKind.dashboards ||
     _AppNavigationDestinationKind.settings => null,

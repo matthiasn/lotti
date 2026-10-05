@@ -10979,12 +10979,6 @@ abstract class AppLocalizations {
   /// **'Add cover photo'**
   String get eventsAddCoverPhoto;
 
-  /// No description provided for @eventsAddLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get eventsAddLabel;
-
   /// No description provided for @eventsChangeCover.
   ///
   /// In en, this message translates to:
@@ -11122,12 +11116,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Summary'**
   String get eventsSummaryTitle;
-
-  /// No description provided for @eventsTasksEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Link a prep or follow-up task'**
-  String get eventsTasksEmpty;
 
   /// No description provided for @eventsTasksSection.
   ///

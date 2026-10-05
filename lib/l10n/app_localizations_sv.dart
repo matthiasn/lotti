@@ -6453,9 +6453,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Lägg till omslagsfoto';
 
   @override
-  String get eventsAddLabel => 'Lägg till';
-
-  @override
   String get eventsChangeCover => 'Byt omslag';
 
   @override
@@ -6540,10 +6537,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get eventsSummaryTitle => 'Sammanfattning';
-
-  @override
-  String get eventsTasksEmpty =>
-      'Länka en förberedelse- eller uppföljningsuppgift';
 
   @override
   String get eventsTasksSection => 'Uppgifter';
