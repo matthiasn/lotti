@@ -53,14 +53,41 @@ class SpeechDictionaryRepository {
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
 
-  /// Every live entry, ordered by term, again whenever the dictionary
-  /// changes here or arrives from another device.
-  Stream<List<SpeechDictionaryEntry>> watchEntries() =>
-      notificationDrivenStream(
-        notifications: _updateNotifications,
-        notificationKeys: {speechDictionaryNotification},
-        fetcher: _journalDb.getAllSpeechDictionaryEntries,
-      );
+  /// Every live entry, ordered by term, again whenever the dictionary, the
+  /// categories or the privacy toggle change, here or on another device.
+  ///
+  /// Without [includePrivate], an entry limited only to private categories
+  /// is left out: its terms and misheard spellings belong to those
+  /// categories, and are hidden with them.
+  Stream<List<SpeechDictionaryEntry>> watchEntries({
+    bool includePrivate = true,
+  }) => notificationDrivenStream(
+    notifications: _updateNotifications,
+    notificationKeys: {
+      speechDictionaryNotification,
+      categoriesNotification,
+      privateToggleNotification,
+    },
+    fetcher: () => _entries(includePrivate: includePrivate),
+  );
+
+  Future<List<SpeechDictionaryEntry>> _entries({
+    required bool includePrivate,
+  }) async {
+    final entries = await _journalDb.getAllSpeechDictionaryEntries();
+    if (includePrivate) return entries;
+    final privateIds = {
+      for (final category
+          in await _journalDb.getAllCategoriesIncludingPrivate())
+        if (category.private) category.id,
+    };
+    return [
+      for (final entry in entries)
+        if (entry.appliesToAllCategories ||
+            !entry.categoryIds!.every(privateIds.contains))
+          entry,
+    ];
+  }
 
   /// The live entries that reach a recording in [categoryId].
   Future<List<SpeechDictionaryEntry>> entriesReaching(

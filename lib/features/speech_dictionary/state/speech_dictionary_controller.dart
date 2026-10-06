@@ -3,14 +3,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 
 /// Every live dictionary entry, ordered by term, kept current with edits
-/// here and on other devices.
+/// here and on other devices. While private entries are hidden, an entry
+/// limited only to private categories is hidden with them.
 final speechDictionaryEntriesProvider =
     StreamProvider<List<SpeechDictionaryEntry>>(
-      (ref) => ref.watch(speechDictionaryRepositoryProvider).watchEntries(),
+      (ref) => ref
+          .watch(speechDictionaryRepositoryProvider)
+          .watchEntries(
+            includePrivate:
+                ref.watch(showPrivateEntriesProvider).value ?? false,
+          ),
     );
 
 /// The live entry with the given id, or null once it is gone.

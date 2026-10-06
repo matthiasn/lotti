@@ -177,6 +177,32 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'migrates private categories while private entries are hidden',
+      () async {
+        final phone = device();
+        await phone.hold([
+          _category('work', dictionary: ['Kubernetes']),
+          _category(
+            'secret',
+            dictionary: ['Kubernetes'],
+          ).copyWith(private: true),
+        ]);
+        // Private entries are hidden: the visible category list lacks it.
+        expect(
+          (await phone.db.getAllCategories()).map((c) => c.id),
+          ['work'],
+        );
+
+        await phone.migration.run();
+
+        expect((await phone.entry('Kubernetes'))?.categoryIds, [
+          'secret',
+          'work',
+        ]);
+      },
+    );
+
     // SpeechDictionarySync.tla, AbsentOnly: a later run must not bring back
     // a term the user deleted, nor widen one the user limited.
     test('leaves a term the device holds an entry for alone', () async {

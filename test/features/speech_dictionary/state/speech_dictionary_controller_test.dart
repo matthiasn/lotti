@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 import 'package:lotti/features/speech_dictionary/state/speech_dictionary_controller.dart';
@@ -39,7 +40,11 @@ void main() {
   setUp(() {
     repository = MockSpeechDictionaryRepository();
     entries = StreamController<List<SpeechDictionaryEntry>>.broadcast();
-    when(repository.watchEntries).thenAnswer((_) => entries.stream);
+    when(
+      () => repository.watchEntries(
+        includePrivate: any(named: 'includePrivate'),
+      ),
+    ).thenAnswer((_) => entries.stream);
     when(() => repository.entryForTerm(any())).thenAnswer((_) async => null);
     when(
       () => repository.save(
@@ -76,6 +81,40 @@ void main() {
 
   SpeechDictionaryEditorState stateOf(SpeechDictionaryEditorArgs args) =>
       container.read(speechDictionaryEditorControllerProvider(args));
+
+  group('speechDictionaryEntriesProvider', () {
+    test('hides private-only entries until private entries are shown', () {
+      final hidden = ProviderContainer(
+        overrides: withServiceOverrides([
+          speechDictionaryRepositoryProvider.overrideWithValue(repository),
+          showPrivateEntriesProvider.overrideWith(
+            (ref) => Stream.value(false),
+          ),
+        ]),
+      );
+      addTearDown(hidden.dispose);
+      hidden.listen(speechDictionaryEntriesProvider, (_, _) {});
+
+      verify(() => repository.watchEntries(includePrivate: false)).called(1);
+    });
+
+    test('shows them once private entries are shown', () async {
+      final shown = ProviderContainer(
+        overrides: withServiceOverrides([
+          speechDictionaryRepositoryProvider.overrideWithValue(repository),
+          showPrivateEntriesProvider.overrideWith((ref) => Stream.value(true)),
+        ]),
+      );
+      addTearDown(shown.dispose);
+      shown.listen(speechDictionaryEntriesProvider, (_, _) {});
+      await pumpEventQueue();
+
+      verify(
+        // ignore: avoid_redundant_argument_values
+        () => repository.watchEntries(includePrivate: true),
+      ).called(1);
+    });
+  });
 
   group('speechDictionaryEntryProvider', () {
     test('finds the entry by id, and null once it is gone', () async {

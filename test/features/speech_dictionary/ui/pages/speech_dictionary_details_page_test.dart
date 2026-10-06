@@ -78,7 +78,11 @@ void main() {
     ]);
     repository = MockSpeechDictionaryRepository();
     entries = StreamController<List<SpeechDictionaryEntry>>.broadcast();
-    when(repository.watchEntries).thenAnswer((_) => entries.stream);
+    when(
+      () => repository.watchEntries(
+        includePrivate: any(named: 'includePrivate'),
+      ),
+    ).thenAnswer((_) => entries.stream);
     when(() => repository.entryForTerm(any())).thenAnswer((_) async => null);
     when(() => repository.delete(any())).thenAnswer((_) async {});
     when(

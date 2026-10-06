@@ -45,8 +45,10 @@ class SpeechDictionaryMigration {
             in await _journalDb.getSpeechDictionaryEntriesIncludingDeleted())
           entry.id,
       };
+      // Private categories too, whatever the privacy toggle shows now: a
+      // term migrated without one of its categories never gains it later.
       final pending = legacySpeechDictionaryEntries(
-        await _journalDb.getAllCategories(),
+        await _journalDb.getAllCategoriesIncludingPrivate(),
       ).where((entry) => !held.contains(entry.id));
 
       var written = 0;

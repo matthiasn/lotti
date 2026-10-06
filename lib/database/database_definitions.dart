@@ -155,6 +155,13 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
+  /// Every live category, private ones included, whatever this device's
+  /// privacy toggle says — for work on the data rather than its display.
+  Future<List<CategoryDefinition>> getAllCategoriesIncludingPrivate() async =>
+      categoryDefinitionsStreamMapper(
+        await allCategoryDefinitionsIncludingPrivate().get(),
+      );
+
   Future<List<HabitDefinition>> getAllHabitDefinitions() async {
     return habitDefinitionsStreamMapper(
       await allHabitDefinitions().get(),

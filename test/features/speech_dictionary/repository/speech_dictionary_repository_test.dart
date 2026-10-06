@@ -318,6 +318,40 @@ void main() {
       );
     });
 
+    test('without private entries, leaves out terms limited only to private '
+        'categories', () async {
+      for (final (id, private) in [('secret', true), ('work', false)]) {
+        await db.upsertCategoryDefinition(
+          CategoryDefinition(
+            id: id,
+            name: id,
+            createdAt: earlier,
+            updatedAt: earlier,
+            vectorClock: null,
+            private: private,
+            active: true,
+          ),
+        );
+      }
+      await stored('Lotti');
+      await stored('Kubernetes', categoryIds: ['secret', 'work']);
+      await stored('Sardine market', categoryIds: ['secret']);
+
+      final hidden = StreamQueue(
+        repository.watchEntries(includePrivate: false),
+      );
+      addTearDown(hidden.cancel);
+      expect((await hidden.next).map((e) => e.term), ['Kubernetes', 'Lotti']);
+
+      final all = StreamQueue(repository.watchEntries());
+      addTearDown(all.cancel);
+      expect((await all.next).map((e) => e.term), [
+        'Kubernetes',
+        'Lotti',
+        'Sardine market',
+      ]);
+    });
+
     test('watchEntries emits again when the dictionary changes', () async {
       final queue = StreamQueue(repository.watchEntries());
       addTearDown(queue.cancel);

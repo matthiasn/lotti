@@ -209,8 +209,13 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
         }
 
         // An edit wins over the raw transcript, the precedence every other
-        // consumer uses; a held transcription has no edit yet.
-        final entryContent = _resolveEntryContent(entity);
+        // consumer uses — except for a held transcript: its text is still the
+        // one the recording had before (empty, or the text a
+        // re-transcription replaces), and the correction is of the newest
+        // transcript.
+        final entryContent = correct
+            ? _latestTranscriptText(entity) ?? _resolveEntryContent(entity)
+            : _resolveEntryContent(entity);
         final entries = await _promptBuilderHelper.getSpeechDictionaryEntries(
           entity,
         );

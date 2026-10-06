@@ -1103,6 +1103,11 @@ SELECT * FROM category_definitions
   AND deleted = false
   ORDER BY name COLLATE NOCASE;
 
+allCategoryDefinitionsIncludingPrivate:
+SELECT * FROM category_definitions
+  WHERE deleted = false
+  ORDER BY name COLLATE NOCASE;
+
 categoryById:
 SELECT * FROM category_definitions
   WHERE deleted = false

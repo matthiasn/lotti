@@ -243,6 +243,41 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         );
       });
 
+      test('a re-transcription corrects the new transcript and replaces the '
+          'old text', () async {
+        await stubRun(dictionary: [kubernetes]);
+        // The recording already has text from an earlier transcription.
+        final earlier = makeAudioEntity(plainText: 'An older take.');
+        var current = earlier;
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => current);
+        when(
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
+        ).thenAnswer((invocation) async {
+          current = invocation.positionalArguments.first as JournalAudio;
+          textWrites.add(current.entryText?.plainText);
+          return true;
+        });
+        stubSummary(firstOccurrence);
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: transcriptionFor(transcriptionProvider: whisper()),
+          linkedTaskId: 'task-1',
+        );
+
+        // The old text is kept while held, then replaced by the corrected
+        // new transcript — what the model was shown.
+        expect(textWrites, ['An older take.', corrected]);
+        final prompt = lastSummaryCall!.positionalArguments.first as String;
+        expect(prompt, contains(raw));
+        expect(prompt, isNot(contains('An older take.')));
+      });
+
       test('writes the raw transcript when the summary fails', () async {
         await stubRun(dictionary: [kubernetes]);
         stubSummary(null);

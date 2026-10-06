@@ -7791,6 +7791,15 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
+  Selectable<CategoryDefinitionDbEntity>
+  allCategoryDefinitionsIncludingPrivate() {
+    return customSelect(
+      'SELECT * FROM category_definitions WHERE deleted = FALSE ORDER BY name COLLATE NOCASE',
+      variables: [],
+      readsFrom: {categoryDefinitions},
+    ).asyncMap(categoryDefinitions.mapFromRow);
+  }
+
   Selectable<CategoryDefinitionDbEntity> categoryById(String id) {
     return customSelect(
       'SELECT * FROM category_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
