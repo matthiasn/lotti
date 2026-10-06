@@ -23,7 +23,7 @@ CONSTANTS Family, Peers, MaxCounter, SeparateEntities, AbortCounters, Concurrent
           PrepareExactPayload, RetryReceipts, AnnounceHeads, MixedFamilies, NamespacePayloads
 
 ASSUME /\ Family \in {"journal", "entryLink", "agentEntity", "agentLink",
-                       "notification", "consumptionEvent"}
+                       "notification", "consumptionEvent", "entityDefinition"}
        /\ MaxCounter \in 1..3
        /\ ConcurrentWriters => MaxCounter >= 2
        /\ MixedFamilies => MaxCounter = 2 /\ Family # "notification"

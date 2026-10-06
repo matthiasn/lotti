@@ -2852,7 +2852,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Ge länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem.';
+      'Ge inställningsdefinitioner (kategorier, etiketter, vanor, instrumentpaneler, mätvärden och ordlisteord), länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem. Det räcker att köra det på en enhet.';
 
   @override
   String get backfillClocksFailed =>
@@ -2896,6 +2896,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
+
+  @override
+  String get backfillRecordsDefinitions => 'Inställningsdefinitioner';
 
   @override
   String get backfillRecordsEntryLinks => 'Länkar mellan poster';

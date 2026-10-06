@@ -2833,7 +2833,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Add a vector clock to entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them.';
+      'Add a vector clock to settings definitions (categories, labels, habits, dashboards, measurables and dictionary terms), entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them. Running it on one device is enough.';
 
   @override
   String get backfillClocksFailed => 'Could not repair vector clocks';
@@ -2876,6 +2876,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'AI usage events';
+
+  @override
+  String get backfillRecordsDefinitions => 'Settings definitions';
 
   @override
   String get backfillRecordsEntryLinks => 'Entry links';

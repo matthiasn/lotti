@@ -1245,7 +1245,7 @@
     }
   },
   "backfillCatchUpDescription": "Solicita ahora a los pares las entradas faltantes recientes.",
-  "backfillClocksDescription": "Añade un reloj vectorial a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos.",
+  "backfillClocksDescription": "Añade un reloj vectorial a las definiciones de ajustes (categorías, etiquetas, hábitos, paneles, mediciones y términos del diccionario), a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos. Basta con ejecutarlo en un dispositivo.",
   "backfillClocksFailed": "No se pudieron reparar los relojes vectoriales",
   "backfillClocksTitle": "Relojes vectoriales",
   "backfillClocksTrigger": "Reparar relojes vectoriales",
@@ -1264,6 +1264,7 @@
   "backfillRecordsAgentEntities": "Entidades de agentes",
   "backfillRecordsAgentLinks": "Enlaces de agentes",
   "backfillRecordsConsumptionEvents": "Eventos de uso de IA",
+  "backfillRecordsDefinitions": "Definiciones de ajustes",
   "backfillRecordsEntryLinks": "Enlaces entre entradas",
   "backfillRecordsHint": "Incluye los eliminados. Los dispositivos sincronizados muestran aquí las mismas cifras; los contadores registrados pueden variar entre ellos.",
   "backfillRecordsJournal": "Entradas del diario",

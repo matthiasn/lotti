@@ -2888,7 +2888,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Adăugați un ceas vectorial legăturilor între intrări, entităților și legăturilor agenților salvate fără unul, pentru ca celelalte dispozitive să le poată ordona și primi.';
+      'Adăugați un ceas vectorial definițiilor de setări (categorii, etichete, obiceiuri, panouri, mărimi măsurabile și termeni din dicționar), legăturilor între intrări, entităților și legăturilor agenților salvate fără unul, pentru ca celelalte dispozitive să le poată ordona și primi. Este suficient să rulați operațiunea pe un singur dispozitiv.';
 
   @override
   String get backfillClocksFailed =>
@@ -2932,6 +2932,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'Evenimente de utilizare AI';
+
+  @override
+  String get backfillRecordsDefinitions => 'Definiții de setări';
 
   @override
   String get backfillRecordsEntryLinks => 'Legături între intrări';

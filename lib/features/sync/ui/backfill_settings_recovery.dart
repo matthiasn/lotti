@@ -283,12 +283,12 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     ];
   }
 
-  /// Stamps agent entities, agent links and entry links that were persisted
-  /// without a vector clock, then enqueues them.
+  /// Stamps entity definitions, agent entities, agent links and entry links
+  /// that were persisted without a vector clock, then enqueues them.
   ///
-  /// All three run together: they are the same repair over three tables, each
-  /// no-ops when nothing is missing a clock, and there is no reason to offer a
-  /// half-repaired state as a choice.
+  /// All four run together: they are the same repair over different tables,
+  /// each no-ops when nothing is missing a clock, and there is no reason to
+  /// offer a half-repaired state as a choice.
   Future<void> _repairAgentClocks(BuildContext context) async {
     final messages = context.messages;
     final syncController = ProviderScope.containerOf(
@@ -298,6 +298,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     try {
       await syncController.syncAll(
         selectedSteps: const {
+          SyncStep.backfillDefinitionClocks,
           SyncStep.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks,
           SyncStep.backfillEntryLinkClocks,

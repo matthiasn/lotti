@@ -116,6 +116,7 @@ at a time; they are not the Cartesian product of all faults and families.
 | `AgentLink` | one write; one staging, send or apply failure | 54 |
 | `Notification` | full base plus lifecycle patch, either receive order | 289,859 |
 | `Consumption` | two immutable events; one abandoned delivery or failed receipt | 183,515 |
+| `Definition` | two concurrent definition writers; one staging, send or apply failure | 846 |
 | `Burn` | one aborted reservation, one enqueue/send failure and one process crash | 112 |
 | `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 183,515 |
 | `ForkSuccessor` | concurrent agent A1/B1 followed by A2; one receiver, no injected faults | 2,038,963 |
@@ -2733,9 +2734,11 @@ configuration gives (single worker):
 
 What the model leaves out:
 
-- **The enqueue.** A write and its outbox row are one step, as for every
-  definition; there is no intent ledger and no sequence-gap repair, so a lost
-  row waits for the next edit of the term or "Sync Entities".
+- **The enqueue and the clocks.** A write and its outbox row are one step,
+  and versions are ordered by `updatedAt` alone. Every definition now carries
+  a vector clock and a lost version is repaired through the sequence log;
+  both are [`DefinitionClocks`](#definitionclocks--every-definition-version-under-a-vector-clock)'s,
+  whose `updatedAt` and content order this model's rules feed.
 - **Old builds.** A peer that cannot decode the entry skips it for good; no
   supported configuration mixes builds.
 - **Respelling.** A case-only change writes the same entry; any other
@@ -2748,6 +2751,69 @@ The repository suite (`speech_dictionary_repository_test.dart`) and the
 migration suite (`speech_dictionary_migration_test.dart`) replay these
 traces over a real in-memory database; reverting any one of the Dart rules
 fails at least one of them.
+
+## `DefinitionClocks` — every definition version under a vector clock
+
+Entity definitions — categories, labels, habits, dashboards, measurables and
+speech dictionary entries — replicate as whole documents. Every local write
+reserves the host's next counter on top of the stored clock; the receiving
+gate keeps a version whose clock dominates and settles two concurrent ones
+last-writer-wins (`updatedAt`, then content), storing the winner under the
+join of both clocks. Rows from builds before clocks carry none: a manual
+migration stamps them on whichever device the user runs it, a clockless copy
+never displaces a clocked row, and a clockless row that keeps its place
+against a clocked copy stamps itself on top of it. With `Backfill`, delivery
+is lossy and the sequence log repairs it: a receiver learns every counter in
+a clock, asks for the gaps, and any host whose stored clock covers one
+answers with its current version and a hint. The protocol is described in
+[the definition clocks concept](../../knowledge/features/sync/definition-clocks.md)
+and decided in [ADR 0125](../../docs/adr/0125-definitions-carry-vector-clocks.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `EqualClocksAgree` | invariant | two hosts holding the same clock hold the same document |
+| `CausalWriteWins` | invariant | wherever a write is known, no version its author had seen is the stored one |
+| `CountersAreWrites` | invariant | every counter in a stored clock was spent by a write or a stamp — resolution spends none |
+| `LegacyNeverRegresses` | action | no host replaces a legacy row by an older legacy row |
+| `NewestLegacyWins` | liveness | once the migration has run on any host, with nothing edited, every host holds the newest legacy version |
+| `EventuallyConverged` | liveness | once the migration has run — or every row was written with a clock — all hosts hold the same content, under a clock |
+| `GapsHeal` | liveness | every counter a host learns of is eventually received |
+
+| Configuration | Hosts | Writes per host | Rows from before clocks | Losses | Backfill | Stamps | Distinct states |
+|---------------|-------|-----------------|-------------------------|--------|----------|--------|-----------------|
+| `DefinitionClocks` | 2 | 2, migration and stamps included | yes, plus one re-send each | 0 | no | 1–2 | 2,812 |
+| `DefinitionClocksThree` | 3 | 2 | no | 0 | no | 1–2 | 90,585 |
+| `DefinitionClocksLossy` | 2 | 2 | no | 1 | yes | 1–2 | 681,332 |
+
+Each rule has a switch; setting one to `FALSE` in a temporary copy of a
+configuration gives (twenty workers):
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `JoinOnResolve = FALSE` | `GapsHeal` in `Lossy` (32,898 states): both hosts write at once and the later content wins; the losing host stores the winner under the winner's own clock, and its own copy to the other host is lost. Its counter is now in no stored clock, so no host can answer the request for it and the gap never heals. `Three` and the legacy profile pass: last-writer-wins alone picks the right content, the join is what keeps every counter answerable |
+| `ContentTieBreak = FALSE` | `EqualClocksAgree` in every profile (102–172 states): two writes at the same `updatedAt` are each applied on arrival; the hosts swap contents under the same joined clock |
+| `NullFallsBack = FALSE` | `LegacyNeverRegresses` in the legacy profile (106 states): a clockless row yields to any clocked copy, so a host holding the newer legacy row takes the older one the other host has just stamped |
+| `MonotoneEditStamp = FALSE` | `CausalWriteWins` in every profile (544–1,007 states): host `a` writes `A1` and then `A2` with an earlier `updatedAt`; `b` has kept `A1` against its own concurrent write under the join, and `A2` — concurrent with that join — loses to `A1` by `updatedAt`. The join puts a host's own older version up against its newer one, so a write must stamp past the stored `updatedAt` |
+| `StampsBeaten = FALSE` | `EventuallyConverged` in the legacy profile (2,877 states): the migration runs on `a`, whose legacy row is the older; `b` keeps its newer clockless row against `a`'s stamped copy, nothing ever sends it, and the hosts hold different versions for good |
+
+What the model leaves out:
+
+- **One definition.** Definitions are independent documents; the counters of
+  other payloads in the same host's clock are left to `SyncPipeline` and
+  `SyncSequence`.
+- **The reservation's failure paths.** A refused write releases and burns its
+  counter; reservation, burn and settlement are `SyncSequence`'s and
+  `OwnCounterSettlement`'s.
+- **Old builds.** A peer that ignores clocks orders by `updatedAt` as before;
+  no supported configuration mixes builds.
+- **Re-sends of clocked rows.** A maintenance re-send of a clocked version
+  repeats a message the model already delivers or loses.
+
+`database_definitions_test.dart`, `persistence_definition_ops_test.dart`,
+`definition_clock_stamper_test.dart` and
+`sync_event_processor_definition_handlers_test.dart` replay these rules over a
+real in-memory database or the receive path; reverting any one of them fails
+at least one test.
 
 ## `SyncPreferenceEdits` — local edits and debounced publication
 

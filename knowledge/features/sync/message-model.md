@@ -115,6 +115,15 @@ builds new ones. Agent-wake writes hit the outbox as individual
 coalesces them (see [send path](send-path.md)). Children of any in-flight legacy
 bundle resurface through per-`(host, counter)` backfill on demand.
 
+# Entity definitions: sequence-tracked
+
+`entityDefinition` carries a category, label, habit, dashboard, measurable or
+speech dictionary entry, its vector clock and the `originatingHostId` that
+sent it. It is recorded in the sequence log under
+`SyncSequencePayloadType.entityDefinition` on both ends, so a lost version is
+asked for and answered like any tracked payload. How the clocks are written
+and settled is in [definition clocks](definition-clocks.md).
+
 # Saved task filters: per-item, not sequence-tracked
 
 Saved task-filter definitions carry no vector clock and no

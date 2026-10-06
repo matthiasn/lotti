@@ -82,6 +82,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/logic/config_flag_effects.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 /// Entity/dashboard definition and config-flag operations of
 /// [PersistenceLogic].
@@ -46,28 +48,46 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     return linesAffected;
   }
 
-  /// Writes [definition] only if the recency gate accepts it as it is —
-  /// never re-stamped past a stored copy — then announces and sends it.
+  /// Writes [definition] only when no copy of it is stored, under a fresh
+  /// own counter but with its `updatedAt` as given, then announces and
+  /// sends it.
   ///
   /// For definitions a device derives on its own rather than a user's edit,
   /// such as migrated speech dictionary entries: whatever is stored, written
-  /// here or arrived from another device, must win over them. Returns the
-  /// write's row count, 0 when the stored copy won and nothing was sent.
+  /// here or arrived from another device, must win over them, and a seed
+  /// that meets another device's copy later loses to any newer `updatedAt`.
+  /// Returns the write's row count, 0 when a copy was stored and nothing was
+  /// written or sent.
   Future<int> seedEntityDefinitionImpl(EntityDefinition definition) async {
-    final linesAffected = await journalDb.upsertEntityDefinition(definition);
-    if (linesAffected == 0) return 0;
+    final seeded = await vectorClockService.withVcScope<EntityDefinition?>(
+      () => journalDb.transaction(() async {
+        if (await journalDb.definitionStamp(definition) != null) return null;
+        final stamped = definition.copyWith(
+          vectorClock: await vectorClockService.getNextVectorClock(
+            payload: _payloadOf(definition),
+          ),
+        );
+        final linesAffected = await journalDb.upsertEntityDefinition(stamped);
+        return linesAffected == 0 ? null : stamped;
+      }),
+      commitWhen: (seeded) => seeded != null,
+    );
+    if (seeded == null) return 0;
     updateNotifications.notify({
-      definition.id,
-      _typeNotification(definition),
+      seeded.id,
+      _typeNotification(seeded),
     });
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
-        entityDefinition: definition,
+        entityDefinition: seeded,
         status: SyncEntryStatus.update,
       ),
     );
-    return linesAffected;
+    return 1;
   }
+
+  static VcPayloadRef _payloadOf(EntityDefinition definition) =>
+      (id: definition.id, type: SyncSequencePayloadType.entityDefinition);
 
   static String _typeNotification(EntityDefinition definition) =>
       switch (definition) {
@@ -81,55 +101,52 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
 
   /// Writes a local definition edit so that it applies and wins on sync.
   ///
-  /// `JournalDb` refuses a definition older than the stored one — the guard
-  /// that keeps a late sync arrival from overwriting a newer edit. A local
-  /// edit trips the same guard when a sync landed while the editor was open
-  /// and the caller did not refresh `updatedAt` (deletes from the settings
-  /// pages, for one). A user's action must still apply, so the edit is
-  /// rebuilt from the stored stamp: its timestamp goes strictly above the
-  /// stored one — even when the peer's clock runs ahead of ours — and it
-  /// carries the stored vector clock, so an ordered clock cannot outrank it
-  /// (equal clocks defer to `updatedAt`). That copy applies here and wins on
-  /// every peer holding the same stored version.
+  /// The edit is a new version of what is stored: it carries this host's
+  /// next counter on top of the stored vector clock, so it dominates every
+  /// version this device has seen and supersedes them on every peer
+  /// (DefinitionClocks.tla). Its `updatedAt` goes strictly above the stored
+  /// one when the caller's does not — a stale editor, a delete that kept the
+  /// old stamp, or a peer whose clock runs ahead — so it also wins
+  /// last-writer-wins against a concurrent version written before it.
+  ///
+  /// The stored stamp is read, the counter reserved and the edit written in
+  /// one transaction, so no sync arrival can land in between: the gate
+  /// always accepts the edit. Were the write still refused, the reservation
+  /// is released and its counter burned.
   ///
   /// Returns the definition that was actually stored with the write's row
-  /// count, or null when even the rebuilt copy was refused — then nothing
-  /// was saved, and the caller must neither announce nor sync it.
+  /// count, or null when it was refused — then nothing was saved, and the
+  /// caller must neither announce nor sync it.
   Future<(EntityDefinition, int)?> _writeLocalEdit(
     EntityDefinition definition,
     Future<int> Function(EntityDefinition definition) write,
-  ) async {
-    final linesAffected = await write(definition);
-    if (linesAffected != 0) {
-      return (definition, linesAffected);
-    }
-
-    final stored = await journalDb.definitionStamp(definition);
-    final now = clock.now();
-    final floor = stored?.updatedAt;
-    final restamped = definition.copyWith(
-      updatedAt: floor == null || now.isAfter(floor)
-          ? now
-          : floor.add(const Duration(milliseconds: 1)),
-      vectorClock: stored?.vectorClock ?? definition.vectorClock,
+  ) {
+    return vectorClockService.withVcScope<(EntityDefinition, int)?>(
+      () => journalDb.transaction(() async {
+        final stored = await journalDb.definitionStamp(definition);
+        final floor = stored?.updatedAt;
+        final edit = definition.copyWith(
+          updatedAt: floor == null || definition.updatedAt.isAfter(floor)
+              ? definition.updatedAt
+              : floor.add(const Duration(milliseconds: 1)),
+          vectorClock: await vectorClockService.getNextVectorClock(
+            previous: stored?.vectorClock,
+            payload: _payloadOf(definition),
+          ),
+        );
+        final linesAffected = await write(edit);
+        if (linesAffected == 0) {
+          loggingService.error(
+            LogDomain.persistence,
+            StateError('Local definition edit ${definition.id} refused'),
+            subDomain: 'upsertEntityDefinition.refused',
+          );
+          return null;
+        }
+        return (edit, linesAffected);
+      }),
+      commitWhen: (written) => written != null,
     );
-    final restampedLines = await write(restamped);
-    if (restampedLines == 0) {
-      loggingService.error(
-        LogDomain.persistence,
-        StateError(
-          'Local definition edit ${definition.id} refused twice; not saved',
-        ),
-        subDomain: 'upsertEntityDefinition.restamp',
-      );
-      return null;
-    }
-    loggingService.log(
-      LogDomain.persistence,
-      'Re-stamped stale local definition edit ${definition.id}',
-      subDomain: 'upsertEntityDefinition.restamp',
-    );
-    return (restamped, restampedLines);
   }
 
   Future<void> _reindexMeasurements(MeasurableDataType dataType) async {

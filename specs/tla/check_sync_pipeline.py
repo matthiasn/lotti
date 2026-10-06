@@ -16,7 +16,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def check(name, constants, assertion, *, temporal=False, extension="", fails=True,
-          module="SyncPipeline", profile=None):
+          module="SyncPipeline", profile=None, action=False):
     config = (HERE / f"{profile or module}.cfg").read_text()
     for key, value in constants.items():
         config, count = re.subn(
@@ -25,7 +25,7 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
         if count != 1:
             raise ValueError(f"{name}: unknown/duplicate constant {key}")
     config = re.sub(r"(?m)^(INVARIANTS?|PROPERT(?:Y|IES)) .*\n?", "", config)
-    config += f"{'PROPERTY' if temporal else 'INVARIANT'} {assertion}\n"
+    config += f"{'PROPERTY' if temporal or action else 'INVARIANT'} {assertion}\n"
     spec = (HERE / f"{module}.tla").read_text()
     separator = "\n" + "=" * 77
     spec = spec.replace(separator, extension + separator)
@@ -42,8 +42,9 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
             env={**os.environ, "JAVA_TOOL_OPTIONS": "-Xmx2g"},
         )
     expected = (
-        "Temporal properties were violated"
-        if temporal else f"Invariant {assertion} is violated"
+        f"Action property {assertion} is violated" if action
+        else "Temporal properties were violated" if temporal
+        else f"Invariant {assertion} is violated"
     )
     if fails:
         passed = result.returncode != 0 and expected in result.stdout
@@ -138,7 +139,28 @@ def check_preference_edits():
           extension='\nNoCausalEditWitness == \\A v \\in committed : v[1] <= MaxEdits\n')
 
 
+def check_definition_clocks():
+    # Each rule of the definition gate against the property it protects, in
+    # the smallest profile that shows it (specs/tla/README.md).
+    for switch, profile, assertion, kind in (
+            ("JoinOnResolve", "DefinitionClocksLossy", "GapsHeal", "temporal"),
+            ("ContentTieBreak", "DefinitionClocks", "EqualClocksAgree", "invariant"),
+            ("NullFallsBack", "DefinitionClocks", "LegacyNeverRegresses", "action"),
+            ("MonotoneEditStamp", "DefinitionClocksThree", "CausalWriteWins",
+             "invariant"),
+            ("StampsBeaten", "DefinitionClocks", "EventuallyConverged", "temporal")):
+        for guarded, fails in (("TRUE", False), ("FALSE", True)):
+            # The lossy profile's guarded run is the checked-in configuration.
+            if profile == "DefinitionClocksLossy" and not fails:
+                continue
+            check("definition-" + switch + "-" + guarded, {switch: guarded},
+                  assertion, module="DefinitionClocks", profile=profile,
+                  fails=fails, temporal=kind == "temporal",
+                  action=kind == "action")
+
+
 if __name__ == "__main__":
     main()
     check_settings()
     check_preference_edits()
+    check_definition_clocks()

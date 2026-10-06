@@ -28,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -854,6 +855,9 @@ void main() {
       when(
         () => mockJournalDb.countEntryLinksWithNullVectorClock(),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockJournalDb.clocklessDefinitions(),
+      ).thenAnswer((_) async => []);
     }
 
     glados.Glados<List<SyncStep>>(
@@ -1258,6 +1262,75 @@ void main() {
     );
   });
 
+  group('backfillDefinitionClocks', () {
+    final legacy = categoryMindfulness.copyWith(
+      updatedAt: DateTime(2023, 6, 1, 9),
+      vectorClock: null,
+    );
+
+    test(
+      'stamps each clockless definition, keeps its updatedAt, stores and '
+      'sends it',
+      () async {
+        when(
+          () => mockJournalDb.clocklessDefinitions(),
+        ).thenAnswer((_) async => [legacy]);
+        when(
+          () => mockJournalDb.definitionById(legacy.id),
+        ).thenAnswer((_) async => legacy);
+        when(
+          () => mockJournalDb.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => const VectorClock({'host-1': 7}));
+        final progress = <double>[];
+
+        await syncMaintenanceRepository.backfillDefinitionClocks(
+          onProgress: progress.add,
+        );
+
+        final stamped = legacy.copyWith(
+          vectorClock: const VectorClock({'host-1': 7}),
+        );
+        verify(() => mockJournalDb.upsertEntityDefinition(stamped)).called(1);
+        final sent =
+            verify(
+                  () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+                ).captured.single
+                as SyncEntityDefinition;
+        expect(sent.entityDefinition, stamped);
+        expect(progress, [1.0]);
+      },
+    );
+
+    test(
+      'reports completion at once when every definition has a clock',
+      () async {
+        when(
+          () => mockJournalDb.clocklessDefinitions(),
+        ).thenAnswer((_) async => []);
+        final detailed = <List<int>>[];
+
+        await syncMaintenanceRepository.backfillDefinitionClocks(
+          onDetailedProgress: (p, t) => detailed.add([p, t]),
+        );
+
+        expect(detailed, [
+          [0, 0],
+        ]);
+        verifyNever(() => mockJournalDb.upsertEntityDefinition(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
+      },
+    );
+  });
+
   group('backfillEntryLinkClocks', () {
     test('stamps each clockless link, keeps its updatedAt, and enqueues then '
         'stores it', () async {
@@ -1440,6 +1513,18 @@ void main() {
   });
 
   group('fetchTotalsForSteps - backfill steps', () {
+    test('counts the clockless definitions', () async {
+      when(() => mockJournalDb.clocklessDefinitions()).thenAnswer(
+        (_) async => [categoryMindfulness, testLabelDefinition1],
+      );
+
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+        {SyncStep.backfillDefinitionClocks},
+      );
+
+      expect(totals[SyncStep.backfillDefinitionClocks], 2);
+    });
+
     test('counts clockless entry links with the dedicated query', () async {
       when(
         () => mockJournalDb.countEntryLinksWithNullVectorClock(),
@@ -1574,6 +1659,7 @@ void main() {
       SyncStep.habits: 'syncHabits',
       SyncStep.aiSettings: 'syncAiSettings',
       SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
+      SyncStep.backfillDefinitionClocks: 'backfillDefinitionClocks',
       SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
       SyncStep.backfillEntryLinkClocks: 'backfillEntryLinkClocks',
@@ -1587,6 +1673,7 @@ void main() {
       SyncStep.habits: 'fetchTotals_habits',
       SyncStep.aiSettings: 'fetchTotals_aiSettings',
       SyncStep.savedTaskFilters: 'fetchTotals_savedTaskFilters',
+      SyncStep.backfillDefinitionClocks: 'fetchTotals_backfillDefinitionClocks',
       SyncStep.backfillAgentEntityClocks:
           'fetchTotals_backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',

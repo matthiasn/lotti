@@ -2843,7 +2843,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Giv links mellem poster, agententiteter og agentlinks, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan ordne og modtage dem.';
+      'Giv indstillingsdefinitioner (kategorier, etiketter, vaner, dashboards, målinger og ordbogsord), links mellem poster, agententiteter og agentlinks, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan ordne og modtage dem. Det er nok at køre det på én enhed.';
 
   @override
   String get backfillClocksFailed => 'Kunne ikke reparere vektorure';
@@ -2886,6 +2886,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
+
+  @override
+  String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';
 
   @override
   String get backfillRecordsEntryLinks => 'Links mellem poster';

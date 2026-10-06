@@ -10,6 +10,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
+import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -64,6 +65,13 @@ class SyncMaintenanceRepository {
   final SavedTaskFiltersRepository _savedTaskFiltersRepository;
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
+
+  late final DefinitionClockStamper _definitionClockStamper =
+      DefinitionClockStamper(
+        journalDb: _journalDb,
+        vectorClockService: _vectorClockService,
+        outboxService: _outboxService,
+      );
 
   late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
       _createOperation<MeasurableDataType>(
@@ -189,6 +197,44 @@ class SyncMaintenanceRepository {
     SyncStep.aiSettings: _aiConfigSyncOperation,
     SyncStep.savedTaskFilters: _savedTaskFiltersSyncOperation,
   };
+
+  /// The manual migration of entity definitions saved before definitions
+  /// carried a vector clock: stamps each clockless one on this device —
+  /// deleted ones included, so a deletion orders like an edit — and sends
+  /// it ([DefinitionClockStamper]).
+  ///
+  /// Like [backfillEntryLinkClocks], a stamp keeps the definition's
+  /// `updatedAt`, so it never outranks a genuine edit made meanwhile on
+  /// another device. Running it on one device is enough: a device whose
+  /// clockless copy is newer keeps it and stamps it on receipt.
+  Future<void> backfillDefinitionClocks({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final definitions = await _journalDb.clocklessDefinitions();
+        final total = definitions.length;
+
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final definition in definitions) {
+          await _definitionClockStamper.stamp(definition.id);
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      'backfillDefinitionClocks',
+    );
+  }
 
   /// Backfill vector clocks on agent entities that have `vectorClock: null`.
   ///
@@ -471,6 +517,12 @@ class SyncMaintenanceRepository {
     }
 
     // Backfill steps use dedicated count queries to avoid loading all rows.
+    if (step == SyncStep.backfillDefinitionClocks) {
+      return _runWithLogging<int>(
+        () async => (await _journalDb.clocklessDefinitions()).length,
+        'fetchTotals_backfillDefinitionClocks',
+      );
+    }
     if (step == SyncStep.backfillAgentEntityClocks) {
       return _runWithLogging<int>(
         _agentRepository.countEntitiesWithNullVectorClock,
@@ -625,6 +677,7 @@ class SyncMaintenanceRepository {
     SyncStep.habits: 'syncHabits',
     SyncStep.aiSettings: 'syncAiSettings',
     SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
+    SyncStep.backfillDefinitionClocks: 'backfillDefinitionClocks',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
     SyncStep.backfillEntryLinkClocks: 'backfillEntryLinkClocks',

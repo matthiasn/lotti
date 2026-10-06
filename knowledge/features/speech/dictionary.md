@@ -82,16 +82,14 @@ stateDiagram-v2
 ## Receiving an entry
 
 `JournalDb.upsertSpeechDictionaryEntry` uses the definitions' recency gate
-with one difference: **two copies with the same `updatedAt` are ordered by
-their canonical JSON** (`orderTiesByContent`), so devices that receive them in
-opposite orders keep the same one. Exact ties are not rare here — every device
-migrates a legacy term at the same fixed stamp. Other definitions still apply
-whichever copy arrives on a tie. The protocol is model-checked in
-[`SpeechDictionarySync`](../../../specs/tla/README.md), which also states what
-it leaves out: like every definition, an entry has no intent ledger or
-sequence repair, so a lost outbox row waits for the next edit or *Settings →
-Sync → Sync Entities*, whose speech dictionary step re-sends every entry,
-tombstones included.
+([definition clocks](../sync/definition-clocks.md)): a dominating clock wins,
+and concurrent copies are settled by `updatedAt` and then by canonical
+content, so devices that receive them in opposite orders keep the same one.
+Exact ties are not rare here — every device migrates a legacy term at the same
+fixed stamp. The migration's ordering rules are model-checked in
+[`SpeechDictionarySync`](../../../specs/tla/README.md); the clocks, and the
+sequence-log repair a lost version now gets like every definition, in
+`DefinitionClocks`.
 
 **Concurrent edits of one term are last-writer-wins.** One device limiting a
 term to a category and another adding a misheard spelling at the same moment

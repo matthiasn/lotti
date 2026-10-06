@@ -2855,7 +2855,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Geef koppelingen tussen items, agententiteiten en agentkoppelingen die zonder vectorklok zijn opgeslagen er alsnog een, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+      'Geef instellingsdefinities (categorieën, labels, gewoontes, dashboards, meetwaarden en woordenboektermen), koppelingen tussen items, agententiteiten en agentkoppelingen die zonder vectorklok zijn opgeslagen er alsnog een, zodat je andere apparaten ze kunnen ordenen en ontvangen. Het is genoeg om dit op één apparaat uit te voeren.';
 
   @override
   String get backfillClocksFailed =>
@@ -2899,6 +2899,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
+
+  @override
+  String get backfillRecordsDefinitions => 'Instellingsdefinities';
 
   @override
   String get backfillRecordsEntryLinks => 'Koppelingen tussen items';

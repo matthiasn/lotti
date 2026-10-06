@@ -1059,7 +1059,9 @@ void main() {
         testDashboardConfig.id,
       );
 
-      expect(created, testDashboardConfig);
+      // Stored under this host's counter, otherwise as given.
+      expect(created?.vectorClock, isNotNull);
+      expect(created?.copyWith(vectorClock: null), testDashboardConfig);
 
       // Now test the delete method directly
       await getIt<PersistenceLogic>().deleteDashboardDefinition(
@@ -1093,15 +1095,11 @@ void main() {
 
       expect(habitCompletion?.data, habitCompletionData);
 
-      // habit can be retrieved
-      expect((await getIt<JournalDb>().getAllHabitDefinitions()).toSet(), {
-        habitFlossing,
-      });
-
-      expect(
-        await getIt<JournalDb>().getHabitById(habitFlossing.id),
-        habitFlossing,
-      );
+      // habit can be retrieved, stored under this host's counter
+      final stored = await getIt<JournalDb>().getHabitById(habitFlossing.id);
+      expect(stored?.vectorClock, isNotNull);
+      expect(stored?.copyWith(vectorClock: null), habitFlossing);
+      expect(await getIt<JournalDb>().getAllHabitDefinitions(), [stored]);
 
       // habit can be deleted
       await getIt<PersistenceLogic>().upsertEntityDefinition(
@@ -1905,11 +1903,13 @@ void main() {
       );
 
       expect(await logic.seedEntityDefinition(seeded), isNot(0));
-      final edited = seeded.copyWith(
-        updatedAt: DateTime.utc(2026),
-        categoryIds: const ['work'],
+      // The seed carries a clock, so the edit goes through the local write.
+      await logic.upsertEntityDefinition(
+        seeded.copyWith(
+          updatedAt: DateTime.utc(2026),
+          categoryIds: const ['work'],
+        ),
       );
-      await getIt<JournalDb>().upsertEntityDefinition(edited);
 
       expect(await logic.seedEntityDefinition(seeded), 0);
       expect(
@@ -2056,6 +2056,9 @@ void main() {
       when(
         () => journalDb.parentLinkedEntityIds(any<String>()),
       ).thenReturn(MockSelectable<String>([]));
+      when(
+        () => journalDb.definitionStamp(any<EntityDefinition>()),
+      ).thenAnswer((_) async => null);
 
       getIt
         ..registerSingleton<JournalDb>(journalDb)

@@ -1245,7 +1245,7 @@
     }
   },
   "backfillCatchUpDescription": "Solicitați acum colegilor intrările lipsă recente.",
-  "backfillClocksDescription": "Adăugați un ceas vectorial legăturilor între intrări, entităților și legăturilor agenților salvate fără unul, pentru ca celelalte dispozitive să le poată ordona și primi.",
+  "backfillClocksDescription": "Adăugați un ceas vectorial definițiilor de setări (categorii, etichete, obiceiuri, panouri, mărimi măsurabile și termeni din dicționar), legăturilor între intrări, entităților și legăturilor agenților salvate fără unul, pentru ca celelalte dispozitive să le poată ordona și primi. Este suficient să rulați operațiunea pe un singur dispozitiv.",
   "backfillClocksFailed": "Ceasurile vectoriale nu au putut fi reparate",
   "backfillClocksTitle": "Ceasuri vectoriale",
   "backfillClocksTrigger": "Reparați ceasurile vectoriale",
@@ -1264,6 +1264,7 @@
   "backfillRecordsAgentEntities": "Entități ale agenților",
   "backfillRecordsAgentLinks": "Legături ale agenților",
   "backfillRecordsConsumptionEvents": "Evenimente de utilizare AI",
+  "backfillRecordsDefinitions": "Definiții de setări",
   "backfillRecordsEntryLinks": "Legături între intrări",
   "backfillRecordsHint": "Inclusiv cele șterse. Dispozitivele sincronizate afișează aici aceleași numere; contoarele urmărite pot diferi între ele.",
   "backfillRecordsJournal": "Intrări în jurnal",

@@ -12,4 +12,9 @@ enum SyncSequencePayloadType {
   // sync sequence log (`sync_sequence_receiver.dart`), so existing values must
   // never be reordered — only new values may be added at the end.
   consumptionEvent,
+
+  /// A version of an entity definition — category, label, habit, dashboard,
+  /// measurable or speech dictionary entry. The id names the definition in
+  /// whichever of their tables holds it.
+  entityDefinition,
 }

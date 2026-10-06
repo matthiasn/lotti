@@ -383,6 +383,8 @@ class RecordCountsCard extends StatelessWidget {
           messages.backfillRecordsNotifications,
       SyncSequencePayloadType.consumptionEvent:
           messages.backfillRecordsConsumptionEvents,
+      SyncSequencePayloadType.entityDefinition:
+          messages.backfillRecordsDefinitions,
     };
 
     return SurfaceCard(

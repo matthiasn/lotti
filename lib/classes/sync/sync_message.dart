@@ -164,6 +164,12 @@ sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.entityDefinition({
     required EntityDefinition entityDefinition,
     required SyncEntryStatus status,
+
+    /// The host UUID that sent this definition version: the writer, or the
+    /// device answering a backfill request for one of its counters. Used for
+    /// sequence tracking; absent on payloads from builds before definitions
+    /// carried vector clocks.
+    String? originatingHostId,
   }) = SyncEntityDefinition;
 
   const factory SyncMessage.entryLink({

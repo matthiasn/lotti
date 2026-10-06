@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -593,6 +594,16 @@ class BackfillResponseHandler {
                 payloadTypeName: 'consumptionEvent',
               );
             }
+          case SyncSequencePayloadType.entityDefinition:
+            await _tryVerifyAndMarkBackfilled(
+              hostId: response.hostId,
+              counter: response.counter,
+              payloadId: payloadId,
+              payloadType: payloadType,
+              loadPayload: () => _journalDb.definitionById(payloadId),
+              getVectorClock: (definition) => definition.vectorClock,
+              payloadTypeName: 'entityDefinition',
+            );
         }
       }
     } catch (e, st) {

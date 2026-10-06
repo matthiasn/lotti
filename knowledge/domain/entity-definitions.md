@@ -19,7 +19,8 @@ sources:
 `dashboard`, `speechDictionaryEntry`.
 
 They are **not** journal entries — they are the vocabulary journal entries are
-described with, and they sync as their own `SyncMessage.entityDefinition` family.
+described with, and they sync as their own `SyncMessage.entityDefinition` family,
+each version under a vector clock ([definition clocks](../features/sync/definition-clocks.md)).
 
 # `CategoryDefinition` is the most load-bearing
 

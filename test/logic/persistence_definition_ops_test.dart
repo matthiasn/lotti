@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -16,9 +16,11 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/commit_evaluating_vector_clock_service.dart';
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
@@ -36,6 +38,7 @@ void main() {
   late MockNotificationScheduler notificationScheduler;
   late MockOutboxService outboxService;
   late MockFts5Db fts5Db;
+  late CommitEvaluatingVectorClockService vectorClockService;
   late PersistenceDefinitionOps ops;
   late TestGetItMocks mocks;
 
@@ -57,13 +60,16 @@ void main() {
 
   setUp(() async {
     registerAllFallbackValues();
+    registerFallbackValue(measurableHydration);
     notificationService = MockNotificationService();
     notificationScheduler = MockNotificationScheduler();
     outboxService = MockOutboxService();
     fts5Db = MockFts5Db();
+    vectorClockService = CommitEvaluatingVectorClockService();
     mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
+          ..registerSingleton<VectorClockService>(vectorClockService)
           ..registerSingleton<OutboxService>(outboxService)
           ..registerSingleton<Fts5Db>(fts5Db)
           ..registerSingleton<NotificationService>(notificationService)
@@ -92,6 +98,21 @@ void main() {
         statusChanged: previous?.status != flag.status,
       );
     });
+    // This host's next counter, on top of whatever clock is stored.
+    when(
+      () => vectorClockService.getNextVectorClock(
+        previous: any(named: 'previous'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer(
+      (invocation) async => VectorClock({
+        ...?(invocation.namedArguments[#previous] as VectorClock?)?.vclock,
+        'host': 7,
+      }),
+    );
+    when(
+      () => mocks.journalDb.definitionStamp(any()),
+    ).thenAnswer((_) async => null);
     logic = MockPersistenceLogic();
     ops = PersistenceDefinitionOps(logic, buildPersistenceServices());
 
@@ -145,45 +166,70 @@ void main() {
       vectorClock: null,
     );
 
-    test('announces and sends a definition the gate accepted', () async {
-      when(
-        () => mocks.journalDb.upsertEntityDefinition(migrated),
-      ).thenAnswer((_) async => 1);
+    test(
+      'an absent definition is written under a fresh own counter, its '
+      'updatedAt untouched, then announced and sent',
+      () async {
+        when(
+          () => mocks.journalDb.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
-      expect(await ops.seedEntityDefinitionImpl(migrated), 1);
+        expect(await ops.seedEntityDefinitionImpl(migrated), 1);
 
-      verify(
-        () => mocks.updateNotifications.notify({
-          migrated.id,
-          speechDictionaryNotification,
-        }),
-      ).called(1);
-      final sent =
-          verify(
-                () => outboxService.enqueueMessage(captureAny()),
-              ).captured.single
-              as SyncMessage;
-      expect(
-        sent.mapOrNull(entityDefinition: (s) => s.entityDefinition),
-        migrated,
-      );
-    });
+        final seeded = migrated.copyWith(
+          vectorClock: const VectorClock({'host': 7}),
+        );
+        verify(() => mocks.journalDb.upsertEntityDefinition(seeded)).called(1);
+        verify(
+          () => vectorClockService.getNextVectorClock(
+            payload: (
+              id: migrated.id,
+              type: SyncSequencePayloadType.entityDefinition,
+            ),
+          ),
+        ).called(1);
+        verify(
+          () => mocks.updateNotifications.notify({
+            migrated.id,
+            speechDictionaryNotification,
+          }),
+        ).called(1);
+        final sent =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncMessage;
+        expect(
+          sent.mapOrNull(entityDefinition: (s) => s.entityDefinition),
+          seeded,
+        );
+        expect(vectorClockService.commits, [true]);
+      },
+    );
 
-    // Unlike a user's edit, a seeded definition is never re-stamped past a
-    // refusing copy: whatever is stored must win over it
-    // (SpeechDictionarySync.tla, AbsentOnly).
-    test('writes nothing more when the stored copy wins', () async {
-      when(
-        () => mocks.journalDb.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 0);
+    // Unlike a user's edit, a seed never goes over a stored copy: whatever
+    // is stored must win over it (SpeechDictionarySync.tla, AbsentOnly).
+    test(
+      'a stored copy leaves the seed unwritten, unsent and uncounted',
+      () async {
+        when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
+          (_) async => (updatedAt: DateTime.utc(2026), vectorClock: null),
+        );
 
-      expect(await ops.seedEntityDefinitionImpl(migrated), 0);
+        expect(await ops.seedEntityDefinitionImpl(migrated), 0);
 
-      verify(() => mocks.journalDb.upsertEntityDefinition(any())).called(1);
-      verifyNever(() => mocks.journalDb.definitionStamp(any()));
-      verifyNever(() => mocks.updateNotifications.notify(any()));
-      verifyNever(() => outboxService.enqueueMessage(any()));
-    });
+        verifyNever(() => mocks.journalDb.upsertEntityDefinition(any()));
+        verifyNever(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
+        );
+        verifyNever(() => mocks.updateNotifications.notify(any()));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+        expect(vectorClockService.commits, [false]);
+      },
+    );
   });
 
   test('renaming a choice reindexes historical measurements', () async {
@@ -202,7 +248,7 @@ void main() {
       () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
     ).thenAnswer((_) async => previous);
     when(
-      () => mocks.journalDb.upsertEntityDefinition(renamed),
+      () => mocks.journalDb.upsertEntityDefinition(any()),
     ).thenAnswer((_) async => 1);
     when(
       () => mocks.journalDb.getMeasurementsByTypeIncludingPrivate(
@@ -212,13 +258,18 @@ void main() {
       ),
     ).thenAnswer((_) async => entries);
     when(
-      () => fts5Db.reindexMeasurements(renamed, entries),
+      () => fts5Db.reindexMeasurements(any(), entries),
     ).thenAnswer((_) async {});
 
     final affected = await ops.upsertEntityDefinitionImpl(renamed);
 
     expect(affected, 1);
-    verify(() => fts5Db.reindexMeasurements(renamed, entries)).called(1);
+    final reindexed =
+        verify(
+              () => fts5Db.reindexMeasurements(captureAny(), entries),
+            ).captured.single
+            as MeasurableDataType;
+    expect(reindexed.choices, renamed.choices);
     verify(
       () => mocks.updateNotifications.notify({
         renamed.id,
@@ -245,7 +296,7 @@ void main() {
       () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
     ).thenAnswer((_) async => previous);
     when(
-      () => mocks.journalDb.upsertEntityDefinition(renamed),
+      () => mocks.journalDb.upsertEntityDefinition(any()),
     ).thenAnswer((_) async => 1);
     when(
       () => mocks.journalDb.getMeasurementsByTypeIncludingPrivate(
@@ -255,7 +306,7 @@ void main() {
       ),
     ).thenAnswer((_) async => entries);
     when(
-      () => fts5Db.reindexMeasurements(renamed, entries),
+      () => fts5Db.reindexMeasurements(any(), entries),
     ).thenThrow(StateError('fts5 locked'));
     DevLogger.clear();
 
@@ -290,7 +341,7 @@ void main() {
         () => mocks.journalDb.getMeasurableDataTypeById(previous.id),
       ).thenAnswer((_) async => previous);
       when(
-        () => mocks.journalDb.upsertEntityDefinition(reordered),
+        () => mocks.journalDb.upsertEntityDefinition(any()),
       ).thenAnswer((_) async => 1);
 
       await ops.upsertEntityDefinitionImpl(reordered);
@@ -306,112 +357,100 @@ void main() {
     },
   );
 
-  group('stale local edits -', () {
-    test(
-      'an edit the database skips as older is re-stamped and written again, '
-      'and the re-stamped copy is what syncs',
-      () async {
-        final stale = categoryMindfulness.copyWith(
-          updatedAt: DateTime(2026, 9, 5, 10),
-        );
-        final fixedNow = DateTime(2026, 9, 5, 12);
-        final answers = <int>[0, 1];
-        when(
-          () => mocks.journalDb.upsertEntityDefinition(any()),
-        ).thenAnswer((_) async => answers.removeAt(0));
-        when(
-          () => mocks.journalDb.definitionStamp(any()),
-        ).thenAnswer((_) async => null);
-
-        final affected = await withClock(
-          Clock.fixed(fixedNow),
-          () => ops.upsertEntityDefinitionImpl(stale),
-        );
-
-        expect(affected, 1);
-        final written = verify(
-          () => mocks.journalDb.upsertEntityDefinition(captureAny()),
-        ).captured.cast<EntityDefinition>().toList();
-        expect(written, hasLength(2));
-        expect(written.first, stale);
-        expect(written.last.updatedAt, fixedNow);
-        expect(written.last.id, stale.id);
-        final message =
-            verify(
-                  () => outboxService.enqueueMessage(captureAny()),
-                ).captured.single
-                as SyncEntityDefinition;
-        expect(message.entityDefinition.updatedAt, fixedNow);
-      },
-    );
-
-    test('an edit the database applies is written exactly once', () async {
+  group('local edits -', () {
+    setUp(() {
       when(
         () => mocks.journalDb.upsertEntityDefinition(any()),
       ).thenAnswer((_) async => 1);
-
-      await ops.upsertEntityDefinitionImpl(categoryMindfulness);
-
-      verify(
-        () => mocks.journalDb.upsertEntityDefinition(categoryMindfulness),
-      ).called(1);
     });
 
+    EntityDefinition written() =>
+        verify(
+              () => mocks.journalDb.upsertEntityDefinition(captureAny()),
+            ).captured.single
+            as EntityDefinition;
+
+    // DefinitionClocks.tla: a write dominates every version this device
+    // has seen, so it supersedes them on every peer.
     test(
-      'the retry is built from the stored stamp: above its timestamp even '
-      'when that runs ahead of our clock, and carrying its vector clock',
+      'an edit carries the next own counter on top of the stored clock, '
+      'and that copy is what is stored and synced',
       () async {
-        final storedAt = DateTime(2026, 9, 5, 14);
-        final fixedNow = DateTime(2026, 9, 5, 12);
-        final stale = categoryMindfulness.copyWith(
-          updatedAt: DateTime(2026, 9, 5, 10),
-          vectorClock: const VectorClock({'a': 1}),
-        );
-        final answers = <int>[0, 1];
-        when(
-          () => mocks.journalDb.upsertEntityDefinition(any()),
-        ).thenAnswer((_) async => answers.removeAt(0));
         when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
           (_) async => (
-            updatedAt: storedAt,
+            updatedAt: DateTime(2026, 9, 5, 10),
             vectorClock: const VectorClock({'a': 2}),
           ),
         );
-
-        final affected = await withClock(
-          Clock.fixed(fixedNow),
-          () => ops.upsertEntityDefinitionImpl(stale),
+        final edit = categoryMindfulness.copyWith(
+          updatedAt: DateTime(2026, 9, 5, 12),
+          vectorClock: null,
         );
 
-        expect(affected, 1);
-        final written = verify(
-          () => mocks.journalDb.upsertEntityDefinition(captureAny()),
-        ).captured.cast<EntityDefinition>().toList();
-        expect(written, hasLength(2));
+        expect(await ops.upsertEntityDefinitionImpl(edit), 1);
+
+        final stored = written();
         expect(
-          written.last.updatedAt,
-          storedAt.add(const Duration(milliseconds: 1)),
+          stored,
+          edit.copyWith(vectorClock: const VectorClock({'a': 2, 'host': 7})),
         );
-        expect(written.last.vectorClock?.vclock, {'a': 2});
+        verify(
+          () => vectorClockService.getNextVectorClock(
+            previous: const VectorClock({'a': 2}),
+            payload: (
+              id: edit.id,
+              type: SyncSequencePayloadType.entityDefinition,
+            ),
+          ),
+        ).called(1);
         final message =
             verify(
                   () => outboxService.enqueueMessage(captureAny()),
                 ).captured.single
                 as SyncEntityDefinition;
-        expect(message.entityDefinition, written.last);
+        expect(message.entityDefinition, stored);
+        expect(vectorClockService.commits, [true]);
       },
     );
 
+    // DefinitionClocks.tla, MonotoneEditStamp.
     test(
-      'an edit refused twice is reported as unsaved and is neither '
-      'announced, reindexed nor synced',
+      'an edit whose updatedAt does not pass the stored one is stamped just '
+      'above it, even when the stored stamp runs ahead of our clock',
+      () async {
+        final storedAt = DateTime(2026, 9, 5, 14);
+        when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
+          (_) async => (updatedAt: storedAt, vectorClock: null),
+        );
+
+        await ops.upsertEntityDefinitionImpl(
+          categoryMindfulness.copyWith(updatedAt: DateTime(2026, 9, 5, 12)),
+        );
+
+        final stored = written();
+        expect(stored.updatedAt, storedAt.add(const Duration(milliseconds: 1)));
+        expect(stored.vectorClock, const VectorClock({'host': 7}));
+      },
+    );
+
+    test('a first write is stored under its own counter alone', () async {
+      await ops.upsertEntityDefinitionImpl(categoryMindfulness);
+
+      expect(
+        written(),
+        categoryMindfulness.copyWith(
+          vectorClock: const VectorClock({'host': 7}),
+        ),
+      );
+    });
+
+    test(
+      'an edit the database refuses is unsaved: neither announced nor '
+      'synced, and its counter is released',
       () async {
         when(
           () => mocks.journalDb.upsertEntityDefinition(any()),
         ).thenAnswer((_) async => 0);
-        when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
-          (_) async => (updatedAt: DateTime(2026, 9, 5, 14), vectorClock: null),
-        );
 
         final affected = await ops.upsertEntityDefinitionImpl(
           categoryMindfulness,
@@ -420,30 +459,26 @@ void main() {
         expect(affected, 0);
         verifyNever(() => mocks.updateNotifications.notify(any()));
         verifyNever(() => outboxService.enqueueMessage(any()));
+        expect(vectorClockService.commits, [false]);
       },
     );
 
-    test('a stale dashboard edit is re-stamped the same way', () async {
-      final fixedNow = DateTime(2026, 9, 5, 12);
-      final answers = <int>[0, 1];
+    test('a dashboard edit carries a clock the same way', () async {
       when(
         () => mocks.journalDb.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => answers.removeAt(0));
-      when(
-        () => mocks.journalDb.definitionStamp(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => 1);
 
-      final affected = await withClock(
-        Clock.fixed(fixedNow),
-        () => ops.upsertDashboardDefinitionImpl(dashboard),
+      expect(await ops.upsertDashboardDefinitionImpl(dashboard), 1);
+
+      final stored =
+          verify(
+                () => mocks.journalDb.upsertDashboardDefinition(captureAny()),
+              ).captured.single
+              as DashboardDefinition;
+      expect(
+        stored,
+        dashboard.copyWith(vectorClock: const VectorClock({'host': 7})),
       );
-
-      expect(affected, 1);
-      final written = verify(
-        () => mocks.journalDb.upsertDashboardDefinition(captureAny()),
-      ).captured.cast<DashboardDefinition>().toList();
-      expect(written, hasLength(2));
-      expect(written.last.updatedAt, fixedNow);
     });
   });
 

@@ -52,6 +52,7 @@ import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -73,6 +74,7 @@ part 'sync_event_processor_agent_reconciliation.dart';
 part 'sync_event_processor_apply.dart';
 part 'sync_event_processor_consumption_handlers.dart';
 part 'sync_event_processor_deep_backfill.dart';
+part 'sync_event_processor_definition_handlers.dart';
 part 'sync_event_processor_descriptor_cache.dart';
 // Per-domain method bodies live in part files so they share the orchestrator's
 // private state (dedup cache, sequence log service, agent repository) without
@@ -275,6 +277,12 @@ class SyncEventProcessor {
   /// [agentRepository]). When set, incoming consumption events are upserted
   /// directly (no outbox enqueue — prevents echo loops).
   ConsumptionRepository? consumptionRepository;
+
+  /// Stamps a clockless definition that kept its place against a clocked
+  /// copy. Injected after construction, once the outbox it sends through
+  /// exists (same rationale as [backfillResponseHandler]); without it such a
+  /// row waits for the manual clock migration.
+  DefinitionClockStamper? definitionClockStamper;
 
   /// Run after a received journal entity is applied, for what storing it
   /// leaves to do on other rows — the items of a deleted checklist

@@ -1252,7 +1252,7 @@
     }
   },
   "backfillCatchUpDescription": "Stáhni od peerů nedávné chybějící položky hned teď.",
-  "backfillClocksDescription": "Doplň vektorové hodiny odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout.",
+  "backfillClocksDescription": "Doplň vektorové hodiny definicím nastavení (kategoriím, štítkům, návykům, nástěnkám, měřitelným veličinám a slovníkovým výrazům), odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout. Stačí to spustit na jednom zařízení.",
   "backfillClocksFailed": "Vektorové hodiny se nepodařilo opravit",
   "backfillClocksTitle": "Vektorové hodiny",
   "backfillClocksTrigger": "Opravit vektorové hodiny",
@@ -1271,6 +1271,7 @@
   "backfillRecordsAgentEntities": "Entity agentů",
   "backfillRecordsAgentLinks": "Odkazy agentů",
   "backfillRecordsConsumptionEvents": "Události využití AI",
+  "backfillRecordsDefinitions": "Definice nastavení",
   "backfillRecordsEntryLinks": "Odkazy mezi záznamy",
   "backfillRecordsHint": "Včetně smazaných. Synchronizovaná zařízení tu ukazují stejná čísla; sledované čítače se mezi nimi mohou lišit.",
   "backfillRecordsJournal": "Záznamy deníku",

@@ -6,6 +6,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_link.dart' show AgentLinkSoftDelete;
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -27,6 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../agents/test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import 'sync_head_conformance.dart';
@@ -810,14 +812,19 @@ class _GeneratedBackfillResponseBench {
 }
 
 extension _AnyGeneratedBackfillResponseScenario on glados.Any {
-  // Excludes `consumptionEvent`: its backfill responder reuses the generic
-  // `_processAgentBackfillEntry` path (already exercised here via `agentEntity`
-  // /`agentLink`), so it is covered without teaching this expectation model a
-  // new payload family. The exhaustive-switch cases below still handle it.
+  // Excludes `consumptionEvent` and `entityDefinition`: their backfill
+  // responders reuse the generic `_processAgentBackfillEntry` path (already
+  // exercised here via `agentEntity`/`agentLink`), so they are covered without
+  // teaching this expectation model new payload families; each has a group of
+  // its own below. The exhaustive-switch cases still handle them.
   glados.Generator<SyncSequencePayloadType> get generatedPayloadType =>
       glados.AnyUtils(this).choose(
         SyncSequencePayloadType.values
-            .where((t) => t != SyncSequencePayloadType.consumptionEvent)
+            .where(
+              (t) =>
+                  t != SyncSequencePayloadType.consumptionEvent &&
+                  t != SyncSequencePayloadType.entityDefinition,
+            )
             .toList(),
       );
 
@@ -4154,6 +4161,170 @@ void main() {
     });
   });
 
+  group('handleBackfillRequest - EntityDefinition', () {
+    const definitionId = 'category-id';
+
+    test(
+      're-sends the current definition, naming the original host, and a '
+      'hint when its joined clock carries a later counter',
+      () async {
+        final logItem = _createLogItem(
+          aliceHostId,
+          30,
+          entryId: definitionId,
+          originatingHostId: bobHostId,
+          payloadType: SyncSequencePayloadType.entityDefinition,
+        );
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+        ).thenAnswer((_) async => logItem);
+        // Counter 30 was superseded by 35, and the stored version joined
+        // another host's concurrent one.
+        final definition = _definition(
+          definitionId,
+          vectorClock: const VectorClock({
+            'alice-host-uuid': 35,
+            'bob-host-uuid': 2,
+          }),
+        );
+        when(
+          () => mockJournalDb.definitionById(definitionId),
+        ).thenAnswer((_) async => definition);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 30)],
+            requesterId: requesterId,
+          ),
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured, hasLength(2));
+        expect(
+          captured[0],
+          isA<SyncEntityDefinition>()
+              .having((m) => m.entityDefinition, 'entityDefinition', definition)
+              .having(
+                (m) => m.originatingHostId,
+                'originatingHostId',
+                bobHostId,
+              ),
+        );
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.deleted, 'deleted', false)
+              .having((r) => r.payloadId, 'payloadId', definitionId)
+              .having(
+                (r) => r.payloadType,
+                'payloadType',
+                SyncSequencePayloadType.entityDefinition,
+              ),
+        );
+      },
+    );
+
+    test('answers deleted when no table holds the definition', () async {
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 30,
+        logItem: _createLogItem(
+          aliceHostId,
+          30,
+          entryId: definitionId,
+          originatingHostId: bobHostId,
+          payloadType: SyncSequencePayloadType.entityDefinition,
+        ),
+      );
+      when(
+        () => mockJournalDb.definitionById(definitionId),
+      ).thenAnswer((_) async => null);
+
+      await handler.handleBackfillRequest(
+        const SyncBackfillRequest(
+          entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 30)],
+          requesterId: requesterId,
+        ),
+      );
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', true)
+                .having(
+                  (r) => r.payloadType,
+                  'payloadType',
+                  SyncSequencePayloadType.entityDefinition,
+                ),
+          ),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('handleBackfillResponse - EntityDefinition', () {
+    const definitionId = 'category-id';
+
+    setUp(() {
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('verifies the stored definition and marks it backfilled', () async {
+      const storedClock = VectorClock({'alice-host-uuid': 31});
+      when(
+        () => mockJournalDb.definitionById(definitionId),
+      ).thenAnswer(
+        (_) async => _definition(definitionId, vectorClock: storedClock),
+      );
+
+      await handler.handleBackfillResponse(
+        const SyncBackfillResponse(
+          hostId: aliceHostId,
+          counter: 30,
+          deleted: false,
+          payloadType: SyncSequencePayloadType.entityDefinition,
+          payloadId: definitionId,
+        ),
+      );
+
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 30,
+          entryId: definitionId,
+          entryVectorClock: storedClock,
+          payloadType: SyncSequencePayloadType.entityDefinition,
+        ),
+      ).called(1);
+    });
+  });
+
   group('handleBackfillResponse - ConsumptionEvent', () {
     const eventId = 'consumption-event-id';
     const response = SyncBackfillResponse(
@@ -5646,6 +5817,14 @@ void _stubPayloadByType(
             ? null
             : makeConsumptionEvent(id: payloadId, vectorClock: vectorClock),
       );
+    case SyncSequencePayloadType.entityDefinition:
+      when(
+        () => bench.journalDb.definitionById(payloadId),
+      ).thenAnswer(
+        (_) async => vectorClock == null
+            ? null
+            : _definition(payloadId, vectorClock: vectorClock),
+      );
   }
 }
 
@@ -5709,6 +5888,14 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? makeConsumptionEvent(id: payloadId, vectorClock: vectorClock)
+            : null,
+      );
+    case SyncSequencePayloadType.entityDefinition:
+      when(
+        () => bench.journalDb.definitionById(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? _definition(payloadId, vectorClock: vectorClock)
             : null,
       );
   }
@@ -5848,5 +6035,14 @@ void _expectPayloadMessage(
       final consumptionEvent = message as SyncConsumptionEvent;
       expect(consumptionEvent.event.id, payloadId);
       expect(consumptionEvent.status, SyncEntryStatus.update);
+    case SyncSequencePayloadType.entityDefinition:
+      expect(message, isA<SyncEntityDefinition>());
+      final definition = message as SyncEntityDefinition;
+      expect(definition.entityDefinition.id, payloadId);
+      expect(definition.status, SyncEntryStatus.update);
   }
 }
+
+/// A category under [id] and [vectorClock], standing in for any definition.
+EntityDefinition _definition(String id, {VectorClock? vectorClock}) =>
+    categoryMindfulness.copyWith(id: id, vectorClock: vectorClock);

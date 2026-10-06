@@ -2,8 +2,8 @@
 ///
 /// Each entity-type step (measurables…agentLinks) re-enqueues that category's
 /// rows to the outbox; the `backfill…Clocks` steps repair missing vector
-/// clocks on agent rows and entry links before they are re-sent. [complete]
-/// is the terminal marker.
+/// clocks on entity definitions, agent rows and entry links before they are
+/// re-sent. [complete] is the terminal marker.
 enum SyncStep {
   measurables,
   labels,
@@ -13,6 +13,7 @@ enum SyncStep {
   habits,
   aiSettings,
   savedTaskFilters,
+  backfillDefinitionClocks,
   backfillAgentEntityClocks,
   backfillAgentLinkClocks,
   backfillEntryLinkClocks,

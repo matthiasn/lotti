@@ -202,7 +202,10 @@ void main() {
           habitFlossing.name,
         );
 
-        final updated = habitFlossing.copyWith(name: 'Floss Nightly');
+        final updated = habitFlossing.copyWith(
+          name: 'Floss Nightly',
+          updatedAt: habitFlossing.updatedAt.add(const Duration(minutes: 1)),
+        );
         await db!.upsertHabitDefinition(updated);
         row = await (db!.select(
           db!.habitDefinitions,
@@ -372,23 +375,46 @@ void main() {
         expect(await storedCategoryName(categoryMindfulness.id), 'Newer');
       });
 
+      // DefinitionClocks.tla, ContentTieBreak: the same updatedAt on two
+      // devices must settle on one copy whichever arrives last.
       test(
-        'an equal updatedAt still applies, so a local re-save that did not '
-        'touch the timestamp is never dropped',
+        'an equal updatedAt is settled by content, whatever the order',
         () async {
-          await db!.upsertEntityDefinition(
-            categoryMindfulness.copyWith(name: 'Stored', updatedAt: base),
-          );
-
-          final resave = categoryMindfulness.copyWith(
-            name: 'Re-saved',
+          final stored = categoryMindfulness.copyWith(
+            name: 'Stored',
             updatedAt: base,
           );
-          expect(await db!.upsertEntityDefinition(resave), isNot(0));
+          final other = categoryMindfulness.copyWith(
+            name: 'Other',
+            updatedAt: base,
+          );
 
-          expect(await storedCategoryName(categoryMindfulness.id), 'Re-saved');
+          Future<String?> settle(
+            CategoryDefinition first,
+            CategoryDefinition second,
+          ) async {
+            await clearAllTables(db!);
+            await db!.upsertEntityDefinition(first);
+            await db!.upsertEntityDefinition(second);
+            return storedCategoryName(categoryMindfulness.id);
+          }
+
+          expect(await settle(stored, other), 'Stored');
+          expect(await settle(other, stored), 'Stored');
         },
       );
+
+      test('re-delivering the stored version keeps it', () async {
+        final stored = categoryMindfulness.copyWith(
+          name: 'Stored',
+          updatedAt: base,
+          vectorClock: const VectorClock({'a': 1}),
+        );
+        await db!.upsertEntityDefinition(stored);
+
+        expect(await db!.upsertEntityDefinition(stored), 0);
+        expect(await storedCategoryName(categoryMindfulness.id), 'Stored');
+      });
 
       test(
         'an older deleted definition cannot resurrect a newer deletion',
@@ -451,32 +477,143 @@ void main() {
         },
       );
 
-      test('concurrent vector clocks fall back to updatedAt', () async {
-        await db!.upsertEntityDefinition(
-          categoryMindfulness.copyWith(
-            name: 'Stored',
-            updatedAt: base,
+      group('concurrent clocks -', () {
+        final stored = categoryMindfulness.copyWith(
+          name: 'Stored',
+          updatedAt: base,
+          vectorClock: const VectorClock({'a': 1}),
+        );
+
+        // DefinitionClocks.tla, JoinOnResolve: whichever version wins, the
+        // row is stored under the join, strictly above both.
+        test(
+          'an older concurrent version is refused, its clock joined',
+          () async {
+            await db!.upsertEntityDefinition(stored);
+
+            final olderConcurrent = categoryMindfulness.copyWith(
+              name: 'Older concurrent',
+              updatedAt: base.subtract(const Duration(minutes: 1)),
+              vectorClock: const VectorClock({'b': 1}),
+            );
+            expect(await db!.upsertEntityDefinition(olderConcurrent), 0);
+
+            expect(await storedCategoryName(categoryMindfulness.id), 'Stored');
+            expect(
+              (await db!.definitionStamp(stored))?.vectorClock?.vclock,
+              {'a': 1, 'b': 1},
+            );
+            // The join is written into the document in place: it still
+            // parses, with nothing but its clock changed.
+            final category = await db!.getCategoryById(categoryMindfulness.id);
+            expect(
+              category,
+              stored.copyWith(vectorClock: const VectorClock({'a': 1, 'b': 1})),
+            );
+          },
+        );
+
+        test('a newer concurrent version is written under the join', () async {
+          await db!.upsertEntityDefinition(stored);
+
+          final newerConcurrent = categoryMindfulness.copyWith(
+            name: 'Newer concurrent',
+            updatedAt: base.add(const Duration(minutes: 1)),
+            vectorClock: const VectorClock({'b': 1}),
+          );
+          expect(await db!.upsertEntityDefinition(newerConcurrent), isNot(0));
+
+          expect(
+            await storedCategoryName(categoryMindfulness.id),
+            'Newer concurrent',
+          );
+          expect(
+            (await db!.definitionStamp(stored))?.vectorClock?.vclock,
+            {'a': 1, 'b': 1},
+          );
+        });
+
+        test(
+          'concurrent versions at the same updatedAt settle on one, under '
+          'the same join, whatever the order',
+          () async {
+            final other = categoryMindfulness.copyWith(
+              name: 'Other',
+              updatedAt: base,
+              vectorClock: const VectorClock({'b': 1}),
+            );
+
+            Future<CategoryDefinition?> settle(
+              CategoryDefinition first,
+              CategoryDefinition second,
+            ) async {
+              await clearAllTables(db!);
+              await db!.upsertEntityDefinition(first);
+              await db!.upsertEntityDefinition(second);
+              return db!.getCategoryById(categoryMindfulness.id);
+            }
+
+            final storedFirst = await settle(stored, other);
+            expect(storedFirst, await settle(other, stored));
+            expect(storedFirst?.name, 'Stored');
+            expect(storedFirst?.vectorClock?.vclock, {'a': 1, 'b': 1});
+          },
+        );
+      });
+
+      group('clockless rows -', () {
+        final clockless = categoryMindfulness.copyWith(
+          name: 'Clockless',
+          updatedAt: base,
+          vectorClock: null,
+        );
+
+        test('a clockless copy never displaces a clocked row', () async {
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(
+              name: 'Clocked',
+              updatedAt: base,
+              vectorClock: const VectorClock({'a': 1}),
+            ),
+          );
+
+          expect(
+            await db!.upsertEntityDefinition(
+              clockless.copyWith(updatedAt: base.add(const Duration(days: 1))),
+            ),
+            0,
+          );
+          expect(await storedCategoryName(categoryMindfulness.id), 'Clocked');
+        });
+
+        test('a clockless row meets a clocked copy by updatedAt', () async {
+          await db!.upsertEntityDefinition(clockless);
+
+          final olderClocked = categoryMindfulness.copyWith(
+            name: 'Older clocked',
+            updatedAt: base.subtract(const Duration(minutes: 1)),
             vectorClock: const VectorClock({'a': 1}),
-          ),
-        );
+          );
+          expect(await db!.upsertEntityDefinition(olderClocked), 0);
+          expect(await storedCategoryName(categoryMindfulness.id), 'Clockless');
+          expect((await db!.definitionStamp(clockless))?.vectorClock, isNull);
 
-        final olderConcurrent = categoryMindfulness.copyWith(
-          name: 'Older concurrent',
-          updatedAt: base.subtract(const Duration(minutes: 1)),
-          vectorClock: const VectorClock({'b': 1}),
-        );
-        expect(await db!.upsertEntityDefinition(olderConcurrent), 0);
+          final newerClocked = olderClocked.copyWith(
+            name: 'Newer clocked',
+            updatedAt: base.add(const Duration(minutes: 1)),
+          );
+          expect(await db!.upsertEntityDefinition(newerClocked), isNot(0));
+          expect(
+            await storedCategoryName(categoryMindfulness.id),
+            'Newer clocked',
+          );
+        });
 
-        final newerConcurrent = categoryMindfulness.copyWith(
-          name: 'Newer concurrent',
-          updatedAt: base.add(const Duration(minutes: 1)),
-          vectorClock: const VectorClock({'b': 1}),
-        );
-        expect(await db!.upsertEntityDefinition(newerConcurrent), isNot(0));
-        expect(
-          await storedCategoryName(categoryMindfulness.id),
-          'Newer concurrent',
-        );
+        test('re-delivering a clockless row applies it again', () async {
+          await db!.upsertEntityDefinition(clockless);
+
+          expect(await db!.upsertEntityDefinition(clockless), isNot(0));
+        });
       });
 
       test(
@@ -540,6 +677,69 @@ void main() {
             {'d': 3},
             {'l': 4},
           ]);
+        },
+      );
+
+      test(
+        'definitionById finds a definition in any table, deletions '
+        'included, and null for an unknown id',
+        () async {
+          final definitions = <EntityDefinition>[
+            categoryMindfulness.copyWith(deletedAt: base),
+            testLabelDefinition1,
+            habitFlossing,
+            testDashboardConfig,
+            // The shared fixtures reuse the habit's id; real ids are unique
+            // across the definition tables.
+            measurableWater.copyWith(id: 'measurable-water'),
+          ];
+          for (final definition in definitions) {
+            await db!.upsertEntityDefinition(definition);
+          }
+
+          expect(
+            [
+              for (final definition in definitions)
+                await db!.definitionById(definition.id),
+            ],
+            definitions,
+          );
+          expect(await db!.definitionById('unknown'), isNull);
+        },
+      );
+
+      test(
+        'definitionById is null for a document that no longer parses',
+        () async {
+          await db!.customStatement(
+            'INSERT INTO label_definitions '
+            '(id, created_at, updated_at, serialized, name, color, deleted) '
+            "VALUES ('broken', 0, 0, '{\"runtimeType\": \"nope\"}', "
+            "'Broken', '#000000', 0)",
+          );
+
+          expect(await db!.definitionById('broken'), isNull);
+        },
+      );
+
+      test(
+        'clocklessDefinitions lists every clockless definition, deletions '
+        'included, and none that carries a clock',
+        () async {
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(vectorClock: null, deletedAt: base),
+          );
+          await db!.upsertEntityDefinition(
+            testLabelDefinition1.copyWith(vectorClock: null),
+          );
+          await db!.upsertEntityDefinition(
+            habitFlossing.copyWith(vectorClock: const VectorClock({'a': 1})),
+          );
+
+          expect(
+            (await db!.clocklessDefinitions()).map((d) => d.id).toSet(),
+            {categoryMindfulness.id, testLabelDefinition1.id},
+          );
         },
       );
 
@@ -697,7 +897,7 @@ void main() {
         expect((await db!.definitionStamp(entry()))?.updatedAt, stamp);
       });
 
-      test('re-delivering the stored copy still applies', () async {
+      test('re-delivering the stored clockless copy still applies', () async {
         final stored = entry(categoryIds: ['work']);
         await db!.upsertSpeechDictionaryEntry(stored);
 

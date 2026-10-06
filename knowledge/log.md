@@ -1,5 +1,18 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-07
+* **Addition**: [Definition clocks](features/sync/definition-clocks.md) — every
+  definition version under a vector clock, concurrent edits settled
+  last-writer-wins under the joined clock, sequence-log and deep backfill for
+  definitions, and the manual migration of rows from before clocks.
+* **Update**: [Vector clocks and conflicts](features/sync/vector-clocks-and-conflicts.md),
+  [sequence log and backfill](features/sync/sequence-and-backfill.md),
+  [message model](features/sync/message-model.md),
+  [speech dictionary](features/speech/dictionary.md),
+  [entity definitions](domain/entity-definitions.md) — definitions reserve
+  counters and are backfilled; the dictionary's content tie-break is now every
+  definition's.
+
 ## 2026-10-06
 * **Addition**: [Speech dictionary](features/speech/dictionary.md) — one synced
   entry per term with its categories and misheard spellings, the migration out

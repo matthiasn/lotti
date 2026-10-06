@@ -376,6 +376,32 @@ void main() {
       );
     });
 
+    testWidgets('counts settings definitions on a row of their own, last', (
+      tester,
+    ) async {
+      await pumpCounts(tester, const {
+        SyncSequencePayloadType.entityDefinition: 42,
+        SyncSequencePayloadType.consumptionEvent: 7,
+      });
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      final definitions = find.text(
+        context.messages.backfillRecordsDefinitions,
+      );
+      expect(definitions, findsOneWidget);
+      expect(find.text('42'), findsOneWidget);
+      expect(
+        tester.getTopLeft(definitions).dy,
+        greaterThan(
+          tester
+              .getTopLeft(
+                find.text(context.messages.backfillRecordsConsumptionEvents),
+              )
+              .dy,
+        ),
+      );
+    });
+
     testWidgets('says so while there is nothing to show, and offers no '
         'refresh — the counts update on their own', (tester) async {
       await pumpCounts(tester, null);

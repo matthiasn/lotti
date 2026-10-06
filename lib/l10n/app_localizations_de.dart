@@ -2867,7 +2867,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Versieh Eintragsverknüpfungen, Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
+      'Versieh Einstellungsdefinitionen (Kategorien, Labels, Gewohnheiten, Dashboards, Messgrößen und Wörterbuchbegriffe), Eintragsverknüpfungen, Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können. Es reicht, das auf einem Gerät auszuführen.';
 
   @override
   String get backfillClocksFailed =>
@@ -2911,6 +2911,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
+
+  @override
+  String get backfillRecordsDefinitions => 'Einstellungsdefinitionen';
 
   @override
   String get backfillRecordsEntryLinks => 'Eintragsverknüpfungen';
