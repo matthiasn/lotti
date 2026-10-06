@@ -70,10 +70,10 @@ void main() {
       journalDb: db,
     );
     when(
-      () => relationships.getRelationshipById(person.id),
+      () => relationships.getRelationshipByIdUnfiltered(person.id),
     ).thenAnswer((_) async => person);
     when(
-      () => relationships.getCheckInsForRelationship(person.id),
+      () => relationships.getAllCheckInsForRelationship(person.id),
     ).thenAnswer((_) async => [evidence]);
     when(() => cache.getCategoryById('category')).thenReturn(null);
     when(
@@ -136,6 +136,45 @@ void main() {
         () =>
             relationships.linkTask(relationshipId: person.id, taskId: task.id),
       ).called(1);
+    },
+  );
+
+  // The display's reads answer "gone" for a private person and leave a
+  // private check-in out while private entries are hidden. The dispatcher
+  // reads what the agent read: the proposal exists because the agent saw the
+  // check-in, and a "gone" here is permanent — it used to retract the
+  // proposal on every device.
+  test(
+    'a person and check-in hidden by the private-display preference still confirm',
+    () async {
+      when(
+        () => relationships.getRelationshipById(person.id),
+      ).thenAnswer((_) async => null);
+      when(
+        () => relationships.getCheckInsForRelationship(person.id),
+      ).thenAnswer((_) async => const []);
+      final result = await withClock(
+        Clock.fixed(now),
+        () => dispatcher.dispatch('create_and_link_task', args, person.id),
+      );
+      expect(result.success, isTrue);
+      expect(result.nonRetryable, isFalse);
+      expect((result as RelationshipTaskCreationResult).task, task);
+      verify(
+        () => persistence.createTaskEntry(
+          id: any(named: 'id'),
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: 'category',
+          private: true,
+        ),
+      ).called(1);
+      verify(
+        () =>
+            relationships.linkTask(relationshipId: person.id, taskId: task.id),
+      ).called(1);
+      verifyNever(() => relationships.getRelationshipById(any()));
+      verifyNever(() => relationships.getCheckInsForRelationship(any()));
     },
   );
 
@@ -207,7 +246,7 @@ void main() {
         ),
       ]) {
         when(
-          () => relationships.getCheckInsForRelationship(person.id),
+          () => relationships.getAllCheckInsForRelationship(person.id),
         ).thenAnswer((_) async => [?source]);
         expect(
           (await dispatcher.dispatch(
@@ -219,7 +258,7 @@ void main() {
         );
       }
       when(
-        () => relationships.getRelationshipById(person.id),
+        () => relationships.getRelationshipByIdUnfiltered(person.id),
       ).thenAnswer((_) async => null);
       expect(
         (await dispatcher.dispatch(
@@ -311,7 +350,7 @@ void main() {
     'confirming creates the task even when the check-in text changed',
     () async {
       when(
-        () => relationships.getCheckInsForRelationship(person.id),
+        () => relationships.getAllCheckInsForRelationship(person.id),
       ).thenAnswer(
         (_) async => [
           evidence.copyWith(
@@ -340,7 +379,9 @@ void main() {
     'consent withdrawn during creation rolls back without linking',
     () async {
       var reads = 0;
-      when(() => relationships.getRelationshipById(person.id)).thenAnswer(
+      when(
+        () => relationships.getRelationshipByIdUnfiltered(person.id),
+      ).thenAnswer(
         (_) async => reads++ == 0
             ? person
             : person.copyWith(data: person.data.copyWith(important: false)),
@@ -434,7 +475,9 @@ void main() {
   test(
     'private evidence keeps a public person’s task private, and no due date stays absent',
     () async {
-      when(() => relationships.getRelationshipById(person.id)).thenAnswer(
+      when(
+        () => relationships.getRelationshipByIdUnfiltered(person.id),
+      ).thenAnswer(
         (_) async =>
             person.copyWith(meta: person.meta.copyWith(private: false)),
       );

@@ -67,6 +67,7 @@ void main() {
         removed.add(task);
         return removeSucceeds;
       },
+      domainLogger: MockDomainLogger(),
     );
     when(() => repository.getEntity(set.id)).thenAnswer((_) async => confirmed);
     when(
@@ -548,6 +549,7 @@ void main() {
           journalDb: db,
           relationshipRepository: relationships,
           taskRemover: dispatcher.removeTask,
+          domainLogger: MockDomainLogger(),
         );
         expect(await service.undo(confirmed, 0), !lateNote);
         expect(tombstoned, !lateNote);
@@ -570,4 +572,140 @@ void main() {
       },
     );
   }
+
+  group('confirmAll', () {
+    final second = set.copyWith(id: 'set-2');
+    final third = set.copyWith(id: 'set-3');
+
+    test('confirms every item in order, past a throw and a refusal', () async {
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) async => RelationshipTaskCreationResult(testTask));
+      when(
+        () => confirmation.confirmItem(second, 0),
+      ).thenThrow(StateError('write failed'));
+      when(() => confirmation.confirmItem(third, 0)).thenAnswer(
+        (_) async =>
+            const ToolExecutionResult(success: false, output: 'Refused'),
+      );
+      final seen = <(String, bool)>[];
+      final results = await service.confirmAll(
+        [(set, 0), (second, 0), (third, 0)],
+        onEach: (set, index, result) => seen.add((set.id, result.success)),
+      );
+      expect(results.map((result) => result.success), [true, false, false]);
+      expect(results[1].output, 'Confirmation failed');
+      expect(seen, [(set.id, true), (second.id, false), (third.id, false)]);
+      verifyInOrder([
+        () => confirmation.confirmItem(set, 0),
+        () => confirmation.confirmItem(second, 0),
+        () => confirmation.confirmItem(third, 0),
+      ]);
+      expect(await service.receipt(set, 0), testTask);
+    });
+
+    // The band's listener runs after the band may be gone; whatever it
+    // throws is its own problem, not the remaining confirmations'.
+    test('a listener that throws does not stop the batch', () async {
+      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(
+          success: true,
+          output: 'Created',
+          mutatedEntityId: 'task',
+        ),
+      );
+      var calls = 0;
+      final results = await service.confirmAll(
+        [(set, 0), (second, 0)],
+        onEach: (_, _, _) {
+          calls++;
+          throw StateError('the band is gone');
+        },
+      );
+      expect(results.map((result) => result.success), [true, true]);
+      expect(calls, 2);
+      verify(() => confirmation.confirmItem(second, 0)).called(1);
+    });
+
+    // A band built again mid-batch has none of its own busy state; it reads
+    // this to keep the running batch's rows, and a second batch, out of reach.
+    test('every item counts as confirming until its result is in', () async {
+      final first = Completer<ToolExecutionResult>();
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) => first.future);
+      when(() => confirmation.confirmItem(second, 0)).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      final settledWhenHeard = <bool>[];
+      final batch = service.confirmAll(
+        [(set, 0), (second, 0)],
+        onEach: (set, index, _) =>
+            settledWhenHeard.add(!service.isConfirming(set.id, index)),
+      );
+      await pumpEventQueue();
+      expect(service.isConfirming(set.id, 0), isTrue);
+      expect(service.isConfirming(second.id, 0), isTrue);
+      expect(service.isConfirming(third.id, 0), isFalse);
+      first.complete(
+        const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      await batch;
+      expect(settledWhenHeard, [true, true]);
+      expect(service.isConfirming(set.id, 0), isFalse);
+      expect(service.isConfirming(second.id, 0), isFalse);
+    });
+
+    test('a batch that throws leaves nothing marked confirming', () async {
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenThrow(StateError('write failed'));
+      when(() => confirmation.confirmItem(second, 0)).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      await service.confirmAll([(set, 0), (second, 0)]);
+      expect(service.isConfirming(set.id, 0), isFalse);
+      expect(service.isConfirming(second.id, 0), isFalse);
+    });
+
+    // The card and the docked chat each hold a band; both can press before
+    // either hears of the other. The second batch leaves the held item to
+    // the first, confirms the rest, and releases only its own.
+    test('an item another batch holds is left to that batch', () async {
+      final published = <Set<String>>[];
+      service = RelationshipProposalService(
+        confirmation: confirmation,
+        repository: repository,
+        syncService: sync,
+        journalDb: db,
+        relationshipRepository: relationships,
+        taskRemover: (task, {allowedRelationshipId}) async => true,
+        domainLogger: MockDomainLogger(),
+        onConfirmingChanged: published.add,
+      );
+      final first = Completer<ToolExecutionResult>();
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) => first.future);
+      when(() => confirmation.confirmItem(second, 0)).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      final one = service.confirmAll([(set, 0)]);
+      await pumpEventQueue();
+      expect(published.last, {'${set.id}:0'});
+      final two = await service.confirmAll([(set, 0), (second, 0)]);
+      expect(two.map((result) => result.success), [true]);
+      verify(() => confirmation.confirmItem(second, 0)).called(1);
+      verifyNever(() => confirmation.confirmItem(third, 0));
+      expect(service.isConfirming(set.id, 0), isTrue);
+      expect(service.isConfirming(second.id, 0), isFalse);
+      first.complete(
+        const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      await one;
+      verify(() => confirmation.confirmItem(set, 0)).called(1);
+      expect(service.isConfirming(set.id, 0), isFalse);
+      expect(published.last, isEmpty);
+    });
+  });
 }

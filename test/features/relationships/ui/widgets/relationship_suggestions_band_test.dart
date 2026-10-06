@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -97,6 +98,21 @@ void main() {
     );
     await tester.pump();
     await tester.pumpAndSettle();
+  }
+
+  /// The service's own batch loop over the mocked per-item confirm, so the
+  /// band's tests keep stubbing `confirm` and run the loop that ships.
+  void stubConfirmAll() {
+    when(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).thenAnswer(
+      (invocation) => RelationshipProposalService.confirmEach(
+        invocation.positionalArguments.single as List<(ChangeSetEntity, int)>,
+        confirm: service.confirm,
+        onEach:
+            invocation.namedArguments[#onEach] as BatchConfirmationListener?,
+      ),
+    );
   }
 
   testWidgets('folds beyond three and offers Confirm all only for one kind', (
@@ -190,6 +206,7 @@ void main() {
       when(
         () => service.confirm(any(), any()),
       ).thenThrow(StateError('write failed'));
+      stubConfirmAll();
       await pump(
         tester,
         () => RelationshipProposalSnapshot(
@@ -352,6 +369,7 @@ void main() {
           mutatedEntityId: 'task-${set.id}',
         );
       });
+      stubConfirmAll();
       var snapshot = RelationshipProposalSnapshot(
         suggestions: UnifiedSuggestionList(open: rows, activity: const []),
       );
@@ -457,6 +475,7 @@ void main() {
       when(
         () => service.confirm(rows[1].changeSet, 0),
       ).thenAnswer((_) => second.future);
+      stubConfirmAll();
       when(() => service.reject(any(), any())).thenAnswer((_) async => true);
       await pump(
         tester,
@@ -493,4 +512,178 @@ void main() {
       expect(find.textContaining('Commitment 1'), findsNothing);
     },
   );
+
+  // The chat host builds the band lazily, so scrolling away disposes it
+  // mid-batch. The loop that lived in the band returned at `!mounted` and the
+  // remaining proposals stayed pending; the service's batch goes on.
+  testWidgets('the batch finishes after the band unmounts', (tester) async {
+    final rows = [proposal(0), proposal(1)];
+    final first = Completer<ToolExecutionResult>();
+    final second = Completer<ToolExecutionResult>();
+    when(
+      () => service.confirm(rows[0].changeSet, 0),
+    ).thenAnswer((_) => first.future);
+    when(
+      () => service.confirm(rows[1].changeSet, 0),
+    ).thenAnswer((_) => second.future);
+    stubConfirmAll();
+    final shown = ValueNotifier(true);
+    addTearDown(shown.dispose);
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        ValueListenableBuilder<bool>(
+          valueListenable: shown,
+          builder: (_, visible, _) => visible
+              ? const RelationshipSuggestionsBand(
+                  relationshipId: 'person',
+                  checkIns: [],
+                )
+              : const SizedBox.shrink(),
+        ),
+        overrides: [
+          relationshipProposalServiceProvider.overrideWithValue(service),
+          relationshipSuggestionListProvider('person').overrideWith(
+            (ref) async => RelationshipProposalSnapshot(
+              suggestions: UnifiedSuggestionList(
+                open: rows,
+                activity: const [],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand)),
+    );
+    await tester.tap(find.text('Confirm all'));
+    await tester.pump();
+    verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+    shown.value = false;
+    await tester.pump();
+    expect(find.byType(RelationshipSuggestionsBand), findsNothing);
+    first.complete(
+      const ToolExecutionResult(
+        success: true,
+        output: 'Created',
+        mutatedEntityId: 'task-set-0',
+      ),
+    );
+    await tester.pump();
+    verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+    second.complete(
+      const ToolExecutionResult(
+        success: true,
+        output: 'Created',
+        mutatedEntityId: 'task-set-1',
+      ),
+    );
+    await tester.pump();
+    expect(container.read(relationshipTaskHighlightProvider), {
+      'task-set-0',
+      'task-set-1',
+    });
+    await tester.pump(const Duration(seconds: 4));
+  });
+  // A band built again while the service's batch runs has none of the busy
+  // state its predecessor held. It must not offer the batch's rows, or a
+  // second batch, while the first will still reach them.
+  testWidgets('a band built mid-batch keeps the running batch out of reach', (
+    tester,
+  ) async {
+    final rows = [proposal(0), proposal(1)];
+    await pump(
+      tester,
+      () => RelationshipProposalSnapshot(
+        suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+      ),
+    );
+    ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand)),
+    ).read(relationshipConfirmingItemsProvider.notifier).replace({
+      RelationshipProposalSnapshot.itemKey(rows[1].changeSet.id, 0),
+    });
+    await tester.pump();
+    expect(find.text('Confirm all').hitTestable(), findsNothing);
+    await tester.tap(find.byIcon(LottiIcons.confirm).first);
+    await tester.pump();
+    verifyNever(() => service.confirm(any(), any()));
+    verifyNever(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    );
+  });
+
+  // The person's card and its docked chat each hold a band. Both can be
+  // pressed before either rebuilds; the first press reserves the rows in the
+  // service, which publishes them, and the second finds them held and starts
+  // nothing — no second batch, no spurious failure toasts.
+  testWidgets('a second band pressing Confirm all mid-batch starts nothing', (
+    tester,
+  ) async {
+    final rows = [proposal(0), proposal(1)];
+    final first = Completer<ToolExecutionResult>();
+    when(() => service.confirm(any(), any())).thenAnswer((_) => first.future);
+    late ProviderContainer container;
+    when(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).thenAnswer((invocation) {
+      final items =
+          invocation.positionalArguments.single as List<(ChangeSetEntity, int)>;
+      container.read(relationshipConfirmingItemsProvider.notifier).replace({
+        for (final (set, index) in items)
+          RelationshipProposalSnapshot.itemKey(set.id, index),
+      });
+      return RelationshipProposalService.confirmEach(
+        items,
+        confirm: service.confirm,
+        onEach:
+            invocation.namedArguments[#onEach] as BatchConfirmationListener?,
+      );
+    });
+    final snapshot = RelationshipProposalSnapshot(
+      suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const Column(
+          children: [
+            RelationshipSuggestionsBand(relationshipId: 'person', checkIns: []),
+            RelationshipSuggestionsBand(relationshipId: 'person', checkIns: []),
+          ],
+        ),
+        overrides: [
+          relationshipProposalServiceProvider.overrideWithValue(service),
+          relationshipSuggestionListProvider(
+            'person',
+          ).overrideWith((ref) async => snapshot),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand).first),
+    );
+    final buttons = find.text('Confirm all');
+    expect(buttons, findsNWidgets(2));
+    await tester.tap(buttons.first);
+    await tester.tap(buttons.last);
+    await tester.pump();
+    verify(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).called(1);
+    verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+    expect(find.text('Confirm all').hitTestable(), findsNothing);
+    first.complete(
+      const ToolExecutionResult(success: true, output: 'Created'),
+    );
+    await tester.pump();
+    verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump(const Duration(seconds: 4));
+  });
 }

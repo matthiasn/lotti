@@ -81,50 +81,62 @@ class _RelationshipSuggestionsBandState
     });
   }
 
+  /// The batch runs in the proposal service and outlives this band: the chat
+  /// host builds it lazily, so scrolling away disposes it mid-batch, and the
+  /// confirmations the user asked for still happen. Everything read through
+  /// `ref` is read before the first await; the per-row updates touch the
+  /// widget only while it is mounted, and the notification that refreshes the
+  /// person's other surfaces goes out either way. A row another band's batch
+  /// already holds is left to it — the card and the docked chat can both be
+  /// pressed before either rebuilds — and a press that finds every row held
+  /// only rebuilds, so this band shows the batch as running.
   Future<void> _confirmAll(List<PendingSuggestion> rows) async {
     if (_bulkBusy || rows.isEmpty) return;
     final kinds = rows
         .map((row) => resolveKind(row.item.toolName, row.item.args))
         .toSet();
     if (kinds.length != 1) return;
+    final held = ref.read(relationshipConfirmingItemsProvider);
+    final mine = [
+      for (final row in rows)
+        if (!held.contains(_key(row))) row,
+    ];
+    if (mine.isEmpty) {
+      setState(() {});
+      return;
+    }
     setState(() {
       _bulkBusy = true;
       _all = true;
-      for (final row in rows) {
+      for (final row in mine) {
         _resolving[_key(row)] = row;
       }
     });
+    final service = ref.read(relationshipProposalServiceProvider);
+    final highlighter = ref.read(relationshipTaskHighlightProvider.notifier);
+    final notifier = ref.read(updateNotificationsProvider);
+    final agentId = relationshipAgentIdFor(widget.relationshipId);
+    final byKey = {for (final row in mine) _key(row): row};
     try {
-      for (final row in rows) {
-        ToolExecutionResult result;
-        try {
-          result = await _confirm(row);
-        } catch (exception, stackTrace) {
-          // The user hears about it through the toast below; the log is what
-          // says which proposal threw and why.
-          developer.log(
-            'confirming a proposal threw',
-            name: 'RelationshipSuggestionsBand',
-            error: exception,
-            stackTrace: stackTrace,
-          );
-          result = const ToolExecutionResult(
-            success: false,
-            output: 'Confirmation failed',
-          );
-        }
-        if (!mounted) return;
-        if (result.success) {
-          setState(() => _confirmed.add(_key(row)));
-        } else {
-          _end(row, removed: false);
-          context.showToast(
-            tone: DesignSystemToastTone.error,
-            title: context.messages.relationshipErrorLinkTaskFailed,
-          );
-        }
-        _refresh();
-      }
+      await service.confirmAll(
+        [for (final row in mine) (row.changeSet, row.itemIndex)],
+        onEach: (set, index, result) {
+          final row =
+              byKey[RelationshipProposalSnapshot.itemKey(set.id, index)]!;
+          _highlightCreated(highlighter, result);
+          notifier.notifyUiOnly({agentId});
+          if (!mounted) return;
+          if (result.success) {
+            setState(() => _confirmed.add(_key(row)));
+          } else {
+            _end(row, removed: false);
+            context.showToast(
+              tone: DesignSystemToastTone.error,
+              title: context.messages.relationshipErrorLinkTaskFailed,
+            );
+          }
+        },
+      );
     } finally {
       if (mounted) setState(() => _bulkBusy = false);
     }
@@ -135,10 +147,20 @@ class _RelationshipSuggestionsBandState
     final result = await ref
         .read(relationshipProposalServiceProvider)
         .confirm(row.changeSet, row.itemIndex);
+    _highlightCreated(highlighter, result);
+    return result;
+  }
+
+  /// Marks the task a confirmation created on the person's linked-task card.
+  /// Takes the notifier rather than reading it, because a batch reports
+  /// results after this band may be gone.
+  static void _highlightCreated(
+    RelationshipTaskHighlight highlighter,
+    ToolExecutionResult result,
+  ) {
     if (result.success && result.mutatedEntityId != null) {
       highlighter.highlight(result.mutatedEntityId!);
     }
-    return result;
   }
 
   Future<void> _undo(LedgerEntry entry) async {
@@ -231,6 +253,12 @@ class _RelationshipSuggestionsBandState
               widget.runKey == null || row.changeSet.runKey == widget.runKey,
         )
         .toList();
+    // A batch outlives the band that started it; a band built again mid-batch
+    // learns of it from the set the service publishes and keeps every row
+    // inert until it ends.
+    final confirming = ref.watch(relationshipConfirmingItemsProvider);
+    final batchRunning =
+        _bulkBusy || current.any((row) => confirming.contains(_key(row)));
     // Once the ledger acknowledges a removal, forget the local tombstone.
     // A peer can then reopen the same item without it staying hidden here.
     final currentKeys = current.map(_key).toSet();
@@ -272,8 +300,12 @@ class _RelationshipSuggestionsBandState
             child: ProposalsSection(
               open: shown,
               pendingCount: current.length,
-              confirmAllBusy: _bulkBusy,
-              onConfirmAll: current.length > 1 && sameKind && _resolving.isEmpty
+              confirmAllBusy: batchRunning,
+              onConfirmAll:
+                  current.length > 1 &&
+                      sameKind &&
+                      _resolving.isEmpty &&
+                      !batchRunning
                   ? () => _confirmAll(current)
                   : null,
               confirmAllPulse: 0,
@@ -285,7 +317,7 @@ class _RelationshipSuggestionsBandState
                 confirmAllPulse: _confirmed.contains(_key(row)) ? 1 : 0,
                 pendingCount: current.length,
                 settling:
-                    _bulkBusy ||
+                    batchRunning ||
                     (_resolving.isNotEmpty &&
                         !_resolving.containsKey(_key(row))),
                 onResolveStart: _start,

@@ -820,7 +820,7 @@ settles what the lifecycle should be as a rule over recorded intent, and
   identity's `userResumedAt`, from the agent controls' resume.
 - **The stop.** The identity's `userStoppedAt` and `userStopLifecycle`, from
   the agent controls' destroy, pause or delete (`byUser: true`). A teardown
-  the app decides — a deleted person, a retired task agent — is not the
+  the app decides — a deleted person, a retired project agent — is not the
   user's stop.
 - **The rule.** A stop newer than every ask keeps the agent stopped;
   otherwise an important person's agent is active; an unimportant person's
@@ -852,6 +852,7 @@ stateDiagram-v2
   active --> destroyed: user destroy, cascade, reaper (tombstone), reconcile to a destroy
   dormant --> destroyed: user destroy, cascade, reconcile to a destroy
   destroyed --> active: reconcile, when the destroy was the app's or older than the last ask
+  destroyed --> dormant: reconcile, when a user pause is newer than every ask
   destroyed --> deleted: user delete (syncs the stop first)
   deleted --> active: a mark newer than the delete (ensure or maintenance create), or Brief me
 ```
@@ -861,14 +862,14 @@ person still marked important gets it back on the first scan.
 
 ```mermaid
 flowchart TD
-  T[hourly tick / check-in saved / manual wake] --> A[RelationshipAgentPhaseA]
+  T["daily cadence wake (07:00 local) / check-in saved / manual wake"] --> A[RelationshipAgentPhaseA]
   A --> L{agent link?}
   L -->|none| OK1[no-op]
   L --> G{"person still there?<br/>(unfiltered read)"}
-  G -->|"tombstone / not arrived"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps only over a tombstone"]
+  G -->|"tombstone / not arrived"| STOP["nothing to the agent store — not even the tick;<br/>open OS reminders retracted.<br/>maintenance reaps only over a tombstone"]
   G --> R[re-arm daily cadence wake<br/>skip if unchanged]
-  R --> E{important AND active?}
-  E -->|no| OK2[done — the tick keeps checking]
+  R --> E{"important AND the person active?"}
+  E -->|no| OK2["retire active banners, clear OS reminders —<br/>the tick keeps checking"]
   E --> D["derive: newest check-in (unfiltered)<br/>?? tracking start, + cadenceDays<br/>(default 30) → ok | due"]
   D --> SW["sweep nudges: expire past staleAt,<br/>retire actives when cadence is ok<br/>(deterministic, skip-if-no-op)"]
   SW --> REG["recompute relationshipHealth register<br/>ONE row per agent, skip-if-identical"]
@@ -876,7 +877,7 @@ flowchart TD
   N -->|yes| ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
   N -->|no| ST{"evidence changed after<br/>current briefing?"}
   ST -->|no| OK3[€0 no-write no-op]
-  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;evidenceMs&gt;<br/>deadline = evidence + 2 min settle,<br/>or a pending transcript's timeout"]
+  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;evidenceKey&gt;<br/>deadline = evidence + 2 min settle,<br/>or a pending transcript's timeout"]
 ```
 
 Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
@@ -887,7 +888,10 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   preference, and devices with different settings must derive the same
   register. The gated `getRelationshipById` is the UI's read, and using it
   in the runtime silently un-tracks a private person on whichever device
-  hides private entries.
+  hides private entries. The dispatcher's apply-time reads are runtime reads
+  too: a confirmation is applied over what the agent proposed from, and a
+  dispatch failure on "is the check-in still there" is permanent, so the
+  display gate once retracted a hidden check-in's proposal on every device.
 - **Every stored time is read in one of two ways, the same on every
   device** (ADR 0114, `relationship_calendar.dart`). A journal time is the
   writer's wall-clock components without an offset, beside the entry's
@@ -950,7 +954,8 @@ check-in's detail view does once a comment written there has words or a
 recording is made there, and so does
 `CheckInTranscriptionService` once a recording's transcript lands — read
 back from the entry, since a run can end without an error and without words —
-independently of the composer, which may be long closed — through
+independently of the composer, which may be long closed, and
+`CheckInPhotoAnalysisTrigger` once a photo's analysis lands, both through
 `touchCheckInsHolding`. Keyed by the check-in's date, as it used to be, a
 check-in logged after the briefing but dated before it (yesterday's call,
 logged this morning) never made the briefing stale, and a second check-in
@@ -1280,14 +1285,14 @@ the app bar does not.
 The card on the person page (design 2026-09-06 §4, rebuilt to the
 2026-09-13 state matrix) is the same AI panel as the task agent's section
 and the goal agent's read — `aiCardDecoration`, `TldrHeader` (tapping it
-opens the internals), `TldrBody` for the prose — in one of seven faces, on
+opens the internals), `TldrBody` for the prose — in one of six faces, on
 one skeleton: header with **one status line** under the title and an
 optional pill on the trailing rail, body, the proposals band, then a footer
 with one quiet text action on the leading edge, one primary on the trailing
 edge, and the meta lines beneath (model · provider · tokens; sources where
 there is a briefing). The face is a pure function of the runtime's own
 signals,
-[`relationshipAgentCardStateOf`](../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart),
+[`relationshipAgentCardStateOf`](../../lib/features/relationships/ui/widgets/relationship_briefing_card_relationship_briefing_card_state_part.dart),
 so the decision is a table rather than a widget tree:
 
 | Face | When | Status line · body · footer |
@@ -1301,19 +1306,21 @@ briefings without being asked each time — so the one privacy claim on the
 surface described the state the reader was one tap from leaving and said
 nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
-| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
+| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *See activity* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
 | Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
-| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
-| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
-| Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
+| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *See activity* · **Update now** (tertiary) · sources line with the full briefing: behind *Read more*, or at once when the TL;DR is the whole of it |
+| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *See activity* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 
 Open task proposals are counted once, by the proposals band beneath the
 body (`2 pending`), never again in the header: a state said twice is a
 state said badly, and the band is where the proposals are acted on. The
 sources line (`Sources: 6 check-ins · contact details never sent`) is part
-of the expanded reading — it appears with the full briefing behind *Read
-more* — so the folded card stays status · TL;DR · one next step.
+of the full reading — it appears with the whole briefing, behind *Read more*
+or at once when the TL;DR is all there is — so the folded card stays status ·
+TL;DR · one next step. Logging a check-in and calling are the page's verbs,
+held by its sticky action bar, not the card's: every enrolled face's quiet
+action is *See activity*.
 
 ```mermaid
 stateDiagram-v2
@@ -1325,17 +1332,33 @@ stateDiagram-v2
   Failed --> Running: Try again / Choose a model, then wake
   Current --> OutOfDate: check-in newer than the report (reportStaleAt)
   OutOfDate --> Running: Update now / refresh wake
+  note right of OutOfDate : unreachable today — nothing writes reportStaleAt for a relationship agent
   Current --> Running: Update now
   Current --> NotEnrolled: important off, dormant, archived
   OutOfDate --> NotEnrolled: important off, dormant, archived
 ```
 
-Two runtime details keep the faces honest. Every relationship wake stamps
-its outcome on the state row when it ends (`_stampWakeOutcome` in the
-workflow, through `relationshipWakeOutcome`): `lastWakeAt` on success,
+**The out-of-date face is unreachable today.** It is derived from
+`AgentStateEntity.isReportStale`, a watermark pair on the state row, and
+nothing in the relationship feature writes `reportStaleAt`: Phase A decides
+"evidence newer than the briefing" locally (`relationshipEvidenceNewerThan`)
+to arm the refresh wake and never persists it, and the generic writers — a
+`reportStaleOnly` subscription, automatic updates switched off, a task
+cadence window — are set by the task, goal and project services only. A new
+check-in therefore shows as a refresh wake and then a new briefing, never as
+the warning face between the two. The running face, on the other hand, shows
+more than briefings: a Phase A tick holds the same device-local run lock, so
+a €0 tick wears *Writing the briefing…* on the device running it.
+
+Two runtime details keep the faces honest. Every briefing run — the LLM
+tier's wake, once it has its person and has not stood down — stamps its
+outcome on the state row when it ends (`_stampWakeOutcome` in the workflow,
+through `relationshipWakeOutcome`): `lastWakeAt` on success,
 `lastWakeFailedAt` on failure — including a wake that found no model to run
 on and returned before inference — and the failure streak reset or bumped
-beside them. The two stamps are watermarks every device joins by latest
+beside them. A wake that returns before that (no linked person, a deleted
+one, an escalation standing down) stamps nothing, and a Phase A tick never
+does. The two stamps are watermarks every device joins by latest
 instant (`mergeAgentStateCounters`), stamped in UTC and a microsecond past
 the stamps the row already holds (`decisionStampAfter`) — the row's own
 `updatedAt` stays the wall clock, since it decides last-writer-wins for the
@@ -1392,9 +1415,9 @@ uses the shared [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
 ## Deferred task suggestions
 
 [`relationship_agent_contract.dart`](../../lib/features/relationships/workflow/relationship_agent_contract.dart)
-exposes `create_and_link_task` as a deferred tool. It requires an explicit
-commitment, a quoted description, a structured `sourceCheckInId`, and a reason;
-`dueDate` is optional and must be a real calendar date. The renderer includes
+exposes `create_and_link_task` as a deferred tool. It requires a title, an
+explicit commitment quoted as the description, a structured `sourceCheckInId`,
+and a reason; `dueDate` is optional and must be a real calendar date. The renderer includes
 check-in IDs in its ten-entry window and the relationship-scoped `PROPOSALS`
 ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
 contact channels remain outside FACTS. The strategy accepts only IDs from that
@@ -1432,8 +1455,9 @@ stateDiagram-v2
 ```
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
-is the only apply path. It rechecks that the source check-in is still visible
-and still the person's, and current consent — not the quote; creates a task
+is the only apply path. It rechecks, through the agent's unfiltered reads and
+never the display preference's, that the source check-in is still live and
+still the person's, and current consent — not the quote; creates a task
 with the person's category, inherited privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is
@@ -1442,11 +1466,20 @@ category-default assignment helper provisions its task agent. The task has a
 stable UUID derived from the person, source check-in, title and quoted
 commitment, so the same synced proposal confirmed on two devices converges on
 one journal row despite different clocks. The task-creation facade accepts
-this explicit identity and preserves its existing insert-only write contract.
-A live task found under that identity is linked without overwriting it or
-creating a fresh undo receipt from potentially edited data. Reconfirmation
-after undo restores the tombstoned identity with a vector clock descended
-from the tombstone. An active, visible relationship link in either direction
+this explicit identity and refuses to overwrite a *live* row under it; a
+tombstoned row counts as absent and is overwritten. A live task found under
+that identity is linked without overwriting it or creating a fresh undo
+receipt from potentially edited data. **A re-confirmation after an Undo does
+not restore the tombstone the Undo left.** The dispatcher's restore branch
+reads through `journalEntityById`, whose query excludes deleted rows, so it
+never sees that tombstone; the re-confirmation creates the task again under
+the same id with a fresh vector clock that does not descend from the
+tombstone. Locally the tombstone is overwritten; a peer that holds it sees a
+concurrent clock, keeps its tombstone and records a conflict row. The Undo's
+reopen names no effect key either, so the generic guard against a later
+decision ([ADR 0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md))
+does not run for a relationship proposal; the revert's snapshot comparison is
+its only protection. An active, visible relationship link in either direction
 turns a duplicate refusal or a thrown post-write error into success without a
 new undo receipt.
 
@@ -1492,6 +1525,20 @@ It folds after three pending rows, offers bulk confirmation only for a single
 kind, keeps per-row buttons and swipes inert during bulk writes, links evidence
 to the check-in editor, and provides handled history and
 undo. Confirmation briefly highlights the created task in the Tasks card.
+A bulk confirmation runs in the proposal service (`confirmAll`), not in the
+band: the chat host builds the band lazily, so scrolling away disposes it
+mid-batch, and the loop that once lived in the band stopped there with the
+remaining proposals still pending. The band updates its rows while it is
+mounted; the confirmations happen either way, and the person's other surfaces
+are notified of each. The service publishes the items being confirmed —
+in flight or queued — into `relationshipConfirmingItemsProvider`, a notifier
+with no dependencies of its own, and every band watches it: a band built
+again mid-batch keeps the batch's rows inert, with no second *Confirm all*,
+until the batch ends, and the person's card and docked chat, which each hold
+a band, learn of each other's batch at once. A press that reaches the service
+while another batch holds some of its rows confirms only the rest; the
+service leaves an item another batch holds to that batch, and releases only
+its own when it ends.
 It does not use the task-specific `ChangeSetNotificationService`.
 
 The shared chat projection carries each reply's `runKey`.
