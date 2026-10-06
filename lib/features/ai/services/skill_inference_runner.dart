@@ -455,11 +455,13 @@ class SkillInferenceRunner {
       staleIds.addAll(
         parents.whereType<Task>().map((parent) => parent.meta.id),
       );
-    } catch (e) {
-      _loggingService.log(
+    } catch (e, stackTrace) {
+      _loggingService.error(
         LogDomain.ai,
-        'parent lookup for stale notification failed: $e',
+        e,
+        stackTrace: stackTrace,
         subDomain: subDomain,
+        message: 'parent lookup for stale notification failed',
       );
     }
     if (staleIds.isNotEmpty) {
