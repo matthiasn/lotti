@@ -887,7 +887,10 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   preference, and devices with different settings must derive the same
   register. The gated `getRelationshipById` is the UI's read, and using it
   in the runtime silently un-tracks a private person on whichever device
-  hides private entries.
+  hides private entries. The dispatcher's apply-time reads are runtime reads
+  too: a confirmation is applied over what the agent proposed from, and a
+  dispatch failure on "is the check-in still there" is permanent, so the
+  display gate once retracted a hidden check-in's proposal on every device.
 - **Every stored time is read in one of two ways, the same on every
   device** (ADR 0114, `relationship_calendar.dart`). A journal time is the
   writer's wall-clock components without an offset, beside the entry's
@@ -1432,8 +1435,9 @@ stateDiagram-v2
 ```
 
 [`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
-is the only apply path. It rechecks that the source check-in is still visible
-and still the person's, and current consent — not the quote; creates a task
+is the only apply path. It rechecks, through the agent's unfiltered reads and
+never the display preference's, that the source check-in is still live and
+still the person's, and current consent — not the quote; creates a task
 with the person's category, inherited privacy (also preserving private evidence), evidence link and proposed due
 date; then links it to the person. A link failure tombstones the new task only
 if it is unchanged and has no live links. A refused compensation is

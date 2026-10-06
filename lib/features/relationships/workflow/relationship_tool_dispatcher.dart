@@ -32,6 +32,16 @@ class RelationshipTaskCreationResult extends ToolExecutionResult {
 
 /// Applies user-confirmed relationship proposals. Evidence and consent are
 /// checked again at apply time; the model never writes journal entities.
+///
+/// Every read here is the agent's — [RelationshipRepository.getRelationshipByIdUnfiltered]
+/// and [RelationshipRepository.getAllCheckInsForRelationship] — never the
+/// display's. A proposal was made over what the agent read, and whether this
+/// device is showing private entries says nothing about whether the person
+/// or the check-in still exists. The display-gated reads once answered
+/// "gone" for a hidden check-in, and a failure on that question is
+/// permanent, so one confirmation with private entries hidden retracted the
+/// proposal on every device. The rule is the relationships concept's for
+/// every runtime read: a display preference never scopes one.
 class RelationshipToolDispatcher {
   RelationshipToolDispatcher({
     required this.relationshipRepository,
@@ -57,7 +67,7 @@ class RelationshipToolDispatcher {
     }
     final invalid = relationshipTaskProposalError(args);
     if (invalid != null) return _failure(invalid, permanent: true);
-    final person = await relationshipRepository.getRelationshipById(
+    final person = await relationshipRepository.getRelationshipByIdUnfiltered(
       relationshipId,
     );
     if (person == null ||
@@ -66,9 +76,10 @@ class RelationshipToolDispatcher {
         person.data.status is! RelationshipActive) {
       return _failure('Relationship is no longer eligible', permanent: true);
     }
-    final evidence = (await relationshipRepository.getCheckInsForRelationship(
-      relationshipId,
-    )).where((entry) => entry.id == args['sourceCheckInId']).firstOrNull;
+    final evidence =
+        (await relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        )).where((entry) => entry.id == args['sourceCheckInId']).firstOrNull;
     if (evidence == null ||
         evidence.isDeleted ||
         evidence.data.relationshipId != relationshipId) {
@@ -173,9 +184,8 @@ class RelationshipToolDispatcher {
     var alreadyLinked = false;
     try {
       // A deleted person must not gain a task while an async create was running.
-      final current = await relationshipRepository.getRelationshipById(
-        relationshipId,
-      );
+      final current = await relationshipRepository
+          .getRelationshipByIdUnfiltered(relationshipId);
       if (current != null &&
           !current.isDeleted &&
           current.data.important &&
