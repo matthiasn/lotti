@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -32,6 +34,7 @@ void main() {
   ProviderContainer build({
     required AgentIdentityEntity? agent,
     required ProposalLedger ledger,
+    List<InferenceBackfillCandidate> backfill = const [],
   }) {
     when(
       () => mockRepo.getProposalLedger(
@@ -46,6 +49,9 @@ void main() {
       overrides: withServiceOverrides([
         taskAgentProvider('task-abc').overrideWith((ref) async => agent),
         agentRepositoryProvider.overrideWithValue(mockRepo),
+        inferenceBackfillSuggestionsProvider(
+          'task-abc',
+        ).overrideWith((ref) => backfill),
       ]),
     );
     addTearDown(container.dispose);
@@ -70,6 +76,9 @@ void main() {
             taskAgentProvider('task-abc').overrideWith((ref) async => agent),
             agentRepositoryProvider.overrideWithValue(generatedRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
+            inferenceBackfillSuggestionsProvider(
+              'task-abc',
+            ).overrideWith((ref) => const []),
           ]),
         );
 
@@ -735,6 +744,89 @@ void main() {
         expect(result.activity, hasLength(2));
       },
     );
+  });
+
+  group('backfill suggestions', () {
+    final image = InferenceBackfillCandidate(
+      entryId: 'img',
+      kind: InferenceBackfillKind.imageAnalysis,
+      capturedAt: DateTime(2024, 3, 15, 9, 30),
+    );
+    final recording = InferenceBackfillCandidate(
+      entryId: 'rec',
+      kind: InferenceBackfillKind.transcription,
+      capturedAt: DateTime(2024, 3, 14),
+    );
+
+    Future<UnifiedSuggestionList> read(ProviderContainer container) {
+      final sub = container.listen(
+        unifiedSuggestionListProvider('task-abc'),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      return container.read(unifiedSuggestionListProvider('task-abc').future);
+    }
+
+    test(
+      "follow the agent's proposals, one row per missing inference",
+      () async {
+        final agent = makeTestIdentity();
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [
+              makeTestChangeSet(
+                id: 'cs-1',
+                agentId: agent.agentId,
+                taskId: 'task-abc',
+                items: const [
+                  ChangeItem(
+                    toolName: 'set_task_title',
+                    args: {'title': 'Hello'},
+                    humanSummary: 'Rename task',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          backfill: [image, recording],
+        );
+
+        final open = (await read(container)).open;
+
+        expect(open.map((s) => s.backfill), [null, image, recording]);
+        final row = open[1];
+        expect(row.item.toolName, 'backfill_image_analysis');
+        expect(row.item.args, {
+          'entryId': 'img',
+          'capturedAt': image.capturedAt.toIso8601String(),
+        });
+        expect(row.item.status, ChangeItemStatus.pending);
+        expect(row.itemIndex, 0);
+        expect(row.changeSet.id, 'inference-backfill:imageAnalysis:img');
+        expect(row.changeSet.agentId, agent.agentId);
+        expect(row.changeSet.taskId, 'task-abc');
+        expect(row.changeSet.items, [row.item]);
+        expect(row.fingerprint, ChangeItem.fingerprint(row.item));
+        expect(
+          {for (final s in open) s.fingerprint},
+          hasLength(3),
+          reason: 'each row keeps its own identity in the card',
+        );
+      },
+    );
+
+    test('are not shown on a task without an agent', () async {
+      final container = build(
+        agent: null,
+        ledger: const ProposalLedger.empty(),
+        backfill: [image],
+      );
+
+      expect((await read(container)).open, isEmpty);
+    });
   });
 
   group('hideSupersededTimeEntryEdits', () {

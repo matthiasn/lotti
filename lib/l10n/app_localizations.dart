@@ -1633,6 +1633,24 @@ abstract class AppLocalizations {
   /// **'Assign label: \"{label}\"'**
   String agentSummaryAssignLabel(String label);
 
+  /// No description provided for @agentSummaryBackfillAudioSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize the recording from {date} in task context'**
+  String agentSummaryBackfillAudioSummary(Object date);
+
+  /// No description provided for @agentSummaryBackfillImageAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Run image analysis in task context for the image from {date}'**
+  String agentSummaryBackfillImageAnalysis(Object date);
+
+  /// No description provided for @agentSummaryBackfillTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Run speech recognition in task context for the recording from {date}'**
+  String agentSummaryBackfillTranscription(Object date);
+
   /// No description provided for @agentSummaryCheckItem.
   ///
   /// In en, this message translates to:
@@ -2693,6 +2711,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Label'**
   String get aiCardProposalKindLabel;
+
+  /// No description provided for @aiCardProposalKindMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get aiCardProposalKindMedia;
 
   /// No description provided for @aiCardProposalKindPriority.
   ///

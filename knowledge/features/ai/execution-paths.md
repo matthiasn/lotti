@@ -172,6 +172,12 @@ synthesises a profile-shaped result from any configured speech-to-text model
 without consulting a profile at all, so leaving it ungated would have preserved
 exactly the behaviour the switch is meant to make explicit.
 
+[Inference backfill](inference-backfill.md#the-consent-gate) asks the same
+question twice: when it offers a suggestion, through `hasAutomatedSkillType`,
+and again when an accepted one runs, through `tryAnalyzeImage`,
+`tryTranscribe` or `trySummarizeAudio` — the last being the standalone
+counterpart of the summary that follows an automated transcription.
+
 One automatic path outside this service asks the same question: the GitHub
 feature's pull request summaries check the switch of the task that holds the
 pull request before resolving its agent's profile

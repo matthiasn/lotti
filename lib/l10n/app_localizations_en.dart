@@ -881,6 +881,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Summarize the recording from $date in task context';
+  }
+
+  @override
+  String agentSummaryBackfillImageAnalysis(Object date) {
+    return 'Run image analysis in task context for the image from $date';
+  }
+
+  @override
+  String agentSummaryBackfillTranscription(Object date) {
+    return 'Run speech recognition in task context for the recording from $date';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Check: \"$title\"';
   }
@@ -1532,6 +1547,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiCardProposalKindLabel => 'Label';
+
+  @override
+  String get aiCardProposalKindMedia => 'Media';
 
   @override
   String get aiCardProposalKindPriority => 'Priority';
@@ -16580,6 +16598,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get agentsPageTitle => 'Goal Agents';
+
+  @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Summarise the recording from $date in task context';
+  }
 
   @override
   String get aiSetupWizardCreatesOptimized =>

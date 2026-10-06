@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -244,6 +245,67 @@ void main() {
       verify(() => service.confirmAll(csA)).called(1);
       verify(() => service.confirmAll(csB)).called(1);
       verify(() => notifier.notify(any())).called(1);
+    });
+
+    testWidgets('Confirm-all queues every backfill suggestion, not just the '
+        'first, beside the change sets it confirms', (tester) async {
+      final cs = makeTestChangeSet(
+        id: 'cs-a',
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'GROOMED'},
+            humanSummary: 'Set status to GROOMED',
+          ),
+        ],
+      );
+      final service = MockChangeSetConfirmationService();
+      when(() => service.confirmAll(any())).thenAnswer(
+        (_) async => const [ToolExecutionResult(success: true, output: 'ok')],
+      );
+      final queue = RecordingBackfillQueue();
+      final backfill = [
+        makeBackfillPending('img-1'),
+        makeBackfillPending('img-2'),
+        makeBackfillPending('rec', kind: InferenceBackfillKind.transcription),
+      ];
+
+      final bench = AgentTestBench(
+        confirmationService: service,
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(
+          open: [
+            PendingSuggestion(
+              changeSet: cs,
+              itemIndex: 0,
+              item: cs.items.first,
+              fingerprint: 'fp-a',
+            ),
+            ...backfill,
+          ],
+          activity: const [],
+        ),
+        extraOverrides: backfillOverrides(queue: queue),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Confirm all'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(queue.queued.map((job) => job.candidate), [
+        for (final s in backfill) s.backfill,
+      ]);
+      expect(
+        queue.queued.map((job) => job.taskId).toSet(),
+        {AgentTestBench.taskId},
+      );
+      // Only the persisted set goes to the confirmation service.
+      verify(() => service.confirmAll(cs)).called(1);
+      verifyNever(() => service.confirmAll(any()));
     });
 
     testWidgets('tap-confirm dispatches confirmItem with the correct args', (

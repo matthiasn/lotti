@@ -893,6 +893,21 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Sammanfatta inspelningen från $date i uppgiftens sammanhang';
+  }
+
+  @override
+  String agentSummaryBackfillImageAnalysis(Object date) {
+    return 'Kör bildanalys i uppgiftens sammanhang för bilden från $date';
+  }
+
+  @override
+  String agentSummaryBackfillTranscription(Object date) {
+    return 'Kör taligenkänning i uppgiftens sammanhang för inspelningen från $date';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Markera: ”$title”';
   }
@@ -1546,6 +1561,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiCardProposalKindLabel => 'Etikett';
+
+  @override
+  String get aiCardProposalKindMedia => 'Media';
 
   @override
   String get aiCardProposalKindPriority => 'Prioritet';

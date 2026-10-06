@@ -73,6 +73,99 @@ void main() {
     );
   });
 
+  group('AiSummaryCard – backfill rows', () {
+    Future<void> pumpRow(
+      WidgetTester tester, {
+      required MockChangeSetConfirmationService service,
+      required RecordingBackfillQueue queue,
+      RecordingBackfillDismissals? dismissals,
+    }) async {
+      final bench = AgentTestBench(
+        // Reduced motion prunes a committed row within a few frames, with
+        // no timed resolve/collapse window to step through.
+        mediaQueryData: const MediaQueryData(
+          size: Size(900, 800),
+          disableAnimations: true,
+        ),
+        confirmationService: service,
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(
+          open: [makeBackfillPending('img-1')],
+          activity: const [],
+        ),
+        extraOverrides: backfillOverrides(
+          queue: queue,
+          dismissals: dismissals,
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('reads as a media suggestion naming its entry', (tester) async {
+      await pumpRow(
+        tester,
+        service: MockChangeSetConfirmationService(),
+        queue: RecordingBackfillQueue(),
+      );
+
+      expect(
+        find.textContaining(
+          'Media · Run image analysis in task context for the image from',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('confirming queues the inference and leaves the change-set '
+        'service alone', (tester) async {
+      final service = MockChangeSetConfirmationService();
+      final queue = RecordingBackfillQueue();
+      await pumpRow(tester, service: service, queue: queue);
+
+      await tester.tap(find.byIcon(LottiIcons.confirm));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(queue.queued, hasLength(1));
+      expect(queue.queued.single.candidate.entryId, 'img-1');
+      expect(queue.queued.single.taskId, AgentTestBench.taskId);
+      verifyNever(() => service.confirmItem(any(), any()));
+      expect(find.byType(ProposalRow), findsNothing);
+    });
+
+    testWidgets('rejecting dismisses it on this device instead of recording '
+        'a verdict', (tester) async {
+      final service = MockChangeSetConfirmationService();
+      final queue = RecordingBackfillQueue();
+      final dismissals = RecordingBackfillDismissals();
+      await pumpRow(
+        tester,
+        service: service,
+        queue: queue,
+        dismissals: dismissals,
+      );
+
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(dismissals.dismissed.map((c) => c.entryId), ['img-1']);
+      expect(queue.queued, isEmpty);
+      verifyNever(
+        () => service.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      );
+      expect(find.byType(ProposalRow), findsNothing);
+    });
+  });
+
   group('AiSummaryCard – Proposal row error branches', () {
     testWidgets(
       'confirmItem returning success: false surfaces an error toast',

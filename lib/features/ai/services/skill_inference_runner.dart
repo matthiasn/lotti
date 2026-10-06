@@ -71,6 +71,14 @@ const _logTag = 'SkillInferenceRunner';
 /// recording of silence is not worth summarizing either.
 const _audioSummaryMinChars = 200;
 
+/// Whether [SkillInferenceRunner.runAudioSummary] would summarize [audio]
+/// rather than skip it for being too short.
+///
+/// Reads the same content the run reads, so a caller deciding whether to
+/// offer a summary never offers one the run would decline.
+bool hasSummarizableContent(JournalAudio audio) =>
+    _resolveEntryContent(audio).length >= _audioSummaryMinChars;
+
 /// How many times a transcript write that did not land is re-read and tried
 /// before the run fails. A refusal means a version was stored between the
 /// re-read and the write; the next re-read carries it.

@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,6 +17,10 @@ enum ProposalKind {
   label,
   due,
   task,
+
+  /// Running inference an entry is missing — image analysis, transcription
+  /// or a recording summary.
+  media,
 }
 
 class KindMeta {
@@ -29,6 +34,9 @@ class KindMeta {
 /// [`TaskAgentToolNames`](../tools/agent_tool_registry.dart); this maps
 /// each one onto the closest visual kind.
 ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
+  if (InferenceBackfillKind.fromToolName(toolName) != null) {
+    return ProposalKind.media;
+  }
   switch (toolName) {
     case 'create_and_link_task':
       return ProposalKind.task;
@@ -101,6 +109,10 @@ KindMeta kindMeta(BuildContext context, ProposalKind kind) {
     case ProposalKind.due:
       return KindMeta(
         label: messages.aiCardProposalKindDue,
+      );
+    case ProposalKind.media:
+      return KindMeta(
+        label: messages.aiCardProposalKindMedia,
       );
   }
 }

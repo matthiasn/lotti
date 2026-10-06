@@ -296,6 +296,25 @@ class ProfileAutomationService {
     );
   }
 
+  /// Attempts profile-driven audio summarization for a subject entity.
+  ///
+  /// The standalone counterpart to the summary that follows an automated
+  /// transcription: used when a recording already has its transcript but
+  /// never got a summary. Same gate and the same profile walk as
+  /// [tryAnalyzeImage].
+  Future<AutomationResult> trySummarizeAudio({
+    required String subjectId,
+  }) async {
+    if (!await _categoryAllowsAutomation(subjectId, _CallIntent.run)) {
+      return AutomationResult.notHandled;
+    }
+    return _tryAutomateSkillType(
+      subjectId: subjectId,
+      skillType: SkillType.audioSummary,
+      intent: _CallIntent.run,
+    );
+  }
+
   /// Core resolution: find the profile that automates [skillType] for [subjectId]
   /// and the assignment that does it.
   ///

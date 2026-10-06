@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
@@ -504,12 +505,14 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     try {
       final result =
           await (widget.onConfirm?.call() ??
-              ref
-                  .read(changeSetConfirmationServiceProvider)
-                  .confirmItem(
-                    suggestion.changeSet,
-                    suggestion.itemIndex,
-                  ));
+              (suggestion.backfill != null
+                  ? Future.value(confirmBackfillSuggestion(ref, suggestion))
+                  : ref
+                        .read(changeSetConfirmationServiceProvider)
+                        .confirmItem(
+                          suggestion.changeSet,
+                          suggestion.itemIndex,
+                        )));
       notifier.notify({suggestion.changeSet.agentId});
       if (result.success && result.errorMessage == null) {
         // Pure success: the in-place resolve beat + the ticking pending count
@@ -583,12 +586,14 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     try {
       final applied =
           await (widget.onReject?.call() ??
-              ref
-                  .read(changeSetConfirmationServiceProvider)
-                  .rejectItem(
-                    suggestion.changeSet,
-                    suggestion.itemIndex,
-                  ));
+              (suggestion.backfill != null
+                  ? dismissBackfillSuggestion(ref, suggestion)
+                  : ref
+                        .read(changeSetConfirmationServiceProvider)
+                        .rejectItem(
+                          suggestion.changeSet,
+                          suggestion.itemIndex,
+                        )));
       notifier.notify({suggestion.changeSet.agentId});
       if (applied) {
         // As with confirm: the in-place dismiss beat + pending count carry it,

@@ -899,6 +899,21 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Rezumați înregistrarea din $date în contextul sarcinii';
+  }
+
+  @override
+  String agentSummaryBackfillImageAnalysis(Object date) {
+    return 'Rulați analiza imaginii în contextul sarcinii pentru imaginea din $date';
+  }
+
+  @override
+  String agentSummaryBackfillTranscription(Object date) {
+    return 'Rulați recunoașterea vocală în contextul sarcinii pentru înregistrarea din $date';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Bifați: „$title”';
   }
@@ -1560,6 +1575,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardProposalKindLabel => 'Etichetă';
+
+  @override
+  String get aiCardProposalKindMedia => 'Media';
 
   @override
   String get aiCardProposalKindPriority => 'Prioritate';

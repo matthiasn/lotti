@@ -31,6 +31,10 @@ one.
 - **Keeps automation opt-in.** Automatic transcription, image analysis and
   recording summaries are off until switched on per area, because choosing a
   model is not the same as agreeing to spend tokens on every recording.
+- **Catches up on what automation missed.** Photos and recordings of a task
+  that never got their analysis, transcript or summary are offered back as one
+  suggestion each, in the task's proposed changes, when its area has automatic
+  inference switched on.
 - **Shows what was used.** Every AI result records which model produced it and
   what it cost.
 
@@ -53,6 +57,7 @@ the consumption ledger, which belongs to
 lib/features/ai/
 ├── model/          # AiConfig variants
 ├── repository/     # config persistence, provider routing, vector search
+├── backfill/       # suggestions for inference a task's media never got
 ├── services/       # skill execution, profile automation
 ├── skills/         # the built-in skill catalog (code, not data)
 ├── conversation/   # multi-turn loop and tool calling

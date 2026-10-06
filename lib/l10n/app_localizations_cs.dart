@@ -889,6 +889,21 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Shrnout nahrávku z $date v kontextu úkolu';
+  }
+
+  @override
+  String agentSummaryBackfillImageAnalysis(Object date) {
+    return 'Spustit analýzu obrázku v kontextu úkolu pro obrázek z $date';
+  }
+
+  @override
+  String agentSummaryBackfillTranscription(Object date) {
+    return 'Spustit rozpoznávání řeči v kontextu úkolu pro nahrávku z $date';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Odškrtnout: „$title“';
   }
@@ -1548,6 +1563,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardProposalKindLabel => 'Štítek';
+
+  @override
+  String get aiCardProposalKindMedia => 'Média';
 
   @override
   String get aiCardProposalKindPriority => 'Priorita';
