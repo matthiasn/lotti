@@ -287,7 +287,7 @@ transcription](batch-transcription.md)). Five rules hold the run together, each
 pinned by a switch in the `TranscriptionRun` TLA+ model
 ([specs/tla/README.md](../../../specs/tla/README.md)):
 
-- **One run per recording on a device.** `TranscriptionRuns`
+- **One run per recording on a device.** `EntryRuns`
   (`transcriptionRunsProvider`, outside the runner because the runner's provider
   is rebuilt with its dependencies) keys the run by audio id. A request while one
   is in flight joins it: no second paid inference, no second transcript or
@@ -412,6 +412,15 @@ always collapsible regardless of body length, since the tiers exist precisely so
 the reader can choose the short version.
 
 ## Tiered image analysis
+
+**One analysis per image on a device.** `imageAnalysisRunsProvider` keys the
+run by image id, the same `EntryRuns` registry transcription uses: the
+automatic import trigger, the AI popup and an accepted
+[backfill suggestion](inference-backfill.md) all end in `runImageAnalysis`,
+and none of them can see the others' run until after their own awaits. A
+request while an analysis is in flight joins it — no second vision call, no
+second `AiResponseEntry` — and its own model override is not used. Before
+this, an import followed by a tap in the AI popup analysed the picture twice.
 
 Image analysis publishes the same three tiers through the same
 `entrySummaryTool`, with two differences from the audio path that both follow

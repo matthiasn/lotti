@@ -25,7 +25,7 @@
 (* version it was built on.                                               *)
 (*                                                                         *)
 (*   Request     runTranscription: the entity's first read (step 1); with *)
-(*               SingleFlight, TranscriptionRuns joins a run in flight    *)
+(*               SingleFlight, EntryRuns joins a run in flight            *)
 (*   Infer(Fail) the provider call and _recordAttributedConsumption       *)
 (*               (steps 5-6); a provider error surfaces as a failure     *)
 (*   Reread      EntityStateHelper.getCurrentEntityState (step 7)         *)
