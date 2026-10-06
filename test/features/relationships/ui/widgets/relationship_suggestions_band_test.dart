@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -35,6 +36,7 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
     service = MockRelationshipProposalService();
+    when(() => service.isConfirming(any(), any())).thenReturn(false);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
   });
@@ -99,35 +101,19 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The service's batch over the mocked per-item confirm: every item in
-  /// order, a throw counted as a failure, each result handed to `onEach` —
-  /// what `RelationshipProposalService.confirmAll` does, pinned by its own
-  /// suite. Here it lets the band's tests keep stubbing `confirm`.
+  /// The service's own batch loop over the mocked per-item confirm, so the
+  /// band's tests keep stubbing `confirm` and run the loop that ships.
   void stubConfirmAll() {
     when(
       () => service.confirmAll(any(), onEach: any(named: 'onEach')),
-    ).thenAnswer((invocation) async {
-      final items =
-          invocation.positionalArguments.single as List<(ChangeSetEntity, int)>;
-      final onEach =
-          invocation.namedArguments[#onEach]
-              as void Function(ChangeSetEntity, int, ToolExecutionResult)?;
-      final results = <ToolExecutionResult>[];
-      for (final (set, index) in items) {
-        ToolExecutionResult result;
-        try {
-          result = await service.confirm(set, index);
-        } catch (_) {
-          result = const ToolExecutionResult(
-            success: false,
-            output: 'Confirmation failed',
-          );
-        }
-        results.add(result);
-        onEach?.call(set, index, result);
-      }
-      return results;
-    });
+    ).thenAnswer(
+      (invocation) => RelationshipProposalService.confirmEach(
+        invocation.positionalArguments.single as List<(ChangeSetEntity, int)>,
+        confirm: service.confirm,
+        onEach:
+            invocation.namedArguments[#onEach] as BatchConfirmationListener?,
+      ),
+    );
   }
 
   testWidgets('folds beyond three and offers Confirm all only for one kind', (
@@ -601,5 +587,29 @@ void main() {
       'task-set-1',
     });
     await tester.pump(const Duration(seconds: 4));
+  });
+  // A band built again while the service's batch runs has none of the busy
+  // state its predecessor held. It must not offer the batch's rows, or a
+  // second batch, while the first will still reach them.
+  testWidgets('a band built mid-batch keeps the running batch out of reach', (
+    tester,
+  ) async {
+    final rows = [proposal(0), proposal(1)];
+    when(
+      () => service.isConfirming(rows[1].changeSet.id, 0),
+    ).thenReturn(true);
+    await pump(
+      tester,
+      () => RelationshipProposalSnapshot(
+        suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+      ),
+    );
+    expect(find.text('Confirm all').hitTestable(), findsNothing);
+    await tester.tap(find.byIcon(LottiIcons.confirm).first);
+    await tester.pump();
+    verifyNever(() => service.confirm(any(), any()));
+    verifyNever(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    );
   });
 }

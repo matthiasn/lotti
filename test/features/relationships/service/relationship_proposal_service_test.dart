@@ -624,5 +624,46 @@ void main() {
       expect(calls, 2);
       verify(() => confirmation.confirmItem(second, 0)).called(1);
     });
+
+    // A band built again mid-batch has none of its own busy state; it reads
+    // this to keep the running batch's rows, and a second batch, out of reach.
+    test('every item counts as confirming until its result is in', () async {
+      final first = Completer<ToolExecutionResult>();
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) => first.future);
+      when(() => confirmation.confirmItem(second, 0)).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      final settledWhenHeard = <bool>[];
+      final batch = service.confirmAll(
+        [(set, 0), (second, 0)],
+        onEach: (set, index, _) =>
+            settledWhenHeard.add(!service.isConfirming(set.id, index)),
+      );
+      await pumpEventQueue();
+      expect(service.isConfirming(set.id, 0), isTrue);
+      expect(service.isConfirming(second.id, 0), isTrue);
+      expect(service.isConfirming(third.id, 0), isFalse);
+      first.complete(
+        const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      await batch;
+      expect(settledWhenHeard, [true, true]);
+      expect(service.isConfirming(set.id, 0), isFalse);
+      expect(service.isConfirming(second.id, 0), isFalse);
+    });
+
+    test('a batch that throws leaves nothing marked confirming', () async {
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenThrow(StateError('write failed'));
+      when(() => confirmation.confirmItem(second, 0)).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      await service.confirmAll([(set, 0), (second, 0)]);
+      expect(service.isConfirming(set.id, 0), isFalse);
+      expect(service.isConfirming(second.id, 0), isFalse);
+    });
   });
 }

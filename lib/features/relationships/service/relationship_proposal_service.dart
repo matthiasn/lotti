@@ -14,6 +14,10 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
 
+/// Hears each result of a [RelationshipProposalService.confirmAll] batch.
+typedef BatchConfirmationListener =
+    void Function(ChangeSetEntity set, int index, ToolExecutionResult result);
+
 /// Confirms proposals and remembers their task receipts on the decision row.
 /// The immutable proposal args stay unchanged, preserving ledger fingerprints.
 /// Receipts make the handled row's destination available after a restart/sync.
@@ -35,6 +39,7 @@ class RelationshipProposalService {
   final Future<bool> Function(Task, {String? allowedRelationshipId})
   taskRemover;
   final _busy = <String>{};
+  final _queued = <String>{};
   final _receipts = <String, Task>{};
   static const receiptKey = '_relationshipTaskReceipt';
 
@@ -132,17 +137,54 @@ class RelationshipProposalService {
     }
   }
 
+  /// Whether the item is being confirmed right now, or waits for its turn in
+  /// a batch [confirmAll] is running. The batch outlives the band that asked
+  /// for it, so a band built again mid-batch has none of its own busy state;
+  /// it reads this instead, and offers neither a row nor a second batch the
+  /// running one will reach.
+  bool isConfirming(String setId, int index) {
+    final key = _key(setId, index);
+    return _busy.contains(key) || _queued.contains(key);
+  }
+
   /// Confirms [items] one after another, each as [confirm] does, and hands
   /// every result to [onEach] as it lands. The batch is this service's, not
   /// the widget's that asked for it: the chat host builds its suggestions
   /// band lazily, so scrolling away disposes the band mid-batch, and a loop
   /// that lived in the band stopped there with the remaining proposals still
-  /// pending. A confirmation that throws counts as a failed result and the
-  /// batch goes on; so does a listener that throws.
+  /// pending. Every item counts as [isConfirming] until its result is in,
+  /// and leaves before [onEach] hears of it, so a refresh the listener
+  /// triggers already sees it settled.
   Future<List<ToolExecutionResult>> confirmAll(
     List<(ChangeSetEntity, int)> items, {
-    void Function(ChangeSetEntity set, int index, ToolExecutionResult result)?
-    onEach,
+    BatchConfirmationListener? onEach,
+  }) async {
+    final keys = [for (final (set, index) in items) _key(set.id, index)];
+    _queued.addAll(keys);
+    try {
+      return await confirmEach(
+        items,
+        confirm: (set, index) async {
+          try {
+            return await confirm(set, index);
+          } finally {
+            _queued.remove(_key(set.id, index));
+          }
+        },
+        onEach: onEach,
+      );
+    } finally {
+      _queued.removeAll(keys);
+    }
+  }
+
+  /// The loop under [confirmAll]: [confirm] on each item in order, and
+  /// [onEach] with each result. A confirmation that throws counts as a failed
+  /// result and the batch goes on; so does a listener that throws.
+  static Future<List<ToolExecutionResult>> confirmEach(
+    List<(ChangeSetEntity, int)> items, {
+    required Future<ToolExecutionResult> Function(ChangeSetEntity, int) confirm,
+    BatchConfirmationListener? onEach,
   }) async {
     final results = <ToolExecutionResult>[];
     for (final (set, index) in items) {

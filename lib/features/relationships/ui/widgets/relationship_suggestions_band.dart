@@ -111,9 +111,7 @@ class _RelationshipSuggestionsBandState
         onEach: (set, index, result) {
           final row =
               byKey[RelationshipProposalSnapshot.itemKey(set.id, index)]!;
-          if (result.success && result.mutatedEntityId != null) {
-            highlighter.highlight(result.mutatedEntityId!);
-          }
+          _highlightCreated(highlighter, result);
           notifier.notifyUiOnly({agentId});
           if (!mounted) return;
           if (result.success) {
@@ -137,10 +135,20 @@ class _RelationshipSuggestionsBandState
     final result = await ref
         .read(relationshipProposalServiceProvider)
         .confirm(row.changeSet, row.itemIndex);
+    _highlightCreated(highlighter, result);
+    return result;
+  }
+
+  /// Marks the task a confirmation created on the person's linked-task card.
+  /// Takes the notifier rather than reading it, because a batch reports
+  /// results after this band may be gone.
+  static void _highlightCreated(
+    RelationshipTaskHighlight highlighter,
+    ToolExecutionResult result,
+  ) {
     if (result.success && result.mutatedEntityId != null) {
       highlighter.highlight(result.mutatedEntityId!);
     }
-    return result;
   }
 
   Future<void> _undo(LedgerEntry entry) async {
@@ -233,6 +241,14 @@ class _RelationshipSuggestionsBandState
               widget.runKey == null || row.changeSet.runKey == widget.runKey,
         )
         .toList();
+    // A batch outlives the band that started it; a band built again mid-batch
+    // learns of it from the service and keeps every row inert until it ends.
+    final service = ref.watch(relationshipProposalServiceProvider);
+    final batchRunning =
+        _bulkBusy ||
+        current.any(
+          (row) => service.isConfirming(row.changeSet.id, row.itemIndex),
+        );
     // Once the ledger acknowledges a removal, forget the local tombstone.
     // A peer can then reopen the same item without it staying hidden here.
     final currentKeys = current.map(_key).toSet();
@@ -274,8 +290,12 @@ class _RelationshipSuggestionsBandState
             child: ProposalsSection(
               open: shown,
               pendingCount: current.length,
-              confirmAllBusy: _bulkBusy,
-              onConfirmAll: current.length > 1 && sameKind && _resolving.isEmpty
+              confirmAllBusy: batchRunning,
+              onConfirmAll:
+                  current.length > 1 &&
+                      sameKind &&
+                      _resolving.isEmpty &&
+                      !batchRunning
                   ? () => _confirmAll(current)
                   : null,
               confirmAllPulse: 0,
@@ -287,7 +307,7 @@ class _RelationshipSuggestionsBandState
                 confirmAllPulse: _confirmed.contains(_key(row)) ? 1 : 0,
                 pendingCount: current.length,
                 settling:
-                    _bulkBusy ||
+                    batchRunning ||
                     (_resolving.isNotEmpty &&
                         !_resolving.containsKey(_key(row))),
                 onResolveStart: _start,

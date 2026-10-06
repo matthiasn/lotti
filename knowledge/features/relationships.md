@@ -1530,7 +1530,9 @@ band: the chat host builds the band lazily, so scrolling away disposes it
 mid-batch, and the loop that once lived in the band stopped there with the
 remaining proposals still pending. The band updates its rows while it is
 mounted; the confirmations happen either way, and the person's other surfaces
-are notified of each.
+are notified of each. A band built again mid-batch reads the service's
+`isConfirming` and keeps the batch's rows inert, with no second *Confirm all*,
+until the batch ends.
 It does not use the task-specific `ChangeSetNotificationService`.
 
 The shared chat projection carries each reply's `runKey`.
