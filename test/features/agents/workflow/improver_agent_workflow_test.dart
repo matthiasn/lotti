@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/g_counter.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -57,6 +58,7 @@ void main() {
   late MockAgentTemplateService mockTemplateService;
   late MockAgentSyncService mockSyncService;
   late ImproverAgentWorkflow workflow;
+  late MockDomainLogger mockDomainLogger;
 
   const targetTemplateId = _targetTemplateId;
 
@@ -70,7 +72,9 @@ void main() {
     mockTemplateService = MockAgentTemplateService();
     mockSyncService = MockAgentSyncService();
 
+    mockDomainLogger = MockDomainLogger();
     workflow = ImproverAgentWorkflow(
+      domainLogger: mockDomainLogger,
       feedbackService: mockFeedbackService,
       evolutionWorkflow: mockEvolutionWorkflow,
       improverService: mockImproverService,
@@ -402,6 +406,18 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Ritual workflow failed'));
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.agentWorkflow,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ImproverAgentWorkflow',
+          message: any(
+            named: 'message',
+            that: contains('Ritual workflow failed'),
+          ),
+        ),
+      ).called(1);
 
       // Should still schedule next wake.
       verify(
@@ -430,6 +446,18 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Ritual workflow failed'));
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.agentWorkflow,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ImproverAgentWorkflow',
+          message: any(
+            named: 'message',
+            that: contains('Failed to schedule next ritual'),
+          ),
+        ),
+      ).called(1);
     });
 
     test('passes isMetaLevel=true to context builder when '

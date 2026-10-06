@@ -69,6 +69,7 @@ GoalAgentWorkflow _offTrackWorkflow(
   MockAiConfigRepository aiConfigRepository, {
   AgentAlertCopy? alertCopy,
 }) => GoalAgentWorkflow(
+  domainLogger: MockDomainLogger(),
   repository: repository,
   syncService: syncService,
   alertCopy: alertCopy,
@@ -541,6 +542,7 @@ void main() {
     });
     when(() => conversationManager.messages).thenReturn(const []);
     workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: GoalAgentPhaseA(
@@ -1316,6 +1318,7 @@ void main() {
     );
 
     workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: GoalAgentPhaseA(
@@ -1406,6 +1409,7 @@ void main() {
       stubGlmResolution();
       _stubBadPrior(repository, agentId, now);
       workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: GoalAgentPhaseA(
@@ -1552,6 +1556,7 @@ void main() {
       final sources = stubTwoYearsOfCheckIns();
       liveCheckIns = sources.length;
       workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: GoalAgentPhaseA(
@@ -1705,6 +1710,7 @@ void main() {
       _stubBadPrior(repository, agentId, now);
       final compactor = MockGoalCheckInCompactor();
       workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: GoalAgentPhaseA(
@@ -1817,6 +1823,7 @@ void main() {
         ),
       );
       workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: GoalAgentPhaseA(
@@ -1951,6 +1958,7 @@ void main() {
     ).thenAnswer((_) => payload('summary-gone', 'audio-gone', 'deleted words'));
 
     workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: GoalAgentPhaseA(
@@ -2124,6 +2132,7 @@ void main() {
       );
       stubGlmResolution();
       workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: GoalAgentPhaseA(
@@ -2978,6 +2987,7 @@ void main() {
     stubSpec();
     stubGlmResolution();
     workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: GoalAgentPhaseA(
@@ -3054,6 +3064,7 @@ void main() {
             as GoalNudgeEntity;
 
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -3890,6 +3901,7 @@ void main() {
       ),
     );
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -3953,6 +3965,7 @@ void main() {
         ),
       );
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-chat',
@@ -4051,6 +4064,7 @@ void main() {
       ],
     );
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -4142,6 +4156,7 @@ void main() {
       ],
     );
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -4204,6 +4219,7 @@ void main() {
       List<Map<String, dynamic>> creations,
     ) async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-1',
@@ -4257,6 +4273,7 @@ void main() {
       domainLogger: logger,
     );
     final rerunning = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -4355,6 +4372,7 @@ void main() {
 
     Future<GoalAgentStrategy> creating(String headline) async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-chat',
@@ -4589,6 +4607,7 @@ void main() {
 
     Future<GoalAgentStrategy> creating() async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-1',
@@ -4696,6 +4715,7 @@ void main() {
     final derivation = await _offTrackDerivation(repository, staleVersion, now);
 
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -4761,6 +4781,7 @@ void main() {
     final derivation = await _offTrackDerivation(repository, staleVersion, now);
 
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -4810,6 +4831,7 @@ void main() {
 
     Future<GoalAgentStrategy> creating(String headline) async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-1',
@@ -5133,6 +5155,7 @@ void main() {
 
   test('an older period cannot replace a newer standing report head', () async {
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -5243,6 +5266,7 @@ void main() {
       List<ChatCompletionMessageToolCall> calls,
     ) async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-1',
@@ -5383,6 +5407,7 @@ void main() {
       domainLogger: logger,
     );
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -5803,6 +5828,7 @@ void main() {
       String? tagline,
     ]) async {
       final strategy = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: agentId,
         threadId: 'thread-1',
@@ -5851,6 +5877,7 @@ void main() {
       ),
     ).thenAnswer((_) async => [retiredLibraryAd]);
     final rerunning = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',
@@ -6088,6 +6115,7 @@ void main() {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
     workflow = GoalAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: GoalAgentPhaseA(
@@ -6153,6 +6181,7 @@ void main() {
   test('an overdue period stamps the head with the PERIOD end, so '
       'cross-device LWW orders concurrent heads by period', () async {
     final strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: agentId,
       threadId: 'thread-1',

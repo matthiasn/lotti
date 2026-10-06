@@ -278,7 +278,7 @@ TaskAgentWorkflow createTestWorkflow({
     soulDocumentService: soulDocumentService,
     inputCaptureService: inputCaptureService,
     logSummarizer: logSummarizer,
-    domainLogger: domainLogger,
+    domainLogger: domainLogger ?? MockDomainLogger(),
     compactionTailBudgetTokens: compactionTailBudgetTokens,
     compactionTailRetainTokens: compactionTailRetainTokens,
   );

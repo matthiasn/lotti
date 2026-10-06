@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Result of processing a task label assignment.
 class TaskLabelResult {
@@ -33,7 +33,11 @@ class TaskLabelHandler {
   TaskLabelHandler({
     required this.task,
     required this.processor,
+    required this._domainLogger,
   });
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   final Task task;
   final LabelAssignmentProcessor processor;
@@ -52,9 +56,10 @@ class TaskLabelHandler {
   /// suggestion: a label the user accepts is applied regardless of how many
   /// labels the task already carries. The only bound is the per-call cap of 3.
   Future<TaskLabelResult> handle(Map<String, dynamic> args) async {
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Processing assign_task_labels',
-      name: 'TaskLabelHandler',
+      subDomain: 'TaskLabelHandler',
     );
 
     final existingIds = task.meta.labelIds ?? const <String>[];
@@ -65,7 +70,11 @@ class TaskLabelHandler {
       const message =
           'No valid labels after parsing '
           '(all dropped due to low confidence or empty input).';
-      developer.log(message, name: 'TaskLabelHandler');
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
+        message,
+        subDomain: 'TaskLabelHandler',
+      );
       return const TaskLabelResult(
         success: true,
         message: message,
@@ -87,11 +96,12 @@ class TaskLabelHandler {
       final message = result.toStructuredJson(parseResult.selectedIds);
       final didAssign = result.assigned.isNotEmpty;
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         didAssign
             ? 'Assigned ${result.assigned.length} label(s)'
             : 'No labels assigned (all skipped/invalid)',
-        name: 'TaskLabelHandler',
+        subDomain: 'TaskLabelHandler',
       );
 
       return TaskLabelResult(
@@ -101,11 +111,12 @@ class TaskLabelHandler {
       );
     } catch (e, s) {
       const message = 'Failed to assign labels. Continuing without changes.';
-      developer.log(
-        'Failed to assign labels',
-        name: 'TaskLabelHandler',
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'TaskLabelHandler',
+        message: 'Failed to assign labels',
       );
 
       return TaskLabelResult(

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart'
     show AgentTemplateVersionLookup;
+import 'package:lotti/services/domain_logging.dart';
 
 export 'package:lotti/classes/agents/agent_template_ids.dart';
 
@@ -78,7 +79,11 @@ class AgentTemplateService implements AgentTemplateVersionLookup {
   AgentTemplateService({
     required this.repository,
     required this.syncService,
+    required this._domainLogger,
   });
+
+  /// Handed to the CRUD and seeding collaborators for their log lines.
+  final DomainLogger _domainLogger;
 
   final AgentRepository repository;
   final AgentSyncService syncService;
@@ -86,6 +91,7 @@ class AgentTemplateService implements AgentTemplateVersionLookup {
   late final AgentTemplateCrud _crud = AgentTemplateCrud(
     repository: repository,
     syncService: syncService,
+    domainLogger: _domainLogger,
   );
 
   late final AgentTemplateMetrics _metrics = AgentTemplateMetrics(
@@ -96,6 +102,7 @@ class AgentTemplateService implements AgentTemplateVersionLookup {
   late final AgentTemplateSeeding _seeding = AgentTemplateSeeding(
     syncService: syncService,
     crud: _crud,
+    domainLogger: _domainLogger,
   );
 
   // ── CRUD ────────────────────────────────────────────────────────────────

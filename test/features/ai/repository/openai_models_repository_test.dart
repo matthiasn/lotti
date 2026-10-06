@@ -5,11 +5,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 
 void main() {
+  late MockDomainLogger logger;
+  setUp(() => logger = MockDomainLogger());
+
   const baseUrl = 'https://api.openai.com/v1';
   const apiKey = 'sk-test';
 
@@ -17,7 +25,10 @@ void main() {
   OpenAiModelsRepository repoWithHandler(
     Future<http.Response> Function(http.Request request) handler,
   ) {
-    final repo = OpenAiModelsRepository(httpClient: MockClient(handler));
+    final repo = OpenAiModelsRepository(
+      domainLogger: logger,
+      httpClient: MockClient(handler),
+    );
     addTearDown(repo.close);
     return repo;
   }
@@ -274,6 +285,26 @@ void main() {
           {'id': 'gpt-6'},
         ]);
         expect(models.map((m) => m.providerModelId), ['gpt-6']);
+
+        // One unusable row is a warning, not an error.
+        verify(
+          () => logger.log(
+            LogDomain.ai,
+            any(that: startsWith('Skipping malformed OpenAI model row #0: ')),
+            subDomain: any(named: 'subDomain'),
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+            errorType: any(named: 'errorType'),
+          ),
+        );
       });
 
       test('skips a row with no string id but keeps valid ones', () async {

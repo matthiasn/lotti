@@ -7,7 +7,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -15,12 +14,12 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
-import '../../../widget_test_utils.dart';
 import 'sse_test_utils.dart';
 
 void main() {
   late VoxtralInferenceRepository repository;
   late MockHttpClient mockHttpClient;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -31,7 +30,11 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = VoxtralInferenceRepository(httpClient: mockHttpClient);
+    mockDomainLogger = MockDomainLogger();
+    repository = VoxtralInferenceRepository(
+      domainLogger: mockDomainLogger,
+      httpClient: mockHttpClient,
+    );
   });
 
   group('VoxtralInferenceRepository', () {
@@ -42,7 +45,9 @@ void main() {
       const prompt = 'Test context';
 
       test('default constructor creates a closable HTTP client', () {
-        final repository = VoxtralInferenceRepository();
+        final repository = VoxtralInferenceRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(repository.close, returnsNormally);
       });
@@ -930,21 +935,6 @@ data: [DONE]
       const model = 'mistralai/Voxtral-Mini-3B-2507';
       const baseUrl = 'http://localhost:11344';
       const audioBase64 = 'base64_audio_data';
-      late MockDomainLogger mockDomainLogger;
-
-      setUp(() async {
-        mockDomainLogger = MockDomainLogger();
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt
-              ..unregister<DomainLogger>()
-              ..registerSingleton<DomainLogger>(mockDomainLogger);
-          },
-        );
-      });
-
-      tearDown(tearDownTestGetIt);
-
       test('should log exception when model is not available', () async {
         // Arrange
         when(
@@ -979,6 +969,7 @@ data: [DONE]
             any<Object>(that: isA<VoxtralModelNotAvailableException>()),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'model_not_available',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1017,6 +1008,16 @@ data: [DONE]
             any<Object>(that: isA<VoxtralInferenceException>()),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'http_error',
+            errorType: any(named: 'errorType', that: isNotNull),
+          ),
+        ).called(1);
+        // The status line carries the body's size, never the body.
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            'Failed to transcribe audio: HTTP 500',
+            subDomain: 'VoxtralInferenceRepository',
+            message: 'body 12 chars',
           ),
         ).called(1);
       });
@@ -1059,8 +1060,10 @@ data: [DONE]
           () => mockDomainLogger.error(
             LogDomain.speech,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'unexpected',
+            message: 'Unexpected error during audio transcription',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1105,8 +1108,10 @@ data: [DONE]
           () => mockDomainLogger.error(
             LogDomain.speech,
             any<Object>(that: isA<TimeoutException>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'timeout',
+            message: 'Transcription request timed out',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1126,7 +1131,7 @@ data: [DONE]
 
         when(
           () => mockHttpClient.send(any()),
-        ).thenThrow(const FormatException('bad framing'));
+        ).thenThrow(const FormatException('bad framing', 'secret chunk'));
 
         // Act
         final transcriptionStream = repository.transcribeAudio(
@@ -1147,14 +1152,18 @@ data: [DONE]
           ),
         );
 
-        verify(
+        // Logged with its trace, without the text the exception quotes.
+        final logged = verify(
           () => mockDomainLogger.error(
             LogDomain.speech,
-            any<Object>(that: isA<FormatException>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            captureAny(that: isA<FormatException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'format_error',
+            message: 'Failed to parse response from Voxtral server',
+            errorType: FormatException,
           ),
-        ).called(1);
+        ).captured.single;
+        expect(logged.toString(), isNot(contains('secret chunk')));
       });
     });
 

@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/dashboards/ui/create_measurement/create_measurement_dialog.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -589,26 +589,26 @@ class _CompletionForm extends StatelessWidget {
 }
 
 /// The habit's description with tappable links.
-class HabitDescription extends StatelessWidget {
+class HabitDescription extends ConsumerWidget {
   const HabitDescription(this.habitDefinition, {super.key});
 
   final HabitDefinition? habitDefinition;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Future<void> onOpen(LinkableElement link) async {
+      final logger = ref.read(domainLoggerProvider);
       final uri = Uri.tryParse(link.url);
       if (uri != null && await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        getIt<DomainLogger>().log(
+        // The link comes from the user's own habit description: log only
+        // its scheme, never the address.
+        logger.log(
           LogDomain.habits,
-          'Could not launch $uri',
+          'Could not launch link (scheme: ${uri?.scheme})',
           subDomain: 'Click Link in Description',
-        );
-        DevLogger.warning(
-          name: 'HabitCompletionSheet',
-          message: 'Could not launch $uri',
+          level: InsightLevel.warn,
         );
       }
     }

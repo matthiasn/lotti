@@ -369,7 +369,7 @@ Future<SyncTestDevice> createSyncTestDevice({
     vectorClockService: vectorClockService,
     syncEventTrust: syncEventTrust,
     savedTaskFiltersRepository: SavedTaskFiltersRepository(
-      SavedTaskFiltersPersistence(settingsDb),
+      SavedTaskFiltersPersistence(settingsDb, domainLogger: loggingService),
       updateNotifications,
     ),
   );

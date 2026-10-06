@@ -198,6 +198,7 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
     workflow = RelationshipAgentWorkflow(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       syncService: syncService,
       phaseA: RelationshipAgentPhaseA(
@@ -1710,7 +1711,6 @@ void main() {
     );
     expect(wired.domainLogger, same(logger));
     expect(wired.errorLogDomain, LogDomain.agentWorkflow);
-    expect(workflow.domainLogger, isNull);
   });
 
   test('an explicit Brief me pins the refresh directive into the facts, '
@@ -2298,6 +2298,7 @@ void main() {
           relationship: relationship(),
           agentIdentity: identity(),
           aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
         );
         expect(resolved?.modelId, 'claude-x');
         expect(resolved?.profileId, 'profile-cat');
@@ -2370,6 +2371,7 @@ void main() {
         relationship: relationship(),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
       );
       expect(resolved, isNull);
     });
@@ -2393,6 +2395,7 @@ void main() {
         relationship: relationship(),
         agentIdentity: configured,
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
       );
 
       expect(resolved?.modelId, 'claude-x');
@@ -2416,6 +2419,7 @@ void main() {
             ),
           ),
           aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
         );
 
         expect(resolved?.modelId, 'claude-x');
@@ -2440,6 +2444,7 @@ void main() {
               ),
             ),
             aiConfigRepository: aiConfigRepository,
+            domainLogger: MockDomainLogger(),
           );
 
           expect(resolved, isNull);
@@ -2458,6 +2463,7 @@ void main() {
         relationship: personInCategory(),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: categoryLookup,
       );
 
@@ -2474,6 +2480,7 @@ void main() {
         relationship: personInCategory(),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
       );
 
       expect(resolved, isNull);
@@ -2503,6 +2510,7 @@ void main() {
           relationship: personInCategory(profileId: 'profile-1'),
           agentIdentity: identity(),
           aiConfigRepository: aiConfigRepository,
+          domainLogger: MockDomainLogger(),
           categoryProfileLookup: categoryLookup,
         );
 
@@ -2519,6 +2527,7 @@ void main() {
         relationship: personInCategory(),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (_) async => 'gone',
       );
 
@@ -2542,6 +2551,7 @@ void main() {
         relationship: personInCategory(profileId: 'profile-1'),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (_) async =>
             throw StateError('the category read failed'),
       );
@@ -2556,6 +2566,7 @@ void main() {
         relationship: relationship(),
         agentIdentity: identity(),
         aiConfigRepository: aiConfigRepository,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (_) async =>
             throw StateError('lookup must not run without a category'),
       );
@@ -2605,6 +2616,7 @@ void main() {
       expect(unwired.error, contains('no inference provider'));
 
       workflow = RelationshipAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: RelationshipAgentPhaseA(
@@ -3126,6 +3138,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       workflow = RelationshipAgentWorkflow(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         syncService: syncService,
         phaseA: RelationshipAgentPhaseA(

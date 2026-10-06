@@ -320,7 +320,7 @@ Future<MatrixService> _createMatrixService({
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
     savedTaskFiltersRepository: SavedTaskFiltersRepository(
-      SavedTaskFiltersPersistence(settingsDb),
+      SavedTaskFiltersPersistence(settingsDb, domainLogger: loggingService),
       updateNotifications,
     ),
     journalEntityLoader: SmartJournalEntityLoader(

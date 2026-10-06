@@ -4,10 +4,11 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Bundles all filter/search state needed to execute a single query.
@@ -71,9 +72,11 @@ class JournalQueryRunner {
     required this._db,
     required this._fts5Db,
     required this._entitiesCacheService,
+    required this._domainLogger,
   });
 
   final JournalDb _db;
+  final DomainLogger _domainLogger;
   final Fts5Db _fts5Db;
   final EntitiesCacheService _entitiesCacheService;
 
@@ -333,11 +336,12 @@ class JournalQueryRunner {
     JournalQueryParams params,
   ) async {
     if (!getIt.isRegistered<VectorSearchRepository>()) {
-      DevLogger.warning(
-        name: 'JournalQueryRunner',
-        message:
-            'VectorSearchRepository not registered — '
-            'is the embedding pipeline available?',
+      _domainLogger.log(
+        LogDomain.persistence,
+        'VectorSearchRepository not registered — '
+        'is the embedding pipeline available?',
+        subDomain: 'JournalQueryRunner',
+        level: InsightLevel.warn,
       );
       return const JournalVectorSearchResult(
         entities: [],
@@ -367,10 +371,13 @@ class JournalQueryRunner {
         elapsed: result.elapsed,
         distances: result.distances,
       );
-    } on Exception catch (e) {
-      DevLogger.warning(
-        name: 'JournalQueryRunner',
-        message: 'Vector search failed: $e',
+    } on Exception catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.persistence,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'JournalQueryRunner',
+        message: 'Vector search failed',
       );
       return const JournalVectorSearchResult(
         entities: [],

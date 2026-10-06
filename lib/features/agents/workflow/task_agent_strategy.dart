@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/classes/agents/retired_tool_calls.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -75,6 +75,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   TaskAgentStrategy({
     required this.executor,
     required this.syncService,
+    required this._domainLogger,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -103,6 +104,9 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Sync-aware write service for persisting messages. All writes go through
   /// this so they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+
+  /// Structured logger for tool-call processing and its failures.
+  final DomainLogger _domainLogger;
 
   /// The agent's stable ID.
   final String agentId;
@@ -277,10 +281,14 @@ class TaskAgentStrategy extends ConversationStrategy {
         parsedArgs = parseToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
-        developer.log(
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'Failed to parse tool call arguments for $rawToolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
-          name: 'TaskAgentStrategy',
+          subDomain: 'TaskAgentStrategy',
+          level: InsightLevel.warn,
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '
@@ -314,16 +322,18 @@ class TaskAgentStrategy extends ConversationStrategy {
       final toolName = resolved.toolName;
       final args = resolved.args;
       if (toolName != rawToolName) {
-        developer.log(
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'Resolved tool alias $rawToolName -> $toolName',
-          name: 'TaskAgentStrategy',
+          subDomain: 'TaskAgentStrategy',
         );
       }
 
       final argsBytes = utf8.encode(jsonEncode(args)).length;
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Processing tool call: $toolName ($argsBytes bytes)',
-        name: 'TaskAgentStrategy',
+        subDomain: 'TaskAgentStrategy',
       );
 
       // Handle update_report and record_observations locally — they don't
@@ -502,11 +512,13 @@ class TaskAgentStrategy extends ConversationStrategy {
       try {
         await flushChangeSet?.call();
       } catch (e, s) {
-        developer.log(
-          'Incremental change-set flush failed; deferring to end of wake',
-          name: 'TaskAgentStrategy',
-          error: e,
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
           stackTrace: s,
+          subDomain: 'TaskAgentStrategy',
+          message:
+              'Incremental change-set flush failed; deferring to end of wake',
         );
       }
     }

@@ -1,5 +1,3 @@
-import 'dart:developer' as developer show log;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -23,8 +21,12 @@ class FeedbackExtractionService {
   FeedbackExtractionService({
     required this.agentRepository,
     required this.templateService,
+    required this._domainLogger,
     this.soulDocumentService,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentRepository agentRepository;
   final AgentTemplateService templateService;
@@ -75,11 +77,13 @@ class FeedbackExtractionService {
               in changeSetEntities.values.whereType<ChangeSetEntity>())
             entity.id: entity,
         };
-      } catch (e) {
-        developer.log(
-          'Failed to fetch change sets (errorType=${e.runtimeType})',
-          name: 'FeedbackExtractionService',
-          error: e.runtimeType,
+      } catch (e, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
+          stackTrace: stackTrace,
+          subDomain: 'FeedbackExtractionService',
+          message: 'Failed to fetch change sets',
         );
       }
     }
@@ -147,12 +151,14 @@ class FeedbackExtractionService {
             entity.id: entity,
         };
       } catch (e, s) {
-        developer.log(
-          'Failed to fetch observation payloads '
-          '(count=${payloadIds.length}, errorType=${e.runtimeType})',
-          name: 'FeedbackExtractionService',
-          error: e.runtimeType,
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
           stackTrace: s,
+          subDomain: 'FeedbackExtractionService',
+          message:
+              'Failed to fetch observation payloads '
+              '(count=${payloadIds.length})',
         );
       }
     }
@@ -390,12 +396,14 @@ class FeedbackExtractionService {
               ),
             );
           } catch (e, s) {
-            developer.log(
-              'Feedback extraction failed for template '
-              '${DomainLogger.sanitizeId(id)}',
-              name: 'FeedbackExtractionService',
-              error: e.runtimeType,
+            _domainLogger.error(
+              LogDomain.agentWorkflow,
+              e,
               stackTrace: s,
+              subDomain: 'FeedbackExtractionService',
+              message:
+                  'Feedback extraction failed for template '
+                  '${DomainLogger.sanitizeId(id)}',
             );
             return null;
           }

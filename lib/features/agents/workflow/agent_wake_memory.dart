@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
@@ -51,9 +49,9 @@ class AgentWakeMemory {
   /// Creates the pipeline.
   AgentWakeMemory({
     required this.syncService,
+    required this.domainLogger,
     this.inputCaptureService,
     this.logSummarizer,
-    this.domainLogger,
     this.logDomain = LogDomain.agentWorkflow,
   });
 
@@ -68,31 +66,19 @@ class AgentWakeMemory {
   /// flip (no summarization).
   final AgentLogLlmSummarizer? logSummarizer;
 
-  /// Optional structured logger.
-  final DomainLogger? domainLogger;
+  /// Structured logger for compaction progress and failures.
+  final DomainLogger domainLogger;
 
   /// Domain for diagnostics (workflows share `agentWorkflow`).
   final LogDomain logDomain;
 
   void _log(String message) {
-    domainLogger?.log(logDomain, message, subDomain: 'compaction');
+    domainLogger.log(logDomain, message, subDomain: 'compaction');
   }
 
   void _logError(String message, {Object? error}) {
     if (error == null) return;
-    if (domainLogger != null) {
-      domainLogger!.error(logDomain, error, message: message);
-    } else {
-      // Fallback so failures never vanish silently — the same convention the
-      // AgentErrorLogging mixin applies. Kept separate rather than folded into
-      // it: this helper drops a message with no error and carries no stack
-      // trace, so adopting the mixin would change what compaction reports.
-      developer.log(
-        '$message (errorType=${error.runtimeType})',
-        name: 'AgentWakeMemory',
-        error: error.runtimeType,
-      );
-    }
+    domainLogger.error(logDomain, error, message: message);
   }
 
   /// Step 1a — capture this wake's rendered [sources] into the log

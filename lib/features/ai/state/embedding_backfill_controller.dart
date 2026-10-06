@@ -1,13 +1,13 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
 final embeddingBackfillControllerProvider =
@@ -59,13 +59,19 @@ class _BackfillServices {
     required this.embeddingStore,
     required this.embeddingRepository,
     required this.baseUrl,
+    required this.domainLogger,
   });
 
   final JournalDb journalDb;
   final EmbeddingStore embeddingStore;
   final OllamaEmbeddingRepository embeddingRepository;
   final String baseUrl;
+
+  /// Read before the run's first await, while `ref` is certainly alive.
+  final DomainLogger domainLogger;
 }
+
+const _subDomain = 'EmbeddingBackfillController';
 
 class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
   @override
@@ -77,6 +83,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     Future<void> Function(_BackfillServices services) body,
   ) async {
     if (state.isRunning) return;
+    final domainLogger = ref.read(domainLoggerProvider);
 
     if (!getIt.isRegistered<EmbeddingStore>()) {
       state = state.copyWith(
@@ -125,14 +132,16 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           embeddingStore: embeddingStore,
           embeddingRepository: embeddingRepository,
           baseUrl: baseUrl,
+          domainLogger: domainLogger,
         ),
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Backfill error: $e',
-        error: e,
+      domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: stackTrace,
-        name: 'EmbeddingBackfillController',
+        subDomain: _subDomain,
+        message: 'Backfill error',
       );
       state = state.copyWith(error: e.toString());
     } finally {
@@ -162,12 +171,22 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           labelNameResolver: labelResolver,
         );
         if (didEmbed) embedded++;
+      } on EmbeddingEndpointUnavailableException catch (e) {
+        // The circuit is open: routine while Ollama is down, not a failure.
+        services.domainLogger.log(
+          LogDomain.ai,
+          'Backfill skipped $entityId: $e',
+          subDomain: _subDomain,
+          level: InsightLevel.warn,
+        );
       } catch (e, stackTrace) {
-        developer.log(
-          'Backfill failed for $entityId: $e',
-          error: e,
+        services.domainLogger.error(
+          LogDomain.ai,
+          DomainLogger.withoutSource(e),
+          errorType: e.runtimeType,
           stackTrace: stackTrace,
-          name: 'EmbeddingBackfillController',
+          subDomain: _subDomain,
+          message: 'Backfill failed for $entityId',
         );
       }
 

@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Maximum allowed estimate in minutes (24 hours).
@@ -113,11 +114,18 @@ class TaskEstimateHandler {
   /// - [journalRepository]: Repository for persisting task updates.
   /// - [onTaskUpdated]: Optional callback invoked when the task is updated.
   ///   Use this to sync state across multiple handlers.
+  /// - `domainLogger`: Receives the handler's traces and failures.
   TaskEstimateHandler({
     required this.task,
     required this.journalRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
   });
+
+  static const _subDomain = 'TaskEstimateHandler';
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   /// The task being processed.
   ///
@@ -168,10 +176,11 @@ class TaskEstimateHandler {
       // Robustly parse minutes (handles int, double, string)
       final minutes = parseMinutes(rawMinutes);
 
-      developer.log(
-        'Processing update_task_estimate: raw=$rawMinutes, parsed=$minutes min '
+      _domainLogger.log(
+        LogDomain.ai,
+        'Processing update_task_estimate: parsed=$minutes min '
         '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
-        name: 'TaskEstimateHandler',
+        subDomain: _subDomain,
       );
 
       // Validate minutes value
@@ -192,9 +201,10 @@ class TaskEstimateHandler {
       if (currentEstimate != null && currentEstimate.inMinutes == minutes) {
         final message =
             'Estimate already set to $minutes minutes. No change needed.';
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Estimate unchanged: $minutes minutes',
-          name: 'TaskEstimateHandler',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(
@@ -217,7 +227,12 @@ class TaskEstimateHandler {
           case TaskFieldWriteFailed():
             const message =
                 'Failed to update estimate: repository returned false.';
-            developer.log(message, name: 'TaskEstimateHandler');
+            _domainLogger.log(
+              LogDomain.ai,
+              message,
+              subDomain: _subDomain,
+              level: InsightLevel.warn,
+            );
             _sendResponse(call.id, message, manager);
             return const TaskEstimateResult(
               success: false,
@@ -229,7 +244,7 @@ class TaskEstimateHandler {
             const message =
                 "Nothing applied: the task's estimate changed since this "
                 'call read it, so it stays as it is.';
-            developer.log(message, name: 'TaskEstimateHandler');
+            _domainLogger.log(LogDomain.ai, message, subDomain: _subDomain);
             _sendResponse(call.id, message, manager);
             return const TaskEstimateResult(success: true, message: message);
           case TaskFieldWritten(task: final stored):
@@ -238,9 +253,10 @@ class TaskEstimateHandler {
         }
 
         final message = 'Task estimate updated to $minutes minutes.';
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Successfully set task estimate to $minutes minutes',
-          name: 'TaskEstimateHandler',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
 
@@ -252,11 +268,12 @@ class TaskEstimateHandler {
       } catch (e, s) {
         const message =
             'Failed to set estimate. Continuing without estimate update.';
-        developer.log(
-          'Failed to update task estimate',
-          name: 'TaskEstimateHandler',
-          error: e,
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
           stackTrace: s,
+          subDomain: _subDomain,
+          message: 'Failed to update task estimate',
         );
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(
@@ -267,11 +284,12 @@ class TaskEstimateHandler {
       }
     } catch (e, s) {
       const message = 'Error processing task estimate update.';
-      developer.log(
-        'Error processing update_task_estimate: $e',
-        name: 'TaskEstimateHandler',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: s,
+        subDomain: _subDomain,
+        message: 'Error processing update_task_estimate',
       );
       _sendResponse(call.id, message, manager);
       return TaskEstimateResult(

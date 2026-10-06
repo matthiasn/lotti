@@ -40,6 +40,7 @@ void main() {
             final executedAgentIds = <String>[];
 
             orchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: runner,
@@ -88,6 +89,7 @@ void main() {
           final executedAgentIds = <String>[];
 
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -153,6 +155,7 @@ void main() {
             return Future.value();
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -278,6 +281,7 @@ void main() {
           }
 
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -336,6 +340,7 @@ void main() {
             (_) => policyLookupGate.future,
           );
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -394,6 +399,7 @@ void main() {
             (_) => policyLookupGate.future,
           );
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -456,6 +462,7 @@ void main() {
             (_) => policyLookupGate.future,
           );
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -529,6 +536,7 @@ void main() {
             return Future.value();
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -642,6 +650,7 @@ void main() {
             gate: acquisitionGate,
           );
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -692,6 +701,7 @@ void main() {
             );
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -750,6 +760,7 @@ void main() {
             gate: acquisitionGate,
           );
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -819,6 +830,7 @@ void main() {
           });
 
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -880,6 +892,7 @@ void main() {
             }
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -951,6 +964,7 @@ void main() {
               if (entry.agentId == 'final-policy-agent') oldInsertCount++;
             });
             orchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: runner,
@@ -1009,6 +1023,7 @@ void main() {
             }
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1066,6 +1081,7 @@ void main() {
             }
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1121,6 +1137,7 @@ void main() {
             return Future.value();
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1198,6 +1215,7 @@ void main() {
             if (entry.agentId == 'persisted-policy-agent') oldInsertCount++;
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1290,6 +1308,7 @@ void main() {
             if (entry.agentId == 'restored-agent') restoredInsertCount++;
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1586,6 +1605,7 @@ void main() {
             }
           });
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,

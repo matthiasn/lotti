@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -12,6 +10,8 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -166,14 +166,16 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
   /// Runs an async action with busy-state guard and error handling.
   Future<void> _runAction(Future<void> Function() action) async {
     setState(() => _busy = true);
+    final logger = ref.read(domainLoggerProvider);
     try {
       await action();
     } catch (e, s) {
-      developer.log(
-        'AgentControls action failed',
-        name: 'AgentControls',
-        error: e.runtimeType,
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'AgentControls',
+        message: 'AgentControls action failed',
       );
       if (mounted) {
         context.showToast(

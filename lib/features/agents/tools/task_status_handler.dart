@@ -1,10 +1,10 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Result of processing a task status transition.
@@ -35,7 +35,11 @@ class TaskStatusHandler {
   TaskStatusHandler({
     required this.task,
     required this.journalRepository,
+    required this._domainLogger,
   });
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   Task task;
   final JournalRepository journalRepository;
@@ -63,9 +67,10 @@ class TaskStatusHandler {
   }) async {
     final normalized = statusString.trim().toUpperCase();
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Processing set_task_status: chars=${normalized.length}',
-      name: 'TaskStatusHandler',
+      subDomain: 'TaskStatusHandler',
     );
 
     // Reject terminal statuses.
@@ -73,9 +78,11 @@ class TaskStatusHandler {
       final message =
           'Cannot set status to "$normalized": '
           'DONE and REJECTED are user-only statuses.';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected terminal status',
-        name: 'TaskStatusHandler',
+        subDomain: 'TaskStatusHandler',
+        level: InsightLevel.warn,
       );
       return TaskStatusResult(
         success: false,
@@ -89,9 +96,11 @@ class TaskStatusHandler {
       final message =
           'Unknown status: "$normalized". '
           'Valid statuses: ${allowedStatuses.join(", ")}';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected unsupported status',
-        name: 'TaskStatusHandler',
+        subDomain: 'TaskStatusHandler',
+        level: InsightLevel.warn,
       );
       return TaskStatusResult(
         success: false,
@@ -105,9 +114,11 @@ class TaskStatusHandler {
         (reason == null || reason.trim().isEmpty)) {
       final message =
           'Status "$normalized" requires a reason. Please provide one.';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected status transition with missing reason',
-        name: 'TaskStatusHandler',
+        subDomain: 'TaskStatusHandler',
+        level: InsightLevel.warn,
       );
       return TaskStatusResult(
         success: false,
@@ -120,9 +131,10 @@ class TaskStatusHandler {
     final currentDbString = task.data.status.toDbString;
     if (currentDbString == normalized) {
       final message = 'Task is already "$normalized". No change needed.';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Status unchanged — skipping write',
-        name: 'TaskStatusHandler',
+        subDomain: 'TaskStatusHandler',
       );
       return TaskStatusResult(
         success: true,
@@ -149,7 +161,12 @@ class TaskStatusHandler {
       switch (write) {
         case TaskFieldWriteFailed():
           const message = 'Failed to update status: repository returned false.';
-          developer.log(message, name: 'TaskStatusHandler');
+          _domainLogger.log(
+            LogDomain.agentWorkflow,
+            message,
+            subDomain: 'TaskStatusHandler',
+            level: InsightLevel.warn,
+          );
           return const TaskStatusResult(
             success: false,
             message: message,
@@ -161,7 +178,11 @@ class TaskStatusHandler {
               "Nothing applied: the task's status changed to "
               '${stored.data.status.toDbString} since this call read it, '
               'so it stays as it is.';
-          developer.log(message, name: 'TaskStatusHandler');
+          _domainLogger.log(
+            LogDomain.agentWorkflow,
+            message,
+            subDomain: 'TaskStatusHandler',
+          );
           return TaskStatusResult(success: true, message: message);
         case TaskFieldWritten(task: final stored):
           task = stored;
@@ -169,9 +190,10 @@ class TaskStatusHandler {
 
       final message =
           'Task status changed from "$currentDbString" to "$normalized".';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Successfully transitioned task status',
-        name: 'TaskStatusHandler',
+        subDomain: 'TaskStatusHandler',
       );
 
       return TaskStatusResult(
@@ -182,11 +204,12 @@ class TaskStatusHandler {
     } catch (e, s) {
       const message =
           'Failed to update status. Continuing without status change.';
-      developer.log(
-        'Failed to update task status',
-        name: 'TaskStatusHandler',
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'TaskStatusHandler',
+        message: 'Failed to update task status',
       );
 
       return TaskStatusResult(

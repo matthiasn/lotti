@@ -58,6 +58,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,
+      domainLogger: domainLogger,
     );
     final result = await handler.handle(titleArg);
     return ToolExecutionResult.fromHandlerResult(
@@ -124,6 +125,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
         final handler = TaskEstimateHandler(
           task: task,
           journalRepository: journalRepository,
+          domainLogger: domainLogger,
         );
         // Omit the optional manager parameter — the strategy layer adds the
         // tool response with the real call ID. Passing a manager here would
@@ -141,6 +143,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: journalRepository,
+          domainLogger: domainLogger,
         );
         final result = await handler.processToolCall(toolCall);
         return ToolExecutionResult.fromHandlerResult(
@@ -155,6 +158,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
         final handler = TaskPriorityHandler(
           task: task,
           journalRepository: journalRepository,
+          domainLogger: domainLogger,
         );
         final result = await handler.processToolCall(toolCall);
         return ToolExecutionResult.fromHandlerResult(
@@ -195,6 +199,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     final handler = TaskLabelHandler(
       task: task,
       processor: processor,
+      domainLogger: domainLogger,
     );
     final result = await handler.handle(args);
     return ToolExecutionResult.fromHandlerResult(
@@ -225,6 +230,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     final handler = TaskLanguageHandler(
       task: task,
       journalRepository: journalRepository,
+      domainLogger: domainLogger,
     );
     final result = await handler.handle(languageCode);
     return ToolExecutionResult.fromHandlerResult(
@@ -256,6 +262,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     final handler = TaskStatusHandler(
       task: task,
       journalRepository: journalRepository,
+      domainLogger: domainLogger,
     );
     final result = await handler.handle(
       status,
@@ -301,6 +308,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       approval: approval,
       autoChecklistService: autoChecklistService,
       checklistRepository: checklistRepository,
+      domainLogger: domainLogger,
       derivedIds: effect == null
           ? null
           : (
@@ -365,6 +373,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       task: task,
       approval: approval,
       checklistRepository: checklistRepository,
+      domainLogger: domainLogger,
     );
 
     final toolCall = ChatCompletionMessageToolCall(

@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Query dictation uses the current category default's transcription slot,
 /// independently of the task/agent's thinking setup. Resolve on each recording
@@ -19,6 +20,7 @@ queryTranscriptionTargetResolverProvider =
     Provider.family<ChatTranscriptionTargetResolver, QueryScope>((ref, scope) {
       final access = ref.watch(querySourceAccessProvider);
       final configs = ref.watch(aiConfigRepositoryProvider);
+      final domainLogger = ref.watch(domainLoggerProvider);
       return () async {
         final initial = await access.load([scope.id]);
         final categoryId = _categoryId(initial, scope);
@@ -32,6 +34,7 @@ queryTranscriptionTargetResolverProvider =
         final target = await resolveInferenceProviderForProfileSlot(
           modelId: profile.transcriptionModelId!,
           aiConfigRepository: configs,
+          domainLogger: domainLogger,
         );
         if (target == null ||
             !target.model.inputModalities.contains(Modality.audio) ||

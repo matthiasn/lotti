@@ -15,12 +15,14 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockFts5Db mockFts5Db;
   late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockDomainLogger mockDomainLogger;
   late JournalQueryRunner runner;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockFts5Db = MockFts5Db();
     mockEntitiesCacheService = MockEntitiesCacheService();
+    mockDomainLogger = MockDomainLogger();
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
@@ -72,6 +74,7 @@ void main() {
       db: mockJournalDb,
       fts5Db: mockFts5Db,
       entitiesCacheService: mockEntitiesCacheService,
+      domainLogger: mockDomainLogger,
     );
   });
 

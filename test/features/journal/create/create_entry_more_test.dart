@@ -15,6 +15,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -54,11 +55,13 @@ void main() {
   group('Create Entry Tests - ', () {
     late SettingsDb settingsDb;
     late JournalDb journalDb;
+    late MockDomainLogger logger;
 
     // Per-test fresh databases + GetIt registrations: no state accumulates
     // across tests, so no test can depend on entries created by another.
     setUp(() async {
       setFakeDocumentsPath();
+      logger = MockDomainLogger();
 
       settingsDb = SettingsDb(inMemoryDatabase: true);
       journalDb = JournalDb(inMemoryDatabase: true);
@@ -207,7 +210,10 @@ void main() {
       );
       when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-      final task = await createTask(categoryId: categoryId);
+      final task = await createTask(
+        domainLogger: logger,
+        categoryId: categoryId,
+      );
 
       expect(task, isNotNull);
       expect(task!.data.profileId, equals(profileId));
@@ -231,7 +237,10 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        final task = await createTask(categoryId: categoryId);
+        final task = await createTask(
+          domainLogger: logger,
+          categoryId: categoryId,
+        );
 
         expect(task, isNotNull);
         expect(task!.data.profileId, isNull);
@@ -239,7 +248,7 @@ void main() {
     );
 
     test('createTask has null profileId when no categoryId', () async {
-      final task = await createTask();
+      final task = await createTask(domainLogger: logger);
       expect(task, isNotNull);
       expect(task!.data.profileId, isNull);
     });
@@ -266,7 +275,10 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        final task = await createTask(categoryId: categoryId);
+        final task = await createTask(
+          domainLogger: logger,
+          categoryId: categoryId,
+        );
         expect(task, isNotNull);
 
         final mockService = MockTaskAgentService();
@@ -284,7 +296,11 @@ void main() {
           (_) async => makeTestIdentity(id: 'agent-1'),
         );
 
-        await autoAssignCategoryAgentWith(mockService, task!);
+        await autoAssignCategoryAgentWith(
+          mockService,
+          task!,
+          domainLogger: logger,
+        );
 
         verify(
           () => mockService.createTaskAgent(
@@ -303,11 +319,15 @@ void main() {
     test(
       'autoAssignCategoryAgentWith does nothing when no categoryId',
       () async {
-        final task = await createTask();
+        final task = await createTask(domainLogger: logger);
         expect(task, isNotNull);
 
         final mockService = MockTaskAgentService();
-        await autoAssignCategoryAgentWith(mockService, task!);
+        await autoAssignCategoryAgentWith(
+          mockService,
+          task!,
+          domainLogger: logger,
+        );
 
         verifyNever(
           () => mockService.createTaskAgent(
@@ -337,11 +357,18 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        final task = await createTask(categoryId: categoryId);
+        final task = await createTask(
+          domainLogger: logger,
+          categoryId: categoryId,
+        );
         expect(task, isNotNull);
 
         final mockService = MockTaskAgentService();
-        await autoAssignCategoryAgentWith(mockService, task!);
+        await autoAssignCategoryAgentWith(
+          mockService,
+          task!,
+          domainLogger: logger,
+        );
 
         verifyNever(
           () => mockService.createTaskAgent(
@@ -373,7 +400,10 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        final task = await createTask(categoryId: categoryId);
+        final task = await createTask(
+          domainLogger: logger,
+          categoryId: categoryId,
+        );
         expect(task, isNotNull);
 
         final mockService = MockTaskAgentService();
@@ -390,7 +420,21 @@ void main() {
         ).thenThrow(Exception('Service unavailable'));
 
         // Should not throw — errors are caught and logged.
-        await autoAssignCategoryAgentWith(mockService, task!);
+        await autoAssignCategoryAgentWith(
+          mockService,
+          task!,
+          domainLogger: logger,
+        );
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'autoAssignCategoryAgent',
+            message: 'Failed to auto-assign agent for task ${task.meta.id}',
+          ),
+        ).called(1);
       },
     );
 
@@ -414,7 +458,10 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        final task = await createTask(categoryId: categoryId);
+        final task = await createTask(
+          domainLogger: logger,
+          categoryId: categoryId,
+        );
         expect(task, isNotNull);
 
         final mockService = MockTaskAgentService();
@@ -431,7 +478,11 @@ void main() {
         ).thenThrow(StateError('Bad state'));
 
         // Should not throw — the catch block handles all error types.
-        await autoAssignCategoryAgentWith(mockService, task!);
+        await autoAssignCategoryAgentWith(
+          mockService,
+          task!,
+          domainLogger: logger,
+        );
 
         // Verify the service was indeed called (the error was thrown and caught).
         verify(
@@ -484,7 +535,11 @@ void main() {
           ),
         ).thenAnswer((_) async => makeTestIdentity(id: 'event-agent-1'));
 
-        await autoAssignCategoryEventAgentWith(mockService, event!);
+        await autoAssignCategoryEventAgentWith(
+          mockService,
+          event!,
+          domainLogger: logger,
+        );
 
         verify(
           () => mockService.createEventAgent(
@@ -507,7 +562,11 @@ void main() {
         expect(event, isNotNull);
 
         final mockService = MockEventAgentService();
-        await autoAssignCategoryEventAgentWith(mockService, event!);
+        await autoAssignCategoryEventAgentWith(
+          mockService,
+          event!,
+          domainLogger: logger,
+        );
 
         verifyNever(
           () => mockService.createEventAgent(
@@ -544,7 +603,11 @@ void main() {
         expect(event, isNotNull);
 
         final mockService = MockEventAgentService();
-        await autoAssignCategoryEventAgentWith(mockService, event!);
+        await autoAssignCategoryEventAgentWith(
+          mockService,
+          event!,
+          domainLogger: logger,
+        );
 
         verifyNever(
           () => mockService.createEventAgent(
@@ -591,7 +654,22 @@ void main() {
         ).thenThrow(StateError('already exists'));
 
         // Should not throw — errors are caught and logged.
-        await autoAssignCategoryEventAgentWith(mockService, event!);
+        await autoAssignCategoryEventAgentWith(
+          mockService,
+          event!,
+          domainLogger: logger,
+        );
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'autoAssignCategoryEventAgent',
+            message:
+                'Failed to auto-assign event agent for event ${event.meta.id}',
+          ),
+        ).called(1);
       },
     );
   });

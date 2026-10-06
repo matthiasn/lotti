@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -11,6 +13,7 @@ import 'inference_provider_resolver_test_helpers.dart';
 
 void main() {
   late MockAiConfigRepository mockAiConfig;
+  late MockDomainLogger mockLogger;
 
   // No registerFallbackValue is needed here: getConfigsByType is always called
   // and verified with a concrete AiConfigType.model (never any()), and the only
@@ -18,6 +21,7 @@ void main() {
 
   setUp(() {
     mockAiConfig = MockAiConfigRepository();
+    mockLogger = MockDomainLogger();
   });
 
   // Stubs the model-type lookup with [models].
@@ -47,6 +51,7 @@ void main() {
     final resolved = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: aiConfigRepository,
+      domainLogger: mockLogger,
       logTag: logTag,
     );
     return resolved?.provider;
@@ -74,6 +79,14 @@ void main() {
       );
 
       expect(provider, isNull);
+      verify(
+        () => mockLogger.log(
+          LogDomain.ai,
+          any(that: contains('not found in configured models')),
+          subDomain: 'InferenceProviderResolver',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
     });
 
     test('returns null when provider is not an inference provider', () async {
@@ -214,6 +227,7 @@ void main() {
         final resolved = await resolveInferenceProviderWithModel(
           modelId: 'models/gemini-3-flash-preview',
           aiConfigRepository: mockAiConfig,
+          domainLogger: mockLogger,
         );
 
         expect(resolved, isNotNull);
@@ -245,6 +259,7 @@ void main() {
         final resolved = await resolveInferenceProviderWithModel(
           modelId: 'models/gemini-3-flash-preview',
           aiConfigRepository: mockAiConfig,
+          domainLogger: mockLogger,
         );
 
         // The usableFallback branch returns the mismatched-but-usable row.
@@ -388,6 +403,7 @@ void main() {
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'config-row-1',
         aiConfigRepository: mockAiConfig,
+        domainLogger: mockLogger,
       );
 
       expect(resolved, isNotNull);
@@ -401,6 +417,7 @@ void main() {
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'missing',
         aiConfigRepository: mockAiConfig,
+        domainLogger: mockLogger,
       );
 
       expect(resolved, isNull);
@@ -415,6 +432,7 @@ void main() {
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'provider-as-model',
         aiConfigRepository: mockAiConfig,
+        domainLogger: mockLogger,
       );
 
       expect(resolved, isNull);
@@ -427,6 +445,7 @@ void main() {
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'config-row-1',
         aiConfigRepository: mockAiConfig,
+        domainLogger: mockLogger,
       );
 
       expect(resolved, isNull);
@@ -441,6 +460,7 @@ void main() {
         final resolved = await resolveInferenceProviderForModelConfigId(
           modelConfigId: 'config-row-1',
           aiConfigRepository: mockAiConfig,
+          domainLogger: mockLogger,
         );
 
         expect(resolved, isNull);
@@ -460,6 +480,7 @@ void main() {
       final resolved = await resolveInferenceProviderForProfileSlot(
         modelId: 'row-b',
         aiConfigRepository: mockAiConfig,
+        domainLogger: mockLogger,
       );
 
       expect(resolved, isNotNull);
@@ -478,6 +499,7 @@ void main() {
         final resolved = await resolveInferenceProviderForProfileSlot(
           modelId: 'models/gemini-3-flash-preview',
           aiConfigRepository: mockAiConfig,
+          domainLogger: mockLogger,
         );
 
         expect(resolved, isNotNull);
@@ -494,6 +516,7 @@ void main() {
         final resolved = await resolveInferenceProviderForProfileSlot(
           modelId: 'model-1',
           aiConfigRepository: mockAiConfig,
+          domainLogger: mockLogger,
         );
 
         expect(resolved, isNull);

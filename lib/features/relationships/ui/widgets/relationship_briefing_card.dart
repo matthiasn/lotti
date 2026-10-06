@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,6 +37,8 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
 

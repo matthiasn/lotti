@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -70,12 +69,12 @@ String redactEndpoint(String baseUrl) {
 /// logs a handful of lines rather than one per entry.
 class OllamaEmbeddingRepository {
   OllamaEmbeddingRepository({
+    required this._domainLogger,
     http.Client? httpClient,
-    this._domainLogger,
   }) : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
-  final DomainLogger? _domainLogger;
+  final DomainLogger _domainLogger;
 
   /// How long a confirmed outage suppresses calls before the next probe.
   static const Duration outageCooldown = Duration(minutes: 5);
@@ -146,10 +145,12 @@ class OllamaEmbeddingRepository {
       }
     }
 
+    // The body's length only: callers log this error, and an error body can
+    // echo the text that was sent to be embedded.
     if (response.statusCode != httpStatusOk) {
       throw Exception(
-        'Embedding request failed (HTTP ${response.statusCode}): '
-        '${response.body}',
+        'Embedding request failed (HTTP ${response.statusCode}, '
+        '${response.body.length} chars of body)',
       );
     }
 
@@ -164,7 +165,10 @@ class OllamaEmbeddingRepository {
     try {
       json = jsonDecode(body) as Map<String, dynamic>;
     } on FormatException catch (e) {
-      throw Exception('Malformed embedding response: $e');
+      throw Exception(
+        'Malformed embedding response: ${e.message} '
+        '(${body.length} chars)',
+      );
     }
 
     final embeddings = json['embeddings'];
@@ -265,7 +269,7 @@ class OllamaEmbeddingRepository {
   }
 
   void _log(String message, {InsightLevel level = InsightLevel.info}) {
-    _domainLogger?.log(
+    _domainLogger.log(
       LogDomain.ai,
       message,
       subDomain: 'embedding_availability',
@@ -304,9 +308,11 @@ class OllamaEmbeddingRepository {
             );
           }
           final reason = e is TimeoutException ? 'Timeout' : 'Network error';
-          developer.log(
+          _domainLogger.log(
+            LogDomain.ai,
             '$reason during $context, retrying (attempt $attempt)...',
-            name: 'OllamaEmbeddingRepository',
+            subDomain: 'OllamaEmbeddingRepository',
+            level: InsightLevel.warn,
           );
           await Future<void>.delayed(retryBaseDelay * (1 << (attempt - 1)));
           continue;

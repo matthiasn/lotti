@@ -26,6 +26,7 @@ void main() {
     migration = SeedTombstoneMigration(
       aiConfigRepository: repo,
       settingsDb: settingsDb,
+      domainLogger: MockDomainLogger(),
     );
 
     when(() => repo.saveConfig(any())).thenAnswer((_) async {});

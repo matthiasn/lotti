@@ -1,7 +1,6 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 // ---------------------------------------------------------------------------
@@ -112,9 +111,11 @@ CreateChatCompletionStreamResponse createUsageChunk({
 
 /// Captures a thought signature from a Gemini response part if present.
 ///
-/// Logs when a signature is captured or when the first function call lacks one.
+/// Logs to [domainLogger] when a signature is captured (sampled, as this runs
+/// per tool call) or when the first function call lacks one.
 /// Uses [extractThoughtSignature] to extract the signature from the part.
 void captureSignatureIfPresent({
+  required DomainLogger domainLogger,
   required Map<String, dynamic> part,
   required String toolCallId,
   required String functionName,
@@ -124,17 +125,20 @@ void captureSignatureIfPresent({
   final thoughtSignature = extractThoughtSignature(part);
   if (thoughtSignature != null) {
     signatureCollector?.addSignature(toolCallId, thoughtSignature);
-    developer.log(
+    domainLogger.logSampled(
+      LogDomain.ai,
       'Captured thought signature for $functionName ($toolCallId), '
       'length=${thoughtSignature.length}',
-      name: 'GeminiInferenceRepository',
+      sampleKey: 'gemini_thought_signature_captured',
+      subDomain: 'GeminiInferenceRepository',
     );
   } else if (toolCallIndex == 0) {
     // First function call without signature - unexpected for Gemini 3
     // but may be normal for Gemini 2.x or non-thinking mode
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'First function call $functionName has no thought signature',
-      name: 'GeminiInferenceRepository',
+      subDomain: 'GeminiInferenceRepository',
     );
   }
 }

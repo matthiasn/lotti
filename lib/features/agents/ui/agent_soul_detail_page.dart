@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -11,6 +9,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
@@ -365,6 +365,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
   Future<void> _handleSave(BuildContext context) async {
     setState(() => _isSaving = true);
 
+    final logger = ref.read(domainLoggerProvider);
     try {
       final soulService = ref.read(soulDocumentServiceProvider);
       final name = _nameController.text.trim();
@@ -408,11 +409,12 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
         ref.invalidate(allSoulDocumentsProvider);
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to save soul',
-        name: 'AgentSoulDetailPage',
-        error: e.runtimeType,
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'AgentSoulDetailPage',
+        message: 'Failed to save soul',
       );
       if (!context.mounted) return;
       context.showToast(
@@ -441,6 +443,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
           DesignSystemButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
+              final logger = ref.read(domainLoggerProvider);
               try {
                 final soulService = ref.read(soulDocumentServiceProvider);
                 await soulService.deleteSoul(widget.soulId!);
@@ -448,11 +451,12 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
                 ref.invalidate(allSoulDocumentsProvider);
                 Navigator.of(pageContext).pop();
               } catch (e, s) {
-                developer.log(
-                  'Delete failed',
-                  name: 'AgentSoulDetailPage',
-                  error: e.runtimeType,
+                logger.error(
+                  LogDomain.agentWorkflow,
+                  e,
                   stackTrace: s,
+                  subDomain: 'AgentSoulDetailPage',
+                  message: 'Delete failed',
                 );
                 if (!mounted || !pageContext.mounted) return;
                 pageContext.showToast(

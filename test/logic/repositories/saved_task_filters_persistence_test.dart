@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -40,11 +41,28 @@ const _saved = [
 
 void main() {
   late MockSettingsDb mockSettingsDb;
+  late MockDomainLogger mockDomainLogger;
   late SavedTaskFiltersPersistence sut;
+
+  void verifyErrorLogged(String message) {
+    verify(
+      () => mockDomainLogger.error(
+        LogDomain.tasks,
+        any(),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'SavedTaskFiltersPersistence',
+        message: message,
+      ),
+    ).called(1);
+  }
 
   setUp(() {
     mockSettingsDb = MockSettingsDb();
-    sut = SavedTaskFiltersPersistence(mockSettingsDb);
+    mockDomainLogger = MockDomainLogger();
+    sut = SavedTaskFiltersPersistence(
+      mockSettingsDb,
+      domainLogger: mockDomainLogger,
+    );
 
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     when(
@@ -109,6 +127,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(result, isEmpty);
+        verifyErrorLogged('Error decoding saved task filters');
       });
     });
 
@@ -128,6 +147,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(result!.map((f) => f.id), ['sv-1', 'sv-2']);
+        verifyErrorLogged('Skipping undecodable saved task filter');
       });
     });
   });
@@ -192,6 +212,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(result, isNull);
+        verifyErrorLogged('Error decoding saved task filter sync ledger');
       });
     });
 

@@ -10,6 +10,7 @@ class _TemplateDocument implements VersionedDocument {
   static const _templateId = 'template-conformance';
 
   AgentTemplateCrud _crud(AgentReplica device) => AgentTemplateCrud(
+    domainLogger: MockDomainLogger(),
     repository: device.repository,
     syncService: device.syncService,
   );

@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 void main() {
   group('OmlxInferenceRepository', () {
     const baseUrl = 'http://127.0.0.1:8003/v1';
@@ -17,6 +19,7 @@ void main() {
       'listModels fetches OpenAI-compatible catalog with bearer key',
       () async {
         final repository = OmlxInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             expect(request.method, 'GET');
             expect(request.url.toString(), '$baseUrl/models');
@@ -70,6 +73,7 @@ void main() {
       'listModels omits Authorization header when API key is empty',
       () async {
         final repository = OmlxInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             expect(request.headers.containsKey('authorization'), isFalse);
             return http.Response(
@@ -92,6 +96,7 @@ void main() {
 
     test('listModels rejects invalid response shapes', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response('"bad"', 200)),
       );
       addTearDown(repository.close);
@@ -110,6 +115,7 @@ void main() {
 
     test('listModels surfaces structured provider errors', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response(
             jsonEncode({
@@ -133,6 +139,7 @@ void main() {
 
     test('listModels wraps timeouts', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) => Completer<http.Response>().future),
       );
       addTearDown(repository.close);
@@ -152,6 +159,7 @@ void main() {
     test('listModels rejects an empty base URL before any request', () async {
       var requested = false;
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           requested = true;
           return http.Response('[]', 200);
@@ -168,6 +176,7 @@ void main() {
 
     test('listModels wraps malformed base URLs as inference errors', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response('[]', 200)),
       );
       addTearDown(repository.close);
@@ -192,6 +201,7 @@ void main() {
 
     test('listModels wraps non-JSON response bodies', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response('definitely-not-json', 200),
         ),
@@ -212,6 +222,7 @@ void main() {
 
     test('listModels wraps transport-level failures', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           throw http.ClientException('connection refused');
         }),
@@ -232,6 +243,7 @@ void main() {
 
     test('listModels merges metadata and top-level modality lists', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response(
             jsonEncode({
@@ -269,6 +281,7 @@ void main() {
       'listModels infers audio modality for unknown transcription models',
       () async {
         final repository = OmlxInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => http.Response(
               jsonEncode([
@@ -289,6 +302,7 @@ void main() {
 
     test('listModels labels unknown reasoning models', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response(
             jsonEncode([
@@ -307,6 +321,7 @@ void main() {
 
     test('listModels surfaces string error payloads', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response(
             jsonEncode({'error': 'plain error text'}),
@@ -330,6 +345,7 @@ void main() {
 
     test('listModels surfaces top-level message error payloads', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(
           (_) async => http.Response(
             jsonEncode({'message': 'top level failure'}),
@@ -353,6 +369,7 @@ void main() {
 
     test('listModels clips long non-JSON error bodies', () async {
       final repository = OmlxInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response('E' * 200, 500)),
       );
       addTearDown(repository.close);
@@ -373,6 +390,7 @@ void main() {
       'listModels returns raw short error bodies that are not objects',
       () async {
         final repository = OmlxInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async => http.Response('["a","b"]', 500)),
         );
         addTearDown(repository.close);

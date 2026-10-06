@@ -1,7 +1,5 @@
 // ignore_for_file: specify_nonobvious_property_types
 
-import 'dart:developer' as developer;
-
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -17,8 +15,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Provider that returns the latest agent-authored health metrics for a
 /// project, parsed from its most recent project-agent report.
@@ -137,6 +137,7 @@ final projectAgentOverviewUpdateStreamProvider =
     StreamProvider.autoDispose<Set<String>>((ref) async* {
       final notifications = ref.watch(updateNotificationsProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
+      final logger = ref.watch(domainLoggerProvider);
       await for (final ids in notifications.updateStream.where(
         (ids) => ids.contains(agentNotification),
       )) {
@@ -158,11 +159,12 @@ final projectAgentOverviewUpdateStreamProvider =
         } catch (error, stackTrace) {
           // Missing an update would leave a stale one-liner indefinitely.
           // On the rare lookup failure, prefer one conservative refresh.
-          developer.log(
-            'Failed to scope agent update for the Projects overview',
-            name: 'projectAgentOverviewUpdateStreamProvider',
-            error: error,
+          logger.error(
+            LogDomain.tasks,
+            error,
             stackTrace: stackTrace,
+            subDomain: 'projectAgentOverviewUpdateStreamProvider',
+            message: 'Failed to scope agent update for the Projects overview',
           );
           yield ids;
         }
@@ -182,6 +184,7 @@ final projectsOverviewProvider =
       final agentRepository = ref.watch(agentRepositoryProvider);
       final aiConfigRepository = ref.watch(aiConfigRepositoryProvider);
       final sidecarCache = ref.watch(_projectAgentSidecarCacheProvider);
+      final logger = ref.watch(domainLoggerProvider);
       final includeInferenceProfiles = ref.watch(
         projectsFilterControllerProvider.select(
           (filter) => filter.showInferenceProfile,
@@ -189,7 +192,7 @@ final projectsOverviewProvider =
       );
       ref.watch(projectAgentOverviewUpdateStreamProvider);
       if (includeInferenceProfiles) {
-        _reloadOnProfileNameChanges(ref, aiConfigRepository);
+        _reloadOnProfileNameChanges(ref, aiConfigRepository, logger);
       }
       return repository
           .watchProjectsOverview(query: const ProjectsQuery())
@@ -206,11 +209,12 @@ final projectsOverviewProvider =
               } catch (error, stackTrace) {
                 // Agent sidecars are optional enrichment. A failed read must
                 // not replace the established list with an error.
-                developer.log(
-                  'Failed to attach project agent sidecars',
-                  name: 'projectsOverviewProvider',
-                  error: error,
+                logger.error(
+                  LogDomain.tasks,
+                  error,
                   stackTrace: stackTrace,
+                  subDomain: 'projectsOverviewProvider',
+                  message: 'Failed to attach project agent sidecars',
                 );
                 return _restoreCachedProjectAgentSidecars(
                   snapshot,
@@ -228,7 +232,12 @@ final projectsOverviewProvider =
 /// renamed profile kept its old name and a deleted one never turned into the
 /// missing-profile warning. The first emission is the baseline; only a change
 /// in the id → name map reloads, so edits to a profile's model slots do not.
-void _reloadOnProfileNameChanges(Ref ref, AiConfigRepository repository) {
+/// A failing profile stream is reported to [logger].
+void _reloadOnProfileNameChanges(
+  Ref ref,
+  AiConfigRepository repository,
+  DomainLogger logger,
+) {
   Map<String, String>? baseline;
   final subscription = repository.watchProfiles().listen(
     (profiles) {
@@ -241,11 +250,12 @@ void _reloadOnProfileNameChanges(Ref ref, AiConfigRepository repository) {
       }
     },
     onError: (Object error, StackTrace stackTrace) {
-      developer.log(
-        'Failed to watch inference profiles for the Projects overview',
-        name: 'projectsOverviewProvider',
-        error: error,
+      logger.error(
+        LogDomain.tasks,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'projectsOverviewProvider',
+        message: 'Failed to watch inference profiles for the Projects overview',
       );
     },
   );

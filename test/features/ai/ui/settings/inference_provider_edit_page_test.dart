@@ -10,6 +10,12 @@ import 'package:http/testing.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/providers/model_catalog_repository_providers.dart'
+    show
+        geminiModelsRepositoryProvider,
+        meliousInferenceRepositoryProvider,
+        mistralInferenceRepositoryProvider,
+        omlxInferenceRepositoryProvider;
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart'
@@ -20,12 +26,7 @@ import 'package:lotti/features/ai/repository/mistral_inference_repository.dart'
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
-    show
-        AvailableModelsSection,
-        geminiModelsRepositoryProvider,
-        meliousInferenceRepositoryProvider,
-        mistralInferenceRepositoryProvider,
-        omlxInferenceRepositoryProvider;
+    show AvailableModelsSection;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -111,6 +112,7 @@ Future<void> _setTestSurface(
 Override _geminiStaticCatalogOverride() {
   return geminiModelsRepositoryProvider.overrideWithValue(
     GeminiModelsRepository(
+      domainLogger: MockDomainLogger(),
       httpClient: MockClient(
         (_) async => http.Response(
           jsonEncode({
@@ -2554,6 +2556,7 @@ void main() {
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               geminiModelsRepositoryProvider.overrideWithValue(
                 GeminiModelsRepository(
+                  domainLogger: MockDomainLogger(),
                   httpClient: MockClient(
                     (_) async => http.Response(
                       jsonEncode({

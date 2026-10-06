@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
 
+import '../../../mocks/mocks.dart';
 import '../agent_test_device.dart';
 
 /// The default seeding and the user's template and soul operations, wired
@@ -18,16 +19,19 @@ class DefaultSeedingDevice {
   final AgentTestDevice device;
 
   AgentTemplateCrud get templates => AgentTemplateCrud(
+    domainLogger: MockDomainLogger(),
     repository: device.repository,
     syncService: device.sync,
   );
 
   SoulVersionOps get souls => SoulVersionOps(
+    domainLogger: MockDomainLogger(),
     repository: device.repository,
     syncService: device.sync,
   );
 
   SoulTemplateOps get soulAssignments => SoulTemplateOps(
+    domainLogger: MockDomainLogger(),
     repository: device.repository,
     syncService: device.sync,
     versionOps: souls,
@@ -37,6 +41,7 @@ class DefaultSeedingDevice {
   /// default templates, then the default souls and their assignments.
   Future<void> start() async {
     await AgentTemplateSeeding(
+      domainLogger: MockDomainLogger(),
       syncService: device.sync,
       crud: templates,
     ).seedDefaults();

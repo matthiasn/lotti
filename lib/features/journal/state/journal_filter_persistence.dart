@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Handles encoding, decoding, loading, and saving of journal/task filter
 /// state to the settings database.
@@ -11,9 +11,13 @@ import 'package:lotti/services/dev_logger.dart';
 /// Owns the dedup optimisation: tracks the last-persisted value per key and
 /// skips writes when nothing has changed.
 class JournalFilterPersistence {
-  JournalFilterPersistence(this._settingsDb);
+  JournalFilterPersistence(
+    this._settingsDb, {
+    required this._domainLogger,
+  });
 
   final SettingsDb _settingsDb;
+  final DomainLogger _domainLogger;
 
   /// Key used for entry-type persistence.
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
@@ -74,12 +78,15 @@ class JournalFilterPersistence {
       _persistedFiltersByKey[key] = _encodeTasksFilter(filter);
       _loadedFilterKeys.add(key);
       return filter;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _persistedFiltersByKey[key] = raw;
       _loadedFilterKeys.add(key);
-      DevLogger.warning(
-        name: 'JournalFilterPersistence',
-        message: 'Error loading persisted filters: $e',
+      _domainLogger.error(
+        LogDomain.persistence,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'JournalFilterPersistence',
+        message: 'Error loading persisted filters',
       );
       return null;
     }
@@ -101,12 +108,15 @@ class JournalFilterPersistence {
       _persistedEntryTypesValue = _encodeEntryTypes(types);
       _hasLoadedEntryTypesValue = true;
       return types;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _persistedEntryTypesValue = raw;
       _hasLoadedEntryTypesValue = true;
-      DevLogger.warning(
-        name: 'JournalFilterPersistence',
-        message: 'Error loading persisted entry types: $e',
+      _domainLogger.error(
+        LogDomain.persistence,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'JournalFilterPersistence',
+        message: 'Error loading persisted entry types',
       );
       return null;
     }

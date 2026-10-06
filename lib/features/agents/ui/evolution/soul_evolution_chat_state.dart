@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +8,8 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Manages the lifecycle of a standalone soul evolution chat session.
 ///
@@ -33,8 +34,13 @@ class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
   static const _logTag = 'SoulEvolutionChatState';
 
+  /// Read in [build]: the dispose-time and post-await failure paths log
+  /// through it after `ref` may no longer be usable.
+  late DomainLogger _domainLogger;
+
   @override
   Future<EvolutionChatData> build() async {
+    _domainLogger = ref.read(domainLoggerProvider);
     final workflow = ref.read(templateEvolutionWorkflowProvider);
 
     final messages = <EvolutionChatMessage>[
@@ -119,11 +125,12 @@ class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
             Object e,
             StackTrace s,
           ) {
-            developer.log(
-              'abandonSession on dispose failed',
-              name: _logTag,
-              error: e.runtimeType,
+            _domainLogger.error(
+              LogDomain.agentWorkflow,
+              e,
               stackTrace: s,
+              subDomain: _logTag,
+              message: 'abandonSession on dispose failed',
             );
           }),
         );
@@ -233,11 +240,12 @@ class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
         ),
       );
     } catch (e, s) {
-      developer.log(
-        'sendMessage failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'sendMessage failed',
       );
       final current = state.value;
       if (current != null) {
@@ -306,11 +314,12 @@ class SoulEvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
       return true;
     } catch (e, s) {
-      developer.log(
-        'approveSoulProposal failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'approveSoulProposal failed',
       );
       final current = state.value;
       if (current != null) {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// How this repository names itself in an [InferenceHttpException].
 const _exceptionProvider = 'oMLX';
@@ -19,8 +19,13 @@ const _exceptionProvider = 'oMLX';
 /// are already in the bundled oMLX catalog and applies conservative heuristics
 /// for unknown local models.
 class OmlxInferenceRepository {
-  OmlxInferenceRepository({http.Client? httpClient})
-    : httpClient = httpClient ?? http.Client();
+  OmlxInferenceRepository({
+    required this._domainLogger,
+    http.Client? httpClient,
+  }) : httpClient = httpClient ?? http.Client();
+
+  /// Records catalog fetches.
+  final DomainLogger _domainLogger;
 
   /// Segments the model-name humanizer keeps upper-case for this provider.
   static const _modelNameAcronyms = {
@@ -54,7 +59,12 @@ class OmlxInferenceRepository {
     }
 
     final uri = _buildEndpointUri(normalizedBaseUrl, 'models');
-    developer.log('Fetching oMLX model catalog from $uri', name: _providerName);
+    _domainLogger.log(
+      LogDomain.ai,
+      'Fetching oMLX model catalog from '
+      '${ModelCatalogMapping.redactedEndpoint(uri)}',
+      subDomain: _providerName,
+    );
 
     try {
       final response = await httpClient

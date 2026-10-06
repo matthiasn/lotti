@@ -97,6 +97,7 @@ void main() {
             final generatedQueue = WakeQueue();
             final generatedRunner = WakeRunner();
             final generatedOrchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: generatedRepository,
               queue: generatedQueue,
               runner: generatedRunner,
@@ -340,6 +341,7 @@ void main() {
           var refreshNotifications = 0;
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,
@@ -398,6 +400,7 @@ void main() {
           // upsert.
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,
@@ -453,6 +456,7 @@ void main() {
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -492,6 +496,7 @@ void main() {
                   )
                   as AgentStateEntity;
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -542,6 +547,7 @@ void main() {
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -578,6 +584,7 @@ void main() {
                   as AgentStateEntity;
           final persistedNotifications = <String>[];
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -689,6 +696,7 @@ void main() {
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -719,6 +727,7 @@ void main() {
         'automatic updates are on',
         () async {
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -748,6 +757,7 @@ void main() {
 
       test('scheduled manual enqueue is classified as automation', () async {
         orchestrator = WakeOrchestrator(
+          domainLogger: MockDomainLogger(),
           repository: mockRepository,
           queue: queue,
           runner: runner,
@@ -784,6 +794,7 @@ void main() {
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -837,6 +848,7 @@ void main() {
             () => mockRepository.upsertEntity(any()),
           ).thenAnswer((_) async {});
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -891,6 +903,7 @@ void main() {
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -941,6 +954,7 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,
@@ -1000,6 +1014,7 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,
@@ -1064,6 +1079,7 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,

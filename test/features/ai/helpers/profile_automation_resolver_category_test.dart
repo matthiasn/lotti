@@ -27,6 +27,7 @@ void main() {
       subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
+      domainLogger: MockDomainLogger(),
     );
   });
 
@@ -43,6 +44,7 @@ void main() {
         subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (categoryId) async {
           if (categoryId == 'cat-journal') return 'category-profile-1';
           return null;
@@ -81,6 +83,7 @@ void main() {
         subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (_) async => null,
       );
 
@@ -99,6 +102,7 @@ void main() {
         subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
+        domainLogger: MockDomainLogger(),
         categoryProfileLookup: (_) async => 'broken-profile',
       );
       when(
@@ -190,6 +194,7 @@ void main() {
           subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
+          domainLogger: MockDomainLogger(),
           subjectProfileLookup: (taskId) async =>
               taskId == 'task-orphan' ? 'task-inherited-profile' : null,
         );
@@ -218,6 +223,7 @@ void main() {
           subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
+          domainLogger: MockDomainLogger(),
           subjectProfileLookup: (_) async => 'task-different-profile',
         );
         when(
@@ -260,6 +266,7 @@ void main() {
           subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
+          domainLogger: MockDomainLogger(),
           subjectProfileLookup: (_) async => null,
           categoryProfileLookup: (_) async {
             fail(

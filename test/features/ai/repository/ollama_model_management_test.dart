@@ -39,10 +39,16 @@ void main() {
 
       // Create a real OllamaInferenceRepository with the mocked HTTP client
       // This allows the tests to verify HTTP calls as originally intended
-      final ollamaRepo = OllamaInferenceRepository(httpClient: mockHttpClient);
+      final ollamaRepo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockHttpClient,
+      );
 
       // Also provide a real GeminiInferenceRepository to satisfy constructor deps
-      final geminiRepo = GeminiInferenceRepository(httpClient: mockHttpClient);
+      final geminiRepo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockHttpClient,
+      );
 
       container = ProviderContainer(
         overrides: [
@@ -163,9 +169,11 @@ void main() {
 
         // Set up repository with mock HTTP client
         final testOllamaRepo = OllamaInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: mockHttpClient,
         );
         final testGeminiRepo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: mockHttpClient,
         );
 

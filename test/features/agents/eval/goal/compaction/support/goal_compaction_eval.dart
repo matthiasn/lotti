@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../../../../tool/goal_compaction_eval_report.dart';
+import '../../../../../../mocks/mocks.dart';
 import '../../support/goal_agent_eval_runner.dart';
 import 'goal_compaction_facts.dart';
 import 'goal_compaction_fixtures.dart';
@@ -762,6 +763,7 @@ Future<String?> acceptedGoalReportStatus(
   GoalCompactionDerivation derivation,
 ) async {
   final strategy = GoalAgentStrategy(
+    domainLogger: MockDomainLogger(),
     syncService: _DiscardingAgentSyncService(),
     agentId: 'goal_agent:compaction-eval',
     threadId: 'compaction-eval',

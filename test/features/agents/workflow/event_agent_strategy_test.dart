@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -48,6 +50,7 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late MockConversationManager mockManager;
   late EventAgentStrategy strategy;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(registerAllFallbackValues);
 
@@ -57,7 +60,9 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
+    mockDomainLogger = MockDomainLogger();
     strategy = EventAgentStrategy(
+      domainLogger: mockDomainLogger,
       syncService: mockSyncService,
       agentId: _agentId,
       threadId: _threadId,
@@ -305,6 +310,28 @@ void main() {
               as String;
       expect(captured, contains('invalid arguments format'));
       expect(strategy.extractReportContent(), '');
+      verify(
+        () => mockDomainLogger.log(
+          LogDomain.agentWorkflow,
+          any(
+            that: allOf(
+              contains('Failed to parse tool call arguments'),
+              contains('errorType=FormatException'),
+            ),
+          ),
+          subDomain: 'EventAgentStrategy',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockDomainLogger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      );
     });
   });
 

@@ -7,6 +7,8 @@ import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 AiConfigInferenceProvider _provider() => AiConfigInferenceProvider(
   id: 'prov',
   baseUrl: 'https://generativelanguage.googleapis.com',
@@ -407,6 +409,7 @@ void main() {
         );
 
         final result = await generateGeminiImage(
+          domainLogger: MockDomainLogger(),
           httpClient: client,
           prompt: 'a cat',
           model: 'gemini-3-pro-image-preview',
@@ -440,6 +443,7 @@ void main() {
 
       await expectLater(
         generateGeminiImage(
+          domainLogger: MockDomainLogger(),
           httpClient: client,
           prompt: 'a cat',
           model: 'gemini-3-pro-image-preview',
@@ -463,6 +467,7 @@ void main() {
 
       await expectLater(
         generateGeminiImage(
+          domainLogger: MockDomainLogger(),
           httpClient: client,
           prompt: 'a penguin on an ice floe',
           model: 'gemini-3-pro-image-preview',
@@ -490,6 +495,7 @@ void main() {
 
         await expectLater(
           generateGeminiImage(
+            domainLogger: MockDomainLogger(),
             httpClient: client,
             prompt: 'a cat',
             model: 'gemini-3-pro-image-preview',
@@ -526,6 +532,7 @@ void main() {
         );
 
         await generateGeminiImage(
+          domainLogger: MockDomainLogger(),
           httpClient: client,
           prompt: 'a cat',
           model: 'gemini-3-pro-image-preview',

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/create_measurement/suggest_measurement.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -13,7 +14,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/full_height_wolt_dialog_type.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -137,6 +139,10 @@ class _MeasurementCaptureDraft {
     }
 
     final errorMessage = modalContext.messages.measurementSaveError;
+    final logger = ProviderScope.containerOf(
+      modalContext,
+      listen: false,
+    ).read(domainLoggerProvider);
     saveState.value = (isSaving: true, error: null);
     final data = buildData(measurementDateTime.value);
     try {
@@ -153,11 +159,12 @@ class _MeasurementCaptureDraft {
         Navigator.of(modalContext).pop(data);
       }
     } catch (error, stackTrace) {
-      DevLogger.error(
-        name: 'MeasurementCaptureModal',
-        message: 'Failed to save measurement',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'MeasurementCaptureModal',
+        message: 'Failed to save measurement',
       );
       _showSaveError(errorMessage);
     }

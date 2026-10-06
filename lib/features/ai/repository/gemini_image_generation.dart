@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Generates an image using Gemini's image generation capabilities.
 ///
@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 ///
 /// Parameters:
 /// - [httpClient]: HTTP client used for the request.
+/// - [domainLogger]: Records the request endpoint.
 /// - [prompt]: The text prompt describing the image to generate.
 /// - [model]: The Gemini model ID (e.g., 'models/gemini-3-pro-image-preview').
 /// - [provider]: Contains base URL and API key.
@@ -26,6 +27,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 /// throws an exception if generation fails.
 Future<GeneratedImage> generateGeminiImage({
   required http.Client httpClient,
+  required DomainLogger domainLogger,
   required String prompt,
   required String model,
   required AiConfigInferenceProvider provider,
@@ -43,9 +45,10 @@ Future<GeneratedImage> generateGeminiImage({
     referenceImages: referenceImages,
   );
 
-  developer.log(
+  domainLogger.log(
+    LogDomain.ai,
     'Gemini generateImage request to: ${GeminiUtils.redactedEndpoint(uri)}',
-    name: 'GeminiInferenceRepository',
+    subDomain: 'GeminiInferenceRepository',
   );
 
   final response = await httpClient
@@ -208,12 +211,13 @@ String _httpErrorReason(int statusCode, String body) {
 /// diagnose from logs.
 ///
 /// This suffix is appended to the thrown exception's message, which the skill
-/// runner persists via `LoggingService` (the repository's own `developer.log`
-/// calls are *not* captured in release/TestFlight builds), so it is the only
-/// reliable place to surface the cause for later log searches. It reports the
-/// terminal reason, any blocked safety categories, and token-usage counts
-/// (which distinguish a thinking-budget exhaustion from an outright refusal),
-/// and always attaches a truncated raw payload as a backstop.
+/// runner persists via `LoggingService` (the repository's own request trace
+/// is gated by the `ai` log domain and carries no diagnostics), so it is the
+/// only reliable place to surface the cause for later log searches. It
+/// reports the terminal reason, any blocked safety categories, and
+/// token-usage counts (which distinguish a thinking-budget exhaustion from an
+/// outright refusal), and always attaches a truncated raw payload as a
+/// backstop.
 String _responseDiagnostics(
   Map<String, dynamic> response,
   Map<String, dynamic>? candidate,

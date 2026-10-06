@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/model/report_health_band.dart';
@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Project Agent.
@@ -32,6 +33,7 @@ class ProjectAgentStrategy extends ConversationStrategy
     with AgentMessageRecording {
   ProjectAgentStrategy({
     required this.syncService,
+    required this.domainLogger,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -43,6 +45,10 @@ class ProjectAgentStrategy extends ConversationStrategy
   /// Sync-aware write service for persisting messages.
   @override
   final AgentSyncService syncService;
+
+  /// Structured logger for argument-parsing and persistence failures.
+  @override
+  final DomainLogger domainLogger;
 
   /// The agent's stable ID.
   @override
@@ -99,10 +105,14 @@ class ProjectAgentStrategy extends ConversationStrategy
         args = parseAgentToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
-        developer.log(
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        domainLogger.log(
+          LogDomain.agentWorkflow,
           'Failed to parse tool call arguments for $toolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
-          name: 'ProjectAgentStrategy',
+          subDomain: 'ProjectAgentStrategy',
+          level: InsightLevel.warn,
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '
@@ -412,11 +422,13 @@ class ProjectAgentStrategy extends ConversationStrategy
         requests: requests,
         alreadyStagedKeys: _stagedRetractionKeys,
       );
-    } catch (e) {
-      developer.log(
-        'retract_suggestions could not read open proposals '
-        '(errorType=${e.runtimeType})',
-        name: 'ProjectAgentStrategy',
+    } catch (e, stackTrace) {
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'ProjectAgentStrategy',
+        message: 'retract_suggestions could not read open proposals',
       );
       await _rejectToolCall(
         callId: callId,

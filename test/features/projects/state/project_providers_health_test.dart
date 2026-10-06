@@ -14,8 +14,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
@@ -30,6 +32,7 @@ void main() {
   late MockAiConfigRepository mockAiConfigRepo;
   late StreamController<Set<String>> updateStreamController;
   late ProviderContainer container;
+  late MockDomainLogger logger;
 
   setUp(() {
     mockRepo = MockProjectRepository();
@@ -65,8 +68,10 @@ void main() {
       () => mockAiConfigRepo.watchProfiles(),
     ).thenAnswer((_) => const Stream.empty());
 
+    logger = MockDomainLogger();
     container = ProviderContainer(
       overrides: withServiceOverrides([
+        domainLoggerProvider.overrideWithValue(logger),
         projectRepositoryProvider.overrideWithValue(mockRepo),
         agentRepositoryProvider.overrideWithValue(mockAgentRepo),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
@@ -264,6 +269,15 @@ void main() {
 
         expect(result.groups.expand((group) => group.projects), hasLength(2));
         expect(result.groups.first.projects.single.oneLiner, isNull);
+        verify(
+          () => logger.error(
+            LogDomain.tasks,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'projectsOverviewProvider',
+            message: 'Failed to attach project agent sidecars',
+          ),
+        ).called(1);
       },
     );
 
@@ -437,6 +451,7 @@ void main() {
         ).thenThrow(StateError('agent database unavailable'));
         final scopedContainer = ProviderContainer(
           overrides: withServiceOverrides([
+            domainLoggerProvider.overrideWithValue(logger),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
           ]),
@@ -457,6 +472,15 @@ void main() {
         agentUpdates.add(ids);
 
         expect(await refresh, ids);
+        verify(
+          () => logger.error(
+            LogDomain.tasks,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'projectAgentOverviewUpdateStreamProvider',
+            message: 'Failed to scope agent update for the Projects overview',
+          ),
+        ).called(1);
       },
     );
 

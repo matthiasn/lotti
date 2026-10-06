@@ -64,7 +64,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
         ),
       );
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to persist day-agent user message',
         error: e,
         stackTrace: s,

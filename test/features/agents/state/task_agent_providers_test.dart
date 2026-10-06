@@ -32,6 +32,7 @@ void main() {
       final wakeQueue = WakeQueue();
       final wakeRunner = WakeRunner();
       final orchestrator = WakeOrchestrator(
+        domainLogger: MockDomainLogger(),
         repository: mockRepository,
         queue: wakeQueue,
         runner: wakeRunner,

@@ -3,6 +3,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -104,6 +105,7 @@ void main() {
           stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskTitleHandler(
+            domainLogger: MockDomainLogger(),
             task: task,
             journalRepository: mockJournalRepo,
           );
@@ -124,6 +126,7 @@ void main() {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -136,6 +139,7 @@ void main() {
 
       test('rejects empty title and returns error without writing', () async {
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -153,6 +157,7 @@ void main() {
 
       test('rejects whitespace-only title', () async {
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -168,6 +173,7 @@ void main() {
 
       test('returns success no-op when title is unchanged', () async {
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -183,11 +189,13 @@ void main() {
       });
 
       test('returns error when repository throws', () async {
+        final logger = MockDomainLogger();
         when(
           () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('DB write failed'));
 
         final handler = TaskTitleHandler(
+          domainLogger: logger,
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -200,6 +208,16 @@ void main() {
         expect(result.message, contains('Failed'));
         expect(handler.task, same(task));
         expect(handler.task.data.title, equals('Original Title'));
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'TaskTitleHandler',
+            message: 'Failed to update task title',
+          ),
+        ).called(1);
       });
 
       test('returns error when repository returns false', () async {
@@ -208,6 +226,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -226,6 +245,7 @@ void main() {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -243,6 +263,7 @@ void main() {
         ).thenThrow(Exception('fail'));
 
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -257,6 +278,7 @@ void main() {
 
         Task? callbackTask;
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
           onTaskUpdated: (t) => callbackTask = t,
@@ -271,6 +293,7 @@ void main() {
       test('does not invoke onTaskUpdated on no-op', () async {
         var callbackInvoked = false;
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
           onTaskUpdated: (_) => callbackInvoked = true,
@@ -288,6 +311,7 @@ void main() {
 
         var callbackInvoked = false;
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
           onTaskUpdated: (_) => callbackInvoked = true,
@@ -306,6 +330,7 @@ void main() {
           );
         Task? callbackTask;
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
           onTaskUpdated: (t) => callbackTask = t,
@@ -330,6 +355,7 @@ void main() {
         final stored = row.task;
         var callbackInvoked = false;
         final handler = TaskTitleHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
           onTaskUpdated: (_) => callbackInvoked = true,
@@ -360,6 +386,7 @@ void main() {
           final row = stubTaskRow(repo, initialTask);
           Task? callbackTask;
           final handler = TaskTitleHandler(
+            domainLogger: MockDomainLogger(),
             task: initialTask,
             journalRepository: repo,
             onTaskUpdated: (updatedTask) => callbackTask = updatedTask,

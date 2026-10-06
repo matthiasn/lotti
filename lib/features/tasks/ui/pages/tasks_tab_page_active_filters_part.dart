@@ -248,10 +248,12 @@ Future<void> _defaultCreateTaskPressed(
 ) async {
   // Capture the service before the await to avoid using ref after disposal.
   final agentService = ref.read(taskAgentServiceProvider);
+  final logger = ref.read(domainLoggerProvider);
   final context = ref.context;
   Task? task;
   try {
     task = await createTask(
+      domainLogger: logger,
       categoryId: filterContext.categoryId,
       projectId: filterContext.projectId,
       labelIds: filterContext.labelIds.isEmpty
@@ -260,11 +262,12 @@ Future<void> _defaultCreateTaskPressed(
       status: filterContext.status,
     );
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to create task',
-      name: 'TasksTabPage',
-      error: error,
+    logger.error(
+      LogDomain.tasks,
+      error,
       stackTrace: stackTrace,
+      subDomain: 'TasksTabPage',
+      message: 'Failed to create task',
     );
   }
   if (task == null) {
@@ -281,6 +284,6 @@ Future<void> _defaultCreateTaskPressed(
   // established layout the moment the agent landed — a full reflow one beat
   // after the page appeared. It is a local write, and it is a no-op for a
   // category with no default template.
-  await autoAssignCategoryAgentWith(agentService, task);
+  await autoAssignCategoryAgentWith(agentService, task, domainLogger: logger);
   ref.read(navServiceProvider).beamToNamed('/tasks/${task.meta.id}');
 }

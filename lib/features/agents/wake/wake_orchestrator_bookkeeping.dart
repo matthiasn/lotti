@@ -196,7 +196,7 @@ extension _WakeOrchestratorBookkeeping on WakeOrchestrator {
   }
 
   void _log(String message, {String? subDomain}) {
-    domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
+    domainLogger.log(LogDomain.agentRuntime, message, subDomain: subDomain);
   }
 
   /// Every job enters the queue through here, whatever asked for it — a

@@ -253,6 +253,7 @@ class ContactImportController extends Notifier<ContactImportState> {
     final agentService = state.drafts.values.any((draft) => draft.important)
         ? ref.read(relationshipAgentServiceProvider)
         : null;
+    final domainLogger = ref.read(domainLoggerProvider);
     final refKey = await ref.read(contactRefKeyProvider.future);
     final created = <String>[];
 
@@ -280,6 +281,7 @@ class ContactImportController extends Notifier<ContactImportState> {
           agentService,
           relationship,
           source: 'ContactImportController',
+          domainLogger: domainLogger,
         );
       }
     }

@@ -483,13 +483,15 @@ class TutorialAppHarness {
     );
 
     final loggingService = LoggingService();
+    // One logger for every service the harness builds, registered below.
+    final domainLogger = DomainLogger(loggingService: loggingService);
     final settingsDb = SettingsDb(inMemoryDatabase: true);
     final journalDb = JournalDb(
       inMemoryDatabase: inMemoryJournal,
       documentsDirectoryProvider: () async => documentsDirectory,
       background: false,
       readPool: 0,
-      loggingService: DomainLogger(loggingService: loggingService),
+      loggingService: domainLogger,
     );
     final fts5Db = Fts5Db(inMemoryDatabase: true);
     final editorDb = EditorDb(inMemoryDatabase: true);
@@ -546,7 +548,7 @@ class TutorialAppHarness {
       )
       ..registerSingleton<SavedTaskFiltersRepository>(
         SavedTaskFiltersRepository(
-          SavedTaskFiltersPersistence(settingsDb),
+          SavedTaskFiltersPersistence(settingsDb, domainLogger: domainLogger),
           updateNotifications,
         ),
       );
@@ -568,13 +570,11 @@ class TutorialAppHarness {
       vectorClockService: vectorClockService,
     );
     final geolocationService = GeolocationService(
-      loggingService: DomainLogger(loggingService: loggingService),
+      loggingService: domainLogger,
     );
 
     getIt
-      ..registerSingleton<DomainLogger>(
-        DomainLogger(loggingService: loggingService),
-      )
+      ..registerSingleton<DomainLogger>(domainLogger)
       ..registerSingleton<MetadataService>(metadataService)
       ..registerSingleton<GeolocationService>(geolocationService)
       ..registerSingleton<PersistenceLogic>(buildPersistenceLogic())
@@ -588,7 +588,7 @@ class TutorialAppHarness {
       ..registerSingleton<NotificationService>(
         NotificationService(
           journalDb: journalDb,
-          domainLogger: getIt<DomainLogger>(),
+          domainLogger: domainLogger,
           onNotificationTap: routeNotificationTap,
         ),
       );
@@ -617,6 +617,7 @@ class TutorialAppHarness {
     final entitiesCacheService = EntitiesCacheService(
       journalDb: journalDb,
       updateNotifications: updateNotifications,
+      domainLogger: domainLogger,
     );
     await entitiesCacheService.init();
     getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);

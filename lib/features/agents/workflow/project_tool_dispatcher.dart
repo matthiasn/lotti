@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -31,7 +29,7 @@ class ProjectToolDispatcher {
     required this.persistenceLogic,
     required this.entitiesCacheService,
     required this.journalDb,
-    this.domainLogger,
+    required this.domainLogger,
     this.taskAgentService,
   });
 
@@ -39,7 +37,7 @@ class ProjectToolDispatcher {
   final PersistenceLogic persistenceLogic;
   final EntitiesCacheService entitiesCacheService;
   final JournalDb journalDb;
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
   final TaskAgentService? taskAgentService;
 
   static const _uuid = Uuid();
@@ -50,9 +48,10 @@ class ProjectToolDispatcher {
     Map<String, dynamic> args,
     String projectId,
   ) async {
-    developer.log(
+    domainLogger.log(
+      LogDomain.agentWorkflow,
       'Dispatching project tool handler: $toolName',
-      name: 'ProjectToolDispatcher',
+      subDomain: 'ProjectToolDispatcher',
     );
 
     // A confirmed change item names its effect; no handler sees the reserved
@@ -370,7 +369,7 @@ class ProjectToolDispatcher {
       final deletedTask = task.copyWith(meta: deletedMeta);
       return (await persistenceLogic.updateDbEntity(deletedTask)) ?? false;
     } catch (error, stackTrace) {
-      domainLogger?.error(
+      domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         message:
@@ -408,7 +407,7 @@ class ProjectToolDispatcher {
         automaticUpdatesEnabled: category.automaticAgentWakesEnabledEffective,
       );
     } catch (error, stackTrace) {
-      domainLogger?.error(
+      domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         message:

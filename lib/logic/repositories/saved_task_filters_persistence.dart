@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Persists the ordered list of [SavedTaskFilter]s as a single JSON blob in
 /// [SettingsDb], next to the [SavedTaskFilterSyncLedger] that records what
@@ -10,9 +10,13 @@ import 'package:lotti/services/dev_logger.dart';
 ///
 /// The list is small (typical user has a handful of saved filters) so a
 /// single-blob approach mirrors `JournalFilterPersistence` and keeps reorder
-/// trivial: position in the list is the sort order.
+/// trivial: position in the list is the sort order. Decode failures go to
+/// [LogDomain.tasks] through the injected [DomainLogger].
 class SavedTaskFiltersPersistence {
-  SavedTaskFiltersPersistence(this._settingsDb);
+  SavedTaskFiltersPersistence(
+    this._settingsDb, {
+    required this._domainLogger,
+  });
 
   /// Storage key under which the JSON list of saved filters is persisted.
   static const storageKey = 'SAVED_TASK_FILTERS';
@@ -21,6 +25,7 @@ class SavedTaskFiltersPersistence {
   static const ledgerKey = 'SAVED_TASK_FILTERS_SYNC_LEDGER';
 
   final SettingsDb _settingsDb;
+  final DomainLogger _domainLogger;
 
   // Dedup state — avoids redundant DB writes when the encoded value is
   // unchanged. Mirrors the pattern in JournalFilterPersistence.
@@ -44,9 +49,9 @@ class SavedTaskFiltersPersistence {
     final List<dynamic> items;
     try {
       items = jsonDecode(raw) as List<dynamic>;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _persistedValue = raw;
-      _warn('Error decoding saved task filters: $e');
+      _logError('Error decoding saved task filters', e, stackTrace);
       return const <SavedTaskFilter>[];
     }
 
@@ -54,8 +59,8 @@ class SavedTaskFiltersPersistence {
     for (final item in items) {
       try {
         list.add(SavedTaskFilter.fromJson(item as Map<String, dynamic>));
-      } catch (e) {
-        _warn('Skipping undecodable saved task filter: $e');
+      } catch (e, stackTrace) {
+        _logError('Skipping undecodable saved task filter', e, stackTrace);
       }
     }
     _persistedValue = _encode(list);
@@ -87,10 +92,10 @@ class SavedTaskFiltersPersistence {
       return SavedTaskFilterSyncLedger.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       // An unreadable ledger is treated like a missing one: the caller then
       // owes every stored filter again, which only costs redundant sends.
-      _warn('Error decoding saved task filter sync ledger: $e');
+      _logError('Error decoding saved task filter sync ledger', e, stackTrace);
       return null;
     }
   }
@@ -116,8 +121,14 @@ class SavedTaskFiltersPersistence {
     }
   }
 
-  void _warn(String message) =>
-      DevLogger.warning(name: 'SavedTaskFiltersPersistence', message: message);
+  void _logError(String message, Object error, StackTrace stackTrace) =>
+      _domainLogger.error(
+        LogDomain.tasks,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'SavedTaskFiltersPersistence',
+        message: message,
+      );
 }
 
 /// What this device still owes its peers for its saved filters, and what it

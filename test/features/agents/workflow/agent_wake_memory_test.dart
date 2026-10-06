@@ -77,6 +77,7 @@ void main() {
       ).thenAnswer((_) async => {});
       final summarizer = MockAgentLogLlmSummarizer();
       final memory = AgentWakeMemory(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         logSummarizer: summarizer,
       );
@@ -121,6 +122,7 @@ void main() {
       'skips compactor reads when this wake did not refresh capture',
       () async {
         final memory = AgentWakeMemory(
+          domainLogger: MockDomainLogger(),
           syncService: syncService,
         );
 
@@ -150,6 +152,7 @@ void main() {
         (_) async => [],
       );
       final memory = AgentWakeMemory(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
       );
 
@@ -163,6 +166,7 @@ void main() {
   group('capture', () {
     test('returns false when no capture service is wired', () async {
       final memory = AgentWakeMemory(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
       );
 
@@ -179,6 +183,7 @@ void main() {
 
     test('absorbs capture failures and returns false', () async {
       final memory = AgentWakeMemory(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         inputCaptureService: _ThrowingCaptureService(),
       );

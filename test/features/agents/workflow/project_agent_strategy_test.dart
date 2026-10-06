@@ -6,12 +6,14 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -42,6 +44,7 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late MockConversationManager mockManager;
   late ProjectAgentStrategy strategy;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(registerAllFallbackValues);
 
@@ -51,7 +54,9 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
+    mockDomainLogger = MockDomainLogger();
     strategy = ProjectAgentStrategy(
+      domainLogger: mockDomainLogger,
       syncService: mockSyncService,
       agentId: _agentId,
       threadId: _threadId,
@@ -580,6 +585,28 @@ void main() {
             ),
           ),
         ).called(1);
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.agentWorkflow,
+            any(
+              that: allOf(
+                contains('Failed to parse tool call arguments'),
+                contains('errorType=FormatException'),
+              ),
+            ),
+            subDomain: 'ProjectAgentStrategy',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDomainLogger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
       });
 
       test('parses markdown-wrapped JSON arguments', () async {
@@ -792,6 +819,7 @@ void main() {
       /// is, so it can refuse a proposal that would change nothing.
       ProjectAgentStrategy withStatus(ProjectStatus status) =>
           ProjectAgentStrategy(
+            domainLogger: MockDomainLogger(),
             syncService: mockSyncService,
             agentId: _agentId,
             threadId: _threadId,
@@ -954,6 +982,7 @@ void main() {
         ).thenAnswer((_) async => const ProposalLedger.empty());
 
         strategy = ProjectAgentStrategy(
+          domainLogger: MockDomainLogger(),
           syncService: mockSyncService,
           agentId: _agentId,
           threadId: _threadId,
@@ -1090,6 +1119,7 @@ void main() {
 
       test('says so when the tool is not wired up', () async {
         final unwired = ProjectAgentStrategy(
+          domainLogger: MockDomainLogger(),
           syncService: mockSyncService,
           agentId: _agentId,
           threadId: _threadId,

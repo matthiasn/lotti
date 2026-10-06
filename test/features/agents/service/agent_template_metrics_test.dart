@@ -33,6 +33,7 @@ void main() {
     when(() => mockSync.upsertEntity(any())).thenAnswer((_) async {});
 
     final crud = AgentTemplateCrud(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );

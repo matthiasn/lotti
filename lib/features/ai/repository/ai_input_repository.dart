@@ -501,7 +501,10 @@ AiInputRepository aiInputRepository(Ref ref) {
       : null;
   return AiInputRepository(
     ref,
-    taskSummaryResolver: TaskSummaryResolver(agentRepository),
+    taskSummaryResolver: TaskSummaryResolver(
+      agentRepository,
+      domainLogger: ref.watch(domainLoggerProvider),
+    ),
     projectRepository: ref.read(projectRepositoryProvider),
     agentRepository: agentRepository,
     domainLogger: ref.watch(domainLoggerProvider),

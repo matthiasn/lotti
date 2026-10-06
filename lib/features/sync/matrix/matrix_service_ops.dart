@@ -133,6 +133,7 @@ class MatrixServiceOps {
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
     deviceKeys: deviceKeys,
     service: service(),
+    loggingService: loggingService,
   );
 
   /// Runs post-verification recovery so sync resumes without app restart.

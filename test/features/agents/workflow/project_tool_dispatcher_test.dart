@@ -45,6 +45,7 @@ void main() {
     ).thenAnswer((_) async => null);
 
     dispatcher = ProjectToolDispatcher(
+      domainLogger: MockDomainLogger(),
       projectRepository: mockProjectRepository,
       persistenceLogic: mockPersistenceLogic,
       entitiesCacheService: mockEntitiesCacheService,
@@ -960,6 +961,7 @@ void main() {
 
     test('create_task skips auto-assign when no taskAgentService', () async {
       final noServiceDispatcher = ProjectToolDispatcher(
+        domainLogger: MockDomainLogger(),
         projectRepository: mockProjectRepository,
         persistenceLogic: mockPersistenceLogic,
         entitiesCacheService: mockEntitiesCacheService,

@@ -9,7 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../test_utils.dart';
+import '../../../mocks/mocks.dart';
 import 'model_prepopulation_service_test_helpers.dart';
 
 void main() {
@@ -23,7 +23,10 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(repository: mockRepository);
+      service = ModelPrepopulationService(
+        repository: mockRepository,
+        domainLogger: MockDomainLogger(),
+      );
     });
 
     /// Stubs the repository's config queries: [models] for the model type,
@@ -164,8 +167,9 @@ void main() {
           );
           stubRepo(providers: [provider]);
 
-          final created = await ModelPrepopulationService()
-              .prepopulateModelsForProvider(provider);
+          final created = await ModelPrepopulationService(
+            domainLogger: MockDomainLogger(),
+          ).prepopulateModelsForProvider(provider);
 
           expect(
             created,
@@ -425,6 +429,7 @@ void main() {
           final generatedRepository = MockAiConfigRepository();
           final generatedService = ModelPrepopulationService(
             repository: generatedRepository,
+            domainLogger: MockDomainLogger(),
           );
           final savedModels = <AiConfigModel>[];
 
@@ -571,7 +576,10 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(repository: mockRepository);
+      service = ModelPrepopulationService(
+        repository: mockRepository,
+        domainLogger: MockDomainLogger(),
+      );
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
     });
 
@@ -699,7 +707,10 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      service = ModelPrepopulationService(repository: mockRepository);
+      service = ModelPrepopulationService(
+        repository: mockRepository,
+        domainLogger: MockDomainLogger(),
+      );
     });
 
     test('should backfill models for all existing providers', () async {

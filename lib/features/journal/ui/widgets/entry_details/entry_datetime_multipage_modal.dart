@@ -12,7 +12,8 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_status_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/full_height_wolt_dialog_type.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -554,6 +555,7 @@ class _SaveActionBar extends ConsumerWidget {
             fullWidth: true,
             onPressed: canSave
                 ? () async {
+                    final logger = ref.read(domainLoggerProvider);
                     try {
                       await ref
                           .read(provider.notifier)
@@ -564,10 +566,13 @@ class _SaveActionBar extends ConsumerWidget {
                       if (context.mounted) {
                         Navigator.of(context).pop();
                       }
-                    } catch (e) {
-                      DevLogger.warning(
-                        name: 'EntryDateTimeMultiPageModal',
-                        message: 'Error updating date range: $e',
+                    } catch (e, stackTrace) {
+                      logger.error(
+                        LogDomain.persistence,
+                        e,
+                        stackTrace: stackTrace,
+                        subDomain: 'EntryDateTimeMultiPageModal',
+                        message: 'Error updating date range',
                       );
                     }
                   }

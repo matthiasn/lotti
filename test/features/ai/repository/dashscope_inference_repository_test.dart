@@ -24,7 +24,10 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = DashScopeInferenceRepository(httpClient: mockHttpClient);
+    repository = DashScopeInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: mockHttpClient,
+    );
   });
 
   AiConfigInferenceProvider createProvider({
@@ -953,7 +956,9 @@ void main() {
 
     group('extractImageUrlFromSse', () {
       test('returns null for empty body and bodies without data lines', () {
-        final repo = DashScopeInferenceRepository();
+        final repo = DashScopeInferenceRepository(
+          domainLogger: MockDomainLogger(),
+        );
         addTearDown(repo.close);
         expect(repo.extractImageUrlFromSse(''), isNull);
         expect(
@@ -969,7 +974,9 @@ void main() {
         'extracts the last image URL from generated SSE bodies, '
         'skipping text events and malformed lines',
         (scenario) {
-          final repo = DashScopeInferenceRepository();
+          final repo = DashScopeInferenceRepository(
+            domainLogger: MockDomainLogger(),
+          );
           addTearDown(repo.close);
 
           expect(

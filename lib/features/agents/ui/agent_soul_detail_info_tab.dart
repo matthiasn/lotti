@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -11,6 +9,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -186,6 +186,7 @@ class _VersionTile extends ConsumerWidget {
             label: dialogContext.messages.agentSoulRollbackAction,
             onPressed: () async {
               Navigator.pop(dialogContext);
+              final logger = ref.read(domainLoggerProvider);
               try {
                 final soulService = ref.read(soulDocumentServiceProvider);
                 await soulService.rollbackToVersion(
@@ -193,11 +194,12 @@ class _VersionTile extends ConsumerWidget {
                   versionId: version.id,
                 );
               } catch (e, s) {
-                developer.log(
-                  'Rollback failed',
-                  name: 'AgentSoulDetailPage',
-                  error: e,
+                logger.error(
+                  LogDomain.agentWorkflow,
+                  e,
                   stackTrace: s,
+                  subDomain: 'AgentSoulDetailPage',
+                  message: 'Rollback failed',
                 );
                 if (!context.mounted) return;
                 context.showToast(

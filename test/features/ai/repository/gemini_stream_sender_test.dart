@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 http.StreamedResponse _ok(String body) {
   final bytes = utf8.encode(body);
   return http.StreamedResponse(
@@ -49,7 +51,10 @@ void main() {
     test('returns the first non-retryable response without delay', () {
       fakeAsync((async) {
         final client = _ScriptedClient([_ok('{"ok":true}')]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -67,7 +72,10 @@ void main() {
     test('retries on 429 then succeeds, honoring exponential backoff', () {
       fakeAsync((async) {
         final client = _ScriptedClient([_status(429), _ok('{}')]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -91,7 +99,10 @@ void main() {
     test('retries on 503 the same way as 429', () {
       fakeAsync((async) {
         final client = _ScriptedClient([_status(503), _ok('{}')]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -114,7 +125,10 @@ void main() {
           _status(429, headers: {'retry-after': '7'}),
           _ok('{}'),
         ]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -142,7 +156,10 @@ void main() {
           _status(429, headers: {'retry-after': 'soon'}),
           _ok('{}'),
         ]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -165,7 +182,10 @@ void main() {
           // 4 total attempts for default maxRetries=3, all 429.
           List<Object>.generate(4, (_) => _status(429)),
         );
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -194,7 +214,10 @@ void main() {
           TimeoutException('handshake'),
           _ok('{}'),
         ]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         http.StreamedResponse? result;
         sender
@@ -216,7 +239,10 @@ void main() {
         final client = _ScriptedClient(
           List<Object>.generate(4, (_) => TimeoutException('t')),
         );
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         Object? caught;
         sender.send(buildRequest: _buildRequest, context: 'ctx').catchError((
@@ -243,7 +269,10 @@ void main() {
     test('builds a fresh request for every attempt', () {
       fakeAsync((async) {
         final client = _ScriptedClient([_status(429), _ok('{}')]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         var built = 0;
         sender.send(
@@ -266,7 +295,11 @@ void main() {
     test('respects a custom maxRetries of zero (no retries)', () {
       fakeAsync((async) {
         final client = _ScriptedClient([_status(429), _ok('{}')]);
-        final sender = GeminiStreamSender(httpClient: client, maxRetries: 0);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+          maxRetries: 0,
+        );
 
         http.StreamedResponse? result;
         sender

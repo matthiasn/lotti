@@ -1216,6 +1216,7 @@ void main() {
     when(() => mockSync.upsertLink(any())).thenAnswer((_) async {});
 
     service = AgentTemplateService(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );
@@ -1351,6 +1352,7 @@ void main() {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();
       final generatedService = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: generatedRepository,
         syncService: generatedSync,
       );
@@ -2204,6 +2206,7 @@ void main() {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();
       final generatedService = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: generatedRepository,
         syncService: generatedSync,
       );
@@ -2488,6 +2491,7 @@ void main() {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();
       final generatedService = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: generatedRepository,
         syncService: generatedSync,
       );
@@ -2775,6 +2779,7 @@ void main() {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();
       final generatedService = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: generatedRepository,
         syncService: generatedSync,
       );
@@ -3532,6 +3537,7 @@ void main() {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();
       final generatedService = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: generatedRepository,
         syncService: generatedSync,
       );

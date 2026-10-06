@@ -520,6 +520,7 @@ void main() {
     ).thenAnswer((_) async => goalIdentity('goal-a'));
     final dispatched = <(String, Set<String>)>[];
     final liveOrchestrator = WakeOrchestrator(
+      domainLogger: MockDomainLogger(),
       repository: repository,
       queue: WakeQueue(),
       runner: WakeRunner(),

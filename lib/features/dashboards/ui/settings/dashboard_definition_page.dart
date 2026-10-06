@@ -17,7 +17,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
@@ -248,10 +247,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                     }).toList();
 
                     void setCategory(String? newCategoryId) {
-                      DevLogger.log(
-                        name: 'DashboardDefinitionPage',
-                        message: 'setCategory $newCategoryId',
-                      );
                       categoryId = newCategoryId;
                       setState(() {
                         dirty = true;

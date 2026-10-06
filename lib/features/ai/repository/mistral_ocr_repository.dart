@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -23,6 +23,7 @@ const _exceptionProvider = 'Mistral OCR';
 /// to the image entry instead of a 400.
 class MistralOcrRepository {
   MistralOcrRepository({
+    required this._domainLogger,
     http.Client? httpClient,
     http.Client Function()? clientFactory,
   }) : assert(
@@ -32,6 +33,8 @@ class MistralOcrRepository {
        _httpClient = httpClient ?? (clientFactory ?? http.Client.new)(),
        _shouldCloseClient = httpClient == null;
 
+  /// Records each OCR run.
+  final DomainLogger _domainLogger;
   final http.Client _httpClient;
   final bool _shouldCloseClient;
 
@@ -115,10 +118,11 @@ class MistralOcrRepository {
     required Duration timeout,
   }) async {
     final uri = _ocrUri(baseUrl);
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Running Mistral OCR on ${images.length} image(s) via '
       '${_redactedEndpoint(uri)} with model $model',
-      name: _providerName,
+      subDomain: _providerName,
     );
 
     // Each image's OCR request is independent, so run them concurrently and

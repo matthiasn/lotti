@@ -3,15 +3,18 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
   late MockAiInputRepository mockAiInputRepo;
+  late MockDomainLogger mockLogger;
 
   setUp(() {
     mockAiInputRepo = MockAiInputRepository();
+    mockLogger = MockDomainLogger();
   });
 
   group('EntityStateHelper', () {
@@ -76,10 +79,22 @@ void main() {
               entityId: entityId,
               aiInputRepo: mockAiInputRepo,
               entityTypeName: 'image',
+              domainLogger: mockLogger,
             );
 
         expect(result, expected);
         verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
+        if (throws) {
+          verify(
+            () => mockLogger.error(
+              LogDomain.ai,
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'EntityStateHelper',
+              message: any(named: 'message'),
+            ),
+          ).called(1);
+        }
       }
 
       test('returns typed entity when fetch succeeds and type matches', () {
@@ -112,6 +127,7 @@ void main() {
                 entityId: audioId,
                 aiInputRepo: mockAiInputRepo,
                 entityTypeName: 'audio',
+                domainLogger: mockLogger,
               );
 
           expect(result, isNull);
@@ -152,6 +168,7 @@ void main() {
               entityId: audioId,
               aiInputRepo: mockAiInputRepo,
               entityTypeName: 'audio',
+              domainLogger: mockLogger,
             );
 
         expect(audioResult, equals(audio));
@@ -188,6 +205,7 @@ void main() {
           entityId: taskId,
           aiInputRepo: mockAiInputRepo,
           entityTypeName: 'task',
+          domainLogger: mockLogger,
         );
 
         expect(taskResult, equals(task));
@@ -221,6 +239,7 @@ void main() {
               entityId: entityId,
               aiInputRepo: mockAiInputRepo,
               entityTypeName: 'entity',
+              domainLogger: mockLogger,
             );
 
         // Assert

@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -245,6 +246,7 @@ void main() {
       MockSoulDocumentService? soulDocumentService,
     }) {
       return TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository:
             convRepo ??
             _TestConversationRepository(
@@ -363,6 +365,7 @@ void main() {
 
     test('returns null when templateService is not set', () async {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -498,6 +501,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -524,6 +528,7 @@ void main() {
 
     test('returns null for unknown session', () async {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -548,6 +553,7 @@ void main() {
             };
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -579,6 +585,7 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -613,6 +620,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -634,6 +642,7 @@ void main() {
 
     test('returns null when no proposal exists', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -652,6 +661,7 @@ void main() {
 
     test('returns null for unknown session', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -681,6 +691,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -798,6 +809,7 @@ void main() {
       expect(strategy.pendingNotes, hasLength(1));
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -878,6 +890,7 @@ void main() {
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -901,6 +914,7 @@ void main() {
 
     test('returns null for unknown session', () async {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -925,6 +939,7 @@ void main() {
       final (:strategy, :manager) = await _strategyWithProposal();
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -963,6 +978,7 @@ void main() {
 
       final convRepo = _TestConversationRepository();
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1014,6 +1030,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(),
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1079,6 +1096,7 @@ void main() {
 
       final convRepo = _TestConversationRepository();
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1204,6 +1222,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(),
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1264,6 +1283,7 @@ void main() {
       expect(strategy.latestProposal, isNotNull);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -1286,6 +1306,7 @@ void main() {
 
     test('is safe when no proposal exists', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -1307,6 +1328,7 @@ void main() {
     test('is safe for unknown session', () {
       // Should not throw.
       TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -1349,6 +1371,7 @@ void main() {
 
       final convRepo = _TestConversationRepository();
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1392,6 +1415,7 @@ void main() {
     test('handles missing sync service gracefully', () async {
       final convRepo = _TestConversationRepository();
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1439,7 +1463,9 @@ void main() {
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final convRepo = _TestConversationRepository();
+      final domainLogger = MockDomainLogger();
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: domainLogger,
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1471,12 +1497,24 @@ void main() {
           .toList();
       expect(sessionEntities, hasLength(1));
       expect(sessionEntities.first.status, EvolutionSessionStatus.abandoned);
+
+      // The note failure itself is logged with its stack trace.
+      verify(
+        () => domainLogger.error(
+          LogDomain.agentWorkflow,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'TemplateEvolutionWorkflow',
+          message: 'Failed to persist notes during abandon',
+        ),
+      ).called(1);
     });
   });
 
   group('getActiveSessionForTemplate', () {
     test('returns active session matching template', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -1542,6 +1580,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1587,6 +1626,7 @@ void main() {
 
         final convRepo = _TestConversationRepository();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1646,6 +1686,7 @@ void main() {
         ).thenAnswer((_) async => adopted);
         final (:strategy, :manager) = await _strategyWithProposal();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(),
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1697,6 +1738,7 @@ void main() {
         ).thenAnswer((_) async => null);
         final (:strategy, :manager) = await _strategyWithProposal();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(),
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1784,6 +1826,7 @@ void main() {
 
         final convRepo = _TestConversationRepository();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -1889,6 +1932,7 @@ void main() {
 
         final convRepo = _TestConversationRepository();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -2008,6 +2052,7 @@ void main() {
 
         final convRepo = _TestConversationRepository();
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -2106,6 +2151,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2159,6 +2205,7 @@ void main() {
       ).thenAnswer((_) async => <String>[kTestTemplateId]);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2200,6 +2247,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2227,6 +2275,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2271,6 +2320,7 @@ void main() {
       ).thenThrow(StateError('DB error'));
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2307,6 +2357,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(
             assistantResponse: 'Hello',
           ),
@@ -2341,6 +2392,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2392,6 +2444,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2441,6 +2494,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2473,6 +2527,7 @@ void main() {
       ).thenAnswer((_) async => makeTestEvolutionSession());
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2506,6 +2561,7 @@ void main() {
 
       // Workflow created without updateNotifications.
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Hello',
         ),
@@ -2558,6 +2614,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -2600,6 +2657,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2658,6 +2716,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2741,6 +2800,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2785,6 +2845,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2829,6 +2890,7 @@ void main() {
       );
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -2887,6 +2949,7 @@ void main() {
         ).thenAnswer((_) async => [staleSession]);
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(
             assistantResponse: 'Opening response.',
           ),
@@ -2935,6 +2998,7 @@ void main() {
       ).thenAnswer((_) async => [completedSession]);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(
           assistantResponse: 'Opening response.',
         ),
@@ -2983,6 +3047,7 @@ void main() {
       expect(strategy.latestRecap, isNotNull);
 
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -3002,6 +3067,7 @@ void main() {
 
     test('returns null for unknown session', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -3012,6 +3078,7 @@ void main() {
 
     test('returns null when session has no recap', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -3034,6 +3101,7 @@ void main() {
   group('getSession', () {
     test('returns the active session by session ID', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -3053,6 +3121,7 @@ void main() {
 
     test('returns null for unknown session ID', () {
       final workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
@@ -3072,6 +3141,7 @@ void main() {
       await setUpTestGetIt();
       device = AgentTestDevice('host-a');
       templates = AgentTemplateService(
+        domainLogger: MockDomainLogger(),
         repository: device.repository,
         syncService: device.sync,
       );
@@ -3091,6 +3161,7 @@ void main() {
       });
       final (:strategy, :manager) = await _strategyWithProposal();
       workflow = TemplateEvolutionWorkflow(
+        domainLogger: MockDomainLogger(),
         conversationRepository: _TestConversationRepository(),
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -3265,6 +3336,7 @@ void main() {
 
         // Use a conv repo that returns no messages (empty transcript).
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: _TestConversationRepository(),
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,
@@ -3364,6 +3436,7 @@ void main() {
         );
 
         final workflow = TemplateEvolutionWorkflow(
+          domainLogger: MockDomainLogger(),
           conversationRepository: convRepo,
           aiConfigRepository: mockAiConfig,
           cloudInferenceRepository: mockCloudInference,

@@ -334,6 +334,7 @@ void main() {
         final generatedOrchestrator = MockWakeOrchestrator();
         final generatedSyncService = MockAgentSyncService();
         final generatedService = TaskAgentService(
+          domainLogger: MockDomainLogger(),
           agentService: generatedAgentService,
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
@@ -1094,6 +1095,7 @@ void main() {
           final target = notifications == null
               ? service
               : TaskAgentService(
+                  domainLogger: MockDomainLogger(),
                   agentService: mockAgentService,
                   repository: mockRepository,
                   orchestrator: mockOrchestrator,
@@ -1157,6 +1159,7 @@ void main() {
 
         test('creation still succeeds without a notification bus', () async {
           final unwired = TaskAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
@@ -1956,16 +1959,17 @@ void main() {
       });
     });
 
-    group('null domainLogger fallback', () {
+    group('restoreSubscriptions failure logging', () {
       test(
-        'restoreSubscriptions logs to developer.log when domainLogger is null',
+        'reports a per-agent registration failure to the domain logger',
         () async {
-          // Create a service without domainLogger to exercise the else branch.
-          final nullLoggerService = TaskAgentService(
+          final logger = MockDomainLogger();
+          final loggedService = TaskAgentService(
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: mockSyncService,
+            domainLogger: logger,
           );
 
           final failingAgent = makeIdentity(agentId: 'ta-fail');
@@ -1996,11 +2000,21 @@ void main() {
             () => mockOrchestrator.addSubscription(any()),
           ).thenThrow(StateError('runtime registration failed'));
 
-          // Should not throw — error is caught and logged via developer.log.
-          await nullLoggerService.restoreSubscriptions();
+          // Should not throw — the error is caught and reported.
+          await loggedService.restoreSubscriptions();
 
           // Registration was attempted once and its failure was contained.
           verify(() => mockOrchestrator.addSubscription(any())).called(1);
+          verify(
+            () => logger.error(
+              LogDomain.agentRuntime,
+              any<Object>(that: isA<StateError>()),
+              message:
+                  'failed to restore subscriptions '
+                  'for ${DomainLogger.sanitizeId('ta-fail')}',
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
         },
       );
     });
@@ -2537,6 +2551,7 @@ void main() {
           final failingSync = _PostCommitFailingAgentSyncService();
           when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
           final failingService = TaskAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
@@ -3316,6 +3331,7 @@ void main() {
           final failingSync = _PostCommitFailingAgentSyncService();
           when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
           final failingService = TaskAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
@@ -3383,6 +3399,7 @@ void main() {
           final failingSync = _PostCommitFailingAgentSyncService();
           when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
           final failingService = TaskAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,

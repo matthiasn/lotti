@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -28,8 +29,10 @@ void main() {
   late MockAgentService agents;
   late ProjectAgentMutationCoordinator coordinator;
   late ProjectLifecycleService service;
+  late MockDomainLogger logger;
 
   setUp(() {
+    logger = MockDomainLogger();
     repository = MockProjectRepository();
     projectAgents = MockProjectAgentService();
     agents = MockAgentService();
@@ -39,6 +42,7 @@ void main() {
       projectAgentService: projectAgents,
       agentService: agents,
       mutationCoordinator: coordinator,
+      domainLogger: logger,
     );
     when(
       () => projectAgents.getProjectAgentsForProject(project.id),
@@ -156,6 +160,15 @@ void main() {
     expect(await service.deleteProject(project.id), isFalse);
     verifyZeroInteractions(agents);
     verifyNoProjectWrite();
+    verify(
+      () => logger.error(
+        LogDomain.tasks,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'ProjectLifecycleService',
+        message: 'Failed to resolve project agents',
+      ),
+    ).called(1);
   });
 
   test('missing agents and projects are already deleted', () async {
@@ -317,5 +330,14 @@ void main() {
     when(projectAgents.restoreSubscriptions).thenThrow(StateError('subscribe'));
     expect(await service.deleteProject(project.id), isFalse);
     verify(projectAgents.restoreSubscriptions).called(1);
+    verify(
+      () => logger.error(
+        LogDomain.tasks,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'ProjectLifecycleService',
+        message: 'Failed to restore project subscriptions',
+      ),
+    ).called(1);
   });
 }

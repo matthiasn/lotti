@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,9 +12,11 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 const _logTag = 'CheckInTranscriptionService';
 
@@ -78,6 +79,7 @@ class CheckInTranscriptionService {
     this._profileResolver,
     this._runner,
     this._relationshipRepository,
+    this._domainLogger,
   );
 
   final JournalDb _journalDb;
@@ -85,6 +87,9 @@ class CheckInTranscriptionService {
   final ProfileResolver _profileResolver;
   final SkillInferenceRunner _runner;
   final RelationshipRepository _relationshipRepository;
+
+  /// Receives every failure that ends or degrades a transcript wait.
+  final DomainLogger _domainLogger;
 
   /// Whether the selected system default has a usable transcription slot.
   Future<bool> canTranscribe() async => await _resolveProfile() != null;
@@ -141,11 +146,14 @@ class CheckInTranscriptionService {
         people: await _journalDb.getRelationships(),
       );
     } catch (exception, stackTrace) {
-      developer.log(
-        'Could not read known terms for $relationshipId',
-        name: _logTag,
-        error: exception,
+      _domainLogger.error(
+        LogDomain.speech,
+        exception,
         stackTrace: stackTrace,
+        subDomain: _logTag,
+        message:
+            'Could not read known terms for '
+            '${DomainLogger.sanitizeId(relationshipId)}',
       );
       return const [];
     }
@@ -191,11 +199,14 @@ class CheckInTranscriptionService {
       // Done here rather than in the composer, which may be long closed.
       await _relationshipRepository.touchCheckInsHolding(audioEntryId);
     } catch (exception, stackTrace) {
-      developer.log(
-        'Requested transcription failed for $audioEntryId',
-        name: _logTag,
-        error: exception,
+      _domainLogger.error(
+        LogDomain.speech,
+        exception,
         stackTrace: stackTrace,
+        subDomain: _logTag,
+        message:
+            'Requested transcription failed for '
+            '${DomainLogger.sanitizeId(audioEntryId)}',
       );
       onFailure();
     }
@@ -227,11 +238,12 @@ class CheckInTranscriptionService {
         final transcript = await _readTranscript(audioEntryId);
         if (transcript != null) finish(transcript);
       } catch (exception, stackTrace) {
-        developer.log(
-          'Could not read the check-in transcript',
-          name: _logTag,
-          error: exception,
+        _domainLogger.error(
+          LogDomain.speech,
+          exception,
           stackTrace: stackTrace,
+          subDomain: _logTag,
+          message: 'Could not read the check-in transcript',
         );
         finish(null);
       }
@@ -242,11 +254,12 @@ class CheckInTranscriptionService {
         if (affectedIds.contains(audioEntryId)) unawaited(check());
       },
       onError: (Object error, StackTrace stackTrace) {
-        developer.log(
-          'Check-in transcript notifications failed',
-          name: _logTag,
-          error: error,
+        _domainLogger.error(
+          LogDomain.speech,
+          error,
           stackTrace: stackTrace,
+          subDomain: _logTag,
+          message: 'Check-in transcript notifications failed',
         );
         finish(null);
       },
@@ -286,4 +299,5 @@ CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
       ref.watch(profileResolverProvider),
       ref.watch(skillInferenceRunnerProvider),
       ref.watch(relationshipRepositoryProvider),
+      ref.watch(domainLoggerProvider),
     );

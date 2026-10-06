@@ -196,7 +196,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
     required this._readWatermark,
     required this._send,
     required this._localHostId,
-    this.domainLogger,
+    required this.domainLogger,
   });
 
   /// How long a peer's claim cancels covered wakes after its last message.
@@ -217,7 +217,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
   final Future<String?> Function() _localHostId;
 
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
@@ -233,7 +233,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
   Future<void> _sendChain = Future<void>.value();
 
   void _log(String message) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       message,
       subDomain: 'coordination',

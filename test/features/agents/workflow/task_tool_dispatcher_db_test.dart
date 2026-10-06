@@ -173,6 +173,7 @@ void main() {
     checklistId = created.checklist!.meta.id;
 
     dispatcher = TaskToolDispatcher(
+      domainLogger: MockDomainLogger(),
       journalDb: journalDb,
       journalRepository: buildJournalRepository(),
       checklistRepository: ChecklistRepository(

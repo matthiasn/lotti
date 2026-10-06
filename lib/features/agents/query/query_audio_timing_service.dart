@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Timing uses the explicitly configured transcription slot. No provider or
@@ -25,14 +27,19 @@ class QueryAudioTimingUnavailable implements Exception {
 }
 
 class QueryAudioTimingService {
+  /// [domainLogger] is handed to the default repositories when
+  /// [createRepository] or [createMeliousRepository] is not given.
   QueryAudioTimingService({
+    required DomainLogger domainLogger,
     MistralTranscriptionRepository Function()? createRepository,
     MeliousInferenceRepository Function()? createMeliousRepository,
     this.capture,
   }) : createRepository =
-           createRepository ?? MistralTranscriptionRepository.new,
+           createRepository ??
+           (() => MistralTranscriptionRepository(domainLogger: domainLogger)),
        createMeliousRepository =
-           createMeliousRepository ?? MeliousInferenceRepository.new;
+           createMeliousRepository ??
+           (() => MeliousInferenceRepository(domainLogger: domainLogger));
 
   /// Bounds the byte/base64/multipart working set and avoids the existing
   /// full-recording PCM conversion for oversized Melious uploads.
@@ -163,6 +170,7 @@ class QueryAudioTimingService {
 
 final queryAudioTimingServiceProvider = Provider<QueryAudioTimingService>(
   (ref) => QueryAudioTimingService(
+    domainLogger: ref.watch(domainLoggerProvider),
     capture: getIt.isRegistered<AiInteractionCapture>()
         ? getIt<AiInteractionCapture>()
         : null,

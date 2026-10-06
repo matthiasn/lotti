@@ -69,6 +69,7 @@ void main() {
     when(() => mockAgentService.getAgent(any())).thenAnswer((_) async => null);
 
     service = ImproverAgentService(
+      domainLogger: MockDomainLogger(),
       agentService: mockAgentService,
       repository: mockRepository,
       syncService: mockSyncService,

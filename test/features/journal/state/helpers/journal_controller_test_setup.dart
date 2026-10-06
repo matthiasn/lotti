@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -43,6 +44,7 @@ class JournalControllerTestSetup {
   late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNavService mockNavService;
+  late MockDomainLogger mockDomainLogger;
   late StreamController<Set<String>> updateStreamController;
   late StreamController<Set<String>> configFlagsController;
   late StreamController<bool> privateFlagController;
@@ -56,6 +58,7 @@ class JournalControllerTestSetup {
     mockUpdateNotifications = MockUpdateNotifications();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
+    mockDomainLogger = MockDomainLogger();
 
     updateStreamController = StreamController<Set<String>>.broadcast();
     configFlagsController = StreamController<Set<String>>.broadcast();
@@ -148,7 +151,12 @@ class JournalControllerTestSetup {
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<NavService>(mockNavService);
 
-    container = ProviderContainer(overrides: getItServiceOverrides());
+    container = ProviderContainer(
+      overrides: [
+        ...getItServiceOverrides(),
+        domainLoggerProvider.overrideWithValue(mockDomainLogger),
+      ],
+    );
   }
 
   /// Convenience for tests: drives a nav-index emission on the same

@@ -56,6 +56,7 @@ void main() {
             verification,
             controller: controller,
             name: 'Test runner',
+            domainLogger: MockDomainLogger(),
           );
 
           expect(runner.lastStep, '');
@@ -111,6 +112,7 @@ void main() {
             verification,
             controller: controller,
             name: 'Completion runner',
+            domainLogger: MockDomainLogger(),
             onCompleted: (_) async {
               callbackCount++;
             },
@@ -174,6 +176,7 @@ void main() {
             verification,
             controller: controller,
             name: 'Generated runner',
+            domainLogger: MockDomainLogger(),
             onCompleted: (source) {
               completions.add(source);
               return Future<void>.value();
@@ -288,6 +291,7 @@ void main() {
             verification,
             controller: controller,
             name: 'Action runner',
+            domainLogger: MockDomainLogger(),
           );
 
           runner.acceptVerification();
@@ -491,6 +495,7 @@ void main() {
           verification,
           controller: controller,
           name: 'Forward test',
+          domainLogger: MockDomainLogger(),
         );
 
         // Simulate SDK calling onUpdate
@@ -526,6 +531,7 @@ void main() {
           verification,
           controller: controller,
           name: 'Cancel test',
+          domainLogger: MockDomainLogger(),
         );
 
         async.elapse(const Duration(milliseconds: 100));
@@ -577,6 +583,7 @@ void main() {
       await verifyMatrixDevice(
         deviceKeys: deviceKeys,
         service: service,
+        loggingService: MockDomainLogger(),
       );
 
       verify(deviceKeys.startVerification).called(1);
@@ -623,7 +630,11 @@ void main() {
       when(() => verification.sasEmojis).thenReturn([]);
       when(() => verification.isDone).thenReturn(true);
 
-      await verifyMatrixDevice(deviceKeys: deviceKeys, service: service);
+      await verifyMatrixDevice(
+        deviceKeys: deviceKeys,
+        service: service,
+        loggingService: MockDomainLogger(),
+      );
       addTearDown(() => latestRunner?.stopTimer());
 
       verify(
@@ -645,6 +656,7 @@ void main() {
         verification,
         controller: runnerController(),
         name: 'Outcome runner',
+        domainLogger: MockDomainLogger(),
         onCompleted: onCompleted == null
             ? null
             : (source) async => onCompleted(source),

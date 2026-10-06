@@ -3,6 +3,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Service for managing soul documents — reusable personality blueprints that
 /// can be assigned to agent templates.
@@ -16,7 +17,11 @@ class SoulDocumentService {
   SoulDocumentService({
     required this.repository,
     required this.syncService,
+    required this._domainLogger,
   });
+
+  /// Handed to the version and template-ops collaborators for their log lines.
+  final DomainLogger _domainLogger;
 
   final AgentRepository repository;
   final AgentSyncService syncService;
@@ -24,12 +29,14 @@ class SoulDocumentService {
   late final SoulVersionOps _versionOps = SoulVersionOps(
     repository: repository,
     syncService: syncService,
+    domainLogger: _domainLogger,
   );
 
   late final SoulTemplateOps _templateOps = SoulTemplateOps(
     repository: repository,
     syncService: syncService,
     versionOps: _versionOps,
+    domainLogger: _domainLogger,
   );
 
   // ── Soul document + version lifecycle ─────────────────────────────────────

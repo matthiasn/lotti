@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
@@ -101,9 +102,11 @@ void main() {
         inferenceProviderType: InferenceProviderType.melious,
       ).copyWith(baseUrl: 'https://api.melious.ai/v1');
       final service = QueryAudioTimingService(
+        domainLogger: MockDomainLogger(),
         capture: attribution.capture,
         createRepository: () => throw StateError('Must not call Mistral'),
         createMeliousRepository: () => MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming((request, body) async {
             final multipart = request as http.MultipartRequest;
             expect(
@@ -166,8 +169,11 @@ void main() {
         return http.StreamedResponse(Stream.value(utf8.encode(response)), 200);
       });
       final service = QueryAudioTimingService(
-        createRepository: () =>
-            MistralTranscriptionRepository(httpClient: client),
+        domainLogger: MockDomainLogger(),
+        createRepository: () => MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        ),
       );
       var gates = 0;
       final created = DateTime(2026, 7, 17);
@@ -206,13 +212,16 @@ void main() {
     () async {
       var calls = 0;
       final service = QueryAudioTimingService(
+        domainLogger: MockDomainLogger(),
         createRepository: () => MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             calls++;
             return http.Response(response, 200);
           }),
         ),
         createMeliousRepository: () => MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             calls++;
             return http.Response(response, 200);
@@ -258,7 +267,9 @@ void main() {
   test('denied access and unsupported routing never send audio', () async {
     var calls = 0;
     final service = QueryAudioTimingService(
+      domainLogger: MockDomainLogger(),
       createRepository: () => MistralTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           calls++;
           return http.Response(response, 200);
@@ -295,7 +306,9 @@ void main() {
     final started = Completer<void>();
     final token = QueryCancellation();
     final service = QueryAudioTimingService(
+      domainLogger: MockDomainLogger(),
       createRepository: () => MistralTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) {
           started.complete();
           return pending.future;
@@ -321,7 +334,9 @@ void main() {
   test('visibility is checked again after the provider completes', () async {
     var gates = 0;
     final service = QueryAudioTimingService(
+      domainLogger: MockDomainLogger(),
       createRepository: () => MistralTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response(response, 200)),
       ),
     );

@@ -1,7 +1,6 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/checklist/services/correction_capture_service.dar
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
 /// Clock provider for timestamps — override in tests for determinism.
@@ -50,6 +50,7 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   }
 
   void _listen() {
+    final logger = ref.read(domainLoggerProvider);
     _updateSubscription = ref
         .read(updateNotificationsProvider)
         .updateStream
@@ -57,16 +58,16 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
           affectedIds,
         ) async {
           if (!affectedIds.contains(id)) return;
-          developer.log(
-            'notify received id=$id affected=$affectedIds',
-            name: 'ChecklistItemController',
-          );
           if (!ref.mounted) return;
           final latest = await _fetch();
           if (!ref.mounted) return;
-          developer.log(
+          // One line per notification would flood the file during a sync
+          // burst; a sampled count keeps the signal.
+          logger.logSampled(
+            LogDomain.tasks,
             'state updated id=$id isChecked=${latest?.data.isChecked}',
-            name: 'ChecklistItemController',
+            sampleKey: 'checklistItemStateUpdated',
+            subDomain: 'ChecklistItemController',
           );
           state = AsyncData(latest);
         });

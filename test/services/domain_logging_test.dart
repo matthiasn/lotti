@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -49,6 +50,30 @@ void main() {
     registerFallbackValue(InsightLevel.info);
     registerFallbackValue(InsightType.log);
     registerFallbackValue(StackTrace.empty);
+  });
+
+  group('DomainLogger.withoutSource', () {
+    test('drops the source a jsonDecode failure quotes, keeping the rest', () {
+      Object? caught;
+      try {
+        jsonDecode('{"title": "secret title" "x": 1}');
+      } on FormatException catch (e) {
+        caught = e;
+      }
+      final original = caught! as FormatException;
+      expect(original.toString(), contains('secret title'));
+
+      final stripped = DomainLogger.withoutSource(original) as FormatException;
+      expect(stripped.source, isNull);
+      expect(stripped.message, original.message);
+      expect(stripped.offset, original.offset);
+      expect(stripped.toString(), isNot(contains('secret title')));
+    });
+
+    test('returns any other error unchanged', () {
+      final error = StateError('boom');
+      expect(DomainLogger.withoutSource(error), same(error));
+    });
   });
 
   group('DomainLogger.sanitizeId', () {

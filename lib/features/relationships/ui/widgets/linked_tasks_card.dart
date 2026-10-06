@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -19,6 +18,8 @@ import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -51,9 +52,10 @@ class LinkedTasksCard extends ConsumerWidget {
   /// Answers false for a write that changed no row *and* for one that threw:
   /// both mean the link the user asked for does not exist, and the caller —
   /// which knows whether there is still a page to say so on — decides how to
-  /// report it.
+  /// report it. A throw is reported to [logger].
   Future<bool> _linkTask(
     RelationshipRepository repository,
+    DomainLogger logger,
     String taskId,
   ) async {
     try {
@@ -62,11 +64,12 @@ class LinkedTasksCard extends ConsumerWidget {
         taskId: taskId,
       );
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to link task to relationship',
-        name: 'LinkedTasksCard',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'LinkedTasksCard',
+        message: 'Failed to link task to relationship',
       );
       return false;
     }
@@ -96,20 +99,23 @@ class LinkedTasksCard extends ConsumerWidget {
     // post-gap read on a disposed ref would strand a task already written.
     final agentService = ref.read(taskAgentServiceProvider);
     final repository = ref.read(relationshipRepositoryProvider);
+    final logger = ref.read(domainLoggerProvider);
 
     Task? created;
     try {
       created = await createTask(
+        domainLogger: logger,
         title: title,
         categoryId: categoryId,
         inheritContextFrom: relationshipId,
       );
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to create a task for the relationship',
-        name: 'LinkedTasksCard',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'LinkedTasksCard',
+        message: 'Failed to create a task for the relationship',
       );
     }
     // Nothing was written. The picker stays open on the query that failed,
@@ -120,7 +126,9 @@ class LinkedTasksCard extends ConsumerWidget {
 
     // The same follow-up every other create flow performs, so a task created
     // here is not the one left without its category's agent.
-    unawaited(autoAssignCategoryAgentWith(agentService, created));
+    unawaited(
+      autoAssignCategoryAgentWith(agentService, created, domainLogger: logger),
+    );
 
     if (modalContext.mounted) return created;
 
@@ -128,7 +136,7 @@ class LinkedTasksCard extends ConsumerWidget {
     // asked for it to be linked, so handing back null here would leave it
     // created, unlinked and unannounced — visible only as a stray row in the
     // task list. Link it on the dependencies captured before the gap.
-    final linked = await _linkTask(repository, created.meta.id);
+    final linked = await _linkTask(repository, logger, created.meta.id);
     if (!linked && pageContext.mounted) {
       pageContext.showToast(
         tone: DesignSystemToastTone.error,
@@ -140,6 +148,7 @@ class LinkedTasksCard extends ConsumerWidget {
 
   Future<void> _pickTask(BuildContext context, WidgetRef ref) async {
     final repository = ref.read(relationshipRepositoryProvider);
+    final logger = ref.read(domainLoggerProvider);
     final linkedIds = {for (final task in tasks) task.meta.id};
 
     await ModalUtils.showSinglePageModal<void>(
@@ -160,7 +169,11 @@ class LinkedTasksCard extends ConsumerWidget {
                 title: title,
               ),
               onTaskSelected: (task) async {
-                final linked = await _linkTask(repository, task.meta.id);
+                final linked = await _linkTask(
+                  repository,
+                  logger,
+                  task.meta.id,
+                );
                 if (!modalContext.mounted) return;
                 Navigator.of(modalContext).pop();
                 // `createLink` answers false when the upsert changed no row,
@@ -195,6 +208,7 @@ class LinkedTasksCard extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
+    final logger = ref.read(domainLoggerProvider);
     try {
       final removed = await ref
           .read(relationshipRepositoryProvider)
@@ -206,11 +220,12 @@ class LinkedTasksCard extends ConsumerWidget {
         );
       }
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to unlink task from relationship',
-        name: 'LinkedTasksCard',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'LinkedTasksCard',
+        message: 'Failed to unlink task from relationship',
       );
       if (context.mounted) {
         context.showToast(

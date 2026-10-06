@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
@@ -78,6 +79,18 @@ void main() {
   late MockProfileResolver resolver;
   late ResolvedProfile defaultProfile;
   late MockSkillInferenceRunner runner;
+  late MockDomainLogger logger;
+
+  /// Verifies the service reported exactly one [T] failure as [message].
+  void verifyLoggedError<T>(String message) => verify(
+    () => logger.error(
+      LogDomain.speech,
+      any<Object>(that: isA<T>()),
+      stackTrace: any(named: 'stackTrace', that: isNotNull),
+      subDomain: 'CheckInTranscriptionService',
+      message: message,
+    ),
+  ).called(1);
 
   const audioEntryId = 'audio-1';
   final personId = testRelationship.id;
@@ -107,6 +120,7 @@ void main() {
         resolver,
         runner,
         relationships,
+        logger,
       );
 
       final wait = service.transcribe(
@@ -139,6 +153,7 @@ void main() {
   }
 
   setUp(() {
+    logger = MockDomainLogger();
     journalDb = MockJournalDb();
     relationships = MockRelationshipRepository();
     when(
@@ -173,6 +188,7 @@ void main() {
       expect(run.result, isNull);
       expect(run.hasListener, isFalse);
     });
+    verifyLoggedError<StateError>('Check-in transcript notifications failed');
   });
 
   test('closed notification stream ends the transcript wait', () {
@@ -193,6 +209,7 @@ void main() {
       expect(run.result, isNull);
       expect(run.hasListener, isFalse);
     });
+    verifyLoggedError<StateError>('Could not read the check-in transcript');
   });
 
   group('transcript already present', () {
@@ -417,6 +434,9 @@ void main() {
         expect(captured.single, isEmpty);
         expect(run.isDone, isFalse, reason: 'the transcript is still coming');
       });
+      verifyLoggedError<StateError>(
+        'Could not read known terms for ${DomainLogger.sanitizeId(personId)}',
+      );
     });
 
     // Words that arrive after the check-in was saved are new evidence: the
@@ -499,6 +519,11 @@ void main() {
         expect(run.isDone, isTrue);
         expect(run.result, isNull);
       });
+      // The profile read fails inside a parallel `.wait`, which wraps it.
+      verifyLoggedError<ParallelWaitError<Object?, Object?>>(
+        'Requested transcription failed for '
+        '${DomainLogger.sanitizeId(audioEntryId)}',
+      );
     });
 
     // The blocker a real HTTP 503 exposed. `runTranscription` reports an
@@ -571,6 +596,7 @@ void main() {
         resolver,
         runner,
         relationships,
+        logger,
       );
     });
 
@@ -619,6 +645,7 @@ void main() {
         resolver,
         runner,
         relationships,
+        logger,
       );
     });
 

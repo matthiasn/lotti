@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -18,6 +16,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -56,6 +56,7 @@ class _DailyOsInferenceSetupSheetBodyState
     required _PendingInferenceAction action,
   }) async {
     if (_busy) return;
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _pendingAction = action);
     try {
       await update();
@@ -72,11 +73,12 @@ class _DailyOsInferenceSetupSheetBodyState
         );
       }
     } catch (error, stackTrace) {
-      developer.log(
-        'Daily OS planner inference update failed',
-        name: 'DailyOsInferenceSetupSheet',
-        error: error,
+      logger.error(
+        LogDomain.dailyOs,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'DailyOsInferenceSetupSheet',
+        message: 'Daily OS planner inference update failed',
       );
       if (mounted) {
         context.showToast(

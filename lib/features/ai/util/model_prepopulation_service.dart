@@ -5,22 +5,25 @@
 /// same provider-native model IDs already exist to avoid duplicates.
 library;
 
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Service that handles automatic population of known models
 /// for newly created inference providers.
 class ModelPrepopulationService {
   ModelPrepopulationService({
+    required this._domainLogger,
     AiConfigRepository? repository,
   }) : _repository = repository ?? getIt<AiConfigRepository>();
 
   final AiConfigRepository _repository;
+
+  /// Receives the counts of rewritten and backfilled models.
+  final DomainLogger _domainLogger;
 
   /// Pre-populates known models for a given inference provider.
   ///
@@ -210,9 +213,10 @@ class ModelPrepopulationService {
     }
 
     if (migrated > 0) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Rewrote $migrated model row(s) onto renamed provider model ids',
-        name: 'ModelPrepopulationService',
+        subDomain: 'ModelPrepopulationService',
       );
     }
     return migrated;
@@ -230,9 +234,10 @@ class ModelPrepopulationService {
     }
 
     if (totalCreated > 0) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Backfilled $totalCreated new known models for existing providers',
-        name: 'ModelPrepopulationService',
+        subDomain: 'ModelPrepopulationService',
       );
     }
   }

@@ -301,6 +301,7 @@ void main() {
       await runner.tryAcquire('goal-1');
       addTearDown(() => runner.release('goal-1'));
       final realOrchestrator = WakeOrchestrator(
+        domainLogger: MockDomainLogger(),
         repository: MockAgentRepository(),
         queue: queue,
         runner: runner,
@@ -340,6 +341,7 @@ void main() {
     await runner.tryAcquire('goal-1');
     addTearDown(() => runner.release('goal-1'));
     final realOrchestrator = WakeOrchestrator(
+      domainLogger: MockDomainLogger(),
       repository: MockAgentRepository(),
       queue: queue,
       runner: runner,

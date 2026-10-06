@@ -1,10 +1,9 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Persists the per-wake conversation messages (assistant thought, tool action,
@@ -12,10 +11,11 @@ import 'package:uuid/uuid.dart';
 ///
 /// Mixed into the conversation strategies whose message-recording is identical
 /// (event + project). Persistence failures are swallowed and logged so a
-/// storage hiccup never aborts the wake; the log name is the concrete
+/// storage hiccup never aborts the wake; the log sub-domain is the concrete
 /// strategy's runtime type.
 mixin AgentMessageRecording {
   AgentSyncService get syncService;
+  DomainLogger get domainLogger;
   String get agentId;
   String get threadId;
   String get runKey;
@@ -67,10 +67,13 @@ mixin AgentMessageRecording {
           metadata: metadata,
         ),
       );
-    } catch (e) {
-      developer.log(
-        'Failed to persist $label message (errorType=${e.runtimeType})',
-        name: '$runtimeType',
+    } catch (e, stackTrace) {
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: stackTrace,
+        subDomain: '$runtimeType',
+        message: 'Failed to persist $label message',
       );
     }
   }

@@ -9,7 +9,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// This repository handles audio transcription using a locally running
 /// Whisper instance via JSON POST to `/v1/audio/transcriptions`.
 class WhisperInferenceRepository extends TranscriptionRepository {
-  WhisperInferenceRepository({super.httpClient});
+  WhisperInferenceRepository({required super.domainLogger, super.httpClient});
 
   static const _providerName = 'WhisperInference';
 

@@ -5,6 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 
 void main() {
   group('timed segments', () {
@@ -74,9 +78,11 @@ void main() {
 
   group('TranscriptionRepository', () {
     late TranscriptionRepository repo;
+    late MockDomainLogger logger;
 
     setUp(() {
-      repo = TranscriptionRepository();
+      logger = MockDomainLogger();
+      repo = TranscriptionRepository(domainLogger: logger);
     });
 
     group('executeTranscription', () {
@@ -149,6 +155,15 @@ void main() {
                 ),
           ),
         );
+        // The status and the body's size reach the log, never the body.
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            'Failed to transcribe audio: HTTP 500',
+            subDomain: 'TestProvider',
+            message: 'body 21 chars',
+          ),
+        ).called(1);
       });
 
       test(
@@ -245,6 +260,15 @@ void main() {
                 ),
           ),
         );
+        // The response's keys, not the response itself.
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            'Invalid response from TestProvider: missing text field',
+            subDomain: 'TestProvider',
+            message: 'response keys: segments',
+          ),
+        ).called(1);
       });
 
       test('throws TranscriptionException on TimeoutException '
@@ -279,6 +303,15 @@ void main() {
                 ),
           ),
         );
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<TimeoutException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'TestProvider',
+            message: 'Transcription request timed out',
+          ),
+        ).called(1);
       });
 
       test('throws TranscriptionException on FormatException', () async {
@@ -310,6 +343,23 @@ void main() {
                 ),
           ),
         );
+        // The logged error drops the source, which would quote the body.
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            any<Object>(
+              that: isA<FormatException>().having(
+                (e) => e.source,
+                'source',
+                isNull,
+              ),
+            ),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'TestProvider',
+            message: any<String?>(named: 'message'),
+            errorType: FormatException,
+          ),
+        ).called(1);
       });
 
       test('throws TranscriptionException on generic exception', () async {
@@ -338,6 +388,16 @@ void main() {
                 ),
           ),
         );
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<Exception>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
+            subDomain: 'TestProvider',
+            message: 'Unexpected error during audio transcription',
+            errorType: any(named: 'errorType', that: isNotNull),
+          ),
+        ).called(1);
       });
 
       test('uses default timeout when none specified', () async {

@@ -11,7 +11,10 @@ import 'package:openai_dart/openai_dart.dart';
 /// OpenAI's gpt-4o-transcribe and gpt-4o-mini-transcribe models require
 /// the transcription endpoint with multipart/form-data, not chat completions.
 class OpenAiTranscriptionRepository extends TranscriptionRepository {
-  OpenAiTranscriptionRepository({super.httpClient});
+  OpenAiTranscriptionRepository({
+    required super.domainLogger,
+    super.httpClient,
+  });
 
   static const _providerName = 'OpenAiTranscription';
 

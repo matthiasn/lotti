@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -148,6 +149,7 @@ extension _AnyTaskDueDateHandlerScenario on glados.Any {
 
 void main() {
   late MockJournalRepository mockJournalRepo;
+  late MockDomainLogger mockLogger;
   late MockConversationManager mockManager;
 
   // Fixed date for deterministic tests - per test/README.md policy
@@ -182,6 +184,7 @@ void main() {
 
   setUp(() {
     mockJournalRepo = MockJournalRepository();
+    mockLogger = MockDomainLogger();
     mockManager = MockConversationManager();
   });
 
@@ -260,6 +263,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
           onTaskUpdated: (t) => capturedTask = t,
         );
 
@@ -290,6 +294,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         expect(handler.task.data.due, isNull);
@@ -310,6 +315,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
           );
 
           // Call without manager
@@ -341,6 +347,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -363,6 +370,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -383,6 +391,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
           onTaskUpdated: (_) => callbackCalled = true,
         );
 
@@ -406,6 +415,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -454,6 +464,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -473,6 +484,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -501,6 +513,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -520,6 +533,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -545,6 +559,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -574,6 +589,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -582,6 +598,15 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('Database connection lost'));
         expect(handler.task, same(task));
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'TaskDueDateHandler',
+            message: 'Failed to update task due date',
+          ),
+        ).called(1);
 
         verify(
           () => mockManager.addToolResponse(
@@ -604,6 +629,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
           onTaskUpdated: (_) => callbackCalled = true,
         );
 
@@ -625,6 +651,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
           );
 
           await handler.processToolCall(toolCall);
@@ -653,6 +680,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: initialTask,
           journalRepository: repo,
+          domainLogger: mockLogger,
           onTaskUpdated: (updatedTask) => callbackTask = updatedTask,
         );
 
@@ -734,6 +762,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
           );
 
           final result = await handler.processToolCall(toolCall, mockManager);
@@ -757,6 +786,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
           );
 
           final result = await handler.processToolCall(toolCall, mockManager);
@@ -778,6 +808,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -795,6 +826,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -812,6 +844,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);
@@ -838,6 +871,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
             onTaskUpdated: (t) => callbackTask = t,
           );
 
@@ -866,6 +900,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
           onTaskUpdated: (_) => callbackCalled = true,
         );
 
@@ -925,6 +960,7 @@ void main() {
           final handler = TaskDueDateHandler(
             task: task,
             journalRepository: mockJournalRepo,
+            domainLogger: mockLogger,
           );
 
           final result = await handler.processToolCall(toolCall, mockManager);
@@ -948,6 +984,7 @@ void main() {
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
+          domainLogger: mockLogger,
         );
 
         final result = await handler.processToolCall(toolCall, mockManager);

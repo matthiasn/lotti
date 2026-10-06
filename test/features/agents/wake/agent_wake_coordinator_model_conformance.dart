@@ -166,6 +166,7 @@ class _CoordinationTrace {
   void boot(_TraceDevice device) {
     device
       ..coordinator = AgentWakeCoordinator(
+        domainLogger: MockDomainLogger(),
         readInputs: (_) async => inputsOf(device),
         readWatermark: (_) async => watermarkOf(device),
         send: (message) async {

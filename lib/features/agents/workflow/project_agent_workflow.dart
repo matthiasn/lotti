@@ -63,8 +63,8 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     required this.journalRepository,
     required this.syncService,
     required this.templateService,
+    required this.domainLogger,
     this.soulDocumentService,
-    this.domainLogger,
     this.onPersistedStateChanged,
     this.inputCaptureService,
     this.logSummarizer,
@@ -82,7 +82,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;

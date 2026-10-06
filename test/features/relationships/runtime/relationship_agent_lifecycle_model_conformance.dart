@@ -233,6 +233,7 @@ class _LifeDevice {
 
   void _build() {
     agents = AgentService(
+      domainLogger: MockDomainLogger(),
       repository: replica.repository,
       orchestrator: orchestrator,
       syncService: replica.syncService,

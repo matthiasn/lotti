@@ -1,11 +1,13 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
+
+const _subDomain = 'aiConfigInitialization';
 
 /// Seeds default inference profiles and backfills known models on startup.
 ///
@@ -17,8 +19,10 @@ final aiConfigInitializationProvider = FutureProvider<void>(
 );
 Future<void> aiConfigInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
+  final logger = ref.watch(domainLoggerProvider);
   final profileService = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
+    domainLogger: logger,
   );
 
   // Convert the 0.9.1067/0.9.1068 settings-row tombstone ledger into
@@ -30,13 +34,16 @@ Future<void> aiConfigInitialization(Ref ref) async {
     await SeedTombstoneMigration(
       aiConfigRepository: aiConfigRepo,
       settingsDb: ref.read(settingsDbProvider),
+      domainLogger: logger,
     ).migrate();
   } catch (error, stackTrace) {
     tombstonesMigrated = false;
-    developer.log(
-      'Failed to migrate legacy seed tombstones: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to migrate legacy seed tombstones',
     );
   }
 
@@ -45,36 +52,45 @@ Future<void> aiConfigInitialization(Ref ref) async {
   // Skipping this launch leaves the ledger intact to retry, which is strictly
   // better than resurrecting — and syncing — deleted seeds.
   if (!tombstonesMigrated) {
-    developer.log(
+    logger.log(
+      LogDomain.ai,
       'Skipping model backfill and profile seeding: legacy seed tombstones '
       'are not migrated, so deleted seeds would be recreated',
-      name: 'aiConfigInitialization',
+      subDomain: _subDomain,
+      level: InsightLevel.warn,
     );
     return;
   }
 
   // Backfill known models before seeding so that new default profiles can
   // resolve their model slots to existing `AiConfigModel` rows right away.
-  final modelService = ModelPrepopulationService(repository: aiConfigRepo);
+  final modelService = ModelPrepopulationService(
+    repository: aiConfigRepo,
+    domainLogger: logger,
+  );
   // Before the backfill, so a repaired row already owns the new id when the
   // backfill decides whether that model still needs creating.
   try {
     await modelService.migrateRenamedModelIds();
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to migrate renamed model ids: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to migrate renamed model ids',
     );
   }
 
   try {
     await modelService.backfillNewModels();
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to backfill known models: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to backfill known models',
     );
   }
 
@@ -84,10 +100,12 @@ Future<void> aiConfigInitialization(Ref ref) async {
   try {
     await profileService.seedDefaults();
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to seed inference profiles: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to seed inference profiles',
     );
   }
 
@@ -96,10 +114,12 @@ Future<void> aiConfigInitialization(Ref ref) async {
   try {
     await profileService.upgradeExisting();
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to upgrade inference profiles: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to upgrade inference profiles',
     );
   }
 
@@ -109,10 +129,12 @@ Future<void> aiConfigInitialization(Ref ref) async {
   try {
     await profileService.removeOrphanedDefaultSeeds();
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to remove orphaned default profiles: $error',
-      name: 'aiConfigInitialization',
+    logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Failed to remove orphaned default profiles',
     );
   }
 }

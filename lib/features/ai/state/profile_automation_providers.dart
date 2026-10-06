@@ -18,6 +18,7 @@ final profileResolverProvider = Provider<ProfileResolver>(
 ProfileResolver profileResolver(Ref ref) {
   return ProfileResolver(
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -62,6 +63,7 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
     subjectAgentLookup: ref.watch(automationSubjectAgentLookupProvider),
     templateService: ref.watch(automationTemplateLookupProvider),
     profileResolver: ref.watch(profileResolverProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     subjectProfileLookup: (subjectId) async {
       final entity = await ref
           .read(journalDbProvider)

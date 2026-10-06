@@ -32,7 +32,10 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+    repository = OllamaInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: mockHttpClient,
+    );
   });
 
   group('OllamaInferenceRepository', () {
@@ -525,7 +528,10 @@ void main() {
 
     setUp(() {
       mockHttpClient = MockHttpClient();
-      repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+      repository = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockHttpClient,
+      );
     });
 
     test('should extract text from list of content parts', () async {
@@ -992,7 +998,10 @@ void main() {
 
     setUp(() {
       mockHttpClient = MockHttpClient();
-      repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+      repository = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockHttpClient,
+      );
     });
 
     test('should handle malformed JSON in stream', () async {
@@ -1195,7 +1204,10 @@ void main() {
 
     setUp(() {
       mockHttpClient = MockHttpClient();
-      repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+      repository = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockHttpClient,
+      );
     });
 
     test('should handle tool calls with existing ID in stream', () async {
@@ -2266,7 +2278,10 @@ void main() {
 
     setUp(() {
       thinkingMockClient = MockHttpClient();
-      thinkingRepo = OllamaInferenceRepository(httpClient: thinkingMockClient);
+      thinkingRepo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: thinkingMockClient,
+      );
     });
 
     test('adds think:true for gemma4 models', () async {
@@ -2642,7 +2657,9 @@ void main() {
       () {
         // Line 23: exercises the `?? http.Client()` default branch.
         // We cannot call a real server, but the object should be created.
-        final repo = OllamaInferenceRepository();
+        final repo = OllamaInferenceRepository(
+          domainLogger: MockDomainLogger(),
+        );
         expect(repo, isA<OllamaInferenceRepository>());
       },
     );
@@ -2674,7 +2691,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
+      repo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockClient,
+      );
     });
 
     test(
@@ -2737,7 +2757,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
+      repo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockClient,
+      );
     });
 
     test(
@@ -2822,7 +2845,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
+      repo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockClient,
+      );
     });
 
     test(
@@ -2873,7 +2899,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
+      repo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockClient,
+      );
     });
 
     final provider = AiConfigInferenceProvider(
@@ -2934,7 +2963,10 @@ void main() {
 
     setUp(() {
       mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
+      repo = OllamaInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: mockClient,
+      );
     });
 
     void stubInstallStream(String responseBody) {

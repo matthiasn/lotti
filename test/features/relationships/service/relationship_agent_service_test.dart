@@ -10,10 +10,12 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -615,5 +617,56 @@ void main() {
       hasLength(1),
       reason: 'exactly ONE wake carries the report-refresh token',
     );
+  });
+
+  group('ensureRelationshipAgentInBackground', () {
+    final important = testRelationship.copyWith(
+      data: testRelationship.data.copyWith(important: true),
+    );
+
+    test('logs a failure with its stack trace, naming only the sanitized '
+        'relationship id', () async {
+      final service = MockRelationshipAgentService();
+      final logger = MockDomainLogger();
+      when(
+        () => service.ensureAgentForRelationship(important),
+      ).thenThrow(StateError('agent db closed'));
+
+      ensureRelationshipAgentInBackground(
+        service,
+        important,
+        source: 'RelationshipFormModal',
+        domainLogger: logger,
+      );
+      await pumpEventQueue();
+
+      final message =
+          verify(
+                () => logger.error(
+                  LogDomain.agentWorkflow,
+                  any<Object>(that: isA<StateError>()),
+                  stackTrace: any(named: 'stackTrace', that: isNotNull),
+                  subDomain: 'RelationshipFormModal',
+                  message: captureAny(named: 'message'),
+                ),
+              ).captured.single
+              as String;
+      expect(message, contains(DomainLogger.sanitizeId(important.id)));
+      expect(message, isNot(contains(important.id)));
+    });
+
+    test('does nothing for a relationship that is not important', () async {
+      final service = MockRelationshipAgentService();
+
+      ensureRelationshipAgentInBackground(
+        service,
+        testRelationship,
+        source: 'RelationshipFormModal',
+        domainLogger: MockDomainLogger(),
+      );
+      await pumpEventQueue();
+
+      verifyZeroInteractions(service);
+    });
   });
 }

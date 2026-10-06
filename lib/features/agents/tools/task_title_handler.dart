@@ -1,8 +1,8 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Result of processing a task title update.
 ///
@@ -51,6 +51,7 @@ class TaskTitleResult {
 /// final handler = TaskTitleHandler(
 ///   task: myTask,
 ///   journalRepository: repo,
+///   domainLogger: logger,
 ///   onTaskUpdated: (updated) => print('Title is now: ${updated.data.title}'),
 /// );
 ///
@@ -73,8 +74,12 @@ class TaskTitleHandler {
   TaskTitleHandler({
     required this.task,
     required this.journalRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
   });
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   /// The task being processed.
   ///
@@ -105,18 +110,21 @@ class TaskTitleHandler {
   Future<TaskTitleResult> handle(String newTitle) async {
     final trimmed = newTitle.trim();
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Processing set_task_title: '
       'isEmpty=${trimmed.isEmpty}, chars=${trimmed.length}',
-      name: 'TaskTitleHandler',
+      subDomain: 'TaskTitleHandler',
     );
 
     // Validate: reject empty titles.
     if (trimmed.isEmpty) {
       const message = 'Invalid title: title must not be empty.';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected empty title',
-        name: 'TaskTitleHandler',
+        subDomain: 'TaskTitleHandler',
+        level: InsightLevel.warn,
       );
       return const TaskTitleResult(
         success: false,
@@ -128,9 +136,10 @@ class TaskTitleHandler {
     // No-op: skip write if title is unchanged.
     if (trimmed == task.data.title) {
       final message = 'Title is already "$trimmed". No change needed.';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Title unchanged — skipping write',
-        name: 'TaskTitleHandler',
+        subDomain: 'TaskTitleHandler',
       );
       return TaskTitleResult(
         success: true,
@@ -150,7 +159,12 @@ class TaskTitleHandler {
       switch (write) {
         case TaskFieldWriteFailed():
           const message = 'Failed to update title: repository returned false.';
-          developer.log(message, name: 'TaskTitleHandler');
+          _domainLogger.log(
+            LogDomain.agentWorkflow,
+            message,
+            subDomain: 'TaskTitleHandler',
+            level: InsightLevel.warn,
+          );
           return const TaskTitleResult(
             success: false,
             message: message,
@@ -161,7 +175,11 @@ class TaskTitleHandler {
           const message =
               "Nothing applied: the task's title changed since this "
               'call read it, so it stays as it is.';
-          developer.log(message, name: 'TaskTitleHandler');
+          _domainLogger.log(
+            LogDomain.agentWorkflow,
+            message,
+            subDomain: 'TaskTitleHandler',
+          );
           return const TaskTitleResult(success: true, message: message);
         case TaskFieldWritten(task: final stored):
           task = stored;
@@ -169,9 +187,10 @@ class TaskTitleHandler {
       }
 
       final message = 'Task title updated to "$trimmed".';
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Successfully updated task title',
-        name: 'TaskTitleHandler',
+        subDomain: 'TaskTitleHandler',
       );
 
       return TaskTitleResult(
@@ -182,11 +201,12 @@ class TaskTitleHandler {
     } catch (e, s) {
       const message =
           'Failed to update title. Continuing without title change.';
-      developer.log(
-        'Failed to update task title',
-        name: 'TaskTitleHandler',
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'TaskTitleHandler',
+        message: 'Failed to update task title',
       );
 
       return TaskTitleResult(

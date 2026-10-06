@@ -11,11 +11,14 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -114,6 +117,7 @@ void main() {
   late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockAiConfigRepository mockAiConfigRepo;
+  late MockDomainLogger mockLogger;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -125,6 +129,7 @@ void main() {
     mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockAiConfigRepo = MockAiConfigRepository();
+    mockLogger = MockDomainLogger();
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -154,7 +159,11 @@ void main() {
       () => mockJournalDb.getAllLabelDefinitions(),
     ).thenAnswer((_) async => []);
 
-    container = ProviderContainer(overrides: getItServiceOverrides());
+    container = ProviderContainer(
+      overrides: withServiceOverrides([
+        domainLoggerProvider.overrideWithValue(mockLogger),
+      ]),
+    );
   });
 
   tearDown(() async {
@@ -534,6 +543,60 @@ void main() {
       expect(s.processedCount, 2);
       expect(s.embeddedCount, 1);
       expect(s.error, isNull);
+      verify(
+        () => mockLogger.error(
+          LogDomain.ai,
+          any<Object>(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: any(named: 'subDomain'),
+          message: 'Backfill failed for bad-1',
+          errorType: any(named: 'errorType', that: isNotNull),
+        ),
+      ).called(1);
+    });
+
+    test('an open embedding circuit skips an entity with a warning', () async {
+      final entry = JournalEntry(
+        meta: _meta(id: 'down-1'),
+        entryText: const EntryText(plainText: _longText),
+      );
+      _stubEntityIds(mockJournalDb, ['down-1']);
+      _stubEntity(mockJournalDb, entry);
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer(
+        (_) async => throw EmbeddingEndpointUnavailableException(
+          baseUrl: _ollamaBaseUrl,
+          retryAt: DateTime(2024, 3, 15, 0, 5),
+        ),
+      );
+
+      await controller().backfillCategories({_testCategoryId});
+
+      expect(state().processedCount, 1);
+      expect(state().embeddedCount, 0);
+      verify(
+        () => mockLogger.log(
+          LogDomain.ai,
+          any(that: startsWith('Backfill skipped down-1')),
+          subDomain: any(named: 'subDomain'),
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockLogger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+          errorType: any(named: 'errorType'),
+        ),
+      );
     });
 
     test('sets error when embedding pipeline not registered', () async {
@@ -571,6 +634,15 @@ void main() {
 
       expect(state().error, contains('Database connection lost'));
       expect(state().isRunning, isFalse);
+      verify(
+        () => mockLogger.error(
+          LogDomain.ai,
+          any<Object>(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: any(named: 'subDomain'),
+          message: 'Backfill error',
+        ),
+      ).called(1);
     });
   });
 

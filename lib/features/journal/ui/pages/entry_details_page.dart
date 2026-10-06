@@ -30,6 +30,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
 import 'package:material_ui/material_ui.dart';
@@ -79,6 +80,9 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     with HighlightScrollMixin {
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _entryKeys = {};
+
+  @override
+  DomainLogger get highlightScrollLogger => ref.read(domainLoggerProvider);
 
   @override
   void initState() {

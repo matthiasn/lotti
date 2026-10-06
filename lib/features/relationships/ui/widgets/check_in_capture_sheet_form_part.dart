@@ -179,11 +179,12 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
     try {
       route = await transcription.route();
     } catch (exception, stackTrace) {
-      developer.log(
-        'Could not name the transcription route',
-        name: 'CheckInCaptureForm',
-        error: exception,
+      _logger.error(
+        LogDomain.speech,
+        exception,
         stackTrace: stackTrace,
+        subDomain: 'CheckInCaptureForm',
+        message: 'Could not name the transcription route',
       );
       return;
     }

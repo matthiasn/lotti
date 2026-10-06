@@ -3,10 +3,12 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -17,6 +19,7 @@ void main() {
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
   late MockAiConfigRepository mockAiConfigRepo;
+  late MockDomainLogger mockDomainLogger;
   late VectorSearchRepository sut;
 
   final fakeVector = Float32List(1024);
@@ -28,8 +31,7 @@ void main() {
   });
 
   setUp(() {
-    DevLogger.suppressOutput = true;
-    DevLogger.clear();
+    mockDomainLogger = MockDomainLogger();
     mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockJournalDb = MockJournalDb();
@@ -40,6 +42,7 @@ void main() {
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       aiConfigRepository: mockAiConfigRepo,
+      domainLogger: mockDomainLogger,
     );
 
     when(
@@ -53,10 +56,6 @@ void main() {
     when(
       () => mockJournalDb.linksForIds(any()),
     ).thenReturn(MockSelectable(<LinkedDbEntry>[]));
-  });
-
-  tearDown(() {
-    DevLogger.suppressOutput = false;
   });
 
   /// Serves [entities] from the bulk read by id, as the journal does: an id
@@ -319,6 +318,16 @@ void main() {
       final result = await sut.searchRelatedTasks(query: 'query');
 
       expect(result.entities, isEmpty);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'VectorSearchRepository',
+          message: 'Failed to embed query',
+          errorType: any(named: 'errorType', that: isNotNull),
+        ),
+      ).called(1);
       verifyNever(
         () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
@@ -327,6 +336,49 @@ void main() {
         ),
       );
     });
+
+    test(
+      'an open embedding circuit is a warning, not an error',
+      () async {
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenThrow(
+          EmbeddingEndpointUnavailableException(
+            baseUrl: 'http://user:secret@localhost:11434/api',
+            retryAt: DateTime(2024, 3, 15, 10, 35),
+          ),
+        );
+
+        final result = await sut.searchRelatedTasks(query: 'query');
+
+        expect(result.entities, isEmpty);
+        final logged =
+            verify(
+                  () => mockDomainLogger.log(
+                    LogDomain.ai,
+                    captureAny(),
+                    subDomain: 'VectorSearchRepository',
+                    level: InsightLevel.warn,
+                  ),
+                ).captured.single
+                as String;
+        expect(logged, startsWith('Query not embedded'));
+        expect(logged, isNot(contains('secret')));
+        verifyNever(
+          () => mockDomainLogger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+            errorType: any(named: 'errorType'),
+          ),
+        );
+      },
+    );
 
     test('returns empty results when search returns no matches', () async {
       when(
@@ -567,18 +619,24 @@ void main() {
         () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => []);
 
-      DevLogger.clear();
       await sut.searchRelatedTasks(query: 'log test');
 
+      final message =
+          verify(
+                () => mockDomainLogger.log(
+                  LogDomain.ai,
+                  captureAny(),
+                  subDomain: 'VectorSearch',
+                ),
+              ).captured.single
+              as String;
       expect(
-        DevLogger.capturedLogs,
-        contains(
-          allOf(
-            contains('Distance distribution'),
-            contains('count=3'),
-            contains('min=0.200'),
-            contains('max=0.800'),
-          ),
+        message,
+        allOf(
+          contains('Distance distribution'),
+          contains('count=3'),
+          contains('min=0.200'),
+          contains('max=0.800'),
         ),
       );
     });

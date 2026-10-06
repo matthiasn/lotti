@@ -18,6 +18,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -707,6 +708,64 @@ void main() {
                   start: any(named: 'start'),
                   linkedId: 'task-id',
                   categoryId: any(named: 'categoryId'),
+                ),
+              ).called(1);
+              verify(
+                () => harness.mockDomainLogger.error(
+                  LogDomain.ai,
+                  any<Object>(that: isA<Exception>()),
+                  stackTrace: any(named: 'stackTrace', that: isNotNull),
+                  subDomain: 'UnifiedAiInferenceRepository',
+                  message: 'createLink failed',
+                ),
+              ).called(1);
+            },
+          );
+
+          test(
+            'a failed response write is logged with its trace and swallowed',
+            () async {
+              stubInferenceContext(
+                mockAiInputRepo: mockAiInputRepo,
+                mockAiConfigRepo: mockAiConfigRepo,
+                entity: audioEntity(),
+                model: model,
+                provider: provider,
+              );
+              stubGenerate(
+                mockCloudInferenceRepo,
+                stream: createMockTextStream(['Generated prompt']),
+              );
+              when(
+                () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+              ).thenAnswer((_) async => <JournalEntity>[]);
+              when(
+                () => mockAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).thenThrow(StateError('db down'));
+
+              // Without an attribution session the failure is not rethrown.
+              await expectLater(
+                repository.runInference(
+                  entityId: 'test-id',
+                  promptConfig: codingPrompt(),
+                  onProgress: (_) {},
+                  onStatusChange: (_) {},
+                ),
+                completes,
+              );
+
+              verify(
+                () => harness.mockDomainLogger.error(
+                  LogDomain.ai,
+                  any<Object>(that: isA<StateError>()),
+                  stackTrace: any(named: 'stackTrace', that: isNotNull),
+                  subDomain: 'UnifiedAiInferenceRepository',
+                  message: 'createAiResponseEntry failed',
                 ),
               ).called(1);
             },
@@ -1928,7 +1987,7 @@ void main() {
           ).thenAnswer((_) async => taskEntity);
           when(
             () => mockAiConfigRepo.getConfigById('model-1'),
-          ).thenThrow(Exception('Model not found'));
+          ).thenThrow(Exception('Model not found: echoed prompt text'));
 
           expect(
             () => repository.runInference(
@@ -1944,6 +2003,20 @@ void main() {
           async.flushMicrotasks();
           // Note: Repository no longer emits error status - controller handles it
           expect(statusChanges, [InferenceStatus.running]);
+
+          // The failure is logged with its trace, by type only: a provider
+          // error's text can echo the prompt or the model's output.
+          final logged = verify(
+            () => harness.mockDomainLogger.error(
+              LogDomain.ai,
+              captureAny(),
+              stackTrace: any(named: 'stackTrace', that: isNotNull),
+              subDomain: 'UnifiedAiInferenceRepository',
+              message: 'Inference failed',
+              errorType: any(named: 'errorType', that: isNotNull),
+            ),
+          ).captured.single;
+          expect(logged, '_Exception');
         });
       });
 

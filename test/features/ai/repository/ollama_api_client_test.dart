@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/ollama_api_client.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -47,12 +49,17 @@ void main() {
   group('OllamaApiClient.warmUpModel', () {
     late MockHttpClient httpClient;
     late OllamaApiClient client;
+    late MockDomainLogger logger;
 
     setUpAll(registerAllFallbackValues);
 
     setUp(() {
       httpClient = MockHttpClient();
-      client = OllamaApiClient(httpClient: httpClient);
+      logger = MockDomainLogger();
+      client = OllamaApiClient(
+        domainLogger: logger,
+        httpClient: httpClient,
+      );
     });
 
     void stubPost(Future<http.Response> Function() answer) {
@@ -105,6 +112,37 @@ void main() {
         );
       });
     }
+
+    test('logs a failed response as a warning, by status only', () async {
+      stubPost(() async => http.Response('boom', 500));
+
+      await client.warmUpModel('gemma4:4b', 'http://localhost:11434');
+
+      verify(
+        () => logger.log(
+          LogDomain.ai,
+          'Model warm-up failed: HTTP 500',
+          subDomain: 'OllamaApiClient',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+    });
+
+    test('logs a transport error with its exception', () async {
+      stubPost(() async => throw const SocketException('connection refused'));
+
+      await client.warmUpModel('gemma4:4b', 'http://localhost:11434');
+
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          any<Object>(that: isA<SocketException>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'OllamaApiClient',
+          message: 'Model warm-up failed',
+        ),
+      ).called(1);
+    });
   });
 
   group('OllamaInstallException', () {

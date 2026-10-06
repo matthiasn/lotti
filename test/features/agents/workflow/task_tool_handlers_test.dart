@@ -16,6 +16,7 @@ void main() {
       'handle instead of silently dropping it',
       () async {
         final dispatcher = TaskToolDispatcher(
+          domainLogger: MockDomainLogger(),
           journalDb: MockJournalDb(),
           journalRepository: MockJournalRepository(),
           checklistRepository: MockChecklistRepository(),

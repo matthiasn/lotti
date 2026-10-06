@@ -336,6 +336,7 @@ class DayAgentPipelineHarness {
           dependencyResolver ??
           TaskDependencyResolver(journalRepository: journalRepository),
       soulDocumentService: SoulDocumentService(
+        domainLogger: domainLogger,
         repository: agentRepository,
         syncService: syncService,
       ),
@@ -375,6 +376,7 @@ class DayAgentPipelineHarness {
           };
 
     final agentService = AgentService(
+      domainLogger: domainLogger,
       repository: agentRepository,
       orchestrator: orchestrator,
       syncService: syncService,

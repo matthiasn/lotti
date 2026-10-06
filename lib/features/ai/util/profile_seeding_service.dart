@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_assignment.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
@@ -7,6 +5,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 
 part 'profile_seeding_service_mistral_skill_assignments_part.dart';
@@ -28,9 +27,13 @@ part 'profile_seeding_service_builders.dart';
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
+    required this._domainLogger,
   }) : _repo = aiConfigRepository;
 
   final AiConfigRepository _repo;
+
+  /// Receives the counts of seeded, upgraded and removed profiles.
+  final DomainLogger _domainLogger;
 
   /// The provider type whose setup makes each default profile functional.
   ///
@@ -104,7 +107,11 @@ class ProfileSeedingService {
     }
 
     if (seededCount > 0) {
-      developer.log('Profiles: seeded $seededCount', name: _logTag);
+      _domainLogger.log(
+        LogDomain.ai,
+        'Profiles: seeded $seededCount',
+        subDomain: _logTag,
+      );
     }
   }
 
@@ -178,9 +185,10 @@ class ProfileSeedingService {
     }
 
     if (removedCount > 0) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Profiles: removed $removedCount orphaned default seeds',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
   }
@@ -277,9 +285,10 @@ class ProfileSeedingService {
     }
 
     if (upgradedCount > 0) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Upgraded $upgradedCount inference profiles',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
   }

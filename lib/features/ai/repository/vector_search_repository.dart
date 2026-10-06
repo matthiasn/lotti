@@ -2,11 +2,12 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Result of a vector search, including timing information.
 class VectorSearchResult {
@@ -37,12 +38,14 @@ class VectorSearchRepository {
     required this._embeddingRepository,
     required this._journalDb,
     required this._aiConfigRepository,
+    required this._domainLogger,
   });
 
   final EmbeddingStore _embeddingStore;
   final OllamaEmbeddingRepository _embeddingRepository;
   final JournalDb _journalDb;
   final AiConfigRepository _aiConfigRepository;
+  final DomainLogger _domainLogger;
 
   /// Searches for tasks semantically related to [query].
   ///
@@ -186,10 +189,24 @@ class VectorSearchRepository {
         input: query,
         baseUrl: baseUrl,
       );
-    } on Exception catch (e) {
-      DevLogger.warning(
-        name: 'VectorSearchRepository',
-        message: 'Failed to embed query: $e',
+    } on EmbeddingEndpointUnavailableException catch (e) {
+      // The circuit is open: routine while Ollama is down, not a failure.
+      _domainLogger.log(
+        LogDomain.ai,
+        'Query not embedded: $e',
+        subDomain: 'VectorSearchRepository',
+        level: InsightLevel.warn,
+      );
+      stopwatch.stop();
+      return null;
+    } on Exception catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        DomainLogger.withoutSource(e),
+        errorType: e.runtimeType,
+        stackTrace: stackTrace,
+        subDomain: 'VectorSearchRepository',
+        message: 'Failed to embed query',
       );
       stopwatch.stop();
       return null;
@@ -207,12 +224,12 @@ class VectorSearchRepository {
       final min = distances.first.toStringAsFixed(3);
       final max = distances.last.toStringAsFixed(3);
       final median = distances[distances.length ~/ 2].toStringAsFixed(3);
-      DevLogger.log(
-        name: 'VectorSearch',
-        message:
-            'Distance distribution: '
-            'count=${distances.length}, '
-            'min=$min, median=$median, max=$max',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Distance distribution: '
+        'count=${distances.length}, '
+        'min=$min, median=$median, max=$max',
+        subDomain: 'VectorSearch',
       );
     }
 

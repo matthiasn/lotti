@@ -1,14 +1,15 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Generates text with full conversation history for multi-turn interactions.
@@ -21,6 +22,7 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Parameters:
 /// - [sender]: HTTP stream sender with rate-limit backoff.
+/// - [domainLogger]: Records the request and an empty-output stream.
 /// - [messages]: Full conversation history as OpenAI-style messages
 /// - [model]: Gemini model ID
 /// - [temperature]: Sampling temperature
@@ -37,6 +39,7 @@ import 'package:openai_dart/openai_dart.dart';
 ///   lookup errors when replaying multi-turn function calls.
 Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
   required GeminiStreamSender sender,
+  required DomainLogger domainLogger,
   required List<ChatCompletionMessage> messages,
   required String model,
   required double temperature,
@@ -57,6 +60,7 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
   final endpoint = GeminiUtils.redactedEndpoint(uri);
 
   final body = GeminiUtils.buildMultiTurnRequestBody(
+    domainLogger: domainLogger,
     messages: messages,
     temperature: temperature,
     thinkingConfig: thinkingConfig,
@@ -68,10 +72,11 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
     toolChoice: toolChoice,
   );
 
-  developer.log(
+  domainLogger.log(
+    LogDomain.ai,
     'Gemini multi-turn streamGenerateContent request to: $endpoint with '
     '${messages.length} messages',
-    name: 'GeminiInferenceRepository',
+    subDomain: 'GeminiInferenceRepository',
   );
 
   http.Request buildStreamRequest() {
@@ -198,6 +203,7 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
           final toolCallId = 'tool_turn${turn}_$currentIndex';
 
           captureSignatureIfPresent(
+            domainLogger: domainLogger,
             part: p,
             toolCallId: toolCallId,
             functionName: name,
@@ -244,10 +250,12 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
 
   // Fallback if no content was emitted
   if (!emittedAny) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Gemini multi-turn stream produced no output, no fallback available for '
       'multi-turn mode',
-      name: 'GeminiInferenceRepository',
+      subDomain: 'GeminiInferenceRepository',
+      level: InsightLevel.warn,
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -65,6 +64,7 @@ class KeyVerificationRunner {
     this.keyVerification, {
     required this.controller,
     required this.name,
+    required this._domainLogger,
     this.onCompleted,
   }) {
     lastStep = keyVerification.lastStep ?? '';
@@ -86,6 +86,7 @@ class KeyVerificationRunner {
   KeyVerification keyVerification;
   StreamController<KeyVerificationRunner> controller;
   final Future<void> Function(String source)? onCompleted;
+  final DomainLogger _domainLogger;
   Timer? _timer;
   bool _lastIsDone = false;
   bool _completionNotified = false;
@@ -103,9 +104,10 @@ class KeyVerificationRunner {
     if (newLastStep != lastStep) {
       lastStep = newLastStep;
       changed = true;
-      DevLogger.log(
-        name: 'KeyVerificationRunner',
-        message: '$name newLastStep: $newLastStep',
+      _domainLogger.log(
+        LogDomain.sync,
+        '$name newLastStep: $newLastStep',
+        subDomain: 'KeyVerificationRunner',
       );
 
       if (lastStep == 'm.key.verification.key') {
@@ -198,25 +200,20 @@ listenForKeyVerificationRequestsWithSubscription({
             keyVerification,
             controller: service.incomingKeyVerificationRunnerController,
             name: 'Incoming KeyVerificationRunner',
+            domainLogger: loggingService,
             onCompleted: (source) =>
                 service.onVerificationCompleted(source: source),
           );
 
-          DevLogger.log(
-            name: 'KeyVerificationRunner',
-            message:
-                'Key Verification Request from ${keyVerification.deviceId}',
+          loggingService.log(
+            LogDomain.sync,
+            'Key Verification Request from ${keyVerification.deviceId}',
+            subDomain: 'KeyVerificationRunner',
           );
           service.incomingKeyVerificationController.add(keyVerification);
         });
     return subscription;
   } catch (e, stackTrace) {
-    DevLogger.error(
-      name: 'KeyVerificationRunner',
-      message: 'Error listening for key verification requests',
-      error: e,
-      stackTrace: stackTrace,
-    );
     loggingService.error(
       LogDomain.sync,
       e,
@@ -227,15 +224,20 @@ listenForKeyVerificationRequestsWithSubscription({
   }
 }
 
+/// Starts an outgoing verification of [deviceKeys] and stores its
+/// [KeyVerificationRunner] on `service.keyVerificationRunner`; the runner
+/// traces its step changes to [loggingService].
 Future<void> verifyMatrixDevice({
   required DeviceKeys deviceKeys,
   required MatrixService service,
+  required DomainLogger loggingService,
 }) async {
   final keyVerification = await deviceKeys.startVerification();
   service.keyVerificationRunner = KeyVerificationRunner(
     keyVerification,
     controller: service.keyVerificationController,
     name: 'Outgoing KeyVerificationRunner',
+    domainLogger: loggingService,
     onCompleted: (source) => service.onVerificationCompleted(source: source),
   );
 }

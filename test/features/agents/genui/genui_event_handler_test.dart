@@ -7,6 +7,7 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -14,13 +15,18 @@ import '../../../mocks/mocks.dart';
 void main() {
   late SurfaceController processor;
   late GenUiBridge bridge;
+  late MockDomainLogger mockDomainLogger;
   late GenUiEventHandler handler;
 
   setUp(() {
     final catalog = buildEvolutionCatalog();
     processor = SurfaceController(catalogs: [catalog]);
     bridge = GenUiBridge(processor: processor);
-    handler = GenUiEventHandler(processor: processor)..listen();
+    mockDomainLogger = MockDomainLogger();
+    handler = GenUiEventHandler(
+      domainLogger: mockDomainLogger,
+      processor: processor,
+    )..listen();
   });
 
   tearDown(() {
@@ -43,6 +49,27 @@ void main() {
       ),
     );
     await pumpEventQueue();
+  }
+
+  /// Verifies exactly one parse failure was logged with [message], with its
+  /// stack trace and original type, and that the logged error carries none of
+  /// the payload's text.
+  void verifyContentFreeParseFailure(String message, String payloadText) {
+    final captured = verify(
+      () => mockDomainLogger.error(
+        LogDomain.agentWorkflow,
+        captureAny(),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'GenUiEventHandler',
+        message: message,
+        errorType: FormatException,
+      ),
+    ).captured;
+    expect(captured, hasLength(1));
+    final error = captured.single;
+    expect(error, isA<FormatException>());
+    expect((error as FormatException).source, isNull);
+    expect(error.toString(), isNot(contains(payloadText)));
   }
 
   group('GenUiEventHandler', () {
@@ -107,8 +134,10 @@ void main() {
         (_) => submitController.stream,
       );
 
-      final malformedHandler = GenUiEventHandler(processor: mockProcessor)
-        ..listen();
+      final malformedHandler = GenUiEventHandler(
+        domainLogger: MockDomainLogger(),
+        processor: mockProcessor,
+      )..listen();
       addTearDown(malformedHandler.dispose);
 
       final events = <(String, String)>[];
@@ -229,10 +258,14 @@ void main() {
       await dispatchAndWait(
         name: 'ratings_submitted',
         surfaceId: 'ratings-surface',
-        sourceComponentId: '{invalid-json',
+        sourceComponentId: '{"Secret rating note',
       );
 
       expect(events, isEmpty);
+      verifyContentFreeParseFailure(
+        'Failed to parse ratings JSON (bytes=20)',
+        'Secret rating note',
+      );
     });
 
     test('routes binary_choice_submitted event to callback', () async {
@@ -261,10 +294,14 @@ void main() {
       await dispatchAndWait(
         name: 'binary_choice_submitted',
         surfaceId: 'binary-choice-surface',
-        sourceComponentId: '{bad-json',
+        sourceComponentId: '{"value":"Secret choice text',
       );
 
       expect(events, isEmpty);
+      verifyContentFreeParseFailure(
+        'Failed to parse binary choice JSON (bytes=28)',
+        'Secret choice text',
+      );
     });
 
     test(
@@ -381,10 +418,14 @@ void main() {
       await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-2',
-        sourceComponentId: '{bad-json',
+        sourceComponentId: '{"value":"Secret option text',
       );
 
       expect(events, isEmpty);
+      verifyContentFreeParseFailure(
+        'Failed to parse AB comparison JSON (bytes=28)',
+        'Secret option text',
+      );
     });
 
     test('ignores empty value in AB comparison', () async {

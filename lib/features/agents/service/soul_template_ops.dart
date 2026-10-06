@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -28,7 +26,11 @@ class SoulTemplateOps {
     required this.repository,
     required this.syncService,
     required this.versionOps,
+    required this._domainLogger,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentRepository repository;
   final AgentSyncService syncService;
@@ -74,10 +76,11 @@ class SoulTemplateOps {
       await syncService.upsertLink(link);
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Assigned soul ${DomainLogger.sanitizeId(soulId)} to template '
       '${DomainLogger.sanitizeId(templateId)}',
-      name: _logTag,
+      subDomain: _logTag,
     );
   }
 
@@ -95,9 +98,10 @@ class SoulTemplateOps {
       }
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Unassigned soul from template ${DomainLogger.sanitizeId(templateId)}',
-      name: _logTag,
+      subDomain: _logTag,
     );
   }
 
@@ -224,9 +228,10 @@ class SoulTemplateOps {
     });
 
     if (deleted) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Deleted soul ${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
   }
@@ -343,7 +348,11 @@ class SoulTemplateOps {
       await _seedAssignment(templateId: a.templateId, soulId: a.soulId);
     }
 
-    developer.log('Seeded default souls and assignments', name: _logTag);
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'Seeded default souls and assignments',
+      subDomain: _logTag,
+    );
   }
 
   /// Links [soulId] to [templateId] as a seeded default, unless the

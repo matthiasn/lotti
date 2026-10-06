@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,8 +14,9 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -432,11 +434,15 @@ void _waitForTimerAndScroll({
 
   void checkAndScroll() {
     if (attempts >= _kTimerScrollMaxAttempts) {
-      DevLogger.warning(
-        name: 'CreateEntryItems',
-        message:
-            'Failed to find timer entry $timerEntryId after $_kTimerScrollMaxAttempts attempts',
-      );
+      container
+          .read(domainLoggerProvider)
+          .log(
+            LogDomain.navigation,
+            'Failed to find timer entry $timerEntryId after '
+            '$_kTimerScrollMaxAttempts attempts',
+            subDomain: 'CreateEntryItems',
+            level: InsightLevel.warn,
+          );
       return;
     }
 

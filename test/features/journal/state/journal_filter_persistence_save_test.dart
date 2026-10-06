@@ -13,11 +13,16 @@ import 'journal_filter_persistence_test_helpers.dart';
 
 void main() {
   late MockSettingsDb mockSettingsDb;
+  late MockDomainLogger mockDomainLogger;
   late JournalFilterPersistence sut;
 
   setUp(() {
     mockSettingsDb = MockSettingsDb();
-    sut = JournalFilterPersistence(mockSettingsDb);
+    mockDomainLogger = MockDomainLogger();
+    sut = JournalFilterPersistence(
+      mockSettingsDb,
+      domainLogger: mockDomainLogger,
+    );
 
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     // Reconciled against today's types: these tests are about the dedup, so
@@ -224,8 +229,10 @@ void main() {
             return 1;
           });
 
-          final persistence = JournalFilterPersistence(db)
-            ..saveFilters(filter, key);
+          final persistence = JournalFilterPersistence(
+            db,
+            domainLogger: mockDomainLogger,
+          )..saveFilters(filter, key);
           async.flushMicrotasks();
 
           TasksFilter? loaded;
@@ -262,14 +269,20 @@ void main() {
             return 1;
           });
 
-          JournalFilterPersistence(db).saveFilters(filter, key);
+          JournalFilterPersistence(
+            db,
+            domainLogger: mockDomainLogger,
+          ).saveFilters(filter, key);
           async.flushMicrotasks();
           expect(writeCount, 1, reason: 'first save persists $filter');
 
           // A fresh persistence instance loads the encoded value (seeding its
           // dedup snapshot) and then saving the same filter must be a no-op,
           // proving the encoded form is stable across the load path.
-          final reloaded = JournalFilterPersistence(db);
+          final reloaded = JournalFilterPersistence(
+            db,
+            domainLogger: mockDomainLogger,
+          );
           TasksFilter? loaded;
           reloaded.loadFilters(key).then((v) => loaded = v);
           async.flushMicrotasks();

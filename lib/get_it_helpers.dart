@@ -39,45 +39,20 @@ void _registerLazyServiceSafely<T extends Object>(
   }
 }
 
-/// Safe logging helper that falls back to DevLogger if LoggingService is unavailable
+/// Logs a service-registration outcome to the [DomainLogger].
+///
+/// `registerSingletons` registers the logger before its first
+/// [_registerLazyServiceSafely], so it is always available here. Errors are
+/// never gated on the settings domain flag; successes are.
 void _safeLog(String message, {required bool isError}) {
-  try {
-    if (getIt.isRegistered<DomainLogger>()) {
-      final domainLogger = getIt<DomainLogger>();
-      if (isError) {
-        // error() is never gated on enabledDomains, so a registration failure
-        // is always recorded even when the settings domain is toggled off.
-        domainLogger.error(
-          LogDomain.settings,
-          message,
-          subDomain: 'error',
-        );
-      } else {
-        domainLogger.log(
-          LogDomain.settings,
-          message,
-          subDomain: 'SERVICE_REGISTRATION',
-        );
-      }
-    } else {
-      // Fallback to DevLogger if LoggingService not available
-      if (isError) {
-        DevLogger.error(
-          name: 'SERVICE_REGISTRATION',
-          message: message,
-        );
-      } else {
-        DevLogger.log(
-          name: 'SERVICE_REGISTRATION',
-          message: message,
-        );
-      }
-    }
-  } catch (e) {
-    // Ultimate fallback if even the safe check fails
-    DevLogger.error(
-      name: 'SERVICE_REGISTRATION',
-      message: '$message (logging failed: $e)',
+  final domainLogger = getIt<DomainLogger>();
+  if (isError) {
+    domainLogger.error(LogDomain.settings, message, subDomain: 'error');
+  } else {
+    domainLogger.log(
+      LogDomain.settings,
+      message,
+      subDomain: 'SERVICE_REGISTRATION',
     );
   }
 }
@@ -130,11 +105,7 @@ Future<void> _registerLateAndOptionalServices({
       // One instance for every caller, so its per-endpoint availability
       // circuit is shared application-wide.
       ..registerSingleton<OllamaEmbeddingRepository>(
-        OllamaEmbeddingRepository(
-          domainLogger: getIt.isRegistered<DomainLogger>()
-              ? getIt<DomainLogger>()
-              : null,
-        ),
+        OllamaEmbeddingRepository(domainLogger: getIt<DomainLogger>()),
         dispose: (repo) => repo.close(),
       )
       ..registerSingleton<EmbeddingService>(
@@ -144,6 +115,7 @@ Future<void> _registerLateAndOptionalServices({
           journalDb: getIt<JournalDb>(),
           updateNotifications: getIt<UpdateNotifications>(),
           aiConfigRepository: getIt<AiConfigRepository>(),
+          domainLogger: getIt<DomainLogger>(),
         ),
         dispose: (svc) async => svc.stop(),
       )
@@ -153,23 +125,18 @@ Future<void> _registerLateAndOptionalServices({
           embeddingRepository: getIt<OllamaEmbeddingRepository>(),
           journalDb: getIt<JournalDb>(),
           aiConfigRepository: getIt<AiConfigRepository>(),
+          domainLogger: getIt<DomainLogger>(),
         ),
       );
 
     getIt<EmbeddingService>().start();
     _safeLog('Embedding pipeline initialized successfully', isError: false);
   } catch (e, stackTrace) {
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.ai,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'embedding_pipeline_init',
-      );
-    }
-    _safeLog(
-      'Embedding pipeline unavailable: $e',
-      isError: true,
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
+      e,
+      stackTrace: stackTrace,
+      subDomain: 'embedding_pipeline_init',
     );
   }
   // coverage:ignore-end

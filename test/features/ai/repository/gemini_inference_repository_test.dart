@@ -10,8 +10,11 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 import 'gemini_test_clients.dart';
 
 void main() {
@@ -34,7 +37,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -87,7 +93,10 @@ void main() {
         });
 
         final client = FakeStreamClient(200, [malformed, valid]);
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         final provider = AiConfigInferenceProvider(
           id: 'prov',
@@ -152,7 +161,10 @@ void main() {
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -222,7 +234,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -281,7 +296,10 @@ void main() {
         });
 
         final client = FakeStreamClient(200, [line]);
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         final provider = AiConfigInferenceProvider(
           id: 'prov',
@@ -353,7 +371,10 @@ void main() {
           streamLines: [streamLine],
           fallbackBody: fallback,
         );
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         final provider = AiConfigInferenceProvider(
           id: 'prov',
@@ -388,7 +409,10 @@ void main() {
 
     test('throws for non-2xx streaming status codes', () async {
       final client = FakeStreamClient(500, ['{"error":"x"}']);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -429,7 +453,10 @@ void main() {
         });
 
         final client = FakeStreamClient(200, [line]);
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         final provider = AiConfigInferenceProvider(
           id: 'prov',
@@ -480,7 +507,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -526,7 +556,10 @@ void main() {
 
       // Prepend an opening bracket to test array framing removal
       final client = FakeStreamClient(200, ['[', sse]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -556,7 +589,10 @@ void main() {
       const part1 = '{"candidates":[{"content":{"parts":[';
       const part2 = '{"text":"Hello"}]}}]}';
       final client = FakeStreamClient(200, const [part1, part2]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -589,7 +625,11 @@ void main() {
         ],
       });
       final client = RoutingErrorClient(streamLines: [emptyParts]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final logger = MockDomainLogger();
+      final repo = GeminiInferenceRepository(
+        domainLogger: logger,
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -608,6 +648,18 @@ void main() {
           )
           .toList();
       expect(events, isEmpty);
+      // The failure is logged by status and body size; the body stays out.
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          'Gemini non-stream fallback failed: HTTP 500',
+          subDomain: 'GeminiInferenceRepository',
+          message: any<String?>(
+            named: 'message',
+            that: allOf(contains('16 chars'), isNot(contains('boom'))),
+          ),
+        ),
+      ).called(1);
     });
 
     test(
@@ -639,7 +691,10 @@ void main() {
           streamLines: [streamLine],
           fallbackBody: fallback,
         );
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -696,7 +751,10 @@ void main() {
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -747,7 +805,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [responseWithUsage]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -818,7 +879,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [chunk1, chunk2]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -864,7 +928,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [responseNoUsage]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -911,7 +978,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [responseWithFunctionCall]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -968,7 +1038,10 @@ void main() {
       final client = FakeStreamClient(200, [
         responseWithMultipleFunctionCalls,
       ]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -1027,7 +1100,10 @@ void main() {
           onRequest: () => attemptCount++,
         );
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1088,7 +1164,10 @@ void main() {
           onRequest: () => attemptCount++,
         );
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1130,7 +1209,10 @@ void main() {
           onRequest: () => attemptCount++,
         );
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1197,7 +1279,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1247,7 +1332,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1326,7 +1414,10 @@ void main() {
           }),
         );
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1361,6 +1452,7 @@ void main() {
       () async {
         const sentinelApiKey = 'sentinel-secret-key';
         final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: _UriEchoingFailureClient(),
         );
         final provider = AiConfigInferenceProvider(
@@ -1411,7 +1503,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1460,7 +1555,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1532,7 +1630,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [line]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -1631,7 +1732,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [responseWithSignature]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final collector = ThoughtSignatureCollector();
 
       final provider = AiConfigInferenceProvider(
@@ -1684,7 +1788,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [responseNoSignature]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final collector = ThoughtSignatureCollector();
 
       final provider = AiConfigInferenceProvider(
@@ -1745,7 +1852,10 @@ void main() {
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final collector = ThoughtSignatureCollector();
 
       final provider = AiConfigInferenceProvider(
@@ -1797,7 +1907,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1860,7 +1973,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -1945,7 +2061,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [response]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final collector = ThoughtSignatureCollector();
 
       final provider = AiConfigInferenceProvider(
@@ -1991,7 +2110,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [response]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -2047,7 +2169,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [response]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -2082,7 +2207,10 @@ void main() {
 
     test('throws on non-2xx status in multi-turn mode', () async {
       final client = FakeStreamClient(500, ['{"error":"internal"}']);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -2125,7 +2253,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [response]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -2171,7 +2302,10 @@ void main() {
       });
 
       final client = FakeStreamClient(200, [response]);
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -2222,7 +2356,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2286,7 +2423,10 @@ void main() {
           onRequest: () => attemptCount++,
         );
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2345,7 +2485,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2388,7 +2531,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2412,7 +2558,10 @@ void main() {
         response: jsonEncode({'candidates': <Map<String, dynamic>>[]}),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2453,7 +2602,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2485,7 +2637,10 @@ void main() {
         body: '{"error": "Bad request"}',
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2536,7 +2691,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2581,7 +2739,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2607,7 +2768,7 @@ void main() {
       // Verifies the `?? http.Client()` branch in the constructor.
       // We cannot send real HTTP calls, but we can verify the object is created
       // and is a GeminiInferenceRepository.
-      final repo = GeminiInferenceRepository();
+      final repo = GeminiInferenceRepository(domainLogger: MockDomainLogger());
       expect(repo, isA<GeminiInferenceRepository>());
     });
   });
@@ -2633,7 +2794,10 @@ void main() {
         });
 
         final client = FakeStreamClient(200, [line]);
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2694,7 +2858,10 @@ void main() {
           // Manually override the retry-after header to a non-numeric value
           final wrappedClient = _NonNumericRetryAfterClient(inner: client);
 
-          final repo = GeminiInferenceRepository(httpClient: wrappedClient);
+          final repo = GeminiInferenceRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: wrappedClient,
+          );
           final provider = AiConfigInferenceProvider(
             id: 'prov',
             baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2756,7 +2923,10 @@ void main() {
             onRequest: () => attemptCount++,
           );
 
-          final repo = GeminiInferenceRepository(httpClient: client);
+          final repo = GeminiInferenceRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: client,
+          );
           final provider = AiConfigInferenceProvider(
             id: 'prov',
             baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2799,7 +2969,10 @@ void main() {
         // Always timeout — never succeeds.
         final client = _AlwaysTimeoutClient(onRequest: () => attemptCount++);
 
-        final repo = GeminiInferenceRepository(httpClient: client);
+        final repo = GeminiInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
         final provider = AiConfigInferenceProvider(
           id: 'prov',
           baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2856,7 +3029,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -2896,7 +3072,10 @@ void main() {
         }),
       );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
+      final repo = GeminiInferenceRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
       final provider = AiConfigInferenceProvider(
         id: 'prov',
         baseUrl: 'https://generativelanguage.googleapis.com',

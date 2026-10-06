@@ -13,12 +13,14 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 // The SDK exception requires an enum omitted from its public barrel.
@@ -124,6 +126,7 @@ void main() {
             final probe = _ChatStreamProbe(content: 'Analysis');
             Map<String, dynamic>? body;
             final repository = MeliousInferenceRepository(
+              domainLogger: MockDomainLogger(),
               chatCompletionStreamFactory: probe.call,
               httpClient: MockClient((request) async {
                 body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -276,6 +279,7 @@ void main() {
 
     test('listModels fetches include_meta and maps capabilities', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((request) async {
           expect(request.method, equals('GET'));
           expect(request.url.path, equals('/v1/models'));
@@ -404,6 +408,7 @@ void main() {
       'listModels accepts top-level arrays and plain string model IDs',
       () async {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             expect(request.url.path, equals('/v1/models'));
             expect(request.url.queryParameters['include_meta'], equals('true'));
@@ -448,6 +453,7 @@ void main() {
       'listModels merges live Melious metadata with curated capabilities',
       () async {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             expect(request.url.queryParameters['include_meta'], equals('true'));
 
@@ -594,7 +600,9 @@ void main() {
       'listModels falls back to plain /models when include_meta fails',
       () async {
         var call = 0;
+        final logger = MockDomainLogger();
         final repository = MeliousInferenceRepository(
+          domainLogger: logger,
           httpClient: MockClient((request) async {
             call++;
             if (call == 1) {
@@ -624,8 +632,9 @@ void main() {
         );
         addTearDown(repository.close);
 
+        // Credentials in the configured URL must never reach a log line.
         final models = await repository.listModels(
-          baseUrl: baseUrl,
+          baseUrl: baseUrl.replaceFirst('://', '://user:secret@'),
           apiKey: apiKey,
         );
 
@@ -633,6 +642,41 @@ void main() {
         expect(models, hasLength(1));
         expect(models.single.providerModelId, 'deepseek-v4-pro');
         expect(models.single.isReasoningModel, isTrue);
+
+        // The planned fallback is a warning, not an error.
+        verify(
+          () => logger.log(
+            LogDomain.ai,
+            'Melious metadata catalog failed (HTTP 400); retrying plain '
+            '/models as degraded fallback',
+            subDomain: any(named: 'subDomain'),
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+            errorType: any(named: 'errorType'),
+          ),
+        );
+        final lines = verify(
+          () => logger.log(
+            LogDomain.ai,
+            captureAny(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).captured.cast<String>();
+        expect(
+          lines.where((l) => l.contains('Fetching Melious')),
+          hasLength(2),
+        );
+        expect(lines, everyElement(isNot(contains('secret'))));
+        expect(lines, everyElement(isNot(contains('include_meta=true'))));
       },
     );
 
@@ -645,6 +689,7 @@ void main() {
           onCancel: () => stopped = true,
         );
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => http.Response('{"choices":[]}', 200),
           ),
@@ -680,6 +725,7 @@ void main() {
       () async {
         final requests = <Map<String, dynamic>>[];
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             requests.add(jsonDecode(request.body) as Map<String, dynamic>);
             return http.Response(
@@ -752,6 +798,7 @@ void main() {
                 },
               );
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             bufferedCalls++;
             return http.Response('{}', 200);
@@ -825,7 +872,10 @@ void main() {
             headers: {'content-type': 'text/event-stream'},
           );
         });
-        final repository = MeliousInferenceRepository(httpClient: transport);
+        final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: transport,
+        );
         addTearDown(repository.close);
         final sdkClient = MockHttpClient();
         when(() => sdkClient.send(any())).thenAnswer(
@@ -861,6 +911,7 @@ void main() {
     test('generateText streams text and sends prompt request body', () async {
       final probe = _ChatStreamProbe(content: 'melious response');
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         chatCompletionStreamFactory: probe.call,
       );
       addTearDown(repository.close);
@@ -899,6 +950,7 @@ void main() {
       () async {
         final probe = _ChatStreamProbe(content: 'history response');
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           chatCompletionStreamFactory: probe.call,
         );
         addTearDown(repository.close);
@@ -940,6 +992,7 @@ void main() {
     test('generateWithImages sends multimodal message parts', () async {
       final probe = _ChatStreamProbe(content: 'vision response');
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         chatCompletionStreamFactory: probe.call,
       );
       addTearDown(repository.close);
@@ -971,7 +1024,9 @@ void main() {
     });
 
     test('generateText uses default OpenAI-compatible stream factory', () {
-      final repository = MeliousInferenceRepository();
+      final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
+      );
       addTearDown(repository.close);
 
       final stream = repository.generateText(
@@ -986,6 +1041,7 @@ void main() {
 
     test('listModels surfaces provider error messages', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           return http.Response(
             jsonEncode({
@@ -1008,7 +1064,9 @@ void main() {
     });
 
     test('listModels validates required request parameters', () {
-      final repository = MeliousInferenceRepository();
+      final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
+      );
       addTearDown(repository.close);
 
       expect(
@@ -1023,6 +1081,7 @@ void main() {
 
     test('listModels wraps malformed JSON responses', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response('{', 200)),
       );
       addTearDown(repository.close);
@@ -1045,6 +1104,7 @@ void main() {
         required String message,
       }) async {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             return http.Response(jsonEncode(payload), 200);
           }),
@@ -1095,6 +1155,7 @@ void main() {
       'listModels coerces modality aliases and truthy metadata values',
       () async {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             return http.Response(
               jsonEncode({
@@ -1162,6 +1223,7 @@ void main() {
       () async {
         var call = 0;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             call++;
             if (call == 1) {
@@ -1224,6 +1286,7 @@ void main() {
     test('listModels wraps timeout and transport failures', () async {
       var timeoutCalls = 0;
       final timeoutRepository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) {
           timeoutCalls++;
           return Completer<http.Response>().future;
@@ -1249,6 +1312,7 @@ void main() {
 
       var failingCalls = 0;
       final failingRepository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           failingCalls++;
           throw Exception('socket closed');
@@ -1271,6 +1335,7 @@ void main() {
 
     test('listModels clips raw non-JSON error bodies', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           return http.Response('x' * 260, 500);
         }),
@@ -1306,6 +1371,7 @@ void main() {
       () async {
         http.BaseRequest? captured;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming((request, _) async {
             captured = request;
             return http.StreamedResponse(
@@ -1343,6 +1409,7 @@ void main() {
       fakeAsync((async) {
         final body = StreamController<List<int>>();
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming(
             (_, _) async => http.StreamedResponse(body.stream, 200),
           ),
@@ -1422,6 +1489,7 @@ void main() {
           var calls = 0;
           List<AudioTimedSegment>? timing;
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             audioSegmentEncoder: segments,
             httpClient: MockClient.streaming((request, _) async {
               calls++;
@@ -1481,6 +1549,7 @@ void main() {
             var calls = 0;
             var callbacks = 0;
             final repository = MeliousInferenceRepository(
+              domainLogger: MockDomainLogger(),
               audioSegmentEncoder: segments,
               httpClient: MockClient((_) async {
                 calls++;
@@ -1527,6 +1596,7 @@ void main() {
           var calls = 0;
           final collector = InferenceImpactCollector();
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             audioSegmentEncoder: segments,
             httpClient: MockClient.streaming((request, _) async {
               calls++;
@@ -1585,6 +1655,7 @@ void main() {
       test('rejects an oversized encoded part before uploading it', () async {
         var calls = 0;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           audioSegmentEncoder: segments,
           temporaryFileReader: (_) async => Uint8List(
             MeliousInferenceRepository.maxTranscriptionUploadBytes + 1,
@@ -1621,6 +1692,7 @@ void main() {
       for (final empty in [true, false]) {
         test('audio preparation failure is typed (empty=$empty)', () async {
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             audioSegmentEncoder: (_) => empty
                 ? const Stream<File>.empty()
                 : Stream<File>.error(
@@ -1665,6 +1737,7 @@ void main() {
         }
 
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           audioSegmentEncoder: cancelableSegments,
           httpClient: MockClient.streaming((request, _) async {
             if (!started.isCompleted) started.complete();
@@ -1710,6 +1783,7 @@ void main() {
         () async {
           var calls = 0;
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             audioSegmentEncoder: segments,
             httpClient: MockClient.streaming((request, _) async {
               calls++;
@@ -1782,6 +1856,7 @@ void main() {
       () async {
         final impactCollector = InferenceImpactCollector();
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming(
             (_, _) async => http.StreamedResponse(
               Stream.value(
@@ -1840,6 +1915,7 @@ void main() {
       () async {
         final impactCollector = InferenceImpactCollector();
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming(
             (_, _) async => http.StreamedResponse(
               Stream.value(utf8.encode(jsonEncode({'text': 'bonjour'}))),
@@ -1873,6 +1949,7 @@ void main() {
         const mp3Bytes = [0x49, 0x44, 0x33, 0x04];
         late File temporaryMp3;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((request) async {
             captured = request;
             return _voxtralChatResponse(
@@ -1931,6 +2008,7 @@ void main() {
       () async {
         final impactCollector = InferenceImpactCollector();
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => _voxtralChatResponse(
               environmentImpact: {
@@ -1983,6 +2061,7 @@ void main() {
         final wavBytes = base64Decode('UklGRgAAAABXQVZF');
         Uint8List? encodedSource;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async => _voxtralChatResponse()),
           audioToTemporaryMp3Encoder: (bytes) async {
             encodedSource = bytes;
@@ -2009,6 +2088,7 @@ void main() {
     test('transcribeChatAudio surfaces native conversion failures', () async {
       var requestSent = false;
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           requestSent = true;
           return _voxtralChatResponse();
@@ -2046,6 +2126,7 @@ void main() {
       var requestSent = false;
       late File temporaryMp3;
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           requestSent = true;
           return _voxtralChatResponse();
@@ -2084,6 +2165,7 @@ void main() {
       () async {
         late File temporaryMp3;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => http.Response(
               jsonEncode({
@@ -2132,6 +2214,7 @@ void main() {
 
     test('transcribeChatAudio times out with a request id', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) => Completer<http.Response>().future),
         audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
       );
@@ -2164,6 +2247,7 @@ void main() {
 
     test('transcribeChatAudio bounds MP3 encoding time', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         audioToTemporaryMp3Encoder: (_) => Completer<File>().future,
       );
       addTearDown(repository.close);
@@ -2197,6 +2281,7 @@ void main() {
         var requestSent = false;
         late File temporaryMp3;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           clockSource: Clock(() => currentTime),
           httpClient: MockClient((_) async {
             requestSent = true;
@@ -2234,6 +2319,7 @@ void main() {
         var currentTime = startedAt;
         late File temporaryMp3;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           clockSource: Clock(() => currentTime),
           httpClient: MockClient((_) => Completer<http.Response>().future),
           audioToTemporaryMp3Encoder: (_) async {
@@ -2297,6 +2383,7 @@ void main() {
           var requestSent = false;
           late File temporaryMp3;
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             clockSource: Clock(() => currentTime),
             httpClient: MockClient((_) async {
               requestSent = true;
@@ -2344,6 +2431,7 @@ void main() {
 
     test('transcribeChatAudio prefixes conversion status detail', () {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         audioToTemporaryMp3Encoder: (_) async => throw TranscriptionException(
           'Native audio decoder rejected the recording',
           provider: 'audio_decoder',
@@ -2396,6 +2484,7 @@ void main() {
     for (final testCase in malformedChatCases) {
       test('transcribeChatAudio ${testCase.description}', () {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async => testCase.response),
           audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
         );
@@ -2424,6 +2513,7 @@ void main() {
 
     test('transcribeChatAudio wraps transport failures', () {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => throw Exception('network down')),
         audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
       );
@@ -2458,7 +2548,9 @@ void main() {
         ];
     for (final arguments in invalidChatArguments) {
       test('transcribeChatAudio validates required arguments $arguments', () {
-        final repository = MeliousInferenceRepository();
+        final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
+        );
         addTearDown(repository.close);
 
         expect(
@@ -2482,6 +2574,7 @@ void main() {
       () async {
         http.BaseRequest? captured;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming((request, _) async {
             captured = request;
             return http.StreamedResponse(
@@ -2525,6 +2618,7 @@ void main() {
       () async {
         http.BaseRequest? captured;
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming((request, _) async {
             captured = request;
             return http.StreamedResponse(
@@ -2549,6 +2643,7 @@ void main() {
         expect(request.fields['response_format'], 'verbose_json');
 
         final timeoutRepository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient.streaming((_, _) {
             return Completer<http.StreamedResponse>().future;
           }),
@@ -2579,7 +2674,9 @@ void main() {
     );
 
     test('transcribeAudio validates required request parameters', () {
-      final repository = MeliousInferenceRepository();
+      final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
+      );
       addTearDown(repository.close);
 
       expect(
@@ -2623,6 +2720,7 @@ void main() {
     test('generateImage decodes base64 image responses', () async {
       const pngBytes = [137, 80, 78, 71];
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((request) async {
           expect(request.method, equals('POST'));
           expect(request.url.path, equals('/v1/images/generations'));
@@ -2664,6 +2762,7 @@ void main() {
     test('generateImage decodes data-uri MIME types', () async {
       const webpBytes = [82, 73, 70, 70];
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           return http.Response(
             jsonEncode({
@@ -2714,6 +2813,7 @@ void main() {
         }
 
         final impactRepository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => imageResponse(withImpact: true),
           ),
@@ -2735,6 +2835,7 @@ void main() {
         expect(collectorWithImpact.impact!.costCredits, 0.05);
 
         final plainRepository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(
             (_) async => imageResponse(withImpact: false),
           ),
@@ -2760,7 +2861,9 @@ void main() {
     );
 
     test('generateImage rejects reference images explicitly', () async {
-      final repository = MeliousInferenceRepository();
+      final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
+      );
       addTearDown(repository.close);
 
       await expectLater(
@@ -2781,6 +2884,7 @@ void main() {
 
     test('generateImage surfaces provider error messages', () async {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           return http.Response(
             jsonEncode({'error': 'image model unavailable'}),
@@ -2806,6 +2910,7 @@ void main() {
 
     test('generateImage wraps malformed JSON and transport failures', () async {
       final malformedRepository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async => http.Response('{', 200)),
       );
       addTearDown(malformedRepository.close);
@@ -2826,6 +2931,7 @@ void main() {
       );
 
       final timeoutRepository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) => Completer<http.Response>().future),
       );
       addTearDown(timeoutRepository.close);
@@ -2847,6 +2953,7 @@ void main() {
       );
 
       final failingRepository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient((_) async {
           throw Exception('connection reset');
         }),
@@ -2885,6 +2992,7 @@ void main() {
 
       for (final payload in cases) {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             return http.Response(jsonEncode(payload), 200);
           }),
@@ -2903,7 +3011,9 @@ void main() {
     });
 
     test('generateImage validates required parameters', () async {
-      final repository = MeliousInferenceRepository();
+      final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
+      );
       addTearDown(repository.close);
 
       await expectLater(
@@ -3023,6 +3133,7 @@ void main() {
       'listModels falls back to top-level capabilities and metadata key',
       () async {
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient((_) async {
             return http.Response(
               jsonEncode({
@@ -3065,11 +3176,13 @@ void main() {
       },
     );
 
-    test('listModels logs rich, clipped summaries for malformed rows', () async {
+    test('listModels logs key-only summaries for malformed rows', () async {
       // A row that throws (no string id) but still carries `_meta.capabilities`
-      // and a >800-character JSON body exercises the metaKeys/capabilityKeys
-      // branches and the clip path of the catalog-row error summary logger.
+      // exercises the metaKeys/capabilityKeys branches of the catalog-row
+      // error summary, which names keys and never the row's values.
+      final logger = MockDomainLogger();
       final repository = MeliousInferenceRepository(
+        domainLogger: logger,
         httpClient: MockClient((_) async {
           return http.Response(
             jsonEncode({
@@ -3100,6 +3213,24 @@ void main() {
           ),
         ),
       );
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          any<Object>(that: isA<InferenceHttpException>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'MeliousInferenceRepository',
+          message: any<String?>(
+            named: 'message',
+            that: allOf(
+              contains(
+                'id=<missing>; keys=object,_meta; metaKeys=capabilities',
+              ),
+              contains('capabilityKeys=padding'),
+              isNot(contains('xxx')),
+            ),
+          ),
+        ),
+      ).called(1);
     });
   });
 
@@ -3114,6 +3245,7 @@ void main() {
           final pending = Completer<http.Response>();
           var requested = false;
           final repository = MeliousInferenceRepository(
+            domainLogger: MockDomainLogger(),
             httpClient: MockClient((_) {
               requested = true;
               // A response already in flight can win the HTTP abort race.
@@ -3169,6 +3301,7 @@ void main() {
             final pending = <Completer<http.StreamedResponse>>[];
             final aborted = <bool>[];
             final repository = MeliousInferenceRepository(
+              domainLogger: MockDomainLogger(),
               httpClient: MockClient.streaming((request, _) {
                 final index = pending.length;
                 final response = Completer<http.StreamedResponse>();
@@ -3282,6 +3415,7 @@ void main() {
 
     MeliousInferenceRepository repositoryWith(MockClientHandler handler) {
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient(handler),
       );
       addTearDown(repository.close);
@@ -3890,6 +4024,7 @@ void main() {
     test('generateText sends reasoning_effort for a quirked model', () async {
       final probe = _ChatStreamProbe(content: 'ok');
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         chatCompletionStreamFactory: probe.call,
       );
       addTearDown(repository.close);
@@ -3920,6 +4055,7 @@ void main() {
       () async {
         final probe = _ChatStreamProbe(content: 'ok');
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           chatCompletionStreamFactory: probe.call,
         );
         addTearDown(repository.close);
@@ -3947,6 +4083,7 @@ void main() {
         // it could never have satisfied the requirement.
         final probe = _ChatStreamProbe(content: 'ok');
         final repository = MeliousInferenceRepository(
+          domainLogger: MockDomainLogger(),
           chatCompletionStreamFactory: probe.call,
         );
         addTearDown(repository.close);
@@ -3968,6 +4105,7 @@ void main() {
     test('generateTextWithMessages clamps a caller-supplied high', () async {
       final probe = _ChatStreamProbe(content: 'ok');
       final repository = MeliousInferenceRepository(
+        domainLogger: MockDomainLogger(),
         chatCompletionStreamFactory: probe.call,
       );
       addTearDown(repository.close);

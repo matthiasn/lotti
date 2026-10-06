@@ -13,8 +13,11 @@ import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -36,6 +39,8 @@ void main() {
     late Map<String, AgentWakeRunner> contributedRunners;
     late List<String> gateCalls;
     late Set<String> retiredByGate;
+    late MockDomainLogger logger;
+    late MockAgentRepository agentRepository;
 
     setUp(() {
       agentService = MockAgentService();
@@ -47,6 +52,11 @@ void main() {
       contributedRunners = {};
       gateCalls = [];
       retiredByGate = {};
+      logger = MockDomainLogger();
+      agentRepository = MockAgentRepository();
+      when(
+        () => agentRepository.getLinksFrom(any(), type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
 
       // The orchestrator stores whatever executor is wired into a real field.
       WakeExecutor? wired;
@@ -69,6 +79,8 @@ void main() {
           eventAgentWorkflowProvider.overrideWithValue(eventWorkflow),
           agentTemplateServiceProvider.overrideWithValue(templateService),
           agentWakeRunnersProvider.overrideWithValue(contributedRunners),
+          domainLoggerProvider.overrideWithValue(logger),
+          agentRepositoryProvider.overrideWithValue(agentRepository),
         ]),
       );
       addTearDown(container.dispose);
@@ -285,6 +297,52 @@ void main() {
         ).called(1);
       });
 
+      test('a failed token lookup after a task wake is logged with its '
+          'stack trace, and the wake still announces itself', () async {
+        stubTaskAgent();
+        when(
+          () => agentRepository.getLinksFrom(any(), type: any(named: 'type')),
+        ).thenThrow(StateError('agent db closed'));
+
+        await wire()('task-agent-1', 'run-key', const {'task-1'}, 'thread');
+
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'agentInitialization',
+            message: 'Failed to resolve task/project wake notification tokens',
+          ),
+        ).called(1);
+        verify(
+          () => notifications.notifyUiOnly({'task-agent-1', agentNotification}),
+        ).called(1);
+      });
+
+      test('a failed template lookup after a task wake is logged with its '
+          'stack trace, and the wake still announces itself', () async {
+        stubTaskAgent();
+        when(
+          () => templateService.getTemplateForAgent(any()),
+        ).thenThrow(StateError('template db closed'));
+
+        await wire()('task-agent-1', 'run-key', const {'task-1'}, 'thread');
+
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'agentInitialization',
+            message: 'Failed to resolve template for wake notification',
+          ),
+        ).called(1);
+        verify(
+          () => notifications.notifyUiOnly({'task-agent-1', agentNotification}),
+        ).called(1);
+      });
+
       test('other kinds never consult the gate', () async {
         stubEventAgent();
         when(
@@ -405,6 +463,7 @@ void main() {
     late MockProjectUpdateCadence cadence;
     late MockScheduledWakeManager manager;
     late MockUpdateNotifications notifications;
+    late MockDomainLogger logger;
     late ProviderContainer container;
 
     final slot =
@@ -442,8 +501,10 @@ void main() {
       when(manager.requestCheck).thenReturn(null);
       notifications = MockUpdateNotifications();
       when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      logger = MockDomainLogger();
       container = ProviderContainer(
         overrides: withServiceOverrides([
+          domainLoggerProvider.overrideWithValue(logger),
           projectUpdateCadenceProvider.overrideWithValue(cadence),
           scheduledWakeManagerProvider.overrideWithValue(manager),
           updateNotificationsProvider.overrideWithValue(notifications),
@@ -516,6 +577,15 @@ void main() {
       );
       await pumpEventQueue();
       verifyNever(manager.requestCheck);
+      verify(
+        () => logger.error(
+          LogDomain.agentRuntime,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'wireProjectSlotRefusals',
+          message: 'failed to re-arm a refused project update slot',
+        ),
+      ).called(1);
 
       container.dispose();
       completions.add(

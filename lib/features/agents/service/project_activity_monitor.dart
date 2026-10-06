@@ -26,7 +26,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
     required this._agentRepository,
     required this._projectRepository,
     required this._syncService,
-    this.domainLogger,
+    required this.domainLogger,
     this._clock = const Clock(),
     this.retireProjectAgent,
     this.updateProjectAgentScopes,
@@ -51,7 +51,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
   /// and idempotent: it schedules at most one slot, and starts no work.
   final Future<void> Function(String agentId)? armProjectUpdate;
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
@@ -61,7 +61,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
   StreamSubscription<Set<String>>? _syncSubscription;
 
   void _log(String message, {String? subDomain}) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       message,
       subDomain: subDomain,

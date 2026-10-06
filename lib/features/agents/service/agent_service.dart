@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -7,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -28,6 +27,7 @@ class AgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    required this._domainLogger,
     this.onPersistedStateChanged,
     this.sidecarReclaimer,
   });
@@ -43,6 +43,9 @@ class AgentService {
   /// headless contexts without a documents directory simply skip reclamation.
   final AgentSidecarReclaimer? sidecarReclaimer;
   final void Function(String agentId)? onPersistedStateChanged;
+
+  /// Records lifecycle transitions to the agent-workflow log.
+  final DomainLogger _domainLogger;
 
   static const _uuid = Uuid();
 
@@ -114,10 +117,11 @@ class AgentService {
       await syncService.upsertLink(link);
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Created agent ${DomainLogger.sanitizeId(resolvedAgentId)} '
       '(kind: $kind)',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
 
     return identity;
@@ -250,10 +254,11 @@ class AgentService {
     // when the drain happened to re-check policy, and a running one kept
     // paying for model turns until it finished.
     final abortedRun = orchestrator.haltAgent(agentId);
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Paused agent ${DomainLogger.sanitizeId(agentId)}'
       '${abortedRun ? ' (running wake aborted)' : ''}',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
     return true;
   }
@@ -276,9 +281,10 @@ class AgentService {
       decision: byUser ? _UserDecision.resume : null,
     );
     if (!updated) return false;
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Resumed agent ${DomainLogger.sanitizeId(agentId)}',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
     return true;
   }
@@ -300,9 +306,10 @@ class AgentService {
     if (lifecycle != AgentLifecycle.active) {
       orchestrator.removeSubscriptions(agentId);
     }
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Restored agent ${DomainLogger.sanitizeId(agentId)} to ${lifecycle.name}',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
     return true;
   }
@@ -328,9 +335,10 @@ class AgentService {
     );
     if (!updated) return false;
     orchestrator.haltAgent(agentId);
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Destroyed agent ${DomainLogger.sanitizeId(agentId)}',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
     return true;
   }
@@ -378,9 +386,10 @@ class AgentService {
       notifyPersistedStateChanged(AgentNotificationScopes.projectOverview);
       projectIds.forEach(notifyPersistedStateChanged);
     }
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Deleted all data for agent ${DomainLogger.sanitizeId(agentId)}',
-      name: 'AgentService',
+      subDomain: 'AgentService',
     );
   }
 
@@ -446,10 +455,12 @@ class AgentService {
     final updated = await syncService.runInTransaction(() async {
       final identity = await getAgent(agentId);
       if (identity == null) {
-        developer.log(
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'Cannot update lifecycle: agent '
           '${DomainLogger.sanitizeId(agentId)} not found',
-          name: 'AgentService',
+          subDomain: 'AgentService',
+          level: InsightLevel.warn,
         );
         return false;
       }

@@ -38,6 +38,7 @@ final templateEvolutionWorkflowProvider = Provider<TemplateEvolutionWorkflow>(
 TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
   final improverService = ref.watch(improverAgentServiceProvider);
   return TemplateEvolutionWorkflow(
+    domainLogger: ref.watch(domainLoggerProvider),
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
@@ -65,6 +66,7 @@ final improverAgentWorkflowProvider = Provider<ImproverAgentWorkflow>(
 );
 ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
   return ImproverAgentWorkflow(
+    domainLogger: ref.watch(domainLoggerProvider),
     feedbackService: ref.watch(feedbackExtractionServiceProvider),
     evolutionWorkflow: ref.watch(templateEvolutionWorkflowProvider),
     improverService: ref.watch(improverAgentServiceProvider),

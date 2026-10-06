@@ -30,7 +30,8 @@ import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart'
     show journalRepositoryProvider;
 import 'package:lotti/logic/repositories/journal_repository.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -79,6 +80,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
   late MockCategoryRepository mockCategoryRepo;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
   late MockLabelsRepository mockLabelsRepository;
+  late MockDomainLogger mockDomainLogger;
   late TestChecklistCompletionService testChecklistCompletionService;
   late Directory suiteTempDir;
   late Directory baseTempDir;
@@ -94,6 +96,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
   }
 
   void setUp() {
+    mockDomainLogger = MockDomainLogger();
     mockAiConfigRepo = MockAiConfigRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockCloudInferenceRepo = MockCloudInferenceRepository();
@@ -138,6 +141,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
           mockCloudInferenceRepo,
         ),
         journalDbProvider.overrideWithValue(mockJournalDb),
+        domainLoggerProvider.overrideWithValue(mockDomainLogger),
         journalRepositoryProvider.overrideWithValue(mockJournalRepo),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepo),

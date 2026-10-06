@@ -124,6 +124,7 @@ relationshipAgentResolvedSetupProvider = FutureProvider.autoDispose
       final categoryProfileLookup = ref.watch(
         relationshipCategoryProfileLookupProvider,
       );
+      final domainLogger = ref.watch(domainLoggerProvider);
       final links = await agentRepository.getLinksFrom(
         agentId,
         type: AgentLinkTypes.agentRelationship,
@@ -137,6 +138,7 @@ relationshipAgentResolvedSetupProvider = FutureProvider.autoDispose
         relationship: relationship,
         agentIdentity: identity,
         aiConfigRepository: aiConfigRepository,
+        domainLogger: domainLogger,
         categoryProfileLookup: categoryProfileLookup,
       );
       return resolved?.setup ??
@@ -303,6 +305,7 @@ final relationshipRuntimeMaintenanceProvider =
                   relationship: relationship,
                   agentIdentity: identity,
                   aiConfigRepository: ref.read(aiConfigRepositoryProvider),
+                  domainLogger: ref.read(domainLoggerProvider),
                   categoryProfileLookup: ref.read(
                     relationshipCategoryProfileLookupProvider,
                   ),

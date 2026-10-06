@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 
 /// DashScope image generation endpoint path (native API, not OpenAI-compatible).
@@ -31,10 +32,15 @@ const _allowedImageHostSuffixes = [
 /// DashScope's native SSE streaming API rather than the OpenAI-compatible
 /// endpoint used for text/audio/vision models.
 class DashScopeInferenceRepository {
-  DashScopeInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  DashScopeInferenceRepository({
+    required this._domainLogger,
+    http.Client? httpClient,
+  }) : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
+
+  /// Records image generation requests.
+  final DomainLogger _domainLogger;
 
   /// Generates an image using DashScope's native SSE streaming API.
   ///
@@ -53,12 +59,11 @@ class DashScopeInferenceRepository {
     final baseUrl = _extractBaseHost(provider.baseUrl);
     final uri = Uri.parse('$baseUrl$_imageGenerationPath');
 
-    developer.log(
-      'DashScope generateImage:\n'
-      '  uri: $uri\n'
-      '  model: $model\n'
-      '  promptLength: ${prompt.length}',
-      name: 'DashScopeInferenceRepository',
+    _domainLogger.log(
+      LogDomain.ai,
+      'DashScope generateImage: uri: $uri, model: $model, '
+      'promptLength: ${prompt.length}',
+      subDomain: 'DashScopeInferenceRepository',
     );
 
     final body = _buildRequestBody(
@@ -105,9 +110,10 @@ class DashScopeInferenceRepository {
     // Validate the image URL to prevent SSRF
     _validateImageUrl(imageUrl);
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'DashScope image URL received, downloading...',
-      name: 'DashScopeInferenceRepository',
+      subDomain: 'DashScopeInferenceRepository',
     );
 
     // Download the image from the temporary URL
@@ -266,7 +272,9 @@ dashScopeInferenceRepositoryProvider =
       name: 'dashScopeInferenceRepositoryProvider',
     );
 DashScopeInferenceRepository dashScopeInferenceRepository(Ref ref) {
-  final repo = DashScopeInferenceRepository();
+  final repo = DashScopeInferenceRepository(
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
   ref.onDispose(repo.close);
   return repo;
 }

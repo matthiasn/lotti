@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +27,8 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.da
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -188,6 +189,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     final agentService = _important
         ? ref.read(relationshipAgentServiceProvider)
         : null;
+    final logger = ref.read(domainLoggerProvider);
     final nickname = _nicknameController.text.trim();
     final knownTerms = parseSpeechTerms(_knownTermsController.text);
 
@@ -228,7 +230,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         // Keyed on the payload write, not the verdict: `important` and the
         // cadence are already persisted, so the agent must be wired even
         // when the category leg failed.
-        if (saved) _ensureAgentIfImportant(agentService, updated);
+        if (saved) _ensureAgentIfImportant(agentService, logger, updated);
         if (!mounted) return;
         if (success) {
           Navigator.of(context).pop(updated);
@@ -251,7 +253,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           ),
           categoryId: _categoryId,
         );
-        if (created != null) _ensureAgentIfImportant(agentService, created);
+        if (created != null) {
+          _ensureAgentIfImportant(agentService, logger, created);
+        }
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -263,11 +267,12 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         }
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to save relationship',
-        name: 'RelationshipForm',
-        error: e,
+      logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'RelationshipForm',
+        message: 'Failed to save relationship',
       );
       if (mounted) {
         context.showToast(
@@ -286,9 +291,10 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
   /// The lazy-create trigger; see [ensureRelationshipAgentInBackground]. The
   /// service is null when the form was saved with reminders off, since it
-  /// is only resolved when it will be used.
+  /// is only resolved when it will be used. A failure goes to [logger].
   void _ensureAgentIfImportant(
     RelationshipAgentService? agentService,
+    DomainLogger logger,
     RelationshipEntry relationship,
   ) {
     if (agentService == null) return;
@@ -296,6 +302,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       agentService,
       relationship,
       source: 'RelationshipForm',
+      domainLogger: logger,
     );
   }
 

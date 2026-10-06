@@ -387,7 +387,8 @@ class RelationshipProposalService {
       if (!unlinked) {
         domainLogger.log(
           LogDomain.agentWorkflow,
-          'Task removed; relationship link cleanup was refused',
+          'Task ${DomainLogger.sanitizeId(taskId)} removed; relationship link '
+          'cleanup was refused',
           subDomain: _logSubDomain,
           level: InsightLevel.warn,
         );
@@ -398,7 +399,9 @@ class RelationshipProposalService {
         error,
         stackTrace: stackTrace,
         subDomain: _logSubDomain,
-        message: 'Task removed; relationship link cleanup failed',
+        message:
+            'Task ${DomainLogger.sanitizeId(taskId)} removed; relationship '
+            'link cleanup failed',
       );
     }
   }

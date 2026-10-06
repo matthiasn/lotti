@@ -33,6 +33,7 @@ void main() {
     when(() => mockSync.upsertEntity(any())).thenAnswer((_) async {});
 
     versionOps = SoulVersionOps(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );

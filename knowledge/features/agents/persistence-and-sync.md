@@ -11,7 +11,7 @@ sources:
   - id: error-logging
     resource: ../../../lib/features/agents/util/agent_error_logging.dart
     title: AgentErrorLogging — the shared content-free diagnostic path
-    last_modified: 2026-08-06
+    last_modified: 2026-10-06
   - id: carrierless-attribution
     resource: ../../../lib/features/agents/workflow/carrierless_attribution.dart
     title: prepareAgentReportAttribution and finalizeCarrierlessAgentAttribution
@@ -772,25 +772,32 @@ full rate, so their exclusion is visible rather than assumed.
 
 # Diagnostics are content-free
 
-This is a hard rule, not a style preference. `DomainLogger` and direct
-`developer.log` calls **may** record tool names, item indexes, counts, byte
-sizes, status names, sanitized ids and exception runtime types.
+This is a hard rule, not a style preference. `DomainLogger` messages **may**
+record tool names, item indexes, counts, byte sizes, status names, sanitized ids
+(`DomainLogger.sanitizeId`) and exception runtime types.
 
 They **must not** record task titles, notes, timer summaries, prompt text, model
-output, raw tool arguments, or arbitrary exception strings.
+output or raw tool arguments.
+
+An exception passed to `DomainLogger.error` is written in full to the full error
+log only; the PII-safe `error-safe-*.log` records the message and the runtime
+type, never the error's text. An exception whose text echoes its input is
+therefore sanitized before it is logged: `parseAgentToolArguments`
+(`agents/workflow/agent_tool_arg_parsing.dart`) throws a `FormatException`
+without the raw arguments, and `GenUiEventHandler` logs a `jsonDecode` failure
+as a copy without its source, passing the original type as `errorType`. A model
+sending malformed tool arguments is routine, not an app fault, so the
+strategies record it as a warn-level `log` line with the error's type and answer
+the model with a rejection.
 
 The durable agent message log remains the memory and audit surface; it is never
 copied into runtime log files.
 
-For the runtime and workflow classes that share `AgentErrorLogging`
-(`agents/util/agent_error_logging.dart`), the rule is enforced in one place: its
-no-logger fallback passes `error.runtimeType` to `developer.log`, never the error
-object. That mixin replaced a byte-identical copy of the method in each class, so
-the rule can no longer be upheld in some places and broken in others.
-`DayAgentWorkflow` deliberately does not adopt it — its logger is non-nullable
-and it has no fallback branch at all — so it carries the rule on its own.
-`GoalAgentWorkflow` (in `features/goals`) does adopt it, so the mixin is no
-longer exclusive to `features/agents`.
+The runtime and workflow classes, `DayAgentWorkflow` and `GoalAgentWorkflow`
+(in `features/goals`) included, share one implementation of their progress and
+error logging: `AgentErrorLogging` (`agents/util/agent_error_logging.dart`).
+Each supplies its required `DomainLogger` and the `LogDomain` its failures
+belong to, so a fix to the logging shape lands in every class at once.
 
 # AI consumption provenance
 

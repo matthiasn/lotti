@@ -493,7 +493,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     required String? consumptionWakeRunKey,
     required String? consumptionThreadId,
   }) {
-    _log(
+    logInfo(
       'capture wake missed parse_capture_to_items — retrying with forced '
       'tool choice',
       subDomain: 'execute',
@@ -541,7 +541,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     required String? consumptionWakeRunKey,
     required String? consumptionThreadId,
   }) {
-    _log(
+    logInfo(
       'drafting wake missed draft_day_plan — retrying with forced tool choice',
       subDomain: 'execute',
     );

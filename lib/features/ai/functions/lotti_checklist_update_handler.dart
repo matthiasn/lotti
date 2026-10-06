@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:openai_dart/openai_dart.dart';
 
@@ -31,6 +31,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   LottiChecklistUpdateHandler({
     required this.task,
     required this.checklistRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
     this.approval,
     DateTime Function()? clock,
@@ -44,6 +45,11 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   /// checklistIds). The [onTaskUpdated] callback is invoked when refreshed.
   Task task;
   final ChecklistRepository checklistRepository;
+
+  static const _subDomain = 'LottiChecklistUpdateHandler';
+
+  /// Receives the handler's audit and update traces.
+  final DomainLogger _domainLogger;
 
   /// Supplied only by the human confirmation path, never by the model.
   final ChecklistItemProvenance? approval;
@@ -441,10 +447,11 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         }
 
         // Log override reason for audit
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Overriding user-set item $id (set at $checkedAtStr), '
           'reason ${trimmedReason.length} chars',
-          name: 'LottiChecklistUpdateHandler',
+          subDomain: _subDomain,
         );
       }
 
@@ -503,9 +510,10 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           UpdatedItemDetail(title: updatedData.title, changes: changes),
         );
 
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Updated checklist item $id: changes=$changes',
-          name: 'LottiChecklistUpdateHandler',
+          subDomain: _subDomain,
         );
       } else {
         _skip(id, 'Update failed');

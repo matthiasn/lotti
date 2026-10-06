@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -390,6 +391,7 @@ void main() {
     mockTemplateService = MockAgentTemplateService();
 
     service = FeedbackExtractionService(
+      domainLogger: MockDomainLogger(),
       agentRepository: mockRepo,
       templateService: mockTemplateService,
     );
@@ -2019,10 +2021,13 @@ void main() {
 
   group('extractForSoul', () {
     late MockSoulDocumentService mockSoulService;
+    late MockDomainLogger mockDomainLogger;
 
     setUp(() {
       mockSoulService = MockSoulDocumentService();
+      mockDomainLogger = MockDomainLogger();
       service = FeedbackExtractionService(
+        domainLogger: mockDomainLogger,
         agentRepository: mockRepo,
         templateService: mockTemplateService,
         soulDocumentService: mockSoulService,
@@ -2045,6 +2050,7 @@ void main() {
 
     test('returns empty map when soulDocumentService is null', () async {
       final serviceWithoutSoul = FeedbackExtractionService(
+        domainLogger: MockDomainLogger(),
         agentRepository: mockRepo,
         templateService: mockTemplateService,
       );
@@ -2146,6 +2152,17 @@ void main() {
       );
 
       expect(result.keys, ['template-ok']);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'FeedbackExtractionService',
+          message:
+              'Feedback extraction failed for template '
+              '${DomainLogger.sanitizeId('template-fails')}',
+        ),
+      ).called(1);
     });
   });
 }

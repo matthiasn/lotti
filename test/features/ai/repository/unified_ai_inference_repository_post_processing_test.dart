@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -30,6 +31,7 @@ MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
 MockAutoChecklistService get mockAutoChecklistService =>
     harness.mockAutoChecklistService;
 MockDirectory get mockDirectory => harness.mockDirectory;
+MockDomainLogger get mockDomainLogger => harness.mockDomainLogger;
 List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
@@ -1185,6 +1187,15 @@ Take into account the following task context:
 
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'UnifiedAiInferenceRepository',
+            message: 'Failed to update image analysis for image test-id',
+          ),
+        ).called(1);
       },
     );
   });
@@ -1276,6 +1287,15 @@ Take into account the following task context:
             InferenceStatus.idle,
           ]);
           verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.ai,
+              any(that: isA<Exception>()),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'UnifiedAiInferenceRepository',
+              message: 'Failed to update audio transcription for audio test-id',
+            ),
+          ).called(1);
         },
       );
     },

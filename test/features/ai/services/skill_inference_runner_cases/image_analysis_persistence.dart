@@ -453,6 +453,17 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
           linkedTaskId: 'task-1',
         );
 
+        // The failed lookup is reported as an error, with its stack trace.
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: any(named: 'subDomain'),
+            message: 'parent lookup for stale notification failed',
+          ),
+        ).called(1);
+
         // The analysis is already persisted, so a failed parent lookup
         // degrades to notifying just the resolved task, never to aborting.
         final notifications =

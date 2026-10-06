@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Settings key written by the 0.9.1067/0.9.1068 seed-tombstone ledger.
 const legacySeedTombstonesSettingsKey = 'ai_deleted_seed_identities';
@@ -36,10 +36,14 @@ class SeedTombstoneMigration {
   const SeedTombstoneMigration({
     required AiConfigRepository aiConfigRepository,
     required this._settingsDb,
+    required this._domainLogger,
   }) : _repo = aiConfigRepository;
 
   final AiConfigRepository _repo;
   final SettingsDb _settingsDb;
+
+  /// Receives the count of converted tombstones.
+  final DomainLogger _domainLogger;
 
   Future<void> migrate() async {
     final identities = await _legacyIdentities();
@@ -54,9 +58,10 @@ class SeedTombstoneMigration {
     // not become reconstructible later, and leaving the key set would re-run
     // this pass on every launch.
     await _settingsDb.removeSettingsItem(legacySeedTombstonesSettingsKey);
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Converted $converted of ${identities.length} legacy seed tombstones',
-      name: _logTag,
+      subDomain: _logTag,
     );
   }
 

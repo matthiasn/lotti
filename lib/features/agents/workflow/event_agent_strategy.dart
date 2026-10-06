@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Event Agent.
@@ -29,6 +30,7 @@ class EventAgentStrategy extends ConversationStrategy
     with AgentMessageRecording {
   EventAgentStrategy({
     required this.syncService,
+    required this.domainLogger,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -37,6 +39,10 @@ class EventAgentStrategy extends ConversationStrategy
   /// Sync-aware write service for persisting messages.
   @override
   final AgentSyncService syncService;
+
+  /// Structured logger for argument-parsing and persistence failures.
+  @override
+  final DomainLogger domainLogger;
 
   /// The agent's stable ID.
   @override
@@ -73,10 +79,14 @@ class EventAgentStrategy extends ConversationStrategy
         args = parseAgentToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
-        developer.log(
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        domainLogger.log(
+          LogDomain.agentWorkflow,
           'Failed to parse tool call arguments for $toolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
-          name: 'EventAgentStrategy',
+          subDomain: 'EventAgentStrategy',
+          level: InsightLevel.warn,
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '

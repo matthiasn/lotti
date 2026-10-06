@@ -34,6 +34,7 @@ void main() {
   late MockTaskAgentService taskAgentService;
   late MockAgentSyncService syncService;
   late OnboardingCaptureToTaskService service;
+  late MockDomainLogger logger;
 
   const categoryId = 'cat-1';
   final fixedNow = DateTime(2026, 6, 21, 9);
@@ -146,6 +147,7 @@ void main() {
     categoryRepository = MockCategoryRepository();
     taskAgentService = MockTaskAgentService();
     syncService = MockAgentSyncService();
+    logger = MockDomainLogger();
     when(
       () => journalRepository.updateCategoryId(
         any(),
@@ -163,6 +165,7 @@ void main() {
       taskAgentService: taskAgentService,
       persistenceLogic: persistence,
       journalRepository: journalRepository,
+      domainLogger: logger,
       clock: () => fixedNow,
     );
     stubMetrics();
@@ -533,6 +536,17 @@ void main() {
       // Seeding is best-effort: its failure never costs the user the task or the
       // aha — the agent's own wake will still populate the checklist.
       expect(result.task != null, isTrue);
+      verify(
+        () => logger.error(
+          LogDomain.onboarding,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'OnboardingCaptureToTaskService',
+          message:
+              'Failed to seed checklist proposals for onboarding task '
+              'task-1',
+        ),
+      ).called(1);
     });
 
     test(
@@ -644,6 +658,15 @@ void main() {
       // Agent creation is best-effort: its failure never costs the user the
       // task or the aha.
       expect(result.task != null, isTrue);
+      verify(
+        () => logger.error(
+          LogDomain.onboarding,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'OnboardingCaptureToTaskService',
+          message: 'Failed to auto-assign agent for onboarding task task-1',
+        ),
+      ).called(1);
     });
 
     test(

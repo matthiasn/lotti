@@ -266,7 +266,7 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
     // state.pagingController is null at the time refreshQuery is called.
 
     test(
-      'emits DevLogger warning and returns early when pagingController is null',
+      'logs a warning and returns early when pagingController is null',
       () {
         fakeAsync((async) {
           final controller = setup.container.read(
@@ -280,25 +280,19 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
             pagingController: null,
           );
 
-          DevLogger.clear();
-
           // Must not throw; should log the warning.
           controller.refreshQuery();
 
           settle(async);
 
-          // Verify the DevLogger warning was emitted.
-          expect(
-            DevLogger.capturedLogs.any(
-              (msg) => msg.contains(
-                'refreshQuery called but pagingController is null',
-              ),
+          verify(
+            () => setup.mockDomainLogger.log(
+              LogDomain.persistence,
+              'refreshQuery called but pagingController is null',
+              subDomain: 'JournalPageController',
+              level: InsightLevel.warn,
             ),
-            isTrue,
-            reason:
-                'DevLogger.warning must be called when pagingController '
-                'is null',
-          );
+          ).called(1);
         });
       },
     );

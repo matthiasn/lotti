@@ -1,8 +1,8 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 const _logTag = 'ProfileAutomationResolver';
 
@@ -66,6 +66,7 @@ class ProfileAutomationResolver {
     required this._subjectAgentLookup,
     required this._templateService,
     required this._profileResolver,
+    required this._domainLogger,
     this._subjectProfileLookup,
     this._categoryProfileLookup,
     this._subjectCategoryLookup,
@@ -74,6 +75,10 @@ class ProfileAutomationResolver {
   final AutomationSubjectAgentLookup _subjectAgentLookup;
   final AgentTemplateVersionLookup _templateService;
   final ProfileResolver _profileResolver;
+
+  /// Receives the resolution traces.
+  final DomainLogger _domainLogger;
+
   final SubjectProfileLookup? _subjectProfileLookup;
   final CategoryProfileLookup? _categoryProfileLookup;
   final SubjectCategoryLookup? _subjectCategoryLookup;
@@ -134,10 +139,12 @@ class ProfileAutomationResolver {
     for (final profileId in candidateProfileIds) {
       final profile = await _profileResolver.resolveByProfileId(profileId);
       if (profile == null) {
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Automation fallback profile $profileId for subject $subjectId '
           'could not be resolved — skipping',
-          name: _logTag,
+          subDomain: _logTag,
+          level: InsightLevel.warn,
         );
         continue;
       }
@@ -172,10 +179,11 @@ class ProfileAutomationResolver {
     if (lookup == null) return null;
     final subjectProfileId = await lookup(subjectId);
     if (subjectProfileId != null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'resolveProfileIdForSubject: using subject-level profileId '
         '$subjectProfileId for subject $subjectId',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
     return subjectProfileId;
@@ -206,16 +214,18 @@ class ProfileAutomationResolver {
 
     final profileId = await lookup(categoryId);
     if (profileId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No defaultProfileId for category $categoryId',
-        name: _logTag,
+        subDomain: _logTag,
       );
       return null;
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Using category defaultProfileId $profileId for category $categoryId',
-      name: _logTag,
+      subDomain: _logTag,
     );
     return _profileResolver.resolveByProfileId(profileId);
   }
@@ -223,27 +233,30 @@ class ProfileAutomationResolver {
   Future<ResolvedProfile?> _resolveViaAgent(String subjectId) async {
     final agent = await _subjectAgentLookup(subjectId);
     if (agent == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No agent found for subject $subjectId',
-        name: _logTag,
+        subDomain: _logTag,
       );
       return null;
     }
 
     final template = await _templateService.getTemplateForAgent(agent.agentId);
     if (template == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No template found for agent ${agent.agentId}',
-        name: _logTag,
+        subDomain: _logTag,
       );
       return null;
     }
 
     final version = await _templateService.getActiveVersion(template.id);
     if (version == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No active version for template ${template.id}',
-        name: _logTag,
+        subDomain: _logTag,
       );
       return null;
     }
@@ -261,16 +274,18 @@ class ProfileAutomationResolver {
 
     final profileId = await lookup(subjectId);
     if (profileId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No subject-level profileId for subject $subjectId',
-        name: _logTag,
+        subDomain: _logTag,
       );
       return null;
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Using subject-level profileId $profileId for subject $subjectId',
-      name: _logTag,
+      subDomain: _logTag,
     );
     return _profileResolver.resolveByProfileId(profileId);
   }

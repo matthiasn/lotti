@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 
 /// How this repository names itself in an [InferenceHttpException].
@@ -33,10 +34,15 @@ const _exceptionProvider = 'Gemini';
 /// parameter, so the API key never appears in the request URL (and therefore
 /// can't leak through proxy/access logs or an exception that echoes the URI).
 class GeminiModelsRepository {
-  GeminiModelsRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  GeminiModelsRepository({
+    required this._domainLogger,
+    http.Client? httpClient,
+  }) : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
+
+  /// Records catalog fetches and skipped malformed rows.
+  final DomainLogger _domainLogger;
 
   static const _providerName = 'GeminiModelsRepository';
 
@@ -98,10 +104,13 @@ class GeminiModelsRepository {
         try {
           known = _knownModelFromPayload(row);
         } on InferenceHttpException catch (e) {
-          developer.log(
-            'Skipping malformed Gemini model row on page ${page + 1} #$index',
-            name: _providerName,
-            error: e,
+          // One unusable catalog row is expected degradation, not a failure.
+          _domainLogger.log(
+            LogDomain.ai,
+            'Skipping malformed Gemini model row on page ${page + 1} '
+            '#$index: ${e.message}',
+            subDomain: _providerName,
+            level: InsightLevel.warn,
           );
           continue;
         }
@@ -152,10 +161,11 @@ class GeminiModelsRepository {
         'Invalid Gemini base URL',
       );
     }
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Fetching Gemini model catalog from '
       '${ModelCatalogMapping.redactedEndpoint(uri)}',
-      name: _providerName,
+      subDomain: _providerName,
     );
 
     try {

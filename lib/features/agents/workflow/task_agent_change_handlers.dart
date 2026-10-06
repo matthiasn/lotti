@@ -69,10 +69,11 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         humanSummary: _generateHumanSummary(toolName, effectiveArgs),
       );
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Deferred tool $toolName to change set '
         '(${csBuilder.items.length} items total)',
-        name: 'TaskAgentStrategy',
+        subDomain: 'TaskAgentStrategy',
       );
 
       return 'Proposal queued for user review. '
@@ -129,10 +130,11 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       }
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Deferred tool $toolName to change set '
       '(${csBuilder.items.length} items total)',
-      name: 'TaskAgentStrategy',
+      subDomain: 'TaskAgentStrategy',
     );
 
     return response;
@@ -241,10 +243,11 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return 'Skipped: $addRedundancy';
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Deferred tool ${TaskAgentToolNames.linkTask} to change set '
       '(${csBuilder.items.length} items total)',
-      name: 'TaskAgentStrategy',
+      subDomain: 'TaskAgentStrategy',
     );
 
     return 'OK — link_task proposal recorded successfully. Only call '

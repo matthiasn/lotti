@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +24,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/form/agent_wake_cadence_field.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -379,15 +380,17 @@ class _AgentMaintenanceSectionState
   /// Returns whether the action completed, so a caller that moved the UI
   /// ahead of the round trip can put it back.
   Future<bool> _guarded(String what, Future<void> Function() action) async {
+    final logger = ref.read(domainLoggerProvider);
     try {
       await action();
       return true;
     } catch (error, stackTrace) {
-      developer.log(
-        what,
-        name: 'AgentMaintenanceSection',
-        error: error,
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'AgentMaintenanceSection',
+        message: what,
       );
       if (mounted) {
         context.showToast(

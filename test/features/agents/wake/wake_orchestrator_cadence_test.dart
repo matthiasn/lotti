@@ -32,6 +32,7 @@ void main() {
   void startCadenced({AgentWakeCadence? override, bool taskAgent = true}) {
     cadenced =
         WakeOrchestrator(
+          domainLogger: MockDomainLogger(),
           repository: mockRepository,
           queue: queue,
           runner: runner,
@@ -306,6 +307,7 @@ void main() {
   group('runtime inputs', () {
     test('mirrors a task identity: its own cadence and single category', () {
       final o = WakeOrchestrator(
+        domainLogger: MockDomainLogger(),
         repository: mockRepository,
         queue: queue,
         runner: runner,

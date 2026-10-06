@@ -53,8 +53,8 @@ class EventAgentWorkflow with AgentErrorLogging {
     required this.journalRepository,
     required this.syncService,
     required this.templateService,
+    required this.domainLogger,
     this.soulDocumentService,
-    this.domainLogger,
     this.onPersistedStateChanged,
   });
 
@@ -67,7 +67,7 @@ class EventAgentWorkflow with AgentErrorLogging {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
@@ -142,6 +142,7 @@ class EventAgentWorkflow with AgentErrorLogging {
 
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
+      domainLogger: domainLogger,
     );
     final resolvedProfile = templateCtx != null
         ? await profileResolver.resolve(
@@ -225,6 +226,7 @@ class EventAgentWorkflow with AgentErrorLogging {
 
     try {
       final strategy = EventAgentStrategy(
+        domainLogger: domainLogger,
         syncService: syncService,
         agentId: agentId,
         threadId: threadId,

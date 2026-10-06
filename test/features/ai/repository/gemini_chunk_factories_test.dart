@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 void main() {
   group('chunk factories', () {
     test('createThinkingChunk wraps the thinking text in think tags', () {
@@ -85,6 +87,7 @@ void main() {
       final collector = ThoughtSignatureCollector();
 
       captureSignatureIfPresent(
+        domainLogger: MockDomainLogger(),
         part: <String, dynamic>{
           'functionCall': {'name': 'f', 'args': <String, dynamic>{}},
           'thoughtSignature': 'sig-9',
@@ -102,6 +105,7 @@ void main() {
       final collector = ThoughtSignatureCollector();
 
       captureSignatureIfPresent(
+        domainLogger: MockDomainLogger(),
         part: <String, dynamic>{
           'functionCall': {'name': 'f', 'args': <String, dynamic>{}},
         },

@@ -48,10 +48,12 @@ void main() {
     when(() => mockSync.upsertEntity(any())).thenAnswer((_) async {});
 
     final crud = AgentTemplateCrud(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );
     seeding = AgentTemplateSeeding(
+      domainLogger: MockDomainLogger(),
       syncService: mockSync,
       crud: crud,
     );
@@ -380,8 +382,13 @@ void main() {
         final sync = _TransactionalSyncService();
         when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
         final reconciling = AgentTemplateSeeding(
+          domainLogger: MockDomainLogger(),
           syncService: sync,
-          crud: AgentTemplateCrud(repository: mockRepo, syncService: sync),
+          crud: AgentTemplateCrud(
+            domainLogger: MockDomainLogger(),
+            repository: mockRepo,
+            syncService: sync,
+          ),
         );
         final stale = makeTestTemplateVersion(
           id: 'v-old',

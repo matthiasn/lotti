@@ -190,6 +190,7 @@ class WakeDevice {
   void boot() {
     replica.reboot();
     orchestrator = WakeOrchestrator(
+      domainLogger: MockDomainLogger(),
       repository: replica.repository,
       queue: WakeQueue(),
       runner: WakeRunner(),
@@ -202,6 +203,7 @@ class WakeDevice {
     orchestrator.wakeExecutor = executor(this);
     final before = beforeCheck;
     manager = ScheduledWakeManager(
+      domainLogger: MockDomainLogger(),
       repository: replica.repository,
       orchestrator: orchestrator,
       syncService: replica.syncService,

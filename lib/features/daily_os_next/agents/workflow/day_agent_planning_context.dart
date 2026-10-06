@@ -25,7 +25,7 @@ extension DayAgentPlanningContext on DayAgentWorkflow {
       await service.ensureWeekRollups(now: now);
       return await service.recentWeeksJson(now: now);
     } catch (e, s) {
-      _logError('failed to load recent weeks', error: e, stackTrace: s);
+      logError('failed to load recent weeks', error: e, stackTrace: s);
       return null;
     }
   }
@@ -167,7 +167,7 @@ extension DayAgentPlanningContext on DayAgentWorkflow {
           'attentionWindow': _attentionPlanningToJson(attentionWindow),
       };
     } catch (e, s) {
-      _logError('failed to load digest context', error: e, stackTrace: s);
+      logError('failed to load digest context', error: e, stackTrace: s);
       return null;
     }
   }
@@ -223,7 +223,7 @@ extension DayAgentPlanningContext on DayAgentWorkflow {
         end: DateTime(start.year, start.month, start.day + 1),
       );
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to load attention planning context',
         error: e,
         stackTrace: s,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -12,6 +11,8 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 class OllamaModelInstallDialog extends ConsumerStatefulWidget {
@@ -37,6 +38,7 @@ class OllamaModelInstallDialogState
   String? _error;
 
   Future<void> _installModel() async {
+    final logger = ref.read(domainLoggerProvider);
     setState(() {
       _isInstalling = true;
       _error = null;
@@ -89,12 +91,13 @@ class OllamaModelInstallDialogState
         Navigator.of(context).pop();
         widget.onModelInstalled?.call();
       }
-    } catch (e) {
-      // The type only: the text of an unexpected error is technical English
-      // and may carry details that do not belong in a log.
-      developer.log(
-        'Model installation failed (${e.runtimeType})',
-        name: '_OllamaModelInstallDialogState',
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'OllamaModelInstallDialog',
+        message: 'Model installation failed',
       );
       if (!mounted) return;
       setState(() {
@@ -128,11 +131,6 @@ class OllamaModelInstallDialogState
   @override
   Widget build(BuildContext context) {
     final command = 'ollama pull ${widget.modelName}';
-
-    developer.log(
-      'Building OllamaModelInstallDialog for model: ${widget.modelName}',
-      name: '_OllamaModelInstallDialogState',
-    );
 
     final tokens = context.designTokens;
     final colors = tokens.colors;

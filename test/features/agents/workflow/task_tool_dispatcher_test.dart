@@ -333,6 +333,7 @@ void main() {
     mockTimeService = MockTimeService();
 
     dispatcher = TaskToolDispatcher(
+      domainLogger: MockDomainLogger(),
       journalDb: mockJournalDb,
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
@@ -685,6 +686,7 @@ void main() {
         (scenario) async {
           final localJournalDb = MockJournalDb();
           final localDispatcher = TaskToolDispatcher(
+            domainLogger: MockDomainLogger(),
             journalDb: localJournalDb,
             journalRepository: MockJournalRepository(),
             checklistRepository: MockChecklistRepository(),
@@ -785,6 +787,7 @@ void main() {
           final localJournalDb = MockJournalDb();
           final localJournalRepository = MockJournalRepository();
           final localDispatcher = TaskToolDispatcher(
+            domainLogger: MockDomainLogger(),
             journalDb: localJournalDb,
             journalRepository: localJournalRepository,
             checklistRepository: MockChecklistRepository(),
@@ -842,6 +845,7 @@ void main() {
           localAgentRepository = MockAgentRepository();
           localSyncService = MockAgentSyncService();
           localDispatcher = TaskToolDispatcher(
+            domainLogger: MockDomainLogger(),
             journalDb: localJournalDb,
             journalRepository: MockJournalRepository(),
             checklistRepository: MockChecklistRepository(),

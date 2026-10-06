@@ -105,7 +105,6 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -174,6 +173,19 @@ Future<void> registerSingletons({
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
   await getIt<LoggingService>().listenToConfigFlag();
 
+  // main() registers DomainLogger early (before this runs) so startup
+  // diagnostics can resolve it; register it here when an entry point hasn't
+  // (the integration harnesses register only a LoggingService). It must exist
+  // before the first _registerLazyServiceSafely, whose _safeLog writes to it.
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: getIt<LoggingService>()),
+      dispose: (logger) => logger.dispose(),
+    );
+  }
+  final domainLogger = getIt<DomainLogger>();
+  await domainLogger.listenToDomainFlags(getIt<JournalDb>().watchConfigFlag);
+
   _registerLazyServiceSafely<NotificationService>(
     () => NotificationService(
       journalDb: getIt<JournalDb>(),
@@ -196,6 +208,7 @@ Future<void> registerSingletons({
   final entitiesCacheService = EntitiesCacheService(
     journalDb: getIt<JournalDb>(),
     updateNotifications: getIt<UpdateNotifications>(),
+    domainLogger: domainLogger,
   );
   await entitiesCacheService.init();
   getIt.registerSingleton<EntitiesCacheService>(
@@ -220,7 +233,6 @@ Future<void> registerSingletons({
         documentsDirectory: documentsDirectory,
       ),
     );
-  final loggingService = getIt<LoggingService>();
   final userActivityService = getIt<UserActivityService>();
   final userActivityGate = getIt<UserActivityGate>();
   final journalDb = getIt<JournalDb>();
@@ -231,7 +243,7 @@ Future<void> registerSingletons({
   // of the OutboxService registration below — and injected into the
   // SyncEventProcessor.
   final savedTaskFiltersRepository = SavedTaskFiltersRepository(
-    SavedTaskFiltersPersistence(settingsDb),
+    SavedTaskFiltersPersistence(settingsDb, domainLogger: domainLogger),
     getIt<UpdateNotifications>(),
   );
   getIt.registerSingleton<SavedTaskFiltersRepository>(
@@ -248,17 +260,6 @@ Future<void> registerSingletons({
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();
-  // main() registers DomainLogger early (before this runs) so startup
-  // diagnostics can resolve it; only register here when an entry point hasn't
-  // already done so (e.g. a future caller of registerSingletons()).
-  if (!getIt.isRegistered<DomainLogger>()) {
-    getIt.registerSingleton<DomainLogger>(
-      DomainLogger(loggingService: loggingService),
-      dispose: (logger) => logger.dispose(),
-    );
-  }
-  final domainLogger = getIt<DomainLogger>();
-  await domainLogger.listenToDomainFlags(getIt<JournalDb>().watchConfigFlag);
 
   // FTUE measurement substrate. Recording the first-launch signal here (rather
   // than when the welcome UI shows) ensures pre-FTUE users upgrading into this
@@ -413,6 +414,7 @@ Future<void> registerSingletons({
       AiInteractionCapture(
         getIt<AiAttributionService>(),
         getIt<AiAttributionIdentityResolver>(),
+        getIt<DomainLogger>(),
       ),
     )
     ..registerSingleton<TranscriptAttributionCoordinator>(

@@ -5,11 +5,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 
 void main() {
+  late MockDomainLogger logger;
+  setUp(() => logger = MockDomainLogger());
+
   const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
   const apiKey = 'gemini-key';
 
@@ -17,7 +25,10 @@ void main() {
   GeminiModelsRepository repoWithHandler(
     Future<http.Response> Function(http.Request request) handler,
   ) {
-    final repo = GeminiModelsRepository(httpClient: MockClient(handler));
+    final repo = GeminiModelsRepository(
+      domainLogger: logger,
+      httpClient: MockClient(handler),
+    );
     addTearDown(repo.close);
     return repo;
   }
@@ -410,6 +421,27 @@ void main() {
             },
           ]);
           expect(models.map((m) => m.providerModelId), ['models/gemini-4-pro']);
+
+          // One unusable row is a warning, not an error.
+          verify(
+            () => logger.log(
+              LogDomain.ai,
+              'Skipping malformed Gemini model row on page 1 #0: '
+              'Gemini model entry is missing a string name',
+              subDomain: any(named: 'subDomain'),
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
+          verifyNever(
+            () => logger.error(
+              any(),
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+              message: any(named: 'message'),
+              errorType: any(named: 'errorType'),
+            ),
+          );
         },
       );
 

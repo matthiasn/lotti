@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -29,6 +27,8 @@ import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -42,8 +42,11 @@ typedef ProjectByIdResolver = Future<ProjectEntry?> Function(String projectId);
 
 /// Injectable task-creation seam used by the project detail action.
 final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
-  (ref) =>
-      (projectId) => createTask(projectId: projectId),
+  (ref) {
+    final domainLogger = ref.watch(domainLoggerProvider);
+    return (projectId) =>
+        createTask(domainLogger: domainLogger, projectId: projectId);
+  },
   name: 'projectTaskCreatorProvider',
 );
 
@@ -51,7 +54,9 @@ final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
 final projectTaskAgentAssignerProvider = Provider<ProjectTaskAgentAssigner>(
   (ref) {
     final service = ref.watch(taskAgentServiceProvider);
-    return (task) => autoAssignCategoryAgentWith(service, task);
+    final domainLogger = ref.watch(domainLoggerProvider);
+    return (task) =>
+        autoAssignCategoryAgentWith(service, task, domainLogger: domainLogger);
   },
   name: 'projectTaskAgentAssignerProvider',
 );
@@ -217,6 +222,7 @@ class ProjectDetailsPage extends ConsumerWidget {
   ) async {
     final resolveProject = ref.read(projectByIdResolverProvider);
     final agentService = ref.read(projectAgentServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
     try {
       final templates = (await ref.read(agentTemplatesProvider.future))
           .whereType<AgentTemplateEntity>()
@@ -271,11 +277,12 @@ class ProjectDetailsPage extends ConsumerWidget {
       );
       ref.invalidate(projectAgentProvider(currentProject.meta.id));
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to assign project agent',
-        name: 'ProjectDetailsPage',
-        error: error,
+      logger.error(
+        LogDomain.tasks,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'ProjectDetailsPage',
+        message: 'Failed to assign project agent',
       );
       if (!context.mounted) return;
       context.showToast(
@@ -411,15 +418,17 @@ class ProjectDetailsPage extends ConsumerWidget {
   Future<void> _addTask(BuildContext context, WidgetRef ref) async {
     final createProjectTask = ref.read(projectTaskCreatorProvider);
     final assignTaskAgent = ref.read(projectTaskAgentAssignerProvider);
+    final logger = ref.read(domainLoggerProvider);
     Task? task;
     try {
       task = await createProjectTask(projectId);
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to create project task',
-        name: 'ProjectDetailsPage',
-        error: error,
+      logger.error(
+        LogDomain.tasks,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'ProjectDetailsPage',
+        message: 'Failed to create project task',
       );
     }
     if (task == null) {
@@ -433,11 +442,12 @@ class ProjectDetailsPage extends ConsumerWidget {
     try {
       await assignTaskAgent(task);
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to assign category agent to project task',
-        name: 'ProjectDetailsPage',
-        error: error,
+      logger.error(
+        LogDomain.tasks,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'ProjectDetailsPage',
+        message: 'Failed to assign category agent to project task',
       );
       if (!context.mounted) return;
       context.showToast(

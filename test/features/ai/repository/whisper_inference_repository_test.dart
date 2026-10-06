@@ -26,7 +26,10 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = WhisperInferenceRepository(httpClient: mockHttpClient);
+    repository = WhisperInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: mockHttpClient,
+    );
   });
 
   tearDown(() {
@@ -56,7 +59,9 @@ void main() {
 
     group('transcribeAudio', () {
       test('default constructor creates a closable HTTP client', () {
-        final repository = WhisperInferenceRepository();
+        final repository = WhisperInferenceRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(repository.httpClient, isA<http.Client>());
         expect(repository.close, returnsNormally);

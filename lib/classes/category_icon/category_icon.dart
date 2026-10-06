@@ -1,5 +1,4 @@
 import 'package:lotti/classes/category_icon/category_icon_names.dart';
-import 'package:lotti/services/dev_logger.dart';
 
 export 'package:lotti/classes/category_icon/category_icon_names.dart';
 
@@ -113,13 +112,6 @@ abstract final class CategoryIconConstants {
 abstract final class CategoryIconStrings {
   /// Default fallback character when category name is empty
   static const String fallbackCharacter = '?';
-
-  /// Warning message prefix for invalid icon names (log output)
-  // Used by CategoryIcon.fromJson below; DCM fails to connect the
-  // static constant read in this file.
-  // ignore: unused-code
-  static const String invalidIconWarning =
-      'Warning: Invalid CategoryIcon name: ';
 }
 
 /// Enum representing all available category icons in Lotti.
@@ -276,26 +268,13 @@ extension CategoryIconExtension on CategoryIcon {
   /// Convert CategoryIcon to string for serialization
   String toJson() => name;
 
-  /// Convert string to CategoryIcon for deserialization
+  /// Convert string to CategoryIcon for deserialization.
+  ///
   /// Returns null if [json] is null, empty, or not a valid CategoryIcon name
-  /// Uses O(1) map lookup for efficient performance
+  /// (e.g. an icon removed in a later version), so callers fall back to the
+  /// default icon. Uses an O(1) map lookup on the trimmed name.
   static CategoryIcon? fromJson(String? json) {
     if (json == null || json.trim().isEmpty) return null;
-
-    final trimmedJson = json.trim();
-    final icon = _byName[trimmedJson];
-
-    if (icon == null) {
-      // Log the error in debug mode for troubleshooting
-      assert(() {
-        DevLogger.warning(
-          name: 'CategoryIcon',
-          message: '${CategoryIconStrings.invalidIconWarning}"$trimmedJson"',
-        );
-        return true;
-      }(), 'Invalid CategoryIcon name: "$trimmedJson"');
-    }
-
-    return icon;
+    return _byName[json.trim()];
   }
 }

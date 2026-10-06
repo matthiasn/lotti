@@ -18,7 +18,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
@@ -605,12 +604,9 @@ void main() {
       expect(find.widgetWithText(SettingsDeleteRow, 'Delete'), findsOneWidget);
     });
 
-    testWidgets('dashboard definition page setCategory logs to DevLogger '
-        'and marks the page dirty when clearing the category', (tester) async {
+    testWidgets('dashboard definition page marks the page dirty when '
+        'clearing the category', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
-
-      // Clear DevLogger captured logs before test
-      DevLogger.clear();
 
       _stubUpsertCapture(mockPersistenceLogic);
       _stubMeasurableDb(mockJournalDb);
@@ -650,17 +646,6 @@ void main() {
       await tester.tap(clearCategoryButtonFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify DevLogger.log was called for setCategory
-      expect(
-        DevLogger.capturedLogs.any(
-          (log) =>
-              log.contains('DashboardDefinitionPage') &&
-              log.contains('setCategory'),
-        ),
-        isTrue,
-        reason: 'setCategory should log to DevLogger',
-      );
 
       // Clearing the category marks the page dirty.
       expect(_pillEnabled(tester, 'Save'), isTrue);

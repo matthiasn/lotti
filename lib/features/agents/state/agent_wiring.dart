@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -11,7 +10,9 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod/riverpod.dart';
 
 /// Re-arms a project agent whenever the drain refuses one of its update
@@ -21,6 +22,7 @@ import 'package:riverpod/riverpod.dart';
 /// pending until some unrelated change armed one.
 void wireProjectSlotRefusals(Ref ref, WakeOrchestrator orchestrator) {
   final rearm = rearmRefusedProjectSlot(ref);
+  final logger = ref.read(domainLoggerProvider);
   final subscription = orchestrator.runCompletions.listen((completion) {
     final error = completion.error;
     final agentId = completion.agentId;
@@ -31,11 +33,12 @@ void wireProjectSlotRefusals(Ref ref, WakeOrchestrator orchestrator) {
     }
     unawaited(
       rearm(agentId, error.cause).catchError((Object error, StackTrace st) {
-        developer.log(
-          'failed to re-arm a refused project update slot',
-          name: 'wireProjectSlotRefusals',
-          error: error,
+        logger.error(
+          LogDomain.agentRuntime,
+          error,
           stackTrace: st,
+          subDomain: 'wireProjectSlotRefusals',
+          message: 'failed to re-arm a refused project update slot',
         );
       }),
     );
@@ -56,6 +59,7 @@ void wireWakeExecutor(
   UpdateNotifications updateNotifications, {
   required Future<bool> Function(String agentId) retireIfSuperseded,
 }) {
+  final logger = ref.read(domainLoggerProvider);
   orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
     final agentService = ref.read(agentServiceProvider);
     final identity = await agentService.getAgent(agentId);
@@ -231,12 +235,12 @@ void wireWakeExecutor(
         }
       }
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to resolve task/project wake notification tokens '
-        '(errorType=${error.runtimeType})',
-        name: 'agentInitialization',
-        error: error.runtimeType,
+      logger.error(
+        LogDomain.agentRuntime,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'agentInitialization',
+        message: 'Failed to resolve task/project wake notification tokens',
       );
     }
 
@@ -262,18 +266,19 @@ Future<void> _notifyWakeCompletion(
   required UpdateNotifications updateNotifications,
   Set<String> extraTokens = const {},
 }) async {
+  final logger = ref.read(domainLoggerProvider);
   String? templateId;
   try {
     final templateService = ref.read(agentTemplateServiceProvider);
     final template = await templateService.getTemplateForAgent(agentId);
     templateId = template?.id;
   } catch (error, stackTrace) {
-    developer.log(
-      'Failed to resolve template for wake notification '
-      '(errorType=${error.runtimeType})',
-      name: 'agentInitialization',
-      error: error.runtimeType,
+    logger.error(
+      LogDomain.agentRuntime,
+      error,
       stackTrace: stackTrace,
+      subDomain: 'agentInitialization',
+      message: 'Failed to resolve template for wake notification',
     );
   }
 

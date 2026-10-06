@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -30,7 +30,9 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -60,12 +62,16 @@ class PreparedAudio {
 /// to run any configured AI prompt
 class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
-    : _clock = clock ?? DateTime.now {
-    final resolver = TaskSummaryResolver.fromRegisteredAgentDatabase();
+    : _clock = clock ?? DateTime.now,
+      _domainLogger = ref.read(domainLoggerProvider) {
+    final resolver = TaskSummaryResolver.fromRegisteredAgentDatabase(
+      domainLogger: _domainLogger,
+    );
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
       taskSummaryResolver: resolver,
+      domainLogger: _domainLogger,
     );
   }
 
@@ -74,10 +80,23 @@ class UnifiedAiInferenceRepository {
   /// Clock function for timestamps — injectable for testing.
   final DateTime Function() _clock;
 
+  final DomainLogger _domainLogger;
+
+  static const _logTag = 'UnifiedAiInferenceRepository';
+
+  void _log(String message, {InsightLevel level = InsightLevel.info}) =>
+      _domainLogger.log(
+        LogDomain.ai,
+        message,
+        subDomain: _logTag,
+        level: level,
+      );
+
   late final AiToolCallProcessor _toolCallProcessor = AiToolCallProcessor(
     ref: ref,
     clock: _clock,
     autoChecklistServiceResolver: () => autoChecklistService,
+    domainLogger: _domainLogger,
   );
 
   late final AiPromptResolver _promptResolver = AiPromptResolver(ref: ref);
@@ -107,10 +126,9 @@ class UnifiedAiInferenceRepository {
   }) async {
     // Guard: legacy response types should not be executed
     if (promptConfig.aiResponseType.isLegacyType) {
-      developer.log(
+      _log(
         'Skipping inference for legacy response type '
         '${promptConfig.aiResponseType.name} (prompt ${promptConfig.id})',
-        name: 'UnifiedAiInferenceRepository',
       );
       return;
     }
@@ -322,12 +340,6 @@ class UnifiedAiInferenceRepository {
         // Accumulate tool calls from chunks
         if (chunk.choices?.isNotEmpty ?? false) {
           final delta = chunk.choices?.first.delta;
-          developer.log(
-            'Stream chunk received: hasContent=${text.isNotEmpty}, '
-            'hasToolCalls=${delta?.toolCalls != null}, '
-            'toolCallCount=${delta?.toolCalls?.length ?? 0}',
-            name: 'UnifiedAiInferenceRepository',
-          );
           toolCallAccumulator.processChunk(delta);
         }
       }
@@ -343,20 +355,13 @@ class UnifiedAiInferenceRepository {
       // Process accumulated tool calls
       List<ChatCompletionMessageToolCall>? toolCalls;
       if (toolCallAccumulator.hasToolCalls) {
-        developer.log(
-          'Processing ${toolCallAccumulator.count} accumulated tool calls',
-          name: 'UnifiedAiInferenceRepository',
-        );
         toolCalls = toolCallAccumulator.toToolCalls();
-        developer.log(
-          'Created ${toolCalls.length} tool calls from accumulator',
-          name: 'UnifiedAiInferenceRepository',
+        _log(
+          'Created ${toolCalls.length} of ${toolCallAccumulator.count} '
+          'accumulated tool calls (the rest had no arguments)',
         );
       } else {
-        developer.log(
-          'No tool calls accumulated from stream',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('No tool calls accumulated from stream');
       }
 
       // Process the complete response. It persists the carrier before
@@ -389,12 +394,15 @@ class UnifiedAiInferenceRepository {
       // The controller sets state.error THEN sets status, ensuring the widget
       // can read the error object when it rebuilds on status change.
 
-      // Log additional error details
-      developer.log(
-        'Inference failed',
-        name: 'UnifiedAiInferenceRepository',
-        error: e,
+      // The type only: a provider error can carry the response body, which
+      // may echo the prompt or the model's output.
+      _domainLogger.error(
+        LogDomain.ai,
+        '${e.runtimeType}',
+        errorType: e.runtimeType,
         stackTrace: stackTrace,
+        subDomain: _logTag,
+        message: 'Inference failed',
       );
 
       if (attributionSession != null && !outputCompleted) {
@@ -432,10 +440,7 @@ class UnifiedAiInferenceRepository {
     if (preparedAudio != null) {
       // No function calling tools for audio transcription tasks
       // This prevents models from getting confused about their capabilities
-      developer.log(
-        'Processing audio transcription without function calling tools',
-        name: 'UnifiedAiInferenceRepository',
-      );
+      _log('Processing audio transcription without function calling tools');
 
       // Extract speech dictionary terms for context biasing
       // (used by Mistral's transcription endpoint as context_bias)
@@ -479,10 +484,7 @@ class UnifiedAiInferenceRepository {
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks
       // This prevents models from getting confused about their capabilities
-      developer.log(
-        'Processing image analysis without function calling tools',
-        name: 'UnifiedAiInferenceRepository',
-      );
+      _log('Processing image analysis without function calling tools');
 
       return cloudRepo.generateWithImages(
         prompt,
@@ -567,9 +569,9 @@ class UnifiedAiInferenceRepository {
     final taskForToolCalls = await _getTaskForEntity(entity);
 
     if (toolCalls != null && toolCalls.isNotEmpty && taskForToolCalls != null) {
-      developer.log(
-        'Processing ${toolCalls.length} tool calls for task ${taskForToolCalls.id} (from ${entity.runtimeType})',
-        name: 'UnifiedAiInferenceRepository',
+      _log(
+        'Processing ${toolCalls.length} tool calls for task '
+        '${taskForToolCalls.id} (from ${entity.runtimeType})',
       );
       final languageWasSet = await processToolCalls(
         toolCalls: toolCalls,
@@ -578,9 +580,9 @@ class UnifiedAiInferenceRepository {
 
       // If language was set and response is empty, we need to re-run
       if (languageWasSet && response.trim().isEmpty && !isRerun) {
-        developer.log(
-          'Language was detected and set, but response is empty. Triggering automatic re-run for task ${taskForToolCalls.id}',
-          name: 'UnifiedAiInferenceRepository',
+        _log(
+          'Language was detected and set, but response is empty. '
+          'Triggering automatic re-run for task ${taskForToolCalls.id}',
         );
         // Re-run the inference with the same prompt to generate the summary in the detected language
         await _runInferenceInternal(
@@ -596,9 +598,10 @@ class UnifiedAiInferenceRepository {
         return; // Exit early to avoid duplicate processing
       }
     } else {
-      developer.log(
-        'No tool calls to process - toolCalls: ${toolCalls?.length ?? 0}, taskForToolCalls: ${taskForToolCalls?.id ?? 'null'}, entity: ${entity.runtimeType}',
-        name: 'UnifiedAiInferenceRepository',
+      _log(
+        'No tool calls to process - toolCalls: ${toolCalls?.length ?? 0}, '
+        'taskForToolCalls: ${taskForToolCalls?.id ?? 'null'}, '
+        'entity: ${entity.runtimeType}',
       );
     }
 
@@ -682,32 +685,33 @@ class UnifiedAiInferenceRepository {
               toId: aiResponseEntry.id,
             );
             if (!linked) {
-              developer.log(
+              _log(
                 'Secondary link from ${entity.id} to '
                 '${aiResponseEntry.id} not created',
-                name: 'UnifiedAiInferenceRepository',
+                level: InsightLevel.warn,
               );
             }
-          } catch (linkError) {
-            developer.log(
-              'createLink failed: $linkError',
-              name: 'UnifiedAiInferenceRepository',
-              error: linkError,
+          } catch (linkError, stackTrace) {
+            _domainLogger.error(
+              LogDomain.ai,
+              linkError,
+              stackTrace: stackTrace,
+              subDomain: _logTag,
+              message: 'createLink failed',
             );
           }
         }
-        developer.log(
-          'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}');
         if (attributionEnvelope != null) {
           await getIt<AiAttributionService>().finalize(attributionEnvelope);
         }
-      } catch (e) {
-        developer.log(
-          'createAiResponseEntry failed: $e',
-          name: 'UnifiedAiInferenceRepository',
-          error: e,
+      } catch (e, stackTrace) {
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
+          stackTrace: stackTrace,
+          subDomain: _logTag,
+          message: 'createAiResponseEntry failed',
         );
         if (attributionSession != null) {
           rethrow;
@@ -716,9 +720,9 @@ class UnifiedAiInferenceRepository {
     }
 
     // Handle special post-processing
-    developer.log(
-      'About to call _handlePostProcessing. entity: ${entity.runtimeType}, promptConfig.aiResponseType: ${promptConfig.aiResponseType}',
-      name: 'UnifiedAiInferenceRepository',
+    _log(
+      'About to call _handlePostProcessing. entity: ${entity.runtimeType}, '
+      'aiResponseType: ${promptConfig.aiResponseType.name}',
     );
 
     await _handlePostProcessing(
@@ -771,6 +775,7 @@ class UnifiedAiInferenceRepository {
                 entityId: entity.id,
                 aiInputRepo: ref.read(aiInputRepositoryProvider),
                 entityTypeName: 'image analysis',
+                domainLogger: _domainLogger,
               );
           if (currentImage == null) {
             break;
@@ -790,15 +795,14 @@ class UnifiedAiInferenceRepository {
               ),
             );
             await journalRepo.updateJournalEntity(updated);
-            developer.log(
-              'Successfully updated image analysis for image ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
-            );
-          } catch (e) {
-            developer.log(
-              'Failed to update image analysis for image ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
-              error: e,
+            _log('Successfully updated image analysis for image ${entity.id}');
+          } catch (e, stackTrace) {
+            _domainLogger.error(
+              LogDomain.ai,
+              e,
+              stackTrace: stackTrace,
+              subDomain: _logTag,
+              message: 'Failed to update image analysis for image ${entity.id}',
             );
           }
         }
@@ -810,6 +814,7 @@ class UnifiedAiInferenceRepository {
                 entityId: entity.id,
                 aiInputRepo: ref.read(aiInputRepositoryProvider),
                 entityTypeName: 'audio transcription',
+                domainLogger: _domainLogger,
               );
           if (currentAudio == null) {
             break;
@@ -859,19 +864,21 @@ class UnifiedAiInferenceRepository {
             if (transcript.aiAttribution case final attribution?) {
               await getIt<AiAttributionService>().finalize(attribution);
             }
-            developer.log(
+            _log(
               'Successfully updated audio transcription for audio ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
             );
 
             // Note: Task summary for audio is handled by AutomaticPromptTrigger
             // using category defaults.
             // See lib/features/speech/helpers/automatic_prompt_trigger.dart
-          } catch (e) {
-            developer.log(
-              'Failed to update audio transcription for audio ${entity.id}',
-              name: 'UnifiedAiInferenceRepository',
-              error: e,
+          } catch (e, stackTrace) {
+            _domainLogger.error(
+              LogDomain.ai,
+              e,
+              stackTrace: stackTrace,
+              subDomain: _logTag,
+              message:
+                  'Failed to update audio transcription for audio ${entity.id}',
             );
             if (attributionSession != null) {
               rethrow;
@@ -881,27 +888,18 @@ class UnifiedAiInferenceRepository {
       case AiResponseType.promptGeneration:
         // Prompt generation has no special post-processing - the response
         // is saved as an AiResponseEntry which is handled by the caller
-        developer.log(
-          'Prompt generation completed for entity ${entity.id}',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('Prompt generation completed for entity ${entity.id}');
       case AiResponseType.imagePromptGeneration:
         // Image prompt generation has no special post-processing - the response
         // is saved as an AiResponseEntry which is handled by the caller
-        developer.log(
-          'Image prompt generation completed for entity ${entity.id}',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('Image prompt generation completed for entity ${entity.id}');
       case AiResponseType.audioSummary:
       case AiResponseType.pullRequestSummary:
         // Audio summaries only exist on the skill path, and pull request
         // summaries in the GitHub feature; each persists its response itself.
         // The legacy prompt path can never produce one — there is no prompt
         // config carrying either response type.
-        developer.log(
-          'Summary type received in response processing - no-op',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('Summary type received in response processing - no-op');
     }
   }
 

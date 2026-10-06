@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -8,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_assignment.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
@@ -20,7 +19,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -81,7 +82,11 @@ Future<JournalEntity?> createChecklist({
 /// writing a link to it. [linkedId] does both together; callers that own their
 /// own linking (the link picker writes one typed edge) would otherwise have to
 /// unpick a plain link to get the context across.
+///
+/// Failures along the way (project lookup, project link, title indexing) are
+/// reported to [domainLogger].
 Future<Task?> createTask({
+  required DomainLogger domainLogger,
   String? linkedId,
   String? categoryId,
   String? projectId,
@@ -109,17 +114,22 @@ Future<Task?> createTask({
     ProjectEntry? project;
     try {
       project = await projectRepository!.getProjectById(projectId);
-    } catch (error) {
-      developer.log(
-        'Failed to resolve category for project $projectId: $error',
-        name: 'createTask',
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'createTask',
+        message: 'Failed to resolve category for project $projectId',
       );
       return null;
     }
     if (project == null) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.persistence,
         'Could not resolve project $projectId before task creation',
-        name: 'createTask',
+        subDomain: 'createTask',
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -173,6 +183,7 @@ Future<Task?> createTask({
 
   if (task != null && projectId != null) {
     final assigned = await _assignProjectToTask(
+      domainLogger: domainLogger,
       projectRepository: projectRepository!,
       projectId: projectId,
       taskId: task.meta.id,
@@ -199,6 +210,7 @@ Future<Task?> createTask({
     // linked to its parent but absent from that parent's project lists and
     // rollups.
     await _inheritProjectFromLinkedTask(
+      domainLogger: domainLogger,
       linkedId: (linkedId ?? inheritContextFrom)!,
       newTaskId: task.meta.id,
     );
@@ -213,10 +225,13 @@ Future<Task?> createTask({
   if (task != null && title.isNotEmpty) {
     try {
       await getIt<Fts5Db>().insertText(task);
-    } catch (error) {
-      developer.log(
-        'Failed to index title for task ${task.meta.id}: $error',
-        name: 'createTask',
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'createTask',
+        message: 'Failed to index title for task ${task.meta.id}',
       );
     }
   }
@@ -244,8 +259,10 @@ Future<bool> _softDeleteFailedProjectTask(Task task) async {
 
 /// Copies the project assignment from [linkedId] to [newTaskId] via
 /// [ProjectRepository.inheritProjectFromTask]. Best-effort: failures are
-/// caught so they never prevent task creation from succeeding.
+/// caught and reported to [domainLogger] so they never prevent task creation
+/// from succeeding.
 Future<void> _inheritProjectFromLinkedTask({
+  required DomainLogger domainLogger,
   required String linkedId,
   required String newTaskId,
 }) async {
@@ -255,15 +272,19 @@ Future<void> _inheritProjectFromLinkedTask({
       newTaskId: newTaskId,
     );
     if (!inherited) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.persistence,
         'No project to inherit for task $newTaskId from $linkedId',
-        name: 'createTask',
+        subDomain: 'createTask',
       );
     }
-  } catch (e) {
-    developer.log(
-      'Failed to inherit project for task $newTaskId from $linkedId: $e',
-      name: 'createTask',
+  } catch (e, stackTrace) {
+    domainLogger.error(
+      LogDomain.persistence,
+      e,
+      stackTrace: stackTrace,
+      subDomain: 'createTask',
+      message: 'Failed to inherit project for task $newTaskId from $linkedId',
     );
   }
 }
@@ -271,8 +292,10 @@ Future<void> _inheritProjectFromLinkedTask({
 /// Assigns the explicitly inherited project to a newly created task.
 ///
 /// Returns whether the link succeeded so [createTask] can surface explicit
-/// assignment failures. Repository exceptions are logged and return `false`.
+/// assignment failures. Repository exceptions are logged to [domainLogger]
+/// and return `false`.
 Future<bool> _assignProjectToTask({
+  required DomainLogger domainLogger,
   required ProjectRepository projectRepository,
   required String projectId,
   required String taskId,
@@ -283,16 +306,21 @@ Future<bool> _assignProjectToTask({
       taskId: taskId,
     );
     if (!assigned) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.persistence,
         'Could not assign project $projectId to task $taskId',
-        name: 'createTask',
+        subDomain: 'createTask',
+        level: InsightLevel.warn,
       );
     }
     return assigned;
-  } catch (error) {
-    developer.log(
-      'Failed to assign project $projectId to task $taskId: $error',
-      name: 'createTask',
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.persistence,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'createTask',
+      message: 'Failed to assign project $projectId to task $taskId',
     );
     return false;
   }
@@ -319,17 +347,23 @@ ProjectRepository _createProjectRepository() {
 ///
 /// Call this after [createTask] from contexts that have Riverpod [WidgetRef].
 Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) =>
-    autoAssignCategoryAgentWith(ref.read(taskAgentServiceProvider), task);
+    autoAssignCategoryAgentWith(
+      ref.read(taskAgentServiceProvider),
+      task,
+      domainLogger: ref.read(domainLoggerProvider),
+    );
 
 /// Core of [autoAssignCategoryAgent].
 ///
-/// Accepts a [TaskAgentService] directly so callers can capture the service
-/// before an async gap (avoiding post-await [WidgetRef] usage) and tests
-/// can call it without needing a [WidgetRef].
+/// Accepts a [TaskAgentService] and [domainLogger] directly so callers can
+/// capture both before an async gap (avoiding post-await [WidgetRef] usage)
+/// and tests can call it without needing a [WidgetRef]. A failed assignment
+/// is reported to [domainLogger].
 Future<void> autoAssignCategoryAgentWith(
   TaskAgentService service,
-  Task task,
-) async {
+  Task task, {
+  required DomainLogger domainLogger,
+}) async {
   final categoryId = task.meta.categoryId;
   final category = categoryId == null
       ? null
@@ -340,12 +374,12 @@ Future<void> autoAssignCategoryAgentWith(
     category: category,
   );
   if (result.status == TaskAgentAssignmentStatus.failed) {
-    developer.log(
-      'Failed to auto-assign agent for task ${task.meta.id}: '
-      '${result.error}',
-      name: 'autoAssignCategoryAgent',
-      error: result.error,
+    domainLogger.error(
+      LogDomain.agentWorkflow,
+      result.error ?? 'task agent assignment failed',
       stackTrace: result.stackTrace,
+      subDomain: 'autoAssignCategoryAgent',
+      message: 'Failed to auto-assign agent for task ${task.meta.id}',
     );
   }
 }
@@ -359,17 +393,20 @@ Future<void> autoAssignCategoryEventAgent(WidgetRef ref, JournalEvent event) =>
     autoAssignCategoryEventAgentWith(
       ref.read(eventAgentServiceProvider),
       event,
+      domainLogger: ref.read(domainLoggerProvider),
     );
 
 /// Core of [autoAssignCategoryEventAgent].
 ///
-/// Accepts an [EventAgentService] directly so callers can capture the service
-/// before an async gap (avoiding post-await [WidgetRef] usage) and tests can
-/// call it without needing a [WidgetRef].
+/// Accepts an [EventAgentService] and [domainLogger] directly so callers can
+/// capture both before an async gap (avoiding post-await [WidgetRef] usage)
+/// and tests can call it without needing a [WidgetRef]. A failure is reported
+/// to [domainLogger].
 Future<void> autoAssignCategoryEventAgentWith(
   EventAgentService service,
-  JournalEvent event,
-) async {
+  JournalEvent event, {
+  required DomainLogger domainLogger,
+}) async {
   try {
     final categoryId = event.meta.categoryId;
     if (categoryId == null) return;
@@ -387,11 +424,12 @@ Future<void> autoAssignCategoryEventAgentWith(
       allowedCategoryIds: {categoryId},
     );
   } catch (e, stackTrace) {
-    developer.log(
-      'Failed to auto-assign event agent for event ${event.meta.id}: $e',
-      name: 'autoAssignCategoryEventAgent',
-      error: e,
+    domainLogger.error(
+      LogDomain.agentWorkflow,
+      e,
       stackTrace: stackTrace,
+      subDomain: 'autoAssignCategoryEventAgent',
+      message: 'Failed to auto-assign event agent for event ${event.meta.id}',
     );
   }
 }

@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 JournalEntity _makeEntry(String id) {
   return JournalEntity.journalEntry(
@@ -18,19 +22,22 @@ JournalEntity _makeEntry(String id) {
   );
 }
 
-JournalPagingController _createController() {
+JournalPagingController _createController(DomainLogger domainLogger) {
   return JournalPagingController(
     getNextPageKey: (state) => null,
     fetchPage: (key) async => <JournalEntity>[],
+    domainLogger: domainLogger,
   );
 }
 
 void main() {
   group('JournalPagingController', () {
+    late MockDomainLogger mockDomainLogger;
     late JournalPagingController controller;
 
     setUp(() {
-      controller = _createController();
+      mockDomainLogger = MockDomainLogger();
+      controller = _createController(mockDomainLogger);
     });
 
     tearDown(() {
@@ -252,10 +259,7 @@ void main() {
         () async {
           // Controller starts with no pages — refreshLoadedPages should call
           // refresh() and fetchNextPage() and return.
-          final ctrl = JournalPagingController(
-            getNextPageKey: (state) => null,
-            fetchPage: (key) async => <JournalEntity>[],
-          );
+          final ctrl = _createController(mockDomainLogger);
 
           await ctrl.refreshLoadedPages(
             runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
@@ -431,6 +435,41 @@ void main() {
 
           // Only page at key 0 (non-empty) should be queried.
           expect(queriedKeys, [0]);
+        },
+      );
+
+      test(
+        'a failing query logs the error and finishes the refresh with it',
+        () async {
+          controller.replacePages(
+            [
+              [_makeEntry('f-1')],
+            ],
+            keys: [0],
+            hasNextPage: false,
+          );
+          final failure = Exception('query failed');
+
+          await controller.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async =>
+                throw failure,
+            requiresSequential: true,
+            pageSize: 10,
+            isMounted: () => true,
+            onPostFilterOffset: (_) {},
+            onLeadingItems: (_) {},
+          );
+
+          expect(controller.value.error, same(failure));
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.persistence,
+              failure,
+              stackTrace: any(named: 'stackTrace', that: isNotNull),
+              subDomain: 'JournalPagingController',
+              message: 'retained visible-page refresh failed',
+            ),
+          ).called(1);
         },
       );
     });

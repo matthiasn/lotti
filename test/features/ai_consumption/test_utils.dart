@@ -127,7 +127,7 @@ class AiInteractionCaptureTestBench {
       recorded,
       service: service,
       identity: identity,
-      capture: AiInteractionCapture(service, identity),
+      capture: AiInteractionCapture(service, identity, MockDomainLogger()),
     );
   }
 

@@ -143,10 +143,12 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   required RelationshipEntry? relationship,
   required AgentIdentityEntity? agentIdentity,
   required AiConfigRepository aiConfigRepository,
+  required DomainLogger domainLogger,
   CategoryProfileLookup? categoryProfileLookup,
 }) async {
   final profileResolver = ProfileResolver(
     aiConfigRepository: aiConfigRepository,
+    domainLogger: domainLogger,
   );
   final setup = agentIdentity?.config.inferenceSetup;
   if (setup != null) {
@@ -207,6 +209,7 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   final direct = await resolveInferenceProviderWithModel(
     modelId: meliousGlm52ModelId,
     aiConfigRepository: aiConfigRepository,
+    domainLogger: domainLogger,
     logTag: 'RelationshipAgentWorkflow',
   );
   if (direct == null) return null;

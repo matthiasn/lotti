@@ -8,6 +8,8 @@ import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 AiConfigInferenceProvider _provider() => AiConfigInferenceProvider(
   id: 'prov',
   baseUrl: 'https://generativelanguage.googleapis.com',
@@ -68,9 +70,13 @@ void main() {
             ],
           }),
         ]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         final events = await generateGeminiTextWithMessages(
+          domainLogger: MockDomainLogger(),
           sender: sender,
           messages: _messages(),
           model: 'gemini-2.5-pro',
@@ -108,9 +114,13 @@ void main() {
           },
         }),
       ]);
-      final sender = GeminiStreamSender(httpClient: client);
+      final sender = GeminiStreamSender(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final events = await generateGeminiTextWithMessages(
+        domainLogger: MockDomainLogger(),
         sender: sender,
         messages: _messages(),
         model: 'gemini-2.5-pro',
@@ -143,9 +153,13 @@ void main() {
           ],
         }),
       ]);
-      final sender = GeminiStreamSender(httpClient: client);
+      final sender = GeminiStreamSender(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       final events = await generateGeminiTextWithMessages(
+        domainLogger: MockDomainLogger(),
         sender: sender,
         messages: _messages(),
         model: 'gemini-3-pro',
@@ -174,10 +188,14 @@ void main() {
         ],
         statusCode: 500,
       );
-      final sender = GeminiStreamSender(httpClient: client);
+      final sender = GeminiStreamSender(
+        domainLogger: MockDomainLogger(),
+        httpClient: client,
+      );
 
       await expectLater(
         generateGeminiTextWithMessages(
+          domainLogger: MockDomainLogger(),
           sender: sender,
           messages: _messages(),
           model: 'gemini-2.5-pro',
@@ -211,9 +229,13 @@ void main() {
             ],
           }),
         ]);
-        final sender = GeminiStreamSender(httpClient: client);
+        final sender = GeminiStreamSender(
+          domainLogger: MockDomainLogger(),
+          httpClient: client,
+        );
 
         await generateGeminiTextWithMessages(
+          domainLogger: MockDomainLogger(),
           sender: sender,
           messages: _messages(),
           model: 'gemini-2.5-pro',

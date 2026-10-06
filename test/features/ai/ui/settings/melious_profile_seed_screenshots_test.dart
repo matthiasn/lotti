@@ -204,6 +204,7 @@ void main() {
             // fixture that could drift from the seed template.
             await ProfileSeedingService(
               aiConfigRepository: aiRepository,
+              domainLogger: MockDomainLogger(),
             ).seedDefaults();
 
             final seeded = store[profileMeliousId];

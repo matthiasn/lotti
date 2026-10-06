@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -30,7 +28,11 @@ class SoulVersionOps {
   SoulVersionOps({
     required this.repository,
     required this.syncService,
+    required this._domainLogger,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentRepository repository;
   final AgentSyncService syncService;
@@ -107,9 +109,10 @@ class SoulVersionOps {
       await syncService.upsertEntity(version);
       await syncService.upsertEntity(head);
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Created soul ${DomainLogger.sanitizeId(id)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return soul;
@@ -204,10 +207,11 @@ class SoulVersionOps {
       );
       await syncService.upsertEntity(updatedHead);
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Created version $nextVersion for soul '
         '${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return newVersion;
@@ -297,10 +301,11 @@ class SoulVersionOps {
       );
       await syncService.upsertEntity(updatedHead);
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Updated soul ${DomainLogger.sanitizeId(soulId)} and created '
         'version $nextVersion',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return newVersion;
@@ -368,10 +373,11 @@ class SoulVersionOps {
       await syncService.upsertEntity(updatedHead);
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Rolled back soul ${DomainLogger.sanitizeId(soulId)} to version '
       '${DomainLogger.sanitizeId(versionId)}',
-      name: _logTag,
+      subDomain: _logTag,
     );
   }
 }

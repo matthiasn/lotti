@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -171,6 +173,7 @@ ChatCompletionMessageToolCall _toolCall({
   Future<Set<String>> Function()? resolveExistingTaskRelations,
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
+  DomainLogger? domainLogger,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -188,6 +191,7 @@ ChatCompletionMessageToolCall _toolCall({
       );
 
   final strategy = TaskAgentStrategy(
+    domainLogger: domainLogger ?? MockDomainLogger(),
     executor: executor,
     syncService: syncService,
     agentId: agentId,
@@ -225,6 +229,7 @@ void main() {
   late MockAgentToolExecutor mockExecutor;
   late MockConversationManager mockManager;
   late TaskAgentStrategy strategy;
+  late MockDomainLogger mockDomainLogger;
 
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -244,9 +249,11 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
+    mockDomainLogger = MockDomainLogger();
     strategy = _createStrategy(
       executor: mockExecutor,
       syncService: mockSyncService,
+      domainLogger: mockDomainLogger,
       withChangeSetBuilder: false,
       executeToolHandler: (toolName, args, manager) async =>
           const ToolExecutionResult(
@@ -574,6 +581,28 @@ void main() {
         verify(
           () => mockSyncService.upsertEntity(any()),
         ).called(greaterThanOrEqualTo(2));
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.agentWorkflow,
+            any(
+              that: allOf(
+                contains('Failed to parse tool call arguments'),
+                contains('errorType=FormatException'),
+              ),
+            ),
+            subDomain: 'TaskAgentStrategy',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDomainLogger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
       });
 
       // JSON-recovery scenarios share one harness: stub the executor, fire a
@@ -2539,10 +2568,12 @@ void main() {
       );
 
       test('a failing flush does not abort the turn', () async {
+        final logger = MockDomainLogger();
         final bench = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
           flushChangeSet: () async => throw Exception('write failed'),
+          domainLogger: logger,
         );
 
         final action = await bench.strategy.processToolCalls(
@@ -2566,6 +2597,18 @@ void main() {
           hasLength(1),
           reason: 'the proposal stays staged for the final write',
         );
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'TaskAgentStrategy',
+            message: any(
+              named: 'message',
+              that: contains('Incremental change-set flush failed'),
+            ),
+          ),
+        ).called(1);
       });
     });
 

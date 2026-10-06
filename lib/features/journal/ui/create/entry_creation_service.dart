@@ -13,6 +13,8 @@ import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart' as image_import;
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -21,7 +23,10 @@ import 'package:material_ui/material_ui.dart';
 /// This service wraps the global entry creation functions to make them
 /// testable via Riverpod provider overrides.
 class EntryCreationService {
-  EntryCreationService({this._ref});
+  EntryCreationService({required this._domainLogger, this._ref});
+
+  /// Receives the failures of the entry-creation paths this service wraps.
+  final DomainLogger _domainLogger;
 
   /// Provider container ref captured by [entryCreationServiceProvider].
   /// Optional so the service can still be instantiated bare in
@@ -78,13 +83,20 @@ class EntryCreationService {
     String? categoryId,
   }) async {
     final task = await create_entry.createTask(
+      domainLogger: _domainLogger,
       linkedId: linkedId,
       categoryId: categoryId,
     );
     if (task == null) return null;
     final agentService = _ref?.read(taskAgentServiceProvider);
     if (agentService != null) {
-      unawaited(create_entry.autoAssignCategoryAgentWith(agentService, task));
+      unawaited(
+        create_entry.autoAssignCategoryAgentWith(
+          agentService,
+          task,
+          domainLogger: _domainLogger,
+        ),
+      );
     }
     beamToNamed('/tasks/${task.meta.id}');
     return task;
@@ -153,5 +165,8 @@ class EntryCreationService {
 /// Provider for the entry creation service.
 /// Can be overridden in tests to mock entry creation behavior.
 final entryCreationServiceProvider = Provider<EntryCreationService>((ref) {
-  return EntryCreationService(ref: ref);
+  return EntryCreationService(
+    domainLogger: ref.watch(domainLoggerProvider),
+    ref: ref,
+  );
 });

@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -14,25 +13,30 @@ import 'package:openai_dart/openai_dart.dart';
 /// Voxtral instance with OpenAI-compatible API. Voxtral supports up to
 /// 30 minutes of audio transcription with 9 languages.
 class VoxtralInferenceRepository {
-  VoxtralInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  VoxtralInferenceRepository({
+    required this._domainLogger,
+    http.Client? httpClient,
+  }) : _httpClient = httpClient ?? http.Client();
 
+  final DomainLogger _domainLogger;
   final http.Client _httpClient;
 
-  /// Safely log exception to LoggingService if available
+  /// Records [exception] under [subDomain], with an optional content-free
+  /// [message]. A `FormatException` loses the response text it quotes.
   void _logException(
     Object exception, {
     required String subDomain,
     StackTrace? stackTrace,
+    String? message,
   }) {
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.speech,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: subDomain,
-      );
-    }
+    _domainLogger.error(
+      LogDomain.speech,
+      DomainLogger.withoutSource(exception),
+      errorType: exception.runtimeType,
+      stackTrace: stackTrace,
+      subDomain: subDomain,
+      message: message,
+    );
   }
 
   /// Validates HTTP response status code and throws appropriate exception
@@ -48,9 +52,11 @@ class VoxtralInferenceRepository {
     if (statusCode == 200) return;
 
     if (statusCode == 404) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.speech,
         'Model not downloaded: HTTP 404',
-        name: 'VoxtralInferenceRepository',
+        subDomain: 'VoxtralInferenceRepository',
+        level: InsightLevel.warn,
       );
       final exception = VoxtralModelNotAvailableException(
         'Voxtral model is not available. Please download it first.',
@@ -61,10 +67,12 @@ class VoxtralInferenceRepository {
       throw exception;
     }
 
-    developer.log(
+    // The body's size, not the body: an error body can echo the request.
+    _domainLogger.error(
+      LogDomain.speech,
       'Failed to transcribe audio: HTTP $statusCode',
-      name: 'VoxtralInferenceRepository',
-      error: responseBody,
+      subDomain: 'VoxtralInferenceRepository',
+      message: 'body ${responseBody?.length ?? 0} chars',
     );
     final exception = VoxtralInferenceException(
       'Failed to transcribe audio (HTTP $statusCode). '
@@ -140,11 +148,12 @@ class VoxtralInferenceRepository {
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording or check your Voxtral server.';
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.speech,
       'Sending streaming audio transcription request to local Voxtral server - '
-      'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
+      'model: $model, audioLength: ${audioBase64.length}, '
       'timeout: ${requestTimeout.inMinutes} minutes',
-      name: 'VoxtralInferenceRepository',
+      subDomain: 'VoxtralInferenceRepository',
     );
 
     // Build messages with full context (including speech dictionary)
@@ -284,9 +293,10 @@ class VoxtralInferenceRepository {
 
             // Check for stream end
             if (data == '[DONE]') {
-              developer.log(
+              _domainLogger.log(
+                LogDomain.speech,
                 'Streaming complete - received $chunksReceived chunks',
-                name: 'VoxtralInferenceRepository',
+                subDomain: 'VoxtralInferenceRepository',
               );
               return;
             }
@@ -311,9 +321,11 @@ class VoxtralInferenceRepository {
                 if (hasContent || usage != null) {
                   if (hasContent) {
                     chunksReceived++;
-                    developer.log(
+                    _domainLogger.logSampled(
+                      LogDomain.speech,
                       'Received chunk $chunksReceived: ${content.length} chars',
-                      name: 'VoxtralInferenceRepository',
+                      sampleKey: 'voxtral_stream_chunk',
+                      subDomain: 'VoxtralInferenceRepository',
                     );
                   }
 
@@ -346,9 +358,10 @@ class VoxtralInferenceRepository {
                 // Handle finish_reason without content (final chunk)
                 if (finishReason == 'stop' &&
                     (content == null || content.isEmpty)) {
-                  developer.log(
+                  _domainLogger.log(
+                    LogDomain.speech,
                     'Received stop signal',
-                    name: 'VoxtralInferenceRepository',
+                    subDomain: 'VoxtralInferenceRepository',
                   );
                 }
               } else if (usage != null) {
@@ -365,12 +378,17 @@ class VoxtralInferenceRepository {
                   usage: usage,
                 );
               }
-            } on FormatException catch (e) {
-              developer.log(
+            } on FormatException catch (e, stackTrace) {
+              _domainLogger.error(
+                LogDomain.speech,
                 // Not the exception itself: its toString quotes the chunk.
-                'Failed to parse SSE chunk (${data.length} chars) '
-                'at offset ${e.offset}',
-                name: 'VoxtralInferenceRepository',
+                DomainLogger.withoutSource(e),
+                errorType: e.runtimeType,
+                stackTrace: stackTrace,
+                subDomain: 'VoxtralInferenceRepository',
+                message:
+                    'Failed to parse SSE chunk (${data.length} chars) '
+                    'at offset ${e.offset}',
               );
               // Continue processing other chunks
             }
@@ -382,32 +400,32 @@ class VoxtralInferenceRepository {
     } on VoxtralInferenceException {
       rethrow;
     } on TimeoutException catch (e, stackTrace) {
-      developer.log(
-        'Transcription request timed out',
-        name: 'VoxtralInferenceRepository',
-        error: e,
+      _logException(
+        e,
+        subDomain: 'timeout',
+        stackTrace: stackTrace,
+        message: 'Transcription request timed out',
       );
-      _logException(e, subDomain: 'timeout', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         timeoutErrorMessage,
       );
     } on FormatException catch (e, stackTrace) {
-      developer.log(
-        'Failed to parse response from Voxtral server',
-        name: 'VoxtralInferenceRepository',
-        error: e,
+      _logException(
+        e,
+        subDomain: 'format_error',
+        stackTrace: stackTrace,
+        message: 'Failed to parse response from Voxtral server',
       );
-      _logException(e, subDomain: 'format_error', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         'Invalid response format from transcription service',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Unexpected error during audio transcription',
-        name: 'VoxtralInferenceRepository',
-        error: e,
+      _logException(
+        e,
+        subDomain: 'unexpected',
+        stackTrace: stackTrace,
+        message: 'Unexpected error during audio transcription',
       );
-      _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
       throw VoxtralInferenceException(
         'Failed to transcribe audio: $e',
       );

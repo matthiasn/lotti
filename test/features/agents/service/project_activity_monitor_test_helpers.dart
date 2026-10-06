@@ -367,6 +367,7 @@ class GeneratedProjectActivityBench {
     }
 
     final monitor = ProjectActivityMonitor(
+      domainLogger: MockDomainLogger(),
       notifications: notifications,
       agentRepository: repository,
       projectRepository: projectRepository,

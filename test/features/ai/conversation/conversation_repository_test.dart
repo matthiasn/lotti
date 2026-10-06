@@ -15,7 +15,9 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -220,6 +222,7 @@ void main() {
   late ConversationRepository repository;
   late MockOllamaInferenceRepository mockOllamaRepo;
   late MockConversationStrategy mockStrategy;
+  late MockDomainLogger mockLogger;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -233,7 +236,10 @@ void main() {
   });
 
   setUp(() {
-    container = ProviderContainer();
+    mockLogger = MockDomainLogger();
+    container = ProviderContainer(
+      overrides: [domainLoggerProvider.overrideWithValue(mockLogger)],
+    );
     repository = container.read(conversationRepositoryProvider.notifier);
     mockOllamaRepo = MockOllamaInferenceRepository();
     mockStrategy = MockConversationStrategy();
@@ -1030,7 +1036,11 @@ void main() {
         // `turnIndex` would fail to match the real call, so the resulting
         // error would come from an unmatched mock rather than the thrown
         // exception under test.
-        _stubGenerateText(mockOllamaRepo).thenThrow(Exception('API Error'));
+        // The body a provider error can carry, which may echo the
+        // conversation: it must never reach the log.
+        _stubGenerateText(
+          mockOllamaRepo,
+        ).thenThrow(Exception('API Error: echoed user text'));
 
         final manager = repository.getConversation(conversationId)!;
 
@@ -1043,6 +1053,18 @@ void main() {
         );
 
         expect(manager.lastError, contains('API Error'));
+        final logged = verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            captureAny(),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'ConversationRepository',
+            message: 'Error during conversation turn',
+            errorType: any(named: 'errorType', that: isNotNull),
+          ),
+        ).captured.single;
+        expect(logged.toString(), isNot(contains('echoed user text')));
+        expect(logged, '_Exception');
       });
 
       test(

@@ -31,7 +31,10 @@ MockOutboxService registerSavedTaskFilterSyncDeps(TestGetItMocks mocks) {
   if (!getIt.isRegistered<SavedTaskFiltersRepository>()) {
     getIt.registerSingleton<SavedTaskFiltersRepository>(
       SavedTaskFiltersRepository(
-        SavedTaskFiltersPersistence(mocks.settingsDb),
+        SavedTaskFiltersPersistence(
+          mocks.settingsDb,
+          domainLogger: MockDomainLogger(),
+        ),
         mocks.updateNotifications,
       ),
     );

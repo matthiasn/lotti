@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -17,12 +19,14 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockFts5Db mockFts5Db;
   late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockDomainLogger mockDomainLogger;
   late JournalQueryRunner runner;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockFts5Db = MockFts5Db();
     mockEntitiesCacheService = MockEntitiesCacheService();
+    mockDomainLogger = MockDomainLogger();
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
@@ -74,6 +78,7 @@ void main() {
       db: mockJournalDb,
       fts5Db: mockFts5Db,
       entitiesCacheService: mockEntitiesCacheService,
+      domainLogger: mockDomainLogger,
     );
   });
 
@@ -435,6 +440,14 @@ void main() {
           expect(result.entities, isEmpty);
           expect(result.elapsed, equals(Duration.zero));
           expect(result.distances, isEmpty);
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.persistence,
+              any(that: contains('VectorSearchRepository not registered')),
+              subDomain: 'JournalQueryRunner',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
         });
       },
     );
@@ -586,6 +599,15 @@ void main() {
         expect(result.entities, isEmpty);
         expect(result.elapsed, equals(Duration.zero));
         expect(result.distances, isEmpty);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'JournalQueryRunner',
+            message: 'Vector search failed',
+          ),
+        ).called(1);
       });
     });
   });

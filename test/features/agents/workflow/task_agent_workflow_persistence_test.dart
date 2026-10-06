@@ -1073,6 +1073,7 @@ not describe task configuration or tool activity as progress.
                   const InferenceUsage(inputTokens: 50, outputTokens: 25);
 
           final soulWorkflow = TaskAgentWorkflow(
+            domainLogger: MockDomainLogger(),
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
             aiInputRepository: mockAiInputRepository,
@@ -2473,6 +2474,7 @@ not describe task configuration or tool activity as progress.
         // A real repository, so the cooldown is the production circuit
         // rather than a stubbed exception.
         final embeddingRepository = OllamaEmbeddingRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: httpClient,
         );
         final mockEmbeddingStore = MockEmbeddingStore();

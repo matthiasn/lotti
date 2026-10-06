@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -57,6 +56,7 @@ Future<AiFtueResult?> runFtueSetupForType({
   bool createDefaultCategory = true,
 }) async {
   final aiConfigRepository = ref.read(aiConfigRepositoryProvider);
+  final domainLogger = ref.read(domainLoggerProvider);
   final result = await switch (providerType) {
     InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
       context: context,
@@ -121,15 +121,17 @@ Future<AiFtueResult?> runFtueSetupForType({
     try {
       final seedingService = ProfileSeedingService(
         aiConfigRepository: aiConfigRepository,
+        domainLogger: domainLogger,
       );
       await seedingService.seedDefaults();
       await seedingService.upgradeExisting();
     } catch (e, stackTrace) {
-      developer.log(
-        'Profile repair after FTUE setup failed: $e',
-        name: 'runFtueSetupForType',
-        error: e,
+      domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: stackTrace,
+        subDomain: 'runFtueSetupForType',
+        message: 'Profile repair after FTUE setup failed',
       );
     }
   }

@@ -1418,7 +1418,8 @@ class MockSavedTaskFiltersRepository extends Mock
 
 class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   FakeMeliousInferenceRepository(this._results)
-    : assert(_results.isNotEmpty, 'Provide at least one result factory');
+    : assert(_results.isNotEmpty, 'Provide at least one result factory'),
+      super(domainLogger: MockDomainLogger());
 
   final List<Future<List<KnownModel>> Function()> _results;
   final calls = <({String baseUrl, String apiKey})>[];
@@ -1443,7 +1444,8 @@ class FakeMeliousInferenceRepository extends MeliousInferenceRepository {
 
 class FakeOmlxInferenceRepository extends OmlxInferenceRepository {
   FakeOmlxInferenceRepository(this._results)
-    : assert(_results.isNotEmpty, 'Provide at least one result factory');
+    : assert(_results.isNotEmpty, 'Provide at least one result factory'),
+      super(domainLogger: MockDomainLogger());
 
   final List<Future<List<KnownModel>> Function()> _results;
   final calls = <({String baseUrl, String apiKey})>[];
@@ -1468,7 +1470,8 @@ class FakeOmlxInferenceRepository extends OmlxInferenceRepository {
 
 class FakeMistralInferenceRepository extends MistralInferenceRepository {
   FakeMistralInferenceRepository(this._results)
-    : assert(_results.isNotEmpty, 'Provide at least one result factory');
+    : assert(_results.isNotEmpty, 'Provide at least one result factory'),
+      super(domainLogger: MockDomainLogger());
 
   final List<Future<List<KnownModel>> Function()> _results;
   final calls = <({String baseUrl, String apiKey})>[];

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -19,6 +18,8 @@ import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps_summary.dart';
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_proposal_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The action bands inside the project AI card: the newest run's
@@ -69,6 +70,10 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
 
 class _ProjectRecommendationsPanelState
     extends ConsumerState<ProjectRecommendationsPanel> {
+  /// Read once in [initState]: the failures it reports land after an await,
+  /// when this state may already be unmounted.
+  late final DomainLogger _logger;
+
   final _busySteps = <String>{};
 
   /// Steps whose last attempt failed: whether a retry can help, and the
@@ -105,6 +110,12 @@ class _ProjectRecommendationsPanelState
   bool _collapseDecided = false;
   DateTime? _collapseRun;
   bool _collapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _logger = ref.read(domainLoggerProvider);
+  }
 
   @override
   void dispose() {
@@ -382,11 +393,12 @@ class _ProjectRecommendationsPanelState
   }
 
   void _log(String message, Object error, StackTrace stackTrace) {
-    developer.log(
-      message,
-      name: 'ProjectRecommendationsPanel',
-      error: error,
+    _logger.error(
+      LogDomain.tasks,
+      error,
       stackTrace: stackTrace,
+      subDomain: 'ProjectRecommendationsPanel',
+      message: message,
     );
   }
 

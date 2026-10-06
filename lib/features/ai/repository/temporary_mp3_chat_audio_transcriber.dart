@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -12,6 +11,7 @@ import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -66,8 +66,10 @@ final class TemporaryMp3ChatAudioProvider {
 /// this request and deleted after success or failure. Provider repositories
 /// supply only their JSON dialect and diagnostic identity, keeping conversion,
 /// timeout accounting, response parsing, and cleanup identical.
+/// [domainLogger] records a temporary MP3 that could not be deleted.
 Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
   required http.Client httpClient,
+  required DomainLogger domainLogger,
   required TemporaryMp3ChatAudioProvider provider,
   required String model,
   required String audioBase64,
@@ -91,6 +93,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
     try {
       final chunk = await _transcribeTemporaryMp3ChatAudio(
         httpClient: httpClient,
+        domainLogger: domainLogger,
         provider: provider,
         model: model,
         audioBase64: audioBase64,
@@ -126,6 +129,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
 
 Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
   required http.Client httpClient,
+  required DomainLogger domainLogger,
   required TemporaryMp3ChatAudioProvider provider,
   required String model,
   required String audioBase64,
@@ -345,11 +349,12 @@ Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
       try {
         if (file.existsSync()) temporaryFileDeleter(file);
       } on FileSystemException catch (error, stackTrace) {
-        developer.log(
-          'Failed to delete temporary Voxtral MP3 file',
-          name: provider.repositoryName,
-          error: error,
+        domainLogger.error(
+          LogDomain.speech,
+          error,
           stackTrace: stackTrace,
+          subDomain: provider.repositoryName,
+          message: 'Failed to delete temporary chat-audio MP3 file',
         );
       }
     }

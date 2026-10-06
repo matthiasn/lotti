@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Raw HTTP access to the Ollama API: chat streaming (incl. image analysis),
@@ -16,9 +17,15 @@ import 'package:openai_dart/openai_dart.dart';
 /// an independently testable unit; the repository keeps the mockable public
 /// surface and delegates here.
 class OllamaApiClient {
-  OllamaApiClient({required this._httpClient});
+  OllamaApiClient({
+    required this._httpClient,
+    required this._domainLogger,
+  });
 
   final http.Client _httpClient;
+
+  /// Records requests, retries, install and warm-up outcomes.
+  final DomainLogger _domainLogger;
 
   /// Base delay used for exponential backoff between retry attempts.
   ///
@@ -66,9 +73,10 @@ class OllamaApiClient {
     final toolsLog = ollamaTools != null && tools != null
         ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
         : '';
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Preparing Ollama chat request for model: $model$toolsLog',
-      name: 'OllamaApiClient',
+      subDomain: 'OllamaApiClient',
     );
 
     // Build messages array
@@ -146,10 +154,11 @@ class OllamaApiClient {
         }
         // The status and size only: the request carries the conversation, and
         // the error body is surfaced to the user through the exception below.
-        developer.log(
-          'Ollama chat API error: Status ${request.statusCode}, '
-          'body ${responseBody.length} chars',
-          name: 'OllamaApiClient',
+        _domainLogger.error(
+          LogDomain.ai,
+          'Ollama chat API error: Status ${request.statusCode}',
+          subDomain: 'OllamaApiClient',
+          message: 'body ${responseBody.length} chars',
         );
         throw Exception(
           'Ollama chat API request failed with status ${request.statusCode}: '
@@ -239,11 +248,13 @@ class OllamaApiClient {
                     ? arguments
                     : jsonEncode(arguments);
 
-                developer.log(
+                _domainLogger.logSampled(
+                  LogDomain.ai,
                   'Tool call: ${functionCall['name']} '
                   '(args type: ${arguments.runtimeType}, '
                   '${argumentsStr.length} chars)',
-                  name: 'OllamaApiClient',
+                  sampleKey: 'ollama_tool_call',
+                  subDomain: 'OllamaApiClient',
                 );
 
                 // Resolve a stable dense index for this tool call.
@@ -332,10 +343,11 @@ class OllamaApiClient {
             yield _contentChunk('</think>');
           }
           if (json['done'] == true) {
-            developer.log(
+            _domainLogger.log(
+              LogDomain.ai,
               'Ollama done response: prompt_eval_count='
               '${json['prompt_eval_count']}, eval_count=${json['eval_count']}',
-              name: 'OllamaApiClient',
+              subDomain: 'OllamaApiClient',
             );
             // Ollama reports token counts in the final response:
             // prompt_eval_count → input tokens, eval_count → output tokens.
@@ -359,12 +371,17 @@ class OllamaApiClient {
             }
             break;
           }
-        } catch (e) {
-          developer.log(
-            // The type only: a FormatException's toString quotes the chunk.
-            'Error parsing Ollama chat response chunk '
-            '(${chunk.length} chars): ${e.runtimeType}',
-            name: 'OllamaApiClient',
+        } catch (e, stackTrace) {
+          _domainLogger.error(
+            LogDomain.ai,
+            // Not a FormatException itself: its toString quotes the chunk.
+            DomainLogger.withoutSource(e),
+            errorType: e.runtimeType,
+            stackTrace: stackTrace,
+            subDomain: 'OllamaApiClient',
+            message:
+                'Error parsing Ollama chat response chunk '
+                '(${chunk.length} chars)',
           );
         }
       }
@@ -413,9 +430,11 @@ class OllamaApiClient {
             );
           }
           final reason = e is TimeoutException ? 'Timeout' : 'Network error';
-          developer.log(
-            ' [33m$reason during $context, retrying (attempt $attempt)... [0m',
-            name: 'OllamaApiClient',
+          _domainLogger.log(
+            LogDomain.ai,
+            '$reason during $context, retrying (attempt $attempt)...',
+            subDomain: 'OllamaApiClient',
+            level: InsightLevel.warn,
           );
           await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
           continue;
@@ -567,9 +586,10 @@ class OllamaApiClient {
     }
 
     if (streamedResponse.statusCode != httpStatusOk) {
-      developer.log(
+      _domainLogger.error(
+        LogDomain.ai,
         'Model installation failed: HTTP ${streamedResponse.statusCode}',
-        name: 'OllamaApiClient',
+        subDomain: 'OllamaApiClient',
       );
       throw OllamaInstallException(
         OllamaInstallFailure.startFailed,
@@ -596,9 +616,14 @@ class OllamaApiClient {
 
           if (data.containsKey('error')) {
             final errorMessage = data['error'] as String;
-            developer.log(
-              'Model installation error: $errorMessage',
-              name: 'OllamaApiClient',
+            // The server's own short error string, capped — not the body.
+            _domainLogger.error(
+              LogDomain.ai,
+              errorMessage.length <= 200
+                  ? errorMessage
+                  : '${errorMessage.substring(0, 200)}…',
+              subDomain: 'OllamaApiClient',
+              message: 'Model installation error',
             );
             // The kind of failure, not a sentence: the caller words it in the
             // user's language.
@@ -643,9 +668,10 @@ class OllamaApiClient {
   /// Warm up a model by sending a simple request to load it into memory
   Future<void> warmUpModel(String modelName, String baseUrl) async {
     try {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Warming up model: $modelName',
-        name: 'OllamaApiClient',
+        subDomain: 'OllamaApiClient',
       );
 
       final response = await _httpClient
@@ -665,23 +691,27 @@ class OllamaApiClient {
           .timeout(const Duration(seconds: 60));
 
       if (response.statusCode != httpStatusOk) {
-        developer.log(
-          'Warning: Model warm-up failed: HTTP ${response.statusCode}',
-          name: 'OllamaApiClient',
+        _domainLogger.log(
+          LogDomain.ai,
+          'Model warm-up failed: HTTP ${response.statusCode}',
+          subDomain: 'OllamaApiClient',
+          level: InsightLevel.warn,
         );
         return; // Don't throw, just log warning
       }
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Model warmed up successfully: $modelName',
-        name: 'OllamaApiClient',
+        subDomain: 'OllamaApiClient',
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Warning: Model warm-up failed',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: stackTrace,
-        name: 'OllamaApiClient',
+        subDomain: 'OllamaApiClient',
+        message: 'Model warm-up failed',
       );
       // Don't throw, just log warning
     }

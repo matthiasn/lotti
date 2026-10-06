@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -13,6 +12,7 @@ import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
@@ -250,9 +250,11 @@ class SkillInferenceRunner {
         final provider = target.provider;
         final modelId = target.modelId;
         if (provider == null || modelId == null) {
-          developer.log(
+          _loggingService.log(
+            LogDomain.ai,
             'Profile missing transcription provider/model for $audioEntryId',
-            name: _logTag,
+            subDomain: _logTag,
+            level: InsightLevel.warn,
           );
           return null;
         }
@@ -453,11 +455,13 @@ class SkillInferenceRunner {
       staleIds.addAll(
         parents.whereType<Task>().map((parent) => parent.meta.id),
       );
-    } catch (e) {
-      _loggingService.log(
+    } catch (e, stackTrace) {
+      _loggingService.error(
         LogDomain.ai,
-        'parent lookup for stale notification failed: $e',
+        e,
+        stackTrace: stackTrace,
         subDomain: subDomain,
+        message: 'parent lookup for stale notification failed',
       );
     }
     if (staleIds.isNotEmpty) {
@@ -784,7 +788,7 @@ enum _OverrideSlotKind {
 
   const _OverrideSlotKind(this.label);
 
-  /// Human-readable form used in developer-log messages.
+  /// Human-readable form used in log messages.
   final String label;
 }
 
@@ -793,7 +797,9 @@ final skillInferenceRunnerProvider = Provider<SkillInferenceRunner>(
   name: 'skillInferenceRunnerProvider',
 );
 SkillInferenceRunner skillInferenceRunner(Ref ref) {
-  final taskSummaryResolver = TaskSummaryResolver.fromRegisteredAgentDatabase();
+  final taskSummaryResolver = TaskSummaryResolver.fromRegisteredAgentDatabase(
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
 
   return SkillInferenceRunner(
     ref: ref,
@@ -806,6 +812,7 @@ SkillInferenceRunner skillInferenceRunner(Ref ref) {
       aiInputRepository: ref.watch(aiInputRepositoryProvider),
       journalRepository: ref.watch(journalRepositoryProvider),
       taskSummaryResolver: taskSummaryResolver,
+      domainLogger: ref.watch(domainLoggerProvider),
     ),
   );
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Provider usage values observed on a streamed response chunk.
@@ -64,12 +64,16 @@ class AiCapturedContext {
 class AiInteractionCapture {
   const AiInteractionCapture(
     this._attributionService,
-    this._identityResolver, [
+    this._identityResolver,
+    this._domainLogger, [
     this._uuid = const Uuid(),
   ]);
 
   final AiAttributionService _attributionService;
   final AiAttributionIdentityResolver _identityResolver;
+
+  /// Receives the failures to record an interaction.
+  final DomainLogger _domainLogger;
   final Uuid _uuid;
 
   Stream<T> captureStream<T>({
@@ -435,11 +439,12 @@ class AiInteractionCapture {
         ),
       );
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to record AI interaction',
-        name: 'AiInteractionCapture',
-        error: error,
+      _domainLogger.error(
+        LogDomain.ai,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'AiInteractionCapture',
+        message: 'Failed to record AI interaction',
       );
       return;
     }
