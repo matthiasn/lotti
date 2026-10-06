@@ -34,12 +34,13 @@ contact action.
 
 The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date. One status line under the title says which, in
-that state's colour; the footer offers one quiet action (log a check-in, or
-see the activity after a failure) and one primary: turn reminders on, brief
-now, choose a model, retry, update, or call. An out-of-date briefing shows
+that state's colour; the footer offers one quiet action, seeing the agent's
+activity, and one primary: turn reminders on, brief now, choose a model,
+retry or update — logging a check-in and calling belong to the page's action
+bar. An out-of-date briefing shows
 its age in the header; open task proposals are counted by their own band
 under the body. The model row carries the inference cost, and a current
-briefing names its sources once it is expanded. The model row names the
+briefing names its sources with its full text. The model row names the
 model and provider before anything is sent, so *Brief now* and *Update now*
 start at once, with no confirmation; while a new briefing is written the
 previous one stays readable under the spinner, and after a failed run it
