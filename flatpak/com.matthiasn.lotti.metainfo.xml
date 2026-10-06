@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.44" date="2026-10-06">
+      <description>
+        <p>Added: a task now offers to catch up on photos and recordings its AI never processed. When a task's category has automatic inference switched on, every image without an analysis, recording without a transcript, and transcribed recording without a summary appears as its own suggestion in the task's proposed changes, using the models of the task's inference profile. Accepting one runs just that entry; "Confirm all" runs them one after another. Nothing is offered for an entry whose inference is already running, and dismissing a suggestion hides it on that device.</p>
+        <p>Fixed: "Confirm all" on a person's suggestions could stop partway. The batch ran inside the suggestions band itself, and the chat shows that band only while it is on screen, so scrolling away mid-batch quietly left the remaining suggestions unconfirmed. The batch now runs on its own, and every suggestion you confirmed together is applied whether or not the band is still showing.</p>
+        <p>Fixed: confirming a suggested task could fail for good while private entries were hidden. A suggestion made from a private check-in was applied with the same reads that hide private entries from the screen, so with private entries hidden the check-in looked gone, the confirmation failed, and the suggestion was withdrawn on every device. Confirming now reads what the agent read, and the task is created, private like its check-in.</p>
+        <p>Fixed: many failures left no trace in the app's logs. Errors behind a generic "something went wrong" message, in AI, agents, tasks, projects, people, the journal, habits, dashboards and sync setup, were visible only to an attached debugger. They are now written to the app's error log with their stack trace, and the progress notes around them go to the matching logging domain.</p>
+      </description>
+    </release>
     <release version="1.1.43" date="2026-10-05">
       <description>
         <p>Added: search the projects when moving a task into one. Changing a task's project from its breadcrumb or its details used to show every project in the category as one long list, with nothing to narrow it. The picker now opens on the same search field the category and label pickers use, so typing part of a project's title finds it at once. The project the task is in sits ticked at the top with "No project" under it to unlink, every project still shows its status, and a category without projects says so.</p>
