@@ -18,6 +18,7 @@ import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+import 'backfill_fixtures.dart';
 
 const _taskId = 'task-1';
 
@@ -355,5 +356,41 @@ void main() {
       ),
     ).called(1);
     expect(container.read(inferenceBackfillQueueProvider), isEmpty);
+  });
+
+  test('inferenceBackfillDetectorProvider scans through the app journal and '
+      'automation service', () async {
+    final db = MockJournalDb();
+    final service = MockProfileAutomationService();
+    final wired = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(db),
+        profileAutomationServiceProvider.overrideWithValue(service),
+      ],
+    );
+    addTearDown(wired.dispose);
+    when(
+      () => db.journalEntityById(_taskId),
+    ).thenAnswer((_) async => TestTaskFactory.create(id: _taskId));
+    when(
+      () => db.getLinkedEntities(_taskId),
+    ).thenAnswer((_) async => [backfillImage(id: 'img')]);
+    when(
+      () => db.getBulkLinkedEntities({'img'}),
+    ).thenAnswer((_) async => const {});
+    when(
+      () => service.hasAutomatedSkillType(
+        subjectId: _taskId,
+        skillType: InferenceBackfillKind.imageAnalysis.skillType,
+      ),
+    ).thenAnswer((_) async => true);
+
+    final scan = await wired
+        .read(inferenceBackfillDetectorProvider)
+        .scan(
+          _taskId,
+        );
+
+    expect(scan.candidates.map((c) => c.entryId), ['img']);
   });
 }
