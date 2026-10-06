@@ -33,7 +33,8 @@ contact action.
 ## Briefings and suggestions
 
 The agent card has six states: not enrolled, no briefing, running, failed,
-current and out of date. One status line under the title says which, in
+current and out of date — the last not reached today, since nothing yet
+marks a relationship briefing stale. One status line under the title says which, in
 that state's colour; the footer offers one quiet action, seeing the agent's
 activity, and one primary: turn reminders on, brief now, choose a model,
 retry or update — logging a check-in and calling belong to the page's action
