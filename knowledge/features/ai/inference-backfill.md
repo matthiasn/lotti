@@ -100,6 +100,7 @@ flowchart LR
   Bulk --> Rule["findMissingInference"]
   Rule --> Gate["hasAutomatedSkillType<br/>per kind"]
   Gate --> ScanProvider["inferenceBackfillScanProvider"]
+  Config["watchConfigsByType<br/>profile, skill, model, provider"] --> ScanProvider
   ScanProvider --> List["inferenceBackfillSuggestionsProvider"]
   Queue["InferenceBackfillQueue state"] --> List
   Status["inferenceStatusControllerProvider<br/>per entry and type"] --> List
@@ -110,7 +111,15 @@ flowchart LR
 
 `inferenceBackfillScanProvider` rescans when an update notification names the
 task, one of its media entries, or `categoriesNotification` (the switch lives on
-the category). A background rescan that fails keeps the last list.
+the category), and when the AI configuration the gate reads changes — profiles,
+skills, models and providers arrive through `AiConfigRepository.watchConfigsByType`,
+not through journal notifications. Each of those streams replays its snapshot on
+subscribe; that first event is skipped, since the initial scan already read it.
+
+Scans overlap, because every notification starts one. Each takes a generation
+number and only the latest may publish: a slow scan that read the database
+before an analysis landed would otherwise overwrite a faster, later one and
+resurrect the suggestion. A background rescan that fails keeps the last list.
 
 `inferenceBackfillSuggestionsProvider` then drops, on every rebuild:
 

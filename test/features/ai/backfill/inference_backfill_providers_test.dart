@@ -3,11 +3,13 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_detector.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_queue.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -47,6 +49,7 @@ void main() {
   late MockUpdateNotifications notifications;
   late MockDomainLogger logger;
   late StreamController<Set<String>> updates;
+  late Map<AiConfigType, StreamController<List<AiConfig>>> configs;
   late ProviderContainer container;
 
   setUp(() {
@@ -64,8 +67,21 @@ void main() {
       () => settingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
 
+    final aiConfig = MockAiConfigRepository();
+    configs = {
+      for (final type in AiConfigType.values)
+        type: StreamController<List<AiConfig>>.broadcast(),
+    };
+    for (final MapEntry(key: type, value: controller) in configs.entries) {
+      addTearDown(controller.close);
+      when(
+        () => aiConfig.watchConfigsByType(type),
+      ).thenAnswer((_) => controller.stream);
+    }
+
     container = ProviderContainer(
       overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(aiConfig),
         inferenceBackfillDetectorProvider.overrideWithValue(detector),
         settingsDbProvider.overrideWithValue(settingsDb),
         updateNotificationsProvider.overrideWithValue(notifications),
@@ -116,6 +132,71 @@ void main() {
         await pumpEventQueue();
 
         verify(() => detector.scan(_taskId)).called(2);
+      },
+    );
+
+    test('rescans when the AI configuration the gate reads changes, but '
+        'not on the snapshot each stream replays', () async {
+      when(() => detector.scan(_taskId)).thenAnswer((_) async => _scan([]));
+      await readScan();
+
+      for (final type in [
+        AiConfigType.inferenceProfile,
+        AiConfigType.skill,
+        AiConfigType.model,
+        AiConfigType.inferenceProvider,
+      ]) {
+        configs[type]!.add(const []);
+      }
+      await pumpEventQueue();
+      verify(() => detector.scan(_taskId)).called(1);
+
+      // A profile now automates image analysis.
+      configs[AiConfigType.inferenceProfile]!.add(const []);
+      await pumpEventQueue();
+      verify(() => detector.scan(_taskId)).called(1);
+
+      // Prompts are not part of the gate.
+      configs[AiConfigType.prompt]!
+        ..add(const [])
+        ..add(const []);
+      await pumpEventQueue();
+      verifyNever(() => detector.scan(_taskId));
+    });
+
+    test(
+      'a slow scan that started first never overwrites a later one',
+      () async {
+        when(
+          () => detector.scan(_taskId),
+        ).thenAnswer((_) async => _scan([_candidate('img')]));
+        await readScan();
+
+        final older = Completer<InferenceBackfillScan>();
+        final newer = Completer<InferenceBackfillScan>();
+        final pending = [older, newer];
+        when(
+          () => detector.scan(_taskId),
+        ).thenAnswer((_) => pending.removeAt(0).future);
+
+        updates.add({_taskId});
+        await pumpEventQueue();
+        updates.add({'img'});
+        await pumpEventQueue();
+
+        // The analysis landed: the later scan saw it, the earlier one did not.
+        newer.complete(_scan([]));
+        await pumpEventQueue();
+        older.complete(_scan([_candidate('img')]));
+        await pumpEventQueue();
+
+        expect(
+          container
+              .read(inferenceBackfillScanProvider(_taskId))
+              .value
+              ?.candidates,
+          isEmpty,
+        );
       },
     );
 
