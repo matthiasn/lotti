@@ -1,9 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -141,6 +143,30 @@ void main() {
             ),
           ).captured.single
           as String?;
+
+  test(
+    'the provider adds through the dictionary and journal it is given',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          speechDictionaryRepositoryProvider.overrideWithValue(
+            mockDictionaryRepository,
+          ),
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      stubEntry(null);
+
+      await container
+          .read(speechDictionaryServiceProvider)
+          .addTermForEntry(entryId: 'entry-1', term: 'Lotti');
+
+      verify(
+        () => mockJournalRepository.getJournalEntityById('entry-1'),
+      ).called(1);
+    },
+  );
 
   group('addTermForEntry resolves the category the term is limited to', () {
     test("a task's own category", () async {

@@ -4,11 +4,14 @@ import 'dart:io';
 import 'package:async/async.dart';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -91,6 +94,30 @@ void main() {
 
   Future<SpeechDictionaryEntry?> byTerm(String term) =>
       db.getSpeechDictionaryEntryById(speechDictionaryEntryId(term));
+
+  test(
+    "the provider writes through the app's persistence and database",
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          persistenceLogicProvider.overrideWithValue(persistence),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(speechDictionaryRepositoryProvider)
+          .save(term: 'Lotti');
+
+      verify(() => persistence.upsertEntityDefinition(any())).called(1);
+      expect(
+        (await db.getAllSpeechDictionaryEntries()).map((e) => e.term),
+        ['Lotti'],
+      );
+    },
+  );
 
   group('save', () {
     test('writes a new term under the id its spelling derives', () async {

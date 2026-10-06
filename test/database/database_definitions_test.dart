@@ -691,6 +691,12 @@ void main() {
         },
       );
 
+      test("definitionStamp reads a stored entry's stamp", () async {
+        await db!.upsertSpeechDictionaryEntry(entry());
+
+        expect((await db!.definitionStamp(entry()))?.updatedAt, stamp);
+      });
+
       test('re-delivering the stored copy still applies', () async {
         final stored = entry(categoryIds: ['work']);
         await db!.upsertSpeechDictionaryEntry(stored);

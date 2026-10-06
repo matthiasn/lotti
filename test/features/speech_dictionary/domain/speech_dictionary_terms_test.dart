@@ -130,6 +130,15 @@ void main() {
       expect(merged.last, 'new');
     });
 
+    test('cuts an over-long spelling to the term length limit', () {
+      final long = 'x' * (kMaxTermLength + 5);
+
+      expect(
+        mergeMisheardForms(null, [long], term: 'Term')!.single,
+        hasLength(kMaxTermLength),
+      );
+    });
+
     test('is null when nothing remains', () {
       expect(mergeMisheardForms(null, [' ', 'Term'], term: 'term'), isNull);
     });

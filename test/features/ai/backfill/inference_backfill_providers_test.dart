@@ -396,9 +396,14 @@ void main() {
       test('holds back a fresh entry until its window closes', () {
         fakeAsync((async) {
           final fresh = _freshCandidate('rec', created);
-          when(
-            () => detector.scan(_taskId),
-          ).thenAnswer((_) async => _scan([fresh, _candidate('old')]));
+          // Settles a minute later: the provider wakes for the earlier one.
+          final fresher = _freshCandidate(
+            'rec-2',
+            created.add(const Duration(minutes: 1)),
+          );
+          when(() => detector.scan(_taskId)).thenAnswer(
+            (_) async => _scan([fresher, fresh, _candidate('old')]),
+          );
           final subscription = container.listen(
             inferenceBackfillSuggestionsProvider(_taskId),
             (_, _) {},
@@ -420,6 +425,11 @@ void main() {
             ..elapse(const Duration(seconds: 1))
             ..flushMicrotasks();
           expect(shown(), [fresh, _candidate('old')]);
+
+          async
+            ..elapse(const Duration(minutes: 1))
+            ..flushMicrotasks();
+          expect(shown(), [fresher, fresh, _candidate('old')]);
 
           subscription.close();
         }, initialTime: created);

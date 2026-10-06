@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -3335,6 +3336,40 @@ void main() {
       verify(
         () => updateNotifications.notify(
           {testLabelDefinition1.id, labelsNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'SyncEntityDefinition carrying a SpeechDictionaryEntry notifies the '
+    'speech dictionary channel',
+    () async {
+      final entry = SpeechDictionaryEntry(
+        id: 'entry-kubernetes',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        term: 'Kubernetes',
+        vectorClock: null,
+      );
+      when(
+        () => journalDb.upsertEntityDefinition(entry),
+      ).thenAnswer((_) async => 1);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: entry,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => updateNotifications.notify(
+          {entry.id, speechDictionaryNotification},
           fromSync: true,
         ),
       ).called(1);

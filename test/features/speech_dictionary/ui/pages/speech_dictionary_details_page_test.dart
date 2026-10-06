@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/labels/ui/widgets/category_selection_chip.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
+import 'package:lotti/features/speech_dictionary/state/speech_dictionary_controller.dart';
 import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -106,14 +109,16 @@ void main() {
 
   Future<void> pumpPage(
     WidgetTester tester,
-    SpeechDictionaryDetailsPage page,
-  ) async {
+    SpeechDictionaryDetailsPage page, {
+    List<Override> overrides = const [],
+  }) async {
     await tester.binding.setSurfaceSize(const Size(1024, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         speechDictionaryRepositoryProvider.overrideWithValue(repository),
         entitiesCacheServiceProvider.overrideWithValue(cache),
+        ...overrides,
       ]),
     );
     addTearDown(container.dispose);
@@ -309,5 +314,164 @@ void main() {
 
     verify(() => repository.delete(kubernetes.id)).called(1);
     expect(beamedTo, ['/settings/speech-dictionary']);
+  });
+
+  testWidgets('Ctrl+S saves an edit', (tester) async {
+    await pumpEditing(tester);
+    await tester.enterText(find.text('Kuber Nets; Q Bernetes'), 'Kuber Nets');
+    await tester.pump();
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => repository.save(
+        term: 'Kubernetes',
+        categoryIds: const ['work'],
+        misheardAs: const ['Kuber Nets'],
+        previous: kubernetes,
+      ),
+    ).called(1);
+    expect(beamedTo, ['/settings/speech-dictionary']);
+  });
+
+  testWidgets('Ctrl+S with nothing edited saves nothing', (tester) async {
+    await pumpEditing(tester);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+    await tester.pump();
+
+    verifyNever(
+      () => repository.save(
+        term: any(named: 'term'),
+        categoryIds: any(named: 'categoryIds'),
+        misheardAs: any(named: 'misheardAs'),
+        previous: any(named: 'previous'),
+      ),
+    );
+  });
+
+  testWidgets('the back chevron returns to the list', (tester) async {
+    await pumpEditing(tester);
+
+    await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+    await tester.pump();
+
+    expect(beamedTo, ['/settings/speech-dictionary']);
+  });
+
+  testWidgets('Cancel returns to the list without saving', (tester) async {
+    await pumpEditing(tester);
+    await tester.enterText(find.text('Kuber Nets; Q Bernetes'), 'Kuber Nets');
+    await tester.pump();
+
+    await tester.tap(_pill(messages.cancelButton));
+    await tester.pump();
+
+    expect(beamedTo, ['/settings/speech-dictionary']);
+    verifyNever(
+      () => repository.save(
+        term: any(named: 'term'),
+        categoryIds: any(named: 'categoryIds'),
+        misheardAs: any(named: 'misheardAs'),
+        previous: any(named: 'previous'),
+      ),
+    );
+  });
+
+  testWidgets('a refused empty term says why', (tester) async {
+    await pumpPage(
+      tester,
+      const SpeechDictionaryDetailsPage(),
+      overrides: [
+        speechDictionaryEditorControllerProvider.overrideWithBuild(
+          (ref, args) => const SpeechDictionaryEditorState(
+            term: '',
+            categoryIds: {},
+            misheardAs: [],
+            error: SpeechDictionaryEditorError.emptyTerm,
+          ),
+        ),
+      ],
+    );
+
+    expect(
+      find.text(messages.settingsSpeechDictionaryErrorEmpty),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('categories picked in the picker are shown by name', (
+    tester,
+  ) async {
+    await pumpEditing(tester);
+
+    await tester.tap(
+      find.text(messages.settingsSpeechDictionaryCategoriesChoose),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(CategoryPickerSheet),
+        matching: find.text('Home'),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text(messages.tasksLabelsSheetApply));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Sorted by name, whatever order they were picked in.
+    expect(
+      tester
+          .widgetList<CategorySelectionChip>(find.byType(CategorySelectionChip))
+          .map((chip) => chip.name),
+      ['Home', 'Work'],
+    );
+    expect(pillEnabled(tester, messages.saveButton), isTrue);
+  });
+
+  testWidgets('cancelling the delete question keeps the entry', (
+    tester,
+  ) async {
+    await pumpEditing(tester);
+
+    await tester.scrollUntilVisible(
+      find.widgetWithText(SettingsDeleteRow, messages.deleteButton),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.drag(
+      find.byType(Scrollable).first,
+      const Offset(0, -120),
+      warnIfMissed: false,
+    );
+    await tester.pump();
+    await tester.tap(
+      find.widgetWithText(SettingsDeleteRow, messages.deleteButton),
+    );
+    await tester.pump();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(
+          DesignSystemButton,
+          messages.cancelButton,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(AlertDialog), findsNothing);
+    verifyNever(() => repository.delete(any()));
+    expect(beamedTo, isEmpty);
   });
 }

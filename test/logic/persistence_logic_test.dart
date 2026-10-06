@@ -1891,6 +1891,34 @@ void main() {
         expect(after?.entryText?.plainText, 'Image caption');
       },
     );
+
+    test('seedEntityDefinition writes an absent definition and never one '
+        'older than what is stored', () async {
+      final logic = getIt<PersistenceLogic>();
+      final stamp = DateTime.utc(1970);
+      final seeded = SpeechDictionaryEntry(
+        id: 'entry-kubernetes',
+        createdAt: stamp,
+        updatedAt: stamp,
+        term: 'Kubernetes',
+        vectorClock: null,
+      );
+
+      expect(await logic.seedEntityDefinition(seeded), isNot(0));
+      final edited = seeded.copyWith(
+        updatedAt: DateTime.utc(2026),
+        categoryIds: const ['work'],
+      );
+      await getIt<JournalDb>().upsertEntityDefinition(edited);
+
+      expect(await logic.seedEntityDefinition(seeded), 0);
+      expect(
+        (await getIt<JournalDb>().getSpeechDictionaryEntryById(
+          'entry-kubernetes',
+        ))?.categoryIds,
+        ['work'],
+      );
+    });
   });
 
   // Error-path coverage for the `_loggingService.error(...)` calls inside the
@@ -3982,5 +4010,3 @@ void main() {
     });
   });
 }
-
-// Mock DeviceLocation — not available in central mocks

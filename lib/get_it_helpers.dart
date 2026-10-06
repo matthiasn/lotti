@@ -77,16 +77,7 @@ Future<void> _registerLateAndOptionalServices({
     getIt<StartupTasks>().track(getIt<MatrixService>().init());
   }
 
-  // The categories' legacy speech dictionaries into dictionary entries. Runs
-  // at every start: it writes only terms this device holds no entry for, so
-  // after the first run it changes nothing.
-  getIt<StartupTasks>().track(
-    SpeechDictionaryMigration(
-      journalDb: getIt<JournalDb>(),
-      persistenceLogic: getIt<PersistenceLogic>(),
-      domainLogger: getIt<DomainLogger>(),
-    ).run(),
-  );
+  getIt<StartupTasks>().track(_migrateSpeechDictionary());
 
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(

@@ -147,6 +147,16 @@ void main() {
     expect(beamedTo, ['/settings/speech-dictionary/create?term=Kubernetes']);
   });
 
+  testWidgets('the create button opens an empty entry', (tester) async {
+    await pumpList(tester, [_entry('Lotti')]);
+
+    await tester.tap(
+      find.bySemanticsLabel(messages.settingsSpeechDictionaryCreateTitle),
+    );
+
+    expect(beamedTo, ['/settings/speech-dictionary/create']);
+  });
+
   testWidgets('an empty dictionary explains what it is for', (tester) async {
     await pumpList(tester, []);
 

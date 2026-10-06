@@ -33,6 +33,7 @@ void main() {
       (InferenceProviderType.melious, 'voxtral-small-24b'),
       (InferenceProviderType.alibaba, 'qwen3-omni-flash'),
       (InferenceProviderType.openRouter, 'whisper-like-name'),
+      (InferenceProviderType.ollama, 'gemma3'),
     ]) {
       test('${type.name} $model is a multimodal model', () {
         expect(route(type, model), isFalse);

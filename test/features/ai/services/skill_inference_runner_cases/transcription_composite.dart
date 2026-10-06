@@ -278,6 +278,124 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         expect(prompt, isNot(contains('An older take.')));
       });
 
+      test('a correction it cannot learn is still written', () async {
+        await stubRun(dictionary: [kubernetes]);
+        stubSummary(firstOccurrence);
+        when(
+          () => mockSpeechDictionaryRepository.learnMisheardForms(any()),
+        ).thenThrow(StateError('dictionary closed'));
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: transcriptionFor(transcriptionProvider: whisper()),
+          linkedTaskId: 'task-1',
+        );
+
+        expect(textWrites, [null, corrected]);
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'runAudioSummary.learnMisheardForms',
+          ),
+        ).called(1);
+      });
+
+      test('a text write refused every time is logged, never thrown', () async {
+        await stubRun(dictionary: [kubernetes]);
+        stubSummary(firstOccurrence);
+        var writes = 0;
+        var current = makeAudioEntity();
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => current);
+        when(
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
+        ).thenAnswer((invocation) async {
+          // The transcript's own write lands; every text write is refused.
+          if (++writes > 1) return false;
+          current = invocation.positionalArguments.first as JournalAudio;
+          return true;
+        });
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: transcriptionFor(transcriptionProvider: whisper()),
+          linkedTaskId: 'task-1',
+        );
+
+        // The transcript's write, then three refused text writes.
+        expect(writes, 4);
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'runTranscription.writeText',
+          ),
+        ).called(1);
+      });
+
+      test('a recording deleted while its summary ran gets no text', () async {
+        await stubRun(dictionary: [kubernetes]);
+        var deleted = false;
+        var current = makeAudioEntity();
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => deleted ? null : current);
+        when(
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
+        ).thenAnswer((invocation) async {
+          current = invocation.positionalArguments.first as JournalAudio;
+          textWrites.add(current.entryText?.plainText);
+          return true;
+        });
+        stubSummary(firstOccurrence);
+        // The model's call is where the recording goes away.
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) {
+          deleted = true;
+          return const Stream.empty();
+        });
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: transcriptionFor(transcriptionProvider: whisper()),
+          linkedTaskId: 'task-1',
+        );
+
+        expect(textWrites, [null]);
+        verifyNever(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
+
       test('writes the raw transcript when the summary fails', () async {
         await stubRun(dictionary: [kubernetes]);
         stubSummary(null);

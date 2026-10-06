@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -26,6 +27,7 @@ void main() {
       const Stream<List<({String id, Map<String, int>? vectorClock})>>.empty(),
     );
     registerFallbackValue(() async => 0);
+    registerFallbackValue(FakeCategoryDefinition());
   });
   setUp(() async {
     // Use a dedicated scope per test to avoid cross-file contamination
@@ -262,6 +264,51 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('migrateSpeechDictionaryForTesting', () {
+    test(
+      "migrates the categories' lists through the registered services",
+      () async {
+        final journalDb = MockJournalDb();
+        final persistence = MockPersistenceLogic();
+        final logger = MockDomainLogger();
+        when(
+          journalDb.getSpeechDictionaryEntriesIncludingDeleted,
+        ).thenAnswer((_) async => []);
+        when(journalDb.getAllCategoriesIncludingPrivate).thenAnswer(
+          (_) async => [
+            CategoryDefinition(
+              id: 'work',
+              name: 'Work',
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+              private: false,
+              active: true,
+              speechDictionary: const ['Kubernetes'],
+            ),
+          ],
+        );
+        when(
+          () => persistence.seedEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
+        getIt
+          ..registerSingleton<JournalDb>(journalDb)
+          ..registerSingleton<PersistenceLogic>(persistence)
+          ..registerSingleton<DomainLogger>(logger);
+
+        await migrateSpeechDictionaryForTesting();
+
+        final seeded =
+            verify(
+                  () => persistence.seedEntityDefinition(captureAny()),
+                ).captured.single
+                as SpeechDictionaryEntry;
+        expect(seeded.term, 'Kubernetes');
+        expect(seeded.categoryIds, ['work']);
+      },
+    );
   });
 
   group('composition-root builders for the layer seams', () {
