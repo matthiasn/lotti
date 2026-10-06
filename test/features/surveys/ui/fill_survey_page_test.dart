@@ -1,26 +1,34 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:research_package/research_package.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late MockDomainLogger mockDomainLogger;
+
   setUp(() {
-    DevLogger.suppressOutput = true;
-    DevLogger.clear();
+    mockDomainLogger = MockDomainLogger();
   });
 
-  tearDown(() {
-    DevLogger.suppressOutput = false;
-  });
+  void verifyCancelLogged(String message) {
+    verify(
+      () => mockDomainLogger.log(
+        LogDomain.general,
+        message,
+        subDomain: 'SurveyWidget',
+      ),
+    ).called(1);
+  }
 
   RPOrderedTask buildTask(String identifier) => RPOrderedTask(
     identifier: identifier,
@@ -46,6 +54,7 @@ void main() {
       makeTestableWidgetNoScroll(
         Scaffold(body: SurveyWidget(task, resultCallback)),
         locale: locale,
+        overrides: [domainLoggerProvider.overrideWithValue(mockDomainLogger)],
       ),
     );
     await tester.pump(const Duration(milliseconds: 100));
@@ -73,8 +82,8 @@ void main() {
       expect(rpuiTask.onSubmit, same(cb));
 
       // onCancel is wired to SurveyWidget's local closure (not the submit
-      // callback): driving it with a null result must log 'No result' and must
-      // never invoke resultCallback.
+      // callback): driving it with a null result must log the cancellation and
+      // must never invoke resultCallback.
       var submitFired = false;
       final wiredRpuiTask = await pumpSurvey(
         tester,
@@ -83,7 +92,7 @@ void main() {
       );
       wiredRpuiTask.onCancel!(null);
       expect(submitFired, isFalse);
-      expect(DevLogger.capturedLogs, contains('[SurveyWidget] No result'));
+      verifyCancelLogged('Survey cancelled without a result');
     });
 
     testWidgets('onSubmit forwards the result to resultCallback', (
@@ -152,7 +161,7 @@ void main() {
     });
 
     testWidgets(
-      'onCancel with a non-null result logs the encoded result via cancelCallBack',
+      'onCancel with a non-null result logs only the step-result count',
       (tester) async {
         var callbackFired = false;
         final rpuiTask = await pumpSurvey(
@@ -161,31 +170,37 @@ void main() {
           resultCallback: (_) => callbackFired = true,
         );
 
-        final result = RPTaskResult(identifier: 'cancel_result_id');
+        final result = RPTaskResult(identifier: 'cancel_result_id')
+          ..setStepResultForIdentifier(
+            'q1',
+            RPStepResult(
+              identifier: 'q1',
+              questionTitle: 'How do you feel?',
+              answerFormat: RPChoiceAnswerFormat(
+                answerStyle: RPChoiceAnswerStyle.SingleChoice,
+                choices: [RPChoice(text: 'Private answer', value: 1)],
+              ),
+            ),
+          );
         rpuiTask.onCancel!(result);
 
-        // cancelCallBack does not invoke the submit callback.
+        // The cancel path does not invoke the submit callback.
         expect(callbackFired, isFalse);
 
-        // The produced log line is "[SurveyWidget] The result so far:\n<json>".
-        final logLine = DevLogger.capturedLogs.singleWhere(
-          (log) => log.contains('The result so far:'),
-          orElse: () => '',
+        // Only the count reaches the log — never the answers themselves.
+        verifyCancelLogged('Survey cancelled with 1 step results');
+        verifyNever(
+          () => mockDomainLogger.log(
+            any(),
+            any(that: contains('Private answer')),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
         );
-        expect(logLine, contains('[SurveyWidget]'));
-
-        // The JSON body produced by SurveyWidget._encode must be valid JSON and
-        // must contain the result's identifier under the "identifier" key.
-        final jsonBody = logLine.split('The result so far:\n').last;
-        final decoded = jsonDecode(jsonBody) as Map<String, dynamic>;
-        expect(decoded['identifier'], 'cancel_result_id');
-
-        // _encode uses an indented encoder, so the body is pretty-printed.
-        expect(jsonBody, contains('\n'));
       },
     );
 
-    testWidgets('onCancel with a null result logs "No result"', (
+    testWidgets('onCancel with a null result logs a cancellation without one', (
       tester,
     ) async {
       var callbackFired = false;
@@ -198,15 +213,8 @@ void main() {
       rpuiTask.onCancel!(null);
 
       expect(callbackFired, isFalse);
-      expect(
-        DevLogger.capturedLogs,
-        contains('[SurveyWidget] No result'),
-      );
-      // The null branch must not emit the encoded-result log line.
-      expect(
-        DevLogger.capturedLogs.any((log) => log.contains('The result so far:')),
-        isFalse,
-      );
+      verifyCancelLogged('Survey cancelled without a result');
+      verifyNoMoreInteractions(mockDomainLogger);
     });
   });
 }

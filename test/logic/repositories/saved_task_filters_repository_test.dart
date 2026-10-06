@@ -70,7 +70,10 @@ class _Device {
 
   void restart() {
     repository = SavedTaskFiltersRepository(
-      SavedTaskFiltersPersistence(settingsDb),
+      SavedTaskFiltersPersistence(
+        settingsDb,
+        domainLogger: MockDomainLogger(),
+      ),
       _bench.notifications,
     );
   }

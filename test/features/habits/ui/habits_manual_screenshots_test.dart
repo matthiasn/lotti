@@ -262,6 +262,7 @@ void main() {
         EntitiesCacheService(
             journalDb: mocks.journalDb,
             updateNotifications: mocks.updateNotifications,
+            domainLogger: MockDomainLogger(),
           )
           ..categoriesById[_penguinOps.id] = _penguinOps
           ..dataTypesById[_krillRations.id] = _krillRations

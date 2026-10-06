@@ -16,6 +16,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/dashboards/state/measurables_controller.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -33,6 +34,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -796,12 +799,21 @@ void main() {
       UrlLauncherPlatform.instance = originalPlatform;
     });
 
-    Future<Linkify> pumpDescription(WidgetTester tester, String text) async {
+    Future<Linkify> pumpDescription(
+      WidgetTester tester,
+      String text, {
+      DomainLogger? logger,
+    }) async {
       await tester.pumpWidget(
         makeTestableWidget(
           Material(
             child: HabitDescription(habitFlossing.copyWith(description: text)),
           ),
+          overrides: [
+            domainLoggerProvider.overrideWithValue(
+              logger ?? MockDomainLogger(),
+            ),
+          ],
         ),
       );
       await tester.pump();
@@ -832,12 +844,27 @@ void main() {
       when(
         () => mockUrlLauncher.canLaunch(any()),
       ).thenAnswer((_) async => false);
-      final linkify = await pumpDescription(tester, 'See https://bad.url');
+      final logger = MockDomainLogger();
+      final linkify = await pumpDescription(
+        tester,
+        'See https://bad.url',
+        logger: logger,
+      );
       await expectLater(
         () => linkify.onOpen!(LinkableElement('bad', 'https://bad.url')),
         returnsNormally,
       );
+      await tester.pump();
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+      // Only the scheme is logged — the address is the user's own text.
+      verify(
+        () => logger.log(
+          LogDomain.habits,
+          'Could not launch link (scheme: https)',
+          subDomain: 'Click Link in Description',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
     });
   });
   group('reflecting in a watching goal', () {

@@ -18,6 +18,8 @@ import 'package:lotti/features/design_system/components/time_pickers/design_syst
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -44,12 +46,14 @@ void main() {
 
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     mockJournalDb = mockJournalDbWithMeasurableTypes([measurableWater]);
     mockPersistenceLogic = MockPersistenceLogic();
+    mockDomainLogger = MockDomainLogger();
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -125,6 +129,7 @@ void main() {
           ),
         ),
         mediaQueryData: mediaQueryData,
+        overrides: [domainLoggerProvider.overrideWithValue(mockDomainLogger)],
       ),
     );
   }
@@ -637,6 +642,15 @@ void main() {
       isTrue,
     );
     expect(find.byKey(_saveKey), findsOneWidget);
+    verify(
+      () => mockDomainLogger.error(
+        LogDomain.general,
+        any(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'MeasurementCaptureModal',
+        message: 'Failed to save measurement',
+      ),
+    ).called(1);
   });
 
   final pickerLayouts = <({String name, MediaQueryData mediaQueryData})>[

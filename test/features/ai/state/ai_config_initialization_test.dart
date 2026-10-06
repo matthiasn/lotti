@@ -8,10 +8,13 @@ import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 import '../test_utils.dart';
 import '../util/seed_tombstone_test_utils.dart';
 
@@ -19,9 +22,11 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late MockAiConfigRepository repo;
+  late MockDomainLogger logger;
 
   setUp(() async {
     repo = MockAiConfigRepository();
+    logger = MockDomainLogger();
     when(() => repo.saveConfig(any())).thenAnswer((_) async {});
     when(
       () => repo.hardDeleteConfig(
@@ -43,10 +48,25 @@ void main() {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         aiConfigRepositoryProvider.overrideWithValue(repo),
+        domainLoggerProvider.overrideWithValue(logger),
       ]),
     );
     addTearDown(container.dispose);
     return container;
+  }
+
+  /// Verifies that the phase which failed with [message] logged its error
+  /// once, with the exception and its stack trace.
+  void verifyPhaseError(String message) {
+    verify(
+      () => logger.error(
+        LogDomain.ai,
+        any<Object>(that: isA<Exception>()),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'aiConfigInitialization',
+        message: message,
+      ),
+    ).called(1);
   }
 
   /// All saved configs captured from `saveConfig` calls.
@@ -241,6 +261,7 @@ void main() {
           includeDeleted: any(named: 'includeDeleted'),
         ),
       );
+      verifyPhaseError('Failed to migrate legacy seed tombstones');
     });
 
     test('completes normally and attempts every phase when provider reads '
@@ -287,6 +308,11 @@ void main() {
           includeDeleted: any(named: 'includeDeleted'),
         ),
       ).called(5);
+      verifyPhaseError('Failed to migrate renamed model ids');
+      verifyPhaseError('Failed to backfill known models');
+      verifyPhaseError('Failed to seed inference profiles');
+      verifyPhaseError('Failed to upgrade inference profiles');
+      verifyPhaseError('Failed to remove orphaned default profiles');
     });
 
     test('completes normally and still seeds profiles when the profile '
@@ -329,6 +355,8 @@ void main() {
         savedConfigs().whereType<AiConfigInferenceProfile>().map((p) => p.id),
         [profileAnthropicId],
       );
+      verifyPhaseError('Failed to upgrade inference profiles');
+      verifyPhaseError('Failed to remove orphaned default profiles');
     });
   });
 }

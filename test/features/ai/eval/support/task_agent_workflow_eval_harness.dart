@@ -161,6 +161,7 @@ class TaskAgentWorkflowEvalHarness {
           EntitiesCacheService(
             journalDb: journalDb,
             updateNotifications: updateNotifications,
+            domainLogger: MockDomainLogger(),
           ),
         );
         put<DomainLogger>(DomainLogger(loggingService: LoggingService()));

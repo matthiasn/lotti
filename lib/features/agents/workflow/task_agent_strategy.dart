@@ -8,6 +8,7 @@ import 'package:lotti/classes/agents/retired_tool_calls.dart';
 import 'package:lotti/classes/directed_relation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -278,16 +279,16 @@ class TaskAgentStrategy extends ConversationStrategy {
       Map<String, dynamic> parsedArgs;
       try {
         parsedArgs = parseToolArguments(call.function.arguments);
-      } catch (e, stackTrace) {
+      } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
-        _domainLogger.error(
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        _domainLogger.log(
           LogDomain.agentWorkflow,
-          e,
-          stackTrace: stackTrace,
+          'Failed to parse tool call arguments for $rawToolName '
+          '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
           subDomain: 'TaskAgentStrategy',
-          message:
-              'Failed to parse tool call arguments for $rawToolName '
-              '(rawBytes=$rawBytes)',
+          level: InsightLevel.warn,
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '

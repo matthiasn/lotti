@@ -184,6 +184,14 @@ it that way by failing on any file outside `lib/services/` that logs through
 `make developer_log_check`. It counts on the token stream, and resolves a
 `part` file through its library's import.
 
+`DevLogger` wraps the same channel, so the guard confines it too. It stays only
+beneath the logging pipeline. `LoggingService` mirrors its own records to the
+console through it, and `lib/database/` opens and migrates the databases
+`LoggingService` writes into, during bootstrap and before any `DomainLogger`
+exists. `registerSingletons` (`lib/get_it.dart`) registers a `DomainLogger`
+right after the config flags load, before the first service whose
+registration it logs, so those diagnostics need no console fallback.
+
 Two smaller leaks are closed with it. Provider error bodies stay out of
 exception messages, which `DomainLogger.error` writes in full: Gemini image
 errors carry the body's length, and Ollama errors carry only the server's own

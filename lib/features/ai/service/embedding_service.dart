@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -216,10 +217,22 @@ class EmbeddingService {
             labelNameResolver: labelResolver,
           );
           _failedAttempts.remove(entityId);
+        } on EmbeddingEndpointUnavailableException catch (e) {
+          // The circuit is open: routine while Ollama is down. The whole
+          // batch waits for the retry window rather than failing entity by
+          // entity.
+          _domainLogger.log(
+            LogDomain.ai,
+            'Embedding for $entityId deferred: $e',
+            subDomain: _subDomain,
+            level: InsightLevel.warn,
+          );
+          _retryLater(entityId, e);
         } catch (e, stackTrace) {
           _domainLogger.error(
             LogDomain.ai,
-            e,
+            DomainLogger.withoutSource(e),
+            errorType: e.runtimeType,
             stackTrace: stackTrace,
             subDomain: _subDomain,
             message: 'Failed to generate embedding for $entityId',

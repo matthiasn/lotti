@@ -540,7 +540,7 @@ void main() {
         () => logger.error(
           LogDomain.onboarding,
           any<Object>(that: isA<StateError>()),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'OnboardingCaptureToTaskService',
           message:
               'Failed to seed checklist proposals for onboarding task '
@@ -662,7 +662,7 @@ void main() {
         () => logger.error(
           LogDomain.onboarding,
           any<Object>(that: isA<StateError>()),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'OnboardingCaptureToTaskService',
           message: 'Failed to auto-assign agent for onboarding task task-1',
         ),

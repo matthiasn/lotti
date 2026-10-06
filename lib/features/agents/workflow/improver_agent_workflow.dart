@@ -90,7 +90,7 @@ class ImproverAgentWorkflow {
       _domainLogger.log(
         LogDomain.agentWorkflow,
         'Extracted ${feedback.items.length} feedback items for '
-        'template $targetTemplateId (since $since)',
+        'template ${DomainLogger.sanitizeId(targetTemplateId)} (since $since)',
         subDomain: _logTag,
       );
 
@@ -200,7 +200,8 @@ class ImproverAgentWorkflow {
 
       _domainLogger.log(
         LogDomain.agentWorkflow,
-        'Started ritual session for template $targetTemplateId',
+        'Started ritual session for template '
+        '${DomainLogger.sanitizeId(targetTemplateId)}',
         subDomain: _logTag,
       );
 

@@ -22,7 +22,7 @@ class VoxtralInferenceRepository {
   final http.Client _httpClient;
 
   /// Records [exception] under [subDomain], with an optional content-free
-  /// [message].
+  /// [message]. A `FormatException` loses the response text it quotes.
   void _logException(
     Object exception, {
     required String subDomain,
@@ -31,7 +31,8 @@ class VoxtralInferenceRepository {
   }) {
     _domainLogger.error(
       LogDomain.speech,
-      exception,
+      DomainLogger.withoutSource(exception),
+      errorType: exception.runtimeType,
       stackTrace: stackTrace,
       subDomain: subDomain,
       message: message,
@@ -381,7 +382,7 @@ class VoxtralInferenceRepository {
               _domainLogger.error(
                 LogDomain.speech,
                 // Not the exception itself: its toString quotes the chunk.
-                FormatException(e.message, null, e.offset),
+                DomainLogger.withoutSource(e),
                 errorType: e.runtimeType,
                 stackTrace: stackTrace,
                 subDomain: 'VoxtralInferenceRepository',

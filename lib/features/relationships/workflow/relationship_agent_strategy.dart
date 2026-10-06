@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
@@ -118,15 +119,15 @@ class RelationshipAgentStrategy extends ConversationStrategy
       Map<String, dynamic> args;
       try {
         args = parseAgentToolArguments(call.function.arguments);
-      } catch (e, stackTrace) {
-        domainLogger.error(
+      } catch (e) {
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        domainLogger.log(
           LogDomain.agentWorkflow,
-          e,
-          stackTrace: stackTrace,
+          'Failed to parse tool call arguments for $toolName '
+          '(rawBytes=${utf8.encode(call.function.arguments).length}, errorType=${e.runtimeType})',
           subDomain: 'RelationshipAgentStrategy',
-          message:
-              'Failed to parse tool call arguments for $toolName '
-              '(rawBytes=${utf8.encode(call.function.arguments).length})',
+          level: InsightLevel.warn,
         );
         await _reject(
           call: call,

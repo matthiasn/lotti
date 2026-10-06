@@ -651,11 +651,12 @@ class ConversationRepository extends Notifier<void> {
     Object error,
     StackTrace stackTrace,
   ) {
-    // The logger keeps the error's text out of its PII-safe log: a provider
-    // error can carry the response body, which may echo the conversation.
+    // The type only: a provider error can carry the response body, which may
+    // echo the conversation, and the full error log is no place for it.
     _logger.error(
       LogDomain.ai,
-      error,
+      '${error.runtimeType}',
+      errorType: error.runtimeType,
       stackTrace: stackTrace,
       subDomain: _subDomain,
       message: 'Error during conversation turn',

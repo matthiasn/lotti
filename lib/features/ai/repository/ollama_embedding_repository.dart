@@ -145,10 +145,12 @@ class OllamaEmbeddingRepository {
       }
     }
 
+    // The body's length only: callers log this error, and an error body can
+    // echo the text that was sent to be embedded.
     if (response.statusCode != httpStatusOk) {
       throw Exception(
-        'Embedding request failed (HTTP ${response.statusCode}): '
-        '${response.body}',
+        'Embedding request failed (HTTP ${response.statusCode}, '
+        '${response.body.length} chars of body)',
       );
     }
 
@@ -163,7 +165,10 @@ class OllamaEmbeddingRepository {
     try {
       json = jsonDecode(body) as Map<String, dynamic>;
     } on FormatException catch (e) {
-      throw Exception('Malformed embedding response: $e');
+      throw Exception(
+        'Malformed embedding response: ${e.message} '
+        '(${body.length} chars)',
+      );
     }
 
     final embeddings = json['embeddings'];

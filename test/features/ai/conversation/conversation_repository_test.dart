@@ -1036,7 +1036,11 @@ void main() {
         // `turnIndex` would fail to match the real call, so the resulting
         // error would come from an unmatched mock rather than the thrown
         // exception under test.
-        _stubGenerateText(mockOllamaRepo).thenThrow(Exception('API Error'));
+        // The body a provider error can carry, which may echo the
+        // conversation: it must never reach the log.
+        _stubGenerateText(
+          mockOllamaRepo,
+        ).thenThrow(Exception('API Error: echoed user text'));
 
         final manager = repository.getConversation(conversationId)!;
 
@@ -1049,15 +1053,18 @@ void main() {
         );
 
         expect(manager.lastError, contains('API Error'));
-        verify(
+        final logged = verify(
           () => mockLogger.error(
             LogDomain.ai,
-            any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
+            captureAny(),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'ConversationRepository',
             message: 'Error during conversation turn',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
-        ).called(1);
+        ).captured.single;
+        expect(logged.toString(), isNot(contains('echoed user text')));
+        expect(logged, '_Exception');
       });
 
       test(

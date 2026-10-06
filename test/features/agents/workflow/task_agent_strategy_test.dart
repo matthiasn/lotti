@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -228,6 +229,7 @@ void main() {
   late MockAgentToolExecutor mockExecutor;
   late MockConversationManager mockManager;
   late TaskAgentStrategy strategy;
+  late MockDomainLogger mockDomainLogger;
 
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -247,9 +249,11 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
+    mockDomainLogger = MockDomainLogger();
     strategy = _createStrategy(
       executor: mockExecutor,
       syncService: mockSyncService,
+      domainLogger: mockDomainLogger,
       withChangeSetBuilder: false,
       executeToolHandler: (toolName, args, manager) async =>
           const ToolExecutionResult(
@@ -577,6 +581,28 @@ void main() {
         verify(
           () => mockSyncService.upsertEntity(any()),
         ).called(greaterThanOrEqualTo(2));
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.agentWorkflow,
+            any(
+              that: allOf(
+                contains('Failed to parse tool call arguments'),
+                contains('errorType=FormatException'),
+              ),
+            ),
+            subDomain: 'TaskAgentStrategy',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDomainLogger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
       });
 
       // JSON-recovery scenarios share one harness: stub the executor, fire a
@@ -2575,7 +2601,7 @@ void main() {
           () => logger.error(
             LogDomain.agentWorkflow,
             any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'TaskAgentStrategy',
             message: any(
               named: 'message',

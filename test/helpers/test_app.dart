@@ -112,17 +112,29 @@ Widget makeTestableWidget(
   locale: locale,
 );
 
+/// The bare test app, with no scroll view around [child].
+///
+/// It opens a `ProviderScope` only when [overrides] are given, so callers that
+/// wrap it in their own scope keep theirs unshadowed.
 Widget makeTestableWidget2(
   Widget child, {
   MediaQueryData? mediaQueryData,
+  List<Override> overrides = const [],
   ThemeData? theme,
   Locale? locale,
-}) => _testApp(
-  child,
-  mediaQueryData: mediaQueryData,
-  theme: theme,
-  locale: locale,
-);
+}) {
+  final app = _testApp(
+    child,
+    mediaQueryData: mediaQueryData,
+    theme: theme,
+    locale: locale,
+  );
+  if (overrides.isEmpty) return app;
+  return ProviderScope(
+    overrides: withServiceOverrides(overrides),
+    child: app,
+  );
+}
 
 Widget makeTestableWidgetWithScaffold(
   Widget child, {

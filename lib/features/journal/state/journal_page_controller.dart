@@ -7,6 +7,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
@@ -17,7 +18,7 @@ import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -63,6 +64,7 @@ class JournalPageController extends Notifier<JournalPageState>
   late final JournalFilterPersistence _persistence;
   late final JournalQueryRunner _queryRunner;
   late final JournalPageSubscriptions _subscriptions;
+  late final DomainLogger _domainLogger;
   StreamSubscription<int>? _navIndexSubscription;
 
   // Internal state (mutable for efficiency, exposed via immutable state)
@@ -138,13 +140,18 @@ class JournalPageController extends Notifier<JournalPageState>
     final fts5Db = getIt<Fts5Db>();
     final updateNotifications = ref.read(updateNotificationsProvider);
     final entitiesCacheService = getIt<EntitiesCacheService>();
+    _domainLogger = ref.read(domainLoggerProvider);
 
     // Initialize delegates
-    _persistence = JournalFilterPersistence(settingsDb);
+    _persistence = JournalFilterPersistence(
+      settingsDb,
+      domainLogger: _domainLogger,
+    );
     _queryRunner = JournalQueryRunner(
       db: db,
       fts5Db: fts5Db,
       entitiesCacheService: entitiesCacheService,
+      domainLogger: _domainLogger,
     );
     _subscriptions = JournalPageSubscriptions(
       db: db,
@@ -234,6 +241,7 @@ class JournalPageController extends Notifier<JournalPageState>
     return JournalPagingController(
       getNextPageKey: _getNextPageKey,
       fetchPage: _fetchPage,
+      domainLogger: _domainLogger,
     );
   }
 
@@ -389,9 +397,11 @@ class JournalPageController extends Notifier<JournalPageState>
 
     final pagingController = state.pagingController;
     if (pagingController == null) {
-      DevLogger.warning(
-        name: 'JournalPageController',
-        message: 'refreshQuery called but pagingController is null',
+      _domainLogger.log(
+        LogDomain.persistence,
+        'refreshQuery called but pagingController is null',
+        subDomain: 'JournalPageController',
+        level: InsightLevel.warn,
       );
       return;
     }

@@ -10,7 +10,6 @@ import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/services/geolocation_service.dart'
     show GeolocationService;
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -278,10 +277,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
         exception,
         stackTrace: stackTrace,
         subDomain: 'updateDbEntity',
-      );
-      DevLogger.error(
-        name: 'PersistenceLogic',
-        message: 'Exception: $exception',
       );
     }
     return null;

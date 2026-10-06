@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -390,16 +391,16 @@ abstract final class GeminiUtils {
             dynamic args;
             try {
               args = jsonDecode(toolCall.function.arguments);
-            } on FormatException catch (e, stackTrace) {
-              domainLogger.error(
+            } on FormatException catch (e) {
+              // The model's own malformed call, recovered from and rebuilt on
+              // every later turn: a warning, never the arguments themselves.
+              domainLogger.log(
                 LogDomain.ai,
-                e,
-                stackTrace: stackTrace,
+                'Failed to parse tool call arguments as JSON '
+                '(${e.message} at offset ${e.offset}). Using empty object '
+                '(raw ${toolCall.function.arguments.length} chars).',
                 subDomain: 'GeminiUtils',
-                message:
-                    'Failed to parse tool call arguments as JSON. '
-                    'Using empty object (raw '
-                    '${toolCall.function.arguments.length} chars).',
+                level: InsightLevel.warn,
               );
               args = <String, dynamic>{};
             }

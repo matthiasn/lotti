@@ -436,7 +436,7 @@ void main() {
           () => logger.error(
             LogDomain.persistence,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'createTask',
             message: 'Failed to resolve category for project $failingProjectId',
           ),
@@ -544,7 +544,7 @@ void main() {
               () => logger.error(
                 LogDomain.persistence,
                 any<Object>(that: isA<StateError>()),
-                stackTrace: any(named: 'stackTrace'),
+                stackTrace: any(named: 'stackTrace', that: isNotNull),
                 subDomain: 'createTask',
                 message:
                     'Failed to assign project ${scenario.projectId} '

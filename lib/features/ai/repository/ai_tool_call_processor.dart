@@ -58,13 +58,16 @@ class AiToolCallProcessor {
         level: level,
       );
 
+  /// Logs a caught [error] without the source text a `jsonDecode` failure
+  /// carries: these errors come from parsing the model's tool arguments.
   void _error(Object error, String message, [StackTrace? stackTrace]) =>
       _domainLogger.error(
         LogDomain.ai,
-        error,
+        DomainLogger.withoutSource(error),
         stackTrace: stackTrace,
         subDomain: _logTag,
         message: message,
+        errorType: error.runtimeType,
       );
 
   /// Resolves the repository-owned (test-injectable) auto-checklist service.
@@ -213,16 +216,20 @@ class AiToolCallProcessor {
                   // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
                   _domainLogger.error(
                     LogDomain.ai,
-                    'Failed to refresh task ${currentTask.id} after creating '
+                    'Failed to refresh task '
+                    '${DomainLogger.sanitizeId(currentTask.id)} after creating '
                     'checklist. It might have been deleted concurrently.',
                     subDomain: _logTag,
                   );
                   break;
                 }
               } else {
-                _error(
-                  result.error ?? 'unknown error',
-                  'Failed to create checklist',
+                // The service has already logged any exception behind this;
+                // its error text can carry that exception's message.
+                _log(
+                  'Checklist not created for task ${currentTask.id}; '
+                  'item skipped',
+                  level: InsightLevel.warn,
                 );
               }
             } else {
@@ -262,9 +269,13 @@ class AiToolCallProcessor {
           final result = updateHandler.processFunctionCall(toolCall);
 
           if (!result.success) {
-            _error(
-              result.error ?? 'unknown error',
-              'Invalid update_checklist_items call',
+            // A malformed call is the model's, not an app failure, and the
+            // handler's error text can quote the arguments: size only.
+            _log(
+              'Invalid update_checklist_items call '
+              '(toolCallId=${toolCall.id}, '
+              '${toolCall.function.arguments.length} chars of arguments)',
+              level: InsightLevel.warn,
             );
             continue;
           }

@@ -4,8 +4,11 @@ import 'dart:isolate';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show DeviceOrientation;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:zxing2/qrcode.dart';
@@ -111,8 +114,10 @@ typedef QrDecoder = Future<String?> Function(QrFrame frame);
 /// Built on the standard camera API — CameraX on Android, AVFoundation on
 /// iOS, `camera_desktop` on macOS and Linux — and decoded off the UI isolate
 /// with the pure-Dart ZXing port. No proprietary scanning SDK is involved,
-/// which keeps the Android build free of Google ML Kit.
-class QrScanner extends StatefulWidget {
+/// which keeps the Android build free of Google ML Kit. Camera and decode
+/// failures are logged to [LogDomain.sync] via `domainLoggerProvider`; a
+/// denied camera permission is a warning, not an error.
+class QrScanner extends ConsumerStatefulWidget {
   const QrScanner({
     required this.onDetect,
     required this.unavailableBuilder,
@@ -128,7 +133,7 @@ class QrScanner extends StatefulWidget {
       Isolate.run(() => decodeQrFrame(frame));
 
   @override
-  State<QrScanner> createState() => _QrScannerState();
+  ConsumerState<QrScanner> createState() => _QrScannerState();
 }
 
 /// Narrow camera seam used by the widget tests; production uses
@@ -150,6 +155,17 @@ abstract interface class QrCamera {
 
 typedef QrCameraFactory = Future<QrCamera> Function();
 
+/// [CameraException] codes the camera plugins report when the user denied
+/// (or a policy restricts) camera access: `camera_avfoundation` and
+/// `camera_android_camerax` use the `CameraAccess*` codes, `camera_desktop`
+/// on macOS `permission_denied`.
+const cameraAccessDeniedCodes = <String>{
+  'CameraAccessDenied',
+  'CameraAccessDeniedWithoutPrompt',
+  'CameraAccessRestricted',
+  'permission_denied',
+};
+
 /// Test-only factory override for the native camera.
 @visibleForTesting
 QrCameraFactory? qrCameraFactoryOverride;
@@ -158,7 +174,11 @@ QrCameraFactory? qrCameraFactoryOverride;
 @visibleForTesting
 Future<QrCamera> createQrCamera() => _CameraQrCamera.create();
 
-class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
+class _QrScannerState extends ConsumerState<QrScanner>
+    with WidgetsBindingObserver {
+  /// Read once in [initState]: the failure handlers run after awaits, when
+  /// `ref` may already be unusable.
+  late final DomainLogger _domainLogger;
   QrCamera? _camera;
   bool _unavailable = false;
   bool _decoding = false;
@@ -178,6 +198,7 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _domainLogger = ref.read(domainLoggerProvider);
     WidgetsBinding.instance.addObserver(this);
     _openCamera();
   }
@@ -250,12 +271,25 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
     if (failedCamera != null) {
       await _disposeCamera(failedCamera);
     }
-    DevLogger.error(
-      name: 'QrScanner',
-      message: 'Camera failed',
-      error: error,
-      stackTrace: stackTrace,
-    );
+    if (error is CameraException &&
+        cameraAccessDeniedCodes.contains(error.code)) {
+      // Denied access is the user's choice, not a fault, and every resume
+      // retries it: a warning per attempt, without a stack trace.
+      _domainLogger.log(
+        LogDomain.sync,
+        'Camera access denied (code=${error.code})',
+        subDomain: 'QrScanner',
+        level: InsightLevel.warn,
+      );
+    } else {
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'QrScanner',
+        message: 'Camera failed',
+      );
+    }
     if (mounted) setState(() => _unavailable = true);
     _handlingCameraFailure = false;
   }
@@ -264,11 +298,12 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
     try {
       await camera.dispose();
     } on Exception catch (error, stackTrace) {
-      DevLogger.error(
-        name: 'QrScanner',
-        message: 'Failed to dispose camera',
-        error: error,
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'QrScanner',
+        message: 'Failed to dispose camera',
       );
     }
   }
@@ -302,11 +337,12 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
       _lastDetectedPayload = payload;
       widget.onDetect(payload);
     } on Exception catch (error, stackTrace) {
-      DevLogger.error(
-        name: 'QrScanner',
-        message: 'QR decode failed',
-        error: error,
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'QrScanner',
+        message: 'QR decode failed',
       );
     } finally {
       _decoding = false;

@@ -55,13 +55,7 @@ class GenUiEventHandler {
         _processInteraction(interactionPart.interaction);
       }
     } catch (e, s) {
-      _domainLogger.error(
-        LogDomain.agentWorkflow,
-        e,
-        stackTrace: s,
-        subDomain: 'GenUiEventHandler',
-        message: 'Failed to handle GenUI event',
-      );
+      _logFailure(e, s, 'Failed to handle GenUI event');
     }
   }
 
@@ -90,14 +84,11 @@ class GenUiEventHandler {
             onRatingsSubmitted?.call(action.surfaceId, ratings);
           }
         } catch (e, s) {
-          _domainLogger.error(
-            LogDomain.agentWorkflow,
+          _logFailure(
             e,
-            stackTrace: s,
-            subDomain: 'GenUiEventHandler',
-            message:
-                'Failed to parse ratings JSON '
-                '(bytes=${utf8.encode(ratingsJson).length})',
+            s,
+            'Failed to parse ratings JSON '
+            '(bytes=${utf8.encode(ratingsJson).length})',
           );
         }
       } else if (name == 'ab_comparison_submitted') {
@@ -111,14 +102,11 @@ class GenUiEventHandler {
             }
           }
         } catch (e, s) {
-          _domainLogger.error(
-            LogDomain.agentWorkflow,
+          _logFailure(
             e,
-            stackTrace: s,
-            subDomain: 'GenUiEventHandler',
-            message:
-                'Failed to parse AB comparison JSON '
-                '(bytes=${utf8.encode(payloadJson).length})',
+            s,
+            'Failed to parse AB comparison JSON '
+            '(bytes=${utf8.encode(payloadJson).length})',
           );
         }
       } else if (name == 'binary_choice_submitted') {
@@ -132,26 +120,34 @@ class GenUiEventHandler {
             }
           }
         } catch (e, s) {
-          _domainLogger.error(
-            LogDomain.agentWorkflow,
+          _logFailure(
             e,
-            stackTrace: s,
-            subDomain: 'GenUiEventHandler',
-            message:
-                'Failed to parse binary choice JSON '
-                '(bytes=${utf8.encode(payloadJson).length})',
+            s,
+            'Failed to parse binary choice JSON '
+            '(bytes=${utf8.encode(payloadJson).length})',
           );
         }
       }
     } catch (e, s) {
-      _domainLogger.error(
-        LogDomain.agentWorkflow,
-        e,
-        stackTrace: s,
-        subDomain: 'GenUiEventHandler',
-        message: 'Failed to process GenUI interaction',
-      );
+      _logFailure(e, s, 'Failed to process GenUI interaction');
     }
+  }
+
+  /// Logs a failed surface event without its payload.
+  ///
+  /// A `jsonDecode` [FormatException] prints the offending source, which here
+  /// is the user's rating, choice or comparison option — model-written text —
+  /// so it is logged through [DomainLogger.withoutSource], and `errorType`
+  /// keeps the original classification in the PII-safe log.
+  void _logFailure(Object error, StackTrace stackTrace, String message) {
+    _domainLogger.error(
+      LogDomain.agentWorkflow,
+      DomainLogger.withoutSource(error),
+      stackTrace: stackTrace,
+      subDomain: 'GenUiEventHandler',
+      message: message,
+      errorType: error.runtimeType,
+    );
   }
 
   /// Stop listening and clean up.

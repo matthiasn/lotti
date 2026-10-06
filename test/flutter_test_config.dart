@@ -35,7 +35,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
   // Suppress DevLogger console output in tests by default.
-  // Tests that need to verify logging can use DevLogger.capturedLogs.
+  // Only lib/database/ and the logging service still log through DevLogger;
+  // tests verify app logging on MockDomainLogger (see test/README.md).
   DevLogger.suppressOutput = true;
 
   // Bind super_clipboard's native write channels to a shared recording mock

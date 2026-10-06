@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
@@ -76,16 +77,16 @@ class EventAgentStrategy extends ConversationStrategy
       Map<String, dynamic> args;
       try {
         args = parseAgentToolArguments(call.function.arguments);
-      } catch (e, stackTrace) {
+      } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
-        domainLogger.error(
+        // Malformed arguments are a routine model hiccup, answered with a
+        // rejection below — not an app fault for the error log.
+        domainLogger.log(
           LogDomain.agentWorkflow,
-          e,
-          stackTrace: stackTrace,
+          'Failed to parse tool call arguments for $toolName '
+          '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
           subDomain: 'EventAgentStrategy',
-          message:
-              'Failed to parse tool call arguments for $toolName '
-              '(rawBytes=$rawBytes)',
+          level: InsightLevel.warn,
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '

@@ -1009,7 +1009,7 @@ void main() {
           () => logger.error(
             LogDomain.persistence,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'EntryController',
             message:
                 'Failed to drop privacy-incompatible project link for '
@@ -2957,7 +2957,7 @@ void main() {
         () => logger.error(
           LogDomain.persistence,
           any<Object>(that: isA<StateError>()),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'EntryController',
           message: 'Failed to sync a title change for task $entryId',
         ),
@@ -3506,7 +3506,7 @@ void main() {
         () => logger.error(
           LogDomain.persistence,
           any<Object>(that: isA<StateError>()),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'EntryController',
           message: 'Failed to paste cover art',
         ),

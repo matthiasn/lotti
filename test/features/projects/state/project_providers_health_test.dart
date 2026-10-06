@@ -273,7 +273,7 @@ void main() {
           () => logger.error(
             LogDomain.tasks,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'projectsOverviewProvider',
             message: 'Failed to attach project agent sidecars',
           ),
@@ -476,7 +476,7 @@ void main() {
           () => logger.error(
             LogDomain.tasks,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'projectAgentOverviewUpdateStreamProvider',
             message: 'Failed to scope agent update for the Projects overview',
           ),

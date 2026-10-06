@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1462,8 +1463,9 @@ void main() {
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final convRepo = _TestConversationRepository();
+      final domainLogger = MockDomainLogger();
       final workflow = TemplateEvolutionWorkflow(
-        domainLogger: MockDomainLogger(),
+        domainLogger: domainLogger,
         conversationRepository: convRepo,
         aiConfigRepository: mockAiConfig,
         cloudInferenceRepository: mockCloudInference,
@@ -1495,6 +1497,17 @@ void main() {
           .toList();
       expect(sessionEntities, hasLength(1));
       expect(sessionEntities.first.status, EvolutionSessionStatus.abandoned);
+
+      // The note failure itself is logged with its stack trace.
+      verify(
+        () => domainLogger.error(
+          LogDomain.agentWorkflow,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'TemplateEvolutionWorkflow',
+          message: 'Failed to persist notes during abandon',
+        ),
+      ).called(1);
     });
   });
 

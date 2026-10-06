@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart' show toDbEntity;
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
@@ -573,6 +574,42 @@ void main() {
         expect(testChecklistCompletionService.capturedSuggestions, isEmpty);
       },
     );
+
+    test(
+      'logs a malformed suggestion without the arguments it quotes',
+      () async {
+        final task = makeTask2();
+
+        await repository.processToolCalls(
+          toolCalls: [
+            createMockMessageToolCall(
+              id: 'malformed',
+              functionName:
+                  ChecklistCompletionFunctions.suggestChecklistCompletion,
+              // Missing comma: jsonDecode's FormatException quotes this text.
+              arguments:
+                  '{"checklistItemId":"item-1","reason":"Buy secret gift" '
+                  '"confidence":"high"}',
+            ),
+          ],
+          task: task,
+        );
+
+        final logged = verify(
+          () => harness.mockDomainLogger.error(
+            LogDomain.ai,
+            captureAny(),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'UnifiedAiInferenceRepository',
+            message: 'Error parsing individual checklist completion JSON',
+            errorType: FormatException,
+          ),
+        ).captured.single;
+        expect(logged, isA<FormatException>());
+        expect((logged as FormatException).source, isNull);
+        expect(logged.toString(), isNot(contains('secret gift')));
+      },
+    );
   });
 
   group('processToolCalls – add_multiple_checklist_items edge cases', () {
@@ -724,7 +761,7 @@ void main() {
     );
 
     test(
-      'logs error when autoCreateChecklist fails',
+      'logs a content-free warning when autoCreateChecklist fails',
       () async {
         final task = Task(
           meta: createMetadata(id: 'task-cl-fail'),
@@ -753,7 +790,8 @@ void main() {
             success: false,
             checklistId: null,
             createdItems: null,
-            error: 'Creation failed',
+            // The service's error text can carry an exception's message.
+            error: 'Creation failed: secret detail',
           ),
         );
 
@@ -784,6 +822,26 @@ void main() {
             isChecked: any(named: 'isChecked'),
             categoryId: any(named: 'categoryId'),
             checkedBy: any(named: 'checkedBy'),
+          ),
+        );
+        // The service already logged any exception: a warning here, never
+        // the service's error text and never a second error.
+        verify(
+          () => harness.mockDomainLogger.log(
+            LogDomain.ai,
+            'Checklist not created for task task-cl-fail; item skipped',
+            subDomain: 'UnifiedAiInferenceRepository',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => harness.mockDomainLogger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+            errorType: any(named: 'errorType'),
           ),
         );
       },
@@ -826,6 +884,62 @@ void main() {
 
           expect(result, isFalse);
           verifyNever(() => mockJournalDb.entriesForIds(any()));
+        },
+      );
+
+      test(
+        'a malformed update call is a warning that never quotes it',
+        () async {
+          final task = Task(
+            meta: createMetadata(id: 'task-update-malformed'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Update Malformed Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              checklistIds: const ['checklist-1'],
+            ),
+          );
+          // The handler's error is 'Invalid JSON: <FormatException>', which
+          // quotes these arguments.
+          const arguments = '{"items": [{"title": "secret title" }';
+
+          await repository.processToolCalls(
+            toolCalls: [
+              createMockMessageToolCall(
+                id: 'malformed-update',
+                functionName: ChecklistCompletionFunctions.updateChecklistItems,
+                arguments: arguments,
+              ),
+            ],
+            task: task,
+          );
+
+          verify(
+            () => harness.mockDomainLogger.log(
+              LogDomain.ai,
+              'Invalid update_checklist_items call '
+              '(toolCallId=malformed-update, '
+              '${arguments.length} chars of arguments)',
+              subDomain: 'UnifiedAiInferenceRepository',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
+          verifyNever(
+            () => harness.mockDomainLogger.error(
+              any(),
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+              message: any(named: 'message'),
+              errorType: any(named: 'errorType'),
+            ),
+          );
         },
       );
 

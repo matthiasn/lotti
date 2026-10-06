@@ -111,6 +111,19 @@ every file after it — and the painting binding's `imageCache` carries
 whatever earlier files decoded, so assert a *delta* on its size, never an
 absolute.
 
+## Asserting logging
+
+App code logs through `DomainLogger`; `DevLogger` remains only in
+`lib/database/` and the logging service beneath it, so
+`DevLogger.capturedLogs` observes nothing else. Inject the shared
+`MockDomainLogger` (`test/mocks/mocks.dart`), keep it in a field rather than
+an inline `MockDomainLogger()` you cannot verify, and assert the call: a
+caught failure with
+`verify(() => logger.error(domain, any(), stackTrace: any(named: 'stackTrace', that: isNotNull), subDomain: ..., message: ...))`,
+a progress or warning line with `verify(() => logger.log(domain, message, ...))`.
+A bare `any(named: 'stackTrace')` also matches `null`, so it cannot catch a
+catch block that dropped its trace.
+
 ## Settings routing and panels
 
 The settings route registry, the desktop panel host, `LeafPanel` and

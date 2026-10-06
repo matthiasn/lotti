@@ -9,7 +9,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
@@ -167,6 +168,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                 onPressed: () async {
                   final navigator = Navigator.of(context);
                   final messages = context.messages;
+                  final logger = ref.read(domainLoggerProvider);
 
                   final categoryName = _nameController.text.trim();
 
@@ -188,11 +190,12 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     widget.onCategoryCreated(category);
                     navigator.pop();
                   } catch (e, s) {
-                    DevLogger.error(
-                      name: 'CategoryCreateModal',
-                      message: 'Error creating category',
-                      error: e,
+                    logger.error(
+                      LogDomain.general,
+                      e,
                       stackTrace: s,
+                      subDomain: 'CategoryCreateModal',
+                      message: 'Error creating category',
                     );
 
                     if (!context.mounted) return;

@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
@@ -77,7 +78,7 @@ typedef _TimeSensitiveDayAgentContext = ({
 });
 
 /// Assembles context and runs one Daily OS day-agent wake.
-class DayAgentWorkflow {
+class DayAgentWorkflow with AgentErrorLogging {
   /// Creates a day-agent workflow.
   DayAgentWorkflow({
     required this.agentRepository,
@@ -152,6 +153,7 @@ class DayAgentWorkflow {
   final TaskDependencyResolver? dependencyResolver;
 
   /// Structured logger.
+  @override
   final DomainLogger domainLogger;
 
   /// Callback fired when persisted state changes.
@@ -179,22 +181,9 @@ class DayAgentWorkflow {
   /// Newest-first fetch cap for the per-wake observation read (see the call
   /// site in [execute]) — 2x the 20-item replay cap in `recentObservations`.
   static const _observationFetchLimit = 40;
-  void _log(String message, {String? subDomain}) {
-    domainLogger.log(
-      LogDomain.agentWorkflow,
-      message,
-      subDomain: subDomain,
-    );
-  }
 
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    domainLogger.error(
-      LogDomain.agentWorkflow,
-      error ?? message,
-      message: error != null ? message : null,
-      stackTrace: stackTrace,
-    );
-  }
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentWorkflow;
 
   /// Execute a full wake cycle for [agentIdentity].
   Future<WakeResult> execute({
@@ -216,7 +205,7 @@ class DayAgentWorkflow {
         ? reanchorDigestTriggerTokens(triggerTokens, now)
         : triggerTokens;
     if (!identical(effectiveTokens, triggerTokens)) {
-      _log(
+      logInfo(
         're-anchored stale digest wake to ${dayAgentIdForDate(now)}',
         subDomain: 'execute',
       );
@@ -265,7 +254,7 @@ class DayAgentWorkflow {
                 : null,
           );
         } catch (scheduleError, stackTrace) {
-          _logError(
+          logError(
             'failed to re-arm coordinator digest wake',
             error: scheduleError,
             stackTrace: stackTrace,
@@ -361,7 +350,7 @@ class DayAgentWorkflow {
         !wakeContext.isDraftingWake &&
         !wakeContext.isRefineWake &&
         isStalePlannerDay(resolvedDayId, now)) {
-      _log(
+      logInfo(
         'skipped stale planning_day wake for $resolvedDayId — day finished, '
         'no inference',
         subDomain: 'execute',
@@ -431,7 +420,7 @@ class DayAgentWorkflow {
       );
       capturesLoaded = true;
     } catch (e) {
-      _logError('failed to load capture metadata', error: e);
+      logError('failed to load capture metadata', error: e);
     }
     final memoryView = await memory.compactAndAssemble(
       agentId: agentId,
@@ -756,7 +745,7 @@ class DayAgentWorkflow {
         modelId: modelId,
         templateCtx: templateCtx,
         now: now,
-        logError: _logError,
+        logError: logError,
       );
 
       final manager = conversationRepository.getConversation(conversationId);
@@ -822,10 +811,10 @@ class DayAgentWorkflow {
         ?..call(agentId)
         ..call(resolvedDayId);
 
-      _log('day-agent wake completed', subDomain: 'execute');
+      logInfo('day-agent wake completed', subDomain: 'execute');
       return const WakeResult(success: true);
     } catch (e, s) {
-      _logError('day-agent wake failed', error: e, stackTrace: s);
+      logError('day-agent wake failed', error: e, stackTrace: s);
       try {
         // Read and write in one transaction, so a write that lands in
         // between is not overwritten (ADR 0068).
@@ -838,7 +827,7 @@ class DayAgentWorkflow {
           ),
         );
       } catch (stateError, stackTrace) {
-        _logError(
+        logError(
           'failed to update day-agent failure count',
           error: stateError,
           stackTrace: stackTrace,
@@ -880,7 +869,7 @@ class DayAgentWorkflow {
         }
       }
     } catch (e, s) {
-      _logError('failed to read digest completion', error: e, stackTrace: s);
+      logError('failed to read digest completion', error: e, stackTrace: s);
     }
     return false;
   }

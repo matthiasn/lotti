@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -394,18 +395,31 @@ void main() {
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
       );
 
-      // The parse failure is logged with the arguments' size, not their text.
-      verify(
+      // The model's malformed call is a warning carrying the parser's
+      // message and the arguments' size, never their text.
+      final logged =
+          verify(
+                () => logger.log(
+                  LogDomain.ai,
+                  captureAny(),
+                  subDomain: 'GeminiUtils',
+                  level: InsightLevel.warn,
+                ),
+              ).captured.single
+              as String;
+      expect(logged, startsWith('Failed to parse tool call arguments as JSON'));
+      expect(logged, contains('raw 18 chars'));
+      expect(logged, isNot(contains('not valid json')));
+      verifyNever(
         () => logger.error(
-          LogDomain.ai,
-          any<Object>(that: isA<FormatException>()),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: 'GeminiUtils',
-          message:
-              'Failed to parse tool call arguments as JSON. '
-              'Using empty object (raw 18 chars).',
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+          errorType: any(named: 'errorType'),
         ),
-      ).called(1);
+      );
 
       expect(body['contents'], isA<List<dynamic>>());
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();

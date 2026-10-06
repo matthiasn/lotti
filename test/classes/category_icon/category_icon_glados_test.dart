@@ -58,7 +58,6 @@ void main() {
   group('CategoryIconStrings', () {
     test('should have non-empty string constants', () {
       expect(CategoryIconStrings.fallbackCharacter, isNotEmpty);
-      expect(CategoryIconStrings.invalidIconWarning, isNotEmpty);
     });
 
     test('fallback character should be a single character', () {

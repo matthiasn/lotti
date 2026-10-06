@@ -705,7 +705,7 @@ void main() {
             () => mockLogger.error(
               LogDomain.tasks,
               any<Object>(),
-              stackTrace: any(named: 'stackTrace'),
+              stackTrace: any(named: 'stackTrace', that: isNotNull),
               subDomain: 'CorrectionCaptureService',
               message: 'Correction capture: timer callback failed',
             ),
@@ -999,7 +999,7 @@ void main() {
           () => mockLogger.error(
             LogDomain.tasks,
             any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'CorrectionCaptureService',
             message: 'Correction capture: save failed',
           ),

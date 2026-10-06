@@ -208,12 +208,14 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
   );
 
   final loggingService = LoggingService();
+  // One logger for every service the harness builds, registered below.
+  final domainLogger = DomainLogger(loggingService: loggingService);
   final settingsDb = SettingsDb(inMemoryDatabase: true);
   final journalDb = JournalDb(
     inMemoryDatabase: true,
     background: false,
     readPool: 0,
-    loggingService: DomainLogger(loggingService: loggingService),
+    loggingService: domainLogger,
   );
   final fts5Db = Fts5Db(inMemoryDatabase: true);
   final editorDb = EditorDb(inMemoryDatabase: true);
@@ -261,18 +263,17 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     vectorClockService: vectorClockService,
   );
   final geolocationService = GeolocationService(
-    loggingService: DomainLogger(loggingService: loggingService),
+    loggingService: domainLogger,
   );
   final entitiesCacheService = EntitiesCacheService(
     journalDb: journalDb,
     updateNotifications: updateNotifications,
+    domainLogger: domainLogger,
   );
   await entitiesCacheService.init();
 
   getIt
-    ..registerSingleton<DomainLogger>(
-      DomainLogger(loggingService: loggingService),
-    )
+    ..registerSingleton<DomainLogger>(domainLogger)
     ..registerSingleton<MetadataService>(metadataService)
     ..registerSingleton<GeolocationService>(geolocationService)
     ..registerSingleton<EntitiesCacheService>(entitiesCacheService)

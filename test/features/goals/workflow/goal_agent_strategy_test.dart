@@ -4,8 +4,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -29,6 +31,7 @@ void main() {
   late MockAgentSyncService syncService;
   late MockConversationManager manager;
   late GoalAgentStrategy strategy;
+  late MockDomainLogger domainLogger;
 
   setUpAll(registerAllFallbackValues);
 
@@ -36,8 +39,9 @@ void main() {
     syncService = MockAgentSyncService();
     manager = MockConversationManager();
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    domainLogger = MockDomainLogger();
     strategy = GoalAgentStrategy(
-      domainLogger: MockDomainLogger(),
+      domainLogger: domainLogger,
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -1720,6 +1724,28 @@ void main() {
       );
       expect(strategy.hasReport, isFalse);
       expect(rejection(), contains('invalid arguments format'));
+      verify(
+        () => domainLogger.log(
+          LogDomain.agentWorkflow,
+          any(
+            that: allOf(
+              contains('Failed to parse tool call arguments'),
+              contains('errorType=FormatException'),
+            ),
+          ),
+          subDomain: 'GoalAgentStrategy',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+      verifyNever(
+        () => domainLogger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      );
     },
   );
 

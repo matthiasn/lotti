@@ -112,7 +112,7 @@
     "lib/features/habits/state/habit_completion_controller.dart": {"lookups": 1},
     "lib/features/habits/state/habit_signal_status_controller.dart": {"lookups": 3},
     "lib/features/habits/ui/habits_page.dart": {"lookups": 1},
-    "lib/features/habits/ui/sheets/habit_completion_sheet.dart": {"lookups": 3},
+    "lib/features/habits/ui/sheets/habit_completion_sheet.dart": {"lookups": 2},
     "lib/features/habits/ui/widgets/habit_action_row.dart": {"lookups": 1},
     "lib/features/habits/ui/widgets/habit_category.dart": {"lookups": 1},
     "lib/features/habits/ui/widgets/habit_completion_card.dart": {"lookups": 1},

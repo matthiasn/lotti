@@ -7,6 +7,13 @@
 /// that reaches only an attached debugger, so a failure logged there leaves
 /// no trace a user or maintainer would find. The files that implement
 /// logging (`lib/services/`) may use it; no other file may.
+///
+/// `DevLogger` (`lib/services/dev_logger.dart`) wraps that same channel. It
+/// stays only beneath the logging pipeline: `LoggingService` mirrors its own
+/// records to the console through it, and `lib/database/` opens and migrates
+/// the databases `LoggingService` writes into, during bootstrap and before any
+/// `DomainLogger` exists. Everywhere else it is the same bypass, so no other
+/// file may reference it.
 library;
 
 import 'dart:io';
@@ -18,6 +25,13 @@ import 'package:path/path.dart' as p;
 
 /// Directories whose files implement logging and may call `dart:developer`.
 const loggingLayer = <String>{'lib/services/'};
+
+/// Paths beneath the logging pipeline, which may use `DevLogger`.
+const devLoggerLayer = <String>{
+  'lib/database/',
+  'lib/services/dev_logger.dart',
+  'lib/services/logging_service.dart',
+};
 
 /// Generated sources restate the hand-written ones.
 bool isGenerated(String path) =>
@@ -74,6 +88,24 @@ int countDeveloperLogs(String source, {String? librarySource}) {
   return count;
 }
 
+/// Counts references to `DevLogger` in [source]: calls, tear-offs and type
+/// uses alike. Counting runs on the token stream, so comments, strings and
+/// import URIs never count, nor does a member that merely shares the name.
+int countDevLoggerUses(String source) {
+  final unit = parseString(content: source, throwIfDiagnostics: false).unit;
+  var count = 0;
+  for (Token? t = unit.beginToken; t != null && !t.isEof; t = t.next) {
+    if (t.type != TokenType.IDENTIFIER || t.lexeme != 'DevLogger') continue;
+    final previous = t.previous;
+    final afterDot =
+        previous != null &&
+        (previous.type == TokenType.PERIOD ||
+            previous.type == TokenType.QUESTION_PERIOD);
+    if (!afterDot) count++;
+  }
+  return count;
+}
+
 /// A file that logs through `dart:developer`, phrased as something the reader
 /// can act on.
 class DeveloperLogViolation {
@@ -86,21 +118,13 @@ class DeveloperLogViolation {
   String toString() => '$path: $message';
 }
 
-/// The result of a scan: each offending file's count, and a violation per
-/// file.
-class GuardResult {
-  const GuardResult(this.counts, this.violations);
-
-  final Map<String, int> counts;
-  final List<DeveloperLogViolation> violations;
-
-  int get total => counts.values.fold(0, (a, b) => a + b);
-}
-
 /// Counts `dart:developer` logging in every Dart file under [root] outside
-/// [loggingLayer]; every file with a call is a violation.
-GuardResult scan({required Directory root, required String repoRoot}) {
-  final counts = <String, int>{};
+/// [loggingLayer], and `DevLogger` use outside [devLoggerLayer]. Returns one
+/// violation per offending kind per file, so a file with both yields two.
+List<DeveloperLogViolation> scan({
+  required Directory root,
+  required String repoRoot,
+}) {
   final violations = <DeveloperLogViolation>[];
   final files =
       root
@@ -114,25 +138,43 @@ GuardResult scan({required Directory root, required String repoRoot}) {
     final rel = p.posix.joinAll(
       p.split(p.relative(file.path, from: repoRoot)),
     );
-    if (isGenerated(rel) || loggingLayer.any(rel.startsWith)) continue;
+    if (isGenerated(rel)) continue;
     final source = file.readAsStringSync();
-    final found = countDeveloperLogs(
-      source,
-      librarySource: _librarySourceOf(file, source),
-    );
-    if (found == 0) continue;
-    counts[rel] = found;
-    violations.add(
-      DeveloperLogViolation(
-        rel,
-        'has $found `dart:developer` log call${found == 1 ? '' : 's'}. Log '
-        'through `DomainLogger` — `error` with the stack trace in a catch '
-        'block, `log` otherwise (ids, counts and lengths, never content).',
-      ),
-    );
+    final developerLogs = loggingLayer.any(rel.startsWith)
+        ? 0
+        : countDeveloperLogs(
+            source,
+            librarySource: _librarySourceOf(file, source),
+          );
+    final devLoggerUses = devLoggerLayer.any(rel.startsWith)
+        ? 0
+        : countDevLoggerUses(source);
+    if (developerLogs > 0) {
+      violations.add(
+        DeveloperLogViolation(
+          rel,
+          'has $developerLogs `dart:developer` log '
+          'call${developerLogs == 1 ? '' : 's'}. $_logThroughDomainLogger',
+        ),
+      );
+    }
+    if (devLoggerUses > 0) {
+      violations.add(
+        DeveloperLogViolation(
+          rel,
+          'uses `DevLogger` $devLoggerUses '
+          'time${devLoggerUses == 1 ? '' : 's'}; it belongs to '
+          '${devLoggerLayer.join(', ')}. $_logThroughDomainLogger',
+        ),
+      );
+    }
   }
-  return GuardResult(counts, violations);
+  return violations;
 }
+
+const _logThroughDomainLogger =
+    'Log through `DomainLogger` — `error` with the stack trace in a catch '
+    'block, `log` otherwise (ids, counts and lengths, never content).';
 
 /// The source of the library [file] is a `part of`, or null if it is a
 /// library itself (or its library cannot be read).

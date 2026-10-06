@@ -375,9 +375,7 @@ class OllamaApiClient {
           _domainLogger.error(
             LogDomain.ai,
             // Not a FormatException itself: its toString quotes the chunk.
-            e is FormatException
-                ? FormatException(e.message, null, e.offset)
-                : e,
+            DomainLogger.withoutSource(e),
             errorType: e.runtimeType,
             stackTrace: stackTrace,
             subDomain: 'OllamaApiClient',

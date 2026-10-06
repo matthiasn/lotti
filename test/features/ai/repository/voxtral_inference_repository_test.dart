@@ -969,6 +969,7 @@ data: [DONE]
             any<Object>(that: isA<VoxtralModelNotAvailableException>()),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'model_not_available',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1007,6 +1008,7 @@ data: [DONE]
             any<Object>(that: isA<VoxtralInferenceException>()),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'http_error',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
         // The status line carries the body's size, never the body.
@@ -1058,9 +1060,10 @@ data: [DONE]
           () => mockDomainLogger.error(
             LogDomain.speech,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'unexpected',
             message: 'Unexpected error during audio transcription',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1105,9 +1108,10 @@ data: [DONE]
           () => mockDomainLogger.error(
             LogDomain.speech,
             any<Object>(that: isA<TimeoutException>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'timeout',
             message: 'Transcription request timed out',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });
@@ -1127,7 +1131,7 @@ data: [DONE]
 
         when(
           () => mockHttpClient.send(any()),
-        ).thenThrow(const FormatException('bad framing'));
+        ).thenThrow(const FormatException('bad framing', 'secret chunk'));
 
         // Act
         final transcriptionStream = repository.transcribeAudio(
@@ -1148,15 +1152,18 @@ data: [DONE]
           ),
         );
 
-        verify(
+        // Logged with its trace, without the text the exception quotes.
+        final logged = verify(
           () => mockDomainLogger.error(
             LogDomain.speech,
-            any<Object>(that: isA<FormatException>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            captureAny(that: isA<FormatException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'format_error',
             message: 'Failed to parse response from Voxtral server',
+            errorType: FormatException,
           ),
-        ).called(1);
+        ).captured.single;
+        expect(logged.toString(), isNot(contains('secret chunk')));
       });
     });
 

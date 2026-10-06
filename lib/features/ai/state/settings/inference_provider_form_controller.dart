@@ -7,7 +7,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -258,10 +257,11 @@ class InferenceProviderFormController
 
       // Log the number of models created for debugging
       if (modelsCreated > 0) {
-        DevLogger.log(
-          name: 'InferenceProviderForm',
-          message:
-              'Pre-populated $modelsCreated models for provider ${config.name}',
+        domainLogger.log(
+          LogDomain.ai,
+          'Pre-populated $modelsCreated models for provider ${config.id} '
+          '(${config.inferenceProviderType.name})',
+          subDomain: 'InferenceProviderForm',
         );
       }
 
@@ -309,10 +309,13 @@ class InferenceProviderFormController
       );
       await seedingService.seedDefaults();
       await seedingService.upgradeExisting();
-    } catch (error) {
-      DevLogger.log(
-        name: 'InferenceProviderForm',
-        message: 'Profile seeding after provider save failed: $error',
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'InferenceProviderForm',
+        message: 'Profile seeding after provider save failed',
       );
     }
   }

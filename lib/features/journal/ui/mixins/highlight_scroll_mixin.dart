@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/scheduler.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mixin for managing entry highlight animations and scroll-to-entry with retry logic.
@@ -16,6 +17,11 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   // Keep scroll highlight visible long enough for multi-pulse sequences (4x1200ms)
   Duration get highlightDuration => const Duration(milliseconds: 4800);
   Duration get scrollDuration => const Duration(milliseconds: 300);
+
+  /// Logger for scroll failures; the host State supplies it (a ConsumerState
+  /// returns `ref.read(domainLoggerProvider)`). Read once per attempt, before
+  /// any await, so a host disposed mid-scroll is never asked for it.
+  DomainLogger get highlightScrollLogger;
 
   /// Pure retry predicate: attempt counting starts at 0, so a budget of
   /// [maxRetries] attempts allows retries while `attempt < maxRetries - 1`
@@ -119,6 +125,7 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       if (_disposed) return;
+      final logger = highlightScrollLogger;
 
       // Guard: bail out if a newer scroll operation has started
       if (_scrollingToEntryId != entryId) return;
@@ -155,10 +162,13 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           _retryTimer?.cancel();
           // Clear intent on success if requested
           onScrolled?.call();
-        } catch (e) {
-          DevLogger.warning(
-            name: 'HighlightScrollMixin',
-            message: 'Failed to scroll to entry $entryId: $e',
+        } catch (e, stackTrace) {
+          logger.error(
+            LogDomain.navigation,
+            e,
+            stackTrace: stackTrace,
+            subDomain: 'HighlightScrollMixin',
+            message: 'Failed to scroll to entry $entryId',
           );
           _scrollingToEntryId = null;
           _retryTimer?.cancel();
@@ -182,10 +192,11 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
         });
       } else {
         // Final attempt failed - log warning and clear state
-        DevLogger.warning(
-          name: 'HighlightScrollMixin',
-          message:
-              'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
+        logger.log(
+          LogDomain.navigation,
+          'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
+          subDomain: 'HighlightScrollMixin',
+          level: InsightLevel.warn,
         );
         _scrollingToEntryId = null;
         _retryTimer?.cancel();

@@ -394,9 +394,12 @@ class UnifiedAiInferenceRepository {
       // The controller sets state.error THEN sets status, ensuring the widget
       // can read the error object when it rebuilds on status change.
 
+      // The type only: a provider error can carry the response body, which
+      // may echo the prompt or the model's output.
       _domainLogger.error(
         LogDomain.ai,
-        e,
+        '${e.runtimeType}',
+        errorType: e.runtimeType,
         stackTrace: stackTrace,
         subDomain: _logTag,
         message: 'Inference failed',

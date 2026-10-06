@@ -14,7 +14,6 @@ import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/services/metadata_service.dart'
     show MetadataService;
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -386,10 +385,6 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
         exception,
         stackTrace: stackTrace,
         subDomain: 'createDbEntity',
-      );
-      DevLogger.error(
-        name: 'PersistenceLogic',
-        message: 'Exception: $exception',
       );
     }
     // null only when the write itself never reported a verdict.

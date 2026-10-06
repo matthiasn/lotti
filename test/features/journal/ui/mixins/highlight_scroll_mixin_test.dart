@@ -1,10 +1,16 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+/// The logger every test host hands the mixin; replaced in `setUp`.
+MockDomainLogger _hostLogger = MockDomainLogger();
 
 // Test widget that uses the mixin
 class TestWidgetWithMixin extends StatefulWidget {
@@ -21,6 +27,9 @@ class TestWidgetWithMixin extends StatefulWidget {
 
 class TestWidgetWithMixinState extends State<TestWidgetWithMixin>
     with HighlightScrollMixin {
+  @override
+  DomainLogger get highlightScrollLogger => _hostLogger;
+
   final Map<String, GlobalKey> _entryKeys = {};
   VoidCallback? onScrolledCallback;
   int onScrolledCallCount = 0;
@@ -113,6 +122,9 @@ class ThrowingScrollHost extends StatefulWidget {
 
 class ThrowingScrollHostState extends State<ThrowingScrollHost>
     with HighlightScrollMixin {
+  @override
+  DomainLogger get highlightScrollLogger => _hostLogger;
+
   final Map<String, GlobalKey> _entryKeys = {};
   int onScrolledCallCount = 0;
 
@@ -167,6 +179,9 @@ class LateEntryHost extends StatefulWidget {
 
 class LateEntryHostState extends State<LateEntryHost>
     with HighlightScrollMixin {
+  @override
+  DomainLogger get highlightScrollLogger => _hostLogger;
+
   final List<String> entryIds = [];
   final Map<String, GlobalKey> _entryKeys = {};
 
@@ -226,12 +241,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    DevLogger.suppressOutput = true;
-    DevLogger.clear();
-  });
-
-  tearDown(() {
-    DevLogger.suppressOutput = false;
+    _hostLogger = MockDomainLogger();
   });
 
   group('HighlightScrollMixin - ', () {
@@ -521,8 +531,6 @@ void main() {
     testWidgets('retry logic handles missing context and logs warning', (
       tester,
     ) async {
-      DevLogger.clear();
-
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const TestWidgetWithMixin(entryIds: ['entry-1']),
@@ -553,31 +561,20 @@ void main() {
       expect(state.highlightedEntryId, isNull);
       expect(tester.takeException(), isNull);
 
-      // Verify DevLogger.warning was called after max retries
-      // The warning message format is:
-      // 'Failed to scroll to entry $entryId after $maxScrollRetries attempts'
-      final hasWarning = DevLogger.capturedLogs.any(
-        (log) =>
-            log.contains('HighlightScrollMixin') &&
-            log.contains('Failed to scroll to entry'),
-      );
-
-      // Unconditional: the warning must be captured — a conditional
-      // assertion could silently pass without verifying anything.
-      expect(
-        hasWarning,
-        isTrue,
-        reason:
-            'Should log warning after max retries exceeded. '
-            'Logs: ${DevLogger.capturedLogs}',
-      );
+      // The retries-exhausted warning is logged exactly once.
+      verify(
+        () => _hostLogger.log(
+          LogDomain.navigation,
+          'Failed to scroll to entry non-existent-entry after 5 attempts',
+          subDomain: 'HighlightScrollMixin',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
     });
 
     testWidgets(
       'ensureVisible failure logs warning, clears intent, leaves no highlight',
       (tester) async {
-        DevLogger.clear();
-
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
             const ThrowingScrollHost(entryIds: ['entry-1', 'entry-2']),
@@ -610,28 +607,30 @@ void main() {
         expect(state.highlightedEntryId, isNull);
         expect(tester.takeException(), isNull);
 
-        // The catch branch logs exactly one per-attempt failure message that
-        // includes the thrown error (lines 150-152), and never reaches the
-        // retries-exhausted message ('after N attempts').
-        final catchLogs = DevLogger.capturedLogs
-            .where(
-              (log) =>
-                  log.contains('HighlightScrollMixin') &&
-                  log.contains('Failed to scroll to entry entry-1') &&
-                  log.contains('reveal-boom'),
-            )
-            .toList();
-        expect(
-          catchLogs,
-          hasLength(1),
-          reason:
-              'catch branch should log the failure with the thrown error once. '
-              'Logs: ${DevLogger.capturedLogs}',
-        );
-        expect(
-          DevLogger.capturedLogs.any((log) => log.contains('after')),
-          isFalse,
-          reason: 'should not reach the retries-exhausted path',
+        // The catch branch logs the thrown error exactly once, and never
+        // reaches the retries-exhausted warning.
+        verify(
+          () => _hostLogger.error(
+            LogDomain.navigation,
+            any(
+              that: isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                'reveal-boom',
+              ),
+            ),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'HighlightScrollMixin',
+            message: 'Failed to scroll to entry entry-1',
+          ),
+        ).called(1);
+        verifyNever(
+          () => _hostLogger.log(
+            any(),
+            any(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
         );
       },
     );

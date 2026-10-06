@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -212,10 +213,12 @@ extension _AnyGeneratedEntitiesCacheScenario on glados.Any {
 
 void main() {
   late MockJournalDb journalDb;
+  late MockDomainLogger domainLogger;
   late TestNotifications notifications;
 
   setUp(() {
     journalDb = MockJournalDb();
+    domainLogger = MockDomainLogger();
     notifications = TestNotifications(sync: true);
   });
 
@@ -255,6 +258,7 @@ void main() {
     final cache = EntitiesCacheService(
       journalDb: journalDb,
       updateNotifications: notifications,
+      domainLogger: domainLogger,
     );
     await cache.init();
     return cache;
@@ -293,6 +297,7 @@ void main() {
     final cache = EntitiesCacheService(
       journalDb: journalDb,
       updateNotifications: notifications,
+      domainLogger: domainLogger,
     )..init();
     async.flushMicrotasks();
     return cache;
@@ -696,6 +701,7 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       )..init();
       async.flushMicrotasks();
       expect(measurableFetchCount, 1);
@@ -745,6 +751,7 @@ void main() {
     final cache = EntitiesCacheService(
       journalDb: journalDb,
       updateNotifications: notifications,
+      domainLogger: domainLogger,
     );
     await cache.init();
 
@@ -814,6 +821,7 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       )..init();
       async.flushMicrotasks();
       expect(categoryFetchCount, 1);
@@ -876,6 +884,7 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       )..init();
       async.flushMicrotasks();
       expect(habitFetchCount, 1);
@@ -931,6 +940,7 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       )..init();
       async.flushMicrotasks();
       expect(dashboardFetchCount, 1);
@@ -980,11 +990,21 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       );
       // Should not throw even though getAllDashboards throws
       await expectLater(cache.init(), completes);
       // dashboardsById stays empty — no crash
       expect(cache.getDashboardById('any'), isNull);
+      verify(
+        () => domainLogger.error(
+          LogDomain.persistence,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'EntitiesCacheService',
+          message: 'Failed to load dashboards',
+        ),
+      ).called(1);
     },
   );
 
@@ -1022,6 +1042,7 @@ void main() {
       final cache = EntitiesCacheService(
         journalDb: journalDb,
         updateNotifications: notifications,
+        domainLogger: domainLogger,
       )..init();
       async.flushMicrotasks();
       expect(labelFetchCount, 1);

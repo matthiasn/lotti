@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
@@ -102,15 +103,14 @@ class GeminiModelsRepository {
         final KnownModel? known;
         try {
           known = _knownModelFromPayload(row);
-        } on InferenceHttpException catch (e, stackTrace) {
-          _domainLogger.error(
+        } on InferenceHttpException catch (e) {
+          // One unusable catalog row is expected degradation, not a failure.
+          _domainLogger.log(
             LogDomain.ai,
-            e,
-            stackTrace: stackTrace,
+            'Skipping malformed Gemini model row on page ${page + 1} '
+            '#$index: ${e.message}',
             subDomain: _providerName,
-            message:
-                'Skipping malformed Gemini model row on page ${page + 1} '
-                '#$index',
+            level: InsightLevel.warn,
           );
           continue;
         }

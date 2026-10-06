@@ -361,7 +361,7 @@ void main() {
       () => logger.error(
         LogDomain.general,
         any<Object>(that: isA<StateError>()),
-        stackTrace: any(named: 'stackTrace'),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
         subDomain: 'PersonPhotoCard',
         message: 'Failed to change a photo',
       ),
@@ -397,7 +397,7 @@ void main() {
       () => logger.error(
         LogDomain.general,
         any<Object>(that: isA<StateError>()),
-        stackTrace: any(named: 'stackTrace'),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
         subDomain: 'PersonPhotoCard',
         message: 'Failed to re-read the person after a photo change',
       ),

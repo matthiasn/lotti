@@ -392,9 +392,10 @@ void main() {
           () => logger.error(
             LogDomain.speech,
             any<Object>(that: isA<Exception>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace', that: isNotNull),
             subDomain: 'TestProvider',
             message: 'Unexpected error during audio transcription',
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
       });

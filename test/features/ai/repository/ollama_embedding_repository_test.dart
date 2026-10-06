@@ -189,6 +189,8 @@ void main() {
           (_) async => http.Response('Internal Server Error', 500),
         );
 
+        // The body's length, never its text: an error body can echo the
+        // input, and callers log this error.
         await expectLater(
           () => repository.embed(
             input: 'test',
@@ -198,7 +200,11 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('HTTP 500'),
+              allOf(
+                contains('HTTP 500'),
+                contains('21 chars of body'),
+                isNot(contains('Internal Server Error')),
+              ),
             ),
           ),
         );
@@ -224,7 +230,11 @@ void main() {
             isA<Exception>().having(
               (e) => e.toString(),
               'message',
-              contains('Malformed'),
+              allOf(
+                contains('Malformed'),
+                contains('15 chars'),
+                isNot(contains('not json at all')),
+              ),
             ),
           ),
         );

@@ -1,6 +1,6 @@
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Callback that runs a paginated query for a given page key.
 /// Used by [JournalPagingController.refreshLoadedPages] to re-fetch data.
@@ -16,7 +16,10 @@ class JournalPagingController extends PagingController<int, JournalEntity> {
   JournalPagingController({
     required super.getNextPageKey,
     required super.fetchPage,
+    required this._domainLogger,
   });
+
+  final DomainLogger _domainLogger;
 
   bool get hasVisibleItems =>
       value.pages?.any((page) => page.isNotEmpty) ?? false;
@@ -156,9 +159,12 @@ class JournalPagingController extends PagingController<int, JournalEntity> {
         hasNextPage: hasNextPage,
       );
     } catch (error, stackTrace) {
-      DevLogger.warning(
-        name: 'JournalPagingController',
-        message: 'Error in retained visible-page refresh: $error\n$stackTrace',
+      _domainLogger.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'JournalPagingController',
+        message: 'retained visible-page refresh failed',
       );
       if (!isMounted()) return;
       if (!isRetainedRefresh(refreshToken)) return;

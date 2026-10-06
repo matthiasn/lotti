@@ -86,7 +86,7 @@ void main() {
     () => logger.error(
       LogDomain.speech,
       any<Object>(that: isA<T>()),
-      stackTrace: any(named: 'stackTrace'),
+      stackTrace: any(named: 'stackTrace', that: isNotNull),
       subDomain: 'CheckInTranscriptionService',
       message: message,
     ),
@@ -434,7 +434,9 @@ void main() {
         expect(captured.single, isEmpty);
         expect(run.isDone, isFalse, reason: 'the transcript is still coming');
       });
-      verifyLoggedError<StateError>('Could not read known terms for $personId');
+      verifyLoggedError<StateError>(
+        'Could not read known terms for ${DomainLogger.sanitizeId(personId)}',
+      );
     });
 
     // Words that arrive after the check-in was saved are new evidence: the
@@ -519,7 +521,8 @@ void main() {
       });
       // The profile read fails inside a parallel `.wait`, which wraps it.
       verifyLoggedError<ParallelWaitError<Object?, Object?>>(
-        'Requested transcription failed for $audioEntryId',
+        'Requested transcription failed for '
+        '${DomainLogger.sanitizeId(audioEntryId)}',
       );
     });
 

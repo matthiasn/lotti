@@ -173,7 +173,7 @@ class TranscriptionRepository {
           domainLogger.error(
             LogDomain.speech,
             // Not the exception itself: its toString quotes the transcript.
-            FormatException(e.message, null, e.offset),
+            DomainLogger.withoutSource(e),
             errorType: e.runtimeType,
             stackTrace: stackTrace,
             subDomain: providerName,
@@ -189,7 +189,8 @@ class TranscriptionRepository {
         } catch (e, stackTrace) {
           domainLogger.error(
             LogDomain.speech,
-            e,
+            DomainLogger.withoutSource(e),
+            errorType: e.runtimeType,
             stackTrace: stackTrace,
             subDomain: providerName,
             message: 'Unexpected error during audio transcription',

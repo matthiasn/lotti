@@ -164,7 +164,7 @@ void main() {
       () => logger.error(
         LogDomain.tasks,
         any<Object>(that: isA<StateError>()),
-        stackTrace: any(named: 'stackTrace'),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
         subDomain: 'ProjectLifecycleService',
         message: 'Failed to resolve project agents',
       ),
@@ -334,7 +334,7 @@ void main() {
       () => logger.error(
         LogDomain.tasks,
         any<Object>(that: isA<StateError>()),
-        stackTrace: any(named: 'stackTrace'),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
         subDomain: 'ProjectLifecycleService',
         message: 'Failed to restore project subscriptions',
       ),

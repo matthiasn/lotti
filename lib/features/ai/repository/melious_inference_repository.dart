@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
@@ -224,16 +225,16 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         includeMeta: true,
         timeout: timeout,
       );
-    } on InferenceHttpException catch (includeMetaError, stackTrace) {
+    } on InferenceHttpException catch (includeMetaError) {
       if (!_shouldRetryPlainModels(includeMetaError)) rethrow;
-      domainLogger.error(
+      // A planned, degraded path: an error only if the plain list fails too.
+      domainLogger.log(
         LogDomain.ai,
-        includeMetaError,
-        stackTrace: stackTrace,
+        'Melious metadata catalog failed '
+        '(HTTP ${includeMetaError.statusCode}); retrying plain /models as '
+        'degraded fallback',
         subDomain: _providerName,
-        message:
-            'Melious metadata catalog failed; retrying plain /models as '
-            'degraded fallback',
+        level: InsightLevel.warn,
       );
       try {
         return await _listModelsFromEndpoint(

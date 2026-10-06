@@ -7,6 +7,8 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,9 +20,11 @@ import '../../../../test_helper.dart';
 
 void main() {
   late MockCategoryRepository mockRepository;
+  late MockDomainLogger mockDomainLogger;
 
   setUp(() {
     mockRepository = MockCategoryRepository();
+    mockDomainLogger = MockDomainLogger();
     registerFallbackValue(FakeCategoryDefinition());
   });
 
@@ -33,6 +37,7 @@ void main() {
     return ProviderScope(
       overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(mockRepository),
+        domainLoggerProvider.overrideWithValue(mockDomainLogger),
       ]),
       child: WidgetTestBench(
         child: CategoryCreateModal(
@@ -423,6 +428,15 @@ void main() {
       );
       // Modal stays mounted so the user can fix and retry.
       expect(find.byType(CategoryCreateModal), findsOneWidget);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.general,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'CategoryCreateModal',
+          message: 'Error creating category',
+        ),
+      ).called(1);
     },
   );
 

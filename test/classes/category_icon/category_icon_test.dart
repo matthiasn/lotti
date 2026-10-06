@@ -236,7 +236,6 @@ void main() {
       expect('Tap to select a different icon', isNotEmpty);
       expect('Tap to select an icon', isNotEmpty);
       expect('Choose an icon', isNotEmpty);
-      expect(CategoryIconStrings.invalidIconWarning, isNotEmpty);
     });
 
     test('fallback character should be a single character', () {

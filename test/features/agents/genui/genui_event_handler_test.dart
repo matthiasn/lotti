@@ -51,6 +51,27 @@ void main() {
     await pumpEventQueue();
   }
 
+  /// Verifies exactly one parse failure was logged with [message], with its
+  /// stack trace and original type, and that the logged error carries none of
+  /// the payload's text.
+  void verifyContentFreeParseFailure(String message, String payloadText) {
+    final captured = verify(
+      () => mockDomainLogger.error(
+        LogDomain.agentWorkflow,
+        captureAny(),
+        stackTrace: any(named: 'stackTrace', that: isNotNull),
+        subDomain: 'GenUiEventHandler',
+        message: message,
+        errorType: FormatException,
+      ),
+    ).captured;
+    expect(captured, hasLength(1));
+    final error = captured.single;
+    expect(error, isA<FormatException>());
+    expect((error as FormatException).source, isNull);
+    expect(error.toString(), isNot(contains(payloadText)));
+  }
+
   group('GenUiEventHandler', () {
     test('routes proposal_approved event to callback', () async {
       final events = <(String, String)>[];
@@ -237,19 +258,14 @@ void main() {
       await dispatchAndWait(
         name: 'ratings_submitted',
         surfaceId: 'ratings-surface',
-        sourceComponentId: '{invalid-json',
+        sourceComponentId: '{"Secret rating note',
       );
 
       expect(events, isEmpty);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.agentWorkflow,
-          any(that: isA<FormatException>()),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'GenUiEventHandler',
-          message: 'Failed to parse ratings JSON (bytes=13)',
-        ),
-      ).called(1);
+      verifyContentFreeParseFailure(
+        'Failed to parse ratings JSON (bytes=20)',
+        'Secret rating note',
+      );
     });
 
     test('routes binary_choice_submitted event to callback', () async {
@@ -278,10 +294,14 @@ void main() {
       await dispatchAndWait(
         name: 'binary_choice_submitted',
         surfaceId: 'binary-choice-surface',
-        sourceComponentId: '{bad-json',
+        sourceComponentId: '{"value":"Secret choice text',
       );
 
       expect(events, isEmpty);
+      verifyContentFreeParseFailure(
+        'Failed to parse binary choice JSON (bytes=28)',
+        'Secret choice text',
+      );
     });
 
     test(
@@ -398,10 +418,14 @@ void main() {
       await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-2',
-        sourceComponentId: '{bad-json',
+        sourceComponentId: '{"value":"Secret option text',
       );
 
       expect(events, isEmpty);
+      verifyContentFreeParseFailure(
+        'Failed to parse AB comparison JSON (bytes=28)',
+        'Secret option text',
+      );
     });
 
     test('ignores empty value in AB comparison', () async {

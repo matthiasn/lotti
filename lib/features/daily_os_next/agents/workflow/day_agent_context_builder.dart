@@ -247,7 +247,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         now: now,
       );
     } catch (e, s) {
-      _logError('failed to load week context', error: e, stackTrace: s);
+      logError('failed to load week context', error: e, stackTrace: s);
       return null;
     }
   }
@@ -256,7 +256,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     try {
       return await dayAudioEntryContextService?.loadForDay(dayId) ?? const [];
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to load durable day audio entries',
         error: e,
         stackTrace: s,
@@ -278,7 +278,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     try {
       return await service.activeFor(dailyOsPlannerAgentId);
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to load durable planner knowledge',
         error: e,
         stackTrace: s,
@@ -481,7 +481,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     try {
       return await service.directiveForDay(dayId);
     } catch (e, s) {
-      _logError('failed to load day directive', error: e, stackTrace: s);
+      logError('failed to load day directive', error: e, stackTrace: s);
       return null;
     }
   }

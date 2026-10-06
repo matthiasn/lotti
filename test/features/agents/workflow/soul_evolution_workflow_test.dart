@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -647,12 +648,14 @@ void main() {
     late MockAgentSyncService mockSyncService;
     late MockSoulDocumentService mockSoulService;
     late MockAgentRepository mockRepository;
+    late MockDomainLogger mockDomainLogger;
 
     setUp(() {
       mockTemplateService = MockAgentTemplateService();
       mockSyncService = MockAgentSyncService();
       mockSoulService = MockSoulDocumentService();
       mockRepository = MockAgentRepository();
+      mockDomainLogger = MockDomainLogger();
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
     });
 
@@ -660,7 +663,7 @@ void main() {
       _TestConversationRepository? convRepo,
     }) {
       return TemplateEvolutionWorkflow(
-        domainLogger: MockDomainLogger(),
+        domainLogger: mockDomainLogger,
         conversationRepository:
             convRepo ??
             _TestConversationRepository(
@@ -756,6 +759,29 @@ void main() {
         expect(convRepo.lastConsumptionThreadId, 'test-conv-id');
       },
     );
+
+    test('logs a failed start with its stack trace and returns null', () async {
+      stubSoulContext();
+      when(
+        () => mockSyncService.upsertEntity(any()),
+      ).thenThrow(StateError('agent db closed'));
+      // The failure path abandons the session; there is none stored yet.
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      final workflow = buildSoulWorkflow();
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(response, isNull);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.agentWorkflow,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'TemplateEvolutionWorkflow',
+          message: 'Failed to start soul session',
+        ),
+      ).called(1);
+    });
 
     test('returns null when soul not found', () async {
       stubProviderResolution();

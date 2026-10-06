@@ -4,18 +4,29 @@ import 'package:camera/camera.dart' show CameraPreview, CameraValue, Optional;
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/ui/provisioned/qr_scanner.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:zxing2/qrcode.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late CameraPlatform originalCameraPlatform;
+  late MockDomainLogger domainLogger;
+
+  /// The test app, with [domainLogger] standing in for the scanner's logger.
+  Widget scannerApp(Widget child) => makeTestableWidget2(
+    child,
+    overrides: [domainLoggerProvider.overrideWithValue(domainLogger)],
+  );
 
   setUp(() {
     originalCameraPlatform = CameraPlatform.instance;
@@ -27,15 +38,12 @@ void main() {
       isMobile = wasMobile;
       isAndroid = wasAndroid;
     });
-    DevLogger.suppressOutput = true;
-    DevLogger.clear();
+    domainLogger = MockDomainLogger();
   });
 
   tearDown(() {
     CameraPlatform.instance = originalCameraPlatform;
     qrCameraFactoryOverride = null;
-    DevLogger.suppressOutput = false;
-    DevLogger.clear();
   });
 
   group('decodeQrFrame', () {
@@ -141,7 +149,7 @@ void main() {
         var decodeCount = 0;
 
         await tester.pumpWidget(
-          makeTestableWidget2(
+          scannerApp(
             QrScanner(
               onDetect: detected.add,
               unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -184,7 +192,7 @@ void main() {
           throw const FormatException('no camera');
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -194,6 +202,78 @@ void main() {
       await tester.pump();
 
       expect(find.text('Camera unavailable'), findsOneWidget);
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'Camera failed',
+        ),
+      ).called(1);
+    });
+
+    for (final code in cameraAccessDeniedCodes) {
+      testWidgets('logs denied camera access ($code) as a warning', (
+        tester,
+      ) async {
+        qrCameraFactoryOverride = () async =>
+            throw CameraException(code, 'denied');
+
+        await tester.pumpWidget(
+          scannerApp(
+            QrScanner(
+              onDetect: (_) {},
+              unavailableBuilder: (_) => const Text('Camera unavailable'),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Camera unavailable'), findsOneWidget);
+        verify(
+          () => domainLogger.log(
+            LogDomain.sync,
+            'Camera access denied (code=$code)',
+            subDomain: 'QrScanner',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => domainLogger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
+      });
+    }
+
+    testWidgets('logs any other camera exception as an error', (tester) async {
+      qrCameraFactoryOverride = () async =>
+          throw CameraException('camera_error', 'broken');
+
+      await tester.pumpWidget(
+        scannerApp(
+          QrScanner(
+            onDetect: (_) {},
+            unavailableBuilder: (_) => const Text('Camera unavailable'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(that: isA<CameraException>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'Camera failed',
+        ),
+      ).called(1);
     });
 
     testWidgets('disposes the camera before reporting stream start failure', (
@@ -205,7 +285,7 @@ void main() {
       qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -230,7 +310,7 @@ void main() {
       qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -242,6 +322,24 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(camera.disposed, isTrue);
       expect(find.text('Camera unavailable'), findsOneWidget);
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'Failed to dispose camera',
+        ),
+      ).called(1);
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'Camera failed',
+        ),
+      ).called(1);
     });
 
     group('app lifecycle', () {
@@ -263,7 +361,7 @@ void main() {
           ),
         );
         await tester.pumpWidget(
-          makeTestableWidget2(
+          scannerApp(
             QrScanner(
               onDetect: (_) {},
               unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -416,6 +514,15 @@ void main() {
         expect(find.text('Camera unavailable'), findsNothing);
         expect(find.byKey(const Key('camera_preview')), findsOneWidget);
         expect(fresh.disposed, isFalse);
+        verifyNever(
+          () => domainLogger.error(
+            LogDomain.sync,
+            any(),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'QrScanner',
+            message: 'Camera failed',
+          ),
+        );
       });
 
       testWidgets('stops observing the lifecycle once removed', (tester) async {
@@ -441,7 +548,7 @@ void main() {
       qrCameraFactoryOverride = () => cameraCompleter.future;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -464,7 +571,7 @@ void main() {
       var decodeCount = 0;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: detected.add,
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -489,6 +596,15 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(detected, ['recovered-payload']);
       expect(decodeCount, 2);
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'QR decode failed',
+        ),
+      ).called(1);
     });
 
     testWidgets('disposes the camera when removed', (tester) async {
@@ -496,7 +612,7 @@ void main() {
       qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -519,7 +635,7 @@ void main() {
       qrCameraFactoryOverride = () async => camera;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera unavailable'),
@@ -532,6 +648,15 @@ void main() {
 
       expect(camera.disposed, isTrue);
       expect(tester.takeException(), isNull);
+      verify(
+        () => domainLogger.error(
+          LogDomain.sync,
+          any(),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'QrScanner',
+          message: 'Failed to dispose camera',
+        ),
+      ).called(1);
     });
   });
 
@@ -605,7 +730,7 @@ void main() {
       CameraPlatform.instance = platform;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('No webcam'),
@@ -780,7 +905,7 @@ void main() {
           final camera = (await tester.runAsync(createQrCamera))!;
           addTearDown(() => tester.runAsync(camera.dispose));
           await tester.pumpWidget(
-            makeTestableWidget2(
+            scannerApp(
               Center(
                 child: SizedBox.square(
                   key: const Key('viewfinder'),
@@ -864,7 +989,7 @@ void main() {
       CameraPlatform.instance = platform;
 
       await tester.pumpWidget(
-        makeTestableWidget2(
+        scannerApp(
           QrScanner(
             onDetect: (_) {},
             unavailableBuilder: (_) => const Text('Camera disconnected'),

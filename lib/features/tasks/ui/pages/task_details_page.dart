@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
@@ -32,7 +33,7 @@ import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/scroll_anchor.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
@@ -69,6 +70,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
   final Map<String, GlobalKey> _entryKeys = {};
+
+  @override
+  DomainLogger get highlightScrollLogger => ref.read(domainLoggerProvider);
+
   final GlobalKey<State<StatefulWidget>> _suggestionsKey = GlobalKey(
     debugLabel: 'task_suggestions',
   );
@@ -766,6 +771,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      final logger = highlightScrollLogger;
 
       final context = key.currentContext;
       if (context != null) {
@@ -776,14 +782,17 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             duration: scrollDuration,
             curve: Curves.easeInOut,
           );
-        } catch (error) {
+        } catch (error, stackTrace) {
           // A guard only: the key marks a band of this page that is mounted
           // and laid out by the time its context is found, and no test can
           // make ensureVisible fail on one.
           // coverage:ignore-start
-          DevLogger.warning(
-            name: 'TaskDetailsPage',
-            message: 'Failed to scroll to $key: $error',
+          logger.error(
+            LogDomain.tasks,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'TaskDetailsPage',
+            message: 'Failed to scroll to $key',
           );
           // coverage:ignore-end
         } finally {
@@ -808,9 +817,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         return;
       }
 
-      DevLogger.warning(
-        name: 'TaskDetailsPage',
-        message: 'Failed to scroll to $key after $maxScrollRetries attempts',
+      logger.log(
+        LogDomain.tasks,
+        'Failed to scroll to $key after $maxScrollRetries attempts',
+        subDomain: 'TaskDetailsPage',
+        level: InsightLevel.warn,
       );
       _sectionRetryTimer?.cancel();
       if (mounted) {

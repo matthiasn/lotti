@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -310,17 +311,27 @@ void main() {
       expect(captured, contains('invalid arguments format'));
       expect(strategy.extractReportContent(), '');
       verify(
-        () => mockDomainLogger.error(
+        () => mockDomainLogger.log(
           LogDomain.agentWorkflow,
-          any<Object>(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'EventAgentStrategy',
-          message: any(
-            named: 'message',
-            that: contains('Failed to parse tool call arguments'),
+          any(
+            that: allOf(
+              contains('Failed to parse tool call arguments'),
+              contains('errorType=FormatException'),
+            ),
           ),
+          subDomain: 'EventAgentStrategy',
+          level: InsightLevel.warn,
         ),
       ).called(1);
+      verifyNever(
+        () => mockDomainLogger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      );
     });
   });
 

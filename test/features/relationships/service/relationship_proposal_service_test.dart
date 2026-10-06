@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
@@ -137,6 +138,57 @@ void main() {
       ).called(1);
     },
   );
+  group('a failed link cleanup after undo', () {
+    void stubUnlink(Future<bool> Function() answer) => when(
+      () => relationships.unlinkTask(
+        relationshipId: set.taskId,
+        taskId: testTask.id,
+      ),
+    ).thenAnswer((_) => answer());
+
+    test(
+      'logs a refusal as a warning naming only the sanitized task id',
+      () async {
+        stubUnlink(() async => false);
+
+        expect(await service.undo(confirmed, 0), isTrue);
+        expect(removed, [testTask]);
+        final message =
+            verify(
+                  () => logger.log(
+                    LogDomain.agentWorkflow,
+                    captureAny(),
+                    subDomain: 'RelationshipProposalService',
+                    level: InsightLevel.warn,
+                  ),
+                ).captured.single
+                as String;
+        expect(message, contains(DomainLogger.sanitizeId(testTask.id)));
+        expect(message, isNot(contains(testTask.id)));
+      },
+    );
+
+    test('logs a thrown failure as an error naming only the sanitized task '
+        'id', () async {
+      stubUnlink(() async => throw StateError('db closed'));
+
+      expect(await service.undo(confirmed, 0), isTrue);
+      expect(removed, [testTask]);
+      final message =
+          verify(
+                () => logger.error(
+                  LogDomain.agentWorkflow,
+                  any<Object>(that: isA<StateError>()),
+                  stackTrace: any(named: 'stackTrace', that: isNotNull),
+                  subDomain: 'RelationshipProposalService',
+                  message: captureAny(named: 'message'),
+                ),
+              ).captured.single
+              as String;
+      expect(message, contains(DomainLogger.sanitizeId(testTask.id)));
+      expect(message, isNot(contains(testTask.id)));
+    });
+  });
   test('undo refuses a task changed since confirmation', () async {
     when(() => db.journalEntityById(testTask.id)).thenAnswer(
       (_) async =>
@@ -303,7 +355,7 @@ void main() {
         () => logger.error(
           LogDomain.agentWorkflow,
           any<Object>(that: isA<StateError>()),
-          stackTrace: any(named: 'stackTrace'),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'RelationshipProposalService',
           message: 'Could not persist relationship task receipt',
         ),

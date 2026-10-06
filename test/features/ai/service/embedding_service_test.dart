@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -815,12 +816,13 @@ void main() {
           () => mockLogger.error(
             LogDomain.ai,
             any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'EmbeddingService',
             message: any(
               named: 'message',
               that: startsWith('Failed to generate embedding for'),
             ),
+            errorType: any(named: 'errorType', that: isNotNull),
           ),
         ).called(1);
 
@@ -964,6 +966,25 @@ void main() {
 
           // The first failure parks the other id without calling out.
           verify(anyEmbed).called(1);
+          // An open circuit is routine: a warning, never an error.
+          verify(
+            () => mockLogger.log(
+              LogDomain.ai,
+              any(that: startsWith('Embedding for $_entityId deferred')),
+              subDomain: 'EmbeddingService',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockLogger.error(
+              any(),
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+              message: any(named: 'message'),
+              errorType: any(named: 'errorType'),
+            ),
+          );
           verifyNever(
             () => mockEmbeddingStore.replaceEntityEmbeddings(
               entityId: any(named: 'entityId'),

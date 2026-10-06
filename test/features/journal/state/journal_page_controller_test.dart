@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -21,7 +22,7 @@ import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 

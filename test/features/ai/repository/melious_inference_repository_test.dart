@@ -13,6 +13,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
@@ -599,8 +600,9 @@ void main() {
       'listModels falls back to plain /models when include_meta fails',
       () async {
         var call = 0;
+        final logger = MockDomainLogger();
         final repository = MeliousInferenceRepository(
-          domainLogger: MockDomainLogger(),
+          domainLogger: logger,
           httpClient: MockClient((request) async {
             call++;
             if (call == 1) {
@@ -630,8 +632,9 @@ void main() {
         );
         addTearDown(repository.close);
 
+        // Credentials in the configured URL must never reach a log line.
         final models = await repository.listModels(
-          baseUrl: baseUrl,
+          baseUrl: baseUrl.replaceFirst('://', '://user:secret@'),
           apiKey: apiKey,
         );
 
@@ -639,6 +642,41 @@ void main() {
         expect(models, hasLength(1));
         expect(models.single.providerModelId, 'deepseek-v4-pro');
         expect(models.single.isReasoningModel, isTrue);
+
+        // The planned fallback is a warning, not an error.
+        verify(
+          () => logger.log(
+            LogDomain.ai,
+            'Melious metadata catalog failed (HTTP 400); retrying plain '
+            '/models as degraded fallback',
+            subDomain: any(named: 'subDomain'),
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verifyNever(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+            errorType: any(named: 'errorType'),
+          ),
+        );
+        final lines = verify(
+          () => logger.log(
+            LogDomain.ai,
+            captureAny(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).captured.cast<String>();
+        expect(
+          lines.where((l) => l.contains('Fetching Melious')),
+          hasLength(2),
+        );
+        expect(lines, everyElement(isNot(contains('secret'))));
+        expect(lines, everyElement(isNot(contains('include_meta=true'))));
       },
     );
 

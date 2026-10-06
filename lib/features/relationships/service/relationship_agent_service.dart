@@ -44,7 +44,9 @@ void ensureRelationshipAgentInBackground(
         error,
         stackTrace: stackTrace,
         subDomain: source,
-        message: 'Failed to ensure relationship agent ${relationship.id}',
+        message:
+            'Failed to ensure relationship agent '
+            '${DomainLogger.sanitizeId(relationship.id)}',
       );
     }
   }());

@@ -430,7 +430,7 @@ void main() {
           () => logger.error(
             LogDomain.agentWorkflow,
             any<Object>(that: isA<Exception>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'autoAssignCategoryAgent',
             message: 'Failed to auto-assign agent for task ${task.meta.id}',
           ),
@@ -664,7 +664,7 @@ void main() {
           () => logger.error(
             LogDomain.agentWorkflow,
             any<Object>(that: isA<StateError>()),
-            stackTrace: any(named: 'stackTrace'),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
             subDomain: 'autoAssignCategoryEventAgent',
             message:
                 'Failed to auto-assign event agent for event ${event.meta.id}',

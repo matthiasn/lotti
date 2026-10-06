@@ -561,7 +561,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
       domainLogger.log(
         LogDomain.agentWorkflow,
-        'Wake completed for agent $agentId: '
+        'Wake completed for agent ${DomainLogger.sanitizeId(agentId)}: '
         '${observations.length} observations, '
         '${executor.mutatedEntries.length} mutations, '
         '${changeSetBuilder.items.length} deferred changes',

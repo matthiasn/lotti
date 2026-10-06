@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -188,6 +190,7 @@ extension _AnyGeneratedProviderFormScenario on glados.Any {
 
 void main() {
   late MockAiConfigRepository mockRepository;
+  late MockDomainLogger mockDomainLogger;
   late ProviderContainer container;
   final testConfig = AiConfig.inferenceProvider(
     id: 'test-id',
@@ -215,9 +218,11 @@ void main() {
 
   setUp(() async {
     mockRepository = MockAiConfigRepository();
+    mockDomainLogger = MockDomainLogger();
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        domainLoggerProvider.overrideWithValue(mockDomainLogger),
       ],
     );
     addTearDown(container.dispose);
@@ -1236,6 +1241,19 @@ void main() {
           includeDeleted: any(named: 'includeDeleted'),
         ),
       ).called(3);
+      // The prepopulation line names the provider by id and type only —
+      // never by its user-entered name.
+      final message =
+          verify(
+                () => mockDomainLogger.log(
+                  LogDomain.ai,
+                  captureAny(),
+                  subDomain: 'InferenceProviderForm',
+                ),
+              ).captured.single
+              as String;
+      expect(message, contains('gemini-provider-id (gemini)'));
+      expect(message, isNot(contains('Gemini')));
     });
 
     test('seeds the gated default profiles after adding a usable '
@@ -1386,6 +1404,15 @@ void main() {
       // Act + Assert — completes despite the seeding failure.
       await expectLater(controller.addConfig(geminiConfig), completes);
       verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'InferenceProviderForm',
+          message: 'Profile seeding after provider save failed',
+        ),
+      ).called(1);
     });
 
     test(
@@ -1419,6 +1446,15 @@ void main() {
         // Act + Assert — completes despite the seeding failure.
         await expectLater(controller.updateConfig(testConfig), completes);
         verify(() => mockRepository.saveConfig(any())).called(1);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'InferenceProviderForm',
+            message: 'Profile seeding after provider save failed',
+          ),
+        ).called(1);
       },
     );
   });

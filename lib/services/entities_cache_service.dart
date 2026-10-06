@@ -4,16 +4,18 @@ import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 class EntitiesCacheService {
   EntitiesCacheService({
     required this._journalDb,
     required this._updateNotifications,
+    required this._domainLogger,
   });
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
+  final DomainLogger _domainLogger;
   StreamSubscription<Set<String>>? _notificationSub;
 
   Map<String, MeasurableDataType> dataTypesById = {};
@@ -169,9 +171,12 @@ class EntitiesCacheService {
         dashboardsById[item.id] = item;
       }
     } on Object catch (e, stackTrace) {
-      DevLogger.log(
-        name: 'EntitiesCacheService',
-        message: 'Failed to load dashboards: $e\n$stackTrace',
+      _domainLogger.error(
+        LogDomain.persistence,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'EntitiesCacheService',
+        message: 'Failed to load dashboards',
       );
     } finally {
       _dashboardsLoading = false;

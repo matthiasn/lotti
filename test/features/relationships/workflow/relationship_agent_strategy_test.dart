@@ -4,9 +4,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_strategy.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -44,6 +46,7 @@ void main() {
   late MockAgentSyncService syncService;
   late MockConversationManager manager;
   late RelationshipAgentStrategy strategy;
+  late MockDomainLogger domainLogger;
 
   setUpAll(registerAllFallbackValues);
 
@@ -51,8 +54,9 @@ void main() {
     syncService = MockAgentSyncService();
     manager = MockConversationManager();
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    domainLogger = MockDomainLogger();
     strategy = RelationshipAgentStrategy(
-      domainLogger: MockDomainLogger(),
+      domainLogger: domainLogger,
       syncService: syncService,
       agentId: 'relationship_agent:person-1',
       threadId: 'thread-1',
@@ -544,6 +548,28 @@ void main() {
     );
     expect(strategy.replyToUser, isNull);
     expect(strategy.createdAds, isEmpty);
+    verify(
+      () => domainLogger.log(
+        LogDomain.agentWorkflow,
+        any(
+          that: allOf(
+            contains('Failed to parse tool call arguments'),
+            contains('errorType=FormatException'),
+          ),
+        ),
+        subDomain: 'RelationshipAgentStrategy',
+        level: InsightLevel.warn,
+      ),
+    ).called(1);
+    verifyNever(
+      () => domainLogger.error(
+        any(),
+        any(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    );
   });
 
   test('recordFinalResponse keeps the last assistant text as the fallback '

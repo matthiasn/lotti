@@ -151,7 +151,9 @@ class CheckInTranscriptionService {
         exception,
         stackTrace: stackTrace,
         subDomain: _logTag,
-        message: 'Could not read known terms for $relationshipId',
+        message:
+            'Could not read known terms for '
+            '${DomainLogger.sanitizeId(relationshipId)}',
       );
       return const [];
     }
@@ -202,7 +204,9 @@ class CheckInTranscriptionService {
         exception,
         stackTrace: stackTrace,
         subDomain: _logTag,
-        message: 'Requested transcription failed for $audioEntryId',
+        message:
+            'Requested transcription failed for '
+            '${DomainLogger.sanitizeId(audioEntryId)}',
       );
       onFailure();
     }

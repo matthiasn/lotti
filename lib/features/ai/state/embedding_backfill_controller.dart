@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -170,10 +171,19 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           labelNameResolver: labelResolver,
         );
         if (didEmbed) embedded++;
+      } on EmbeddingEndpointUnavailableException catch (e) {
+        // The circuit is open: routine while Ollama is down, not a failure.
+        services.domainLogger.log(
+          LogDomain.ai,
+          'Backfill skipped $entityId: $e',
+          subDomain: _subDomain,
+          level: InsightLevel.warn,
+        );
       } catch (e, stackTrace) {
         services.domainLogger.error(
           LogDomain.ai,
-          e,
+          DomainLogger.withoutSource(e),
+          errorType: e.runtimeType,
           stackTrace: stackTrace,
           subDomain: _subDomain,
           message: 'Backfill failed for $entityId',

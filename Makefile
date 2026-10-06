@@ -78,8 +78,9 @@ icon_check:
 getit_check:
 	$(DART_CMD) run tool/di/validate.dart
 
-# Checks that no file outside lib/services/ logs through dart:developer:
-# DomainLogger is the reviewed channel, and the only one that reaches the log files.
+# Checks that no file outside lib/services/ logs through dart:developer, and that
+# DevLogger stays in lib/database/ and the logging service beneath it: DomainLogger
+# is the reviewed channel, and the only one that reaches the log files.
 .PHONY: developer_log_check
 developer_log_check:
 	$(DART_CMD) run tool/logging/validate.dart

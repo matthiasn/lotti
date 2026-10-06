@@ -13,10 +13,13 @@ extension _MeliousCatalog on MeliousInferenceRepository {
       'models',
       queryParameters: includeMeta ? const {'include_meta': 'true'} : const {},
     );
+    // Host and path only: a configured base URL can carry credentials.
+    final endpoint = ModelCatalogMapping.redactedEndpoint(uri);
 
     domainLogger.log(
       LogDomain.ai,
-      'Fetching Melious model catalog from $uri',
+      'Fetching Melious model catalog from $endpoint '
+      '(includeMeta=$includeMeta)',
       subDomain: MeliousInferenceRepository._providerName,
     );
 
@@ -33,7 +36,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
 
       domainLogger.log(
         LogDomain.ai,
-        'Melious model catalog response from $uri: HTTP '
+        'Melious model catalog response from $endpoint: HTTP '
         '${response.statusCode}',
         subDomain: MeliousInferenceRepository._providerName,
       );
@@ -62,7 +65,11 @@ extension _MeliousCatalog on MeliousInferenceRepository {
           'or a JSON array',
         ),
       };
-      _logCatalogPayload(uri: uri, decoded: decoded, data: data);
+      _logCatalogPayload(
+        endpoint: endpoint,
+        decoded: decoded,
+        data: data,
+      );
 
       final models = <KnownModel>[];
       for (final (index, item) in data.indexed) {
@@ -76,7 +83,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
             subDomain: MeliousInferenceRepository._providerName,
             message:
                 'Failed to parse Melious model catalog row #$index from '
-                '$uri: ${_catalogItemSummary(item)}',
+                '$endpoint: ${_catalogItemSummary(item)}',
           );
           rethrow;
         }
@@ -84,7 +91,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
 
       domainLogger.log(
         LogDomain.ai,
-        'Mapped ${models.length} Melious catalog rows from $uri',
+        'Mapped ${models.length} Melious catalog rows from $endpoint',
         subDomain: MeliousInferenceRepository._providerName,
       );
       return models;
@@ -312,7 +319,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
   }
 
   void _logCatalogPayload({
-    required Uri uri,
+    required String endpoint,
     required Object? decoded,
     required List<dynamic> data,
   }) {
@@ -326,7 +333,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
     };
     domainLogger.log(
       LogDomain.ai,
-      'Melious model catalog payload from $uri: shape=$shape, '
+      'Melious model catalog payload from $endpoint: shape=$shape, '
       'count=${data.length}',
       subDomain: MeliousInferenceRepository._providerName,
     );

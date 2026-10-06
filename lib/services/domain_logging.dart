@@ -414,6 +414,17 @@ class DomainLogger {
 
   // ── PII scrubbing helpers ───────────────────────────────────────────────
 
+  /// Returns [error] without the source text a [FormatException] carries.
+  ///
+  /// `jsonDecode` puts the text it failed on into the exception, and its
+  /// `toString` prints the offending line — model output, tool arguments or
+  /// a response body. The copy keeps the parser's message and offset, which
+  /// say what went wrong and where. Any other error is returned as is; pass
+  /// the original's runtime type as `errorType` alongside it.
+  static Object withoutSource(Object error) => error is FormatException
+      ? FormatException(error.message, null, error.offset)
+      : error;
+
   /// Replaces a full UUID with a short, correlation-safe placeholder.
   ///
   /// Example: `'a1b2c3d4-e5f6-7890-abcd-ef1234567890'` → `'[id:a1b2c3]'`

@@ -342,7 +342,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         dayId: dayId,
       );
     } catch (e) {
-      _logError('search_memory: failed to load capture metadata', error: e);
+      logError('search_memory: failed to load capture metadata', error: e);
     }
 
     // Widen link validation beyond the episodic log so a note that links to a
@@ -360,7 +360,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
           ..add(entry.id);
       }
     } catch (e) {
-      _logError('search_memory: failed to load knowledge ids', error: e);
+      logError('search_memory: failed to load knowledge ids', error: e);
     }
 
     final compactor = AgentLogCompactor(
@@ -384,7 +384,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
               extraKnownIds: extraKnownIds,
             );
     } catch (e, s) {
-      _logError('search_memory failed', error: e, stackTrace: s);
+      logError('search_memory failed', error: e, stackTrace: s);
       return const DayAgentToolResult(
         success: false,
         output: 'Error: memory search failed.',

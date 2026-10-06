@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
@@ -122,13 +123,13 @@ class OpenAiModelsRepository {
         final KnownModel? known;
         try {
           known = _knownModelFromPayload(item);
-        } on InferenceHttpException catch (e, stackTrace) {
-          _domainLogger.error(
+        } on InferenceHttpException catch (e) {
+          // One unusable catalog row is expected degradation, not a failure.
+          _domainLogger.log(
             LogDomain.ai,
-            e,
-            stackTrace: stackTrace,
+            'Skipping malformed OpenAI model row #$index: ${e.message}',
             subDomain: _providerName,
-            message: 'Skipping malformed OpenAI model row #$index',
+            level: InsightLevel.warn,
           );
           continue;
         }

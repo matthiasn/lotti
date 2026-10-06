@@ -1,4 +1,5 @@
-// Checks that no file outside lib/services/ logs through dart:developer.
+// Checks that no file outside lib/services/ logs through dart:developer, and
+// that DevLogger stays beneath the logging pipeline.
 //
 // Usage:
 //   dart run tool/logging/validate.dart
@@ -24,15 +25,15 @@ void main(List<String> args) {
     exit(1);
   }
 
-  final result = scan(root: lib, repoRoot: Directory.current.path);
-  if (result.violations.isNotEmpty) {
+  final violations = scan(root: lib, repoRoot: Directory.current.path);
+  if (violations.isNotEmpty) {
     stderr.writeln('dart:developer logging check failed:\n');
-    for (final violation in result.violations) {
+    for (final violation in violations) {
       stderr.writeln('  $violation\n');
     }
     stderr.writeln(
       'Log through DomainLogger; dart:developer belongs to '
-      '${loggingLayer.join(', ')}.',
+      '${loggingLayer.join(', ')}, DevLogger to ${devLoggerLayer.join(', ')}.',
     );
     exit(1);
   }

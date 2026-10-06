@@ -7,17 +7,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
   late MockSettingsDb mockSettingsDb;
+  late MockDomainLogger mockDomainLogger;
   late JournalFilterPersistence sut;
 
   setUp(() {
     mockSettingsDb = MockSettingsDb();
-    sut = JournalFilterPersistence(mockSettingsDb);
+    mockDomainLogger = MockDomainLogger();
+    sut = JournalFilterPersistence(
+      mockSettingsDb,
+      domainLogger: mockDomainLogger,
+    );
 
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     when(
@@ -96,6 +102,15 @@ void main() {
         async.flushMicrotasks();
 
         expect(result, isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            any(that: isA<FormatException>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'JournalFilterPersistence',
+            message: 'Error loading persisted filters',
+          ),
+        ).called(1);
       });
     });
 
@@ -272,6 +287,15 @@ void main() {
         async.flushMicrotasks();
 
         expect(result, isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            any(that: isA<FormatException>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'JournalFilterPersistence',
+            message: 'Error loading persisted entry types',
+          ),
+        ).called(1);
       });
     });
   });
