@@ -91,10 +91,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addToDictionaryDuplicate => 'Termen finns redan i ordboken';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Kan inte lägga till i ordbok: uppgiften har ingen kategori';
-
-  @override
   String get addToDictionarySaveFailed => 'Misslyckades med att rädda ordboken';
 
   @override
@@ -14504,6 +14500,89 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSectionsTitle => 'Sektioner';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Alla kategorier';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Välj kategorier';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Använd termen bara för inspelningar i de här kategorierna, så att fackord inte smyger sig in i orelaterade transkriptioner. Utan val gäller den överallt.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Kategorier';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Lägg till term';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '”$term” används inte längre för att rätta transkriptioner.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Ta bort term';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Termen ”$term” togs bort';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Redigera term';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Inga termer än';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Lägg till namn, platser och fackord som taligenkänningen stavar fel.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Ange en term';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Det gick inte att läsa in ordlistan';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Stavningar som termen ofta blir, åtskilda med semikolon. De hjälper korrigeringssteget att känna igen den, som ändå avgör utifrån sammanhanget.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Felhört som';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return 'Lägg till ”$query”';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Inga termer matchar ”$query”';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Sök termer…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Namn, platser och fackord för transkribering';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Term';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Röstordlista';
+
+  @override
   String get settingsSpeechSubtitle => 'Röst och högläsning';
 
   @override
@@ -14743,28 +14822,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Färdigheter';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Separerade semikolontermer (max 50 tecken) för bättre taligenkänning';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Talordbok';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Lägg till termer som ofta stavas fel av taligenkänning (namn, platser, tekniska termer)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Taligenkänning';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Stora ordböcker ($count-termer) kan öka API-kostnaderna';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Välj språk';
@@ -15444,6 +15501,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Sparade uppgiftsfilter';
+
+  @override
+  String get syncStepSpeechDictionary => 'Röstordlista';
 
   @override
   String get syncVerifiedCelebrationBody =>

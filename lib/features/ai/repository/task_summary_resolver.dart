@@ -51,12 +51,20 @@ class TaskSummaryResolver {
   ///
   /// When [linkedEntities] are provided (e.g. from a bulk pre-fetch), legacy
   /// summaries are extracted from that list without an extra DB call.
+  ///
+  /// With [fullReport] an agent report gives its whole body rather than its
+  /// TLDR — still a single bounded document, for a caller that frames
+  /// something with the task and can afford more than a few sentences.
   Future<String?> resolve(
     String taskId, {
     List<JournalEntity> linkedEntities = const [],
+    bool fullReport = false,
   }) async {
     // 1. Try agent report first (the new, preferred source)
-    final agentReport = await _getAgentReportForTask(taskId);
+    final agentReport = await _getAgentReportForTask(
+      taskId,
+      fullReport: fullReport,
+    );
     if (agentReport != null) return agentReport;
 
     // 2. Fall back to legacy AiResponseType.taskSummary entries
@@ -118,7 +126,10 @@ class TaskSummaryResolver {
 
   /// Look up the agent assigned to [taskId] and return its latest report
   /// content, or `null` if no agent or report exists.
-  Future<String?> _getAgentReportForTask(String taskId) async {
+  Future<String?> _getAgentReportForTask(
+    String taskId, {
+    required bool fullReport,
+  }) async {
     final repo = _agentRepository;
     if (repo == null) return null;
 
@@ -139,7 +150,7 @@ class TaskSummaryResolver {
       );
       if (report == null) return null;
 
-      final summary = summaryFromReport(report);
+      final summary = summaryFromReport(report, fullReport: fullReport);
       if (summary == null) return null;
 
       _domainLogger.log(
@@ -162,11 +173,17 @@ class TaskSummaryResolver {
     }
   }
 
+  /// The report's TLDR, or with [fullReport] its body; each falls back to
+  /// the other when empty.
   @visibleForTesting
-  String? summaryFromReport(AgentReportEntity report) {
-    final tldr = report.tldr?.trim();
+  String? summaryFromReport(
+    AgentReportEntity report, {
+    bool fullReport = false,
+  }) {
+    final tldr = report.tldr?.trim() ?? '';
     final content = report.content.trim();
-    final summary = (tldr != null && tldr.isNotEmpty) ? tldr : content;
+    final (first, second) = fullReport ? (content, tldr) : (tldr, content);
+    final summary = first.isNotEmpty ? first : second;
     return summary.isEmpty ? null : summary;
   }
 

@@ -385,6 +385,7 @@ void main() {
       expect(definitions.children!.map((n) => n.id).toList(), [
         'definitions/categories',
         'definitions/labels',
+        'definitions/speech-dictionary',
         'definitions/habits',
         'definitions/dashboards',
         'definitions/measurables',
@@ -399,6 +400,7 @@ void main() {
         expect(definitions.children!.map((n) => n.id).toList(), [
           'definitions/categories',
           'definitions/labels',
+          'definitions/speech-dictionary',
           'definitions/measurables',
         ]);
       },

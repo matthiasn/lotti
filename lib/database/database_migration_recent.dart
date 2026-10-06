@@ -348,6 +348,12 @@ CREATE TABLE config_flags_v48 (
     }
     // v51 declares idx_journal_checklist_item_home (ADR 0105); the index
     // reconcile that ends every upgrade creates it, so no step is needed.
+    if (from < 52) {
+      // The speech dictionary as an entity of its own; its index comes from
+      // the reconcile. Filling it from the categories' lists is not a schema
+      // step: SpeechDictionaryMigration does it, on every device, at start.
+      await m.createTable(speechDictionaryEntries);
+    }
   }
 
   /// v50: one conflict row per concurrent version of an entry (ADR 0092).

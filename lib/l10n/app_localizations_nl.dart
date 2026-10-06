@@ -90,10 +90,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addToDictionaryDuplicate => 'Term bestaat al in woordenboek';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Kan niet toevoegen aan woordenboek: taak heeft geen categorie';
-
-  @override
   String get addToDictionarySaveFailed => 'Opslaan woordenboek mislukt';
 
   @override
@@ -14525,6 +14521,89 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsSectionsTitle => 'Onderdelen';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Alle categorieën';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Categorieën kiezen';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Gebruik deze term alleen voor opnames in deze categorieën, zodat vakjargon niet in andere transcripties belandt. Zonder keuze geldt hij overal.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Categorieën';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Term toevoegen';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '‘$term’ wordt niet meer gebruikt om transcripties te corrigeren.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Term verwijderen';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Term ‘$term’ verwijderd';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Term bewerken';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Nog geen termen';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Voeg namen, plaatsen en vaktermen toe die spraakherkenning verkeerd schrijft.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Voer een term in';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Woordenboek kon niet worden geladen';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Spellingen waarin deze term vaak terechtkomt, gescheiden door puntkomma’s. Ze helpen de correctiestap hem te herkennen, die nog steeds op basis van context beslist.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Verkeerd verstaan als';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return '‘$query’ toevoegen';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Geen termen komen overeen met ‘$query’';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Termen zoeken…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Namen, plaatsen en vaktermen voor transcriptie';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Term';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Spraakwoordenboek';
+
+  @override
   String get settingsSpeechSubtitle => 'Stem en hardop lezen';
 
   @override
@@ -14768,28 +14847,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Vaardigheden';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Semicolon-gescheiden termen (max 50 tekens) voor betere spraakherkenning';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Woordenboek';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Voeg termen toe die vaak verkeerd worden gespeld door spraakherkenning (namen, plaatsen, technische termen)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Spraakherkenning';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Groot woordenboek ($count voorwaarden) kan de API kosten verhogen';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Taal selecteren';
@@ -15478,6 +15535,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Opgeslagen taakfilters';
+
+  @override
+  String get syncStepSpeechDictionary => 'Spraakwoordenboek';
 
   @override
   String get syncVerifiedCelebrationBody =>

@@ -435,6 +435,10 @@ class PersistenceLogic implements PersistenceLogicContract {
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) =>
       _updates.upsertEntityDefinition(entityDefinition);
 
+  /// See [PersistenceDefinitionOps.seedEntityDefinitionImpl].
+  Future<int> seedEntityDefinition(EntityDefinition definition) =>
+      _definitions.seedEntityDefinitionImpl(definition);
+
   @override
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) =>
       _updates.upsertDashboardDefinition(dashboard);

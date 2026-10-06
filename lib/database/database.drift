@@ -302,6 +302,24 @@ CREATE INDEX idx_label_definitions_deleted_name_nocase ON label_definitions(
   name COLLATE NOCASE ASC
 );
 
+-- The speech dictionary: one row per term, its category scope in the
+-- serialized document. Deleted rows stay as tombstones.
+CREATE TABLE speech_dictionary_entries (
+  id TEXT NOT NULL,
+  term TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id)
+) as SpeechDictionaryEntryDbEntity;
+
+CREATE INDEX idx_speech_dictionary_entries_deleted_term
+  ON speech_dictionary_entries(
+  deleted COLLATE BINARY ASC,
+  term COLLATE NOCASE ASC
+);
+
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -1085,6 +1103,11 @@ SELECT * FROM category_definitions
   AND deleted = false
   ORDER BY name COLLATE NOCASE;
 
+allCategoryDefinitionsIncludingPrivate:
+SELECT * FROM category_definitions
+  WHERE deleted = false
+  ORDER BY name COLLATE NOCASE;
+
 categoryById:
 SELECT * FROM category_definitions
   WHERE deleted = false
@@ -1112,6 +1135,18 @@ SELECT * FROM label_definitions
   WHERE deleted = false
   AND id = :id
   AND private IN :privateStatuses;
+
+allSpeechDictionaryEntries:
+SELECT * FROM speech_dictionary_entries
+  WHERE deleted = false
+  ORDER BY term COLLATE NOCASE;
+
+speechDictionaryEntriesIncludingDeleted:
+SELECT * FROM speech_dictionary_entries;
+
+speechDictionaryEntryByIdIncludingDeleted:
+SELECT * FROM speech_dictionary_entries
+  WHERE id = :id;
 
 labeledForJournal:
 SELECT label_id FROM labeled

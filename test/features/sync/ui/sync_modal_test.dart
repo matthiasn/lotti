@@ -102,6 +102,7 @@ void main() {
     const totalsByStep = <SyncStep, int>{
       SyncStep.measurables: 5,
       SyncStep.labels: 6,
+      SyncStep.speechDictionary: 14,
       SyncStep.categories: 7,
       SyncStep.dashboards: 8,
       SyncStep.habits: 9,
@@ -147,6 +148,14 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.labels, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncSpeechDictionary(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.speechDictionary, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.syncCategories(
@@ -311,6 +320,7 @@ void main() {
           {
             SyncStep.measurables,
             SyncStep.labels,
+            SyncStep.speechDictionary,
             SyncStep.categories,
             SyncStep.dashboards,
             SyncStep.habits,
@@ -333,6 +343,7 @@ void main() {
       expect(find.text('9 / 9'), findsOneWidget);
       expect(find.text('10 / 10'), findsOneWidget);
       expect(find.text('13 / 13'), findsOneWidget);
+      expect(find.text('14 / 14'), findsOneWidget);
     },
   );
 
@@ -358,6 +369,7 @@ void main() {
       // Verify the confirmation dialog is shown with the checkboxes for each step
       expect(find.text(messages.syncStepMeasurables), findsOneWidget);
       expect(find.text(messages.syncStepLabels), findsOneWidget);
+      expect(find.text(messages.syncStepSpeechDictionary), findsOneWidget);
       expect(find.text(messages.syncStepCategories), findsOneWidget);
       expect(find.text(messages.syncStepDashboards), findsOneWidget);
       expect(find.text(messages.syncStepHabits), findsOneWidget);
@@ -367,13 +379,13 @@ void main() {
       // Agent data is journal-side, not settings: the entries path offers it
       // (one "Agent entities" checkbox in Send message history covering both
       // entities and links), and the two clock backfills are a repair on the
-      // Sync health page. Exactly the seven settings steps are offered.
+      // Sync health page. Exactly the eight settings steps are offered.
       final rows = tester
           .widgetList<DesignSystemSelectionRow>(
             find.byType(DesignSystemSelectionRow),
           )
           .toList();
-      expect(rows.length, 7);
+      expect(rows.length, 8);
       expect(
         rows,
         everyElement(

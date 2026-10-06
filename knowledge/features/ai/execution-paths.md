@@ -268,7 +268,7 @@ default profile, whose `task.data.profileId` is null.
 
 | Skill type | Result |
 |------------|--------|
-| Transcription | Appends to `JournalAudio.transcripts` and sets `entryText` (see [saving a transcript](#saving-a-transcript)), then runs the audio-summary skill when the profile automates it (see below) |
+| Transcription | Appends to `JournalAudio.transcripts` and sets `entryText` (see [saving a transcript](#saving-a-transcript)), then runs the audio summary that follows it (see below). A speech-to-text engine's transcript that a summary follows holds its text back until the summary has corrected it ([speech dictionary](../speech/dictionary.md#correcting-a-speech-to-text-transcript)) |
 | Audio summary | Creates an `AiResponseEntry` linked from the `JournalAudio`, carrying `oneLiner` / `tldr` on `AiResponseData` plus the full markdown in `response` — **one per run**, newest wins |
 | Image analysis | Creates an `AiResponseEntry` linked from the `JournalImage` — **one per run**, so an image accumulates multiple analyses (a brief summary, a full OCR extraction), distinguished by model. Carries `oneLiner` / `tldr` when the vision model can call tools (see below) |
 | Prompt generation (coding/design/research) | Creates an `AiResponseEntry` linked to the parent task when one resolves, **and** back to the source audio/text entry so the prompt appears in both linked-entries lists (falling back to a single link on the source entry when no task resolves) |
@@ -338,7 +338,8 @@ stateDiagram-v2
 
 `SkillInferenceRunner.runAudioSummary` summarizes a recording's transcript in
 three tiers. It hangs off the **end of `runTranscription`**
-(`_maybeRunAudioSummary`) rather than off each of that method's callers, so
+(`_audioSummaryFollowUp`, `_runFollowUpSummary`) rather than off each of that
+method's callers, so
 every route that produces a transcript — automatic recording trigger, synced-audio
 dispatcher, manual picker and Retry, relationship and goal check-ins — gets the
 same follow-up exactly once, and only after the transcript was saved.
@@ -349,7 +350,11 @@ Three gates, all deliberate:
   read otherwise, and the summary is framed by the task. Goal and person
   check-ins and standalone voice notes transcribe as before and get no summary.
 - **The transcription itself must have been automated**, which a non-null
-  `AutomationResult.skillAssignment` records. Only the automated paths set it,
+  `AutomationResult.skillAssignment` records — with one exception: the
+  task-context transcription skill asked for by the user on a speech-to-text
+  engine chains the built-in summary, because on such an engine the summary
+  call is what corrects the transcript against the task and the dictionary
+  (the composite step; the plain transcription skill never chains). Only the automated paths set it,
   and only those passed the category's automatic-inference consent check — the
   manual picker and `requestTranscription` skip that check because a gesture is
   its own consent, and that consent covers the transcription asked for, not a
@@ -371,7 +376,8 @@ task context.
 Two properties are contract rather than detail:
 
 - **The tiers come back through a tool call, never a parser.** The skill
-  sends `entrySummaryTool`, with `toolChoice` fixed to it for every model that
+  sends `recordingSummaryTool` — `entrySummaryTool`'s three tiers plus the
+  speech dictionary corrections — with `toolChoice` fixed to it for every model that
   honours a pinned choice — `entrySummaryToolChoiceFor` omits it for the
   DeepSeek family, which answers a pinned choice with the call written as
   `<｜DSML｜ invoke …>` prose and an empty `tool_calls`, losing the summary
@@ -394,7 +400,14 @@ Transcripts are sent **whole**. There is no input ceiling and no truncation: a
 transcript too large for the model's context fails the call, and the failure
 path above already covers it. Transcripts under `_audioSummaryMinChars` are
 skipped instead — a summary of a one-sentence note would spend a call to restate
-the collapsed card's existing fallback.
+the collapsed card's existing fallback — except a held transcript that
+dictionary terms reach, which is still worth correcting.
+
+**Everything else in the prompt is bounded.** Besides the recording's own text
+it carries the task's title and language code, the task's current report
+(`TaskSummaryResolver.resolve(fullReport: true)`), and the speech dictionary
+entries that reach the recording — never the task's log, which holds every
+other recording's transcript, nor the linked tasks: both grow without limit.
 
 The collapsed audio card reads the newest summary's `oneLiner`
 (`audioSummaryOneLiner`), falling back to `audioEntryOneLiner`'s transcript

@@ -273,12 +273,6 @@ abstract class AppLocalizations {
   /// **'Term already exists in dictionary'**
   String get addToDictionaryDuplicate;
 
-  /// No description provided for @addToDictionaryNoCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'Cannot add to dictionary: task has no category'**
-  String get addToDictionaryNoCategory;
-
   /// No description provided for @addToDictionarySaveFailed.
   ///
   /// In en, this message translates to:
@@ -24023,6 +24017,144 @@ abstract class AppLocalizations {
   /// **'Sections'**
   String get settingsSectionsTitle;
 
+  /// No description provided for @settingsSpeechDictionaryAllCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get settingsSpeechDictionaryAllCategories;
+
+  /// No description provided for @settingsSpeechDictionaryCategoriesChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose categories'**
+  String get settingsSpeechDictionaryCategoriesChoose;
+
+  /// No description provided for @settingsSpeechDictionaryCategoriesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this term only for recordings in these categories, so niche words don\'t creep into unrelated transcripts. With none chosen, it applies everywhere.'**
+  String get settingsSpeechDictionaryCategoriesDescription;
+
+  /// No description provided for @settingsSpeechDictionaryCategoriesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get settingsSpeechDictionaryCategoriesHeading;
+
+  /// No description provided for @settingsSpeechDictionaryCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add term'**
+  String get settingsSpeechDictionaryCreateTitle;
+
+  /// No description provided for @settingsSpeechDictionaryDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{term}\" will no longer be used to correct transcripts.'**
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term);
+
+  /// No description provided for @settingsSpeechDictionaryDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete term'**
+  String get settingsSpeechDictionaryDeleteConfirmTitle;
+
+  /// No description provided for @settingsSpeechDictionaryDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Term \"{term}\" deleted'**
+  String settingsSpeechDictionaryDeleteSuccess(String term);
+
+  /// No description provided for @settingsSpeechDictionaryEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit term'**
+  String get settingsSpeechDictionaryEditTitle;
+
+  /// No description provided for @settingsSpeechDictionaryEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No terms yet'**
+  String get settingsSpeechDictionaryEmptyState;
+
+  /// No description provided for @settingsSpeechDictionaryEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add names, places and jargon that speech recognition gets wrong.'**
+  String get settingsSpeechDictionaryEmptyStateHint;
+
+  /// No description provided for @settingsSpeechDictionaryErrorEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a term'**
+  String get settingsSpeechDictionaryErrorEmpty;
+
+  /// No description provided for @settingsSpeechDictionaryErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load the dictionary'**
+  String get settingsSpeechDictionaryErrorLoading;
+
+  /// No description provided for @settingsSpeechDictionaryMisheardDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Spellings this term often comes out as, separated by semicolons. They help the correction step spot it, which still decides from context.'**
+  String get settingsSpeechDictionaryMisheardDescription;
+
+  /// No description provided for @settingsSpeechDictionaryMisheardHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Misheard as'**
+  String get settingsSpeechDictionaryMisheardHeading;
+
+  /// No description provided for @settingsSpeechDictionaryMisheardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cuban Eddies; Cooper Netties'**
+  String get settingsSpeechDictionaryMisheardHint;
+
+  /// No description provided for @settingsSpeechDictionaryNoMatchCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add \"{query}\"'**
+  String settingsSpeechDictionaryNoMatchCreate(String query);
+
+  /// No description provided for @settingsSpeechDictionaryNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No terms match \"{query}\"'**
+  String settingsSpeechDictionaryNoMatchQuery(String query);
+
+  /// No description provided for @settingsSpeechDictionarySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search terms…'**
+  String get settingsSpeechDictionarySearchHint;
+
+  /// No description provided for @settingsSpeechDictionarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Names, places and jargon for transcription'**
+  String get settingsSpeechDictionarySubtitle;
+
+  /// No description provided for @settingsSpeechDictionaryTermHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Kubernetes'**
+  String get settingsSpeechDictionaryTermHint;
+
+  /// No description provided for @settingsSpeechDictionaryTermLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Term'**
+  String get settingsSpeechDictionaryTermLabel;
+
+  /// No description provided for @settingsSpeechDictionaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech dictionary'**
+  String get settingsSpeechDictionaryTitle;
+
   /// No description provided for @settingsSpeechSubtitle.
   ///
   /// In en, this message translates to:
@@ -24430,42 +24562,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skills'**
   String get skillsSectionTitle;
-
-  /// No description provided for @speechDictionaryHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Semicolon-separated terms (max 50 chars) for better speech recognition'**
-  String get speechDictionaryHelper;
-
-  /// No description provided for @speechDictionaryHint.
-  ///
-  /// In en, this message translates to:
-  /// **'macOS; Kirkjubæjarklaustur; Claude Code'**
-  String get speechDictionaryHint;
-
-  /// No description provided for @speechDictionaryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Speech Dictionary'**
-  String get speechDictionaryLabel;
-
-  /// No description provided for @speechDictionarySectionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Add terms that are often misspelled by speech recognition (names, places, technical terms)'**
-  String get speechDictionarySectionDescription;
-
-  /// No description provided for @speechDictionarySectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Speech recognition'**
-  String get speechDictionarySectionTitle;
-
-  /// No description provided for @speechDictionaryWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Large dictionary ({count} terms) may increase API costs'**
-  String speechDictionaryWarning(Object count);
 
   /// No description provided for @speechModalSelectLanguage.
   ///
@@ -25588,6 +25684,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved task filters'**
   String get syncStepSavedTaskFilters;
+
+  /// No description provided for @syncStepSpeechDictionary.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech dictionary'**
+  String get syncStepSpeechDictionary;
 
   /// No description provided for @syncVerifiedCelebrationBody.
   ///

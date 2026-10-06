@@ -1,0 +1,58 @@
+---
+title: Tenere un dizionario vocale
+description: Insegna alla trascrizione i nomi, i luoghi e il gergo che continua a sbagliare.
+---
+
+# Tenere un dizionario vocale
+
+Il riconoscimento vocale scrive ciò che sente. Nomi, luoghi e termini di
+progetto che non conosce escono sbagliati — **Project Waddle** come «Project
+Wattle». Il dizionario vocale è l’elenco delle parole che Lotti deve scrivere
+giuste, tenuto una sola volta per tutta l’app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Dizionario vocale con Europa per tutte le categorie, Project Waddle per Mission Control e Operazioni del Pinguino, e Sir Flaps-a-Lot per Operazioni del Pinguino"
+  caption="Ogni termine mostra dove si applica. La ricerca trova un termine anche da una grafia con cui è stato frainteso."
+/>
+
+## Aggiungere un termine
+
+1. Apri **Impostazioni → Definizioni → Dizionario vocale**.
+2. Scegli **Aggiungi termine**, oppure scrivi la parola nella ricerca e scegli
+   **Aggiungi «…»** quando nulla corrisponde.
+3. Inserisci il termine esattamente come va scritto.
+
+Puoi anche selezionare una parola nel testo di una voce e scegliere **Aggiungi
+al dizionario**. Viene aggiunta per la categoria di quella voce.
+
+## Limitare un termine a categorie
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Il termine Project Waddle limitato a Mission Control e Operazioni del Pinguino, frainteso come Project Wattle e Project Waddel"
+  caption="Senza categoria scelta, un termine vale ovunque."
+/>
+
+Con **Scegli categorie** un termine vale solo per le registrazioni di quelle
+categorie, così il gergo resta fuori dalle trascrizioni estranee. Senza scelta
+vale per tutte le categorie.
+
+## Frainteso come
+
+Elenca le grafie con cui un termine esce spesso, separate da punto e virgola.
+Lotti aggiunge anche quelle che corregge. Sono indizi, mai sostituzioni
+automatiche: una grafia fraintesa può anche essere una parola vera che si
+intendeva, e decide il contesto.
+
+## Come vengono corrette le trascrizioni
+
+Quando una registrazione di un’attività viene trascritta da un motore di
+riconoscimento come Whisper, il passaggio che scrive il suo riassunto in una
+riga e il riepilogo corregge anche i termini del dizionario fraintesi. Il testo
+della registrazione compare una sola volta, già corretto, e resta modificabile.
+Un modello multimodale che ascolta l’audio da sé legge invece il dizionario nel
+proprio prompt.
+
+I termini che le tue categorie avevano prima sono stati trasferiti
+automaticamente, ciascuno limitato alle categorie che lo avevano.

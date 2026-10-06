@@ -548,6 +548,42 @@ Map<String, dynamic> _$DashboardDefinitionToJson(
   'runtimeType': instance.$type,
 };
 
+SpeechDictionaryEntry _$SpeechDictionaryEntryFromJson(
+  Map<String, dynamic> json,
+) => SpeechDictionaryEntry(
+  id: json['id'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  term: json['term'] as String,
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  categoryIds: (json['categoryIds'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  misheardAs: (json['misheardAs'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SpeechDictionaryEntryToJson(
+  SpeechDictionaryEntry instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'term': instance.term,
+  'vectorClock': instance.vectorClock,
+  'categoryIds': instance.categoryIds,
+  'misheardAs': instance.misheardAs,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 _MeasurementData _$MeasurementDataFromJson(Map<String, dynamic> json) =>
     _MeasurementData(
       dateFrom: DateTime.parse(json['dateFrom'] as String),

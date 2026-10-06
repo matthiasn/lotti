@@ -1,5 +1,16 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-06
+* **Addition**: [Speech dictionary](features/speech/dictionary.md) — one synced
+  entry per term with its categories and misheard spellings, the migration out
+  of the categories' lists, and the correction of a speech-to-text transcript
+  in its bounded summary call.
+* **Update**: [AI execution paths](features/ai/execution-paths.md),
+  [inference backfill](features/ai/inference-backfill.md),
+  [entity definitions](domain/entity-definitions.md),
+  [categories](features/categories.md) — the composite step, the summary's
+  bounded context, the suggestions' grace period, and the sixth definition.
+
 ## 2026-10-04
 * **Addition**: [Backend services](architecture/backend-services.md) — the
   three kinds of service under `services/`, which the app depends on, which CI

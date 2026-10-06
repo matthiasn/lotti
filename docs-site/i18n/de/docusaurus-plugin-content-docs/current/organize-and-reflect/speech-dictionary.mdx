@@ -1,0 +1,58 @@
+---
+title: Ein Sprachwörterbuch pflegen
+description: Bring der Transkription Namen, Orte und Fachbegriffe bei, die sie immer wieder falsch schreibt.
+---
+
+# Ein Sprachwörterbuch pflegen
+
+Die Spracherkennung schreibt auf, was sie hört. Namen, Orte und Projektbegriffe,
+die sie nicht kennt, kommen falsch heraus — **Project Waddle** als „Project
+Wattle“. Das Sprachwörterbuch ist die Liste der Wörter, die Lotti richtig
+schreiben soll, einmal für die ganze App.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Sprachwörterbuch mit Europa für alle Kategorien, Project Waddle für Missionskontrolle und Pinguinbetrieb und Sir Flatterviel für Pinguinbetrieb"
+  caption="Jeder Begriff zeigt, wo er gilt. Die Suche findet einen Begriff auch über eine Schreibweise, als die er verhört wurde."
+/>
+
+## Einen Begriff hinzufügen
+
+1. Öffne **Einstellungen → Definitionen → Sprachwörterbuch**.
+2. Wähle **Begriff hinzufügen**, oder tippe das Wort ins Suchfeld und wähle
+   **„…“ hinzufügen**, wenn nichts passt.
+3. Gib den Begriff genau so ein, wie er geschrieben werden soll.
+
+Du kannst auch ein Wort im Text eines Eintrags markieren und **Zum Wörterbuch
+hinzufügen** wählen. Es wird für die Kategorie dieses Eintrags hinzugefügt.
+
+## Einen Begriff auf Kategorien beschränken
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Der Begriff Project Waddle, beschränkt auf Missionskontrolle und Pinguinbetrieb, verhört als Project Wattle und Project Waddel"
+  caption="Ohne gewählte Kategorie gilt ein Begriff überall."
+/>
+
+Mit **Kategorien wählen** gilt ein Begriff nur für Aufnahmen in diesen
+Kategorien, damit Spezialwörter nicht in fremde Transkripte rutschen. Ohne
+Auswahl gilt er für jede Kategorie.
+
+## Verhört als
+
+Trage die Schreibweisen ein, als die ein Begriff oft herauskommt, getrennt durch
+Semikolons. Lotti ergänzt auch die, die es korrigiert. Sie sind Hinweise, nie
+automatische Ersetzungen: Eine verhörte Schreibweise kann auch ein echtes Wort
+sein, das gemeint war — darüber entscheidet der Zusammenhang.
+
+## Wie Transkripte korrigiert werden
+
+Wird eine Aufnahme in einer Aufgabe von einer Spracherkennung wie Whisper
+transkribiert, korrigiert der Schritt, der ihre Kurzfassung und Zusammenfassung
+schreibt, auch die Wörterbuchbegriffe, die das Transkript verhört hat. Der Text
+der Aufnahme erscheint einmal, schon korrigiert, und bleibt bearbeitbar. Ein
+multimodales Modell, das selbst zuhört, liest das Wörterbuch stattdessen in
+seinem eigenen Prompt.
+
+Die Begriffe, die deine Kategorien vorher hatten, wurden automatisch
+übernommen, jeweils beschränkt auf die Kategorien, die sie hatten.

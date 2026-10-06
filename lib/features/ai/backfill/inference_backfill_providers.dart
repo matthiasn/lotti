@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -156,6 +158,16 @@ final inferenceBackfillDismissalsProvider =
       name: 'inferenceBackfillDismissalsProvider',
     );
 
+/// How long after an entry was created its own automatic inference is given
+/// to finish before a missing result is offered as a suggestion.
+///
+/// A recording is transcribed, corrected and summarized after it stops, and
+/// one synced from another device is processed there; until that settles, a
+/// suggestion to run it would offer work already under way — on another
+/// device, invisibly so. Ten minutes covers a long recording on a slow
+/// model, the same window the goal check-in timeline gives a transcript.
+const inferenceBackfillGrace = Duration(minutes: 10);
+
 /// The backfill suggestions to show for a task, newest entry first.
 ///
 /// Re-evaluated whenever a scan, the queue, a dismissal or one of the
@@ -163,6 +175,10 @@ final inferenceBackfillDismissalsProvider =
 /// its inference starts — from any trigger — and comes back if that run
 /// fails. Empty until both the scan and the dismissals have loaded, so a
 /// dismissed suggestion never flashes in first.
+///
+/// An entry younger than [inferenceBackfillGrace] is still settling and is
+/// not offered unless its run failed on this device; the provider re-reads
+/// itself when the earliest such window closes.
 final ProviderFamily<List<InferenceBackfillCandidate>, String>
 inferenceBackfillSuggestionsProvider = Provider.autoDispose
     .family<List<InferenceBackfillCandidate>, String>(
@@ -172,25 +188,48 @@ inferenceBackfillSuggestionsProvider = Provider.autoDispose
         if (scan == null || dismissed == null) return const [];
         final queued = ref.watch(inferenceBackfillQueueProvider);
 
-        bool isRunning(InferenceBackfillCandidate candidate) =>
-            candidate.kind.busyResponseTypes.any(
-              (type) =>
-                  ref.watch(
-                    inferenceStatusControllerProvider((
-                      id: candidate.entryId,
-                      aiResponseType: type,
-                    )),
-                  ) ==
-                  InferenceStatus.running,
-            );
+        bool hasStatus(
+          InferenceBackfillCandidate candidate,
+          InferenceStatus status,
+        ) => candidate.kind.busyResponseTypes.any(
+          (type) =>
+              ref.watch(
+                inferenceStatusControllerProvider((
+                  id: candidate.entryId,
+                  aiResponseType: type,
+                )),
+              ) ==
+              status,
+        );
 
-        return [
+        final now = clock.now();
+        DateTime? nextSettle;
+        bool isSettling(InferenceBackfillCandidate candidate) {
+          final settlesAt = candidate.createdAt.add(inferenceBackfillGrace);
+          if (!settlesAt.isAfter(now) ||
+              hasStatus(candidate, InferenceStatus.error)) {
+            return false;
+          }
+          if (nextSettle == null || settlesAt.isBefore(nextSettle!)) {
+            nextSettle = settlesAt;
+          }
+          return true;
+        }
+
+        final suggestions = [
           for (final candidate in scan.candidates)
             if (!dismissed.contains(candidate.key) &&
                 !queued.contains(candidate.key) &&
-                !isRunning(candidate))
+                !hasStatus(candidate, InferenceStatus.running) &&
+                !isSettling(candidate))
               candidate,
         ];
+        final settle = nextSettle;
+        if (settle != null) {
+          final timer = Timer(settle.difference(now), ref.invalidateSelf);
+          ref.onDispose(timer.cancel);
+        }
+        return suggestions;
       },
       name: 'inferenceBackfillSuggestionsProvider',
     );

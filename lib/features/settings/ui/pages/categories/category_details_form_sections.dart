@@ -250,17 +250,6 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
-  Widget _buildSpeechDictionary(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return CategorySpeechDictionary(
-      dictionary: category.speechDictionary,
-      onChanged: controller.updateSpeechDictionary,
-    );
-  }
-
   Widget _buildCorrectionExamples(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,

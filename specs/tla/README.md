@@ -2690,6 +2690,65 @@ deterministic regression for each switch, including every delivery order of an
 edit and two deletes; reverting any one of the Dart fixes fails at least one of
 them.
 
+## `SpeechDictionarySync` — one dictionary on every device
+
+The speech dictionary is an entity of its own: one synced entry per term,
+carrying the categories it is limited to (none for every category), an
+`EntityDefinition.speechDictionaryEntry` replicated whole through
+`SyncMessage.entityDefinition` and applied through `JournalDb`'s recency gate.
+Its id is derived from the normalized term, so adding the same term twice, on
+one device or two, writes the same entry. Each device also migrates its
+categories' legacy `speechDictionary` lists, and nothing coordinates when:
+before or after the user has edited the term elsewhere, before or after that
+edit arrives, or on a device installed later. The model covers one term, two
+categories, two devices holding different legacy lists, the user's edits and
+deletes, migration at any point, receivers applying entries in any order, and
+a "Sync Entities" re-send. The protocol is described in
+[the speech dictionary concept](../../knowledge/features/speech/dictionary.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every entry is applied and no migration is due, every device holds the same entry |
+| `UserWins` | invariant | ... and once the user has edited the term, it is the user's last edit: no migration, however late, undoes it |
+| `LegacyKept` | invariant | ... and until then, a term some legacy list held is in the dictionary with the categories one device migrated |
+| `EventuallyConverged` | liveness | the devices end up holding the same entry and stay so |
+
+| Configuration | Devices | Legacy lists | Edits | Deletes | Re-sends | Stamps | Distinct states |
+|---------------|---------|--------------|-------|---------|----------|--------|-----------------|
+| `SpeechDictionarySync` | 2 | category 1 on both, category 2 on device 2 only | 2 | 1 | 1 | 1–3 | 266,929 |
+
+`LegacyKept` is deliberately weak: two devices that migrate different lists
+write different category sets at the same stamp, and the content order picks
+one. A category only the losing device had seen drops out of the term's set.
+Migration is a one-time carry-over, not a merge (see `AbsentOnly`).
+
+Each rule has a switch; setting one to `FALSE` in a temporary copy of the
+configuration gives (single worker):
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `TotalOrder = FALSE` | `Converged` (5 states): both devices limit the term to different categories at the same stamp; each applies the other's equal-stamped edit and they swap for good |
+| `MinimalStamp = FALSE` | `UserWins` (5 states): migration stamps its entry with the time it runs. Device 1's user adds the term at stamp 2; device 2, not yet told, migrates with its clock at 3, and that entry replaces the user's on both devices |
+| `AbsentOnly = FALSE` | `UserWins` (5 states): migration adds its categories to an entry it already holds. Device 1's user limits the term to category 1; device 2 receives that, then migrates its list naming category 2, and the merge — stamped past the edit so it applies — widens the term again on both devices |
+
+What the model leaves out:
+
+- **The enqueue.** A write and its outbox row are one step, as for every
+  definition; there is no intent ledger and no sequence-gap repair, so a lost
+  row waits for the next edit of the term or "Sync Entities".
+- **Old builds.** A peer that cannot decode the entry skips it for good; no
+  supported configuration mixes builds.
+- **Respelling.** A case-only change writes the same entry; any other
+  spelling is another term, so the editor deletes the old entry and writes
+  the new one, two independent entries of the kind modelled.
+- **The legacy lists themselves.** No build writes them any more, so the
+  model holds them fixed per device.
+
+The repository suite (`speech_dictionary_repository_test.dart`) and the
+migration suite (`speech_dictionary_migration_test.dart`) replay these
+traces over a real in-memory database; reverting any one of the Dart rules
+fails at least one of them.
+
 ## `SyncPreferenceEdits` — local edits and debounced publication
 
 This register model adds two peers that each make two local edits, interleaved
@@ -2860,6 +2919,7 @@ The runner's contract is described in
 | `ConflictIsTransient` | invariant | a write that did not land fails the run only after `MaxAttempts` tries |
 | `NoDuplicateTranscript` | invariant | a run's transcript joins the history once |
 | `WriteFailureIsReal` | invariant | a run reports its transcript lost only when it is not stored |
+| `HeldTextLands` | invariant | a held run that saved its transcript leaves the recording with text — its transcript or an edit made meanwhile — unless every write of it was refused |
 | `EveryRequestSettles` | liveness | every request returns, succeeded or visibly failed |
 | `WaiterResolves` | liveness | the check-in waiter ends with the words or with the error, never only by its timeout |
 
@@ -2867,9 +2927,14 @@ The runner's contract is described in
 |---------------|----------|------------|------------|-------------------|--------------|----------------|-----------------|
 | `TranscriptionRun` | 2 | 1 | 1 | 1 | 1 | 3 | 41,000 |
 | `TranscriptionRunExhaust` | 2 | 2 | 1 | 0 | 1 | 2 | 184,823 |
+| `TranscriptionRunHeld` | 2 | 1 | 1 | 1 | 1 | 3 | 90,328 |
 
 The second lets a run use up its write attempts, so the failure path after the
-last retry is explored too. Each fix has a switch; setting one to `FALSE` in a
+last retry is explored too. The third is the composite step (`Held`): a
+speech-to-text engine's transcript in a task's context joins the history
+without touching the text, and after the summary `_writeTranscriptText`
+re-reads the recording and writes the corrected text — the summary's own
+call is abstracted, since only its outcome reaches the text. Each fix has a switch; setting one to `FALSE` in a
 temporary copy of `TranscriptionRun.cfg` gives:
 
 | Mutation | Counterexample |
@@ -2880,6 +2945,8 @@ temporary copy of `TranscriptionRun.cfg` gives:
 | `SingleFlight = FALSE` | `SingleInference` (3 states): two requests for one recording both start an inference. Checking `StatusShowsRunning` alone (4 states): the second run fails and sets the status to error while the first is still running |
 | `KeepConcurrentEdit = FALSE` | `NoLostEdit` (6 states): a synced edit of the text lands during the inference, the re-read sees it, and the write replaces it with the transcript |
 | `GuardedWrite = FALSE` | `NoLostEdit` (6 states): the user types into the recording between the run's re-read and its write; the write, built on the re-read, replaces the edit with the transcript |
+| `KeepEditOverHeld = FALSE` (on `TranscriptionRunHeld`) | `NoLostEdit` (9 states): the transcript is saved and the text held; a synced edit of the text lands while the summary runs, and the held text, written regardless, replaces it |
+| `GuardedFill = FALSE` (on `TranscriptionRunHeld`) | `NoLostEdit` (9 states): the held text's re-read sees the recording unedited, a synced edit lands before its write, and the write, built on the re-read, replaces it |
 | `IdempotentRetry = FALSE` | `NoDuplicateTranscript` (7 states): the write is stored but a step after the commit throws, so it reports false; the retry re-reads and appends the transcript a second time. On `TranscriptionRunExhaust`, checking `WriteFailureIsReal` alone (8 states): the last attempt is stored the same way and the run reports the transcript lost |
 
 What the model leaves out:
@@ -2900,9 +2967,10 @@ What the model leaves out:
 - **Daily OS capture**, which transcribes through `AudioTranscriptionService`,
   not this runner.
 
-The runner suite (`skill_inference_runner_test.dart`, `transcription_save.dart`
-and `transcription_summary.dart`) and `automatic_prompt_trigger_test.dart` hold
-a deterministic regression for each switch; each fails with its fix reverted.
+The runner suite (`skill_inference_runner_test.dart`, `transcription_save.dart`,
+`transcription_summary.dart` and `transcription_composite.dart`) and
+`automatic_prompt_trigger_test.dart` hold a deterministic regression for each
+switch; each fails with its fix reverted.
 ## `EmbeddingFreshness` — the index keeps up with the journal
 
 The local vector index is a cache that nothing reconciles: a row stays as the

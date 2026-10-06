@@ -128,11 +128,23 @@ resurrect the suggestion. A background rescan that fails keeps the last list.
   `inferenceStatusController`, so a row disappears the moment a run starts and
   returns if that run fails. An audio entry counts as busy while *either*
   transcription or summary runs;
+- **entries still settling** — created less than `inferenceBackfillGrace`
+  (ten minutes) ago, by `meta.createdAt` on whichever device created them,
+  unless a run of theirs failed on this device. A fresh recording is still
+  being transcribed, corrected and summarized, here or on the device that
+  recorded it, and that work is invisible to this device's status; offering
+  it would offer work already under way. The provider arms a timer for the
+  earliest window still open and re-evaluates when it closes;
 - entries already queued;
 - entries dismissed on this device.
 
 It returns nothing until both the scan and the dismissals have loaded, so a
 dismissed row never flashes in first.
+
+**A transcript without text** is a recording whose
+[composite step](../speech/dictionary.md#correcting-a-speech-to-text-transcript) never finished: the summary run is
+what writes its text. It misses its summary at any length unless a summary
+already exists, in which case the empty text is the user's.
 
 `unifiedSuggestionListProvider` appends the rows after the agent's own
 proposals. A task without an agent shows neither.
@@ -141,7 +153,10 @@ proposals. A task without an agent shows neither.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Offered: scan finds it, gate allows
+  [*] --> Settling: scan finds it, gate allows, entry is fresh
+  [*] --> Offered: scan finds it, gate allows, entry has settled
+  Settling --> Offered: its window closes, or its run failed here
+  Settling --> [*]: its own inference lands
   Offered --> Hidden: its inference starts running
   Hidden --> Offered: run ends, still missing
   Hidden --> [*]: run lands

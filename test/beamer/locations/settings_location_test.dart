@@ -44,6 +44,7 @@ import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_details_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -176,6 +177,9 @@ void main() {
           '/settings/labels',
           '/settings/labels/create',
           '/settings/labels/:labelId',
+          '/settings/speech-dictionary',
+          '/settings/speech-dictionary/create',
+          '/settings/speech-dictionary/:entryId',
           '/settings/dashboards',
           '/settings/dashboards/:dashboardId',
           '/settings/dashboards/create',
@@ -334,6 +338,36 @@ void main() {
       expect(pages[3].child, isA<LabelDetailsPage>());
       final labelPage = pages[3].child as LabelDetailsPage;
       expect(labelPage.labelId, 'test-id');
+    });
+
+    test('buildPages opens a new dictionary entry with the term to add', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/speech-dictionary/create?term=Lotti'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        BeamState.fromRouteInformation(routeInformation),
+      );
+
+      final page = pages.last.child as SpeechDictionaryDetailsPage;
+      expect(page.entryId, isNull);
+      expect(page.initialTerm, 'Lotti');
+    });
+
+    test('buildPages opens a dictionary entry by its id', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/speech-dictionary/entry-1'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(
+        routeInformation,
+      ).copyWith(pathParameters: {'entryId': 'entry-1'});
+      final pages = location.buildPages(mockBuildContext, beamState);
+
+      final page = pages.last.child as SpeechDictionaryDetailsPage;
+      expect(page.entryId, 'entry-1');
+      expect(page.initialTerm, isNull);
     });
 
     test('buildPages builds AiSettingsPage', () {

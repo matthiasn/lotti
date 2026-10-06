@@ -33,7 +33,9 @@
 (*               which returns false on a refusal and on a throw it       *)
 (*               logged — including a throw after the row was stored;    *)
 (*               then _finalizeAttribution                                *)
-(*   Summary     _maybeRunAudioSummary                                    *)
+(*   Summary     _runFollowUpSummary                                      *)
+(*   FillRead /  _writeTranscriptText: with Held, the text the composite  *)
+(*   FillWrite   step writes once the summary corrected the transcript    *)
 (*   Return      the caller after the call: the agent nudge, onError      *)
 (*   WaiterSees  the check-in waiter re-reading on a notification         *)
 (*   PeerEdit    a synced edit of the recording from another device       *)
@@ -56,6 +58,14 @@
 (*   IdempotentRetry    a re-read that already holds the transcript       *)
 (*                      counts as saved: it is not appended again, and    *)
 (*                      after the last attempt it is not reported lost    *)
+(*   KeepEditOverHeld   a held text is written only while the recording's *)
+(*                      text is still what it was at the run's first read *)
+(*   GuardedFill        the held text's write applies only to the version *)
+(*                      it re-read                                         *)
+(*                                                                         *)
+(* Held is the composite step: a speech-to-text engine's transcript in a  *)
+(* task's context joins the history without touching the text, and the   *)
+(* text is written after the summary has corrected it.                    *)
 (***************************************************************************)
 EXTENDS Naturals, FiniteSets
 
@@ -63,7 +73,8 @@ CONSTANTS N, Nudger, Waiter,
           PeerEditBudget, UserEditBudget, InferFailBudget, ThrowBudget,
           MaxAttempts,
           CheckWrite, RetryConflict, SettleOnOutcome, SingleFlight,
-          KeepConcurrentEdit, GuardedWrite, IdempotentRetry
+          KeepConcurrentEdit, GuardedWrite, IdempotentRetry,
+          Held, KeepEditOverHeld, GuardedFill
 
 Runs == 1..N
 ASSUME Nudger \in Runs /\ Waiter \in Runs /\ MaxAttempts >= 1
@@ -76,29 +87,30 @@ Texts == 0..(Edits + N)
 IsEdit(t) == t \in 1..Edits
 Transcript(r) == Edits + r
 
-Pcs == {"idle", "infer", "reread", "write", "summary", "return", "joined",
-        "done"}
+Pcs == {"idle", "infer", "reread", "write", "summary", "fillread",
+        "fillwrite", "return", "joined", "done"}
 Outcomes == {"none", "ok", "failed"}
 Attrs == {"none", "open", "succeeded"}
 
 (* A run owns the registry entry until its shared future completes, which *)
 (* is after the summary: a request in that window joins it.               *)
-Registered == {"infer", "reread", "write", "summary"}
+Registered == {"infer", "reread", "write", "summary", "fillread",
+               "fillwrite"}
 (* A paid inference, or the write of its result, is under way. *)
 InFlight == {"infer", "reread", "write"}
 
 VARIABLES pc, owner, firstText, firstEdits, readText, readPeer, readVer,
           refusals, outcome, cause, attr, status, text, peer, ver, persisted,
           appends, summarized, nudged, waiter, editLost, peerEdits,
-          userEdits, inferFails, throws
+          userEdits, inferFails, throws, fillText, fillVer, fillTries
 
 vars == <<pc, owner, firstText, firstEdits, readText, readPeer, readVer,
           refusals, outcome, cause, attr, status, text, peer, ver, persisted,
           appends, summarized, nudged, waiter, editLost, peerEdits,
-          userEdits, inferFails, throws>>
+          userEdits, inferFails, throws, fillText, fillVer, fillTries>>
 
-(* What only the write path changes. *)
-writeVars == <<ver, appends, readVer>>
+(* What only the write paths change. *)
+writeVars == <<ver, appends, readVer, fillText, fillVer, fillTries>>
 
 EditsMade == peerEdits + userEdits
 
@@ -125,6 +137,9 @@ Init ==
     /\ waiter = "off"
     /\ editLost = FALSE
     /\ peerEdits = 0 /\ userEdits = 0 /\ inferFails = 0 /\ throws = 0
+    /\ fillText = [r \in Runs |-> 0]
+    /\ fillVer = [r \in Runs |-> 0]
+    /\ fillTries = [r \in Runs |-> 0]
 
 Owns(r) == owner[r] = r
 
@@ -186,6 +201,7 @@ Reread(r) ==
     /\ readText' = [readText EXCEPT ![r] = text]
     /\ readPeer' = [readPeer EXCEPT ![r] = peer]
     /\ readVer' = [readVer EXCEPT ![r] = ver]
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<owner, firstText, firstEdits, refusals, outcome, cause,
                    attr, status, text, peer, ver, persisted, appends,
                    summarized, nudged, waiter, editLost, peerEdits, userEdits,
@@ -218,11 +234,11 @@ Store(r) ==
     /\ persisted' = persisted \cup {r}
     /\ appends' = [appends EXCEPT ![r] = @ + 1]
     /\ ver' = ver + 1
-    /\ text' = NewText(r)
+    /\ text' = IF Held THEN text ELSE NewText(r)
     \* The stored text is an edit made after this run's first read, and the
     \* write replaces it.
     /\ editLost' = (editLost \/ (IsEdit(text) /\ text > firstEdits[r]
-                                 /\ NewText(r) # text))
+                                 /\ text' # text))
 
 (* updateJournalEntity returned false, whether or not the row was stored. *)
 (* A run that ran out of attempts re-reads once more, and with            *)
@@ -243,6 +259,7 @@ WriteApplied(r) ==
     /\ pc[r] = "write" /\ ~Saved(r) /\ ~Moved(r)
     /\ Store(r)
     /\ Succeed(r)
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
                    refusals, peer, summarized, nudged, waiter, peerEdits,
                    userEdits, inferFails, throws>>
@@ -255,6 +272,7 @@ WriteNotApplied(r) ==
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
                    text, peer, ver, persisted, appends, summarized, nudged,
                    waiter, editLost, peerEdits, userEdits, inferFails>>
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ NotApplied(r)
 
 (* The row was stored, and a step after the commit threw. *)
@@ -263,6 +281,7 @@ WriteStoredButFailed(r) ==
     /\ throws < ThrowBudget /\ throws' = throws + 1
     /\ Store(r)
     /\ NotApplied(r)
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
                    peer, summarized, nudged, waiter, peerEdits, userEdits,
                    inferFails>>
@@ -271,6 +290,7 @@ WriteStoredButFailed(r) ==
 AlreadySaved(r) ==
     /\ pc[r] = "write" /\ Saved(r)
     /\ Succeed(r)
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
                    refusals, text, peer, ver, persisted, appends, summarized,
                    nudged, waiter, editLost, peerEdits, userEdits, inferFails,
@@ -280,7 +300,8 @@ AlreadySaved(r) ==
 (* with it.                                                               *)
 Summary(r) ==
     /\ pc[r] = "summary"
-    /\ pc' = [pc EXCEPT ![r] = "return"]
+    /\ pc' = [pc EXCEPT ![r] =
+                IF Held /\ outcome[r] = "ok" THEN "fillread" ELSE "return"]
     /\ summarized' = IF SettleOnOutcome /\ outcome[r] # "ok"
                      THEN summarized ELSE summarized \cup {r}
     /\ UNCHANGED writeVars
@@ -288,6 +309,42 @@ Summary(r) ==
                    outcome, cause, attr, status, text, peer, persisted,
                    nudged, waiter, editLost, peerEdits, userEdits, inferFails,
                    throws>>
+
+(* _writeTranscriptText's re-read. *)
+FillRead(r) ==
+    /\ pc[r] = "fillread"
+    /\ pc' = [pc EXCEPT ![r] = "fillwrite"]
+    /\ fillText' = [fillText EXCEPT ![r] = text]
+    /\ fillVer' = [fillVer EXCEPT ![r] = ver]
+    /\ UNCHANGED <<ver, appends, readVer, fillTries>>
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
+                   outcome, cause, attr, status, text, peer, persisted,
+                   summarized, nudged, waiter, editLost, peerEdits, userEdits,
+                   inferFails, throws>>
+
+(* The held text: skipped when the recording was edited since the run's   *)
+(* first read, refused when the row moved since the re-read (and re-read, *)
+(* up to MaxAttempts), else written.                                      *)
+FillWrite(r) ==
+    /\ pc[r] = "fillwrite"
+    /\ IF KeepEditOverHeld /\ fillText[r] # firstText[r]
+       THEN /\ pc' = [pc EXCEPT ![r] = "return"]
+            /\ UNCHANGED <<text, ver, editLost, fillTries>>
+       ELSE IF GuardedFill /\ ver # fillVer[r]
+       THEN /\ fillTries' = [fillTries EXCEPT ![r] = @ + 1]
+            /\ pc' = [pc EXCEPT ![r] =
+                        IF fillTries[r] + 1 < MaxAttempts
+                        THEN "fillread" ELSE "return"]
+            /\ UNCHANGED <<text, ver, editLost>>
+       ELSE /\ text' = Transcript(r)
+            /\ ver' = ver + 1
+            /\ editLost' = (editLost \/ (IsEdit(text) /\ text > firstEdits[r]))
+            /\ pc' = [pc EXCEPT ![r] = "return"]
+            /\ UNCHANGED fillTries
+    /\ UNCHANGED <<appends, readVer, fillText, fillVer>>
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
+                   outcome, cause, attr, status, peer, persisted, summarized,
+                   nudged, waiter, peerEdits, userEdits, inferFails, throws>>
 
 ------------------------------------------------------------------------------
 (* The callers *)
@@ -333,6 +390,7 @@ PeerEdit ==
     /\ ver' = ver + 1
     \* A peer may edit the words, or something else about the recording.
     /\ text' \in {text, EditsMade + 1}
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<pc, owner, firstText, firstEdits, readText, readPeer,
                    readVer, refusals, outcome, cause, attr, status, persisted,
                    appends, summarized, nudged, waiter, editLost, userEdits,
@@ -343,6 +401,7 @@ UserEdit ==
     /\ userEdits' = userEdits + 1
     /\ ver' = ver + 1
     /\ text' = EditsMade + 1
+    /\ UNCHANGED <<fillText, fillVer, fillTries>>
     /\ UNCHANGED <<pc, owner, firstText, firstEdits, readText, readPeer,
                    readVer, refusals, outcome, cause, attr, status, peer,
                    persisted, appends, summarized, nudged, waiter, editLost,
@@ -353,6 +412,7 @@ Next ==
          \/ Request(r) \/ Infer(r) \/ InferFail(r) \/ Reread(r)
          \/ WriteApplied(r) \/ WriteNotApplied(r) \/ WriteStoredButFailed(r)
          \/ AlreadySaved(r) \/ Summary(r) \/ Return(r)
+         \/ FillRead(r) \/ FillWrite(r)
     \/ WaiterSees \/ PeerEdit \/ UserEdit
 
 Spec == Init /\ [][Next]_vars
@@ -361,6 +421,7 @@ Spec == Init /\ [][Next]_vars
              /\ WF_vars(WriteApplied(r)) /\ WF_vars(WriteNotApplied(r))
              /\ WF_vars(AlreadySaved(r))
              /\ WF_vars(Summary(r)) /\ WF_vars(Return(r))
+             /\ WF_vars(FillRead(r)) /\ WF_vars(FillWrite(r))
         /\ WF_vars(WaiterSees)
 
 ------------------------------------------------------------------------------
@@ -384,6 +445,8 @@ TypeOK ==
     /\ nudged \subseteq Runs
     /\ waiter \in {"off", "waiting", "text", "cancelled"}
     /\ editLost \in BOOLEAN
+    /\ fillText \in [Runs -> Texts] /\ fillVer \in [Runs -> Nat]
+    /\ fillTries \in [Runs -> 0..MaxAttempts]
 
 (* A caller told the run succeeded can find its transcript. *)
 OkMeansPersisted ==
@@ -417,6 +480,14 @@ WriteFailureIsReal == \A r \in Runs : cause[r] = "write" => r \notin persisted
 (* A write that did not land fails the run only after MaxAttempts tries. *)
 ConflictIsTransient ==
     \A r \in Runs : cause[r] = "write" => refusals[r] >= MaxAttempts
+
+(* A held run that saved its transcript leaves the recording with text: *)
+(* its transcript, or an edit made meanwhile -- unless every write of it  *)
+(* was refused, which leaves it for the next summary to fill.             *)
+HeldTextLands ==
+    \A r \in Runs :
+      (Held /\ Owns(r) /\ pc[r] = "done" /\ outcome[r] = "ok")
+        => text # 0 \/ fillTries[r] >= MaxAttempts
 
 (* Every request ends, succeeded or visibly failed. *)
 EveryRequestSettles ==

@@ -161,7 +161,7 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
                           index: 0,
                           id: 'call-1',
                           function: ChatCompletionStreamMessageFunctionCall(
-                            name: entrySummaryToolName,
+                            name: recordingSummaryToolName,
                             arguments: jsonEncode({
                               EntrySummaryToolArgs.oneLiner:
                                   'Migration owners agreed.',

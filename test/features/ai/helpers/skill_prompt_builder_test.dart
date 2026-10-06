@@ -527,6 +527,49 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
       });
     });
 
+    group('user message — audioSummary', () {
+      test(
+        'carries the task report and, after the recording, the dictionary',
+        () {
+          final result = builder.build(
+            skill: makeSkill(
+              skillType: SkillType.audioSummary,
+              contextPolicy: ContextPolicy.fullTask,
+            ),
+            taskContext: '{"title": "Move the build"}',
+            currentTaskSummary: 'The build moves to a cluster this week.',
+            entryContent: 'We moved the build to Cuban Eddies.',
+            transcriptCorrection: '**Speech Dictionary:**\n- Kubernetes',
+          );
+          final message = result.userMessage;
+
+          expect(message, contains('**Task Report:**'));
+          expect(
+            message,
+            contains('The build moves to a cluster this week.'),
+          );
+          // The dictionary follows the transcript it is about.
+          expect(
+            message.indexOf('**Speech Dictionary:**'),
+            greaterThan(message.indexOf('**Entry Notes:**')),
+          );
+        },
+      );
+
+      test('other skills never carry the correction block', () {
+        final result = builder.build(
+          skill: makeSkill(
+            skillType: SkillType.promptGeneration,
+            contextPolicy: ContextPolicy.fullTask,
+          ),
+          entryContent: 'Notes.',
+          transcriptCorrection: '**Speech Dictionary:**\n- Kubernetes',
+        );
+
+        expect(result.userMessage, isNot(contains('Speech Dictionary')));
+      });
+    });
+
     group('user message — imagePromptGeneration', () {
       test(
         'fullTask policy injects full task JSON + linked tasks (the '

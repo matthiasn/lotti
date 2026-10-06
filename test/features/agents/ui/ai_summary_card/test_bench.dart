@@ -281,6 +281,7 @@ PendingSuggestion makeBackfillPending(
     entryId: entryId,
     kind: kind,
     capturedAt: DateTime(2024, 3, 15, 9, 30),
+    createdAt: DateTime(2024, 3, 15, 9, 30),
   ),
   agentId: 'agent-001',
   taskId: AgentTestBench.taskId,

@@ -287,7 +287,7 @@ extension _EntityDisappearedCases on _SkillInferenceTestSetup {
                           index: 0,
                           id: 'call-1',
                           function: ChatCompletionStreamMessageFunctionCall(
-                            name: entrySummaryToolName,
+                            name: recordingSummaryToolName,
                             arguments: jsonEncode({
                               EntrySummaryToolArgs.oneLiner: 'Herring shipped.',
                               EntrySummaryToolArgs.tldr: 'All crates left.',

@@ -7,6 +7,7 @@ void main() {
       expect(SyncStep.values, [
         SyncStep.measurables,
         SyncStep.labels,
+        SyncStep.speechDictionary,
         SyncStep.categories,
         SyncStep.dashboards,
         SyncStep.habits,

@@ -1,112 +1,81 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/domain/speech_dictionary_limits.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
+import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 
-/// Service for managing speech dictionary operations.
-///
-/// This service provides methods to add terms to a category's speech dictionary
-/// from various contexts (e.g., text editor context menu).
+/// Adds terms to the speech dictionary from an entry's context — the
+/// editor's "Add to Dictionary" on a text selection.
 final speechDictionaryServiceProvider = Provider<SpeechDictionaryService>((
   ref,
 ) {
   return SpeechDictionaryService(
-    categoryRepository: ref.watch(categoryRepositoryProvider),
+    dictionaryRepository: ref.watch(speechDictionaryRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
   );
 });
 
 class SpeechDictionaryService {
   SpeechDictionaryService({
-    required this.categoryRepository,
+    required this.dictionaryRepository,
     required this.journalRepository,
   });
 
-  final CategoryRepository categoryRepository;
+  final SpeechDictionaryRepository dictionaryRepository;
   final JournalRepository journalRepository;
 
-  /// Adds a term to the speech dictionary of the category associated with the given entry.
-  ///
-  /// Returns a [SpeechDictionaryResult] indicating success or the reason for failure.
-  ///
-  /// The entry can be:
-  /// - A Task: uses the task's category directly
-  /// - A JournalImage or JournalAudio: looks for a linked task and uses its category
-  /// - Other types: returns [SpeechDictionaryResult.noCategory]
+  /// Adds [term] to the dictionary for recordings in the category of the
+  /// entry [entryId]: the entry's own, else its linked task's. A term the
+  /// dictionary already holds for other categories gains this one; with no
+  /// category to go by, a new term applies to every category.
   Future<SpeechDictionaryResult> addTermForEntry({
     required String entryId,
     required String term,
   }) async {
-    // Validate term
     final trimmedTerm = term.trim();
     if (trimmedTerm.isEmpty) {
       return SpeechDictionaryResult.emptyTerm;
     }
-
     if (trimmedTerm.length > kMaxTermLength) {
       return SpeechDictionaryResult.termTooLong;
     }
 
-    // Get the entry
     final entry = await journalRepository.getJournalEntityById(entryId);
     if (entry == null) {
       return SpeechDictionaryResult.entryNotFound;
     }
 
-    // Find the task and its category
-    final categoryId = await _getCategoryIdForEntry(entry);
-    if (categoryId == null) {
-      return SpeechDictionaryResult.noCategory;
-    }
-
-    // Get the category
-    final category = await categoryRepository.getCategoryById(categoryId);
-    if (category == null) {
-      return SpeechDictionaryResult.categoryNotFound;
-    }
-
-    // Check for duplicates (case-insensitive)
-    final currentDictionary = category.speechDictionary ?? [];
-    final lowerCaseDictionary = currentDictionary
-        .map((t) => t.toLowerCase())
-        .toSet();
-    if (lowerCaseDictionary.contains(trimmedTerm.toLowerCase())) {
-      return SpeechDictionaryResult.duplicate;
-    }
-
-    // Add term to dictionary
-    final updatedDictionary = [...currentDictionary, trimmedTerm];
-
-    // Update category
-    final updatedCategory = category.copyWith(
-      speechDictionary: updatedDictionary,
-    );
-
+    final SpeechDictionaryAddResult added;
     try {
-      await categoryRepository.updateCategory(updatedCategory);
+      added = await dictionaryRepository.addTerm(
+        trimmedTerm,
+        categoryId: await _getCategoryIdForEntry(entry),
+      );
     } on Exception {
       return SpeechDictionaryResult.saveFailed;
     }
 
-    return SpeechDictionaryResult.success;
+    return switch (added) {
+      SpeechDictionaryAddResult.added ||
+      SpeechDictionaryAddResult.scopeExtended => SpeechDictionaryResult.success,
+      SpeechDictionaryAddResult.alreadyPresent =>
+        SpeechDictionaryResult.duplicate,
+      SpeechDictionaryAddResult.emptyTerm => SpeechDictionaryResult.emptyTerm,
+      SpeechDictionaryAddResult.termTooLong =>
+        SpeechDictionaryResult.termTooLong,
+    };
   }
 
-  /// Gets the category ID for a given entry.
-  ///
-  /// For tasks, returns the task's category ID directly.
-  /// For images and audio, looks for a linked task and returns its category ID.
+  /// The category a term picked in [entry] belongs to: the entry's own, or
+  /// for an image or recording without one, its linked task's.
   Future<String?> _getCategoryIdForEntry(JournalEntity entry) async {
-    if (entry is Task) {
-      return entry.meta.categoryId;
-    }
+    final own = entry.meta.categoryId;
+    if (own != null || entry is Task) return own;
 
     if (entry is JournalImage || entry is JournalAudio) {
-      // Look for linked task
       final linkedEntities = await journalRepository.getLinkedToEntities(
         linkedTo: entry.id,
       );
-
       for (final linked in linkedEntities) {
         if (linked is Task) {
           return linked.meta.categoryId;
@@ -120,7 +89,7 @@ class SpeechDictionaryService {
 
 /// Result of attempting to add a term to the speech dictionary.
 enum SpeechDictionaryResult {
-  /// Term was added successfully.
+  /// The term was added, or its scope extended to the entry's category.
   success,
 
   /// The term was empty after trimming.
@@ -129,18 +98,12 @@ enum SpeechDictionaryResult {
   /// The term exceeds the maximum length.
   termTooLong,
 
-  /// The term already exists in the dictionary (case-insensitive).
+  /// The term already reaches the entry's category (case-insensitive).
   duplicate,
 
   /// The entry was not found.
   entryNotFound,
 
-  /// The entry has no associated task with a category.
-  noCategory,
-
-  /// The category was not found.
-  categoryNotFound,
-
-  /// Failed to save the updated category.
+  /// Failed to save the entry.
   saveFailed,
 }

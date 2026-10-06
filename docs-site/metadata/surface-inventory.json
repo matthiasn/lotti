@@ -751,6 +751,33 @@
       "status": "verified"
     },
     {
+      "id": "settings-speech-dictionary-list",
+      "title": "Speech dictionary",
+      "kind": "settings-page",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
+      "sourcePattern": "'definitions/speech-dictionary'",
+      "locator": "/settings/speech-dictionary",
+      "routes": [
+        "/settings/speech-dictionary"
+      ],
+      "page": "organize-and-reflect/speech-dictionary",
+      "status": "documented"
+    },
+    {
+      "id": "settings-speech-dictionary-editor",
+      "title": "Speech dictionary term editor",
+      "kind": "settings-page",
+      "source": "lib/features/settings/routing/settings_routes.dart",
+      "sourcePattern": "'/settings/speech-dictionary/:entryId'",
+      "locator": "/settings/speech-dictionary/create or :entryId",
+      "routes": [
+        "/settings/speech-dictionary/create",
+        "/settings/speech-dictionary/:entryId"
+      ],
+      "page": "organize-and-reflect/speech-dictionary",
+      "status": "documented"
+    },
+    {
       "id": "settings-habits-list",
       "title": "Habit definitions",
       "kind": "settings-page",

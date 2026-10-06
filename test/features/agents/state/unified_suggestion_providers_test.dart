@@ -751,11 +751,13 @@ void main() {
       entryId: 'img',
       kind: InferenceBackfillKind.imageAnalysis,
       capturedAt: DateTime(2024, 3, 15, 9, 30),
+      createdAt: DateTime(2024, 3, 15, 9, 30),
     );
     final recording = InferenceBackfillCandidate(
       entryId: 'rec',
       kind: InferenceBackfillKind.transcription,
       capturedAt: DateTime(2024, 3, 14),
+      createdAt: DateTime(2024, 3, 14),
     );
 
     Future<UnifiedSuggestionList> read(ProviderContainer container) {

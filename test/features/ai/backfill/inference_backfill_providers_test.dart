@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -30,6 +31,18 @@ InferenceBackfillCandidate _candidate(
   entryId: entryId,
   kind: kind,
   capturedAt: testFixedDate,
+  createdAt: testFixedDate,
+);
+
+/// A candidate for an entry created at [createdAt], as a fresh recording is.
+InferenceBackfillCandidate _freshCandidate(
+  String entryId,
+  DateTime createdAt,
+) => InferenceBackfillCandidate(
+  entryId: entryId,
+  kind: InferenceBackfillKind.transcription,
+  capturedAt: createdAt,
+  createdAt: createdAt,
 );
 
 InferenceBackfillScan _scan(List<InferenceBackfillCandidate> candidates) =>
@@ -375,6 +388,83 @@ void main() {
       expect(container.read(inferenceBackfillSuggestionsProvider(_taskId)), [
         _candidate('img'),
       ]);
+    });
+
+    group('grace period', () {
+      final created = DateTime(2026, 10, 6, 12);
+
+      test('holds back a fresh entry until its window closes', () {
+        fakeAsync((async) {
+          final fresh = _freshCandidate('rec', created);
+          // Settles a minute later: the provider wakes for the earlier one.
+          final fresher = _freshCandidate(
+            'rec-2',
+            created.add(const Duration(minutes: 1)),
+          );
+          when(() => detector.scan(_taskId)).thenAnswer(
+            (_) async => _scan([fresher, fresh, _candidate('old')]),
+          );
+          final subscription = container.listen(
+            inferenceBackfillSuggestionsProvider(_taskId),
+            (_, _) {},
+          );
+          List<InferenceBackfillCandidate> shown() =>
+              container.read(inferenceBackfillSuggestionsProvider(_taskId));
+          async.flushMicrotasks();
+
+          // Its own transcription may still be under way, here or on the
+          // device that recorded it.
+          expect(shown(), [_candidate('old')]);
+
+          async
+            ..elapse(inferenceBackfillGrace - const Duration(seconds: 1))
+            ..flushMicrotasks();
+          expect(shown(), [_candidate('old')]);
+
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
+          expect(shown(), [fresh, _candidate('old')]);
+
+          async
+            ..elapse(const Duration(minutes: 1))
+            ..flushMicrotasks();
+          expect(shown(), [fresher, fresh, _candidate('old')]);
+
+          subscription.close();
+        }, initialTime: created);
+      });
+
+      test('offers a fresh entry at once when its run failed', () {
+        fakeAsync((async) {
+          final fresh = _freshCandidate('rec', created);
+          when(
+            () => detector.scan(_taskId),
+          ).thenAnswer((_) async => _scan([fresh]));
+          final subscription = container.listen(
+            inferenceBackfillSuggestionsProvider(_taskId),
+            (_, _) {},
+          );
+          async.flushMicrotasks();
+          expect(
+            container.read(inferenceBackfillSuggestionsProvider(_taskId)),
+            isEmpty,
+          );
+
+          setStatus(
+            'rec',
+            AiResponseType.audioTranscription,
+            InferenceStatus.error,
+          );
+          async.flushMicrotasks();
+
+          expect(
+            container.read(inferenceBackfillSuggestionsProvider(_taskId)),
+            [fresh],
+          );
+          subscription.close();
+        }, initialTime: created.add(const Duration(minutes: 1)));
+      });
     });
 
     test('hides a suggestion the moment it is queued', () async {

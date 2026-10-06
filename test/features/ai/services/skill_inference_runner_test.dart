@@ -28,6 +28,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
+import 'package:lotti/features/ai/skills/recording_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
@@ -37,6 +38,8 @@ import 'package:lotti/features/ai/state/pull_request_context_source_provider.dar
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
+import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -73,6 +76,7 @@ part 'skill_inference_runner_cases/transcription.dart';
 part 'skill_inference_runner_cases/transcription_context_and_errors.dart';
 part 'skill_inference_runner_cases/transcription_save.dart';
 part 'skill_inference_runner_cases/transcription_summary.dart';
+part 'skill_inference_runner_cases/transcription_composite.dart';
 
 void main() {
   final setup = _SkillInferenceTestSetup()..registerLifecycle();
@@ -93,6 +97,7 @@ void main() {
     });
     setup
       ..registerTranscriptionSummary()
+      ..registerTranscriptionComposite()
       ..registerAudioSummary();
     group('runPromptGeneration', () {
       setup

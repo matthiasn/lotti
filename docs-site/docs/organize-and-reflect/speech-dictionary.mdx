@@ -1,0 +1,57 @@
+---
+title: Keep a speech dictionary
+description: Teach transcription the names, places and jargon it keeps getting wrong.
+---
+
+# Keep a speech dictionary
+
+Speech recognition writes down what it hears. Names, places and project jargon
+it has never met come out misspelled — **Project Waddle** as "Project Wattle".
+The speech dictionary is the list of words Lotti should get right, kept once
+for the whole app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Speech dictionary listing Europa for all categories, Project Waddle for Mission Control and Penguin Operations, and Sir Flaps-a-Lot for Penguin Operations"
+  caption="Each term shows where it applies. Search also finds a term by a spelling it was misheard as."
+/>
+
+## Add a term
+
+1. Open **Settings → Definitions → Speech dictionary**.
+2. Select **Add term**, or type the word into the search field and choose
+   **Add "…"** when nothing matches.
+3. Enter the term exactly as it should be spelled.
+
+You can also select a word in the text of any entry and choose **Add to
+Dictionary**. It is added for that entry's category.
+
+## Limit a term to categories
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="The Project Waddle term limited to Mission Control and Penguin Operations, misheard as Project Wattle and Project Waddel"
+  caption="With no category chosen, a term applies everywhere."
+/>
+
+Use **Choose categories** to apply a term only to recordings in those
+categories, so niche vocabulary stays out of unrelated transcripts. With none
+chosen, the term applies to every category.
+
+## Misheard as
+
+List the spellings a term tends to come out as, separated by semicolons. Lotti
+adds the ones it corrects, too. They are hints, never automatic replacements: a
+misheard spelling can also be a real word the speaker meant, and the
+surrounding text decides.
+
+## How transcripts are corrected
+
+When a recording in a task is transcribed by a speech-to-text engine such as
+Whisper, the step that writes its one-liner and summary also corrects the
+dictionary terms the transcript misheard. The recording's text appears once,
+already corrected, and stays editable. A multimodal model that listens to the
+audio itself reads the dictionary in its own prompt instead.
+
+The terms your categories held before were carried over automatically, each
+limited to the categories that held it.

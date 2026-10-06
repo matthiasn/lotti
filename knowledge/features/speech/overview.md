@@ -61,7 +61,7 @@ flowchart LR
   EditorUI --> DictSvc["SpeechDictionaryService"]
 
   SpeechRepo --> Persist["PersistenceLogic + JournalDb"]
-  DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
+  DictSvc --> DictRepo["SpeechDictionaryRepository + JournalRepository"]
   Persist --> JournalAudio["JournalAudio"]
   Attribution --> JournalAudio
 ```

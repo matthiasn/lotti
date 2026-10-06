@@ -43,6 +43,8 @@ import 'package:lotti/features/settings/ui/pages/categories/category_details_pag
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_details_page.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -363,6 +365,25 @@ final SettingsRouteTable settingsRoutes = SettingsRouteTable(
           '/settings/labels/:labelId',
           build: (_, m) =>
               LabelDetailsPage(labelId: m.pathParameters['labelId']),
+        ),
+      ],
+    ),
+    'definitions/speech-dictionary': SettingsRoute(
+      url: '/settings/speech-dictionary',
+      page: (_, _) => const SpeechDictionaryListPage(),
+      panel: (_, _) => const SpeechDictionaryListBody(),
+      keepsBottomNav: true,
+      subRoutes: [
+        SettingsSubRoute(
+          '/settings/speech-dictionary/create',
+          build: (_, m) => SpeechDictionaryDetailsPage(
+            initialTerm: m.queryParameters['term'],
+          ),
+        ),
+        SettingsSubRoute(
+          '/settings/speech-dictionary/:entryId',
+          build: (_, m) =>
+              SpeechDictionaryDetailsPage(entryId: m.pathParameters['entryId']),
         ),
       ],
     ),

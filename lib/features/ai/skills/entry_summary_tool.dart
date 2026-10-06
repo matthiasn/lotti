@@ -81,41 +81,45 @@ const ChatCompletionTool entrySummaryTool = ChatCompletionTool(
         'summary.',
     parameters: {
       'type': 'object',
-      'properties': {
-        EntrySummaryToolArgs.oneLiner: {
-          'type': 'string',
-          'description':
-              'ONE plain sentence naming what this recording is about, at '
-              'most $entrySummaryOneLinerMaxChars characters. This is shown '
-              'as the collapsed label for the recording in the task log, so '
-              'it must stand alone and be specific — never "a voice note" or '
-              '"the user discusses several topics". No markdown, no bullet '
-              'points, no leading label, no trailing ellipsis.',
-        },
-        EntrySummaryToolArgs.tldr: {
-          'type': 'string',
-          'description':
-              'One to three sentences covering what was said and what it '
-              'means for the task. Shown when the recording is expanded but '
-              'the full summary is still collapsed, so it must stand on its '
-              'own. Plain prose, no headings.',
-        },
-        EntrySummaryToolArgs.summary: {
-          'type': 'string',
-          'description':
-              'The full summary as a markdown document. Organise it under '
-              'headings and bullets so a long recording stays scannable; up '
-              'to about half a page for a long meeting, much shorter for a '
-              'brief note. Do not repeat the TLDR verbatim as the opening '
-              'line, and do not transcribe the recording back — summarise '
-              'it.',
-        },
-      },
+      'properties': entrySummaryToolProperties,
       'required': EntrySummaryToolArgs.required,
       'additionalProperties': false,
     },
   ),
 );
+
+/// The JSON-Schema properties of the three tiers, shared with every tool that
+/// publishes them.
+const Map<String, Object> entrySummaryToolProperties = {
+  EntrySummaryToolArgs.oneLiner: {
+    'type': 'string',
+    'description':
+        'ONE plain sentence naming what this recording is about, at '
+        'most $entrySummaryOneLinerMaxChars characters. This is shown '
+        'as the collapsed label for the recording in the task log, so '
+        'it must stand alone and be specific — never "a voice note" or '
+        '"the user discusses several topics". No markdown, no bullet '
+        'points, no leading label, no trailing ellipsis.',
+  },
+  EntrySummaryToolArgs.tldr: {
+    'type': 'string',
+    'description':
+        'One to three sentences covering what was said and what it '
+        'means for the task. Shown when the recording is expanded but '
+        'the full summary is still collapsed, so it must stand on its '
+        'own. Plain prose, no headings.',
+  },
+  EntrySummaryToolArgs.summary: {
+    'type': 'string',
+    'description':
+        'The full summary as a markdown document. Organise it under '
+        'headings and bullets so a long recording stays scannable; up '
+        'to about half a page for a long meeting, much shorter for a '
+        'brief note. Do not repeat the TLDR verbatim as the opening '
+        'line, and do not transcribe the recording back — summarise '
+        'it.',
+  },
+};
 
 /// Pins the model to [entrySummaryTool] so the summary cannot come back as
 /// prose the caller would have to parse.
@@ -137,10 +141,14 @@ ChatCompletionToolChoiceOption? entrySummaryToolChoiceFor(String modelId) =>
 /// Extra tool calls beyond the first matching one are ignored rather than
 /// rejected — some providers echo a duplicate final call, and a usable first
 /// result should not be thrown away over it.
+///
+/// [toolName] is the tool that carries the tiers: [entrySummaryToolName]
+/// unless another tool publishes them alongside more.
 EntrySummary parseEntrySummaryToolCall(
-  List<ChatCompletionMessageToolCall> toolCalls,
-) {
-  final args = _decodeEntrySummaryToolCall(toolCalls);
+  List<ChatCompletionMessageToolCall> toolCalls, {
+  String toolName = entrySummaryToolName,
+}) {
+  final args = _decodeEntrySummaryToolCall(toolCalls, toolName);
 
   final oneLiner = _requireSummaryField(args, EntrySummaryToolArgs.oneLiner);
   if (oneLiner.length > entrySummaryOneLinerMaxChars) {
@@ -166,22 +174,23 @@ EntrySummary parseEntrySummaryToolCall(
 String parseEntrySummaryToolBody(
   List<ChatCompletionMessageToolCall> toolCalls,
 ) => _requireSummaryField(
-  _decodeEntrySummaryToolCall(toolCalls),
+  _decodeEntrySummaryToolCall(toolCalls, entrySummaryToolName),
   EntrySummaryToolArgs.summary,
 );
 
 Map<String, dynamic> _decodeEntrySummaryToolCall(
   List<ChatCompletionMessageToolCall> toolCalls,
+  String toolName,
 ) {
   final call = toolCalls
-      .where((toolCall) => toolCall.function.name == entrySummaryToolName)
+      .where((toolCall) => toolCall.function.name == toolName)
       .firstOrNull;
   if (call == null) {
     final seen = toolCalls.map((c) => c.function.name).join(', ');
     throw EntrySummaryToolException(
       seen.isEmpty
           ? 'model published no tool call'
-          : 'model called [$seen] but not $entrySummaryToolName',
+          : 'model called [$seen] but not $toolName',
     );
   }
 

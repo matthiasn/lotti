@@ -1,0 +1,58 @@
+---
+title: Een spraakwoordenboek bijhouden
+description: Leer de transcriptie de namen, plaatsen en vaktermen die ze steeds verkeerd schrijft.
+---
+
+# Een spraakwoordenboek bijhouden
+
+Spraakherkenning schrijft op wat ze hoort. Namen, plaatsen en projecttermen die
+ze niet kent, komen verkeerd gespeld terug — **Project Waddle** als ‘Project
+Wattle’. Het spraakwoordenboek is de lijst woorden die Lotti goed moet
+schrijven, één keer bijgehouden voor de hele app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Spraakwoordenboek met Europa voor alle categorieën, Project Waddle voor Mission Control en Penguin Operations, en Sir Flaps-a-Lot voor Penguin Operations"
+  caption="Elke term toont waar hij geldt. Zoeken vindt een term ook via een spelling waarin hij verkeerd verstaan werd."
+/>
+
+## Een term toevoegen
+
+1. Open **Instellingen → Definities → Spraakwoordenboek**.
+2. Kies **Term toevoegen**, of typ het woord in het zoekveld en kies
+   **‘…’ toevoegen** als niets overeenkomt.
+3. Voer de term in precies zoals hij gespeld moet worden.
+
+Je kunt ook een woord in de tekst van een item selecteren en **Toevoegen aan
+woordenboek** kiezen. Het wordt toegevoegd voor de categorie van dat item.
+
+## Een term beperken tot categorieën
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="De term Project Waddle beperkt tot Mission Control en Penguin Operations, verkeerd verstaan als Project Wattle en Project Waddel"
+  caption="Zonder gekozen categorie geldt een term overal."
+/>
+
+Met **Categorieën kiezen** geldt een term alleen voor opnames in die
+categorieën, zodat vakjargon buiten andere transcripties blijft. Zonder keuze
+geldt hij voor elke categorie.
+
+## Verkeerd verstaan als
+
+Noteer de spellingen waarin een term vaak terechtkomt, gescheiden door
+puntkomma’s. Lotti voegt ook de spellingen toe die het corrigeert. Het zijn
+hints, nooit automatische vervangingen: een verkeerd verstane spelling kan ook
+een echt bedoeld woord zijn, en de context beslist.
+
+## Hoe transcripties worden gecorrigeerd
+
+Wordt een opname in een taak getranscribeerd door een spraakherkenner zoals
+Whisper, dan corrigeert de stap die de samenvatting in één regel en de
+samenvatting schrijft ook de woordenboektermen die verkeerd verstaan zijn. De
+tekst van de opname verschijnt één keer, al gecorrigeerd, en blijft bewerkbaar.
+Een multimodaal model dat zelf naar de audio luistert, leest het woordenboek in
+zijn eigen prompt.
+
+De termen die je categorieën eerder hadden, zijn automatisch overgenomen, elk
+beperkt tot de categorieën die ze hadden.

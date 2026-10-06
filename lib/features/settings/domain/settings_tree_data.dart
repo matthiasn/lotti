@@ -213,6 +213,7 @@ List<SettingsNode> buildSettingsTree({
           LottiIcons.category,
         ),
         leaf('definitions/labels', LottiIcons.label),
+        leaf('definitions/speech-dictionary', LottiIcons.book),
         if (enableHabits)
           leaf(
             'definitions/habits',

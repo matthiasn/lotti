@@ -50,6 +50,7 @@ class _SkillInferenceTestSetup {
   late MockTaskSummaryResolver mockTaskSummaryResolver;
   late MockAiConfigRepository mockAiConfigRepo;
   late MockPullRequestContextService mockPullRequestContext;
+  late MockSpeechDictionaryRepository mockSpeechDictionaryRepository;
   late SkillInferenceRunner runner;
   late Directory tempDir;
   late ProviderContainer container;
@@ -331,6 +332,10 @@ class _SkillInferenceTestSetup {
       mockTaskSummaryResolver = MockTaskSummaryResolver();
       mockAiConfigRepo = MockAiConfigRepository();
       mockPullRequestContext = MockPullRequestContextService();
+      mockSpeechDictionaryRepository = MockSpeechDictionaryRepository();
+      when(
+        () => mockSpeechDictionaryRepository.learnMisheardForms(any()),
+      ).thenAnswer((_) async => 0);
       // No linked pull requests unless a case says otherwise.
       when(
         () => mockPullRequestContext.contextFor(
@@ -344,6 +349,9 @@ class _SkillInferenceTestSetup {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           pullRequestContextSourceProvider.overrideWithValue(
             mockPullRequestContext,
+          ),
+          speechDictionaryRepositoryProvider.overrideWithValue(
+            mockSpeechDictionaryRepository,
           ),
         ]),
       );
@@ -365,6 +373,22 @@ class _SkillInferenceTestSetup {
         promptBuilderHelper: mockPromptBuilderHelper,
         taskSummaryResolver: mockTaskSummaryResolver,
       );
+      // An entity no case stubbed does not exist; the cases stub theirs
+      // after this, and the latest stub wins.
+      when(
+        () => mockAiInputRepo.getEntity(any()),
+      ).thenAnswer((_) async => null);
+      // No speech dictionary and no task report unless a case says
+      // otherwise: every audio summary reads both.
+      when(
+        () => mockPromptBuilderHelper.getSpeechDictionaryEntries(any()),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => mockTaskSummaryResolver.resolve(
+          any(),
+          fullReport: any(named: 'fullReport'),
+        ),
+      ).thenAnswer((_) async => null);
       // No category brief unless a case says otherwise: the coding-prompt
       // path reads it beside the task context on every linked run.
       when(

@@ -1,0 +1,57 @@
+---
+title: Țineți un dicționar vocal
+description: Învățați transcrierea numele, locurile și jargonul pe care le scrie mereu greșit.
+---
+
+# Țineți un dicționar vocal
+
+Recunoașterea vocală scrie ce aude. Numele, locurile și termenii de proiect pe
+care nu îi cunoaște ies scriși greșit — **Project Waddle** ca „Project Wattle”.
+Dicționarul vocal este lista cuvintelor pe care Lotti trebuie să le scrie
+corect, ținută o singură dată pentru toată aplicația.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Dicționar vocal cu Europa pentru toate categoriile, Project Waddle pentru Mission Control și Operațiuni cu pinguini, și Sir Flaps-a-Lot pentru Operațiuni cu pinguini"
+  caption="Fiecare termen arată unde se aplică. Căutarea găsește un termen și după o grafie în care a fost auzit greșit."
+/>
+
+## Adăugați un termen
+
+1. Deschideți **Setări → Definiții → Dicționar vocal**.
+2. Alegeți **Adăugați un termen** sau scrieți cuvântul în căutare și alegeți
+   **Adăugați „…”** când nu se potrivește nimic.
+3. Introduceți termenul exact cum trebuie scris.
+
+Puteți și să selectați un cuvânt în textul oricărei înregistrări și să alegeți
+**Adăugați la dicționar**. Este adăugat pentru categoria acelei înregistrări.
+
+## Limitați un termen la categorii
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Termenul Project Waddle limitat la Mission Control și Operațiuni cu pinguini, auzit greșit ca Project Wattle și Project Waddel"
+  caption="Fără nicio categorie aleasă, un termen se aplică peste tot."
+/>
+
+Cu **Alegeți categoriile**, un termen se aplică doar înregistrărilor din acele
+categorii, ca jargonul să nu apară în transcrieri fără legătură. Fără selecție,
+se aplică tuturor categoriilor.
+
+## Auzit greșit ca
+
+Notați grafiile în care un termen apare adesea, separate prin punct și virgulă.
+Lotti le adaugă și pe cele pe care le corectează. Sunt indicii, niciodată
+înlocuiri automate: o grafie auzită greșit poate fi și un cuvânt real care a
+fost intenționat, iar contextul decide.
+
+## Cum sunt corectate transcrierile
+
+Când o înregistrare dintr-o sarcină este transcrisă de un motor de recunoaștere
+precum Whisper, pasul care scrie rezumatul pe un rând și rezumatul corectează și
+termenii din dicționar auziți greșit. Textul înregistrării apare o singură dată,
+deja corectat, și rămâne editabil. Un model multimodal care ascultă singur
+sunetul citește în schimb dicționarul în propriul prompt.
+
+Termenii pe care îi aveau înainte categoriile dumneavoastră au fost preluați
+automat, fiecare limitat la categoriile care îl aveau.

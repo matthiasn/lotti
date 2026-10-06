@@ -278,7 +278,7 @@ WHERE type = 'Task'
         addTearDown(db.close);
         await db.customSelect('PRAGMA user_version').get();
 
-        // v47 and v51 each declare one new index; nothing that already
+        // v47, v51 and v52 each declare one new index; nothing that already
         // existed is touched.
         expect(
           DevLogger.capturedLogs.where(
@@ -290,10 +290,14 @@ WHERE type = 'Task'
           reason: DevLogger.capturedLogs.join('\n'),
         );
         expect(
-          DevLogger.capturedLogs.where(
-            (line) => line.contains('Creating declared index'),
-          ),
-          hasLength(2),
+          DevLogger.capturedLogs
+              .where((line) => line.contains('Creating declared index'))
+              .map((line) => RegExp(r'index (\w+) on').firstMatch(line)![1]),
+          unorderedEquals([
+            'idx_journal_checklist_item_home',
+            'idx_journal_quant_latest',
+            'idx_speech_dictionary_entries_deleted_term',
+          ]),
         );
       },
     );

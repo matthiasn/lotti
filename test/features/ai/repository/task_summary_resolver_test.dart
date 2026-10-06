@@ -291,6 +291,42 @@ void main() {
       expect(summary, 'short tldr');
     });
 
+    test('with fullReport, gives the whole report and falls back to its '
+        'tldr', () async {
+      when(
+        () => repo.getLinksTo('task-1', type: AgentLinkTypes.agentTask),
+      ).thenAnswer(
+        (_) async => [
+          _link(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'task-1',
+            createdAt: DateTime(2026, 4, 10),
+          ),
+        ],
+      );
+      var content = 'long content';
+      when(
+        () => repo.getLatestReport('agent-1', AgentReportScopes.current),
+      ).thenAnswer(
+        (_) async => _report(
+          id: 'rep-1',
+          agentId: 'agent-1',
+          content: content,
+          tldr: 'short tldr',
+        ),
+      );
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
+
+      expect(await resolver.resolve('task-1', fullReport: true), content);
+
+      content = '   ';
+      expect(
+        await resolver.resolve('task-1', fullReport: true),
+        'short tldr',
+      );
+    });
+
     test('falls back to content when tldr is whitespace-only', () async {
       final link = _link(
         id: 'link-1',

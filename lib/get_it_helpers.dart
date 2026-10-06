@@ -59,9 +59,9 @@ void _safeLog(String message, {required bool isError}) {
 
 /// Registers late-loaded, sandbox-fragile and optional services (audio
 /// waveform, the label pipeline, the local embedding pipeline) plus the
-/// one-time sequence-log backfill. Split from [registerSingletons] for file
-/// size; every dependency is resolved through [getIt], so no state is
-/// threaded in from the caller.
+/// speech dictionary migration and the one-time sequence-log backfill. Split
+/// from [registerSingletons] for file size; every dependency is resolved
+/// through [getIt], so no state is threaded in from the caller.
 Future<void> _registerLateAndOptionalServices({
   required ProfileContext profile,
 }) async {
@@ -76,6 +76,8 @@ Future<void> _registerLateAndOptionalServices({
   if (profile.capabilities.syncEnabled) {
     getIt<StartupTasks>().track(getIt<MatrixService>().init());
   }
+
+  getIt<StartupTasks>().track(_migrateSpeechDictionary());
 
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(

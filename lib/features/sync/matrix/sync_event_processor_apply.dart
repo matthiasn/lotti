@@ -94,6 +94,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           DashboardDefinition() => dashboardsNotification,
           MeasurableDataType() => measurablesNotification,
           LabelDefinition() => labelsNotification,
+          SpeechDictionaryEntry() => speechDictionaryNotification,
         };
         _updateNotifications.notify(
           {entityDefinition.id, typeNotification},

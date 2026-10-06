@@ -233,6 +233,11 @@ sealed class EntityDefinition with _$EntityDefinition {
     DateTime? deletedAt,
     String? defaultLanguageCode,
     @CategoryIconConverter() CategoryIcon? icon,
+
+    /// The category's speech dictionary before the dictionary became an
+    /// entity of its own ([SpeechDictionaryEntry]). Nothing writes it any
+    /// more; `SpeechDictionaryMigration` reads it into entries scoped to this
+    /// category, and it is kept so a device that migrates later still can.
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
 
@@ -358,6 +363,30 @@ sealed class EntityDefinition with _$EntityDefinition {
     DateTime? deletedAt,
     String? categoryId,
   }) = DashboardDefinition;
+
+  /// One term of the speech dictionary, used to bias and correct
+  /// transcription. [categoryIds] limits it to recordings in those
+  /// categories; null or empty means every category. The id is derived from
+  /// the normalized term (`speechDictionaryEntryId`), so the same term is
+  /// one entry on every device however often it is added or migrated.
+  /// Deleting soft-deletes it; the tombstone keeps a later migration from
+  /// bringing it back.
+  ///
+  /// [misheardAs] holds spellings the term is known to come out as
+  /// ("Cuban Eddies", "Cooper Netties" for "Kubernetes"): typed by the user or learned
+  /// from the corrections a model made. They are evidence for the correction
+  /// step, never replaced blindly — "Cuban Eddies" may be the place the speaker
+  /// meant, which only the surrounding text can tell.
+  const factory EntityDefinition.speechDictionaryEntry({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String term,
+    required VectorClock? vectorClock,
+    List<String>? categoryIds,
+    List<String>? misheardAs,
+    DateTime? deletedAt,
+  }) = SpeechDictionaryEntry;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);

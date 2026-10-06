@@ -175,6 +175,7 @@ void main() {
       entryId: 'rec',
       kind: InferenceBackfillKind.transcription,
       capturedAt: testFixedDate,
+      createdAt: testFixedDate,
     );
 
     void stubEntry(JournalEntity? entry, [List<JournalEntity>? responses]) {
@@ -209,6 +210,7 @@ void main() {
             entryId: 'rec',
             kind: InferenceBackfillKind.imageAnalysis,
             capturedAt: testFixedDate,
+            createdAt: testFixedDate,
           ),
         ),
         isFalse,

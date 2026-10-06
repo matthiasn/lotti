@@ -48,10 +48,15 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
+import 'package:lotti/features/speech_dictionary/state/speech_dictionary_controller.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_details_page.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -509,6 +514,35 @@ Widget _app({
   );
 }
 
+// Speech dictionary: one term for everywhere, two limited to their missions.
+final List<SpeechDictionaryEntry> _dictionary = [
+  SpeechDictionaryEntry(
+    id: speechDictionaryEntryId('Europa'),
+    createdAt: _created,
+    updatedAt: _created,
+    term: 'Europa',
+    vectorClock: null,
+  ),
+  SpeechDictionaryEntry(
+    id: speechDictionaryEntryId('Project Waddle'),
+    createdAt: _created,
+    updatedAt: _created,
+    term: 'Project Waddle',
+    vectorClock: null,
+    categoryIds: [manualDemoCategoryId, _missionControlCategoryId],
+    misheardAs: const ['Project Wattle', 'Project Waddel'],
+  ),
+  SpeechDictionaryEntry(
+    id: speechDictionaryEntryId(_t('Sir Flaps-a-Lot', 'Sir Flatterviel')),
+    createdAt: _created,
+    updatedAt: _created,
+    term: _t('Sir Flaps-a-Lot', 'Sir Flatterviel'),
+    vectorClock: null,
+    categoryIds: [manualDemoCategoryId],
+    misheardAs: const ['Sir Flaps a Lot', 'Sure Flaps-a-lot'],
+  ),
+];
+
 Future<void> _pumpScreen(
   WidgetTester tester, {
   required Widget home,
@@ -807,7 +841,7 @@ void main() {
         );
         await settleFrames(tester);
         expect(
-          find.text(_messages(tester).speechDictionarySectionTitle),
+          find.text(_messages(tester).correctionExamplesSectionTitle),
           findsOneWidget,
         );
         expect(find.textContaining('Project Waddle'), findsWidgets);
@@ -934,6 +968,71 @@ void main() {
       subdir: _subdir,
     );
   });
+
+  // -------------------------------------------------------------------------
+  // Speech dictionary.
+  // -------------------------------------------------------------------------
+
+  List<Override> dictionaryOverrides() => withServiceOverrides([
+    speechDictionaryEntriesProvider.overrideWith(
+      (ref) => Stream.value(_dictionary),
+    ),
+    entitiesCacheServiceProvider.overrideWithValue(cache),
+  ]);
+
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
+
+      testWidgets('$viewport speech dictionary list — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: dictionaryOverrides(),
+          home: const SpeechDictionaryListPage(),
+        );
+        expect(
+          find.text(_t('Sir Flaps-a-Lot', 'Sir Flatterviel')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_messages(tester).settingsSpeechDictionaryAllCategories),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'speech_dictionary_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport speech dictionary detail — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: dictionaryOverrides(),
+          home: SpeechDictionaryDetailsPage(
+            entryId: speechDictionaryEntryId('Project Waddle'),
+          ),
+        );
+        await settleFrames(tester);
+        expect(
+          find.text('Project Wattle; Project Waddel'),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'speech_dictionary_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Labels.

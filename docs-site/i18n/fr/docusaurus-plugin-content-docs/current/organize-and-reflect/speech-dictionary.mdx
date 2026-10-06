@@ -1,0 +1,58 @@
+---
+title: Tenir un dictionnaire vocal
+description: Apprends à la transcription les noms, lieux et termes techniques qu’elle écrit toujours mal.
+---
+
+# Tenir un dictionnaire vocal
+
+La reconnaissance vocale écrit ce qu’elle entend. Les noms, lieux et termes de
+projet qu’elle ne connaît pas ressortent mal orthographiés — **Project Waddle**
+devient « Project Wattle ». Le dictionnaire vocal est la liste des mots que
+Lotti doit écrire correctement, tenue une seule fois pour toute l’app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Dictionnaire vocal avec Europa pour toutes les catégories, Project Waddle pour Mission Control et Opérations Pingouins, et Sir Flaps-a-Lot pour Opérations Pingouins"
+  caption="Chaque terme indique où il s’applique. La recherche trouve aussi un terme par une graphie sous laquelle il a été mal entendu."
+/>
+
+## Ajouter un terme
+
+1. Ouvre **Paramètres → Définitions → Dictionnaire vocal**.
+2. Choisis **Ajouter un terme**, ou tape le mot dans la recherche et choisis
+   **Ajouter « … »** quand rien ne correspond.
+3. Saisis le terme exactement comme il doit être écrit.
+
+Tu peux aussi sélectionner un mot dans le texte d’une entrée et choisir
+**Ajouter au dictionnaire**. Il est ajouté pour la catégorie de cette entrée.
+
+## Limiter un terme à des catégories
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Le terme Project Waddle limité à Mission Control et Opérations Pingouins, mal entendu comme Project Wattle et Project Waddel"
+  caption="Sans catégorie choisie, un terme s’applique partout."
+/>
+
+Avec **Choisir des catégories**, un terme ne vaut que pour les enregistrements
+de ces catégories, pour que le jargon reste hors des transcriptions sans
+rapport. Sans choix, il s’applique à toutes les catégories.
+
+## Mal entendu comme
+
+Indique les graphies sous lesquelles un terme ressort souvent, séparées par des
+points-virgules. Lotti ajoute aussi celles qu’il corrige. Ce sont des indices,
+jamais des remplacements automatiques : une graphie mal entendue peut aussi être
+un vrai mot voulu, et c’est le contexte qui tranche.
+
+## Comment les transcriptions sont corrigées
+
+Quand un enregistrement d’une tâche est transcrit par un moteur de
+reconnaissance comme Whisper, l’étape qui écrit son résumé en une ligne et sa
+synthèse corrige aussi les termes du dictionnaire mal entendus. Le texte de
+l’enregistrement apparaît une seule fois, déjà corrigé, et reste modifiable. Un
+modèle multimodal qui écoute lui-même l’audio lit plutôt le dictionnaire dans
+son propre prompt.
+
+Les termes que tes catégories contenaient auparavant ont été repris
+automatiquement, chacun limité aux catégories qui le contenaient.

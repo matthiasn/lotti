@@ -39,6 +39,7 @@ const sidebars: SidebarsConfig = {
         'organize-and-reflect/time-analysis',
         'organize-and-reflect/categories',
         'organize-and-reflect/labels',
+        'organize-and-reflect/speech-dictionary',
         'organize-and-reflect/habits-and-measurables',
         'organize-and-reflect/dashboards',
       ],

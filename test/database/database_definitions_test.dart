@@ -599,6 +599,112 @@ void main() {
       });
     });
 
+    group('Speech dictionary entries -', () {
+      final stamp = DateTime.utc(2026, 9, 5, 10);
+
+      SpeechDictionaryEntry entry({
+        String term = 'Kubernetes',
+        List<String>? categoryIds,
+        DateTime? updatedAt,
+        DateTime? deletedAt,
+      }) => SpeechDictionaryEntry(
+        id: 'entry-kubernetes',
+        createdAt: stamp,
+        updatedAt: updatedAt ?? stamp,
+        term: term,
+        vectorClock: null,
+        categoryIds: categoryIds,
+        deletedAt: deletedAt,
+      );
+
+      test(
+        'lists live entries by term and finds a tombstone by id',
+        () async {
+          await db!.upsertEntityDefinition(
+            entry().copyWith(id: 'b', term: 'zeta'),
+          );
+          await db!.upsertEntityDefinition(
+            entry().copyWith(id: 'a', term: 'Alpha'),
+          );
+          await db!.upsertEntityDefinition(
+            entry().copyWith(id: 'gone', term: 'Mid', deletedAt: stamp),
+          );
+
+          expect(
+            (await db!.getAllSpeechDictionaryEntries()).map((e) => e.term),
+            ['Alpha', 'zeta'],
+          );
+          expect(
+            (await db!.getSpeechDictionaryEntriesIncludingDeleted()).length,
+            3,
+          );
+          expect(
+            (await db!.getSpeechDictionaryEntryById('gone'))?.deletedAt,
+            stamp,
+          );
+          expect(await db!.getSpeechDictionaryEntryById('none'), isNull);
+        },
+      );
+
+      test('an older copy of an entry is refused', () async {
+        await db!.upsertSpeechDictionaryEntry(
+          entry(categoryIds: ['work']),
+        );
+
+        expect(
+          await db!.upsertSpeechDictionaryEntry(
+            entry(updatedAt: stamp.subtract(const Duration(seconds: 1))),
+          ),
+          0,
+        );
+        expect(
+          (await db!.getSpeechDictionaryEntryById(
+            'entry-kubernetes',
+          ))?.categoryIds,
+          ['work'],
+        );
+      });
+
+      // SpeechDictionarySync.tla, TotalOrder: two devices edit the term at
+      // the same stamp; each must keep the same copy whichever arrives last.
+      test(
+        'copies with the same stamp settle on one, whatever the order',
+        () async {
+          final work = entry(categoryIds: ['work']);
+          final home = entry(categoryIds: ['home']);
+
+          Future<SpeechDictionaryEntry?> settle(
+            SpeechDictionaryEntry first,
+            SpeechDictionaryEntry second,
+          ) async {
+            await clearAllTables(db!);
+            await db!.upsertSpeechDictionaryEntry(first);
+            await db!.upsertSpeechDictionaryEntry(second);
+            return db!.getSpeechDictionaryEntryById('entry-kubernetes');
+          }
+
+          final workThenHome = await settle(work, home);
+          final homeThenWork = await settle(home, work);
+          expect(workThenHome, homeThenWork);
+          // The canonical JSON decides: "work" sorts after "home".
+          expect(workThenHome?.categoryIds, ['work']);
+        },
+      );
+
+      test("definitionStamp reads a stored entry's stamp", () async {
+        await db!.upsertSpeechDictionaryEntry(entry());
+
+        expect((await db!.definitionStamp(entry()))?.updatedAt, stamp);
+      });
+
+      test('re-delivering the stored copy still applies', () async {
+        final stored = entry(categoryIds: ['work']);
+        await db!.upsertSpeechDictionaryEntry(stored);
+
+        expect(await db!.upsertSpeechDictionaryEntry(stored), isNot(0));
+      });
+    });
+
     group('getAllCategories / getCategoryById -', () {
       test('getAllCategories returns inserted categories', () async {
         await db!.upsertCategoryDefinition(categoryMindfulness);

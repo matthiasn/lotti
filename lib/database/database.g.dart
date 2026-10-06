@@ -4049,6 +4049,426 @@ class LabelDefinitionsCompanion
   }
 }
 
+class SpeechDictionaryEntries extends Table
+    with TableInfo<SpeechDictionaryEntries, SpeechDictionaryEntryDbEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  SpeechDictionaryEntries(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _termMeta = const VerificationMeta('term');
+  late final GeneratedColumn<String> term = GeneratedColumn<String>(
+    'term',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
+  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    term,
+    createdAt,
+    updatedAt,
+    deleted,
+    serialized,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'speech_dictionary_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SpeechDictionaryEntryDbEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('term')) {
+      context.handle(
+        _termMeta,
+        term.isAcceptableOrUnknown(data['term']!, _termMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_termMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('serialized')) {
+      context.handle(
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serializedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SpeechDictionaryEntryDbEntity map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SpeechDictionaryEntryDbEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      term: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}term'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+    );
+  }
+
+  @override
+  SpeechDictionaryEntries createAlias(String alias) {
+    return SpeechDictionaryEntries(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class SpeechDictionaryEntryDbEntity extends DataClass
+    implements Insertable<SpeechDictionaryEntryDbEntity> {
+  final String id;
+  final String term;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool deleted;
+  final String serialized;
+  const SpeechDictionaryEntryDbEntity({
+    required this.id,
+    required this.term,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deleted,
+    required this.serialized,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['term'] = Variable<String>(term);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['deleted'] = Variable<bool>(deleted);
+    map['serialized'] = Variable<String>(serialized);
+    return map;
+  }
+
+  SpeechDictionaryEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SpeechDictionaryEntriesCompanion(
+      id: Value(id),
+      term: Value(term),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deleted: Value(deleted),
+      serialized: Value(serialized),
+    );
+  }
+
+  factory SpeechDictionaryEntryDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SpeechDictionaryEntryDbEntity(
+      id: serializer.fromJson<String>(json['id']),
+      term: serializer.fromJson<String>(json['term']),
+      createdAt: serializer.fromJson<DateTime>(json['created_at']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      serialized: serializer.fromJson<String>(json['serialized']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'term': serializer.toJson<String>(term),
+      'created_at': serializer.toJson<DateTime>(createdAt),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'deleted': serializer.toJson<bool>(deleted),
+      'serialized': serializer.toJson<String>(serialized),
+    };
+  }
+
+  SpeechDictionaryEntryDbEntity copyWith({
+    String? id,
+    String? term,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    String? serialized,
+  }) => SpeechDictionaryEntryDbEntity(
+    id: id ?? this.id,
+    term: term ?? this.term,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted ?? this.deleted,
+    serialized: serialized ?? this.serialized,
+  );
+  SpeechDictionaryEntryDbEntity copyWithCompanion(
+    SpeechDictionaryEntriesCompanion data,
+  ) {
+    return SpeechDictionaryEntryDbEntity(
+      id: data.id.present ? data.id.value : this.id,
+      term: data.term.present ? data.term.value : this.term,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpeechDictionaryEntryDbEntity(')
+          ..write('id: $id, ')
+          ..write('term: $term, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('serialized: $serialized')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, term, createdAt, updatedAt, deleted, serialized);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SpeechDictionaryEntryDbEntity &&
+          other.id == this.id &&
+          other.term == this.term &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deleted == this.deleted &&
+          other.serialized == this.serialized);
+}
+
+class SpeechDictionaryEntriesCompanion
+    extends UpdateCompanion<SpeechDictionaryEntryDbEntity> {
+  final Value<String> id;
+  final Value<String> term;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> deleted;
+  final Value<String> serialized;
+  final Value<int> rowid;
+  const SpeechDictionaryEntriesCompanion({
+    this.id = const Value.absent(),
+    this.term = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.serialized = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SpeechDictionaryEntriesCompanion.insert({
+    required String id,
+    required String term,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deleted = const Value.absent(),
+    required String serialized,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       term = Value(term),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized);
+  static Insertable<SpeechDictionaryEntryDbEntity> custom({
+    Expression<String>? id,
+    Expression<String>? term,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? deleted,
+    Expression<String>? serialized,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (term != null) 'term': term,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deleted != null) 'deleted': deleted,
+      if (serialized != null) 'serialized': serialized,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SpeechDictionaryEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? term,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? deleted,
+    Value<String>? serialized,
+    Value<int>? rowid,
+  }) {
+    return SpeechDictionaryEntriesCompanion(
+      id: id ?? this.id,
+      term: term ?? this.term,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deleted: deleted ?? this.deleted,
+      serialized: serialized ?? this.serialized,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (term.present) {
+      map['term'] = Variable<String>(term.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (serialized.present) {
+      map['serialized'] = Variable<String>(serialized.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpeechDictionaryEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('term: $term, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('serialized: $serialized, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class DashboardDefinitions extends Table
     with TableInfo<DashboardDefinitions, DashboardDefinitionDbEntity> {
   @override
@@ -6041,6 +6461,12 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_label_definitions_deleted_name_nocase',
     'CREATE INDEX idx_label_definitions_deleted_name_nocase ON label_definitions (deleted COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
   );
+  late final SpeechDictionaryEntries speechDictionaryEntries =
+      SpeechDictionaryEntries(this);
+  late final Index idxSpeechDictionaryEntriesDeletedTerm = Index(
+    'idx_speech_dictionary_entries_deleted_term',
+    'CREATE INDEX idx_speech_dictionary_entries_deleted_term ON speech_dictionary_entries (deleted COLLATE BINARY ASC, term COLLATE NOCASE ASC)',
+  );
   late final DashboardDefinitions dashboardDefinitions = DashboardDefinitions(
     this,
   );
@@ -7365,6 +7791,15 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
+  Selectable<CategoryDefinitionDbEntity>
+  allCategoryDefinitionsIncludingPrivate() {
+    return customSelect(
+      'SELECT * FROM category_definitions WHERE deleted = FALSE ORDER BY name COLLATE NOCASE',
+      variables: [],
+      readsFrom: {categoryDefinitions},
+    ).asyncMap(categoryDefinitions.mapFromRow);
+  }
+
   Selectable<CategoryDefinitionDbEntity> categoryById(String id) {
     return customSelect(
       'SELECT * FROM category_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
@@ -7423,6 +7858,32 @@ abstract class _$JournalDb extends GeneratedDatabase {
       ],
       readsFrom: {labelDefinitions},
     ).asyncMap(labelDefinitions.mapFromRow);
+  }
+
+  Selectable<SpeechDictionaryEntryDbEntity> allSpeechDictionaryEntries() {
+    return customSelect(
+      'SELECT * FROM speech_dictionary_entries WHERE deleted = FALSE ORDER BY term COLLATE NOCASE',
+      variables: [],
+      readsFrom: {speechDictionaryEntries},
+    ).asyncMap(speechDictionaryEntries.mapFromRow);
+  }
+
+  Selectable<SpeechDictionaryEntryDbEntity>
+  speechDictionaryEntriesIncludingDeleted() {
+    return customSelect(
+      'SELECT * FROM speech_dictionary_entries',
+      variables: [],
+      readsFrom: {speechDictionaryEntries},
+    ).asyncMap(speechDictionaryEntries.mapFromRow);
+  }
+
+  Selectable<SpeechDictionaryEntryDbEntity>
+  speechDictionaryEntryByIdIncludingDeleted(String id) {
+    return customSelect(
+      'SELECT * FROM speech_dictionary_entries WHERE id = ?1',
+      variables: [Variable<String>(id)],
+      readsFrom: {speechDictionaryEntries},
+    ).asyncMap(speechDictionaryEntries.mapFromRow);
   }
 
   Selectable<String> labeledForJournal(String journalId) {
@@ -7792,6 +8253,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLabelDefinitionsPrivate,
     idxLabelDefinitionsDeletedPrivateName,
     idxLabelDefinitionsDeletedNameNocase,
+    speechDictionaryEntries,
+    idxSpeechDictionaryEntriesDeletedTerm,
     dashboardDefinitions,
     idxDashboardDefinitionsName,
     idxDashboardDefinitionsPrivate,
@@ -9772,6 +10235,240 @@ typedef $LabelDefinitionsProcessedTableManager =
       LabelDefinitionDbEntity,
       PrefetchHooks Function()
     >;
+typedef $SpeechDictionaryEntriesCreateCompanionBuilder =
+    SpeechDictionaryEntriesCompanion Function({
+      required String id,
+      required String term,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> deleted,
+      required String serialized,
+      Value<int> rowid,
+    });
+typedef $SpeechDictionaryEntriesUpdateCompanionBuilder =
+    SpeechDictionaryEntriesCompanion Function({
+      Value<String> id,
+      Value<String> term,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> deleted,
+      Value<String> serialized,
+      Value<int> rowid,
+    });
+
+class $SpeechDictionaryEntriesFilterComposer
+    extends Composer<_$JournalDb, SpeechDictionaryEntries> {
+  $SpeechDictionaryEntriesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get term => $composableBuilder(
+    column: $table.term,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $SpeechDictionaryEntriesOrderingComposer
+    extends Composer<_$JournalDb, SpeechDictionaryEntries> {
+  $SpeechDictionaryEntriesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get term => $composableBuilder(
+    column: $table.term,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $SpeechDictionaryEntriesAnnotationComposer
+    extends Composer<_$JournalDb, SpeechDictionaryEntries> {
+  $SpeechDictionaryEntriesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get term =>
+      $composableBuilder(column: $table.term, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => column,
+  );
+}
+
+class $SpeechDictionaryEntriesTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          SpeechDictionaryEntries,
+          SpeechDictionaryEntryDbEntity,
+          $SpeechDictionaryEntriesFilterComposer,
+          $SpeechDictionaryEntriesOrderingComposer,
+          $SpeechDictionaryEntriesAnnotationComposer,
+          $SpeechDictionaryEntriesCreateCompanionBuilder,
+          $SpeechDictionaryEntriesUpdateCompanionBuilder,
+          (
+            SpeechDictionaryEntryDbEntity,
+            BaseReferences<
+              _$JournalDb,
+              SpeechDictionaryEntries,
+              SpeechDictionaryEntryDbEntity
+            >,
+          ),
+          SpeechDictionaryEntryDbEntity,
+          PrefetchHooks Function()
+        > {
+  $SpeechDictionaryEntriesTableManager(
+    _$JournalDb db,
+    SpeechDictionaryEntries table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $SpeechDictionaryEntriesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $SpeechDictionaryEntriesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $SpeechDictionaryEntriesAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> term = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SpeechDictionaryEntriesCompanion(
+                id: id,
+                term: term,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String term,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> deleted = const Value.absent(),
+                required String serialized,
+                Value<int> rowid = const Value.absent(),
+              }) => SpeechDictionaryEntriesCompanion.insert(
+                id: id,
+                term: term,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $SpeechDictionaryEntriesProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      SpeechDictionaryEntries,
+      SpeechDictionaryEntryDbEntity,
+      $SpeechDictionaryEntriesFilterComposer,
+      $SpeechDictionaryEntriesOrderingComposer,
+      $SpeechDictionaryEntriesAnnotationComposer,
+      $SpeechDictionaryEntriesCreateCompanionBuilder,
+      $SpeechDictionaryEntriesUpdateCompanionBuilder,
+      (
+        SpeechDictionaryEntryDbEntity,
+        BaseReferences<
+          _$JournalDb,
+          SpeechDictionaryEntries,
+          SpeechDictionaryEntryDbEntity
+        >,
+      ),
+      SpeechDictionaryEntryDbEntity,
+      PrefetchHooks Function()
+    >;
 typedef $DashboardDefinitionsCreateCompanionBuilder =
     DashboardDefinitionsCompanion Function({
       required String id,
@@ -10786,6 +11483,8 @@ class $JournalDbManager {
       $CategoryDefinitionsTableManager(_db, _db.categoryDefinitions);
   $LabelDefinitionsTableManager get labelDefinitions =>
       $LabelDefinitionsTableManager(_db, _db.labelDefinitions);
+  $SpeechDictionaryEntriesTableManager get speechDictionaryEntries =>
+      $SpeechDictionaryEntriesTableManager(_db, _db.speechDictionaryEntries);
   $DashboardDefinitionsTableManager get dashboardDefinitions =>
       $DashboardDefinitionsTableManager(_db, _db.dashboardDefinitions);
   $ConfigFlagsTableManager get configFlags =>

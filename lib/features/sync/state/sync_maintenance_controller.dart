@@ -25,6 +25,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
     final orderedSteps = <SyncStep>[
       SyncStep.measurables,
       SyncStep.labels,
+      SyncStep.speechDictionary,
       SyncStep.categories,
       SyncStep.dashboards,
       SyncStep.habits,
@@ -69,6 +70,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
         >{
           SyncStep.measurables: _repository.syncMeasurables,
           SyncStep.labels: _repository.syncLabels,
+          SyncStep.speechDictionary: _repository.syncSpeechDictionary,
           SyncStep.categories: _repository.syncCategories,
           SyncStep.dashboards: _repository.syncDashboards,
           SyncStep.habits: _repository.syncHabits,

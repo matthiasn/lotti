@@ -417,43 +417,6 @@ void main() {
       );
     });
 
-    test('updates speech dictionary', () async {
-      final category = CategoryTestUtils.createTestCategory(
-        speechDictionary: ['term1'],
-      );
-
-      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-        (_) => Stream.value(category),
-      );
-
-      final container = makeContainer();
-
-      final controller = await loadCategory(container);
-
-      // Update speech dictionary
-      controller.updateSpeechDictionary(['term1', 'term2', 'term3']);
-
-      final state = container.read(
-        categoryDetailsControllerProvider(testCategoryId),
-      );
-
-      expect(state.hasChanges, isTrue);
-      expect(
-        state.category?.speechDictionary,
-        equals(['term1', 'term2', 'term3']),
-      );
-
-      // Test setting empty list converts to null
-      controller.updateSpeechDictionary([]);
-      expect(
-        container
-            .read(categoryDetailsControllerProvider(testCategoryId))
-            .category
-            ?.speechDictionary,
-        isNull,
-      );
-    });
-
     test(
       'updates the knowledge brief as typed and clears a blank one',
       () async {
@@ -580,30 +543,6 @@ void main() {
         );
       },
     );
-
-    test('no changes when setting same speech dictionary', () async {
-      final category = CategoryTestUtils.createTestCategory(
-        speechDictionary: ['term1', 'term2'],
-      );
-
-      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-        (_) => Stream.value(category),
-      );
-
-      final container = makeContainer();
-
-      final controller = await loadCategory(container);
-
-      // Set same values
-      controller.updateSpeechDictionary(['term1', 'term2']);
-
-      expect(
-        container
-            .read(categoryDetailsControllerProvider(testCategoryId))
-            .hasChanges,
-        isFalse,
-      );
-    });
 
     test('saves changes successfully', () async {
       final category = CategoryTestUtils.createTestCategory(name: 'Original');

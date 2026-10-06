@@ -90,10 +90,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToDictionaryDuplicate => 'Term already exists in dictionary';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Cannot add to dictionary: task has no category';
-
-  @override
   String get addToDictionarySaveFailed => 'Failed to save dictionary';
 
   @override
@@ -14407,6 +14403,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionsTitle => 'Sections';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'All categories';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Choose categories';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Use this term only for recordings in these categories, so niche words don\'t creep into unrelated transcripts. With none chosen, it applies everywhere.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Categories';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Add term';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '\"$term\" will no longer be used to correct transcripts.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Delete term';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Term \"$term\" deleted';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Edit term';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'No terms yet';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Add names, places and jargon that speech recognition gets wrong.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Enter a term';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Failed to load the dictionary';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Spellings this term often comes out as, separated by semicolons. They help the correction step spot it, which still decides from context.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Misheard as';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return 'Add \"$query\"';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'No terms match \"$query\"';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Search terms…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Names, places and jargon for transcription';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Term';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Speech dictionary';
+
+  @override
   String get settingsSpeechSubtitle => 'Voice and reading aloud';
 
   @override
@@ -14643,28 +14722,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Skills';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Semicolon-separated terms (max 50 chars) for better speech recognition';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Speech Dictionary';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Add terms that are often misspelled by speech recognition (names, places, technical terms)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Speech recognition';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Large dictionary ($count terms) may increase API costs';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Select Language';
@@ -15336,6 +15393,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Saved task filters';
+
+  @override
+  String get syncStepSpeechDictionary => 'Speech dictionary';
 
   @override
   String get syncVerifiedCelebrationBody =>

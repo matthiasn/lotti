@@ -1,0 +1,57 @@
+---
+title: Hålla en röstordlista
+description: Lär transkriberingen de namn, platser och fackord den hela tiden stavar fel.
+---
+
+# Hålla en röstordlista
+
+Taligenkänningen skriver ner vad den hör. Namn, platser och projekttermer som
+den inte känner till blir felstavade — **Project Waddle** blir ”Project
+Wattle”. Röstordlistan är listan över ord som Lotti ska stava rätt, en gång för
+hela appen.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Röstordlista med Europa för alla kategorier, Project Waddle för Mission Control och Penguin-operationer, och Sir Flaps-a-Lot för Penguin-operationer"
+  caption="Varje term visar var den gäller. Sökningen hittar också en term via en stavning den felhörts som."
+/>
+
+## Lägga till en term
+
+1. Öppna **Inställningar → Definitioner → Röstordlista**.
+2. Välj **Lägg till term**, eller skriv ordet i sökfältet och välj
+   **Lägg till ”…”** när inget matchar.
+3. Skriv termen exakt som den ska stavas.
+
+Du kan också markera ett ord i texten i en post och välja **Lägg till i
+ordbok**. Det läggs till för postens kategori.
+
+## Begränsa en term till kategorier
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Termen Project Waddle begränsad till Mission Control och Penguin-operationer, felhörd som Project Wattle och Project Waddel"
+  caption="Utan vald kategori gäller en term överallt."
+/>
+
+Med **Välj kategorier** gäller en term bara för inspelningar i de
+kategorierna, så att fackord inte smyger sig in i orelaterade transkriptioner.
+Utan val gäller den för alla kategorier.
+
+## Felhört som
+
+Ange stavningarna som en term ofta blir, åtskilda med semikolon. Lotti lägger
+också till dem den rättar. De är ledtrådar, aldrig automatiska ersättningar: en
+felhörd stavning kan också vara ett riktigt ord som menades, och sammanhanget
+avgör.
+
+## Så rättas transkriptioner
+
+När en inspelning i en uppgift transkriberas av en taligenkänningsmotor som
+Whisper rättar steget som skriver dess enradssammanfattning och sammanfattning
+också de ordlistetermer som transkriptionen felhört. Inspelningens text visas en
+gång, redan rättad, och går att redigera. En multimodal modell som själv lyssnar
+på ljudet läser i stället ordlistan i sin egen prompt.
+
+Termerna som dina kategorier hade tidigare fördes över automatiskt, var och en
+begränsad till de kategorier som hade den.

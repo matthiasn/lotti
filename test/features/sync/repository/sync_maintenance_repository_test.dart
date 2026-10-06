@@ -402,6 +402,49 @@ void main() {
       );
     });
 
+    test(
+      'syncSpeechDictionary re-sends every entry, tombstones included',
+      () async {
+        final live = SpeechDictionaryEntry(
+          id: 'term-live',
+          term: 'Kubernetes',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+        // A deletion must reach a device still holding the term: its
+        // migration never rewrites the term, but nothing else removes it.
+        final deleted = live.copyWith(
+          id: 'term-deleted',
+          term: 'Lottie',
+          deletedAt: DateTime(2024, 2),
+        );
+        when(
+          () => mockJournalDb.getSpeechDictionaryEntriesIncludingDeleted(),
+        ).thenAnswer((_) async => [live, deleted]);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await syncMaintenanceRepository.syncSpeechDictionary();
+
+        final sent = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured.cast<SyncMessage>();
+        expect(
+          sent.map(
+            (message) => message.mapOrNull(
+              entityDefinition: (s) => (s.entityDefinition.id, s.status),
+            ),
+          ),
+          [
+            ('term-live', SyncEntryStatus.update),
+            ('term-deleted', SyncEntryStatus.update),
+          ],
+        );
+      },
+    );
+
     test('syncLabels filters deleted labels (deletedAt != null)', () async {
       final deleted = LabelDefinition(
         id: 'lab-del',
@@ -781,6 +824,9 @@ void main() {
       ).thenAnswer((_) async => []);
       when(
         () => mockJournalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getSpeechDictionaryEntriesIncludingDeleted(),
       ).thenAnswer((_) async => []);
       when(
         () => mockJournalDb.getAllCategories(),
@@ -1522,6 +1568,7 @@ void main() {
     const expectedSyncDomains = <SyncStep, String>{
       SyncStep.measurables: 'syncMeasurables',
       SyncStep.labels: 'syncLabels',
+      SyncStep.speechDictionary: 'syncSpeechDictionary',
       SyncStep.categories: 'syncCategories',
       SyncStep.dashboards: 'syncDashboards',
       SyncStep.habits: 'syncHabits',
@@ -1534,6 +1581,7 @@ void main() {
     const expectedTotalsDomains = <SyncStep, String>{
       SyncStep.measurables: 'fetchTotals_measurables',
       SyncStep.labels: 'fetchTotals_labels',
+      SyncStep.speechDictionary: 'fetchTotals_speechDictionary',
       SyncStep.categories: 'fetchTotals_categories',
       SyncStep.dashboards: 'fetchTotals_dashboards',
       SyncStep.habits: 'fetchTotals_habits',

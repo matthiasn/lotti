@@ -166,6 +166,16 @@
       ]
     },
     {
+      "id": "speech-dictionary",
+      "title": "Speech dictionary",
+      "page": "organize-and-reflect/speech-dictionary",
+      "status": "draft",
+      "screenshotCases": [
+        "speech-dictionary/list",
+        "speech-dictionary/detail"
+      ]
+    },
+    {
       "id": "habits-measurables",
       "title": "Habits and measurables",
       "page": "organize-and-reflect/habits-and-measurables",

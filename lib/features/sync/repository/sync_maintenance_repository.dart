@@ -105,6 +105,22 @@ class SyncMaintenanceRepository {
         shouldSync: (label) => label.deletedAt == null,
       );
 
+  // The speech dictionary, tombstones included: a deletion must reach a
+  // device that still holds the term, or that device's migration would never
+  // write it but its live copy would never go either.
+  late final SyncOperation<SpeechDictionaryEntry>
+  _speechDictionarySyncOperation = _createOperation<SpeechDictionaryEntry>(
+    step: SyncStep.speechDictionary,
+    fetchEntities: _journalDb.getSpeechDictionaryEntriesIncludingDeleted,
+    enqueueEntity: (entry) => _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: entry,
+        status: SyncEntryStatus.update,
+      ),
+    ),
+    shouldSync: (_) => true,
+  );
+
   late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
       _createOperation<DashboardDefinition>(
         step: SyncStep.dashboards,
@@ -166,6 +182,7 @@ class SyncMaintenanceRepository {
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
     SyncStep.measurables: _measurableSyncOperation,
     SyncStep.labels: _labelSyncOperation,
+    SyncStep.speechDictionary: _speechDictionarySyncOperation,
     SyncStep.categories: _categorySyncOperation,
     SyncStep.dashboards: _dashboardSyncOperation,
     SyncStep.habits: _habitSyncOperation,
@@ -368,6 +385,17 @@ class SyncMaintenanceRepository {
   }) {
     return _runOperation<LabelDefinition>(
       _labelSyncOperation,
+      onProgress: onProgress,
+      onDetailedProgress: onDetailedProgress,
+    );
+  }
+
+  Future<void> syncSpeechDictionary({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<SpeechDictionaryEntry>(
+      _speechDictionarySyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
     );
@@ -591,6 +619,7 @@ class SyncMaintenanceRepository {
   static const _syncDomainByStep = <SyncStep, String>{
     SyncStep.measurables: 'syncMeasurables',
     SyncStep.labels: 'syncLabels',
+    SyncStep.speechDictionary: 'syncSpeechDictionary',
     SyncStep.categories: 'syncCategories',
     SyncStep.dashboards: 'syncDashboards',
     SyncStep.habits: 'syncHabits',

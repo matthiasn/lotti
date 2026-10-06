@@ -3,9 +3,16 @@ part of 'skill_inference_runner.dart';
 /// Transcription for [SkillInferenceRunner]: transcribe-and-summarize, saving the transcript, and the follow-up audio summary. A private extension because they use the runner's private deps and are driven by runTranscription.
 extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
   /// The body of [runTranscription] behind its single-flight registry:
-  /// transcribes, saves the transcript, and then runs the automated audio
-  /// summary. Returns the failure the status tracking reported, or null once
-  /// the transcript is saved; the summary follows only a saved transcript.
+  /// transcribes, saves the transcript, and then runs the audio summary that
+  /// follows it ([_audioSummaryFollowUp]). Returns the failure the status
+  /// tracking reported, or null once the transcript is saved; the summary
+  /// follows only a saved transcript.
+  ///
+  /// A speech-to-text engine's transcript that a summary follows is the
+  /// composite step: its text is held back — saved to the transcript history
+  /// only — until the summary has corrected it against the speech dictionary,
+  /// and then written once ([_writeTranscriptText]). The recording never
+  /// shows a raw transcript that is about to change under the reader.
   Future<Object?> _transcribeAndSummarize({
     required String audioEntryId,
     required AutomationResult automationResult,
@@ -17,6 +24,15 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
     required String? linkedTaskId,
     required List<String> knownTerms,
   }) async {
+    final followUp = _audioSummaryFollowUp(
+      automationResult: automationResult,
+      transcriptionSkill: skill,
+      linkedTaskId: linkedTaskId,
+      speechToText: routesToSpeechToText(provider, modelId),
+    );
+    final holdText =
+        followUp != null && routesToSpeechToText(provider, modelId);
+    EntryText? textAtStart;
     Object? failure;
     await _withStatusTracking(
       entityId: audioEntryId,
@@ -30,6 +46,7 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
         if (entity is! JournalAudio) {
           throw StateError('Entity $audioEntryId is not a JournalAudio');
         }
+        textAtStart = entity.entryText;
 
         // 2. Build context for prompts (fetch terms once, reuse for both
         // prompt text and provider-level context biasing).
@@ -220,7 +237,7 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
           audioEntryId: audioEntryId,
           textAtStart: entity.entryText,
           transcript: transcript,
-          text: text,
+          text: holdText ? null : text,
         );
         // The transcript is saved, so the run succeeded: a bookkeeping
         // failure from here on must not fail it, or the summary and the
@@ -256,18 +273,22 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
     // call — reporting "transcribing" for a run that had already written its
     // transcript. The summary tracks its own status, and awaiting here still
     // orders it before the caller's agent nudge so the agent's first read sees
-    // the summary.
-    await _maybeRunAudioSummary(
-      audioEntryId: audioEntryId,
-      automationResult: automationResult,
-      linkedTaskId: linkedTaskId,
-    );
+    // the summary and the corrected text.
+    if (followUp != null && linkedTaskId != null) {
+      await _runFollowUpSummary(
+        audioEntryId: audioEntryId,
+        followUp: followUp,
+        linkedTaskId: linkedTaskId,
+        heldText: holdText ? (textAtStart: textAtStart) : null,
+      );
+    }
     return null;
   }
 
   /// Appends [transcript] to the recording's history and sets its text to
   /// [text], re-reading the recording first so a change made during the
-  /// inference is kept.
+  /// inference is kept. A null [text] leaves the recording's text as it is:
+  /// the composite step writes it once corrected.
   ///
   /// Two rules decide what the write carries:
   /// - **An edit made during the run wins.** When the recording's text is no
@@ -293,7 +314,7 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
     required String audioEntryId,
     required EntryText? textAtStart,
     required AudioTranscript transcript,
-    required String text,
+    required String? text,
   }) async {
     for (var attempt = 1; ; attempt++) {
       final currentAudio =
@@ -322,7 +343,7 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
         data: currentAudio.data.copyWith(
           transcripts: [...existingTranscripts, transcript],
         ),
-        entryText: editedDuringRun
+        entryText: editedDuringRun || text == null
             ? currentAudio.entryText
             : EntryText(plainText: text, markdown: text),
       );
@@ -337,82 +358,6 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
         'Transcript write for $audioEntryId did not land '
         '(attempt $attempt); re-reading',
         subDomain: 'runTranscription',
-      );
-    }
-  }
-
-  /// Runs the profile's automated audio-summary skill, if it has one.
-  ///
-  /// Hangs off the end of [runTranscription] rather than off each of its
-  /// callers (automatic recording trigger, synced-audio dispatcher, manual
-  /// picker and Retry, relationship and goal check-ins) so every route that
-  /// produces a transcript gets the same follow-up exactly once. It runs only
-  /// after the transcript was saved.
-  ///
-  /// Four gates, all deliberate:
-  /// - **A task must be resolved.** The summary is framed by the task it
-  ///   belongs to, and the skill's `fullTask` context policy has nothing to
-  ///   read without one. Goal and person check-ins and standalone voice notes
-  ///   transcribe as before and get no summary.
-  /// - **The transcription itself must have been automated**, which is what a
-  ///   non-null `skillAssignment` means: only `ProfileAutomationService`'s
-  ///   automated paths set it, and only those passed the category's
-  ///   automatic-inference consent check. The manual picker and
-  ///   `requestTranscription` both build an assignment-less result, and both
-  ///   deliberately skip that check because a button press is its own consent.
-  ///   That consent covers the transcription the user asked for — not a second
-  ///   model call they did not. Manual users reach the summary through the
-  ///   "Summarize Recording" skill in the same menu.
-  /// - **The profile must assign the summary skill with `automate: true`.**
-  ///   Reuses the already-resolved profile rather than walking resolution
-  ///   again.
-  /// - **Failures never propagate.** The transcript is persisted and is the
-  ///   valuable artifact; letting a summary failure surface here would mark
-  ///   the whole transcription run as failed and invite a retry that
-  ///   re-transcribes audio that transcribed fine.
-  Future<void> _maybeRunAudioSummary({
-    required String audioEntryId,
-    required AutomationResult automationResult,
-    required String? linkedTaskId,
-  }) async {
-    if (linkedTaskId == null) return;
-    if (automationResult.skillAssignment == null) return;
-    final profile = automationResult.resolvedProfile;
-    if (profile == null) return;
-
-    try {
-      final assignment = profile.skillAssignments
-          .where((a) => a.automate)
-          .map(
-            (a) => (assignment: a, skill: findBuiltInSkill(a.skillId)),
-          )
-          .where((pair) => pair.skill?.skillType == SkillType.audioSummary)
-          .firstOrNull;
-      if (assignment == null) return;
-
-      await runAudioSummary(
-        audioEntryId: audioEntryId,
-        automationResult: AutomationResult(
-          handled: true,
-          skill: assignment.skill,
-          skillAssignment: assignment.assignment,
-          resolvedProfile: profile,
-        ),
-        linkedTaskId: linkedTaskId,
-      );
-    } catch (e, stackTrace) {
-      // Belt and braces, and unreachable today: `runAudioSummary` routes every
-      // operational failure through `_withStatusTracking`, which swallows and
-      // reports rather than rethrows, and its two programmer-error throws are
-      // both guarded above. Kept because this is the seam that protects a
-      // *persisted transcript* from a future change to that contract — the
-      // cost of being wrong here is losing the transcription's result to a
-      // summary bug, which is exactly the trade this method exists to prevent.
-      _loggingService.error(
-        LogDomain.ai,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'maybeRunAudioSummary',
       );
     }
   }

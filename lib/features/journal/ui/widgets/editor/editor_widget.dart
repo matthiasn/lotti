@@ -29,14 +29,12 @@ String? getDictionaryResultMessage(
 ) {
   return switch (result) {
     SpeechDictionaryResult.success => messages.addToDictionarySuccess,
-    SpeechDictionaryResult.noCategory => messages.addToDictionaryNoCategory,
     SpeechDictionaryResult.duplicate => messages.addToDictionaryDuplicate,
     SpeechDictionaryResult.termTooLong => messages.addToDictionaryTooLong,
     SpeechDictionaryResult.saveFailed => messages.addToDictionarySaveFailed,
     // Silent for truly unexpected edge cases
     SpeechDictionaryResult.emptyTerm ||
-    SpeechDictionaryResult.entryNotFound ||
-    SpeechDictionaryResult.categoryNotFound => null,
+    SpeechDictionaryResult.entryNotFound => null,
   };
 }
 
@@ -69,7 +67,7 @@ bool showDictionaryResultToast(
     return false;
   }
 
-  // Silent results (emptyTerm / entryNotFound / categoryNotFound) return a
+  // Silent results (emptyTerm / entryNotFound) return a
   // null message above and never reach this switch — the default warning
   // arm is the common fall-through for the remaining warning cases.
   final tone = switch (result) {
@@ -262,10 +260,10 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
     );
   }
 
-  /// Adds the selected term to the entry's category speech dictionary.
+  /// Adds the selected term to the speech dictionary, limited to the
+  /// entry's category when it has one.
   ///
-  /// Shows a success snackbar on success, or an informative message
-  /// if the entry has no associated category. Silent for other edge cases.
+  /// Shows a toast for the outcome; silent for edge cases.
   Future<void> _addToDictionary(
     BuildContext context,
     String term,

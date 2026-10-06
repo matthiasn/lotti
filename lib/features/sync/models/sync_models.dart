@@ -7,6 +7,7 @@
 enum SyncStep {
   measurables,
   labels,
+  speechDictionary,
   categories,
   dashboards,
   habits,
