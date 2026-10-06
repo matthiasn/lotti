@@ -898,6 +898,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentSummaryBackfillAudioSummary(Object date) {
+    return 'Aufnahme vom $date im Aufgabenkontext zusammenfassen';
+  }
+
+  @override
+  String agentSummaryBackfillImageAnalysis(Object date) {
+    return 'Bildanalyse im Aufgabenkontext für das Bild vom $date ausführen';
+  }
+
+  @override
+  String agentSummaryBackfillTranscription(Object date) {
+    return 'Spracherkennung im Aufgabenkontext für die Aufnahme vom $date ausführen';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Abhaken: „$title“';
   }
@@ -1552,6 +1567,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiCardProposalKindLabel => 'Label';
+
+  @override
+  String get aiCardProposalKindMedia => 'Medien';
 
   @override
   String get aiCardProposalKindPriority => 'Priorität';

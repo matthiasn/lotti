@@ -2837,7 +2837,8 @@ Skill-based transcription of one recording on one device, through
 `SkillInferenceRunner.runTranscription`: the requests that start it (the
 automatic trigger when a recording stops, the AI popup and the timelines'
 Retry through `triggerSkillProvider`, the synced-audio dispatcher on a pinned
-host, the check-in service), the provider call, the re-read and the write of
+host, the check-in service, an accepted backfill suggestion through
+`InferenceBackfillQueue`), the provider call, the re-read and the write of
 the transcript back onto the `JournalAudio`, the audio summary, and what the
 callers do once the call returns — `AutomaticPromptTrigger` nudges the
 subject's agent, the check-in waiter gives up on `onError`. A peer's synced

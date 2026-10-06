@@ -14,6 +14,9 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill_queue.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -268,6 +271,58 @@ PendingSuggestion makePending({
     fingerprint: 'fp-$id',
   );
 }
+
+/// A backfill suggestion for [entryId] on the bench's task.
+PendingSuggestion makeBackfillPending(
+  String entryId, {
+  InferenceBackfillKind kind = InferenceBackfillKind.imageAnalysis,
+}) => PendingSuggestion.backfill(
+  candidate: InferenceBackfillCandidate(
+    entryId: entryId,
+    kind: kind,
+    capturedAt: DateTime(2024, 3, 15, 9, 30),
+  ),
+  agentId: 'agent-001',
+  taskId: AgentTestBench.taskId,
+);
+
+/// Records what the card queues, running no inference.
+class RecordingBackfillQueue extends InferenceBackfillQueue {
+  final queued = <({String taskId, InferenceBackfillCandidate candidate})>[];
+
+  @override
+  bool enqueue({
+    required String taskId,
+    required InferenceBackfillCandidate candidate,
+  }) {
+    queued.add((taskId: taskId, candidate: candidate));
+    return true;
+  }
+}
+
+/// Records what the card dismisses, touching no settings database.
+class RecordingBackfillDismissals extends InferenceBackfillDismissals {
+  final dismissed = <InferenceBackfillCandidate>[];
+
+  @override
+  Future<Set<String>> build() async => const {};
+
+  @override
+  Future<void> dismiss(InferenceBackfillCandidate candidate) async =>
+      dismissed.add(candidate);
+}
+
+/// Overrides that route the card's backfill actions into [queue] and
+/// [dismissals].
+List<Override> backfillOverrides({
+  required RecordingBackfillQueue queue,
+  RecordingBackfillDismissals? dismissals,
+}) => [
+  inferenceBackfillQueueProvider.overrideWith(() => queue),
+  inferenceBackfillDismissalsProvider.overrideWith(
+    () => dismissals ?? RecordingBackfillDismissals(),
+  ),
+];
 
 /// Builds a resolved-history [LedgerEntry] for tests.
 LedgerEntry makeLedgerEntry({

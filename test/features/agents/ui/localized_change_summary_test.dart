@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -914,6 +915,58 @@ void main() {
           reason: phrase,
         );
       }
+    });
+  });
+
+  group('backfill suggestions', () {
+    final capturedAt = DateTime(2024, 3, 15, 9, 30);
+    final args = {
+      'entryId': 'entry-1',
+      'capturedAt': capturedAt.toIso8601String(),
+    };
+    String when(String locale) =>
+        DateFormat.yMMMd(locale).add_jm().format(capturedAt);
+
+    test('name the entry by when it was captured, per kind', () {
+      expect(
+        summary(InferenceBackfillKind.imageAnalysis.toolName, args),
+        'Run image analysis in task context for the image from ${when('en')}',
+      );
+      expect(
+        summary(InferenceBackfillKind.transcription.toolName, args),
+        'Run speech recognition in task context for the recording from '
+        '${when('en')}',
+      );
+      expect(
+        summary(InferenceBackfillKind.audioSummary.toolName, args),
+        'Summarize the recording from ${when('en')} in task context',
+      );
+    });
+
+    test("follow the reader's language", () {
+      expect(
+        summary(
+          InferenceBackfillKind.audioSummary.toolName,
+          args,
+          messages: de,
+        ),
+        'Aufnahme vom ${when('de')} im Aufgabenkontext zusammenfassen',
+      );
+    });
+
+    test('degrade to a placeholder date rather than the raw tool name', () {
+      expect(
+        summary(InferenceBackfillKind.imageAnalysis.toolName, const {
+          'entryId': 'entry-1',
+        }),
+        'Run image analysis in task context for the image from ?',
+      );
+      expect(
+        summary(InferenceBackfillKind.transcription.toolName, const {
+          'capturedAt': 'not a date',
+        }),
+        'Run speech recognition in task context for the recording from ?',
+      );
     });
   });
 }

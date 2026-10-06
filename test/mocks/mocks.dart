@@ -68,6 +68,7 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill_detector.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -1790,6 +1791,9 @@ class MockProfileAutomationService extends Mock
     implements ProfileAutomationService {}
 
 class MockSkillInferenceRunner extends Mock implements SkillInferenceRunner {}
+
+class MockInferenceBackfillDetector extends Mock
+    implements InferenceBackfillDetector {}
 
 class MockAutomaticImageAnalysisTrigger extends Mock
     implements AutomaticImageAnalysisTrigger {}

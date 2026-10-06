@@ -473,6 +473,24 @@
       }
     }
   },
+  "agentSummaryBackfillAudioSummary": "Summarize the recording from {date} in task context",
+  "@agentSummaryBackfillAudioSummary": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "agentSummaryBackfillImageAnalysis": "Run image analysis in task context for the image from {date}",
+  "@agentSummaryBackfillImageAnalysis": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "agentSummaryBackfillTranscription": "Run speech recognition in task context for the recording from {date}",
+  "@agentSummaryBackfillTranscription": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "agentSummaryCheckItem": "Check: \"{title}\"",
   "@agentSummaryCheckItem": {
     "placeholders": {
@@ -1102,6 +1120,7 @@
   "aiCardProposalKindDue": "Due",
   "aiCardProposalKindEstimate": "Estimate",
   "aiCardProposalKindLabel": "Label",
+  "aiCardProposalKindMedia": "Media",
   "aiCardProposalKindPriority": "Priority",
   "aiCardProposalKindRemove": "Remove",
   "aiCardProposalKindStatus": "Status",

@@ -1036,6 +1036,47 @@ void main() {
       });
     });
 
+    group('trySummarizeAudio', () {
+      test(
+        'returns handled when the profile automates the summary skill',
+        () async {
+          const assignment = SkillAssignment(
+            skillId: 'skill-summary',
+            automate: true,
+          );
+          final profile = makeProfile(skillAssignments: [assignment]);
+          final skill = makeSkill(
+            id: 'skill-summary',
+            name: 'Summarize Recording',
+            skillType: SkillType.audioSummary,
+          );
+          when(
+            () => mockResolver.resolveForSubject('task-1'),
+          ).thenAnswer((_) async => profile);
+          when(
+            () => mockAiConfig.getConfigById('skill-summary'),
+          ).thenAnswer((_) async => skill);
+
+          final result = await service.trySummarizeAudio(subjectId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.skill!.skillType, SkillType.audioSummary);
+          expect(result.resolvedProfile, profile);
+          expect(result.skillAssignment, assignment);
+        },
+      );
+
+      test('declines before resolving a profile when the category has '
+          'automatic inference off', () async {
+        categoryAllowsAutomation = false;
+
+        final result = await service.trySummarizeAudio(subjectId: 'task-1');
+
+        expect(result.handled, isFalse);
+        verifyNever(() => mockResolver.resolveForSubject(any()));
+      });
+    });
+
     group('AutomationResult', () {
       test('notHandled has correct defaults', () {
         const result = AutomationResult.notHandled;

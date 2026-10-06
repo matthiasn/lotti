@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
@@ -361,7 +362,8 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   }
 
   /// Confirms every visible suggestion while retaining the whole batch until
-  /// each proposal row finishes its staggered exit animation.
+  /// each proposal row finishes its staggered exit animation. Backfill
+  /// suggestions are all queued, not just the first.
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
     // Start viewport stabilization before the first persistence call can grow
@@ -400,8 +402,14 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final logger = ref.read(domainLoggerProvider);
     final messages = context.messages;
 
+    // Backfill suggestions are queued, one job each; the queue runs them in
+    // turn. Every other row belongs to a persisted change set.
+    for (final s in pending.where((s) => s.backfill != null)) {
+      confirmBackfillSuggestion(ref, s);
+    }
     final distinctSets = <String, ChangeSetEntity>{
-      for (final s in pending) s.changeSet.id: s.changeSet,
+      for (final s in pending)
+        if (s.backfill == null) s.changeSet.id: s.changeSet,
     };
     final agentIds = <String>{
       for (final cs in distinctSets.values) cs.agentId,

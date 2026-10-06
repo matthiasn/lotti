@@ -7,6 +7,8 @@ import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 
 /// One pending proposal in the unified suggestion list.
@@ -17,18 +19,65 @@ import 'package:lotti/providers/agent_repository_providers.dart';
 /// `ChangeSetConfirmationService.confirmItem(changeSet, itemIndex)` or
 /// `rejectItem(...)` — the service itself re-reads a fresh snapshot
 /// before mutating, so stale fields are harmless.
+///
+/// A [backfill] suggestion is the exception: it is not the agent's proposal
+/// but a mechanical one — an entry of the task whose image analysis,
+/// transcription or summary never ran. Its [changeSet] is a stand-in that is
+/// never persisted, never synced and never shown to the agent; it exists so
+/// the row renders and animates like every other proposal. Confirming or
+/// rejecting it goes to the backfill queue and dismissals instead of
+/// `ChangeSetConfirmationService`.
 class PendingSuggestion {
   const PendingSuggestion({
     required this.changeSet,
     required this.itemIndex,
     required this.item,
     required this.fingerprint,
+    this.backfill,
   });
+
+  /// A suggestion to run the inference [candidate] is missing.
+  factory PendingSuggestion.backfill({
+    required InferenceBackfillCandidate candidate,
+    required String agentId,
+    required String taskId,
+  }) {
+    final item = ChangeItem(
+      toolName: candidate.kind.toolName,
+      args: {
+        'entryId': candidate.entryId,
+        'capturedAt': candidate.capturedAt.toIso8601String(),
+      },
+      // Fallback text only: the row re-derives the localized sentence from
+      // the tool name and args.
+      humanSummary: candidate.kind.toolName,
+    );
+    return PendingSuggestion(
+      changeSet: ChangeSetEntity(
+        id: 'inference-backfill:${candidate.key}',
+        agentId: agentId,
+        taskId: taskId,
+        threadId: 'inference-backfill',
+        runKey: 'inference-backfill',
+        status: ChangeSetStatus.pending,
+        items: [item],
+        createdAt: candidate.capturedAt,
+        vectorClock: null,
+      ),
+      itemIndex: 0,
+      item: item,
+      fingerprint: ChangeItem.fingerprint(item),
+      backfill: candidate,
+    );
+  }
 
   final ChangeSetEntity changeSet;
   final int itemIndex;
   final ChangeItem item;
   final String fingerprint;
+
+  /// The missing inference this suggestion runs; null for an agent proposal.
+  final InferenceBackfillCandidate? backfill;
 }
 
 /// What the consolidated `AiSummaryCard` renders for a single task.
@@ -65,6 +114,10 @@ class UnifiedSuggestionList {
 /// dispatch confirm/reject through the existing
 /// `ChangeSetConfirmationService` contract) and the proposal ledger (so
 /// the activity strip can show recently-resolved / retracted items).
+///
+/// The open list ends with the task's backfill suggestions
+/// ([inferenceBackfillSuggestionsProvider]), one per entry missing
+/// inference, after the agent's own proposals.
 final FutureProviderFamily<UnifiedSuggestionList, String>
 unifiedSuggestionListProvider = FutureProvider.autoDispose
     .family<UnifiedSuggestionList, String>(
@@ -82,6 +135,7 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   if (agent == null) return const UnifiedSuggestionList.empty();
 
   ref.watch(agentUpdateStreamProvider(agent.agentId));
+  final backfill = ref.watch(inferenceBackfillSuggestionsProvider(taskId));
 
   final repo = ref.watch(agentRepositoryProvider);
   final ledger = await repo.getProposalLedger(agent.agentId, taskId: taskId);
@@ -126,7 +180,15 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   }
 
   return UnifiedSuggestionList(
-    open: visibleOpen,
+    open: [
+      ...visibleOpen,
+      for (final candidate in backfill)
+        PendingSuggestion.backfill(
+          candidate: candidate,
+          agentId: agent.agentId,
+          taskId: taskId,
+        ),
+    ],
     activity: activity,
     agentName: agent.displayName,
   );

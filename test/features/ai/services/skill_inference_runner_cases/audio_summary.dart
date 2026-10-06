@@ -846,5 +846,52 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
         },
       );
     });
+
+    group('hasSummarizableContent', () {
+      final longText = 'word ' * 60;
+
+      JournalAudio withTranscript(JournalAudio audio, String transcript) =>
+          audio.copyWith(
+            data: audio.data.copyWith(
+              transcripts: [
+                AudioTranscript(
+                  created: DateTime(2024),
+                  library: 'test',
+                  model: 'test-model',
+                  detectedLanguage: 'en',
+                  transcript: transcript,
+                ),
+              ],
+            ),
+          );
+
+      test("accepts content at the summary run's minimum length", () {
+        expect(
+          hasSummarizableContent(makeAudioEntity(plainText: longText)),
+          isTrue,
+        );
+        expect(
+          hasSummarizableContent(withTranscript(makeAudioEntity(), longText)),
+          isTrue,
+        );
+      });
+
+      test('rejects what the run would skip as too short', () {
+        expect(hasSummarizableContent(makeAudioEntity()), isFalse);
+        expect(
+          hasSummarizableContent(makeAudioEntity(plainText: 'Buy milk.')),
+          isFalse,
+        );
+      });
+
+      test('reads an edit before the transcript, as the run does', () {
+        expect(
+          hasSummarizableContent(
+            withTranscript(makeAudioEntity(plainText: 'Buy milk.'), longText),
+          ),
+          isFalse,
+        );
+      });
+    });
   }
 }

@@ -84,7 +84,10 @@ Contents:
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). All confirms route
   through `ChangeSetConfirmationService`. *Confirm all* batches `confirmAll` over
-  distinct change sets.
+  distinct change sets. The list ends with the task's
+  [inference backfill suggestions](../ai/inference-backfill.md) — mechanical
+  rows with no change set behind them, which confirm into the backfill queue,
+  reject into a device-local dismissal, and are all queued by *Confirm all*.
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags and a strikethrough. It is a section of its
   own (`ProposalHistorySection`), not a rail inside *Proposed changes*, and it

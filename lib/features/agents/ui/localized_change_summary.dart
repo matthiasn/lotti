@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart'
     show isValidDueDateWireValue;
 import 'package:lotti/l10n/app_localizations.dart';
@@ -110,8 +111,36 @@ String? localizedChangeSummary(
     args,
   ),
 
+  _ when InferenceBackfillKind.fromToolName(toolName) != null => _backfill(
+    messages,
+    InferenceBackfillKind.fromToolName(toolName)!,
+    args['capturedAt'],
+  ),
+
   _ => null,
 };
+
+/// The sentence for a backfill suggestion, naming the entry by when it was
+/// captured — fifteen photos waiting for analysis are otherwise fifteen
+/// identical rows.
+String _backfill(
+  AppLocalizations messages,
+  InferenceBackfillKind kind,
+  Object? capturedAt,
+) {
+  final parsed = capturedAt is String ? DateTime.tryParse(capturedAt) : null;
+  final date = parsed == null
+      ? '?'
+      : DateFormat.yMMMd(messages.localeName).add_jm().format(parsed);
+  return switch (kind) {
+    InferenceBackfillKind.imageAnalysis =>
+      messages.agentSummaryBackfillImageAnalysis(date),
+    InferenceBackfillKind.transcription =>
+      messages.agentSummaryBackfillTranscription(date),
+    InferenceBackfillKind.audioSummary =>
+      messages.agentSummaryBackfillAudioSummary(date),
+  };
+}
 
 /// The localized sentence for one directed task relationship, with [target]
 /// as its object.
