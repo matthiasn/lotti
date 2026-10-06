@@ -197,15 +197,15 @@ on the next scan.
 
 # Gotchas
 
-- **The running check is check-then-act.** The queue reads the entry's status,
-  then awaits the database and the profile walk before it dispatches. A
-  transcription started by another trigger inside that window is still safe:
-  `TranscriptionRuns` joins the second request to the run in flight
-  (`SingleFlight` in [`TranscriptionRun.tla`](../../../specs/tla/TranscriptionRun.tla)).
-  Image analysis has no such guard, so an automatic or popup analysis starting
-  in that window runs twice — two responses, the newer one read. Closing it
-  means single-flight for image analysis in the runner, not a stricter check
-  here.
+- **The running check is check-then-act; the runner closes the gap.** The
+  queue reads the entry's status, then awaits the database and the profile
+  walk before it dispatches, so another trigger can start inside that window.
+  That is harmless on one device: the runner keeps one run per entry
+  (`EntryRuns` — `transcriptionRunsProvider` and `imageAnalysisRunsProvider`),
+  registered before its first await, and a second request joins the run in
+  flight (`SingleFlight` in
+  [`TranscriptionRun.tla`](../../../specs/tla/TranscriptionRun.tla)). The
+  queue's own check only spares the profile walk.
 - **The status controllers are in-memory.** `inferenceStatusController` is
   autoDispose with a two-minute cache, so "running" is per device and per
   process. Another device's run is invisible until its result syncs — at which

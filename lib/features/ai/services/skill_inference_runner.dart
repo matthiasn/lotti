@@ -84,33 +84,50 @@ bool hasSummarizableContent(JournalAudio audio) =>
 /// re-read and the write; the next re-read carries it.
 const _transcriptSaveAttempts = 3;
 
-/// The transcriptions in flight on this device, one per recording.
+/// One kind of run in flight on this device, at most one per entry.
 ///
-/// Every entry point — the automatic trigger, the AI popup and Retry, the
-/// synced-audio dispatcher, the check-in service — ends in
-/// [SkillInferenceRunner.runTranscription], and a second request for a
-/// recording already being transcribed joins the run in flight instead of
-/// starting another. The runner is rebuilt whenever its provider's
-/// dependencies change, so the registry lives in its own provider.
-class TranscriptionRuns {
+/// A second request for an entry whose run is in flight joins that run
+/// instead of starting another: it pays for no second inference, and gets
+/// the first run's outcome. The registration happens synchronously, before the
+/// run's first await, so two requests cannot both find the entry idle. The
+/// runner is rebuilt whenever its provider's dependencies change, so each
+/// registry lives in a provider of its own.
+class EntryRuns {
   final _active = <String, Future<Object?>>{};
 
-  /// Runs [execute] for [audioEntryId], or returns the run already in flight
-  /// for it. The result is the run's failure, or null when it succeeded.
+  /// Runs [execute] for [entryId], or returns the run already in flight for
+  /// it. The result is the run's failure, or null when it succeeded.
   Future<Object?> run(
-    String audioEntryId,
+    String entryId,
     Future<Object?> Function() execute,
   ) => _active.putIfAbsent(
-    audioEntryId,
+    entryId,
     () => Future<Object?>.microtask(execute).whenComplete(() {
-      _active.remove(audioEntryId);
+      _active.remove(entryId);
     }),
   );
 }
 
-final transcriptionRunsProvider = Provider<TranscriptionRuns>(
-  (ref) => TranscriptionRuns(),
+/// The transcriptions in flight, one per recording.
+///
+/// Every entry point — the automatic trigger, the AI popup and Retry, the
+/// synced-audio dispatcher, the check-in service, an accepted backfill
+/// suggestion — ends in [SkillInferenceRunner.runTranscription].
+final transcriptionRunsProvider = Provider<EntryRuns>(
+  (ref) => EntryRuns(),
   name: 'transcriptionRunsProvider',
+);
+
+/// The image analyses in flight, one per image.
+///
+/// The automatic trigger on import, the AI popup and an accepted backfill
+/// suggestion all end in [SkillInferenceRunner.runImageAnalysis]; none of
+/// them can tell for certain that another is already analysing the picture,
+/// because each awaits before the run marks it running. Without this, two of
+/// them overlapping called the vision model twice and stored two analyses.
+final imageAnalysisRunsProvider = Provider<EntryRuns>(
+  (ref) => EntryRuns(),
+  name: 'imageAnalysisRunsProvider',
 );
 
 /// Service that invokes inference using skill-built prompts and
@@ -212,7 +229,7 @@ class SkillInferenceRunner {
   /// including a transcript the database would not save
   /// ([_saveTranscript]). A failed run starts no audio summary.
   ///
-  /// One run per recording is in flight on a device ([TranscriptionRuns]). A
+  /// One run per recording is in flight on a device ([EntryRuns]). A
   /// call for a recording already being transcribed joins that run: it pays
   /// for no second inference, sets no status of its own, and its [onError]
   /// fires with the run's failure. Its own [overrideModelId], [knownTerms]
@@ -295,6 +312,12 @@ class SkillInferenceRunner {
   /// changing the entire profile. A stale or unresolvable override
   /// falls back to the profile slot (with a warning log) — stranding
   /// the user is worse than ignoring a stale id.
+  ///
+  /// One analysis per image is in flight on a device
+  /// ([imageAnalysisRunsProvider]). A call for an image already being
+  /// analysed joins that run: it pays for no second inference and stores no
+  /// second analysis. Its own [automationResult], [overrideModelId],
+  /// [geminiThinkingMode] and [linkedTaskId] are not used.
   ///
   /// After the attributed path stores the analysis, every parent **task** of
   /// the image (all tasks linking to it, plus [linkedTaskId] when present —

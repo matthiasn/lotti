@@ -2,6 +2,76 @@ part of '../skill_inference_runner_test.dart';
 
 extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
   void registerImageAnalysisPersistence() {
+    test(
+      'a second analysis of an image already being analysed joins it instead '
+      'of calling the model again',
+      () async {
+        final imageEntity = makeImageEntity();
+        final imageDir = Directory('${tempDir.path}/images');
+        await imageDir.create(recursive: true);
+        await File(
+          '${imageDir.path}/test.jpg',
+        ).writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        // The provider keeps streaming until the test releases it, so the
+        // two requests overlap for certain.
+        final response = StreamController<CreateChatCompletionStreamResponse>();
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) => response.stream);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubLoggingEvent();
+
+        // The automatic trigger, then the AI popup or a backfill suggestion,
+        // for the same picture.
+        final first = runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+        final second = runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+        await pumpEventQueue();
+
+        response.add(makeStreamChunk('A photo of a sunset'));
+        await response.close();
+        await Future.wait([first, second]);
+
+        verify(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).called(1);
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+      },
+    );
+
     test('happy path: analyzes image and saves result', () async {
       final imageEntity = makeImageEntity();
 
