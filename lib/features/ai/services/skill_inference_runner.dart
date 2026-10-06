@@ -32,6 +32,7 @@ import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
+import 'package:lotti/features/ai/skills/recording_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
@@ -40,8 +41,10 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/speech_to_text_route.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -57,6 +60,7 @@ import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';
 part 'skill_inference_runner_media_runs.dart';
+part 'skill_inference_runner_recording.dart';
 part 'skill_inference_runner_text_runs.dart';
 part 'skill_inference_runner_transcription.dart';
 
@@ -360,6 +364,10 @@ class SkillInferenceRunner {
   /// shorter than [_audioSummaryMinChars] — a one-liner of a one-sentence note
   /// is pure cost, and the collapsed card's transcript-prefix fallback already
   /// reads fine at that length.
+  ///
+  /// A recording whose text is still empty although it has a transcript — a
+  /// transcription whose composite step never finished — gets its text here:
+  /// the transcript, corrected against the speech dictionary by this call.
   Future<void> runAudioSummary({
     required String audioEntryId,
     required AutomationResult automationResult,
@@ -372,6 +380,7 @@ class SkillInferenceRunner {
     linkedTaskId: linkedTaskId,
     overrideModelId: overrideModelId,
     geminiThinkingMode: geminiThinkingMode,
+    fillEmptyText: true,
   );
 
   /// Run skill-based prompt generation on a [JournalAudio] or [JournalEntry].

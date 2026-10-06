@@ -56,6 +56,7 @@ class InferenceBackfillCandidate {
     required this.entryId,
     required this.kind,
     required this.capturedAt,
+    required this.createdAt,
   });
 
   final String entryId;
@@ -65,6 +66,11 @@ class InferenceBackfillCandidate {
   /// otherwise identical suggestions apart.
   final DateTime capturedAt;
 
+  /// When the entry was created, on whichever device created it: the start
+  /// of the window its own automatic inference is given to finish in before
+  /// a missing result counts as missing.
+  final DateTime createdAt;
+
   /// Identity of the suggestion: one per entry and kind.
   String get key => '${kind.name}:$entryId';
 
@@ -73,10 +79,11 @@ class InferenceBackfillCandidate {
       other is InferenceBackfillCandidate &&
       other.entryId == entryId &&
       other.kind == kind &&
-      other.capturedAt == capturedAt;
+      other.capturedAt == capturedAt &&
+      other.createdAt == createdAt;
 
   @override
-  int get hashCode => Object.hash(entryId, kind, capturedAt);
+  int get hashCode => Object.hash(entryId, kind, capturedAt, createdAt);
 
   @override
   String toString() => 'InferenceBackfillCandidate($key)';
@@ -93,7 +100,10 @@ class InferenceBackfillCandidate {
 ///   text. Text without a transcript is the user's own, and a transcription
 ///   run would overwrite it. Once there is content, missing a summary when no
 ///   `audioSummary` response exists and the content is long enough for the
-///   summary run to accept it ([hasSummarizableContent]).
+///   summary run to accept it ([hasSummarizableContent]). A transcript with
+///   no text and no summary is a composite step that never finished — the
+///   summary run is what writes its text — so it misses its summary at any
+///   length; with a summary, the empty text is the user's.
 ///
 /// At most one kind per entry: a recording without a transcript gets its
 /// summary from the transcription run itself.
@@ -116,8 +126,9 @@ InferenceBackfillKind? missingInferenceFor(
       if (!hasTranscript && !hasText) {
         return InferenceBackfillKind.transcription;
       }
-      if (hasResponse(AiResponseType.audioSummary) ||
-          !hasSummarizableContent(entry)) {
+      if (hasResponse(AiResponseType.audioSummary)) return null;
+      if (!hasText) return InferenceBackfillKind.audioSummary;
+      if (!hasSummarizableContent(entry)) {
         return null;
       }
       return InferenceBackfillKind.audioSummary;
@@ -144,6 +155,7 @@ List<InferenceBackfillCandidate> findMissingInference(
         entryId: entry.meta.id,
         kind: kind,
         capturedAt: entry.meta.dateFrom,
+        createdAt: entry.meta.createdAt,
       ),
     );
   }

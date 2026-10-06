@@ -93,6 +93,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsLabelsTitle,
           desc: m.settingsLabelsSubtitle,
         );
+      case 'definitions/speech-dictionary':
+        return (
+          title: m.settingsSpeechDictionaryTitle,
+          desc: m.settingsSpeechDictionarySubtitle,
+        );
       case 'sync':
         return (title: m.settingsMatrixTitle, desc: m.settingsSyncSubtitle);
       case 'sync-unavailable':

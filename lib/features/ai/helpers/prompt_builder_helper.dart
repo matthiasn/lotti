@@ -5,11 +5,13 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -296,82 +298,50 @@ class PromptBuilderHelper {
     return summary;
   }
 
-  /// Returns raw speech dictionary terms for a given entity's category
-  /// (or linked task's category), or an empty list if none are available.
+  /// The speech dictionary entries that reach [entity]: those limited to
+  /// its category — its own, or its linked task's — and those that apply to
+  /// every category. Empty when the dictionary cannot be read.
   ///
-  /// This is used both for prompt text injection (chat completions) and for
-  /// Mistral's `context_bias` parameter (transcription endpoint).
-  Future<List<String>> getSpeechDictionaryTerms(JournalEntity entity) async {
-    // First check if the entity itself has a category
+  /// Used for prompt text, for the transcription endpoints' `context_bias`
+  /// and, with each entry's misheard spellings, for the correction step.
+  Future<List<SpeechDictionaryEntry>> getSpeechDictionaryEntries(
+    JournalEntity entity,
+  ) async {
     var categoryId = entity.meta.categoryId;
-    var source = 'entity';
-
-    // If no direct category, try to get it from a linked task
     if (categoryId == null) {
       final task = entity is Task ? entity : await _findLinkedTask(entity);
-      if (task != null) {
-        categoryId = task.meta.categoryId;
-        source = 'linked task';
-      }
+      categoryId = task?.meta.categoryId;
     }
 
-    if (categoryId == null) {
+    if (!getIt.isRegistered<JournalDb>()) return const [];
+    try {
+      final entries = entriesForCategory(
+        await getIt<JournalDb>().getAllSpeechDictionaryEntries(),
+        categoryId,
+      );
       _domainLogger.log(
         LogDomain.ai,
-        'Speech dictionary: no category found for entity ${entity.id}',
+        'Speech dictionary: ${entries.length} terms for entity '
+        '${DomainLogger.sanitizeId(entity.id)}',
         subDomain: _subDomain,
       );
-      return [];
-    }
-
-    // Get the category from cache service
-    CategoryDefinition? category;
-    try {
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        final cache = getIt<EntitiesCacheService>();
-        category = cache.getCategoryById(categoryId);
-      }
+      return entries;
     } catch (e, stackTrace) {
       _domainLogger.error(
         LogDomain.ai,
         e,
         stackTrace: stackTrace,
         subDomain: _subDomain,
-        message: 'Speech dictionary: error getting category $categoryId',
+        message: 'Speech dictionary: error reading entries',
       );
-      return [];
+      return const [];
     }
-
-    if (category == null) {
-      _domainLogger.log(
-        LogDomain.ai,
-        'Speech dictionary: category $categoryId not found in cache',
-        subDomain: _subDomain,
-        level: InsightLevel.warn,
-      );
-      return [];
-    }
-
-    // Get the speech dictionary
-    final dictionary = category.speechDictionary;
-    if (dictionary == null || dictionary.isEmpty) {
-      _domainLogger.log(
-        LogDomain.ai,
-        'Speech dictionary: category ${category.id} has no dictionary',
-        subDomain: _subDomain,
-      );
-      return [];
-    }
-
-    _domainLogger.log(
-      LogDomain.ai,
-      'Speech dictionary: found ${dictionary.length} terms from '
-      '$source category ${category.id}',
-      subDomain: _subDomain,
-    );
-
-    return dictionary;
   }
+
+  /// The terms of [getSpeechDictionaryEntries].
+  Future<List<String>> getSpeechDictionaryTerms(JournalEntity entity) async => [
+    for (final entry in await getSpeechDictionaryEntries(entity)) entry.term,
+  ];
 
   // ===========================================================================
   // Placeholder resolution (instance-coupled; pure formatting lives in

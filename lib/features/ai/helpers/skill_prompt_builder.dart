@@ -27,6 +27,9 @@ class SkillPromptBuilder {
   /// caller knows whether the resolved model can call tools at all, so this
   /// is a parameter rather than a property of the skill: the same image
   /// analysis skill runs both ways depending on the model behind it.
+  /// [transcriptCorrection] is the speech dictionary block an audio summary
+  /// corrects its transcript against (`recordingCorrectionPrompt`), placed
+  /// right after the transcript it is about.
   SkillPromptResult build({
     required AiConfigSkill skill,
     String? speechDictionary,
@@ -39,6 +42,7 @@ class SkillPromptBuilder {
     bool requestTieredSummary = false,
     String? categoryKnowledge,
     String? pullRequests,
+    String? transcriptCorrection,
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -58,6 +62,7 @@ class SkillPromptBuilder {
       requestTieredSummary: requestTieredSummary,
       categoryKnowledge: categoryKnowledge,
       pullRequests: pullRequests,
+      transcriptCorrection: transcriptCorrection,
     );
 
     return SkillPromptResult(
@@ -107,6 +112,7 @@ class SkillPromptBuilder {
     bool requestTieredSummary = false,
     String? categoryKnowledge,
     String? pullRequests,
+    String? transcriptCorrection,
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
@@ -180,6 +186,14 @@ class SkillPromptBuilder {
           ..writeln('**Entry Notes:**')
           ..writeln(entryContent);
       }
+    }
+
+    if (skill.skillType == SkillType.audioSummary &&
+        transcriptCorrection != null &&
+        transcriptCorrection.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln(transcriptCorrection);
     }
 
     // Inject URL formatting rules for image analysis skills.
@@ -359,6 +373,17 @@ class SkillPromptBuilder {
         ..writeln()
         ..writeln('**Pull Requests:**')
         ..writeln(pullRequests);
+    }
+
+    // An audio summary reads the task without its log, so the task's
+    // report is what tells it what the task is about.
+    if (skill.skillType == SkillType.audioSummary &&
+        currentTaskSummary != null &&
+        currentTaskSummary.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('**Task Report:**')
+        ..writeln(currentTaskSummary);
     }
 
     // For image generation, inject current task summary.

@@ -94,10 +94,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le terme existe déjà dans le dictionnaire';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Impossible d\'ajouter au dictionnaire : la tâche n\'a pas de catégorie';
-
-  @override
   String get addToDictionarySaveFailed =>
       'Échec de l\'enregistrement du dictionnaire';
 
@@ -14734,6 +14730,90 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsSectionsTitle => 'Sections';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Toutes les catégories';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose =>
+      'Choisir des catégories';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'N’utilise ce terme que pour les enregistrements de ces catégories, pour que le jargon ne s’invite pas dans des transcriptions sans rapport. Sans sélection, il s’applique partout.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Catégories';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Ajouter un terme';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '« $term » ne servira plus à corriger les transcriptions.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Supprimer le terme';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Terme « $term » supprimé';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Modifier le terme';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Aucun terme pour l’instant';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Ajoute les noms, lieux et termes techniques que la reconnaissance vocale écrit mal.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Saisis un terme';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Impossible de charger le dictionnaire';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Graphies sous lesquelles ce terme ressort souvent, séparées par des points-virgules. Elles aident l’étape de correction à le repérer, qui décide toujours selon le contexte.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Mal entendu comme';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return 'Ajouter « $query »';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Aucun terme ne correspond à « $query »';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Rechercher des termes…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Noms, lieux et jargon pour la transcription';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Terme';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Dictionnaire vocal';
+
+  @override
   String get settingsSpeechSubtitle => 'Voix et lecture à voix haute';
 
   @override
@@ -14980,28 +15060,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Compétences';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Termes séparés par des points-virgules (max 50 caractères) pour une meilleure reconnaissance vocale';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Dictionnaire vocal';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Ajoute des termes souvent mal transcrits par la reconnaissance vocale (noms, lieux, termes techniques)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Reconnaissance vocale';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Un grand dictionnaire ($count termes) peut augmenter les coûts API';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Sélectionner la langue';
@@ -15693,6 +15751,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Filtres de tâches enregistrés';
+
+  @override
+  String get syncStepSpeechDictionary => 'Dictionnaire vocal';
 
   @override
   String get syncVerifiedCelebrationBody =>

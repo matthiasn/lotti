@@ -193,4 +193,49 @@ void main() {
     expect(messages.user, endsWith('Transcript:\nVanja traf Frostbite.'));
     expect(messages.system, contains('misheard names'));
   });
+
+  group('reading and applying for another tool', () {
+    test('parses the proposals another tool carries', () {
+      final calls = [
+        ChatCompletionMessageToolCall(
+          id: 'call-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'publish_recording_summary',
+            arguments: jsonEncode({
+              TranscriptNameCorrectionToolArgs.corrections: [
+                {
+                  TranscriptNameCorrectionToolArgs.heard: 'Cuban Eddies',
+                  TranscriptNameCorrectionToolArgs.term: 'Kubernetes',
+                  TranscriptNameCorrectionToolArgs.context: 'to Cuban Eddies',
+                },
+              ],
+            }),
+          ),
+        ),
+      ];
+
+      expect(parseTranscriptNameCorrections(calls), isEmpty);
+      expect(
+        parseTranscriptNameCorrections(
+          calls,
+          toolName: 'publish_recording_summary',
+        ).single.term,
+        'Kubernetes',
+      );
+    });
+
+    test('a known misheard spelling is replaced in any casing', () {
+      final result = applyTranscriptNameCorrections(
+        'deploy to cuban eddies',
+        [(heard: 'cuban eddies', term: 'Kubernetes', context: null)],
+        ['Kubernetes'],
+        knownMisheard: {
+          'Kubernetes': {'cuban eddies'},
+        },
+      );
+
+      expect(result.text, 'deploy to Kubernetes');
+    });
+  });
 }

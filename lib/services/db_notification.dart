@@ -122,6 +122,7 @@ const habitsNotification = 'HABITS_CHANGED';
 const dashboardsNotification = 'DASHBOARDS_CHANGED';
 const measurablesNotification = 'MEASURABLES_CHANGED';
 const labelsNotification = 'LABELS_CHANGED';
+const speechDictionaryNotification = 'SPEECH_DICTIONARY_CHANGED';
 const settingsNotification = 'SETTINGS_CHANGED';
 
 /// The GitHub account record changed: a token connected, disconnected or

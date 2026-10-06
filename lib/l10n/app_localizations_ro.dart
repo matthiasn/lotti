@@ -91,10 +91,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addToDictionaryDuplicate => 'Termenul există deja în dicționar';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Nu se poate adăuga la dicționar: sarcina nu are categorie';
-
-  @override
   String get addToDictionarySaveFailed => 'Salvarea dicționarului a eșuat';
 
   @override
@@ -14769,6 +14765,89 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsSectionsTitle => 'Secțiuni';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Toate categoriile';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Alegeți categoriile';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Folosiți acest termen doar pentru înregistrările din aceste categorii, ca jargonul să nu apară în transcrieri fără legătură. Fără selecție, se aplică peste tot.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Categorii';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Adăugați un termen';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '„$term” nu va mai fi folosit pentru corectarea transcrierilor.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Ștergeți termenul';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Termenul „$term” a fost șters';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Editați termenul';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Niciun termen încă';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Adăugați nume, locuri și jargon pe care recunoașterea vocală le scrie greșit.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Introduceți un termen';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Eșec la încărcarea dicționarului';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Grafii în care acest termen apare adesea, separate prin punct și virgulă. Ajută pasul de corectare să îl recunoască, care decide în continuare după context.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Auzit greșit ca';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return 'Adăugați „$query”';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Niciun termen nu corespunde cu „$query”';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Căutați termeni…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Nume, locuri și jargon pentru transcriere';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Termen';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Dicționar vocal';
+
+  @override
   String get settingsSpeechSubtitle => 'Voce și citire cu voce tare';
 
   @override
@@ -15019,28 +15098,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Competențe';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Termeni separați prin punct și virgulă (max 50 caractere) pentru o mai bună recunoaștere vocală';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Dicționar vocal';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Adăugați termeni care sunt adesea transcrisi greșit de recunoașterea vocală (nume, locuri, termeni tehnici)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Recunoaștere vocală';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Un dicționar mare ($count termeni) poate crește costurile API';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Selectați limba';
@@ -15737,6 +15794,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
+
+  @override
+  String get syncStepSpeechDictionary => 'Dicționar vocal';
 
   @override
   String get syncVerifiedCelebrationBody =>

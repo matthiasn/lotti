@@ -162,11 +162,12 @@ If the image IS relevant:
       createdAt: DateTime(2026),
       description:
           'Summarize an audio recording in the context of its task, as a '
-          'one-liner, a TLDR, and a full markdown summary',
+          'one-liner, a TLDR, and a full markdown summary, and correct the '
+          'speech dictionary terms its transcript misheard',
       systemInstructions: '''
-You are summarizing one audio recording that belongs to a task. The recording may be a quick voice note or a full meeting transcript.
+You are summarizing one audio recording that belongs to a task. The recording may be a quick voice note or a full meeting transcript, written down by speech recognition.
 
-Your summary is read in the context of the task, not on its own. The task context below is what the task looked like at the moment this recording was summarized — treat it as the frame, and say what this recording means *for this task*.
+Your summary is read in the context of the task, not on its own. The task and its current report below are what the task looked like at the moment this recording was summarized — treat them as the frame, and say what this recording means *for this task*.
 
 RESPONSE LANGUAGE:
 Generate your ENTIRE response in the language given by the task's "languageCode" field in the task context JSON. If languageCode is null, empty, or "en", respond in English.
@@ -176,8 +177,11 @@ GROUNDING:
 - Where the recording is ambiguous or inaudible, say so rather than smoothing it over.
 - Do not comment on the recording's audio quality, its length, or the fact that it is a transcript.
 
+SPEECH DICTIONARY:
+When a speech dictionary is given, the transcript may have misheard its terms. Report each misheard occurrence in `corrections`, and summarize as if it were already corrected. Correct nothing else in the transcript.
+
 OUTPUT:
-You MUST publish your result by calling the `publish_entry_summary` tool exactly once, with all three tiers. Do not answer with prose. Do not call any other tool.''',
+You MUST publish your result by calling the `publish_recording_summary` tool exactly once, with all three tiers and the corrections (an empty list when there is nothing to correct). Do not answer with prose. Do not call any other tool.''',
       userInstructions: '''
 Summarize the recording below in the context of the task above.
 
@@ -189,7 +193,7 @@ Prioritize, in this order:
 
 For the full summary, use headings and bullets so a long recording stays scannable. Skip any of the above that the recording does not contain rather than writing "none".
 
-Publish the result with `publish_entry_summary`.''',
+Publish the result with `publish_recording_summary`.''',
     ),
 
     // -- Image generation skill --

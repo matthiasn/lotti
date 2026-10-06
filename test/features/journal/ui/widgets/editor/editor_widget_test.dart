@@ -471,7 +471,7 @@ void main() {
       expect(find.text(messages.addToDictionarySuccess), findsOneWidget);
     });
 
-    testWidgets('shows snackbar for noCategory result', (tester) async {
+    testWidgets('shows a warning toast for a duplicate result', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
@@ -483,7 +483,7 @@ void main() {
                   onPressed: () {
                     showDictionaryResultToast(
                       context,
-                      SpeechDictionaryResult.noCategory,
+                      SpeechDictionaryResult.duplicate,
                       messages,
                     );
                   },
@@ -498,7 +498,7 @@ void main() {
       await tester.tap(find.text('Test'));
       await tester.pump(const Duration(milliseconds: 450));
 
-      expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
+      expect(find.text(messages.addToDictionaryDuplicate), findsOneWidget);
     });
 
     testWidgets('returns false and shows no snackbar for silent results', (

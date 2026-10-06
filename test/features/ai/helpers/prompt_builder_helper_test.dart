@@ -12,6 +12,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
@@ -2685,19 +2686,7 @@ void main() {
     late MockAiInputRepository mockAiInputRepositorySD;
     late MockJournalRepository mockJournalRepositorySD;
     late MockLabelsRepository mockLabelsRepositorySD;
-    late MockEntitiesCacheService mockEntitiesCacheServiceSD;
-
-    final testCategorySD = CategoryDefinition(
-      id: 'category-1',
-      name: 'Test Category',
-      createdAt: DateTime(2025),
-      updatedAt: DateTime(2025),
-      vectorClock: null,
-      private: false,
-      active: true,
-      color: '#FF0000',
-      speechDictionary: ['macOS', 'iPhone', 'Kirkjubaejarklaustur'],
-    );
+    late TestGetItMocks mocksSD;
 
     final testTaskSD = Task(
       data: TaskData(
@@ -2759,15 +2748,10 @@ void main() {
       mockAiInputRepositorySD = MockAiInputRepository();
       mockJournalRepositorySD = MockJournalRepository();
       mockLabelsRepositorySD = MockLabelsRepository();
-      mockEntitiesCacheServiceSD = MockEntitiesCacheService();
-
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt.registerSingleton<EntitiesCacheService>(
-            mockEntitiesCacheServiceSD,
-          );
-        },
-      );
+      mocksSD = await setUpTestGetIt();
+      when(
+        mocksSD.journalDb.getAllSpeechDictionaryEntries,
+      ).thenAnswer((_) async => []);
 
       // Default stubs
       when(
@@ -2818,8 +2802,8 @@ void main() {
               'You are a transcription assistant.\n\n{{speech_dictionary}}',
             ),
           );
-          // Cache service should NOT be called for system message placeholder
-          verifyNever(() => mockEntitiesCacheServiceSD.getCategoryById(any()));
+          // The dictionary is not read for a system message placeholder
+          verifyNever(mocksSD.journalDb.getAllSpeechDictionaryEntries);
         },
       );
 
@@ -2868,9 +2852,11 @@ void main() {
 
     group('buildPromptWithData - speech_dictionary in user message', () {
       test('injects speech dictionary into user message for task', () async {
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(testCategorySD);
+        stubDictionary(mocksSD.journalDb, 'category-1', [
+          'macOS',
+          'iPhone',
+          'Kirkjubaejarklaustur',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -2901,9 +2887,11 @@ void main() {
               linkedTo: 'audio-1',
             ),
           ).thenAnswer((_) async => [testTaskSD]);
-          when(
-            () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-          ).thenReturn(testCategorySD);
+          stubDictionary(mocksSD.journalDb, 'category-1', [
+            'macOS',
+            'iPhone',
+            'Kirkjubaejarklaustur',
+          ]);
 
           final config = _makePromptConfig(
             name: 'Audio Transcription',
@@ -2930,9 +2918,11 @@ void main() {
               linkedTo: 'image-1',
             ),
           ).thenAnswer((_) async => [testTaskSD]);
-          when(
-            () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-          ).thenReturn(testCategorySD);
+          stubDictionary(mocksSD.journalDb, 'category-1', [
+            'macOS',
+            'iPhone',
+            'Kirkjubaejarklaustur',
+          ]);
 
           final config = _makePromptConfig(
             name: 'Image Analysis',
@@ -2952,11 +2942,10 @@ void main() {
         },
       );
 
-      test('replaces with empty when getCategoryById throws exception', () async {
-        // This tests the catch block in _buildSpeechDictionaryPromptText
+      test('replaces with empty when reading the dictionary throws', () async {
         when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenThrow(Exception('Cache service error'));
+          mocksSD.journalDb.getAllSpeechDictionaryEntries,
+        ).thenThrow(Exception('database closed'));
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3022,11 +3011,33 @@ void main() {
         expect(result, isNot(contains('SPEECH DICTIONARY')));
       });
 
-      test('replaces with empty when category not found in cache', () async {
-        // Category lookup returns null
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(null);
+      test('injects the terms that apply to every category, even with no '
+          'category', () async {
+        when(mocksSD.journalDb.getAllSpeechDictionaryEntries).thenAnswer(
+          (_) async => [
+            _dictionaryEntry('Lotti'),
+            _dictionaryEntry('macOS', categoryIds: ['category-1']),
+          ],
+        );
+        final taskNoCategory = Task(
+          data: testTaskSD.data,
+          meta: testTaskSD.meta.copyWith(categoryId: null),
+        );
+
+        final result = await promptBuilderSD.buildPromptWithData(
+          promptConfig: _makePromptConfig(
+            name: 'Audio Transcription',
+            userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+          ),
+          entity: taskNoCategory,
+        );
+
+        expect(result, contains('["Lotti"]'));
+      });
+
+      test('replaces with empty when no entry reaches the category', () async {
+        // Limited to another category only.
+        stubDictionary(mocksSD.journalDb, 'category-other', ['macOS']);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3044,32 +3055,18 @@ void main() {
       });
 
       test('handles multiple dictionary terms correctly', () async {
-        final categoryWithManyTerms = CategoryDefinition(
-          id: 'category-many',
-          name: 'Category with Many Terms',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: [
-            'TensorFlow',
-            'PyTorch',
-            'scikit-learn',
-            'NumPy',
-            'pandas',
-          ],
-        );
-
         final taskWithManyTerms = Task(
           data: testTaskSD.data,
           meta: testTaskSD.meta.copyWith(categoryId: 'category-many'),
         );
 
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-many'),
-        ).thenReturn(categoryWithManyTerms);
+        stubDictionary(mocksSD.journalDb, 'category-many', [
+          'TensorFlow',
+          'PyTorch',
+          'scikit-learn',
+          'NumPy',
+          'pandas',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3096,26 +3093,12 @@ void main() {
       });
 
       test('handles single dictionary term correctly', () async {
-        final categoryWithOneTerm = CategoryDefinition(
-          id: 'category-one',
-          name: 'Category with One Term',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: ['Anthropic'],
-        );
-
         final taskWithOneTerm = Task(
           data: testTaskSD.data,
           meta: testTaskSD.meta.copyWith(categoryId: 'category-one'),
         );
 
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-one'),
-        ).thenReturn(categoryWithOneTerm);
+        stubDictionary(mocksSD.journalDb, 'category-one', ['Anthropic']);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3132,26 +3115,12 @@ void main() {
       });
 
       test('handles empty dictionary list', () async {
-        final categoryWithEmptyList = CategoryDefinition(
-          id: 'category-empty',
-          name: 'Category with Empty List',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: [],
-        );
-
         final taskWithEmptyList = Task(
           data: testTaskSD.data,
           meta: testTaskSD.meta.copyWith(categoryId: 'category-empty'),
         );
 
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-empty'),
-        ).thenReturn(categoryWithEmptyList);
+        stubDictionary(mocksSD.journalDb, 'category-empty', []);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3170,14 +3139,11 @@ void main() {
       });
     });
 
-    group('EntitiesCacheService not registered', () {
+    group('JournalDb not registered', () {
       test(
-        'replaces with empty string when cache service not registered',
+        'replaces with empty string when the database is not registered',
         () async {
-          // Unregister the cache service
-          if (getIt.isRegistered<EntitiesCacheService>()) {
-            getIt.unregister<EntitiesCacheService>();
-          }
+          getIt.unregister<JournalDb>();
 
           final config = _makePromptConfig(
             name: 'Audio Transcription',
@@ -3190,7 +3156,7 @@ void main() {
             entity: testTaskSD,
           );
 
-          // When cache service is not registered, placeholder is replaced with empty
+          // With no database to read, the placeholder is replaced with empty
           expect(result, equals('\n\nTranscribe.'));
         },
       );
@@ -3198,21 +3164,10 @@ void main() {
 
     group('special character handling', () {
       test('escapes quotes in dictionary terms', () async {
-        final categoryWithQuotes = CategoryDefinition(
-          id: 'category-1',
-          name: 'Test Category',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: ['Term with "quotes"', 'Normal term'],
-        );
-
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(categoryWithQuotes);
+        stubDictionary(mocksSD.journalDb, 'category-1', [
+          'Term with "quotes"',
+          'Normal term',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3231,21 +3186,10 @@ void main() {
       });
 
       test('escapes backslashes in dictionary terms', () async {
-        final categoryWithBackslash = CategoryDefinition(
-          id: 'category-1',
-          name: 'Test Category',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: [r'Path\To\File', 'Normal'],
-        );
-
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(categoryWithBackslash);
+        stubDictionary(mocksSD.journalDb, 'category-1', [
+          r'Path\To\File',
+          'Normal',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3263,21 +3207,10 @@ void main() {
       });
 
       test('escapes newlines in dictionary terms', () async {
-        final categoryWithNewline = CategoryDefinition(
-          id: 'category-1',
-          name: 'Test Category',
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: '#FF0000',
-          speechDictionary: ['Term with\nnewline', 'Normal'],
-        );
-
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(categoryWithNewline);
+        stubDictionary(mocksSD.journalDb, 'category-1', [
+          'Term with\nnewline',
+          'Normal',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3297,9 +3230,11 @@ void main() {
       });
 
       test('includes casing guidance in prompt', () async {
-        when(
-          () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
-        ).thenReturn(testCategorySD);
+        stubDictionary(mocksSD.journalDb, 'category-1', [
+          'macOS',
+          'iPhone',
+          'Kirkjubaejarklaustur',
+        ]);
 
         final config = _makePromptConfig(
           name: 'Audio Transcription',
@@ -3321,11 +3256,12 @@ void main() {
 
   group('placeholder escaping properties', () {
     late MockEntitiesCacheService cacheService;
+    late TestGetItMocks mocks;
     late PromptBuilderHelper builder;
 
     setUp(() async {
       cacheService = MockEntitiesCacheService();
-      await setUpTestGetIt(
+      mocks = await setUpTestGetIt(
         additionalSetup: () {
           getIt.registerSingleton<EntitiesCacheService>(cacheService);
         },
@@ -3400,13 +3336,7 @@ void main() {
       'speech dictionary terms survive escaping as parseable JSON',
       (seeds) async {
         final terms = [for (final s in seeds) nastyString(s)];
-        when(() => cacheService.getCategoryById('cat-esc')).thenReturn(
-          CategoryTestUtils.createTestCategory(
-            id: 'cat-esc',
-            name: 'Escaping',
-            speechDictionary: terms,
-          ),
-        );
+        stubDictionary(mocks.journalDb, 'cat-esc', terms);
 
         final result = await builder.buildPromptWithData(
           promptConfig: _makePromptConfig(
@@ -3498,4 +3428,33 @@ void main() {
       tags: 'glados',
     );
   });
+}
+
+/// One dictionary entry for [term], limited to [categoryIds] (none for every
+/// category).
+SpeechDictionaryEntry _dictionaryEntry(
+  String term, {
+  List<String>? categoryIds,
+}) => SpeechDictionaryEntry(
+  id: 'entry-$term',
+  createdAt: DateTime(2025),
+  updatedAt: DateTime(2025),
+  term: term,
+  vectorClock: null,
+  categoryIds: categoryIds,
+);
+
+/// Stubs [journalDb] to hold one entry per term in [terms], each limited to
+/// [categoryId].
+void stubDictionary(
+  MockJournalDb journalDb,
+  String categoryId,
+  List<String> terms,
+) {
+  when(journalDb.getAllSpeechDictionaryEntries).thenAnswer(
+    (_) async => [
+      for (final term in terms)
+        _dictionaryEntry(term, categoryIds: [categoryId]),
+    ],
+  );
 }

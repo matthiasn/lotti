@@ -327,4 +327,30 @@ void main() {
       expect(entrySummaryToolChoiceFor('deepseek-v4.1-flash:speed'), isNull);
     });
   });
+
+  test('reads the tiers from the tool named', () {
+    final call = ChatCompletionMessageToolCall(
+      id: 'call-1',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: 'publish_recording_summary',
+        arguments: jsonEncode({
+          EntrySummaryToolArgs.oneLiner: 'One.',
+          EntrySummaryToolArgs.tldr: 'Two.',
+          EntrySummaryToolArgs.summary: 'Three.',
+        }),
+      ),
+    );
+
+    expect(
+      () => parseEntrySummaryToolCall([call]),
+      throwsA(isA<EntrySummaryToolException>()),
+    );
+    expect(
+      parseEntrySummaryToolCall([
+        call,
+      ], toolName: 'publish_recording_summary').summary,
+      'Three.',
+    );
+  });
 }

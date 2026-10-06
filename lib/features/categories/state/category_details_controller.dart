@@ -142,10 +142,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.knowledgeBrief != _originalCategory!.knowledgeBrief ||
         _pendingCategory!.githubRepository !=
             _originalCategory!.githubRepository ||
-        _hasListChanges(
-          _pendingCategory!.speechDictionary,
-          _originalCategory!.speechDictionary,
-        ) ||
         _hasCorrectionExamplesChanges(
           _pendingCategory!.correctionExamples,
           _originalCategory!.correctionExamples,
@@ -158,17 +154,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   ) {
     // Uses freezed-generated equality which considers all fields
     return !const DeepCollectionEquality().equals(current, original);
-  }
-
-  bool _hasListChanges(List<String>? current, List<String>? original) {
-    if (current == null && original == null) return false;
-    if (current == null || original == null) return true;
-    if (current.length != original.length) return true;
-
-    final currentSet = current.toSet();
-    final originalSet = original.toSet();
-    return !currentSet.containsAll(originalSet) ||
-        !originalSet.containsAll(currentSet);
   }
 
   /// Applies the supplied scalar/flag edits to the pending category and
@@ -371,14 +356,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     // The field reports after a frame, by which time the page may be gone.
     if (!ref.mounted || state.hasInvalidInput == !valid) return;
     state = state.copyWith(hasInvalidInput: !valid);
-  }
-
-  /// Replaces the pending speech-dictionary terms (empty list stored as
-  /// `null`). Not persisted until [saveChanges].
-  void updateSpeechDictionary(List<String> terms) {
-    _updatePendingCategory(
-      (c) => c.copyWith(speechDictionary: terms.isEmpty ? null : terms),
-    );
   }
 
   /// Deletes a correction example at the given index from the pending category.

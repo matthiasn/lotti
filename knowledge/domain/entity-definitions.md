@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: Entity definitions
-description: The five configuration entities — categories, labels, habits, dashboards, measurables — why the category flag is a consent switch rather than a preference, and how a measurable records a number or one of its own choices.
+description: The six configuration entities — categories, labels, habits, dashboards, measurables, speech dictionary entries — why the category flag is a consent switch rather than a preference, and how a measurable records a number or one of its own choices.
 resource: ../../lib/classes/entity_definitions.dart
 tags: [domain, categories, labels, habits, dashboards, measurables]
 status: stable
@@ -14,9 +14,9 @@ sources:
     last_modified: 2026-08-28
 ---
 
-`EntityDefinition` is a union of five configuration entities:
+`EntityDefinition` is a union of six configuration entities:
 `measurableDataType`, `categoryDefinition`, `labelDefinition`, `habit`,
-`dashboard`.
+`dashboard`, `speechDictionaryEntry`.
 
 They are **not** journal entries — they are the vocabulary journal entries are
 described with, and they sync as their own `SyncMessage.entityDefinition` family.
@@ -33,7 +33,7 @@ features read:
 | `defaultLanguageCode` | Speech and transcription |
 | `defaultProfileId` | AI profile resolution for new tasks |
 | `defaultTemplateId`, `defaultEventTemplateId` | Agent auto-attach for tasks and events |
-| `speechDictionary` | Transcription prompt context and `context_bias` |
+| `speechDictionary` | Legacy: read only by the migration into `speechDictionaryEntry` |
 | `correctionExamples` | Category-scoped AI guidance from user corrections |
 | `automaticInferenceEnabled` | **The consent gate for automatic inference** |
 | `automaticAgentWakesEnabled` | Seeds whether auto-created task agents wake on their own |
@@ -117,6 +117,13 @@ breaking on a missing number, and it is why a habit rule on a choice
 measurable can only be "any entry today": the sum is a count, not a quantity.
 `MeasurableDataTypeChoices` (`isChoice`, `activeChoices`, `archivedChoices`,
 `choiceById`) is the extension the surfaces read the kind through.
+
+# `SpeechDictionaryEntry` is one term
+
+A term, the categories it is limited to (none for every category) and the
+spellings it is misheard as. Its id is derived from the normalized term, and
+copies with equal stamps are ordered by content when received — see
+[speech dictionary](../features/speech/dictionary.md).
 
 # Related
 

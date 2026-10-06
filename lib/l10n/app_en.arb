@@ -25,7 +25,6 @@
   "addMeasurementSaveButton": "Save",
   "addToDictionary": "Add to Dictionary",
   "addToDictionaryDuplicate": "Term already exists in dictionary",
-  "addToDictionaryNoCategory": "Cannot add to dictionary: task has no category",
   "addToDictionarySaveFailed": "Failed to save dictionary",
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
@@ -8565,6 +8564,57 @@
   "settingsSectionsIntro": "Each section you turn on gets its own place in the navigation. Turning one off just hides it — nothing you have recorded is deleted.",
   "settingsSectionsSubtitle": "Choose which parts of Lotti you use",
   "settingsSectionsTitle": "Sections",
+  "settingsSpeechDictionaryAllCategories": "All categories",
+  "settingsSpeechDictionaryCategoriesChoose": "Choose categories",
+  "settingsSpeechDictionaryCategoriesDescription": "Use this term only for recordings in these categories, so niche words don't creep into unrelated transcripts. With none chosen, it applies everywhere.",
+  "settingsSpeechDictionaryCategoriesHeading": "Categories",
+  "settingsSpeechDictionaryCreateTitle": "Add term",
+  "settingsSpeechDictionaryDeleteConfirmMessage": "\"{term}\" will no longer be used to correct transcripts.",
+  "@settingsSpeechDictionaryDeleteConfirmMessage": {
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSpeechDictionaryDeleteConfirmTitle": "Delete term",
+  "settingsSpeechDictionaryDeleteSuccess": "Term \"{term}\" deleted",
+  "@settingsSpeechDictionaryDeleteSuccess": {
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSpeechDictionaryEditTitle": "Edit term",
+  "settingsSpeechDictionaryEmptyState": "No terms yet",
+  "settingsSpeechDictionaryEmptyStateHint": "Add names, places and jargon that speech recognition gets wrong.",
+  "settingsSpeechDictionaryErrorEmpty": "Enter a term",
+  "settingsSpeechDictionaryErrorLoading": "Failed to load the dictionary",
+  "settingsSpeechDictionaryMisheardDescription": "Spellings this term often comes out as, separated by semicolons. They help the correction step spot it, which still decides from context.",
+  "settingsSpeechDictionaryMisheardHeading": "Misheard as",
+  "settingsSpeechDictionaryMisheardHint": "Cuban Eddies; Cooper Netties",
+  "settingsSpeechDictionaryNoMatchCreate": "Add \"{query}\"",
+  "@settingsSpeechDictionaryNoMatchCreate": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSpeechDictionaryNoMatchQuery": "No terms match \"{query}\"",
+  "@settingsSpeechDictionaryNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSpeechDictionarySearchHint": "Search terms…",
+  "settingsSpeechDictionarySubtitle": "Names, places and jargon for transcription",
+  "settingsSpeechDictionaryTermHint": "Kubernetes",
+  "settingsSpeechDictionaryTermLabel": "Term",
+  "settingsSpeechDictionaryTitle": "Speech dictionary",
   "settingsSpeechSubtitle": "Voice and reading aloud",
   "settingsSpeechTitle": "Speech",
   "settingsSyncConflictsSubtitle": "Resolve sync conflicts",
@@ -8686,12 +8736,6 @@
   "sidebarWakesQueuedLabel": "Queued",
   "sidebarWakesWorkingLabel": "Working",
   "skillsSectionTitle": "Skills",
-  "speechDictionaryHelper": "Semicolon-separated terms (max 50 chars) for better speech recognition",
-  "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
-  "speechDictionaryLabel": "Speech Dictionary",
-  "speechDictionarySectionDescription": "Add terms that are often misspelled by speech recognition (names, places, technical terms)",
-  "speechDictionarySectionTitle": "Speech recognition",
-  "speechDictionaryWarning": "Large dictionary ({count} terms) may increase API costs",
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
   "speechNoAudioRecorded": "No audio was recorded. Try again.",
@@ -8994,6 +9038,7 @@
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Measurables",
   "syncStepSavedTaskFilters": "Saved task filters",
+  "syncStepSpeechDictionary": "Speech dictionary",
   "syncVerifiedCelebrationBody": "From here on, everything you write syncs — end-to-end encrypted, machine to machine.",
   "syncVerifiedCelebrationTitle": "Your devices trust each other",
   "syncVerifyModalTitle": "Confirm your device",

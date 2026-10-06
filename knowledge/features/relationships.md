@@ -1783,8 +1783,8 @@ phone number does not go.
 
 **The form** ([relationship_form_modal.dart](../../lib/features/relationships/ui/widgets/relationship_form_modal.dart))
 groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
-names that come up with them — the category speech dictionary's semicolon
-format, parsed by the same `parseSpeechTerms` — the category, and while
+names that come up with them — the speech dictionary's semicolon format,
+parsed by the same `parseSpeechTerms` — the category, and while
 editing the status), **Important** (the consent switch — labelled as the
 request it grants, *Remind me to stay in touch*, so it reads true while off —
 one line saying what it enables, and the cadence presets *only* once it is
@@ -2040,8 +2040,9 @@ the name, the nickname, the person's own `knownTerms` ("Names that come up" in
 the form), then the names and nicknames of the other people in the same
 category. Another person marked private contributes nothing, because the
 terms leave the device with the recording; the subject always does. The
-runner puts these ahead of the category's `speechDictionary` (read from the
-audio entry's category, which the recording inherits from the person) and
+runner puts these ahead of the speech dictionary terms that reach the
+recording (by the audio entry's category, which the recording inherits from
+the person; see [speech dictionary](speech/dictionary.md)) and
 corrects the finished transcript against both, so a misheard name reaches
 the field already spelled the way the user writes it. A failed read of the
 terms costs the correction, never the transcript.

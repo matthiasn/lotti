@@ -377,7 +377,8 @@ sequenceDiagram
 **The original M4A is never modified.** Decoder scratch files are removed as soon
 as decoding finishes, and the MP3 is deleted after success, provider failure,
 transport failure or timeout. The audio block precedes the text block so the task
-prompt and category speech dictionary guide recognition.
+prompt and the speech dictionary terms that reach the recording guide
+recognition.
 
 Mistral's instruction-following Voxtral models use the same lifecycle and
 buffered chat route. `temporary_mp3_chat_audio_transcriber.dart` owns the

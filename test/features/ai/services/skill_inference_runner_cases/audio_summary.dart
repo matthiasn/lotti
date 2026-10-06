@@ -38,7 +38,7 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
         String oneLiner = 'Agreed to ship the export flow behind a flag.',
         String tldr = 'The team chose a flagged rollout.',
         String summary = '## Decisions\n- Ship behind a flag',
-        String toolName = entrySummaryToolName,
+        String toolName = recordingSummaryToolName,
         String? rawArguments,
         CompletionUsage? usage,
       }) => CreateChatCompletionStreamResponse(
@@ -234,20 +234,29 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
 
           final tools = captured[1] as List<ChatCompletionTool>?;
           expect(tools, hasLength(1));
-          expect(tools!.first.function.name, entrySummaryToolName);
+          expect(tools!.first.function.name, recordingSummaryToolName);
           expect(captured[2], isNotNull);
         },
       );
 
       test(
-        'injects the task context so the summary is framed by the task as it '
-        'is right now',
+        'frames the summary with the task and its full report, and with '
+        'nothing that grows with the task',
         () async {
           final audio = makeAudioEntity(
             id: 'audio-ctx',
             plainText: longTranscript,
           );
           stubPersistence(audio);
+          when(
+            () => mockAiInputRepo.getEntity('task-1'),
+          ).thenAnswer((_) async => makeTaskEntity('task-1'));
+          when(
+            () => mockTaskSummaryResolver.resolve(
+              'task-1',
+              fullReport: true,
+            ),
+          ).thenAnswer((_) async => 'Export ships behind a flag next week.');
           stubGenerate(() => [makeToolCallChunk()]);
           stubLoggingEvent();
 
@@ -276,8 +285,24 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
                   as String;
 
           expect(userMessage, contains('**Task Context:**'));
-          expect(userMessage, contains('Ship export'));
+          expect(userMessage, contains('"title": "Test task"'));
+          expect(userMessage, contains('"languageCode": null'));
+          expect(userMessage, contains('**Task Report:**'));
+          expect(
+            userMessage,
+            contains('Export ships behind a flag next week.'),
+          );
           expect(userMessage, contains('**Entry Notes:**'));
+          // The task's log — every other recording's transcript among it —
+          // and the linked tasks are never read: they have no size limit.
+          expect(userMessage, isNot(contains('**Related Tasks:**')));
+          verifyNever(
+            () => mockAiInputRepo.buildTaskDetailsJson(
+              id: any(named: 'id'),
+              includeLogEntries: any(named: 'includeLogEntries'),
+            ),
+          );
+          verifyNever(() => mockAiInputRepo.buildLinkedTasksJson(any()));
         },
       );
 
@@ -352,7 +377,15 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
           );
 
           verifyZeroInteractions(mockCloudRepo);
-          verifyNever(() => mockAiInputRepo.getEntity(any()));
+          verifyNever(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
         },
       );
 

@@ -21,6 +21,10 @@ abstract final class SyncModal {
   _offeredSteps = [
     (step: SyncStep.measurables, label: (m) => m.syncStepMeasurables),
     (step: SyncStep.labels, label: (m) => m.syncStepLabels),
+    (
+      step: SyncStep.speechDictionary,
+      label: (m) => m.syncStepSpeechDictionary,
+    ),
     (step: SyncStep.categories, label: (m) => m.syncStepCategories),
     (step: SyncStep.dashboards, label: (m) => m.syncStepDashboards),
     (step: SyncStep.habits, label: (m) => m.syncStepHabits),

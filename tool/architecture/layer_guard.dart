@@ -53,6 +53,7 @@ const featureOrder = <String>[
   'keyboard',
   'categories',
   'labels',
+  'speech_dictionary',
   'insights',
   'lockdown',
   'checklist',

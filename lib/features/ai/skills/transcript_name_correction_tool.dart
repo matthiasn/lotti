@@ -112,12 +112,15 @@ ChatCompletionToolChoiceOption? transcriptNameCorrectionToolChoiceFor(
 /// Decodes the proposals out of [toolCalls]; empty when there is no usable
 /// call. A failed check is no correction, never an error: the phonetic pass
 /// has already run, and this one only adds to it.
+///
+/// [toolName] is the tool that carries the proposals under
+/// [TranscriptNameCorrectionToolArgs.corrections]: this one, unless another
+/// tool reports them alongside its own result.
 List<TranscriptNameProposal> parseTranscriptNameCorrections(
-  List<ChatCompletionMessageToolCall> toolCalls,
-) {
-  final call = toolCalls
-      .where((c) => c.function.name == transcriptNameCorrectionToolName)
-      .firstOrNull;
+  List<ChatCompletionMessageToolCall> toolCalls, {
+  String toolName = transcriptNameCorrectionToolName,
+}) {
+  final call = toolCalls.where((c) => c.function.name == toolName).firstOrNull;
   if (call == null) return const [];
   try {
     final args = jsonDecode(call.function.arguments);
@@ -154,7 +157,9 @@ List<TranscriptNameProposal> parseTranscriptNameCorrections(
 ///   spelled exactly as listed;
 /// * what it replaces is written in the transcript as whole words, at most
 ///   [transcriptNameCorrectionMaxHeardWords] of them, starting with a capital
-///   — a name, not an ordinary lower-case word;
+///   — a name, not an ordinary lower-case word — unless [knownMisheard]
+///   lists it, case-insensitively, as a spelling that term has come out as
+///   before, which is evidence enough for any casing;
 /// * what it replaces is not itself a known name, so a correct name is never
 ///   swapped for another;
 /// * it names its occurrence: only the occurrence inside the proposal's
@@ -167,8 +172,9 @@ List<TranscriptNameProposal> parseTranscriptNameCorrections(
 TranscriptTermCorrectionResult applyTranscriptNameCorrections(
   String transcript,
   List<TranscriptNameProposal> proposals,
-  List<String> terms,
-) {
+  List<String> terms, {
+  Map<String, Set<String>> knownMisheard = const {},
+}) {
   final targets = <String>{};
   final knownLower = <String>{};
   for (final term in terms) {
@@ -190,7 +196,9 @@ TranscriptTermCorrectionResult applyTranscriptNameCorrections(
     final heard = proposal.heard;
     if (!targets.contains(proposal.term)) continue;
     if (heard.isEmpty || heard == proposal.term) continue;
-    if (!_upperInitial.hasMatch(heard)) continue;
+    final misheardBefore =
+        knownMisheard[proposal.term]?.contains(heard.toLowerCase()) ?? false;
+    if (!misheardBefore && !_upperInitial.hasMatch(heard)) continue;
     if (knownLower.contains(heard.toLowerCase())) continue;
     if (_word.allMatches(heard).length >
         transcriptNameCorrectionMaxHeardWords) {

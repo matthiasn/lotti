@@ -128,6 +128,27 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return labelDefinitionsStreamMapper(result).firstOrNull;
   }
 
+  /// Every live speech dictionary entry, ordered by term.
+  Future<List<SpeechDictionaryEntry>> getAllSpeechDictionaryEntries() async =>
+      speechDictionaryEntriesStreamMapper(
+        await allSpeechDictionaryEntries().get(),
+      );
+
+  /// Every speech dictionary entry, tombstones included — what the migration
+  /// must see so it never writes a term the user deleted.
+  Future<List<SpeechDictionaryEntry>>
+  getSpeechDictionaryEntriesIncludingDeleted() async =>
+      speechDictionaryEntriesStreamMapper(
+        await speechDictionaryEntriesIncludingDeleted().get(),
+      );
+
+  /// The entry with [id], deleted or not, or null when there is none.
+  Future<SpeechDictionaryEntry?> getSpeechDictionaryEntryById(
+    String id,
+  ) async => speechDictionaryEntriesStreamMapper(
+    await speechDictionaryEntryByIdIncludingDeleted(id).get(),
+  ).firstOrNull;
+
   Future<List<CategoryDefinition>> getAllCategories() async {
     return categoryDefinitionsStreamMapper(
       await allCategoryDefinitions().get(),
@@ -270,8 +291,28 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
       dashboard: upsertDashboardDefinition,
       categoryDefinition: upsertCategoryDefinition,
       labelDefinition: upsertLabelDefinition,
+      speechDictionaryEntry: upsertSpeechDictionaryEntry,
     );
     return linesAffected;
+  }
+
+  /// Unlike the other definitions, two copies of an entry with the same
+  /// `updatedAt` are ordered by content, so devices that receive them in
+  /// opposite orders still keep the same one (SpeechDictionarySync.tla,
+  /// `TotalOrder`). Exact ties are not rare here: every device migrates a
+  /// legacy term at the same fixed stamp.
+  Future<int> upsertSpeechDictionaryEntry(SpeechDictionaryEntry entry) {
+    return _upsertDefinitionIfNotOlder(
+      entry,
+      readExistingSerialized: () => _serializedById(
+        speechDictionaryEntries,
+        entry.id,
+      ),
+      write: () => into(
+        speechDictionaryEntries,
+      ).insertOnConflictUpdate(speechDictionaryEntryDbEntity(entry)),
+      orderTiesByContent: true,
+    );
   }
 
   Future<int> upsertLabelDefinition(
@@ -321,17 +362,29 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
   /// never the whole document, which for legacy dashboards may not parse.
   /// Read and write share one transaction so the decision cannot interleave
   /// with another writer. Returns the write's result, or 0 when skipped.
+  ///
+  /// With [orderTiesByContent], an exact tie instead applies [incoming] only
+  /// when its canonical JSON sorts at or after the stored document's, so the
+  /// winner does not depend on arrival order. A local re-save that loses
+  /// that comparison is re-stamped by the caller (`_writeLocalEdit`).
   Future<int> _upsertDefinitionIfNotOlder(
     EntityDefinition incoming, {
     required Future<String?> Function() readExistingSerialized,
     required Future<int> Function() write,
+    bool orderTiesByContent = false,
   }) {
     return transaction(() async {
       final existingSerialized = await readExistingSerialized();
       if (existingSerialized != null) {
         final existing =
             json.decode(existingSerialized) as Map<String, dynamic>;
-        if (_definitionIsOlder(incoming, than: existing)) {
+        if (_definitionIsOlder(incoming, than: existing) ||
+            (orderTiesByContent &&
+                _losesContentTie(
+                  incoming,
+                  than: existing,
+                  storedSerialized: existingSerialized,
+                ))) {
           DevLogger.log(
             name: 'JournalDb',
             message:
@@ -358,6 +411,7 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
       dashboard: (_) => dashboardDefinitions,
       categoryDefinition: (_) => categoryDefinitions,
       labelDefinition: (_) => labelDefinitions,
+      speechDictionaryEntry: (_) => speechDictionaryEntries,
     );
     final serialized = await _serializedById(table, definition.id);
     if (serialized == null) return null;
@@ -373,6 +427,22 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
           ? VectorClock.fromJson(vectorClock)
           : null,
     );
+  }
+
+  /// Whether [incoming] carries the stored `updatedAt` exactly but sorts
+  /// before the stored document by canonical JSON — the content order that
+  /// settles a tie the same way on every device.
+  static bool _losesContentTie(
+    EntityDefinition incoming, {
+    required Map<String, dynamic> than,
+    required String storedSerialized,
+  }) {
+    final storedUpdatedAt = _stampOf(than).updatedAt;
+    if (storedUpdatedAt == null ||
+        !incoming.updatedAt.isAtSameMomentAs(storedUpdatedAt)) {
+      return false;
+    }
+    return jsonEncode(incoming).compareTo(storedSerialized) < 0;
   }
 
   static bool _definitionIsOlder(

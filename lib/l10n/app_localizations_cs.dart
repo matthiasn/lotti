@@ -90,10 +90,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addToDictionaryDuplicate => 'Výraz již ve slovníku existuje';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Nelze přidat do slovníku: úkol nemá kategorii';
-
-  @override
   String get addToDictionarySaveFailed => 'Nepodařilo se uložit slovník';
 
   @override
@@ -14676,6 +14672,89 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsSectionsTitle => 'Sekce';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Všechny kategorie';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Vybrat kategorie';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Používej tento výraz jen pro nahrávky v těchto kategoriích, aby se odborné výrazy nedostaly do nesouvisejících přepisů. Bez výběru platí všude.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Kategorie';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Přidat výraz';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '„$term“ se už nebude používat k opravě přepisů.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Smazat výraz';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Výraz „$term“ smazán';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Upravit výraz';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Zatím žádné výrazy';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Přidej jména, místa a odborné výrazy, které rozpoznávání řeči píše špatně.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Zadej výraz';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Slovník se nepodařilo načíst';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Podoby, ve kterých tento výraz často vychází, oddělené středníky. Pomáhají kroku opravy ho rozpoznat, ten však stále rozhoduje podle kontextu.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Přeslechnuto jako';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return 'Přidat „$query“';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Žádný výraz neodpovídá „$query“';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Hledat výrazy…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Jména, místa a odborné výrazy pro přepis';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Výraz';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Slovník pro přepis řeči';
+
+  @override
   String get settingsSpeechSubtitle => 'Hlas a předčítání';
 
   @override
@@ -14921,28 +15000,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Dovednosti';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Výrazy oddělené středníkem (max. 50 znaků) pro lepší rozpoznávání řeči';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Slovník řeči';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Přidejte výrazy, které jsou často chybně rozpoznávány hlasovým vstupem (jména, místa, technické termíny)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Rozpoznávání řeči';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Velký slovník ($count výrazů) může zvýšit náklady na API';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Vyberte jazyk';
@@ -15628,6 +15685,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Uložené filtry úkolů';
+
+  @override
+  String get syncStepSpeechDictionary => 'Slovník pro přepis řeči';
 
   @override
   String get syncVerifiedCelebrationBody =>

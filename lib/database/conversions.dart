@@ -229,6 +229,31 @@ CategoryDefinitionDbEntity categoryDefinitionDbEntity(
   );
 }
 
+List<SpeechDictionaryEntry> speechDictionaryEntriesStreamMapper(
+  List<SpeechDictionaryEntryDbEntity> dbEntities,
+) {
+  return dbEntities
+      .map(
+        (dbEntity) => SpeechDictionaryEntry.fromJson(
+          json.decode(dbEntity.serialized) as Map<String, dynamic>,
+        ),
+      )
+      .toList();
+}
+
+SpeechDictionaryEntryDbEntity speechDictionaryEntryDbEntity(
+  SpeechDictionaryEntry entry,
+) {
+  return SpeechDictionaryEntryDbEntity(
+    id: entry.id,
+    term: entry.term,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+    serialized: jsonEncode(entry),
+    deleted: entry.deletedAt != null,
+  );
+}
+
 LabelDefinition fromLabelDefinitionDbEntity(
   LabelDefinitionDbEntity dbEntity,
 ) {

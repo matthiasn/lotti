@@ -58,8 +58,10 @@ gestures and prompt assembly where an async round trip would be visible.
   `automaticAgentWakesEnabled`) and the live `agentWakeCadence`.
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`,
   `defaultEventTemplateId`.
-- Category-scoped AI and speech context: `speechDictionary`,
-  `correctionExamples`, `knowledgeBrief`.
+- Category-scoped AI context: `correctionExamples`, `knowledgeBrief`. The
+  legacy `speechDictionary` list is read only by the migration into the
+  [speech dictionary](speech/dictionary.md), whose entries name the categories
+  they apply to.
 - The GitHub repository its tasks work in, `githubRepository` (`owner/repo`),
   offered while this device holds a GitHub token GitHub accepts — see
   [GitHub pull requests](github.md#repositories).

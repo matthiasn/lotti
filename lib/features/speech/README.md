@@ -22,8 +22,9 @@ check-in.
 - **Turns speech into text.** Transcription runs after the recording is saved,
   using whichever model the user configured, including local ones. There is no
   live "watch the words appear" mode — the recording is always saved first.
-- **Learns the user's vocabulary.** Names, jargon and product terms can be added
-  to a per-area speech dictionary that guides recognition, editable straight from
+- **Learns the user's vocabulary.** Names, jargon and product terms go into the
+  app-wide [speech dictionary](../speech_dictionary/README.md), which guides
+  recognition and corrects what it still gets wrong — editable straight from
   the editor.
 - **Keeps the language straight.** Each recording carries its language, so
   transcription and later AI work use the right one.
@@ -32,7 +33,7 @@ check-in.
 
 Audio capture and the recorder state machine; the app-wide playback controller;
 waveform extraction and caching; the transcript-maintenance UI; and the
-category speech-dictionary helper used from the editor.
+editor's *Add to Dictionary*, which hands the word to the speech dictionary.
 
 It does **not** own provider configuration or the inference stack — transcription
 calls into [ai](../ai/README.md) after the recording is on disk.

@@ -19,6 +19,8 @@ enum _Media {
   shortTranscript,
   longTranscript,
   summarisedAudio,
+  // A transcript whose composite step never wrote the text.
+  heldTranscript,
   deletedAudio,
   task,
 }
@@ -42,14 +44,22 @@ JournalEntity _entity(_Media media, int index) {
       text: 'my notes',
       dateFrom: date,
     ),
+    // A transcription writes its transcript as the text too.
     _Media.shortTranscript => backfillAudio(
       id: id,
       transcript: 'short',
+      text: 'short',
       dateFrom: date,
     ),
     _Media.longTranscript || _Media.summarisedAudio => backfillAudio(
       id: id,
       transcript: longTranscript,
+      text: longTranscript,
+      dateFrom: date,
+    ),
+    _Media.heldTranscript => backfillAudio(
+      id: id,
+      transcript: 'short',
       dateFrom: date,
     ),
     _Media.deletedAudio => backfillAudio(
@@ -71,6 +81,7 @@ InferenceBackfillKind? _expectedKind(_Media media) => switch (media) {
   _Media.bareImage => InferenceBackfillKind.imageAnalysis,
   _Media.bareAudio => InferenceBackfillKind.transcription,
   _Media.longTranscript => InferenceBackfillKind.audioSummary,
+  _Media.heldTranscript => InferenceBackfillKind.audioSummary,
   _ => null,
 };
 
@@ -166,14 +177,36 @@ void main() {
 
     test('a transcript too short for the summary run needs nothing', () {
       expect(
-        missingInferenceFor(backfillAudio(transcript: 'Buy milk.'), const []),
+        missingInferenceFor(
+          backfillAudio(transcript: 'Buy milk.', text: 'Buy milk.'),
+          const [],
+        ),
         isNull,
       );
     });
 
     test('a summarised recording needs nothing', () {
       expect(
-        missingInferenceFor(backfillAudio(transcript: longTranscript), [
+        missingInferenceFor(
+          backfillAudio(transcript: longTranscript, text: longTranscript),
+          [backfillResponse(AiResponseType.audioSummary)],
+        ),
+        isNull,
+      );
+    });
+
+    test('a transcript whose text was never written needs its summary, '
+        'however short — the summary run writes the text', () {
+      expect(
+        missingInferenceFor(backfillAudio(transcript: 'Buy milk.'), const []),
+        InferenceBackfillKind.audioSummary,
+      );
+    });
+
+    test('a summarised transcript whose text is empty needs nothing: the '
+        'user cleared it', () {
+      expect(
+        missingInferenceFor(backfillAudio(transcript: 'Buy milk.'), [
           backfillResponse(AiResponseType.audioSummary),
         ]),
         isNull,
@@ -213,11 +246,13 @@ void main() {
           entryId: 'new',
           kind: InferenceBackfillKind.transcription,
           capturedAt: DateTime(2024, 3, 2),
+          createdAt: newer.meta.createdAt,
         ),
         InferenceBackfillCandidate(
           entryId: 'old',
           kind: InferenceBackfillKind.imageAnalysis,
           capturedAt: DateTime(2024, 3),
+          createdAt: older.meta.createdAt,
         ),
       ]);
     });
@@ -296,6 +331,7 @@ void main() {
       entryId: 'e',
       kind: InferenceBackfillKind.transcription,
       capturedAt: testFixedDate,
+      createdAt: testFixedDate,
     );
 
     test('is keyed by kind and entry', () {
@@ -310,6 +346,7 @@ void main() {
           entryId: 'e',
           kind: InferenceBackfillKind.transcription,
           capturedAt: testFixedDate,
+          createdAt: testFixedDate,
         ),
       );
       expect(
@@ -318,6 +355,7 @@ void main() {
           entryId: 'e',
           kind: InferenceBackfillKind.transcription,
           capturedAt: testFixedDate,
+          createdAt: testFixedDate,
         ).hashCode,
       );
       expect(
@@ -327,6 +365,7 @@ void main() {
             entryId: 'e',
             kind: InferenceBackfillKind.audioSummary,
             capturedAt: testFixedDate,
+            createdAt: testFixedDate,
           ),
         ),
       );

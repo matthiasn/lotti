@@ -93,10 +93,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Begriff bereits im Wörterbuch vorhanden';
 
   @override
-  String get addToDictionaryNoCategory =>
-      'Kann nicht zum Wörterbuch hinzufügen: Aufgabe hat keine Kategorie';
-
-  @override
   String get addToDictionarySaveFailed =>
       'Wörterbuch konnte nicht gespeichert werden';
 
@@ -14588,6 +14584,89 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsSectionsTitle => 'Bereiche';
 
   @override
+  String get settingsSpeechDictionaryAllCategories => 'Alle Kategorien';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesChoose => 'Kategorien wählen';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesDescription =>
+      'Verwende diesen Begriff nur für Aufnahmen in diesen Kategorien, damit Spezialwörter nicht in fremde Transkripte rutschen. Ohne Auswahl gilt er überall.';
+
+  @override
+  String get settingsSpeechDictionaryCategoriesHeading => 'Kategorien';
+
+  @override
+  String get settingsSpeechDictionaryCreateTitle => 'Begriff hinzufügen';
+
+  @override
+  String settingsSpeechDictionaryDeleteConfirmMessage(String term) {
+    return '„$term“ wird nicht mehr zur Korrektur von Transkripten verwendet.';
+  }
+
+  @override
+  String get settingsSpeechDictionaryDeleteConfirmTitle => 'Begriff löschen';
+
+  @override
+  String settingsSpeechDictionaryDeleteSuccess(String term) {
+    return 'Begriff „$term“ gelöscht';
+  }
+
+  @override
+  String get settingsSpeechDictionaryEditTitle => 'Begriff bearbeiten';
+
+  @override
+  String get settingsSpeechDictionaryEmptyState => 'Noch keine Begriffe';
+
+  @override
+  String get settingsSpeechDictionaryEmptyStateHint =>
+      'Füge Namen, Orte und Fachbegriffe hinzu, die die Spracherkennung falsch schreibt.';
+
+  @override
+  String get settingsSpeechDictionaryErrorEmpty => 'Gib einen Begriff ein';
+
+  @override
+  String get settingsSpeechDictionaryErrorLoading =>
+      'Das Wörterbuch konnte nicht geladen werden';
+
+  @override
+  String get settingsSpeechDictionaryMisheardDescription =>
+      'Schreibweisen, als die dieser Begriff oft herauskommt, durch Semikolons getrennt. Sie helfen dem Korrekturschritt, ihn zu erkennen – entschieden wird weiterhin nach Kontext.';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHeading => 'Verhört als';
+
+  @override
+  String get settingsSpeechDictionaryMisheardHint =>
+      'Cuban Eddies; Cooper Netties';
+
+  @override
+  String settingsSpeechDictionaryNoMatchCreate(String query) {
+    return '„$query“ hinzufügen';
+  }
+
+  @override
+  String settingsSpeechDictionaryNoMatchQuery(String query) {
+    return 'Keine Begriffe passen zu „$query“';
+  }
+
+  @override
+  String get settingsSpeechDictionarySearchHint => 'Begriffe durchsuchen…';
+
+  @override
+  String get settingsSpeechDictionarySubtitle =>
+      'Namen, Orte und Fachbegriffe für die Transkription';
+
+  @override
+  String get settingsSpeechDictionaryTermHint => 'Kubernetes';
+
+  @override
+  String get settingsSpeechDictionaryTermLabel => 'Begriff';
+
+  @override
+  String get settingsSpeechDictionaryTitle => 'Sprachwörterbuch';
+
+  @override
   String get settingsSpeechSubtitle => 'Stimme und Vorlesen';
 
   @override
@@ -14831,28 +14910,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get skillsSectionTitle => 'Skills';
-
-  @override
-  String get speechDictionaryHelper =>
-      'Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung';
-
-  @override
-  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
-
-  @override
-  String get speechDictionaryLabel => 'Sprachwörterbuch';
-
-  @override
-  String get speechDictionarySectionDescription =>
-      'Begriffe hinzufügen, die von der Spracherkennung oft falsch geschrieben werden (Namen, Orte, Fachbegriffe)';
-
-  @override
-  String get speechDictionarySectionTitle => 'Spracherkennung';
-
-  @override
-  String speechDictionaryWarning(Object count) {
-    return 'Großes Wörterbuch ($count Begriffe) kann API-Kosten erhöhen';
-  }
 
   @override
   String get speechModalSelectLanguage => 'Sprache auswählen';
@@ -15543,6 +15600,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepSavedTaskFilters => 'Gespeicherte Aufgabenfilter';
+
+  @override
+  String get syncStepSpeechDictionary => 'Sprachwörterbuch';
 
   @override
   String get syncVerifiedCelebrationBody =>

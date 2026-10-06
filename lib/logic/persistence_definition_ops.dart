@@ -26,14 +26,10 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     );
     if (written == null) return 0;
     final (entityDefinition, linesAffected) = written;
-    final typeNotification = switch (entityDefinition) {
-      CategoryDefinition() => categoriesNotification,
-      HabitDefinition() => habitsNotification,
-      DashboardDefinition() => dashboardsNotification,
-      MeasurableDataType() => measurablesNotification,
-      LabelDefinition() => labelsNotification,
-    };
-    updateNotifications.notify({entityDefinition.id, typeNotification});
+    updateNotifications.notify({
+      entityDefinition.id,
+      _typeNotification(entityDefinition),
+    });
     if (entityDefinition is MeasurableDataType &&
         measurementDefinitionAffectsFts(
           previousMeasurable,
@@ -49,6 +45,39 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     );
     return linesAffected;
   }
+
+  /// Writes [definition] only if the recency gate accepts it as it is —
+  /// never re-stamped past a stored copy — then announces and sends it.
+  ///
+  /// For definitions a device derives on its own rather than a user's edit,
+  /// such as migrated speech dictionary entries: whatever is stored, written
+  /// here or arrived from another device, must win over them. Returns the
+  /// write's row count, 0 when the stored copy won and nothing was sent.
+  Future<int> seedEntityDefinitionImpl(EntityDefinition definition) async {
+    final linesAffected = await journalDb.upsertEntityDefinition(definition);
+    if (linesAffected == 0) return 0;
+    updateNotifications.notify({
+      definition.id,
+      _typeNotification(definition),
+    });
+    await outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: definition,
+        status: SyncEntryStatus.update,
+      ),
+    );
+    return linesAffected;
+  }
+
+  static String _typeNotification(EntityDefinition definition) =>
+      switch (definition) {
+        CategoryDefinition() => categoriesNotification,
+        HabitDefinition() => habitsNotification,
+        DashboardDefinition() => dashboardsNotification,
+        MeasurableDataType() => measurablesNotification,
+        LabelDefinition() => labelsNotification,
+        SpeechDictionaryEntry() => speechDictionaryNotification,
+      };
 
   /// Writes a local definition edit so that it applies and wins on sync.
   ///

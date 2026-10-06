@@ -84,15 +84,6 @@ void main() {
       expect(message, isNotNull);
     });
 
-    test('returns noCategory message for noCategory result', () {
-      final message = getDictionaryResultMessage(
-        SpeechDictionaryResult.noCategory,
-        messages,
-      );
-      expect(message, equals(messages.addToDictionaryNoCategory));
-      expect(message, isNotNull);
-    });
-
     test('returns duplicate message for duplicate result', () {
       final message = getDictionaryResultMessage(
         SpeechDictionaryResult.duplicate,
@@ -136,14 +127,6 @@ void main() {
       expect(message, isNull);
     });
 
-    test('returns null for categoryNotFound result (silent)', () {
-      final message = getDictionaryResultMessage(
-        SpeechDictionaryResult.categoryNotFound,
-        messages,
-      );
-      expect(message, isNull);
-    });
-
     test('covers all SpeechDictionaryResult enum values', () {
       // Ensure every enum value is handled
       for (final result in SpeechDictionaryResult.values) {
@@ -152,8 +135,7 @@ void main() {
 
         // Verify expected nullability based on result type
         if (result == SpeechDictionaryResult.emptyTerm ||
-            result == SpeechDictionaryResult.entryNotFound ||
-            result == SpeechDictionaryResult.categoryNotFound) {
+            result == SpeechDictionaryResult.entryNotFound) {
           expect(message, isNull, reason: '$result should be silent');
         } else {
           expect(message, isNotNull, reason: '$result should have a message');
@@ -345,10 +327,6 @@ void main() {
     for (final (result, expectedToast)
         in <(SpeechDictionaryResult, String? Function(AppLocalizations))>[
           (SpeechDictionaryResult.success, (m) => m.addToDictionarySuccess),
-          (
-            SpeechDictionaryResult.noCategory,
-            (m) => m.addToDictionaryNoCategory,
-          ),
           (SpeechDictionaryResult.duplicate, (m) => m.addToDictionaryDuplicate),
           (SpeechDictionaryResult.termTooLong, (m) => m.addToDictionaryTooLong),
           (

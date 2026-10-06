@@ -37,6 +37,7 @@ import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settin
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
+import 'package:lotti/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
@@ -199,6 +200,10 @@ void main() {
       'definitions': (SettingsMobileBranchPage, null),
       'definitions/categories': (CategoriesListPage, CategoriesListBody),
       'definitions/labels': (LabelsListPage, LabelsListBody),
+      'definitions/speech-dictionary': (
+        SpeechDictionaryListPage,
+        SpeechDictionaryListBody,
+      ),
       'definitions/habits': (HabitSettingsPage, HabitSettingsBody),
       'definitions/dashboards': (DashboardSettingsPage, DashboardSettingsBody),
       'definitions/measurables': (MeasurablesPage, MeasurablesBody),

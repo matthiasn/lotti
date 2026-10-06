@@ -29,6 +29,7 @@ InferenceBackfillCandidate _candidate(
   entryId: entryId,
   kind: kind,
   capturedAt: testFixedDate,
+  createdAt: testFixedDate,
 );
 
 /// A handled result whose profile names [modelId], so a test can tell which

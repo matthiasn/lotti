@@ -16,7 +16,6 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_knowledge_brief.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
-import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -338,13 +337,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   _buildGitHubRepository(category),
                 ],
               ),
-            SettingsFormSection(
-              title: context.messages.speechDictionarySectionTitle,
-              description: context.messages.speechDictionarySectionDescription,
-              children: [
-                _buildSpeechDictionary(category),
-              ],
-            ),
             SettingsFormSection(
               title: context.messages.correctionExamplesSectionTitle,
               description:

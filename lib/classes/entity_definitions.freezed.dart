@@ -1861,6 +1861,10 @@ EntityDefinition _$EntityDefinitionFromJson(
           return DashboardDefinition.fromJson(
             json
           );
+                case 'speechDictionaryEntry':
+          return SpeechDictionaryEntry.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -1876,7 +1880,7 @@ EntityDefinition _$EntityDefinitionFromJson(
 /// @nodoc
 mixin _$EntityDefinition {
 
- String get id; DateTime get createdAt; DateTime get updatedAt; VectorClock? get vectorClock; DateTime? get deletedAt; bool? get private;
+ String get id; DateTime get createdAt; DateTime get updatedAt; VectorClock? get vectorClock; DateTime? get deletedAt;
 /// Create a copy of EntityDefinition
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1889,16 +1893,16 @@ $EntityDefinitionCopyWith<EntityDefinition> get copyWith => _$EntityDefinitionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EntityDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.private, private) || other.private == private));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EntityDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,vectorClock,deletedAt,private);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,vectorClock,deletedAt);
 
 @override
 String toString() {
-  return 'EntityDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt, private: $private)';
+  return 'EntityDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
 }
 
 
@@ -1909,7 +1913,7 @@ abstract mixin class $EntityDefinitionCopyWith<$Res>  {
   factory $EntityDefinitionCopyWith(EntityDefinition value, $Res Function(EntityDefinition) _then) = _$EntityDefinitionCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt, bool private
+ String id, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt
 });
 
 
@@ -1926,15 +1930,14 @@ class _$EntityDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of EntityDefinition
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? private = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,private: null == private ? _self.private! : private // ignore: cast_nullable_to_non_nullable
-as bool,
+as DateTime?,
   ));
 }
 
@@ -1955,7 +1958,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( MeasurableDataType value)?  measurableDataType,TResult Function( CategoryDefinition value)?  categoryDefinition,TResult Function( LabelDefinition value)?  labelDefinition,TResult Function( HabitDefinition value)?  habit,TResult Function( DashboardDefinition value)?  dashboard,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( MeasurableDataType value)?  measurableDataType,TResult Function( CategoryDefinition value)?  categoryDefinition,TResult Function( LabelDefinition value)?  labelDefinition,TResult Function( HabitDefinition value)?  habit,TResult Function( DashboardDefinition value)?  dashboard,TResult Function( SpeechDictionaryEntry value)?  speechDictionaryEntry,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
@@ -1963,7 +1966,8 @@ return measurableDataType(_that);case CategoryDefinition() when categoryDefiniti
 return categoryDefinition(_that);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that);case HabitDefinition() when habit != null:
 return habit(_that);case DashboardDefinition() when dashboard != null:
-return dashboard(_that);case _:
+return dashboard(_that);case SpeechDictionaryEntry() when speechDictionaryEntry != null:
+return speechDictionaryEntry(_that);case _:
   return orElse();
 
 }
@@ -1981,7 +1985,7 @@ return dashboard(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( MeasurableDataType value)  measurableDataType,required TResult Function( CategoryDefinition value)  categoryDefinition,required TResult Function( LabelDefinition value)  labelDefinition,required TResult Function( HabitDefinition value)  habit,required TResult Function( DashboardDefinition value)  dashboard,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( MeasurableDataType value)  measurableDataType,required TResult Function( CategoryDefinition value)  categoryDefinition,required TResult Function( LabelDefinition value)  labelDefinition,required TResult Function( HabitDefinition value)  habit,required TResult Function( DashboardDefinition value)  dashboard,required TResult Function( SpeechDictionaryEntry value)  speechDictionaryEntry,}){
 final _that = this;
 switch (_that) {
 case MeasurableDataType():
@@ -1989,7 +1993,8 @@ return measurableDataType(_that);case CategoryDefinition():
 return categoryDefinition(_that);case LabelDefinition():
 return labelDefinition(_that);case HabitDefinition():
 return habit(_that);case DashboardDefinition():
-return dashboard(_that);}
+return dashboard(_that);case SpeechDictionaryEntry():
+return speechDictionaryEntry(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -2003,7 +2008,7 @@ return dashboard(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( MeasurableDataType value)?  measurableDataType,TResult? Function( CategoryDefinition value)?  categoryDefinition,TResult? Function( LabelDefinition value)?  labelDefinition,TResult? Function( HabitDefinition value)?  habit,TResult? Function( DashboardDefinition value)?  dashboard,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( MeasurableDataType value)?  measurableDataType,TResult? Function( CategoryDefinition value)?  categoryDefinition,TResult? Function( LabelDefinition value)?  labelDefinition,TResult? Function( HabitDefinition value)?  habit,TResult? Function( DashboardDefinition value)?  dashboard,TResult? Function( SpeechDictionaryEntry value)?  speechDictionaryEntry,}){
 final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
@@ -2011,7 +2016,8 @@ return measurableDataType(_that);case CategoryDefinition() when categoryDefiniti
 return categoryDefinition(_that);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that);case HabitDefinition() when habit != null:
 return habit(_that);case DashboardDefinition() when dashboard != null:
-return dashboard(_that);case _:
+return dashboard(_that);case SpeechDictionaryEntry() when speechDictionaryEntry != null:
+return speechDictionaryEntry(_that);case _:
   return null;
 
 }
@@ -2028,14 +2034,15 @@ return dashboard(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String term,  VectorClock? vectorClock,  List<String>? categoryIds,  List<String>? misheardAs,  DateTime? deletedAt)?  speechDictionaryEntry,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.knowledgeBrief,_that.githubRepository,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.agentWakeCadence,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
-return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case _:
+return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case SpeechDictionaryEntry() when speechDictionaryEntry != null:
+return speechDictionaryEntry(_that.id,_that.createdAt,_that.updatedAt,_that.term,_that.vectorClock,_that.categoryIds,_that.misheardAs,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -2053,14 +2060,15 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)  measurableDataType,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)  categoryDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)  labelDefinition,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)  habit,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)  dashboard,required TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  String term,  VectorClock? vectorClock,  List<String>? categoryIds,  List<String>? misheardAs,  DateTime? deletedAt)  speechDictionaryEntry,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType():
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition():
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.knowledgeBrief,_that.githubRepository,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.agentWakeCadence,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition():
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition():
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition():
-return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);}
+return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case SpeechDictionaryEntry():
+return speechDictionaryEntry(_that.id,_that.createdAt,_that.updatedAt,_that.term,_that.vectorClock,_that.categoryIds,_that.misheardAs,_that.deletedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -2074,14 +2082,15 @@ return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String displayName,  String description,  String unitName,  int version,  VectorClock? vectorClock,  DateTime? deletedAt,  bool? private,  bool? favorite,  String? categoryId,  AggregationType? aggregationType, @JsonKey(unknownEnumValue: MeasurableValueKind.number)  MeasurableValueKind? valueKind,  List<MeasurableChoice>? choices)?  measurableDataType,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  VectorClock? vectorClock,  bool private,  bool active,  bool? favorite,  String? color,  String? categoryId,  DateTime? deletedAt,  String? defaultLanguageCode, @CategoryIconConverter()  CategoryIcon? icon,  List<String>? speechDictionary,  List<ChecklistCorrectionExample>? correctionExamples,  String? knowledgeBrief,  String? githubRepository,  String? defaultProfileId,  bool? automaticInferenceEnabled,  String? defaultTemplateId,  bool? automaticAgentWakesEnabled, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentWakeCadence? agentWakeCadence,  String? defaultEventTemplateId,  bool? isAvailableForDayPlan)?  categoryDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String color,  VectorClock? vectorClock,  String? description,  int? sortOrder,  List<String>? applicableCategoryIds,  DateTime? deletedAt,  bool? private)?  labelDefinition,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String name,  String description,  HabitSchedule habitSchedule,  VectorClock? vectorClock,  bool active,  bool private,  AutoCompleteRule? autoCompleteRule,  String? version,  DateTime? activeFrom,  DateTime? activeUntil,  DateTime? deletedAt, @Deprecated('Tags concept removed — kept for JSON backward compatibility')  String? defaultStoryId,  String? categoryId,  bool? priority,  bool autoCompleteNotify)?  habit,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime lastReviewed,  String name,  String description,  List<DashboardItem> items,  String version,  VectorClock? vectorClock,  bool active,  bool private,  DateTime? reviewAt,  int days,  DateTime? deletedAt,  String? categoryId)?  dashboard,TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  String term,  VectorClock? vectorClock,  List<String>? categoryIds,  List<String>? misheardAs,  DateTime? deletedAt)?  speechDictionaryEntry,}) {final _that = this;
 switch (_that) {
 case MeasurableDataType() when measurableDataType != null:
 return measurableDataType(_that.id,_that.createdAt,_that.updatedAt,_that.displayName,_that.description,_that.unitName,_that.version,_that.vectorClock,_that.deletedAt,_that.private,_that.favorite,_that.categoryId,_that.aggregationType,_that.valueKind,_that.choices);case CategoryDefinition() when categoryDefinition != null:
 return categoryDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.vectorClock,_that.private,_that.active,_that.favorite,_that.color,_that.categoryId,_that.deletedAt,_that.defaultLanguageCode,_that.icon,_that.speechDictionary,_that.correctionExamples,_that.knowledgeBrief,_that.githubRepository,_that.defaultProfileId,_that.automaticInferenceEnabled,_that.defaultTemplateId,_that.automaticAgentWakesEnabled,_that.agentWakeCadence,_that.defaultEventTemplateId,_that.isAvailableForDayPlan);case LabelDefinition() when labelDefinition != null:
 return labelDefinition(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.color,_that.vectorClock,_that.description,_that.sortOrder,_that.applicableCategoryIds,_that.deletedAt,_that.private);case HabitDefinition() when habit != null:
 return habit(_that.id,_that.createdAt,_that.updatedAt,_that.name,_that.description,_that.habitSchedule,_that.vectorClock,_that.active,_that.private,_that.autoCompleteRule,_that.version,_that.activeFrom,_that.activeUntil,_that.deletedAt,_that.defaultStoryId,_that.categoryId,_that.priority,_that.autoCompleteNotify);case DashboardDefinition() when dashboard != null:
-return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case _:
+return dashboard(_that.id,_that.createdAt,_that.updatedAt,_that.lastReviewed,_that.name,_that.description,_that.items,_that.version,_that.vectorClock,_that.active,_that.private,_that.reviewAt,_that.days,_that.deletedAt,_that.categoryId);case SpeechDictionaryEntry() when speechDictionaryEntry != null:
+return speechDictionaryEntry(_that.id,_that.createdAt,_that.updatedAt,_that.term,_that.vectorClock,_that.categoryIds,_that.misheardAs,_that.deletedAt);case _:
   return null;
 
 }
@@ -2105,7 +2114,7 @@ class MeasurableDataType implements EntityDefinition {
  final  int version;
 @override final  VectorClock? vectorClock;
 @override final  DateTime? deletedAt;
-@override final  bool? private;
+ final  bool? private;
  final  bool? favorite;
  final  String? categoryId;
  final  AggregationType? aggregationType;
@@ -2218,7 +2227,7 @@ class CategoryDefinition implements EntityDefinition {
 @override final  DateTime updatedAt;
  final  String name;
 @override final  VectorClock? vectorClock;
-@override final  bool private;
+ final  bool private;
  final  bool active;
  final  bool? favorite;
  final  String? color;
@@ -2226,7 +2235,15 @@ class CategoryDefinition implements EntityDefinition {
 @override final  DateTime? deletedAt;
  final  String? defaultLanguageCode;
 @CategoryIconConverter() final  CategoryIcon? icon;
+/// The category's speech dictionary before the dictionary became an
+/// entity of its own ([SpeechDictionaryEntry]). Nothing writes it any
+/// more; `SpeechDictionaryMigration` reads it into entries scoped to this
+/// category, and it is kept so a device that migrates later still can.
  final  List<String>? _speechDictionary;
+/// The category's speech dictionary before the dictionary became an
+/// entity of its own ([SpeechDictionaryEntry]). Nothing writes it any
+/// more; `SpeechDictionaryMigration` reads it into entries scoped to this
+/// category, and it is kept so a device that migrates later still can.
  List<String>? get speechDictionary {
   final value = _speechDictionary;
   if (value == null) return null;
@@ -2281,7 +2298,7 @@ class CategoryDefinition implements EntityDefinition {
 /// which is the value `createTaskAgent` hardcoded before this existed.
  final  bool? automaticAgentWakesEnabled;
 /// How often task agents in this category wake on their own, unless a
-/// task chooses otherwise. Unlike [automaticAgentWakesEnabled] this is
+/// task chooses otherwise. Unlike `automaticAgentWakesEnabled` this is
 /// live: changing it reaches every task that follows the category. Null
 /// follows the app default — see `resolveAgentWakeCadence`. An unknown
 /// name from a newer build reads as null.
@@ -2411,7 +2428,7 @@ class LabelDefinition implements EntityDefinition {
 }
 
 @override final  DateTime? deletedAt;
-@override final  bool? private;
+ final  bool? private;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -2502,7 +2519,7 @@ class HabitDefinition implements EntityDefinition {
  final  HabitSchedule habitSchedule;
 @override final  VectorClock? vectorClock;
  final  bool active;
-@override final  bool private;
+ final  bool private;
  final  AutoCompleteRule? autoCompleteRule;
  final  String? version;
  final  DateTime? activeFrom;
@@ -2641,7 +2658,7 @@ class DashboardDefinition implements EntityDefinition {
  final  String version;
 @override final  VectorClock? vectorClock;
  final  bool active;
-@override final  bool private;
+ final  bool private;
  final  DateTime? reviewAt;
 @JsonKey() final  int days;
 @override final  DateTime? deletedAt;
@@ -2719,6 +2736,109 @@ as DateTime?,days: null == days ? _self.days : days // ignore: cast_nullable_to_
 as int,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SpeechDictionaryEntry implements EntityDefinition {
+  const SpeechDictionaryEntry({required this.id, required this.createdAt, required this.updatedAt, required this.term, required this.vectorClock, final  List<String>? categoryIds, final  List<String>? misheardAs, this.deletedAt, final  String? $type}): _categoryIds = categoryIds,_misheardAs = misheardAs,$type = $type ?? 'speechDictionaryEntry';
+  factory SpeechDictionaryEntry.fromJson(Map<String, dynamic> json) => _$SpeechDictionaryEntryFromJson(json);
+
+@override final  String id;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+ final  String term;
+@override final  VectorClock? vectorClock;
+ final  List<String>? _categoryIds;
+ List<String>? get categoryIds {
+  final value = _categoryIds;
+  if (value == null) return null;
+  if (_categoryIds is EqualUnmodifiableListView) return _categoryIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  List<String>? _misheardAs;
+ List<String>? get misheardAs {
+  final value = _misheardAs;
+  if (value == null) return null;
+  if (_misheardAs is EqualUnmodifiableListView) return _misheardAs;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntityDefinition
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SpeechDictionaryEntryCopyWith<SpeechDictionaryEntry> get copyWith => _$SpeechDictionaryEntryCopyWithImpl<SpeechDictionaryEntry>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SpeechDictionaryEntryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SpeechDictionaryEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.term, term) || other.term == term)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&const DeepCollectionEquality().equals(other._categoryIds, _categoryIds)&&const DeepCollectionEquality().equals(other._misheardAs, _misheardAs)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,term,vectorClock,const DeepCollectionEquality().hash(_categoryIds),const DeepCollectionEquality().hash(_misheardAs),deletedAt);
+
+@override
+String toString() {
+  return 'EntityDefinition.speechDictionaryEntry(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, term: $term, vectorClock: $vectorClock, categoryIds: $categoryIds, misheardAs: $misheardAs, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SpeechDictionaryEntryCopyWith<$Res> implements $EntityDefinitionCopyWith<$Res> {
+  factory $SpeechDictionaryEntryCopyWith(SpeechDictionaryEntry value, $Res Function(SpeechDictionaryEntry) _then) = _$SpeechDictionaryEntryCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, DateTime createdAt, DateTime updatedAt, String term, VectorClock? vectorClock, List<String>? categoryIds, List<String>? misheardAs, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$SpeechDictionaryEntryCopyWithImpl<$Res>
+    implements $SpeechDictionaryEntryCopyWith<$Res> {
+  _$SpeechDictionaryEntryCopyWithImpl(this._self, this._then);
+
+  final SpeechDictionaryEntry _self;
+  final $Res Function(SpeechDictionaryEntry) _then;
+
+/// Create a copy of EntityDefinition
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? term = null,Object? vectorClock = freezed,Object? categoryIds = freezed,Object? misheardAs = freezed,Object? deletedAt = freezed,}) {
+  return _then(SpeechDictionaryEntry(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,term: null == term ? _self.term : term // ignore: cast_nullable_to_non_nullable
+as String,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,categoryIds: freezed == categoryIds ? _self._categoryIds : categoryIds // ignore: cast_nullable_to_non_nullable
+as List<String>?,misheardAs: freezed == misheardAs ? _self._misheardAs : misheardAs // ignore: cast_nullable_to_non_nullable
+as List<String>?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

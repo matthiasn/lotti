@@ -167,6 +167,7 @@ SECONDS = {
     "SyncSettingsFlags": 1,
     "SavedTaskFilterSyncThree": 200,
     "SavedTaskFilterSync": 35,
+    "SpeechDictionarySync": 5,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,
     # Measured locally (4 shared cores) when added; refresh from CI.
@@ -221,6 +222,7 @@ SECONDS = {
     # Measured locally (4 shared cores) when added; refresh from CI.
     "TranscriptionRun": 12,
     "TranscriptionRunExhaust": 44,
+    "TranscriptionRunHeld": 20,
     # Measured locally (two workers, 2 GB heap) when added; refresh from CI.
     "EmbeddingFreshness": 30,
     "EmbeddingFreshnessTwo": 65,

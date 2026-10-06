@@ -136,6 +136,56 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  group('seedEntityDefinitionImpl', () {
+    final migrated = SpeechDictionaryEntry(
+      id: 'entry-kubernetes',
+      createdAt: DateTime.utc(1970),
+      updatedAt: DateTime.utc(1970),
+      term: 'Kubernetes',
+      vectorClock: null,
+    );
+
+    test('announces and sends a definition the gate accepted', () async {
+      when(
+        () => mocks.journalDb.upsertEntityDefinition(migrated),
+      ).thenAnswer((_) async => 1);
+
+      expect(await ops.seedEntityDefinitionImpl(migrated), 1);
+
+      verify(
+        () => mocks.updateNotifications.notify({
+          migrated.id,
+          speechDictionaryNotification,
+        }),
+      ).called(1);
+      final sent =
+          verify(
+                () => outboxService.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncMessage;
+      expect(
+        sent.mapOrNull(entityDefinition: (s) => s.entityDefinition),
+        migrated,
+      );
+    });
+
+    // Unlike a user's edit, a seeded definition is never re-stamped past a
+    // refusing copy: whatever is stored must win over it
+    // (SpeechDictionarySync.tla, AbsentOnly).
+    test('writes nothing more when the stored copy wins', () async {
+      when(
+        () => mocks.journalDb.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 0);
+
+      expect(await ops.seedEntityDefinitionImpl(migrated), 0);
+
+      verify(() => mocks.journalDb.upsertEntityDefinition(any())).called(1);
+      verifyNever(() => mocks.journalDb.definitionStamp(any()));
+      verifyNever(() => mocks.updateNotifications.notify(any()));
+      verifyNever(() => outboxService.enqueueMessage(any()));
+    });
+  });
+
   test('renaming a choice reindexes historical measurements', () async {
     final previous = measurableHydration;
     final renamed = previous.copyWith(
