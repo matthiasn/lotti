@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.44]
+
+### Added
+
+- **A task now offers to catch up on photos and recordings its AI never
+  processed.** When a task's category has automatic inference switched on,
+  every image without an analysis, recording without a transcript, and
+  transcribed recording without a summary appears as its own suggestion in
+  the task's proposed changes, using the models of the task's inference
+  profile. Accepting one runs just that entry; *Confirm all* runs them one
+  after another. Nothing is offered for an entry whose inference is already
+  running, and dismissing a suggestion hides it on that device.
+
+### Fixed
+
+- **Confirm all on a person's suggestions could stop partway.** The batch ran
+  inside the suggestions band itself, and the chat shows that band only while
+  it is on screen, so scrolling away mid-batch quietly left the remaining
+  suggestions unconfirmed. The batch now runs on its own, and every
+  suggestion you confirmed together is applied whether or not the band is
+  still showing.
+- **Confirming a suggested task could fail for good while private entries
+  were hidden.** A suggestion made from a private check-in was applied with
+  the same reads that hide private entries from the screen, so with private
+  entries hidden the check-in looked gone, the confirmation failed, and the
+  suggestion was withdrawn on every device. Confirming now reads what the
+  agent read, and the task is created, private like its check-in.
+- **Many failures left no trace in the app's logs.** Errors behind a generic
+  "something went wrong" message, in AI, agents, tasks, projects, people,
+  the journal, habits, dashboards and sync setup, were visible only to an
+  attached debugger. They are now written to the app's error log with their
+  stack trace, and the progress notes around them go to the matching logging
+  domain.
+
 ## [1.1.43]
 
 ### Added
