@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -17,6 +15,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
@@ -46,6 +46,7 @@ class OnboardingCaptureToTaskService {
     required this._categoryRepository,
     required this._taskAgentService,
     required this._journalRepository,
+    required this._domainLogger,
     PersistenceLogic? persistenceLogic,
     DateTime Function()? clock,
   }) : _persistenceLogic = persistenceLogic ?? getIt<PersistenceLogic>(),
@@ -57,6 +58,9 @@ class OnboardingCaptureToTaskService {
   final TaskAgentService _taskAgentService;
   final PersistenceLogic _persistenceLogic;
   final JournalRepository _journalRepository;
+
+  /// Receives the best-effort agent assignment and seeding failures.
+  final DomainLogger _domainLogger;
   final DateTime Function() _clock;
 
   static const int _maxFloorTitleLength = 80;
@@ -293,11 +297,12 @@ class OnboardingCaptureToTaskService {
         items: items,
       );
     } catch (e, stackTrace) {
-      developer.log(
-        'Failed to auto-assign agent for onboarding task ${task.id}: $e',
-        name: 'OnboardingCaptureToTaskService',
-        error: e,
+      _domainLogger.error(
+        LogDomain.onboarding,
+        e,
         stackTrace: stackTrace,
+        subDomain: 'OnboardingCaptureToTaskService',
+        message: 'Failed to auto-assign agent for onboarding task ${task.id}',
       );
     }
   }
@@ -342,11 +347,14 @@ class OnboardingCaptureToTaskService {
       );
       await builder.build(_taskAgentService.syncService);
     } catch (e, stackTrace) {
-      developer.log(
-        'Failed to seed checklist proposals for onboarding task $taskId: $e',
-        name: 'OnboardingCaptureToTaskService',
-        error: e,
+      _domainLogger.error(
+        LogDomain.onboarding,
+        e,
         stackTrace: stackTrace,
+        subDomain: 'OnboardingCaptureToTaskService',
+        message:
+            'Failed to seed checklist proposals for onboarding task '
+            '$taskId',
       );
     }
   }
@@ -380,5 +388,6 @@ final onboardingCaptureToTaskServiceProvider =
         categoryRepository: ref.watch(categoryRepositoryProvider),
         taskAgentService: ref.watch(taskAgentServiceProvider),
         journalRepository: ref.watch(journalRepositoryProvider),
+        domainLogger: ref.watch(domainLoggerProvider),
       ),
     );

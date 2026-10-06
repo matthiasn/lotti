@@ -11,19 +11,18 @@ import 'package:http/testing.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
 import 'sse_test_utils.dart';
 
 void main() {
   late MistralInferenceRepository repository;
   late MockHttpClient mockHttpClient;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -34,7 +33,11 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = MistralInferenceRepository(httpClient: mockHttpClient);
+    mockDomainLogger = MockDomainLogger();
+    repository = MistralInferenceRepository(
+      domainLogger: mockDomainLogger,
+      httpClient: mockHttpClient,
+    );
   });
 
   group('MistralInferenceRepository', () {
@@ -82,6 +85,7 @@ void main() {
           );
         });
         final chatRepository = MistralInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: client,
           audioToTemporaryMp3Encoder: (_) async => mp3File,
         );
@@ -130,6 +134,7 @@ void main() {
         Future<http.Response> Function(http.Request request) handler,
       ) {
         final repo = MistralInferenceRepository(
+          domainLogger: MockDomainLogger(),
           httpClient: MockClient(handler),
         );
         addTearDown(repo.close);
@@ -1878,16 +1883,7 @@ data: [DONE]
       });
 
       test('should throw after exceeding the parse error threshold', () async {
-        // Arrange - register a logger so the threshold branch also logs.
-        final mockDomainLogger = MockDomainLogger();
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt
-              ..unregister<DomainLogger>()
-              ..registerSingleton<DomainLogger>(mockDomainLogger);
-          },
-        );
-        addTearDown(tearDownTestGetIt);
+        // Arrange
         when(
           () => mockDomainLogger.error(
             any<LogDomain>(),
@@ -1947,6 +1943,17 @@ data: not valid json 5
             errorType: FormatException,
           ),
         ).called(1);
+        // Each malformed chunk is logged too, by type and size only.
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            'FormatException',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'MistralInferenceRepository',
+            message: any<String?>(named: 'message'),
+            errorType: FormatException,
+          ),
+        ).called(5);
       });
     });
 
@@ -2510,20 +2517,6 @@ data: not valid json 5
       const model = 'magistral-medium-2509';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
-      late MockDomainLogger mockDomainLogger;
-
-      setUp(() async {
-        mockDomainLogger = MockDomainLogger();
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt
-              ..unregister<DomainLogger>()
-              ..registerSingleton<DomainLogger>(mockDomainLogger);
-          },
-        );
-      });
-
-      tearDown(tearDownTestGetIt);
 
       test('should log exception on unexpected error', () async {
         // Arrange
@@ -2566,6 +2559,7 @@ data: not valid json 5
             'StateError',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'unexpected',
+            message: 'Unexpected error during Mistral inference',
             errorType: StateError,
           ),
         ).called(1);
@@ -2579,7 +2573,9 @@ data: not valid json 5
       ).test(
         'role and content survive conversion for every message kind',
         (scenario) {
-          final repository = MistralInferenceRepository();
+          final repository = MistralInferenceRepository(
+            domainLogger: MockDomainLogger(),
+          );
           final converted = repository.convertMessages(scenario.messages);
 
           expect(converted.length, scenario.messages.length);

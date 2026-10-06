@@ -1,11 +1,12 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 part 'reference_image_selection_controller.freezed.dart';
@@ -67,7 +68,10 @@ class ReferenceImageSelectionController
     return const ReferenceImageSelectionState(isLoading: true);
   }
 
+  static const _subDomain = 'ReferenceImageSelectionController';
+
   Future<void> _loadAvailableImages() async {
+    final logger = ref.read(domainLoggerProvider);
     try {
       final journalRepository = ref.read(journalRepositoryProvider);
 
@@ -81,6 +85,7 @@ class ReferenceImageSelectionController
       // 2. Cover art from linked tasks.
       final linkedTaskCoverArt = await _fetchLinkedTaskCoverArt(
         journalRepository,
+        logger,
       );
 
       if (!ref.mounted) return;
@@ -106,11 +111,13 @@ class ReferenceImageSelectionController
         linkedTaskImageIds: linkedIds,
         isLoading: false,
       );
-    } catch (e) {
-      developer.log(
-        'Failed to load images for task $taskId: $e',
-        name: 'ReferenceImageSelectionController',
-        error: e,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Failed to load images for task $taskId',
       );
 
       // Only update state if still mounted
@@ -128,6 +135,7 @@ class ReferenceImageSelectionController
   /// directions: outgoing and incoming links).
   Future<List<JournalImage>> _fetchLinkedTaskCoverArt(
     JournalRepository journalRepository,
+    DomainLogger logger,
   ) async {
     final coverArtImages = <JournalImage>[];
 
@@ -161,11 +169,13 @@ class ReferenceImageSelectionController
           }
         }
       }
-    } catch (e) {
-      developer.log(
-        'Failed to fetch linked task cover art for $taskId: $e',
-        name: 'ReferenceImageSelectionController',
-        error: e,
+    } catch (e, stackTrace) {
+      logger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Failed to fetch linked task cover art for $taskId',
       );
       // Non-fatal: return whatever we collected so far.
     }
@@ -194,6 +204,7 @@ class ReferenceImageSelectionController
   /// it is skipped and processing continues with the remaining images.
   /// Returns partial results if the controller is unmounted during processing.
   Future<List<ProcessedReferenceImage>> processSelectedImages() async {
+    final logger = ref.read(domainLoggerProvider);
     state = state.copyWith(isProcessing: true);
 
     final results = <ProcessedReferenceImage>[];
@@ -206,9 +217,11 @@ class ReferenceImageSelectionController
     for (final imageId in state.selectedImageIds) {
       final image = imageById[imageId];
       if (image == null) {
-        developer.log(
+        logger.log(
+          LogDomain.ai,
           'Selected image not found in available images: $imageId, skipping',
-          name: 'ReferenceImageSelectionController',
+          subDomain: _subDomain,
+          level: InsightLevel.warn,
         );
         continue;
       }
@@ -217,6 +230,7 @@ class ReferenceImageSelectionController
       final processed = await processReferenceImage(
         filePath: filePath,
         imageId: imageId,
+        domainLogger: logger,
       );
 
       // Check if still mounted after async operation

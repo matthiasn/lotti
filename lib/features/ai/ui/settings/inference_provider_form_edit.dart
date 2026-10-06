@@ -1,15 +1,9 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
+import 'package:lotti/features/ai/providers/model_catalog_repository_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
-import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
-import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
-import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -23,56 +17,13 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
-
-// Riverpod 3 keeps the concrete auto-dispose provider type internal.
-// ignore: specify_nonobvious_property_types
-final meliousInferenceRepositoryProvider =
-    Provider.autoDispose<MeliousInferenceRepository>((ref) {
-      final repository = MeliousInferenceRepository();
-      ref.onDispose(repository.close);
-      return repository;
-    });
-
-// Riverpod 3 keeps the concrete auto-dispose provider type internal.
-// ignore: specify_nonobvious_property_types
-final omlxInferenceRepositoryProvider =
-    Provider.autoDispose<OmlxInferenceRepository>((ref) {
-      final repository = OmlxInferenceRepository();
-      ref.onDispose(repository.close);
-      return repository;
-    });
-
-// Riverpod 3 keeps the concrete auto-dispose provider type internal.
-// ignore: specify_nonobvious_property_types
-final mistralInferenceRepositoryProvider =
-    Provider.autoDispose<MistralInferenceRepository>((ref) {
-      final repository = MistralInferenceRepository();
-      ref.onDispose(repository.close);
-      return repository;
-    });
-
-// Riverpod 3 keeps the concrete auto-dispose provider type internal.
-// ignore: specify_nonobvious_property_types
-final geminiModelsRepositoryProvider =
-    Provider.autoDispose<GeminiModelsRepository>((ref) {
-      final repository = GeminiModelsRepository();
-      ref.onDispose(repository.close);
-      return repository;
-    });
-
-// Riverpod 3 keeps the concrete auto-dispose provider type internal.
-// ignore: specify_nonobvious_property_types
-final openAiModelsRepositoryProvider =
-    Provider.autoDispose<OpenAiModelsRepository>((ref) {
-      final repository = OpenAiModelsRepository();
-      ref.onDispose(repository.close);
-      return repository;
-    });
 
 // Riverpod 3 keeps the concrete provider-family type internal, so this family
 // has to rely on inference to remain callable and invalidatable.
@@ -691,6 +642,7 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
 
   Future<void> _addModel() async {
     if (_isAdding) return;
+    final logger = ref.read(domainLoggerProvider);
 
     setState(() {
       _isAdding = true;
@@ -707,11 +659,13 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
     } catch (error, stackTrace) {
       // Keep the raw, potentially sensitive error out of the UI: log it for
       // diagnostics and show a localized generic message instead.
-      developer.log(
-        'Failed to add Mistral model ${widget.knownModel.providerModelId}',
-        name: 'KnownModelTile',
-        error: error,
+      logger.error(
+        LogDomain.ai,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'KnownModelTile',
+        message:
+            'Failed to add Mistral model ${widget.knownModel.providerModelId}',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showDesignSystemToast(

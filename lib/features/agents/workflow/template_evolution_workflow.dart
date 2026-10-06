@@ -1,11 +1,10 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
@@ -82,6 +81,7 @@ class TemplateEvolutionWorkflow {
     required this.conversationRepository,
     required this.aiConfigRepository,
     required this.cloudInferenceRepository,
+    required this._domainLogger,
     this.templateService,
     this.syncService,
     this.soulDocumentService,
@@ -94,6 +94,7 @@ class TemplateEvolutionWorkflow {
   final ConversationRepository conversationRepository;
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
+  final DomainLogger _domainLogger;
 
   /// Required for multi-turn sessions.
   final AgentTemplateService? templateService;
@@ -141,9 +142,11 @@ class TemplateEvolutionWorkflow {
   }) async {
     final active = activeSessions[sessionId];
     if (active == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No active session ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -151,6 +154,7 @@ class TemplateEvolutionWorkflow {
     final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: active.modelId,
       aiConfigRepository: aiConfigRepository,
+      domainLogger: _domainLogger,
       logTag: _logTag,
     );
     if (inferenceSlot == null) return null;
@@ -176,12 +180,14 @@ class TemplateEvolutionWorkflow {
 
       return _extractLastAssistantContent(active.conversationId);
     } catch (e, s) {
-      developer.log(
-        'sendMessage failed for session '
-        '${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message:
+            'sendMessage failed for session '
+            '${DomainLogger.sanitizeId(sessionId)}',
       );
       return null;
     }
@@ -219,9 +225,11 @@ class TemplateEvolutionWorkflow {
 
     final proposal = active.strategy.latestProposal;
     if (proposal == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No proposal to approve for ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -295,12 +303,14 @@ class TemplateEvolutionWorkflow {
           currentSessionId: sessionId,
         );
       } catch (e, s) {
-        developer.log(
-          'Failed to auto-abandon stale sessions for template '
-          '${DomainLogger.sanitizeId(active.templateId)}',
-          name: _logTag,
-          error: e.runtimeType,
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
           stackTrace: s,
+          subDomain: _logTag,
+          message:
+              'Failed to auto-abandon stale sessions for template '
+              '${DomainLogger.sanitizeId(active.templateId)}',
         );
       }
 
@@ -312,29 +322,34 @@ class TemplateEvolutionWorkflow {
       try {
         onSessionCompleted?.call(active.templateId, sessionId);
       } catch (e, s) {
-        developer.log(
-          'onSessionCompleted failed for '
-          '${DomainLogger.sanitizeId(sessionId)}',
-          name: _logTag,
-          error: e.runtimeType,
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
           stackTrace: s,
+          subDomain: _logTag,
+          message:
+              'onSessionCompleted failed for '
+              '${DomainLogger.sanitizeId(sessionId)}',
         );
       }
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Approved proposal for session '
         '${DomainLogger.sanitizeId(sessionId)} → version '
         '${DomainLogger.sanitizeId(newVersion.id)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return newVersion;
     } catch (e, s) {
-      developer.log(
-        'approveProposal failed for ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message:
+            'approveProposal failed for ${DomainLogger.sanitizeId(sessionId)}',
       );
       return null;
     }
@@ -350,9 +365,10 @@ class TemplateEvolutionWorkflow {
     active.strategy.clearProposal();
 
     if (hadProposal) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected proposal for session ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
   }
@@ -403,11 +419,12 @@ class TemplateEvolutionWorkflow {
               sync: sync,
             );
           } catch (e, s) {
-            developer.log(
-              'Failed to persist notes during abandon',
-              name: _logTag,
-              error: e.runtimeType,
+            _domainLogger.error(
+              LogDomain.agentWorkflow,
+              e,
               stackTrace: s,
+              subDomain: _logTag,
+              message: 'Failed to persist notes during abandon',
             );
           }
         }

@@ -29,6 +29,7 @@ void main() {
     when(() => mockSync.upsertLink(any())).thenAnswer((_) async {});
 
     service = SoulDocumentService(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );

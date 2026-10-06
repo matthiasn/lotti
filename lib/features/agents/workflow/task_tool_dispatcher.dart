@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/agents/retired_tool_calls.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -35,7 +33,7 @@ class TaskToolDispatcher {
     required this.labelsRepository,
     required this.persistenceLogic,
     required this.timeService,
-    this.domainLogger,
+    required this.domainLogger,
     this.taskAgentService,
     this.projectRepository,
     this.agentRepository,
@@ -49,7 +47,7 @@ class TaskToolDispatcher {
   final LabelsRepository labelsRepository;
   final PersistenceLogic persistenceLogic;
   final TimeService timeService;
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
   final TaskAgentService? taskAgentService;
   final ProjectRepository? projectRepository;
   final AgentRepository? agentRepository;
@@ -75,9 +73,10 @@ class TaskToolDispatcher {
     String taskId, {
     ChecklistItemProvenance? approval,
   }) async {
-    developer.log(
+    domainLogger.log(
+      LogDomain.agentWorkflow,
       'Dispatching tool handler: $toolName',
-      name: 'TaskToolDispatcher',
+      subDomain: 'TaskToolDispatcher',
     );
 
     // A confirmed change item names its effect; no handler sees the reserved
@@ -93,9 +92,10 @@ class TaskToolDispatcher {
     final resolvedName = call.toolName;
     final normalizedArgs = call.args;
     if (resolvedName != toolName) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.agentWorkflow,
         'Resolved tool alias $toolName -> $resolvedName',
-        name: 'TaskToolDispatcher',
+        subDomain: 'TaskToolDispatcher',
       );
     }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai_response_type.dart';
@@ -11,6 +10,8 @@ import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -89,11 +90,14 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
   }
 
   void _triggerGeneration(List<ProcessedReferenceImage> referenceImages) {
-    developer.log(
-      'CoverArtSkillModal: triggering generation for entity '
-      '${widget.entityId} with ${referenceImages.length} reference images',
-      name: 'CoverArtSkillModal',
-    );
+    ref
+        .read(domainLoggerProvider)
+        .log(
+          LogDomain.ai,
+          'Triggering generation for entity ${widget.entityId} with '
+          '${referenceImages.length} reference images',
+          subDomain: 'CoverArtSkillModal',
+        );
 
     setState(() {
       _isGenerating = true;

@@ -52,6 +52,7 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
     strategy = ProjectAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: mockSyncService,
       agentId: _agentId,
       threadId: _threadId,
@@ -792,6 +793,7 @@ void main() {
       /// is, so it can refuse a proposal that would change nothing.
       ProjectAgentStrategy withStatus(ProjectStatus status) =>
           ProjectAgentStrategy(
+            domainLogger: MockDomainLogger(),
             syncService: mockSyncService,
             agentId: _agentId,
             threadId: _threadId,
@@ -954,6 +956,7 @@ void main() {
         ).thenAnswer((_) async => const ProposalLedger.empty());
 
         strategy = ProjectAgentStrategy(
+          domainLogger: MockDomainLogger(),
           syncService: mockSyncService,
           agentId: _agentId,
           threadId: _threadId,
@@ -1090,6 +1093,7 @@ void main() {
 
       test('says so when the tool is not wired up', () async {
         final unwired = ProjectAgentStrategy(
+          domainLogger: MockDomainLogger(),
           syncService: mockSyncService,
           agentId: _agentId,
           threadId: _threadId,

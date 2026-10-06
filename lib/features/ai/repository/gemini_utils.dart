@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Utilities for building Gemini HTTP requests and decoding stream framing.
@@ -192,7 +192,9 @@ abstract final class GeminiUtils {
   /// - [maxTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
   /// - [toolChoice]: Optional forced/disabled/automatic function-calling mode
+  /// - [domainLogger]: Records tool call arguments that fail to parse as JSON
   static Map<String, dynamic> buildMultiTurnRequestBody({
+    required DomainLogger domainLogger,
     required List<ChatCompletionMessage> messages,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
@@ -216,6 +218,7 @@ abstract final class GeminiUtils {
     for (final message in messages) {
       final converted = _convertMessageToGeminiContent(
         message,
+        domainLogger: domainLogger,
         thoughtSignatures: thoughtSignatures,
         toolCallIdToName: toolCallIdToName,
       );
@@ -330,8 +333,10 @@ abstract final class GeminiUtils {
   ///
   /// [toolCallIdToName] maps tool call IDs to function names, used for
   /// converting tool response messages (which only have ID, not name).
+  /// [domainLogger] records tool call arguments that fail to parse as JSON.
   static Map<String, dynamic>? _convertMessageToGeminiContent(
     ChatCompletionMessage message, {
+    required DomainLogger domainLogger,
     Map<String, String>? thoughtSignatures,
     Map<String, String>? toolCallIdToName,
   }) {
@@ -385,12 +390,16 @@ abstract final class GeminiUtils {
             dynamic args;
             try {
               args = jsonDecode(toolCall.function.arguments);
-            } on FormatException catch (e) {
-              developer.log(
-                'Failed to parse tool call arguments as JSON: ${e.message}. '
-                'Using empty object (raw ${toolCall.function.arguments.length} '
-                'chars).',
-                name: 'GeminiUtils',
+            } on FormatException catch (e, stackTrace) {
+              domainLogger.error(
+                LogDomain.ai,
+                e,
+                stackTrace: stackTrace,
+                subDomain: 'GeminiUtils',
+                message:
+                    'Failed to parse tool call arguments as JSON. '
+                    'Using empty object (raw '
+                    '${toolCall.function.arguments.length} chars).',
               );
               args = <String, dynamic>{};
             }

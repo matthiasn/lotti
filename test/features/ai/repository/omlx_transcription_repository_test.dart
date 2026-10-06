@@ -8,6 +8,8 @@ import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart'
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 ({http.Client client, http.BaseRequest? Function() captured})
 _stubStreamingOk() {
   http.BaseRequest? captured;
@@ -64,7 +66,9 @@ void main() {
     });
 
     test('throws ArgumentError for empty required fields', () {
-      final repo = OmlxTranscriptionRepository();
+      final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
+      );
 
       expect(
         () => repo.transcribeAudio(
@@ -107,6 +111,7 @@ void main() {
     test('rejects invalid base64 before sending a request', () {
       var sentRequest = false;
       final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient.streaming((_, _) async {
           sentRequest = true;
           return http.StreamedResponse(const Stream.empty(), 200);
@@ -136,7 +141,10 @@ void main() {
       'sends multipart request to configured oMLX transcription endpoint',
       () async {
         final stub = _stubStreamingOk();
-        final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+        final repo = OmlxTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
         addTearDown(repo.close);
 
         final chunks = await repo
@@ -175,7 +183,10 @@ void main() {
 
     test('trims base64 audio before building multipart upload', () async {
       final stub = _stubStreamingOk();
-      final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+      final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: stub.client,
+      );
       addTearDown(repo.close);
 
       await repo
@@ -195,7 +206,10 @@ void main() {
 
     test('does not send blank prompt field', () async {
       final stub = _stubStreamingOk();
-      final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+      final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: stub.client,
+      );
       addTearDown(repo.close);
 
       await repo
@@ -216,7 +230,10 @@ void main() {
 
     test('trims non-blank prompt field', () async {
       final stub = _stubStreamingOk();
-      final repo = OmlxTranscriptionRepository(httpClient: stub.client);
+      final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: stub.client,
+      );
       addTearDown(repo.close);
 
       await repo
@@ -236,6 +253,7 @@ void main() {
 
     test('surfaces structured provider errors', () async {
       final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient.streaming((_, _) async {
           return http.StreamedResponse(
             Stream.value(
@@ -270,6 +288,7 @@ void main() {
 
     test('wraps request timeouts with provider metadata', () async {
       final repo = OmlxTranscriptionRepository(
+        domainLogger: MockDomainLogger(),
         httpClient: MockClient.streaming((_, _) {
           return Completer<http.StreamedResponse>().future;
         }),

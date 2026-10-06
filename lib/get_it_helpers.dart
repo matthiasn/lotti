@@ -130,11 +130,7 @@ Future<void> _registerLateAndOptionalServices({
       // One instance for every caller, so its per-endpoint availability
       // circuit is shared application-wide.
       ..registerSingleton<OllamaEmbeddingRepository>(
-        OllamaEmbeddingRepository(
-          domainLogger: getIt.isRegistered<DomainLogger>()
-              ? getIt<DomainLogger>()
-              : null,
-        ),
+        OllamaEmbeddingRepository(domainLogger: getIt<DomainLogger>()),
         dispose: (repo) => repo.close(),
       )
       ..registerSingleton<EmbeddingService>(
@@ -144,6 +140,7 @@ Future<void> _registerLateAndOptionalServices({
           journalDb: getIt<JournalDb>(),
           updateNotifications: getIt<UpdateNotifications>(),
           aiConfigRepository: getIt<AiConfigRepository>(),
+          domainLogger: getIt<DomainLogger>(),
         ),
         dispose: (svc) async => svc.stop(),
       )

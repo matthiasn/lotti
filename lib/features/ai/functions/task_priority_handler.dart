@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Result of processing a priority update tool call.
@@ -66,11 +67,18 @@ class TaskPriorityHandler {
   /// - [journalRepository]: Repository for persisting task updates.
   /// - [onTaskUpdated]: Optional callback invoked when the task is updated.
   ///   Use this to sync state across multiple handlers.
+  /// - `domainLogger`: Receives the handler's traces and failures.
   TaskPriorityHandler({
     required this.task,
     required this.journalRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
   });
+
+  static const _subDomain = 'TaskPriorityHandler';
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   /// Parses a priority string from AI input to TaskPriority enum.
   ///
@@ -138,10 +146,11 @@ class TaskPriorityHandler {
 
       final priority = TaskPriorityHandler.parsePriority(rawPriority);
 
-      developer.log(
-        'Processing update_task_priority: raw=$rawPriority, parsed=$priority '
+      _domainLogger.log(
+        LogDomain.ai,
+        'Processing update_task_priority: parsed=$priority '
         '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
-        name: 'TaskPriorityHandler',
+        subDomain: _subDomain,
       );
 
       // Validate priority value
@@ -161,9 +170,10 @@ class TaskPriorityHandler {
       final currentPriority = task.data.priority;
       if (priority == currentPriority) {
         final message = 'Priority already ${priority.short}. No change needed.';
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Priority unchanged: ${priority.short}',
-          name: 'TaskPriorityHandler',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
         return TaskPriorityResult(
@@ -185,7 +195,12 @@ class TaskPriorityHandler {
           case TaskFieldWriteFailed():
             const message =
                 'Failed to update priority: repository returned false.';
-            developer.log(message, name: 'TaskPriorityHandler');
+            _domainLogger.log(
+              LogDomain.ai,
+              message,
+              subDomain: _subDomain,
+              level: InsightLevel.warn,
+            );
             _sendResponse(call.id, message, manager);
             return const TaskPriorityResult(
               success: false,
@@ -197,7 +212,7 @@ class TaskPriorityHandler {
             const message =
                 "Nothing applied: the task's priority changed since this "
                 'call read it, so it stays as it is.';
-            developer.log(message, name: 'TaskPriorityHandler');
+            _domainLogger.log(LogDomain.ai, message, subDomain: _subDomain);
             _sendResponse(call.id, message, manager);
             return const TaskPriorityResult(success: true, message: message);
           case TaskFieldWritten(task: final stored):
@@ -206,9 +221,10 @@ class TaskPriorityHandler {
         }
 
         final message = 'Task priority updated to ${priority.short}.';
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Successfully set task priority to ${priority.short}',
-          name: 'TaskPriorityHandler',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
 
@@ -220,11 +236,12 @@ class TaskPriorityHandler {
       } catch (e, s) {
         const message =
             'Failed to set priority. Continuing without priority update.';
-        developer.log(
-          'Failed to update task priority',
-          name: 'TaskPriorityHandler',
-          error: e,
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
           stackTrace: s,
+          subDomain: _subDomain,
+          message: 'Failed to update task priority',
         );
         _sendResponse(call.id, message, manager);
         return TaskPriorityResult(
@@ -235,11 +252,12 @@ class TaskPriorityHandler {
       }
     } catch (e, s) {
       const message = 'Error processing task priority update.';
-      developer.log(
-        'Error processing update_task_priority: $e',
-        name: 'TaskPriorityHandler',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: s,
+        subDomain: _subDomain,
+        message: 'Error processing update_task_priority',
       );
       _sendResponse(call.id, message, manager);
       return TaskPriorityResult(

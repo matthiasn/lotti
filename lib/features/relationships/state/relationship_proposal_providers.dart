@@ -23,6 +23,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 final Provider<RelationshipToolDispatcher> relationshipToolDispatcherProvider =
     Provider(
       (ref) => RelationshipToolDispatcher(
+        domainLogger: ref.watch(domainLoggerProvider),
         relationshipRepository: ref.watch(relationshipRepositoryProvider),
         persistenceLogic: ref.read(persistenceLogicProvider),
         entitiesCacheService: getIt<EntitiesCacheService>(),

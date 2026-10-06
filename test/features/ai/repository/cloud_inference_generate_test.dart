@@ -20,6 +20,8 @@ class _FakeCreateChatCompletionRequest extends Fake
 class _FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
+  _FakeMeliousInferenceRepository() : super(domainLogger: MockDomainLogger());
+
   final textCalls =
       <
         ({
@@ -97,6 +99,8 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
 }
 
 class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  _FakeMistralInferenceRepository() : super(domainLogger: MockDomainLogger());
+
   final textCalls =
       <({String prompt, String model, ReasoningEffort? reasoningEffort})>[];
 
@@ -123,6 +127,8 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
 }
 
 class _FakeMistralOcrRepository extends MistralOcrRepository {
+  _FakeMistralOcrRepository() : super(domainLogger: MockDomainLogger());
+
   final calls =
       <({String model, String baseUrl, String apiKey, List<String> images})>[];
 
@@ -206,9 +212,9 @@ void main() {
   setUp(() {
     ollamaRepo = MockOllamaInferenceRepository();
     geminiRepo = MockGeminiInferenceRepository();
-    meliousRepo = MeliousInferenceRepository();
-    mistralRepo = MistralInferenceRepository();
-    mistralOcrRepo = MistralOcrRepository();
+    meliousRepo = MeliousInferenceRepository(domainLogger: MockDomainLogger());
+    mistralRepo = MistralInferenceRepository(domainLogger: MockDomainLogger());
+    mistralOcrRepo = MistralOcrRepository(domainLogger: MockDomainLogger());
     client = MockOpenAIClient();
     generate = CloudInferenceGenerate(
       ollamaRepository: ollamaRepo,
@@ -217,6 +223,7 @@ void main() {
       mistralRepository: mistralRepo,
       mistralOcrRepository: mistralOcrRepo,
       helpers: const CloudInferenceRequestHelpers(),
+      domainLogger: MockDomainLogger(),
     );
   });
 
@@ -358,6 +365,7 @@ void main() {
         mistralRepository: mistralRepo,
         mistralOcrRepository: mistralOcrRepo,
         helpers: const CloudInferenceRequestHelpers(),
+        domainLogger: MockDomainLogger(),
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
 
@@ -406,6 +414,7 @@ void main() {
         mistralRepository: fakeMistralRepo,
         mistralOcrRepository: mistralOcrRepo,
         helpers: const CloudInferenceRequestHelpers(),
+        domainLogger: MockDomainLogger(),
       );
 
       final chunks = await generate
@@ -520,6 +529,7 @@ void main() {
         mistralRepository: mistralRepo,
         mistralOcrRepository: mistralOcrRepo,
         helpers: const CloudInferenceRequestHelpers(),
+        domainLogger: MockDomainLogger(),
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
 
@@ -562,6 +572,7 @@ void main() {
           mistralRepository: mistralRepo,
           mistralOcrRepository: fakeOcrRepo,
           helpers: const CloudInferenceRequestHelpers(),
+          domainLogger: MockDomainLogger(),
         );
         final mistralProvider = providerOfType(InferenceProviderType.mistral);
 
@@ -602,6 +613,7 @@ void main() {
           mistralRepository: mistralRepo,
           mistralOcrRepository: fakeOcrRepo,
           helpers: const CloudInferenceRequestHelpers(),
+          domainLogger: MockDomainLogger(),
         );
         when(
           () => client.createChatCompletionStream(

@@ -1,6 +1,5 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -20,6 +19,7 @@ typedef ResolvedInferenceProvider = ({
 Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
   required String modelId,
   required AiConfigRepository aiConfigRepository,
+  required DomainLogger domainLogger,
   String logTag = 'InferenceProviderResolver',
 }) async {
   final models = await aiConfigRepository.getConfigsByType(AiConfigType.model);
@@ -31,10 +31,12 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
       .toList(growable: false);
 
   if (matchingModels.isEmpty) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Requested model not found in configured models '
       '(modelIdLength=${modelId.length})',
-      name: logTag,
+      subDomain: logTag,
+      level: InsightLevel.warn,
     );
     return null;
   }
@@ -47,19 +49,23 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
     final provider = await aiConfigRepository.getConfigById(providerId);
 
     if (provider is! AiConfigInferenceProvider) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.ai,
         'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
         'not an inference provider',
-        name: logTag,
+        subDomain: logTag,
+        level: InsightLevel.warn,
       );
       continue;
     }
 
     if (!provider.isUsable) {
-      developer.log(
+      domainLogger.log(
+        LogDomain.ai,
         'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
         'API key is not configured',
-        name: logTag,
+        subDomain: logTag,
+        level: InsightLevel.warn,
       );
       continue;
     }
@@ -70,29 +76,33 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
     }
 
     usableFallback ??= (model: model, provider: provider);
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
       'provider type ${provider.inferenceProviderType.name} does not match '
       'known model provider type(s) '
       '${preferredProviderTypes.map((type) => type.name).join(', ')}',
-      name: logTag,
+      subDomain: logTag,
     );
   }
 
   if (usableFallback != null) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'No provider with a known matching type configured; '
       'falling back to usable provider '
       '${DomainLogger.sanitizeId(usableFallback.provider.id)}',
-      name: logTag,
+      subDomain: logTag,
     );
     return usableFallback;
   }
 
-  developer.log(
+  domainLogger.log(
+    LogDomain.ai,
     'No usable provider configured across '
     '${matchingModels.length} configured model row(s)',
-    name: logTag,
+    subDomain: logTag,
+    level: InsightLevel.warn,
   );
   return null;
 }
@@ -106,14 +116,17 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
 Future<ResolvedInferenceProvider?> resolveInferenceProviderForModelConfigId({
   required String modelConfigId,
   required AiConfigRepository aiConfigRepository,
+  required DomainLogger domainLogger,
   String logTag = 'InferenceProviderResolver',
 }) async {
   final config = await aiConfigRepository.getConfigById(modelConfigId);
   if (config is! AiConfigModel) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Requested model config not found or wrong type '
       '(modelConfigIdLength=${modelConfigId.length})',
-      name: logTag,
+      subDomain: logTag,
+      level: InsightLevel.warn,
     );
     return null;
   }
@@ -121,6 +134,7 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderForModelConfigId({
   return _resolveProviderForModel(
     config,
     aiConfigRepository: aiConfigRepository,
+    domainLogger: domainLogger,
     logTag: logTag,
   );
 }
@@ -133,6 +147,7 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderForModelConfigId({
 Future<ResolvedInferenceProvider?> resolveInferenceProviderForProfileSlot({
   required String modelId,
   required AiConfigRepository aiConfigRepository,
+  required DomainLogger domainLogger,
   String logTag = 'InferenceProviderResolver',
 }) async {
   final models = await aiConfigRepository.getConfigsByType(AiConfigType.model);
@@ -141,6 +156,7 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderForProfileSlot({
       return _resolveProviderForModel(
         config,
         aiConfigRepository: aiConfigRepository,
+        domainLogger: domainLogger,
         logTag: logTag,
       );
     }
@@ -149,6 +165,7 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderForProfileSlot({
   return resolveInferenceProviderWithModel(
     modelId: modelId,
     aiConfigRepository: aiConfigRepository,
+    domainLogger: domainLogger,
     logTag: logTag,
   );
 }
@@ -156,25 +173,30 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderForProfileSlot({
 Future<ResolvedInferenceProvider?> _resolveProviderForModel(
   AiConfigModel model, {
   required AiConfigRepository aiConfigRepository,
+  required DomainLogger domainLogger,
   required String logTag,
 }) async {
   final providerId = model.inferenceProviderId;
   final provider = await aiConfigRepository.getConfigById(providerId);
 
   if (provider is! AiConfigInferenceProvider) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
       'not an inference provider',
-      name: logTag,
+      subDomain: logTag,
+      level: InsightLevel.warn,
     );
     return null;
   }
 
   if (!provider.isUsable) {
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
       'API key is not configured',
-      name: logTag,
+      subDomain: logTag,
+      level: InsightLevel.warn,
     );
     return null;
   }

@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -20,6 +18,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/settings/settings_icon.dart';
 import 'package:material_ui/material_ui.dart';
@@ -81,6 +81,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
     final profile = options.profiles.firstWhereOrNull(
       (value) => value.id == profileId,
     );
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _savingProfile = true);
     try {
       await ref
@@ -98,11 +99,12 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
         ),
       );
     } catch (error, stackTrace) {
-      developer.log(
-        'Daily OS default profile update failed',
-        name: 'DailyOsSettingsBody',
-        error: error,
+      logger.error(
+        LogDomain.dailyOs,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'DailyOsSettingsBody',
+        message: 'Daily OS default profile update failed',
       );
       if (mounted) {
         context.showToast(

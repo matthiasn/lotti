@@ -11,8 +11,12 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
+import '../../../mocks/mocks.dart';
 
 // ---------------------------------------------------------------------------
 // Fake FlutterImageCompress platform that returns a minimal valid JPEG so
@@ -133,6 +137,9 @@ final _testPngBytes = Uint8List.fromList([
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late MockDomainLogger mockLogger;
+  setUp(() => mockLogger = MockDomainLogger());
+
   group('ProcessedReferenceImage', () {
     test('creates instance with required properties', () {
       const image = ProcessedReferenceImage(
@@ -245,6 +252,7 @@ void main() {
       final result = await processReferenceImage(
         filePath: '/non/existent/path/image.jpg',
         imageId: 'test-id',
+        domainLogger: mockLogger,
       );
 
       expect(result, isNull);
@@ -254,6 +262,7 @@ void main() {
       final result = await processReferenceImage(
         filePath: '',
         imageId: 'test-id',
+        domainLogger: mockLogger,
       );
 
       expect(result, isNull);
@@ -263,6 +272,7 @@ void main() {
       final result = await processReferenceImage(
         filePath: tempDir.path,
         imageId: 'test-id',
+        domainLogger: mockLogger,
       );
 
       // Directory should not be treated as a valid file
@@ -287,10 +297,20 @@ void main() {
       final result = await processReferenceImage(
         filePath: testFile.path,
         imageId: 'corrupted-id',
+        domainLogger: mockLogger,
       );
 
       // Should return null for corrupted data (handled by try-catch)
       expect(result, isNull);
+      verify(
+        () => mockLogger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ImageProcessingUtils',
+          message: 'Failed to process reference image corrupted-id',
+        ),
+      ).called(1);
     });
 
     test('returns null for empty image file', () async {
@@ -300,6 +320,7 @@ void main() {
       final result = await processReferenceImage(
         filePath: testFile.path,
         imageId: 'empty-id',
+        domainLogger: mockLogger,
       );
 
       expect(result, isNull);
@@ -317,6 +338,7 @@ void main() {
         final result = await processReferenceImage(
           filePath: testFile.path,
           imageId: 'special-path-id',
+          domainLogger: mockLogger,
         );
 
         // The function handles the error gracefully
@@ -334,6 +356,7 @@ void main() {
       final future = processReferenceImage(
         filePath: '/some/path.jpg',
         imageId: 'test-id',
+        domainLogger: mockLogger,
       );
 
       // Should return a Future<ProcessedReferenceImage?>
@@ -380,6 +403,7 @@ void main() {
         final result = await processReferenceImage(
           filePath: testFile.path,
           imageId: 'small-image-id',
+          domainLogger: mockLogger,
         );
 
         expect(result, isNotNull);
@@ -401,6 +425,7 @@ void main() {
         final result = await processReferenceImage(
           filePath: testFile.path,
           imageId: 'wide-image-id',
+          domainLogger: mockLogger,
         );
 
         expect(result, isNotNull);
@@ -422,6 +447,7 @@ void main() {
         final result = await processReferenceImage(
           filePath: testFile.path,
           imageId: 'tall-image-id',
+          domainLogger: mockLogger,
         );
 
         expect(result, isNotNull);

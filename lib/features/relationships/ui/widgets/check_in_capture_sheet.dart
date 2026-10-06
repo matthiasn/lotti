@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/scheduler.dart';
@@ -33,6 +32,8 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -141,6 +142,9 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
 }
 
 class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
+  /// Read once in [initState]: failures land after awaits that can outlive
+  /// this state, when reading through `ref` throws.
+  late final DomainLogger _logger;
   late final TextEditingController _topicsController;
   late final TextEditingController _narrativeController;
   late final TextEditingController _payAttentionController;
@@ -211,6 +215,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     final initial = widget.initial;
     final data = initial?.data;
     // The detail fields rebuild the form as they change, so the pop guard's
@@ -419,11 +424,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       );
       setState(() => _phase = const CheckInSpeechRecording());
     } catch (exception, stackTrace) {
-      developer.log(
-        'Spoken check-in failed to start',
-        name: 'CheckInCaptureForm',
-        error: exception,
+      _logger.error(
+        LogDomain.speech,
+        exception,
         stackTrace: stackTrace,
+        subDomain: 'CheckInCaptureForm',
+        message: 'Spoken check-in failed to start',
       );
       if (!mounted) return;
       setState(
@@ -581,11 +587,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         }
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to save check-in',
-        name: 'CheckInCaptureForm',
-        error: e,
+      _logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'CheckInCaptureForm',
+        message: 'Failed to save check-in',
       );
       if (mounted) {
         context.showToast(
@@ -626,11 +633,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to delete check-in',
-        name: 'CheckInCaptureForm',
-        error: e,
+      _logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'CheckInCaptureForm',
+        message: 'Failed to delete check-in',
       );
       if (mounted) {
         context.showToast(

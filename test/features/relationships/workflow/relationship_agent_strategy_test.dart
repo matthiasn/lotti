@@ -52,6 +52,7 @@ void main() {
     manager = MockConversationManager();
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     strategy = RelationshipAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'relationship_agent:person-1',
       threadId: 'thread-1',
@@ -243,6 +244,7 @@ void main() {
 
     test('rejects a valid band outside the rendered sentiment bound', () async {
       final constrained = RelationshipAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: 'relationship_agent:person-1',
         threadId: 'thread-1',

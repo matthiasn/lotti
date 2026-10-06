@@ -38,10 +38,12 @@ void main() {
     // A real version-ops over the same mocks, mirroring the production wiring,
     // so the cross-collaborator call in resolveActiveSoulForTemplate is real.
     final versionOps = SoulVersionOps(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );
     templateOps = SoulTemplateOps(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
       versionOps: versionOps,
@@ -351,6 +353,7 @@ void main() {
         await at(
           0,
           () => AgentTemplateSeeding(
+            domainLogger: MockDomainLogger(),
             syncService: a.device.sync,
             crud: a.templates,
           ).seedDefaults(),
@@ -407,6 +410,7 @@ void main() {
     /// assigned under a random id, as `assignSoulToTemplate` did.
     Future<void> legacyStart(DefaultSeedingDevice device) async {
       await AgentTemplateSeeding(
+        domainLogger: MockDomainLogger(),
         syncService: device.device.sync,
         crud: device.templates,
       ).seedDefaults();

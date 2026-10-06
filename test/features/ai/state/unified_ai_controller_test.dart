@@ -524,6 +524,7 @@ void main() {
             any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'runInference',
+            message: any(named: 'message'),
           ),
         ).called(1);
 
@@ -589,6 +590,7 @@ void main() {
             ),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'runInference',
+            message: any(named: 'message'),
           ),
         ).called(1);
         // … the inference repo is never reached …

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -20,7 +19,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:material_ui/material_ui.dart';
@@ -166,6 +167,7 @@ class _RelationshipSuggestionsBandState
   Future<void> _undo(LedgerEntry entry) async {
     if (_undoBusy) return;
     final service = ref.read(relationshipProposalServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _undoBusy = true);
     var undone = false;
     try {
@@ -173,11 +175,14 @@ class _RelationshipSuggestionsBandState
     } catch (exception, stackTrace) {
       // `undone` stays false, so the toast below still tells the user the row
       // stayed; this records what actually went wrong.
-      developer.log(
-        'undoing a confirmed proposal threw',
-        name: 'RelationshipSuggestionsBand',
-        error: exception,
+      logger.error(
+        LogDomain.agentWorkflow,
+        exception,
         stackTrace: stackTrace,
+        subDomain: 'RelationshipSuggestionsBand',
+        message:
+            'undoing confirmed proposal '
+            '${entry.changeSetId}:${entry.itemIndex} threw',
       );
     }
     if (!mounted) return;

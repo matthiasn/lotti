@@ -71,6 +71,7 @@ void main() {
 
     armedAgentIds.clear();
     monitor = ProjectActivityMonitor(
+      domainLogger: MockDomainLogger(),
       notifications: notifications,
       agentRepository: repository,
       projectRepository: projectRepository,
@@ -92,6 +93,7 @@ void main() {
       () async {
         final retiredAgentIds = <String>[];
         final tombstoneMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,
@@ -159,6 +161,7 @@ void main() {
         final retired = <String>[];
         final scopes = <Set<String>>[];
         final reconciliationMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,
@@ -219,6 +222,7 @@ void main() {
         await entered.future;
         final updates = <Set<String>>[];
         final reconciliationMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,
@@ -253,6 +257,7 @@ void main() {
       () async {
         final updates = <String>[];
         final reconciliationMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,
@@ -285,6 +290,7 @@ void main() {
       () async {
         final attemptedAgentIds = <String>[];
         final tombstoneMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,
@@ -341,6 +347,7 @@ void main() {
         final retiredAgentIds = <String>[];
         final scopeUpdates = <(String, Set<String>)>[];
         final reconciliationMonitor = ProjectActivityMonitor(
+          domainLogger: MockDomainLogger(),
           notifications: notifications,
           agentRepository: repository,
           projectRepository: projectRepository,

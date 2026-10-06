@@ -37,6 +37,7 @@ void main() {
     manager = MockConversationManager();
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     strategy = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -353,6 +354,7 @@ void main() {
     'only deterministically allowed current actions become visible',
     () async {
       final gated = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: 'goal-1',
         threadId: 'thread-1',
@@ -505,6 +507,7 @@ void main() {
     // silently drop one of them.
     for (final token in ['onTrack', 'atRisk', 'offTrack', 'insufficientData']) {
       final fresh = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: 'goal-1',
         threadId: 'thread-1',
@@ -629,6 +632,7 @@ void main() {
   test('a report status contradicting the deterministic FACTS is '
       'rejected — the computed status is authoritative', () async {
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -667,6 +671,7 @@ void main() {
     // ended the wake with no standing report at all — which the outcome eval
     // caught happening on 8 of one model's 9 failures.
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -748,6 +753,7 @@ void main() {
       // the first time on the one forced retry a wake gets — the sequential
       // rejection batching exists to prevent, reached through the parse path.
       final gated = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: 'goal-1',
         threadId: 'thread-1',
@@ -820,6 +826,7 @@ void main() {
     // trivially fails "quote 6000". Reporting that alongside "incomplete"
     // would tell the model twice that a section it never wrote is wrong.
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -860,6 +867,7 @@ void main() {
     // The envelope is for the multiple case only: one problem must not gain
     // a "broke 1 rules" preamble.
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -892,6 +900,7 @@ void main() {
     // twice; reporting both would make the model hunt for a second problem
     // that does not exist.
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -933,6 +942,7 @@ void main() {
       },
     };
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -974,6 +984,7 @@ void main() {
       // it exists to reject.
       Future<GoalAgentStrategy> attempt(String rollingWindow) async {
         final gated = GoalAgentStrategy(
+          domainLogger: MockDomainLogger(),
           syncService: syncService,
           agentId: 'goal-1',
           threadId: 'thread-1',
@@ -1029,6 +1040,7 @@ void main() {
     // passed and the step goals lost their reports entirely.
     Future<bool> accepts(String rollingWindow, String aggregate) async {
       final gated = GoalAgentStrategy(
+        domainLogger: MockDomainLogger(),
         syncService: syncService,
         agentId: 'goal-1',
         threadId: 'thread-1',
@@ -1099,6 +1111,7 @@ void main() {
     // "weight 95 100" reads as two numbers; collapsing the space would hide
     // the 95. The raw text is tried first for exactly this reason.
     final gated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -1164,6 +1177,7 @@ void main() {
     expect(strategy.bannerRequested, isFalse);
 
     final explicitFalse = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -1186,6 +1200,7 @@ void main() {
     // An empty window has no mean, and an insufficientData report names the
     // gap. Demanding a number there would force the model to invent one.
     final ungated = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -1319,6 +1334,7 @@ void main() {
 
   test('retire rejects a known ad that is not currently active', () async {
     final activeOnly = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',
@@ -1614,6 +1630,7 @@ void main() {
 
   test('snooze rejects a known reusable ad that is not active', () async {
     final activeOnly = GoalAgentStrategy(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       agentId: 'goal-1',
       threadId: 'thread-1',

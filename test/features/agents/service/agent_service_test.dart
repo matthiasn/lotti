@@ -254,6 +254,7 @@ void main() {
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
 
     service = AgentService(
+      domainLogger: MockDomainLogger(),
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
@@ -273,6 +274,7 @@ void main() {
         final generatedOrchestrator = MockWakeOrchestrator();
         final generatedSyncService = MockAgentSyncService();
         final generatedService = AgentService(
+          domainLogger: MockDomainLogger(),
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
           syncService: generatedSyncService,
@@ -939,6 +941,7 @@ void main() {
         final generatedOrchestrator = MockWakeOrchestrator();
         final generatedSyncService = MockAgentSyncService();
         final generatedService = AgentService(
+          domainLogger: MockDomainLogger(),
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
           syncService: generatedSyncService,
@@ -1349,6 +1352,7 @@ void main() {
         );
 
         await AgentService(
+          domainLogger: MockDomainLogger(),
           repository: mockRepository,
           orchestrator: mockOrchestrator,
           syncService: mockSyncService,

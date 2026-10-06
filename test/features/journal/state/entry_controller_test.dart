@@ -35,6 +35,7 @@ import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -996,11 +997,25 @@ void main() {
             onlyIfPrivacyMismatched: true,
           ),
         ).thenThrow(StateError('membership store unavailable'));
-        final container = makeProviderContainer();
+        final logger = MockDomainLogger();
+        final container = makeProviderContainer(
+          overrides: [domainLoggerProvider.overrideWithValue(logger)],
+        );
         final notifier = container.read(
           entryControllerProvider(testTask.id).notifier,
         );
         await expectLater(notifier.togglePrivate(), completes);
+        verify(
+          () => logger.error(
+            LogDomain.persistence,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'EntryController',
+            message:
+                'Failed to drop privacy-incompatible project link for '
+                '${testTask.id}',
+          ),
+        ).called(1);
         expect(
           toggledOn(testTask.id, testTask)!.meta.private,
           isTrue,
@@ -2892,8 +2907,10 @@ void main() {
 
     test('task save still completes when Daily OS title sync fails', () async {
       final attempted = <(String, String)>[];
+      final logger = MockDomainLogger();
       final container = makeProviderContainer(
         overrides: [
+          domainLoggerProvider.overrideWithValue(logger),
           taskTitleChangedHooksProvider.overrideWithValue([
             (taskId, title) async {
               attempted.add((taskId, title));
@@ -2936,6 +2953,15 @@ void main() {
         ),
       ).called(1);
       expect(attempted, [(entryId, 'Sync failure still saves')]);
+      verify(
+        () => logger.error(
+          LogDomain.persistence,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'EntryController',
+          message: 'Failed to sync a title change for task $entryId',
+        ),
+      ).called(1);
     });
 
     test('saves task with dueDate', () async {
@@ -3393,9 +3419,13 @@ void main() {
       await tempDir.delete(recursive: true);
     });
 
-    Future<(bool, ProviderContainer)> paste(String entryId) async {
+    Future<(bool, ProviderContainer)> paste(
+      String entryId, {
+      DomainLogger? logger,
+    }) async {
       final container = makeProviderContainer(
         overrides: [
+          if (logger != null) domainLoggerProvider.overrideWithValue(logger),
           clipboardRepositoryProvider.overrideWithValue(clipboard),
           journalRepositoryProvider.overrideWithValue(journalRepository),
         ],
@@ -3467,10 +3497,20 @@ void main() {
     test('a clipboard that fails to read reports no paste instead of '
         'throwing', () async {
       when(clipboard.read).thenThrow(StateError('clipboard gone'));
+      final logger = MockDomainLogger();
 
-      final (pasted, _) = await paste(categorised.meta.id);
+      final (pasted, _) = await paste(categorised.meta.id, logger: logger);
 
       expect(pasted, isFalse);
+      verify(
+        () => logger.error(
+          LogDomain.persistence,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'EntryController',
+          message: 'Failed to paste cover art',
+        ),
+      ).called(1);
       verifyNever(() => journalRepository.deleteJournalEntity(any()));
       verifyNever(
         () => mockPersistenceLogic.updateTask(

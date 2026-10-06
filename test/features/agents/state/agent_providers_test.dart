@@ -677,7 +677,17 @@ void main() {
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);
-      verifyNoMoreInteractions(domainLogger);
+      // Progress lines go through the same logger; only the error must be
+      // reported exactly once.
+      verifyNever(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      );
     });
 
     // Confirmed changes whose dispatch a previous process died in are

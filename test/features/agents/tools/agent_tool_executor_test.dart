@@ -2,12 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
   late MockAgentSyncService mockSyncService;
+  late MockDomainLogger mockDomainLogger;
   late AgentToolExecutor executor;
 
   const agentId = 'agent-001';
@@ -18,6 +20,7 @@ void main() {
 
   setUp(() {
     mockSyncService = MockAgentSyncService();
+    mockDomainLogger = MockDomainLogger();
     registerFallbackValue(
       AgentDomainEntity.unknown(
         id: 'fallback',
@@ -29,6 +32,7 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
     executor = AgentToolExecutor(
+      domainLogger: mockDomainLogger,
       syncService: mockSyncService,
       allowedCategoryIds: {allowedCategoryId},
       runKey: runKey,
@@ -418,6 +422,16 @@ void main() {
         final errorPayload = captured[2] as AgentMessagePayloadEntity;
         expect(errorPayload.content['text'], contains('Error'));
         expect(errorPayload.content['text'], isNot(contains('Crash')));
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'AgentToolExecutor',
+            message: 'Tool set_task_title threw unexpectedly',
+          ),
+        ).called(1);
       });
     });
 

@@ -12,6 +12,8 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/widgets/media/file_image_size.dart';
 import 'package:material_ui/material_ui.dart';
@@ -334,10 +336,12 @@ void main() {
       'card is handed back rather than left disabled behind it', (
     tester,
   ) async {
+    final logger = MockDomainLogger();
     await pumpCard(
       tester,
       person(),
       pickImage: () async => throw StateError('the picker fell over'),
+      overrides: [domainLoggerProvider.overrideWithValue(logger)],
     );
 
     await tester.tap(find.byKey(const ValueKey('person-form-face-change')));
@@ -353,16 +357,27 @@ void main() {
       isNotNull,
       reason: 'busy must be released however the flow ends',
     );
+    verify(
+      () => logger.error(
+        LogDomain.general,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'PersonPhotoCard',
+        message: 'Failed to change a photo',
+      ),
+    ).called(1);
   });
 
   testWidgets("a re-read that throws after a successful write is the host's "
       "problem, not the user's: no error toast, and the card is handed back", (
     tester,
   ) async {
+    final logger = MockDomainLogger();
     await pumpCard(
       tester,
       person(bannerImageId: 'banner-1'),
       onChanged: () async => throw StateError('the re-read fell over'),
+      overrides: [domainLoggerProvider.overrideWithValue(logger)],
     );
 
     await tester.tap(find.byKey(const ValueKey('person-form-banner-remove')));
@@ -378,6 +393,15 @@ void main() {
       find.byKey(const ValueKey('person-form-banner-change')),
     );
     expect(change.onPressed, isNotNull, reason: 'busy is released regardless');
+    verify(
+      () => logger.error(
+        LogDomain.general,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'PersonPhotoCard',
+        message: 'Failed to re-read the person after a photo change',
+      ),
+    ).called(1);
   });
 
   testWidgets("dragging the banner sideways moves it by the hero's own "

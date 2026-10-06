@@ -90,7 +90,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
         rethrowInferenceErrors: true,
       );
     } catch (error) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalPhaseB',
@@ -212,7 +212,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
       ).build(summaries, reference: reference);
       return context.entries;
     } catch (error, stackTrace) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalCheckInDigest',
@@ -338,7 +338,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
         rethrowInferenceErrors: true,
       );
     } catch (error) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalPhaseB',

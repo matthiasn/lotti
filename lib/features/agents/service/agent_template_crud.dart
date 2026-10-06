@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -23,7 +21,11 @@ class AgentTemplateCrud {
   AgentTemplateCrud({
     required this.repository,
     required this.syncService,
+    required this._domainLogger,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentRepository repository;
   final AgentSyncService syncService;
@@ -100,9 +102,10 @@ class AgentTemplateCrud {
       await syncService.upsertEntity(head);
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Created template ${DomainLogger.sanitizeId(tplId)}',
-      name: 'AgentTemplateService',
+      subDomain: 'AgentTemplateService',
     );
 
     return template;
@@ -165,9 +168,10 @@ class AgentTemplateCrud {
         }
       }
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Updated template ${DomainLogger.sanitizeId(templateId)}',
-        name: 'AgentTemplateService',
+        subDomain: 'AgentTemplateService',
       );
 
       return updated;
@@ -246,10 +250,11 @@ class AgentTemplateCrud {
       );
       await syncService.upsertEntity(updatedHead);
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Created version $nextVersion for template '
         '${DomainLogger.sanitizeId(templateId)}',
-        name: 'AgentTemplateService',
+        subDomain: 'AgentTemplateService',
       );
 
       return newVersion;
@@ -398,9 +403,10 @@ class AgentTemplateCrud {
       }
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Soft-deleted template ${DomainLogger.sanitizeId(templateId)}',
-      name: 'AgentTemplateService',
+      subDomain: 'AgentTemplateService',
     );
   }
 
@@ -458,10 +464,11 @@ class AgentTemplateCrud {
       await syncService.upsertEntity(updatedHead);
     });
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Rolled back template ${DomainLogger.sanitizeId(templateId)} '
       'to version ${DomainLogger.sanitizeId(versionId)}',
-      name: 'AgentTemplateService',
+      subDomain: 'AgentTemplateService',
     );
   }
 

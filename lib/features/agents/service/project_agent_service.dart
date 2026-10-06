@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -38,7 +37,7 @@ class ProjectAgentService {
     required this.syncService,
     required this.projectScopeIsCurrent,
     required this.mutationCoordinator,
-    this.domainLogger,
+    required this.domainLogger,
     this.onPersistedStateChanged,
     this.armProjectUpdate,
   });
@@ -61,8 +60,8 @@ class ProjectAgentService {
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
 
-  /// Optional domain logger for structured, PII-safe logging.
-  final DomainLogger? domainLogger;
+  /// Domain logger for structured, PII-safe logging.
+  final DomainLogger domainLogger;
   final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
@@ -233,7 +232,7 @@ class ProjectAgentService {
       triggerTokens: {projectId},
     );
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'created project agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for project ${DomainLogger.sanitizeId(projectId)}',
@@ -361,7 +360,7 @@ class ProjectAgentService {
 
   /// Trigger a manual re-analysis wake for [agentId].
   void triggerReanalysis(String agentId) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'manual reanalysis triggered for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
@@ -381,7 +380,7 @@ class ProjectAgentService {
   /// `agent_project` links are loaded in bulk before the per-agent loop so a
   /// database failure aborts this restoration pass once.
   Future<void> restoreSubscriptions() async {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'restoring project agent runtime state...',
       subDomain: 'restore',
@@ -434,25 +433,16 @@ class ProjectAgentService {
         final msg =
             'failed to restore runtime state '
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
-        if (domainLogger != null) {
-          domainLogger!.error(
-            LogDomain.agentRuntime,
-            e,
-            message: msg,
-            stackTrace: s,
-          );
-        } else {
-          developer.log(
-            '$msg (errorType=${e.runtimeType})',
-            name: 'ProjectAgentService',
-            error: e.runtimeType,
-            stackTrace: s,
-          );
-        }
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: msg,
+          stackTrace: s,
+        );
       }
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'restored $count project agent(s)',
       subDomain: 'restore',
@@ -494,7 +484,7 @@ class ProjectAgentService {
       );
     });
     onPersistedStateChanged?.call(snapshot.agentId);
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'retired legacy project deadlines for '
       '${DomainLogger.sanitizeId(snapshot.agentId)}',

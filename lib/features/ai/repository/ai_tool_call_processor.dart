@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
@@ -20,6 +20,7 @@ import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Dispatches streamed assistant tool calls for the unified AI inference path:
@@ -27,17 +28,44 @@ import 'package:openai_dart/openai_dart.dart';
 /// detection, and `assign_task_labels`.
 ///
 /// Extracted from `UnifiedAiInferenceRepository` as a standalone collaborator
-/// (it needs only [ref], a clock, and the repository-owned
-/// `AutoChecklistService`), keeping the repository focused on the inference run.
+/// (it needs only [ref], a clock, the repository-owned
+/// `AutoChecklistService` and the repository's logger), keeping the
+/// repository focused on the inference run.
+///
+/// Its log lines carry tool names, ids, counts and lengths only — never
+/// argument values, checklist item titles or task titles.
 class AiToolCallProcessor {
   AiToolCallProcessor({
     required this.ref,
     required this.clock,
     required this.autoChecklistServiceResolver,
+    required this._domainLogger,
   });
 
   final Ref ref;
   final DateTime Function() clock;
+  final DomainLogger _domainLogger;
+
+  /// Kept from the repository this was extracted from, so existing log
+  /// filters still match.
+  static const _logTag = 'UnifiedAiInferenceRepository';
+
+  void _log(String message, {InsightLevel level = InsightLevel.info}) =>
+      _domainLogger.log(
+        LogDomain.ai,
+        message,
+        subDomain: _logTag,
+        level: level,
+      );
+
+  void _error(Object error, String message, [StackTrace? stackTrace]) =>
+      _domainLogger.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _logTag,
+        message: message,
+      );
 
   /// Resolves the repository-owned (test-injectable) auto-checklist service.
   final AutoChecklistService Function() autoChecklistServiceResolver;
@@ -51,29 +79,18 @@ class AiToolCallProcessor {
   }) async {
     var languageWasSet = false;
     var currentTask = task; // Create mutable copy for updates
-    developer.log(
-      'Starting to process ${toolCalls.length} tool calls for checklist operations',
-      name: 'UnifiedAiInferenceRepository',
-    );
-
     // Names and sizes only: the arguments carry journal content, which
     // diagnostics must never contain.
-    for (var i = 0; i < toolCalls.length; i++) {
-      final tc = toolCalls[i];
-      developer.log(
-        'Tool call [$i]: name=${tc.function.name}, '
-        'argsLength=${tc.function.arguments.length}',
-        name: 'UnifiedAiInferenceRepository',
-      );
-    }
+    _log(
+      'Starting to process ${toolCalls.length} tool calls for checklist '
+      'operations: ${toolCalls.map((tc) => '${tc.function.name} '
+          '(${tc.function.arguments.length} chars)').join(', ')}',
+    );
 
     final suggestions = <ChecklistCompletionSuggestion>[];
 
     for (final toolCall in toolCalls) {
-      developer.log(
-        'Processing tool call: ${toolCall.function.name}',
-        name: 'UnifiedAiInferenceRepository',
-      );
+      _log('Processing tool call: ${toolCall.function.name}');
 
       if (toolCall.function.name ==
           ChecklistCompletionFunctions.suggestChecklistCompletion) {
@@ -83,27 +100,19 @@ class AiToolCallProcessor {
         if (jsonObjects.isEmpty) {
           // Log metadata only — raw arguments can carry user content/PII
           // and can be arbitrarily large.
-          developer.log(
+          _log(
             'No valid JSON found in arguments '
             '(toolCallId=${toolCall.id}, '
             'length=${toolCall.function.arguments.length})',
-            name: 'UnifiedAiInferenceRepository',
+            level: InsightLevel.warn,
           );
           continue;
         }
 
-        developer.log(
-          'Found ${jsonObjects.length} JSON objects in arguments',
-          name: 'UnifiedAiInferenceRepository',
-        );
+        _log('Found ${jsonObjects.length} JSON objects in arguments');
 
         for (final jsonStr in jsonObjects) {
           try {
-            developer.log(
-              'Parsing individual JSON (${jsonStr.length} chars)',
-              name: 'UnifiedAiInferenceRepository',
-            );
-
             final arguments = jsonDecode(jsonStr) as Map<String, dynamic>;
             final suggestion = ChecklistCompletionSuggestion(
               checklistItemId: arguments['checklistItemId'] as String,
@@ -115,15 +124,16 @@ class AiToolCallProcessor {
             );
             suggestions.add(suggestion);
 
-            developer.log(
-              'Created suggestion for item ${suggestion.checklistItemId} with confidence ${suggestion.confidence.name}',
-              name: 'UnifiedAiInferenceRepository',
+            _log(
+              'Created suggestion for item ${suggestion.checklistItemId} '
+              'with confidence ${suggestion.confidence.name} '
+              '(${jsonStr.length} chars)',
             );
-          } catch (e) {
-            developer.log(
-              'Error parsing individual checklist completion JSON: ${e.runtimeType}',
-              name: 'UnifiedAiInferenceRepository',
-              error: e.runtimeType,
+          } catch (e, stackTrace) {
+            _error(
+              e,
+              'Error parsing individual checklist completion JSON',
+              stackTrace,
             );
           }
         }
@@ -137,9 +147,9 @@ class AiToolCallProcessor {
           // Array-of-objects only
           final itemsField = arguments['items'];
           if (itemsField is! List) {
-            developer.log(
+            _log(
               'Invalid or missing items for add_multiple_checklist_items',
-              name: 'UnifiedAiInferenceRepository',
+              level: InsightLevel.warn,
             );
             continue;
           }
@@ -147,33 +157,28 @@ class AiToolCallProcessor {
           final sanitized = ChecklistValidation.validateItems(itemsField);
 
           if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
-            developer.log(
+            _log(
               ChecklistValidation.getBatchSizeErrorMessage(sanitized.length),
-              name: 'UnifiedAiInferenceRepository',
+              level: InsightLevel.warn,
             );
             continue;
           }
 
-          developer.log(
+          _log(
             'Processing ${sanitized.length} checklist items (array-of-objects)',
-            name: 'UnifiedAiInferenceRepository',
           );
 
           // Process each item
           for (final item in sanitized) {
-            developer.log(
-              'Adding checklist item (isChecked=${item.isChecked})',
-              name: 'UnifiedAiInferenceRepository',
-            );
+            _log('Adding checklist item (isChecked=${item.isChecked})');
 
             // Check if task has existing checklists
             final checklistIds = currentTask.data.checklistIds ?? [];
 
             if (checklistIds.isEmpty) {
               // Create a new "to-do" checklist with the item
-              developer.log(
+              _log(
                 'No existing checklists found, creating new "to-do" checklist',
-                name: 'UnifiedAiInferenceRepository',
               );
 
               final result = await autoChecklistService.autoCreateChecklist(
@@ -190,10 +195,7 @@ class AiToolCallProcessor {
               );
 
               if (result.success) {
-                developer.log(
-                  'Created new checklist ${result.checklistId} with item',
-                  name: 'UnifiedAiInferenceRepository',
-                );
+                _log('Created new checklist ${result.checklistId} with item');
 
                 // Refresh the task to get the updated checklistIds
                 final journalDb = ref.read(journalDbProvider);
@@ -202,33 +204,31 @@ class AiToolCallProcessor {
                 );
                 if (updatedEntity is Task) {
                   currentTask = updatedEntity;
-                  developer.log(
-                    'Refreshed task, now has ${currentTask.data.checklistIds?.length ?? 0} checklists',
-                    name: 'UnifiedAiInferenceRepository',
+                  _log(
+                    'Refreshed task, now has '
+                    '${currentTask.data.checklistIds?.length ?? 0} checklists',
                   );
                 } else {
                   // The task should exist since we just created a checklist for it.
                   // If not, it was likely deleted concurrently. Stop processing to avoid further errors.
-                  developer.log(
-                    'Failed to refresh task ${currentTask.id} after creating checklist. It might have been deleted concurrently.',
-                    name: 'UnifiedAiInferenceRepository',
-                    level: 1000, // SEVERE
+                  _domainLogger.error(
+                    LogDomain.ai,
+                    'Failed to refresh task ${currentTask.id} after creating '
+                    'checklist. It might have been deleted concurrently.',
+                    subDomain: _logTag,
                   );
                   break;
                 }
               } else {
-                developer.log(
-                  'Failed to create checklist: ${result.error}',
-                  name: 'UnifiedAiInferenceRepository',
+                _error(
+                  result.error ?? 'unknown error',
+                  'Failed to create checklist',
                 );
               }
             } else {
               // Add item to the first existing checklist using atomic operation
               final checklistId = checklistIds.first;
-              developer.log(
-                'Adding item to existing checklist: $checklistId',
-                name: 'UnifiedAiInferenceRepository',
-              );
+              _log('Adding item to existing checklist: $checklistId');
 
               final checklistRepository = ref.read(checklistRepositoryProvider);
               final newItem = await checklistRepository.addItemToChecklist(
@@ -240,19 +240,12 @@ class AiToolCallProcessor {
               );
 
               if (newItem != null) {
-                developer.log(
-                  'Successfully added item ${newItem.id} to checklist',
-                  name: 'UnifiedAiInferenceRepository',
-                );
+                _log('Successfully added item ${newItem.id} to checklist');
               }
             }
           }
-        } catch (e) {
-          developer.log(
-            'Error processing add checklist item(s): ${e.runtimeType}',
-            name: 'UnifiedAiInferenceRepository',
-            error: e.runtimeType,
-          );
+        } catch (e, stackTrace) {
+          _error(e, 'Error processing add checklist item(s)', stackTrace);
         }
       } else if (toolCall.function.name ==
           ChecklistCompletionFunctions.updateChecklistItems) {
@@ -260,6 +253,7 @@ class AiToolCallProcessor {
           final updateHandler = LottiChecklistUpdateHandler(
             task: currentTask,
             checklistRepository: ref.read(checklistRepositoryProvider),
+            domainLogger: _domainLogger,
             onTaskUpdated: (Task updatedTask) {
               currentTask = updatedTask;
             },
@@ -268,27 +262,21 @@ class AiToolCallProcessor {
           final result = updateHandler.processFunctionCall(toolCall);
 
           if (!result.success) {
-            developer.log(
-              'Invalid update_checklist_items call: ${result.error}',
-              name: 'UnifiedAiInferenceRepository',
+            _error(
+              result.error ?? 'unknown error',
+              'Invalid update_checklist_items call',
             );
             continue;
           }
 
           final count = await updateHandler.executeUpdates(result);
 
-          developer.log(
+          _log(
             'Updated $count checklist items, '
             'skipped ${updateHandler.skippedItems.length}',
-            name: 'UnifiedAiInferenceRepository',
           );
         } catch (e, stackTrace) {
-          developer.log(
-            'Error processing update_checklist_items: ${e.runtimeType}',
-            name: 'UnifiedAiInferenceRepository',
-            error: e.runtimeType,
-            stackTrace: stackTrace,
-          );
+          _error(e, 'Error processing update_checklist_items', stackTrace);
         }
       } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
         // Handle set task language
@@ -297,11 +285,10 @@ class AiToolCallProcessor {
             jsonDecode(toolCall.function.arguments) as Map<String, dynamic>,
           );
           final languageCode = result.languageCode;
-          final confidence = result.confidence.name;
 
-          developer.log(
-            'Setting task language to: $languageCode (confidence: $confidence)',
-            name: 'UnifiedAiInferenceRepository',
+          // The language code is an argument value: never logged.
+          _log(
+            'Setting task language (confidence: ${result.confidence.name})',
           );
 
           // Re-fetch the task to get the latest state and avoid race conditions
@@ -311,9 +298,10 @@ class AiToolCallProcessor {
           );
 
           if (freshEntity is! Task) {
-            developer.log(
-              'Task ${currentTask.id} not found or is not a Task anymore, skipping language update',
-              name: 'UnifiedAiInferenceRepository',
+            _log(
+              'Task ${currentTask.id} not found or is not a Task anymore, '
+              'skipping language update',
+              level: InsightLevel.warn,
             );
             continue;
           }
@@ -333,28 +321,21 @@ class AiToolCallProcessor {
               : TaskFieldMoved(freshTask);
           switch (write) {
             case TaskFieldWritten():
-              developer.log(
-                'Successfully set task language to $languageCode for task ${currentTask.id}',
-                name: 'UnifiedAiInferenceRepository',
-              );
+              _log('Successfully set task language for task ${currentTask.id}');
               languageWasSet = true;
-            case TaskFieldMoved(task: final stored):
-              developer.log(
-                'Task ${currentTask.id} already has language set to ${stored.data.languageCode}, not overwriting',
-                name: 'UnifiedAiInferenceRepository',
+            case TaskFieldMoved():
+              _log(
+                'Task ${currentTask.id} already has a language set, '
+                'not overwriting',
               );
             case TaskFieldWriteFailed():
-              developer.log(
+              _log(
                 'Failed to update task language for task ${currentTask.id}',
-                name: 'UnifiedAiInferenceRepository',
+                level: InsightLevel.warn,
               );
           }
-        } catch (e) {
-          developer.log(
-            'Error processing set task language: ${e.runtimeType}',
-            name: 'UnifiedAiInferenceRepository',
-            error: e.runtimeType,
-          );
+        } catch (e, stackTrace) {
+          _error(e, 'Error processing set task language', stackTrace);
         }
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
@@ -366,10 +347,10 @@ class AiToolCallProcessor {
 
           // Defensive check: warn if AI called without valid labels
           if (requested.isEmpty) {
-            developer.log(
+            _log(
               'assign_task_labels called without valid labels or labelIds '
               '(${toolCall.function.arguments.length} chars of arguments)',
-              name: 'UnifiedAiInferenceRepository',
+              level: InsightLevel.warn,
             );
             continue;
           }
@@ -387,24 +368,10 @@ class AiToolCallProcessor {
 
           // Short-circuit if everything was suppressed
           if (proposed.isEmpty && requested.isNotEmpty) {
-            final skipped = requested
-                .where(suppressedSet.contains)
-                .map((id) => {'id': id, 'reason': 'suppressed'})
-                .toList();
-            final noop = LabelAssignmentResult(
-              assigned: const [],
-              invalid: const [],
-              skipped: skipped,
+            _log(
+              'assign_task_labels suppressed-only: all ${requested.length} '
+              'requested labels are suppressed for task ${currentTask.id}',
             );
-            try {
-              final response = noop.toStructuredJson(requested);
-              developer.log(
-                'assign_task_labels suppressed-only: $response',
-                name: 'UnifiedAiInferenceRepository',
-              );
-            } catch (_) {
-              // best-effort logging
-            }
             continue;
           }
           final result = await processor.processAssignment(
@@ -417,42 +384,30 @@ class AiToolCallProcessor {
             confidenceBreakdown: parsed.confidenceBreakdown,
             totalCandidates: parsed.totalCandidates,
           );
-          // Log structured result for debugging
-          try {
-            developer.log(
-              'assign_task_labels result: ${result.toStructuredJson(requested)}',
-              name: 'UnifiedAiInferenceRepository',
-            );
-          } catch (_) {
-            // best-effort logging
-          }
-        } catch (e) {
-          developer.log(
-            'Error processing assign_task_labels: ${e.runtimeType}',
-            name: 'UnifiedAiInferenceRepository',
-            error: e.runtimeType,
+          // Counts only: requested ids come from the model's arguments.
+          _log(
+            'assign_task_labels result: requested=${requested.length}, '
+            'assigned=${result.assigned.length}, '
+            'invalid=${result.invalid.length}, '
+            'skipped=${result.skipped.length}',
           );
+        } catch (e, stackTrace) {
+          _error(e, 'Error processing assign_task_labels', stackTrace);
         }
       } else {
-        developer.log(
+        _log(
           'Skipping unknown tool call: ${toolCall.function.name}',
-          name: 'UnifiedAiInferenceRepository',
+          level: InsightLevel.warn,
         );
       }
     }
 
     if (suggestions.isNotEmpty) {
-      developer.log(
-        'About to store ${suggestions.length} suggestions:',
-        name: 'UnifiedAiInferenceRepository',
+      _log(
+        'About to store ${suggestions.length} suggestions: '
+        '${suggestions.map((s) => '${s.checklistItemId} '
+            '(${s.confidence.name})').join(', ')}',
       );
-
-      for (final suggestion in suggestions) {
-        developer.log(
-          '  - Item ${suggestion.checklistItemId} (${suggestion.confidence.name})',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
 
       // Store suggestions in the service
       ref
@@ -465,9 +420,9 @@ class AiToolCallProcessor {
 
       for (final suggestion in suggestions) {
         if (suggestion.confidence == ChecklistCompletionConfidence.high) {
-          developer.log(
-            'Auto-checking item ${suggestion.checklistItemId} due to high confidence',
-            name: 'UnifiedAiInferenceRepository',
+          _log(
+            'Auto-checking item ${suggestion.checklistItemId} '
+            'due to high confidence',
           );
 
           try {
@@ -478,18 +433,17 @@ class AiToolCallProcessor {
 
             if (checklistItem is ChecklistItem) {
               if (checklistItem.data.isChecked) {
-                developer.log(
-                  'Skipping auto-check for item ${suggestion.checklistItemId} - already checked',
-                  name: 'UnifiedAiInferenceRepository',
+                _log(
+                  'Skipping auto-check for item '
+                  '${suggestion.checklistItemId} - already checked',
                 );
               } else if (checklistItem.data.checkedBy == ChangeSource.user) {
                 // User sovereignty: do not auto-check items the user
                 // explicitly unchecked. The agent tool path requires a
                 // reason; auto-check has no reason to provide, so skip.
-                developer.log(
+                _log(
                   'Skipping auto-check for item ${suggestion.checklistItemId} '
                   '- user-owned (sovereignty guard)',
-                  name: 'UnifiedAiInferenceRepository',
                 );
               } else {
                 // Safe to auto-check: item is unchecked and agent-owned. The
@@ -508,31 +462,27 @@ class AiToolCallProcessor {
                   taskId: currentTask.id,
                 );
 
-                developer.log(
+                _log(
                   'Successfully auto-checked item ${suggestion.checklistItemId}',
-                  name: 'UnifiedAiInferenceRepository',
                 );
               }
             }
-          } catch (e) {
-            developer.log(
-              'Error auto-checking item ${suggestion.checklistItemId}: ${e.runtimeType}',
-              name: 'UnifiedAiInferenceRepository',
-              error: e.runtimeType,
+          } catch (e, stackTrace) {
+            _error(
+              e,
+              'Error auto-checking item ${suggestion.checklistItemId}',
+              stackTrace,
             );
           }
         }
       }
 
-      developer.log(
-        'Processed ${suggestions.length} checklist completion suggestions for task ${currentTask.id}',
-        name: 'UnifiedAiInferenceRepository',
+      _log(
+        'Processed ${suggestions.length} checklist completion suggestions '
+        'for task ${currentTask.id}',
       );
     } else {
-      developer.log(
-        'No suggestions to process after parsing tool calls',
-        name: 'UnifiedAiInferenceRepository',
-      );
+      _log('No suggestions to process after parsing tool calls');
     }
 
     return languageWasSet;

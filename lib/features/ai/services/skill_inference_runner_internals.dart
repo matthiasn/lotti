@@ -273,10 +273,12 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     final repo = _ref.read(aiConfigRepositoryProvider);
     final modelConfig = await repo.getConfigById(overrideModelId);
     if (modelConfig is! AiConfigModel) {
-      developer.log(
+      _loggingService.log(
+        LogDomain.ai,
         'Override ${slotKind.label} modelId $overrideModelId did not '
         'resolve to an AiConfigModel; falling back to profile slot',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return fallback();
     }
@@ -284,11 +286,13 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
       modelConfig.inferenceProviderId,
     );
     if (providerConfig is! AiConfigInferenceProvider) {
-      developer.log(
+      _loggingService.log(
+        LogDomain.ai,
         'Override ${slotKind.label} model ${modelConfig.id} has no '
         'resolvable parent provider ${modelConfig.inferenceProviderId}; '
         'falling back to profile slot',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return fallback();
     }
@@ -335,9 +339,11 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     final fullPath = getCanonicalImagePath(image);
     final file = File(fullPath);
     if (!file.existsSync()) {
-      developer.log(
-        'Image file not found: $fullPath',
-        name: _logTag,
+      _loggingService.log(
+        LogDomain.ai,
+        'Image file not found for image ${image.id}',
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return [];
     }
@@ -354,9 +360,11 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     ).resolveSymbolicLinksSync();
     final canonicalPath = file.resolveSymbolicLinksSync();
     if (!canonicalPath.startsWith('$docDir${Platform.pathSeparator}')) {
-      developer.log(
-        'Image path escapes documents directory: $fullPath',
-        name: _logTag,
+      _loggingService.log(
+        LogDomain.ai,
+        'Image path of image ${image.id} escapes documents directory',
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return [];
     }

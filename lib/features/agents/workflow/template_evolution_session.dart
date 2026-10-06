@@ -22,19 +22,23 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
     final sync = syncService;
     final ctxBuilder = contextBuilder ?? EvolutionContextBuilder();
     if (svc == null || sync == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'templateService and syncService are required for sessions',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
 
     // Only one active session per template at a time.
     if (getActiveSessionForTemplate(templateId) != null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Session already active for template '
         '${DomainLogger.sanitizeId(templateId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -42,19 +46,23 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
     // Fetch template and active version.
     final template = await svc.getTemplate(templateId);
     if (template == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Template ${DomainLogger.sanitizeId(templateId)} not found',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
 
     final currentVersion = await svc.getActiveVersion(templateId);
     if (currentVersion == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No active version for template '
         '${DomainLogger.sanitizeId(templateId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -63,13 +71,16 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
     final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: template.modelId,
       aiConfigRepository: this.aiConfigRepository,
+      domainLogger: _domainLogger,
       logTag: _logTag,
     );
     if (inferenceSlot == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Cannot resolve provider for template model '
         '(modelIdLength=${template.modelId.length})',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -145,12 +156,14 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
                   .toList();
             }
           } catch (e, s) {
-            developer.log(
-              'Soul enrichment failed for template '
-              '${DomainLogger.sanitizeId(templateId)}',
-              name: _logTag,
-              error: e.runtimeType,
+            _domainLogger.error(
+              LogDomain.agentWorkflow,
+              e,
               stackTrace: s,
+              subDomain: _logTag,
+              message:
+                  'Soul enrichment failed for template '
+                  '${DomainLogger.sanitizeId(templateId)}',
             );
           }
         }
@@ -191,7 +204,10 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
       final catalog = buildEvolutionCatalog();
       final processor = SurfaceController(catalogs: [catalog]);
       final bridge = GenUiBridge(processor: processor);
-      final eventHandler = GenUiEventHandler(processor: processor)..listen();
+      final eventHandler = GenUiEventHandler(
+        processor: processor,
+        domainLogger: _domainLogger,
+      )..listen();
 
       // Resolve the active soul version for strategy's before/after comparison.
       // Reuse the version already resolved in the full path; only fetch fresh
@@ -204,12 +220,14 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
                 templateId,
               );
         } catch (e, s) {
-          developer.log(
-            'Soul resolution for strategy failed for template '
-            '${DomainLogger.sanitizeId(templateId)}',
-            name: _logTag,
-            error: e.runtimeType,
+          _domainLogger.error(
+            LogDomain.agentWorkflow,
+            e,
             stackTrace: s,
+            subDomain: _logTag,
+            message:
+                'Soul resolution for strategy failed for template '
+                '${DomainLogger.sanitizeId(templateId)}',
           );
         }
       }
@@ -261,11 +279,12 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
 
       return _extractLastAssistantContent(conversationId);
     } catch (e, s) {
-      developer.log(
-        'Failed to start session',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'Failed to start session',
       );
       await abandonSession(sessionId: sessionId);
       return null;

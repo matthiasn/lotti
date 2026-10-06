@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// The lazy-create trigger every door that turns reminders on shares — the
 /// person editor, the person page's card and contact import (ADR 0059
@@ -26,22 +26,25 @@ import 'package:lotti/features/relationships/runtime/relationship_agent_reconcil
 /// save the user just watched succeed. Takes the [service] rather than a
 /// `ref`, because it outlives its caller by design — the agent is created
 /// after the sheet has popped or the import page has closed. A person who is
-/// not important is left alone. [source] names the caller in the log.
+/// not important is left alone. A failure is reported to [domainLogger], with
+/// [source] naming the caller as the log's sub-domain.
 void ensureRelationshipAgentInBackground(
   RelationshipAgentService service,
   RelationshipEntry relationship, {
   required String source,
+  required DomainLogger domainLogger,
 }) {
   if (!relationship.data.important) return;
   unawaited(() async {
     try {
       await service.ensureAgentForRelationship(relationship);
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to ensure relationship agent',
-        name: source,
-        error: error,
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: source,
+        message: 'Failed to ensure relationship agent ${relationship.id}',
       );
     }
   }());

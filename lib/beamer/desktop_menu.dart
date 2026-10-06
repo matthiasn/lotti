@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_catalog.dart';
 import 'package:lotti/features/keyboard/domain/app_command_text.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -95,8 +97,12 @@ class DesktopMenuWrapper extends StatelessWidget {
             await createTextEntry(linkedId: linkedId);
           },
           AppCommandId.createTask => () async {
+            final domainLogger = ProviderScope.containerOf(
+              context,
+              listen: false,
+            ).read(domainLoggerProvider);
             final linkedId = await getIdFromSavedRoute();
-            await createTask(linkedId: linkedId);
+            await createTask(domainLogger: domainLogger, linkedId: linkedId);
           },
           AppCommandId.captureScreenshot => () async {
             final linkedId = await getIdFromSavedRoute();

@@ -321,7 +321,7 @@ void main() {
       orchestrator: orchestrator,
       syncService: syncService,
       checkInterval: checkInterval,
-      domainLogger: domainLogger,
+      domainLogger: domainLogger ?? MockDomainLogger(),
     )..start();
   }
 
@@ -444,6 +444,7 @@ void main() {
         () => repository.getDueScheduledAgentStates(any()),
       ).thenAnswer((_) async => []);
       final manager = ScheduledWakeManager(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         orchestrator: orchestrator,
         syncService: syncService,
@@ -616,6 +617,7 @@ void main() {
             });
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: generatedRepository,
               orchestrator: generatedOrchestrator,
               syncService: generatedSyncService,
@@ -715,6 +717,7 @@ void main() {
             ).thenAnswer((_) async => []);
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: generatedRepository,
               orchestrator: generatedOrchestrator,
               syncService: generatedSyncService,
@@ -1024,6 +1027,7 @@ void main() {
           () => repository.getEntity(record.id),
         ).thenAnswer((_) async => record);
         return ScheduledWakeManager(
+          domainLogger: MockDomainLogger(),
           repository: repository,
           orchestrator: orchestrator,
           syncService: syncService,
@@ -1099,6 +1103,7 @@ void main() {
             ).thenAnswer((_) async => record);
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -1612,6 +1617,7 @@ void main() {
               return 'run-key';
             });
             return ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repo,
               orchestrator: orch,
               syncService: sync,
@@ -1696,6 +1702,7 @@ void main() {
               () => syncService.upsertEntity(any()),
             ).thenAnswer((_) async {});
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -1863,6 +1870,7 @@ void main() {
               ).thenAnswer((_) async {});
 
               final manager = ScheduledWakeManager(
+                domainLogger: MockDomainLogger(),
                 repository: repository,
                 orchestrator: orchestrator,
                 syncService: syncService,
@@ -2194,6 +2202,7 @@ void main() {
             );
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: trackingRepository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -2365,6 +2374,7 @@ void main() {
             () => repository.getAgentState(kTestAgentId),
           ).thenAnswer((_) async => dormantState);
           final manager = ScheduledWakeManager(
+            domainLogger: MockDomainLogger(),
             repository: repository,
             orchestrator: orchestrator,
             syncService: syncService,
@@ -2940,6 +2950,7 @@ void main() {
             );
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -2986,6 +2997,7 @@ void main() {
             );
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -3019,6 +3031,7 @@ void main() {
             ).thenAnswer((_) async => <AgentStateEntity>[]);
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -3051,6 +3064,7 @@ void main() {
             ).thenAnswer((_) async => <AgentStateEntity>[]);
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -3086,6 +3100,7 @@ void main() {
             );
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -3123,6 +3138,7 @@ void main() {
             );
 
             final manager = ScheduledWakeManager(
+              domainLogger: MockDomainLogger(),
               repository: repository,
               orchestrator: orchestrator,
               syncService: syncService,
@@ -3190,6 +3206,7 @@ void main() {
       ).thenAnswer((_) async => due);
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
       return ScheduledWakeManager(
+        domainLogger: MockDomainLogger(),
         repository: repository,
         orchestrator: orchestrator,
         syncService: syncService,
@@ -3467,6 +3484,7 @@ void main() {
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
           final manager = ScheduledWakeManager(
+            domainLogger: MockDomainLogger(),
             repository: repository,
             orchestrator: orchestrator,
             syncService: syncService,

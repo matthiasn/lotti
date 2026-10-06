@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -15,6 +13,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
@@ -388,6 +388,7 @@ class _AgentTemplateDetailPageState
   Future<void> _handleSave(BuildContext context) async {
     setState(() => _isSaving = true);
 
+    final logger = ref.read(domainLoggerProvider);
     try {
       final templateService = ref.read(agentTemplateServiceProvider);
       final name = _nameController.text.trim();
@@ -473,11 +474,12 @@ class _AgentTemplateDetailPageState
           ..invalidate(templateVersionHistoryProvider(widget.templateId!));
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to save template',
-        name: 'AgentTemplateDetailPage',
-        error: e.runtimeType,
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'AgentTemplateDetailPage',
+        message: 'Failed to save template',
       );
       if (!context.mounted) return;
       context.showToast(
@@ -506,6 +508,7 @@ class _AgentTemplateDetailPageState
           DesignSystemButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
+              final logger = ref.read(domainLoggerProvider);
               try {
                 final templateService = ref.read(agentTemplateServiceProvider);
                 await templateService.deleteTemplate(widget.templateId!);
@@ -519,11 +522,12 @@ class _AgentTemplateDetailPageState
                   title: pageContext.messages.agentTemplateDeleteHasInstances,
                 );
               } catch (e, s) {
-                developer.log(
-                  'Delete failed',
-                  name: 'AgentTemplateDetailPage',
-                  error: e.runtimeType,
+                logger.error(
+                  LogDomain.agentWorkflow,
+                  e,
                   stackTrace: s,
+                  subDomain: 'AgentTemplateDetailPage',
+                  message: 'Delete failed',
                 );
                 if (!mounted || !pageContext.mounted) return;
                 pageContext.showToast(

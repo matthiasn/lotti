@@ -1,12 +1,12 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 const _logTag = 'ProfileResolver';
 
@@ -22,9 +22,13 @@ const _logTag = 'ProfileResolver';
 class ProfileResolver {
   const ProfileResolver({
     required this._aiConfigRepository,
+    required this._domainLogger,
   });
 
   final AiConfigRepository _aiConfigRepository;
+
+  /// Receives the reasons a profile or model cannot be resolved.
+  final DomainLogger _domainLogger;
 
   /// Resolve a [ResolvedProfile] for the given agent context.
   ///
@@ -148,6 +152,7 @@ class ProfileResolver {
         : await resolveInferenceProviderForModelConfigId(
             modelConfigId: overrideId,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           );
     final baseProfile = setup.baseProfileId == null
@@ -260,9 +265,11 @@ class ProfileResolver {
   Future<AiConfigInferenceProfile?> _fetchProfile(String profileId) async {
     final config = await _aiConfigRepository.getConfigById(profileId);
     if (config is! AiConfigInferenceProfile) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Profile $profileId not found or wrong type',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -279,13 +286,16 @@ class ProfileResolver {
         await resolveInferenceProviderForProfileSlot(
           modelId: config.thinkingModelId,
           aiConfigRepository: _aiConfigRepository,
+          domainLogger: _domainLogger,
           logTag: _logTag,
         );
     if (thinkingSlot == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Cannot resolve thinking model ${config.thinkingModelId} '
         'for profile ${config.id}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -296,12 +306,14 @@ class ProfileResolver {
         : await resolveInferenceProviderForProfileSlot(
             modelId: config.chatModelId!,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           );
     final thinkingHighEndSlot = config.thinkingHighEndModelId != null
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.thinkingHighEndModelId!,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           )
         : null;
@@ -310,6 +322,7 @@ class ProfileResolver {
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.imageRecognitionModelId!,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           )
         : null;
@@ -318,6 +331,7 @@ class ProfileResolver {
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.transcriptionModelId!,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           )
         : null;
@@ -326,6 +340,7 @@ class ProfileResolver {
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.imageGenerationModelId!,
             aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
             logTag: _logTag,
           )
         : null;
@@ -358,12 +373,15 @@ class ProfileResolver {
     final slot = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: _aiConfigRepository,
+      domainLogger: _domainLogger,
       logTag: _logTag,
     );
     if (slot == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Cannot resolve legacy model $modelId',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }

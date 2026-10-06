@@ -120,6 +120,7 @@ void main() {
   );
 
   EventAgentWorkflow buildWorkflow() => EventAgentWorkflow(
+    domainLogger: MockDomainLogger(),
     agentRepository: mockAgentRepository,
     conversationRepository: mockConversationRepository,
     aiConfigRepository: mockAiConfigRepository,
@@ -129,8 +130,9 @@ void main() {
     templateService: mockTemplateService,
   );
 
-  /// A workflow wired with a real [DomainLogger] (so the `domainLogger != null`
-  /// logging branches execute) and an optional soul-document service.
+  /// A workflow wired with a real [DomainLogger] with the workflow domain
+  /// enabled (so the gated logging lines execute) and an optional
+  /// soul-document service.
   EventAgentWorkflow buildLoggedWorkflow({SoulDocumentService? soul}) =>
       EventAgentWorkflow(
         agentRepository: mockAgentRepository,

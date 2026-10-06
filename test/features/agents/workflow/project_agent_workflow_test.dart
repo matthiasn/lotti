@@ -136,7 +136,7 @@ void main() {
       templateService: mockTemplateService,
       inputCaptureService: inputCaptureService,
       soulDocumentService: soulDocumentService,
-      domainLogger: domainLogger,
+      domainLogger: domainLogger ?? MockDomainLogger(),
       onPersistedStateChanged: onPersistedStateChanged,
       armProjectUpdate:
           armProjectUpdate ?? (agentId) async => armedAgentIds.add(agentId),

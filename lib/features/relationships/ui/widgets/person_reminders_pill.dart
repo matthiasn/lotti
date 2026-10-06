@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -14,6 +12,8 @@ import 'package:lotti/features/relationships/state/relationship_agent_providers.
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -111,16 +111,18 @@ class _PersonRemindersSheetState extends ConsumerState<PersonRemindersSheet> {
     final messages = context.messages;
     final repository = ref.read(relationshipRepositoryProvider);
     final agentService = ref.read(relationshipAgentServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _saving = true);
     var saved = false;
     try {
       saved = await repository.updateRelationship(updated);
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to update reminders',
-        name: 'PersonRemindersSheet',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'PersonRemindersSheet',
+        message: 'Failed to update reminders',
       );
     }
     if (saved) {
@@ -128,6 +130,7 @@ class _PersonRemindersSheetState extends ConsumerState<PersonRemindersSheet> {
         agentService,
         updated,
         source: 'PersonRemindersSheet',
+        domainLogger: logger,
       );
     }
     if (!mounted) return;

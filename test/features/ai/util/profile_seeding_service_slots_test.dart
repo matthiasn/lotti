@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -24,7 +25,10 @@ void main() {
 
   setUp(() {
     mockRepo = MockAiConfigRepository();
-    service = ProfileSeedingService(aiConfigRepository: mockRepo);
+    service = ProfileSeedingService(
+      aiConfigRepository: mockRepo,
+      domainLogger: MockDomainLogger(),
+    );
 
     // Default: all profiles missing (return null for any ID lookup).
     when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);

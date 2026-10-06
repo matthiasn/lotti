@@ -25,7 +25,7 @@ void main() {
   setUp(() {
     service = MockAiAttributionService();
     identity = MockAiAttributionIdentityResolver();
-    capture = AiInteractionCapture(service, identity);
+    capture = AiInteractionCapture(service, identity, MockDomainLogger());
     session = AiAttributionSession(
       id: 'attribution-1',
       workType: AiWorkType.textGeneration,

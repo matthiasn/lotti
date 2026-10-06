@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/nudge_models.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// A banner brief accumulated from one `create_relationship_ad` call.
@@ -45,6 +45,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
     with AgentMessageRecording {
   RelationshipAgentStrategy({
     required this.syncService,
+    required this.domainLogger,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -55,6 +56,10 @@ class RelationshipAgentStrategy extends ConversationStrategy
 
   @override
   final AgentSyncService syncService;
+
+  /// Structured logger for argument-parsing and persistence failures.
+  @override
+  final DomainLogger domainLogger;
   @override
   final String agentId;
   @override
@@ -113,12 +118,15 @@ class RelationshipAgentStrategy extends ConversationStrategy
       Map<String, dynamic> args;
       try {
         args = parseAgentToolArguments(call.function.arguments);
-      } catch (e) {
-        developer.log(
-          'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=${utf8.encode(call.function.arguments).length}, '
-          'errorType=${e.runtimeType})',
-          name: 'RelationshipAgentStrategy',
+      } catch (e, stackTrace) {
+        domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
+          stackTrace: stackTrace,
+          subDomain: 'RelationshipAgentStrategy',
+          message:
+              'Failed to parse tool call arguments for $toolName '
+              '(rawBytes=${utf8.encode(call.function.arguments).length})',
         );
         await _reject(
           call: call,

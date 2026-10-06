@@ -9,6 +9,7 @@ void main() {
       test('enqueues a job and triggers processNext', () {
         fakeAsync((async) {
           (orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -42,6 +43,7 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: runner,
@@ -83,6 +85,7 @@ void main() {
       test('uses the provided reason in the wake job', () {
         fakeAsync((async) {
           (orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -109,6 +112,7 @@ void main() {
         fakeAsync((async) {
           orchestrator =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,

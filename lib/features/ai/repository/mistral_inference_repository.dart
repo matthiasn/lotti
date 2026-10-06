@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
@@ -9,7 +8,6 @@ import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -22,6 +20,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// returned as an array instead of a string.
 class MistralInferenceRepository {
   MistralInferenceRepository({
+    required this._domainLogger,
     http.Client? httpClient,
     AudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
     TemporaryAudioFileReader? temporaryFileReader,
@@ -39,6 +38,7 @@ class MistralInferenceRepository {
   /// Segments the model-name humanizer keeps upper-case for this provider.
   static const _modelNameAcronyms = {'AI', 'API', 'FIM', 'OCR', 'VL'};
 
+  final DomainLogger _domainLogger;
   final http.Client _httpClient;
   final AudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
   final TemporaryAudioFileReader _temporaryFileReader;
@@ -64,25 +64,25 @@ class MistralInferenceRepository {
     return normalized == 'voxtral-small-latest' || normalized.endsWith('-2507');
   }
 
-  /// Safely log exception to LoggingService if available
-  /// Records [exception] by its type only. Its text is not content-free: a
-  /// `FormatException` from decoding a response quotes the malformed
-  /// response, which can echo the prompt.
+  /// Records [exception] by its type only, with an optional content-free
+  /// [message]. Its text is not content-free: a `FormatException` from
+  /// decoding a response quotes the malformed response, which can echo the
+  /// prompt.
   void _logException(
     Object exception, {
     required String subDomain,
     StackTrace? stackTrace,
+    String? message,
   }) {
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt<DomainLogger>().error(
-        LogDomain.ai,
-        '${exception.runtimeType}',
-        stackTrace: stackTrace,
-        subDomain: subDomain,
-        // Keeps the classification the content-free string would lose.
-        errorType: exception.runtimeType,
-      );
-    }
+    _domainLogger.error(
+      LogDomain.ai,
+      '${exception.runtimeType}',
+      stackTrace: stackTrace,
+      subDomain: subDomain,
+      message: message,
+      // Keeps the classification the content-free string would lose.
+      errorType: exception.runtimeType,
+    );
   }
 
   /// Default timeout for [listModels]. Exposed so test doubles can mirror the
@@ -116,9 +116,11 @@ class MistralInferenceRepository {
     final uri = _buildEndpointUri(normalizedBaseUrl, 'models');
     // Log only host + path — never the full URI, which (from a user-configured
     // base URL) can carry credentials in userinfo or tokens in the query.
-    developer.log(
-      'Fetching Mistral model catalog from ${ModelCatalogMapping.redactedEndpoint(uri)}',
-      name: 'MistralInferenceRepository',
+    _domainLogger.log(
+      LogDomain.ai,
+      'Fetching Mistral model catalog from '
+      '${ModelCatalogMapping.redactedEndpoint(uri)}',
+      subDomain: 'MistralInferenceRepository',
     );
 
     try {
@@ -380,6 +382,7 @@ class MistralInferenceRepository {
     Duration timeout = temporaryMp3ChatAudioTimeout,
   }) => transcribeTemporaryMp3ChatAudio(
     httpClient: _httpClient,
+    domainLogger: _domainLogger,
     provider: const TemporaryMp3ChatAudioProvider(
       repositoryName: 'MistralInferenceRepository',
       displayName: 'Mistral',
@@ -612,11 +615,12 @@ class MistralInferenceRepository {
       requestBody['tool_choice'] = _serializeToolChoice(toolChoice) ?? 'auto';
     }
 
-    developer.log(
+    // No base URL: a user-configured one can carry credentials.
+    _domainLogger.log(
+      LogDomain.ai,
       'Sending streaming request to Mistral API - '
-      'baseUrl: $baseUrl, model: $model, '
-      'tools: ${tools?.length ?? 0}',
-      name: 'MistralInferenceRepository',
+      'model: $model, tools: ${tools?.length ?? 0}',
+      subDomain: 'MistralInferenceRepository',
     );
 
     try {
@@ -633,10 +637,13 @@ class MistralInferenceRepository {
 
       if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
-        developer.log(
-          'Mistral API error: HTTP ${streamedResponse.statusCode} '
-          '(body: ${body.length} chars, not logged — it can echo the prompt)',
-          name: 'MistralInferenceRepository',
+        _domainLogger.error(
+          LogDomain.ai,
+          'Mistral API error: HTTP ${streamedResponse.statusCode}',
+          subDomain: 'MistralInferenceRepository',
+          message:
+              'body: ${body.length} chars, not logged — it can echo the '
+              'prompt',
         );
         throw MistralInferenceException(
           'Mistral API error (HTTP ${streamedResponse.statusCode})',
@@ -673,9 +680,10 @@ class MistralInferenceRepository {
 
             // Check for stream end
             if (data == '[DONE]') {
-              developer.log(
+              _domainLogger.log(
+                LogDomain.ai,
                 'Streaming complete - received $chunksReceived chunks',
-                name: 'MistralInferenceRepository',
+                subDomain: 'MistralInferenceRepository',
               );
               return;
             }
@@ -687,13 +695,16 @@ class MistralInferenceRepository {
                 chunksReceived++;
                 yield response;
               }
-            } on FormatException catch (e) {
+            } on FormatException catch (e, stackTrace) {
               parseErrorCount++;
-              developer.log(
-                'Failed to parse SSE chunk ($parseErrorCount/$maxParseErrors, '
-                '${data.length} chars; content not logged)',
-                name: 'MistralInferenceRepository',
-                error: e.runtimeType,
+              _logException(
+                e,
+                subDomain: 'MistralInferenceRepository',
+                stackTrace: stackTrace,
+                message:
+                    'Failed to parse SSE chunk '
+                    '($parseErrorCount/$maxParseErrors, '
+                    '${data.length} chars; content not logged)',
               );
               if (parseErrorCount >= maxParseErrors) {
                 _logException(
@@ -712,12 +723,12 @@ class MistralInferenceRepository {
     } on MistralInferenceException {
       rethrow;
     } catch (e, stackTrace) {
-      developer.log(
-        'Unexpected error during Mistral inference',
-        name: 'MistralInferenceRepository',
-        error: e.runtimeType,
+      _logException(
+        e,
+        subDomain: 'unexpected',
+        stackTrace: stackTrace,
+        message: 'Unexpected error during Mistral inference',
       );
-      _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
       throw MistralInferenceException(
         'Failed to generate text: $e',
       );

@@ -389,6 +389,7 @@ class DayAgentWorkflow {
 
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
+      domainLogger: domainLogger,
     );
     final resolvedProfile = templateCtx != null
         ? await profileResolver.resolve(

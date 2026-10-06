@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -20,6 +19,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -46,6 +46,7 @@ typedef MeliousChatCompletionStreamFactory =
 /// without hard-coding Melious' catalog into the static known-model list.
 class MeliousInferenceRepository extends TranscriptionRepository {
   MeliousInferenceRepository({
+    required super.domainLogger,
     super.httpClient,
     CloudInferenceRequestHelpers? helpers,
     MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
@@ -223,13 +224,16 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         includeMeta: true,
         timeout: timeout,
       );
-    } on InferenceHttpException catch (includeMetaError) {
+    } on InferenceHttpException catch (includeMetaError, stackTrace) {
       if (!_shouldRetryPlainModels(includeMetaError)) rethrow;
-      developer.log(
-        'Melious metadata catalog failed; retrying plain /models as degraded '
-        'fallback',
-        name: _providerName,
-        error: includeMetaError,
+      domainLogger.error(
+        LogDomain.ai,
+        includeMetaError,
+        stackTrace: stackTrace,
+        subDomain: _providerName,
+        message:
+            'Melious metadata catalog failed; retrying plain /models as '
+            'degraded fallback',
       );
       try {
         return await _listModelsFromEndpoint(
@@ -616,6 +620,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     InferenceImpactCollector? impactCollector,
   }) => transcribeTemporaryMp3ChatAudio(
     httpClient: httpClient,
+    domainLogger: domainLogger,
     provider: const TemporaryMp3ChatAudioProvider(
       repositoryName: _providerName,
       displayName: 'Melious',
@@ -838,13 +843,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       return '<missing id; keys=${item.keys.join(',')}>';
     }
     return '<${item.runtimeType}>';
-  }
-
-  static String _clipForLog(String value) {
-    const maxLength = 800;
-    return value.length > maxLength
-        ? '${value.substring(0, maxLength)}...'
-        : value;
   }
 }
 

@@ -9,6 +9,10 @@ import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 
 /// Streaming 200-OK stub that records the outgoing request — previously
 /// repeated inline in every multipart-shape test. Returns one pre-built
@@ -116,7 +120,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -137,7 +144,10 @@ void main() {
 
       test('includes context_bias field with dictionary terms', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -187,7 +197,10 @@ void main() {
           rawTerms,
         ) async {
           final stub = _stubStreamingOk();
-          final repo = MistralTranscriptionRepository(httpClient: stub.client);
+          final repo = MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: stub.client,
+          );
 
           await repo
               .transcribeAudio(
@@ -222,7 +235,10 @@ void main() {
 
       test('preserves multi-word context_bias phrases', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -242,7 +258,10 @@ void main() {
 
       test('deduplicates repeated context_bias terms', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -264,7 +283,10 @@ void main() {
 
       test('limits context_bias to 100 terms', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -284,7 +306,10 @@ void main() {
 
       test('does not include context_bias field when null', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -300,7 +325,10 @@ void main() {
 
       test('does not include context_bias field when empty', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -325,7 +353,11 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final logger = MockDomainLogger();
+        final repo = MistralTranscriptionRepository(
+          domainLogger: logger,
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -350,6 +382,18 @@ void main() {
                 ),
           ),
         );
+        // The status and the body's size are logged; the body is not.
+        verify(
+          () => logger.error(
+            LogDomain.speech,
+            'Failed to transcribe audio: HTTP 400',
+            subDomain: 'MistralTranscription',
+            message: any<String?>(
+              named: 'message',
+              that: allOf(startsWith('body '), isNot(contains('invalid'))),
+            ),
+          ),
+        ).called(1);
       });
 
       test('throws on HTTP error with non-JSON body', () async {
@@ -357,7 +401,10 @@ void main() {
           return http.Response('Internal Server Error', 500);
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -386,7 +433,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -408,7 +458,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty model', () {
-        final repo = MistralTranscriptionRepository();
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -422,7 +474,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty audioBase64', () {
-        final repo = MistralTranscriptionRepository();
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -436,7 +490,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty baseUrl', () {
-        final repo = MistralTranscriptionRepository();
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -450,7 +506,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty apiKey', () {
-        final repo = MistralTranscriptionRepository();
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -480,7 +538,10 @@ void main() {
             },
           );
 
-          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: mockClient,
+          );
 
           await repo
               .transcribeAudio(
@@ -515,7 +576,10 @@ void main() {
             },
           );
 
-          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: mockClient,
+          );
 
           await repo
               .transcribeAudio(
@@ -538,7 +602,10 @@ void main() {
           throw Exception('Network error');
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -561,7 +628,10 @@ void main() {
 
       test('includes diarization fields in request', () async {
         final stub = _stubStreamingOk();
-        final repo = MistralTranscriptionRepository(httpClient: stub.client);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -604,7 +674,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -658,7 +731,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -694,7 +770,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -735,7 +814,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -767,7 +849,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -799,7 +884,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -834,7 +922,10 @@ void main() {
           );
         });
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final repo = MistralTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         final responses = await repo
             .transcribeAudio(
@@ -871,7 +962,10 @@ void main() {
             throw original;
           });
 
-          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: mockClient,
+          );
 
           await expectLater(
             repo
@@ -909,7 +1003,10 @@ void main() {
             return http.Response('not json {{{', 200);
           });
 
-          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: mockClient,
+          );
 
           await expectLater(
             repo
@@ -950,7 +1047,10 @@ void main() {
               return Completer<http.StreamedResponse>().future;
             });
 
-            final repo = MistralTranscriptionRepository(httpClient: mockClient);
+            final repo = MistralTranscriptionRepository(
+              domainLogger: MockDomainLogger(),
+              httpClient: mockClient,
+            );
 
             Object? error;
             var completed = false;
@@ -1005,7 +1105,10 @@ void main() {
               return Completer<http.StreamedResponse>().future;
             });
 
-            final repo = MistralTranscriptionRepository(httpClient: mockClient);
+            final repo = MistralTranscriptionRepository(
+              domainLogger: MockDomainLogger(),
+              httpClient: mockClient,
+            );
 
             Object? error;
             repo

@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -35,8 +33,8 @@ class TaskAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    required this.domainLogger,
     this.updateNotifications,
-    this.domainLogger,
     this.armProjectUpdate,
     this.cancelProjectUpdates,
   });
@@ -71,8 +69,8 @@ class TaskAgentService {
   /// the notification bus.
   final UpdateNotifications? updateNotifications;
 
-  /// Optional domain logger for structured, PII-safe logging.
-  final DomainLogger? domainLogger;
+  /// Domain logger for structured, PII-safe logging.
+  final DomainLogger domainLogger;
 
   /// Keeps each task at one live task agent across devices (ADR 0104). The
   /// sync receive and the wake gate call it; [restoreSubscriptions] runs its
@@ -297,7 +295,7 @@ class TaskAgentService {
         );
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'created task agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for task ${DomainLogger.sanitizeId(taskId)}'
@@ -436,7 +434,7 @@ class TaskAgentService {
       );
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'updated inference setup for ${DomainLogger.sanitizeId(agentId)} '
       'to ${setup.mode.name}',
@@ -603,7 +601,7 @@ class TaskAgentService {
       );
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'automatic updates ${enabled ? 'enabled' : 'disabled'} for '
       '${DomainLogger.sanitizeId(agentId)}',
@@ -694,7 +692,7 @@ class TaskAgentService {
   /// This enqueues a user-initiated wake job that will run the full context
   /// assembly and conversation cycle, regardless of whether anything changed.
   void triggerReanalysis(String agentId) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'manual reanalysis triggered for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
@@ -711,7 +709,7 @@ class TaskAgentService {
   /// Clears the throttle deadline, cancels the deferred drain timer, and
   /// removes any queued subscription jobs — so no automatic wake will fire.
   void cancelScheduledWake(String agentId) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
@@ -823,7 +821,7 @@ class TaskAgentService {
     if (restoreCountdown) {
       await _hydrateThrottleDeadline(agentId);
     }
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'restored ${links.length} subscriptions '
       'for ${DomainLogger.sanitizeId(agentId)}',
@@ -888,7 +886,7 @@ class TaskAgentService {
   /// ([TaskAgentRetirement.retireSupersededEverywhere]), so an agent that
   /// lost to another of its task's agents is not subscribed again.
   Future<void> restoreSubscriptions() async {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'restoring task agent subscriptions...',
       subDomain: 'restore',
@@ -947,25 +945,16 @@ class TaskAgentService {
         final msg =
             'failed to restore subscriptions '
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
-        if (domainLogger != null) {
-          domainLogger!.error(
-            LogDomain.agentRuntime,
-            e,
-            message: msg,
-            stackTrace: s,
-          );
-        } else {
-          developer.log(
-            '$msg (errorType=${e.runtimeType})',
-            name: 'TaskAgentService',
-            error: e.runtimeType,
-            stackTrace: s,
-          );
-        }
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message: msg,
+          stackTrace: s,
+        );
       }
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomain.agentRuntime,
       'restored $count task agent subscriptions',
       subDomain: 'restore',

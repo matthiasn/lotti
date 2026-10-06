@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,10 +19,16 @@ export 'transcription_exception.dart';
 /// (multipart, JSON POST, etc.) and call [executeTranscription] with
 /// a closure that sends the request.
 class TranscriptionRepository {
-  TranscriptionRepository({http.Client? httpClient})
-    : httpClient = httpClient ?? http.Client();
+  TranscriptionRepository({
+    required this.domainLogger,
+    http.Client? httpClient,
+  }) : httpClient = httpClient ?? http.Client();
 
   final http.Client httpClient;
+
+  /// Records transcription requests and failures, for this template and the
+  /// provider-specific paths of subclasses.
+  final DomainLogger domainLogger;
 
   static const _uuid = Uuid();
 
@@ -31,7 +37,7 @@ class TranscriptionRepository {
 
   /// Shared transcription template.
   ///
-  /// Handles timeout calculation, developer logging, response parsing,
+  /// Handles timeout calculation, logging, response parsing,
   /// `CreateChatCompletionStreamResponse` wrapping, and the full error
   /// catch cascade.
   ///
@@ -76,10 +82,11 @@ class TranscriptionRepository {
     return Stream.fromFuture(
       () async {
         try {
-          developer.log(
+          domainLogger.log(
+            LogDomain.speech,
             'Sending audio transcription request to $providerName - '
             'audioLength: $audioLengthForLog, timeout: $timeoutDisplay',
-            name: providerName,
+            subDomain: providerName,
           );
 
           final response = await sendRequest(
@@ -88,10 +95,13 @@ class TranscriptionRepository {
           );
 
           if (response.statusCode != 200) {
-            developer.log(
+            // The body's size, not the body: an error body can echo the
+            // request.
+            domainLogger.error(
+              LogDomain.speech,
               'Failed to transcribe audio: HTTP ${response.statusCode}',
-              name: providerName,
-              error: response.body,
+              subDomain: providerName,
+              message: 'body ${response.body.length} chars',
             );
 
             final errorMessage = _parseErrorMessage(response);
@@ -105,10 +115,11 @@ class TranscriptionRepository {
           final result = jsonDecode(response.body) as Map<String, dynamic>;
 
           if (!result.containsKey('text')) {
-            developer.log(
+            domainLogger.error(
+              LogDomain.speech,
               'Invalid response from $providerName: missing text field',
-              name: providerName,
-              error: result,
+              subDomain: providerName,
+              message: 'response keys: ${result.keys.join(',')}',
             );
             throw TranscriptionException(
               'Invalid response from transcription service: '
@@ -121,10 +132,11 @@ class TranscriptionRepository {
           final usage = parseCompletionUsage(result['usage']);
           onSuccessResponse?.call(result, response);
 
-          developer.log(
+          domainLogger.log(
+            LogDomain.speech,
             'Successfully transcribed audio - '
             'transcriptionLength: ${text.length}',
-            name: providerName,
+            subDomain: providerName,
           );
 
           return CreateChatCompletionStreamResponse(
@@ -143,11 +155,13 @@ class TranscriptionRepository {
           );
         } on TranscriptionException {
           rethrow;
-        } on TimeoutException catch (e) {
-          developer.log(
-            'Transcription request timed out',
-            name: providerName,
-            error: e,
+        } on TimeoutException catch (e, stackTrace) {
+          domainLogger.error(
+            LogDomain.speech,
+            e,
+            stackTrace: stackTrace,
+            subDomain: providerName,
+            message: 'Transcription request timed out',
           );
           throw TranscriptionException(
             timeoutErrorMessage,
@@ -155,22 +169,30 @@ class TranscriptionRepository {
             statusCode: httpStatusRequestTimeout,
             originalError: e,
           );
-        } on FormatException catch (e) {
-          developer.log(
+        } on FormatException catch (e, stackTrace) {
+          domainLogger.error(
+            LogDomain.speech,
             // Not the exception itself: its toString quotes the transcript.
-            'Failed to parse response from $providerName at offset ${e.offset}',
-            name: providerName,
+            FormatException(e.message, null, e.offset),
+            errorType: e.runtimeType,
+            stackTrace: stackTrace,
+            subDomain: providerName,
+            message:
+                'Failed to parse response from $providerName at offset '
+                '${e.offset}',
           );
           throw TranscriptionException(
             'Invalid response format from transcription service',
             provider: providerName,
             originalError: e,
           );
-        } catch (e) {
-          developer.log(
-            'Unexpected error during audio transcription',
-            name: providerName,
-            error: e,
+        } catch (e, stackTrace) {
+          domainLogger.error(
+            LogDomain.speech,
+            e,
+            stackTrace: stackTrace,
+            subDomain: providerName,
+            message: 'Unexpected error during audio transcription',
           );
           throw TranscriptionException(
             'Failed to transcribe audio: $e',

@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -366,6 +367,7 @@ void main() {
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
   late MockAiConfigRepository mockAiConfigRepo;
+  late MockDomainLogger mockLogger;
   late UpdateNotifications updateNotifications;
   late EmbeddingService service;
 
@@ -378,6 +380,7 @@ void main() {
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockJournalDb = MockJournalDb();
     mockAiConfigRepo = MockAiConfigRepository();
+    mockLogger = MockDomainLogger();
     updateNotifications = UpdateNotifications();
 
     service = EmbeddingService(
@@ -386,6 +389,7 @@ void main() {
       journalDb: mockJournalDb,
       updateNotifications: updateNotifications,
       aiConfigRepository: mockAiConfigRepo,
+      domainLogger: mockLogger,
     );
 
     // Default: flag enabled
@@ -806,6 +810,20 @@ void main() {
           ),
         ).called(2);
 
+        // The failure reached the log, naming only the entity id.
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'EmbeddingService',
+            message: any(
+              named: 'message',
+              that: startsWith('Failed to generate embedding for'),
+            ),
+          ),
+        ).called(1);
+
         // Only second entity was stored (first failed)
         verify(
           () => mockEmbeddingStore.replaceEntityEmbeddings(
@@ -1163,6 +1181,7 @@ void main() {
             journalDb: generatedJournalDb,
             updateNotifications: generatedNotifications,
             aiConfigRepository: generatedAiConfigRepo,
+            domainLogger: MockDomainLogger(),
           );
           final actual = _GeneratedEmbeddingExpected();
           final expected = _GeneratedEmbeddingExpected();

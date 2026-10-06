@@ -413,6 +413,7 @@ Future<void> registerSingletons({
       AiInteractionCapture(
         getIt<AiAttributionService>(),
         getIt<AiAttributionIdentityResolver>(),
+        getIt<DomainLogger>(),
       ),
     )
     ..registerSingleton<TranscriptAttributionCoordinator>(

@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Facade over the cloud-inference generate collaborators.
@@ -35,31 +36,40 @@ import 'package:openai_dart/openai_dart.dart';
 /// collaborator so the mockable surface and all call sites stay unchanged.
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient}) {
+    final domainLogger = ref.read(domainLoggerProvider);
     final ollamaRepository = ref.read(ollamaInferenceRepositoryProvider);
     final geminiRepository = ref.read(geminiInferenceRepositoryProvider);
     final dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider);
     final meliousRepository = MeliousInferenceRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final mistralRepository = MistralInferenceRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final mistralTranscriptionRepository = MistralTranscriptionRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     _mistralOcrRepository = MistralOcrRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final whisperRepository = WhisperInferenceRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final omlxTranscriptionRepository = OmlxTranscriptionRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final voxtralRepository = VoxtralInferenceRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
     final openAiTranscriptionRepository = OpenAiTranscriptionRepository(
+      domainLogger: domainLogger,
       httpClient: httpClient,
     );
 
@@ -72,6 +82,7 @@ class CloudInferenceRepository {
       mistralRepository: mistralRepository,
       mistralOcrRepository: _mistralOcrRepository,
       helpers: helpers,
+      domainLogger: domainLogger,
     );
 
     _generateMore = CloudInferenceGenerateMore(
@@ -87,6 +98,7 @@ class CloudInferenceRepository {
       voxtralRepository: voxtralRepository,
       openAiTranscriptionRepository: openAiTranscriptionRepository,
       helpers: helpers,
+      domainLogger: domainLogger,
     );
   }
 

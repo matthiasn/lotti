@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -140,6 +141,7 @@ void main() {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -160,6 +162,7 @@ void main() {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -173,6 +176,7 @@ void main() {
 
       test('rejects empty language code', () async {
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -188,6 +192,7 @@ void main() {
 
       test('rejects unsupported language code', () async {
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -213,6 +218,7 @@ void main() {
           );
 
           final handler = TaskLanguageHandler(
+            domainLogger: MockDomainLogger(),
             task: taskWithLang,
             journalRepository: mockJournalRepo,
           );
@@ -237,6 +243,7 @@ void main() {
         final row = stubTaskRow(mockJournalRepo, taskWithLang);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: taskWithLang,
           journalRepository: mockJournalRepo,
         );
@@ -256,6 +263,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -268,11 +276,13 @@ void main() {
       });
 
       test('returns error when repository throws', () async {
+        final logger = MockDomainLogger();
         when(
           () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('DB error'));
 
         final handler = TaskLanguageHandler(
+          domainLogger: logger,
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -282,12 +292,23 @@ void main() {
         expect(result.success, isFalse);
         expect(result.didWrite, isFalse);
         expect(result.error, contains('DB error'));
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'TaskLanguageHandler',
+            message: 'Failed to update task language',
+          ),
+        ).called(1);
       });
 
       test('updates local task field after successful write', () async {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -308,6 +329,7 @@ void main() {
         );
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: taskWithUserLang,
           journalRepository: mockJournalRepo,
         );
@@ -333,6 +355,7 @@ void main() {
           );
 
           final handler = TaskLanguageHandler(
+            domainLogger: MockDomainLogger(),
             task: taskWithUserLang,
             journalRepository: mockJournalRepo,
           );
@@ -351,6 +374,7 @@ void main() {
         stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -368,6 +392,7 @@ void main() {
         ).thenThrow(Exception('fail'));
 
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -384,6 +409,7 @@ void main() {
             data: task.data.copyWith(title: 'Renamed by the user'),
           );
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -409,6 +435,7 @@ void main() {
           );
         final stored = row.task;
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           journalRepository: mockJournalRepo,
         );
@@ -438,6 +465,7 @@ void main() {
             data: agentSet.data.copyWith(languageSource: ChangeSource.user),
           );
         final handler = TaskLanguageHandler(
+          domainLogger: MockDomainLogger(),
           task: agentSet,
           journalRepository: mockJournalRepo,
         );
@@ -467,6 +495,7 @@ void main() {
           );
           final row = stubTaskRow(repo, initialTask);
           final handler = TaskLanguageHandler(
+            domainLogger: MockDomainLogger(),
             task: initialTask,
             journalRepository: repo,
           );

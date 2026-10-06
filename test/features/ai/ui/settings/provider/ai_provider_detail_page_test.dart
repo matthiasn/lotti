@@ -5,17 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    show CascadeDeletionResult, aiConfigRepositoryProvider;
-import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
-import 'package:lotti/features/ai/repository/openai_models_repository.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart'
+import 'package:lotti/features/ai/providers/model_catalog_repository_providers.dart'
     show
         geminiModelsRepositoryProvider,
         meliousInferenceRepositoryProvider,
         mistralInferenceRepositoryProvider,
         openAiModelsRepositoryProvider;
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
+import 'package:lotti/features/ai/repository/openai_models_repository.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart'
     show kAiDeleteToastDuration;
@@ -173,6 +173,7 @@ void main() {
         // that need a populated catalog override these explicitly.
         geminiModelsRepositoryProvider.overrideWithValue(
           GeminiModelsRepository(
+            domainLogger: MockDomainLogger(),
             httpClient: MockClient(
               (_) async => http.Response('{"models":[]}', 200),
             ),
@@ -180,6 +181,7 @@ void main() {
         ),
         openAiModelsRepositoryProvider.overrideWithValue(
           OpenAiModelsRepository(
+            domainLogger: MockDomainLogger(),
             httpClient: MockClient(
               (_) async => http.Response('{"data":[]}', 200),
             ),
@@ -1550,6 +1552,7 @@ void main() {
               // real network request.
               geminiModelsRepositoryProvider.overrideWithValue(
                 GeminiModelsRepository(
+                  domainLogger: MockDomainLogger(),
                   httpClient: MockClient(
                     (_) async => http.Response('{"models":[]}', 200),
                   ),

@@ -78,9 +78,8 @@ icon_check:
 getit_check:
 	$(DART_CMD) run tool/di/validate.dart
 
-# Checks that dart:developer log calls outside lib/services/ only shrink:
-# DomainLogger is the reviewed channel. After moving a file's calls over,
-# tighten the baseline with `dart run tool/logging/validate.dart --update-baseline`.
+# Checks that no file outside lib/services/ logs through dart:developer:
+# DomainLogger is the reviewed channel, and the only one that reaches the log files.
 .PHONY: developer_log_check
 developer_log_check:
 	$(DART_CMD) run tool/logging/validate.dart

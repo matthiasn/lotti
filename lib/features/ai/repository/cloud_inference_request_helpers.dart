@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -52,7 +51,8 @@ class CloudInferenceRequestHelpers {
     );
   }
 
-  /// Filters out Anthropic ping messages from the stream
+  /// Filters out Anthropic ping messages from the stream, silently: a ping is
+  /// a keep-alive that carries no data.
   Stream<CreateChatCompletionStreamResponse> filterAnthropicPings(
     Stream<CreateChatCompletionStreamResponse> stream, {
     void Function()? onClose,
@@ -72,15 +72,13 @@ class CloudInferenceRequestHelpers {
           controller.add,
           onError: (Object error, StackTrace stackTrace) {
             final message = error.toString();
-            if (message.contains(
+            // A ping fails to parse as a completion chunk.
+            final isPing =
+                message.contains(
                   "type 'Null' is not a subtype of type 'List<dynamic>'",
                 ) &&
-                message.contains('choices')) {
-              developer.log(
-                'Skipping Anthropic ping message',
-                name: 'CloudInferenceRepository',
-              );
-            } else {
+                message.contains('choices');
+            if (!isPing) {
               controller.addError(error, stackTrace);
             }
           },

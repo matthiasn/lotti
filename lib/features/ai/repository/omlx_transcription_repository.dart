@@ -12,7 +12,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// bearer token. The configured provider base URL is therefore used for the
 /// endpoint and the saved API key is forwarded when transcribing.
 class OmlxTranscriptionRepository extends TranscriptionRepository {
-  OmlxTranscriptionRepository({super.httpClient});
+  OmlxTranscriptionRepository({required super.domainLogger, super.httpClient});
 
   static const _providerName = 'OmlxTranscription';
 

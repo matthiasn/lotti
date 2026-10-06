@@ -22,7 +22,10 @@ void main() {
 
   setUp(() {
     mockAiConfig = MockAiConfigRepository();
-    resolver = ProfileResolver(aiConfigRepository: mockAiConfig);
+    resolver = ProfileResolver(
+      aiConfigRepository: mockAiConfig,
+      domainLogger: MockDomainLogger(),
+    );
   });
 
   /// Stubs model lookup and provider resolution for the given [modelId].

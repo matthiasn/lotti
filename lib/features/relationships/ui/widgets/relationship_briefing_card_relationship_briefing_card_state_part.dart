@@ -236,6 +236,7 @@ class _RelationshipBriefingCardState
     if (_requesting) return;
     final relationship = widget.relationship;
     final messages = context.messages;
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _requesting = true);
     // No confirmation and no toast: the card's model row already names the
     // model and provider before anything is sent (ADR 0061), and the
@@ -247,11 +248,12 @@ class _RelationshipBriefingCardState
     } catch (error, stackTrace) {
       // Only what fails before the wake is queued lands here — agent setup
       // and the enqueue itself; the workflow logs its own failures.
-      developer.log(
-        'Failed to request a relationship briefing',
-        name: 'RelationshipBriefingCard',
-        error: error,
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'RelationshipBriefingCard',
+        message: 'Failed to request a relationship briefing',
       );
       if (!mounted) return;
       context.showToast(
@@ -275,6 +277,7 @@ class _RelationshipBriefingCardState
     final messages = context.messages;
     final repository = ref.read(relationshipRepositoryProvider);
     final agentService = ref.read(relationshipAgentServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _marking = true);
     try {
       final relationship = widget.relationship;
@@ -290,6 +293,7 @@ class _RelationshipBriefingCardState
           agentService,
           enrolled,
           source: 'RelationshipBriefingCard',
+          domainLogger: logger,
         );
       } else if (mounted) {
         context.showToast(
@@ -298,11 +302,12 @@ class _RelationshipBriefingCardState
         );
       }
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to mark the person important',
-        name: 'RelationshipBriefingCard',
-        error: error,
+      logger.error(
+        LogDomain.general,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'RelationshipBriefingCard',
+        message: 'Failed to mark the person important',
       );
       if (mounted) {
         context.showToast(

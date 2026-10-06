@@ -1,7 +1,6 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -291,11 +290,6 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
       // Categorize the error for better user feedback
       final inferenceError = AiErrorUtils.categorizeError(e);
 
-      developer.log(
-        'Controller caught exception: ${e.runtimeType}, isException: ${e is Exception}',
-        name: 'UnifiedAiController',
-      );
-
       // Set the error message and preserve the original exception
       // Store the original caught exception 'e' directly, not inferenceError.originalError
       final newState = UnifiedAiState(
@@ -303,18 +297,7 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
         error: e is Exception ? e : null,
       );
 
-      developer.log(
-        'Setting state with error: ${newState.error?.runtimeType}',
-        name: 'UnifiedAiController',
-      );
-
       state = newState;
-
-      developer.log(
-        'State after assignment: error=${state.error?.runtimeType}, '
-        'entityId=$entityId, promptId=$promptId',
-        name: 'UnifiedAiController',
-      );
 
       // Try to set error status if we have prompt config
       try {
@@ -340,6 +323,7 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
         (inferenceError.originalError ?? e) as Object,
         stackTrace: stackTrace,
         subDomain: 'runInference',
+        message: 'Inference failed for entity $entityId, prompt $promptId',
       );
     }
   }

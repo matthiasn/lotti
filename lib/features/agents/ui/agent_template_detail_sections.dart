@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -13,6 +11,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -152,6 +152,7 @@ class _VersionTile extends ConsumerWidget {
           DesignSystemButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
+              final logger = ref.read(domainLoggerProvider);
               try {
                 final templateService = ref.read(agentTemplateServiceProvider);
                 await templateService.rollbackToVersion(
@@ -166,11 +167,12 @@ class _VersionTile extends ConsumerWidget {
                     templateVersionHistoryProvider(templateId),
                   );
               } catch (e, s) {
-                developer.log(
-                  'Rollback failed',
-                  name: 'AgentTemplateDetailPage',
-                  error: e.runtimeType,
+                logger.error(
+                  LogDomain.agentWorkflow,
+                  e,
                   stackTrace: s,
+                  subDomain: 'AgentTemplateDetailPage',
+                  message: 'Rollback failed',
                 );
                 if (!context.mounted) return;
                 context.showToast(

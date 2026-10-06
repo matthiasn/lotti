@@ -6,6 +6,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
@@ -14,6 +16,7 @@ import '../../../mocks/mocks.dart';
 void main() {
   late CorrectionCaptureService service;
   late MockCategoryRepository mockCategoryRepository;
+  late MockDomainLogger mockLogger;
 
   final testCategory = CategoryDefinition(
     id: 'category-1',
@@ -51,8 +54,10 @@ void main() {
 
   setUp(() {
     mockCategoryRepository = MockCategoryRepository();
+    mockLogger = MockDomainLogger();
     service = CorrectionCaptureService(
       categoryRepository: mockCategoryRepository,
+      domainLogger: mockLogger,
     );
   });
 
@@ -62,6 +67,7 @@ void main() {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        domainLoggerProvider.overrideWithValue(mockLogger),
       ]),
     );
     addTearDown(container.dispose);
@@ -656,7 +662,9 @@ void main() {
       () {
         fakeAsync((async) {
           final container = ProviderContainer(
-            overrides: getItServiceOverrides(),
+            overrides: withServiceOverrides([
+              domainLoggerProvider.overrideWithValue(mockLogger),
+            ]),
           );
           addTearDown(container.dispose);
 
@@ -693,6 +701,15 @@ void main() {
 
           // State is cleared even when onSave throws
           expect(container.read(correctionCaptureProvider), isNull);
+          verify(
+            () => mockLogger.error(
+              LogDomain.tasks,
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'CorrectionCaptureService',
+              message: 'Correction capture: timer callback failed',
+            ),
+          ).called(1);
         });
       },
     );
@@ -978,6 +995,15 @@ void main() {
 
         // updateCategory was attempted
         verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+        verify(
+          () => mockLogger.error(
+            LogDomain.tasks,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'CorrectionCaptureService',
+            message: 'Correction capture: save failed',
+          ),
+        ).called(1);
       });
     });
 

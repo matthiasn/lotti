@@ -217,7 +217,9 @@ class QueryAudioTestBench extends QueryTestBench {
     if (!useDefaultAudioServices)
       queryAudioTimingServiceProvider.overrideWithValue(
         QueryAudioTimingService(
+          domainLogger: MockDomainLogger(),
           createRepository: () => MistralTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
             httpClient: createTimingClient(),
           ),
         ),

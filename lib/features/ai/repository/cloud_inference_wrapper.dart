@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -69,18 +67,11 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     int? turnIndex,
     InferenceImpactCollector? impactCollector,
   }) async* {
-    developer.log(
-      'CloudInferenceWrapper: Processing ${messages.length} messages for '
-      'cloud provider ${provider.inferenceProviderType}, '
-      'hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}, '
-      'turnIndex: $turnIndex, '
-      'forcedToolChoice: ${toolChoice != null}',
-      name: 'CloudInferenceWrapper',
-    );
-
-    // Use the cloud repository's native multi-turn support
-    // This properly routes to Gemini's multi-turn API with signature support
-    final stream = cloudRepository.generateWithMessages(
+    // Use the cloud repository's native multi-turn support, which routes to
+    // Gemini's multi-turn API with signature support, logs the call and flags
+    // malformed (concatenated) tool-call arguments. `async*` keeps the call
+    // lazy, so a routing failure surfaces as a stream error.
+    yield* cloudRepository.generateWithMessages(
       messages: messages,
       model: model,
       temperature: temperature,
@@ -95,26 +86,5 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       reasoningEffort: reasoningEffort,
       impactCollector: impactCollector,
     );
-
-    // Pass through the stream but log any tool calls we see
-    await for (final chunk in stream) {
-      // Check if this chunk has tool calls that might be malformed
-      if (chunk.choices?.isNotEmpty ?? false) {
-        final delta = chunk.choices!.first.delta;
-        if (delta?.toolCalls != null) {
-          for (final toolCall in delta!.toolCalls!) {
-            if (toolCall.function?.arguments != null &&
-                toolCall.function!.arguments!.contains('}{')) {
-              developer.log(
-                'WARNING: Detected concatenated JSON in tool call arguments. '
-                'Provider ${provider.inferenceProviderType} may be returning malformed tool calls.',
-                name: 'CloudInferenceWrapper',
-              );
-            }
-          }
-        }
-      }
-      yield chunk;
-    }
   }
 }

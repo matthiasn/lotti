@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -493,6 +492,7 @@ AgentService agentService(Ref ref) {
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
@@ -506,6 +506,7 @@ AgentTemplateService agentTemplateService(Ref ref) {
   return AgentTemplateService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -518,6 +519,7 @@ SoulDocumentService soulDocumentService(Ref ref) {
   return SoulDocumentService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -531,6 +533,7 @@ FeedbackExtractionService feedbackExtractionService(Ref ref) {
     agentRepository: ref.watch(agentRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -545,6 +548,7 @@ ImproverAgentService improverAgentService(Ref ref) {
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
@@ -567,10 +571,12 @@ final agentInitializationProvider = FutureProvider<void>(
   name: 'agentInitializationProvider',
 );
 Future<void> agentInitialization(Ref ref) async {
-  developer.log(
-    'Agents enabled, starting wake orchestrator',
-    name: 'agentInitialization',
-  );
+  final logger = ref.watch(domainLoggerProvider)
+    ..log(
+      LogDomain.agentRuntime,
+      'Agents enabled, starting wake orchestrator',
+      subDomain: 'agentInitialization',
+    );
 
   // Sync first, before any runtime provider is built: building one can
   // throw, and until the repository is wired every agent entity and link
@@ -588,9 +594,10 @@ Future<void> agentInitialization(Ref ref) async {
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
   ref.onDispose(() {
-    developer.log(
+    logger.log(
+      LogDomain.agentRuntime,
       'Stopping wake orchestrator',
-      name: 'agentInitialization',
+      subDomain: 'agentInitialization',
     );
     orchestrator.stop();
   });
@@ -609,9 +616,10 @@ Future<void> agentInitialization(Ref ref) async {
   final repository = ref.read(agentRepositoryProvider);
   final abandonedCount = await repository.abandonOrphanedWakeRuns();
   if (abandonedCount > 0) {
-    developer.log(
+    logger.log(
+      LogDomain.agentRuntime,
       'Marked $abandonedCount orphaned wake run(s) as abandoned on startup',
-      name: 'agentInitialization',
+      subDomain: 'agentInitialization',
     );
   }
 
@@ -661,6 +669,7 @@ Future<void> agentInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
   final profileSeeder = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
+    domainLogger: ref.watch(domainLoggerProvider),
   );
   // Convert the 0.9.1067/0.9.1068 tombstone ledger first. This entry point
   // starts from `beamer_app` independently of `aiConfigInitializationProvider`,
@@ -670,6 +679,7 @@ Future<void> agentInitialization(Ref ref) async {
   await SeedTombstoneMigration(
     aiConfigRepository: ref.read(aiConfigRepositoryProvider),
     settingsDb: ref.read(settingsDbProvider),
+    domainLogger: ref.read(domainLoggerProvider),
   ).migrate();
 
   await Future.wait([

@@ -160,9 +160,11 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     // it mid-write disposes this state — and a post-gap `ref` read throws,
     // which would strand a task that had already been written.
     final agentService = ref.read(taskAgentServiceProvider);
+    final domainLogger = ref.read(domainLoggerProvider);
     final deps = _captureCommitDeps();
 
     final created = await createTask(
+      domainLogger: domainLogger,
       title: title,
       categoryId: entryState.value?.entry?.meta.categoryId,
       inheritContextFrom: widget.currentTaskId,
@@ -172,7 +174,13 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
     // Same follow-up the card's create flow performs, so a task created here
     // is not left behind on category-agent assignment. The `With` variant
     // takes the pre-captured service rather than a WidgetRef.
-    unawaited(autoAssignCategoryAgentWith(agentService, created));
+    unawaited(
+      autoAssignCategoryAgentWith(
+        agentService,
+        created,
+        domainLogger: domainLogger,
+      ),
+    );
 
     if (mounted) return created;
 

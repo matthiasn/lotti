@@ -253,6 +253,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       for (final n in _factsRenderer.reusableTopRated(nudges)) n.id,
     };
     return GoalAgentStrategy(
+      domainLogger: domainLogger,
       syncService: _syncService,
       agentId: agentId,
       threadId: threadId,

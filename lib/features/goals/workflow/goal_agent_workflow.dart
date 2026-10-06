@@ -108,13 +108,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required this._conversationRepository,
     required this._cloudInferenceRepository,
     required this._aiConfigRepository,
+    required this._domainLogger,
     GoalChatHistoryService? chatHistoryService,
     this._factsRenderer = const GoalFactsRenderer(),
     this._checkInCompactor,
     this._checkInSourceReader,
     this._checkInDigestService,
     this._criterionNameReader,
-    this._domainLogger,
     this._alertCopy,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository);
@@ -152,10 +152,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// Writes the span digests the hierarchical compaction reads. Null keeps
   /// the truncating selection: the recent tail only.
   final GoalCheckInDigestService? _checkInDigestService;
-  final DomainLogger? _domainLogger;
+  final DomainLogger _domainLogger;
 
   @override
-  DomainLogger? get domainLogger => _domainLogger;
+  DomainLogger get domainLogger => _domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
@@ -629,7 +629,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         reportUpdated: reportHeadAdvanced && !facts.hasActiveTrackedTimer,
       );
     } catch (error, stackTrace) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalPhaseB',
@@ -809,6 +809,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final details =
         await ProfileResolver(
           aiConfigRepository: _aiConfigRepository,
+          domainLogger: _domainLogger,
         ).resolveStandalone(
           agentConfig: agentIdentity.config,
           legacyModelId: meliousGlm52ModelId,
@@ -835,7 +836,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     try {
       return await reader(ids);
     } catch (error, stackTrace) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalCriterionNames',

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// Provider for a shared http client to prevent resource leaks
 final httpClientProvider = Provider<http.Client>((ref) {
@@ -20,5 +21,8 @@ final ollamaInferenceRepositoryProvider = Provider<OllamaInferenceRepository>((
   // Use the shared http client
   final httpClient = ref.watch(httpClientProvider);
 
-  return OllamaInferenceRepository(httpClient: httpClient);
+  return OllamaInferenceRepository(
+    domainLogger: ref.watch(domainLoggerProvider),
+    httpClient: httpClient,
+  );
 });

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,6 +49,7 @@ class RelationshipToolDispatcher {
     required this.entitiesCacheService,
     required this.taskAgentService,
     required this.journalDb,
+    required this._domainLogger,
   });
 
   final RelationshipRepository relationshipRepository;
@@ -56,6 +57,7 @@ class RelationshipToolDispatcher {
   final EntitiesCacheService entitiesCacheService;
   final TaskAgentService taskAgentService;
   final JournalDb journalDb;
+  final DomainLogger _domainLogger;
 
   Future<ToolExecutionResult> dispatch(
     String toolName,
@@ -224,11 +226,12 @@ class RelationshipToolDispatcher {
       category: category,
     );
     if (assignment.status == TaskAgentAssignmentStatus.failed) {
-      developer.log(
-        'Could not assign category agent to relationship task',
-        name: 'RelationshipToolDispatcher',
-        error: assignment.error,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        assignment.error ?? 'category agent assignment failed',
         stackTrace: assignment.stackTrace,
+        subDomain: 'RelationshipToolDispatcher',
+        message: 'Could not assign category agent to relationship task',
       );
     }
     return RelationshipTaskCreationResult(task);

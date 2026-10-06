@@ -52,7 +52,7 @@ class WakeOrchestrator with AgentErrorLogging {
     required this.repository,
     required this.queue,
     required this.runner,
-    this.domainLogger,
+    required this.domainLogger,
     this.wakeExecutor,
     this.onPersistedStateChanged,
     this.taskContentChecker,
@@ -100,9 +100,9 @@ class WakeOrchestrator with AgentErrorLogging {
   /// resolver every agent keeps the standard two-minute window.
   final TaskWakeCadenceResolver? taskWakeCadenceResolver;
 
-  /// Optional domain logger for structured, PII-safe logging.
+  /// Domain logger for structured, PII-safe logging.
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;

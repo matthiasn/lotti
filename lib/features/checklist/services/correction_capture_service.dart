@@ -1,12 +1,15 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:meta/meta.dart';
+
+const _subDomain = 'CorrectionCaptureService';
 
 /// Duration before a pending correction is automatically saved.
 const kCorrectionSaveDelay = Duration(seconds: 5);
@@ -20,6 +23,7 @@ final Provider<CorrectionCaptureService> correctionCaptureServiceProvider =
 CorrectionCaptureService correctionCaptureService(Ref ref) {
   return CorrectionCaptureService(
     categoryRepository: ref.watch(categoryRepositoryProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     notifier: ref.read(correctionCaptureProvider.notifier),
   );
 }
@@ -53,6 +57,7 @@ class CorrectionCaptureNotifier extends Notifier<PendingCorrection?> {
   }) {
     // Cancel any existing timer
     _saveTimer?.cancel();
+    final logger = ref.read(domainLoggerProvider);
 
     state = pending;
 
@@ -61,11 +66,14 @@ class CorrectionCaptureNotifier extends Notifier<PendingCorrection?> {
       if (state == pending) {
         try {
           await onSave();
-        } catch (e) {
+        } catch (e, stackTrace) {
           // Log error but don't crash - correction save is fire-and-forget
-          developer.log(
-            'Correction capture: timer callback failed: $e',
-            name: 'CorrectionCaptureService',
+          logger.error(
+            LogDomain.tasks,
+            e,
+            stackTrace: stackTrace,
+            subDomain: _subDomain,
+            message: 'Correction capture: timer callback failed',
           );
         }
         state = null;
@@ -79,10 +87,13 @@ class CorrectionCaptureNotifier extends Notifier<PendingCorrection?> {
     _saveTimer?.cancel();
     _saveTimer = null;
     if (state != null) {
-      developer.log(
-        'Correction capture: cancelled by user',
-        name: 'CorrectionCaptureService',
-      );
+      ref
+          .read(domainLoggerProvider)
+          .log(
+            LogDomain.tasks,
+            'Correction capture: cancelled by user',
+            subDomain: _subDomain,
+          );
       state = null;
       return true;
     }
@@ -142,9 +153,17 @@ class PendingCorrection {
 ///
 /// Follows the pattern established by SpeechDictionaryService.
 class CorrectionCaptureService {
-  CorrectionCaptureService({required this.categoryRepository, this.notifier});
+  CorrectionCaptureService({
+    required this.categoryRepository,
+    required this._domainLogger,
+    this.notifier,
+  });
 
   final CategoryRepository categoryRepository;
+
+  /// Receives the capture outcomes — never the before/after text, which is
+  /// the user's checklist content.
+  final DomainLogger _domainLogger;
   final CorrectionCaptureNotifier? notifier;
 
   /// Captures a correction if the before and after texts differ meaningfully.
@@ -160,9 +179,10 @@ class CorrectionCaptureService {
   }) async {
     // Skip if no category
     if (categoryId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: skipped (no category)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return CorrectionCaptureResult.noCategory;
     }
@@ -178,9 +198,10 @@ class CorrectionCaptureService {
 
     // Skip trivial changes (pure whitespace, case-only for very short texts)
     if (!_isMeaningfulCorrection(normalizedBefore, normalizedAfter)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: skipped (trivial change)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return CorrectionCaptureResult.trivialChange;
     }
@@ -188,9 +209,10 @@ class CorrectionCaptureService {
     // Get current category
     final category = await categoryRepository.getCategoryById(categoryId);
     if (category == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: skipped (category not found: $categoryId)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return CorrectionCaptureResult.categoryNotFound;
     }
@@ -198,9 +220,10 @@ class CorrectionCaptureService {
     // Check for duplicates (same before/after pair already exists)
     final existingExamples = category.correctionExamples ?? [];
     if (_isDuplicate(existingExamples, normalizedBefore, normalizedAfter)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: skipped (duplicate)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return CorrectionCaptureResult.duplicate;
     }
@@ -212,10 +235,11 @@ class CorrectionCaptureService {
       createdAt: clock.now(),
     );
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.tasks,
       'Correction capture: pending for category ${category.id} '
       '(will save in ${kCorrectionSaveDelay.inSeconds}s)',
-      name: 'CorrectionCaptureService',
+      subDomain: _subDomain,
     );
 
     // Set up the pending correction with delayed save
@@ -241,9 +265,10 @@ class CorrectionCaptureService {
     // Re-fetch category to get latest state
     final category = await categoryRepository.getCategoryById(categoryId);
     if (category == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: save aborted (category not found)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return;
     }
@@ -251,9 +276,10 @@ class CorrectionCaptureService {
     // Re-check for duplicates in case one was added during the delay
     final existingExamples = category.correctionExamples ?? [];
     if (_isDuplicate(existingExamples, normalizedBefore, normalizedAfter)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: save aborted (duplicate)',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
       return;
     }
@@ -273,14 +299,18 @@ class CorrectionCaptureService {
         category.copyWith(correctionExamples: updatedExamples),
       );
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.tasks,
         'Correction capture: saved to category ${category.id}',
-        name: 'CorrectionCaptureService',
+        subDomain: _subDomain,
       );
-    } on Exception catch (e) {
-      developer.log(
-        'Correction capture: save failed: $e',
-        name: 'CorrectionCaptureService',
+    } on Exception catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.tasks,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Correction capture: save failed',
       );
     }
   }

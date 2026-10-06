@@ -23,7 +23,7 @@ class _Caller with AgentErrorLogging {
   _Caller(this.domainLogger);
 
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;

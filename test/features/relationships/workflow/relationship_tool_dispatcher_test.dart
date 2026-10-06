@@ -63,6 +63,7 @@ void main() {
       () => db.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => []);
     dispatcher = RelationshipToolDispatcher(
+      domainLogger: MockDomainLogger(),
       relationshipRepository: relationships,
       persistenceLogic: persistence,
       entitiesCacheService: cache,
@@ -511,6 +512,7 @@ void main() {
     'two independent devices create the same task identity despite different clocks',
     () async {
       final other = RelationshipToolDispatcher(
+        domainLogger: MockDomainLogger(),
         relationshipRepository: relationships,
         persistenceLogic: persistence,
         entitiesCacheService: cache,

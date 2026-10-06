@@ -6,7 +6,9 @@ import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 final AsyncNotifierProviderFamily<
@@ -242,12 +244,14 @@ class InferenceProviderFormController
   /// Add a new configuration
   Future<void> addConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
+    final domainLogger = ref.read(domainLoggerProvider);
     await repository.saveConfig(config);
 
     // Pre-populate known models for this provider
     if (config is AiConfigInferenceProvider) {
       final prepopulationService = ModelPrepopulationService(
         repository: repository,
+        domainLogger: domainLogger,
       );
       final modelsCreated = await prepopulationService
           .prepopulateModelsForProvider(config);
@@ -264,13 +268,14 @@ class InferenceProviderFormController
       // Seed the profile(s) this provider unlocks before healing existing
       // ones — profile seeding is gated on a usable provider of the matching
       // type, so this save may be the moment the profile becomes eligible.
-      await _seedAndUpgradeProfiles(repository);
+      await _seedAndUpgradeProfiles(repository, domainLogger);
     }
   }
 
   /// Update an existing configuration
   Future<void> updateConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
+    final domainLogger = ref.read(domainLoggerProvider);
     await repository.saveConfig(
       config.copyWith(
         id: _config?.id ?? config.id,
@@ -283,7 +288,7 @@ class InferenceProviderFormController
     // draft) — seed its gated default profile(s) now and heal existing ones
     // so the profile appears immediately, not on the next app launch.
     if (config is AiConfigInferenceProvider) {
-      await _seedAndUpgradeProfiles(repository);
+      await _seedAndUpgradeProfiles(repository, domainLogger);
     }
   }
 
@@ -293,10 +298,14 @@ class InferenceProviderFormController
   /// must not bubble into the page's save handler — that would turn a
   /// successful save into an error toast and block navigation. The next
   /// startup pass retries the same work anyway.
-  Future<void> _seedAndUpgradeProfiles(AiConfigRepository repository) async {
+  Future<void> _seedAndUpgradeProfiles(
+    AiConfigRepository repository,
+    DomainLogger domainLogger,
+  ) async {
     try {
       final seedingService = ProfileSeedingService(
         aiConfigRepository: repository,
+        domainLogger: domainLogger,
       );
       await seedingService.seedDefaults();
       await seedingService.upgradeExisting();

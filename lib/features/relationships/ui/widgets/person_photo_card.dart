@@ -1,5 +1,4 @@
-import 'dart:developer' as developer;
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -14,6 +13,8 @@ import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/media/file_image_size.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
@@ -32,7 +33,7 @@ import 'package:material_ui/material_ui.dart';
 /// does this one. After each write [onChanged] runs so the host can re-read
 /// the person — a form that kept saving from the entry it opened with would
 /// write the old photo back over the new one.
-class PersonPhotoCard extends StatefulWidget {
+class PersonPhotoCard extends ConsumerStatefulWidget {
   const PersonPhotoCard({
     required this.person,
     required this.actions,
@@ -58,10 +59,10 @@ class PersonPhotoCard extends StatefulWidget {
   final ImageFileSizeReader readImageSize;
 
   @override
-  State<PersonPhotoCard> createState() => _PersonPhotoCardState();
+  ConsumerState<PersonPhotoCard> createState() => _PersonPhotoCardState();
 }
 
-class _PersonPhotoCardState extends State<PersonPhotoCard> {
+class _PersonPhotoCardState extends ConsumerState<PersonPhotoCard> {
   /// The banner's alignment while a drag is in progress — shown live, written
   /// once when the finger lifts, and forgotten once the host has re-read the
   /// person so the preview never snaps back to the old value for a frame.
@@ -81,20 +82,22 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
     Future<PersonPhotoOutcome> Function(RelationshipEntry) flow,
   ) async {
     if (_busy) return;
+    final logger = ref.read(domainLoggerProvider);
     setState(() => _busy = true);
     var outcome = PersonPhotoOutcome.cancelled;
     try {
       outcome = await flow(widget.person);
     } catch (e, s) {
-      developer.log(
-        'Failed to change a photo',
-        name: 'PersonPhotoCard',
-        error: e,
+      logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'PersonPhotoCard',
+        message: 'Failed to change a photo',
       );
       outcome = PersonPhotoOutcome.failed;
     }
-    if (outcome == PersonPhotoOutcome.changed) await _notifyChanged();
+    if (outcome == PersonPhotoOutcome.changed) await _notifyChanged(logger);
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -108,15 +111,16 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
     }
   }
 
-  Future<void> _notifyChanged() async {
+  Future<void> _notifyChanged(DomainLogger logger) async {
     try {
       await widget.onChanged();
     } catch (e, s) {
-      developer.log(
-        'Failed to re-read the person after a photo change',
-        name: 'PersonPhotoCard',
-        error: e,
+      logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'PersonPhotoCard',
+        message: 'Failed to re-read the person after a photo change',
       );
     }
   }

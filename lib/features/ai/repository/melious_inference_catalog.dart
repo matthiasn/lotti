@@ -14,9 +14,10 @@ extension _MeliousCatalog on MeliousInferenceRepository {
       queryParameters: includeMeta ? const {'include_meta': 'true'} : const {},
     );
 
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Fetching Melious model catalog from $uri',
-      name: MeliousInferenceRepository._providerName,
+      subDomain: MeliousInferenceRepository._providerName,
     );
 
     try {
@@ -30,10 +31,11 @@ extension _MeliousCatalog on MeliousInferenceRepository {
           )
           .timeout(timeout);
 
-      developer.log(
+      domainLogger.log(
+        LogDomain.ai,
         'Melious model catalog response from $uri: HTTP '
         '${response.statusCode}',
-        name: MeliousInferenceRepository._providerName,
+        subDomain: MeliousInferenceRepository._providerName,
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -67,20 +69,23 @@ extension _MeliousCatalog on MeliousInferenceRepository {
         try {
           models.add(_knownModelFromCatalogItem(item));
         } on Exception catch (e, stackTrace) {
-          developer.log(
-            'Failed to parse Melious model catalog row #$index from $uri: '
-            '${_catalogItemSummary(item)}',
-            name: MeliousInferenceRepository._providerName,
-            error: e,
+          domainLogger.error(
+            LogDomain.ai,
+            e,
             stackTrace: stackTrace,
+            subDomain: MeliousInferenceRepository._providerName,
+            message:
+                'Failed to parse Melious model catalog row #$index from '
+                '$uri: ${_catalogItemSummary(item)}',
           );
           rethrow;
         }
       }
 
-      developer.log(
+      domainLogger.log(
+        LogDomain.ai,
         'Mapped ${models.length} Melious catalog rows from $uri',
-        name: MeliousInferenceRepository._providerName,
+        subDomain: MeliousInferenceRepository._providerName,
       );
       return models;
     } on InferenceHttpException {
@@ -306,7 +311,7 @@ extension _MeliousCatalog on MeliousInferenceRepository {
     return parts.join(' ');
   }
 
-  static void _logCatalogPayload({
+  void _logCatalogPayload({
     required Uri uri,
     required Object? decoded,
     required List<dynamic> data,
@@ -319,10 +324,11 @@ extension _MeliousCatalog on MeliousInferenceRepository {
       // for switch exhaustiveness over Object?.
       _ => decoded.runtimeType.toString(), // coverage:ignore-line
     };
-    developer.log(
+    domainLogger.log(
+      LogDomain.ai,
       'Melious model catalog payload from $uri: shape=$shape, '
       'count=${data.length}',
-      name: MeliousInferenceRepository._providerName,
+      subDomain: MeliousInferenceRepository._providerName,
     );
 
     final ids = data
@@ -331,10 +337,11 @@ extension _MeliousCatalog on MeliousInferenceRepository {
     const chunkSize = 25;
     for (var start = 0; start < ids.length; start += chunkSize) {
       final end = (start + chunkSize).clamp(0, ids.length);
-      developer.log(
+      domainLogger.log(
+        LogDomain.ai,
         'Melious model catalog IDs ${start + 1}-$end/${ids.length}: '
         '${ids.sublist(start, end).join(', ')}',
-        name: MeliousInferenceRepository._providerName,
+        subDomain: MeliousInferenceRepository._providerName,
       );
     }
   }
@@ -355,9 +362,8 @@ extension _MeliousCatalog on MeliousInferenceRepository {
         if (meta != null) 'metaKeys=${meta.keys.join(',')}',
         if (capabilities != null)
           'capabilityKeys=${capabilities.keys.join(',')}',
-        'snippet=${MeliousInferenceRepository._clipForLog(jsonEncode(item))}',
       ].join('; ');
     }
-    return '<${item.runtimeType}> ${MeliousInferenceRepository._clipForLog('$item')}';
+    return '<${item.runtimeType}>';
   }
 }

@@ -564,6 +564,7 @@ void main() {
             restubWakeRunMethods(generatedRepository);
 
             final generatedOrchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: generatedRepository,
               queue: generatedQueue,
               runner: generatedRunner,
@@ -708,6 +709,7 @@ void main() {
               restubWakeRunMethods(generatedRepository);
 
               final generatedOrchestrator = WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: generatedRepository,
                 queue: generatedQueue,
                 runner: generatedRunner,
@@ -1772,6 +1774,7 @@ void main() {
 
             final cg =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: WakeRunner(),
@@ -2065,6 +2068,7 @@ void main() {
 
             orchestrator =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: runner,
@@ -2102,6 +2106,7 @@ void main() {
 
             orchestrator =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: runner,

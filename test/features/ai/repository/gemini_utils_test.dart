@@ -3,7 +3,11 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import '../../../mocks/mocks.dart' show MockDomainLogger;
 
 enum _GeneratedGeminiFrame {
   spaces,
@@ -382,11 +386,26 @@ void main() {
       ];
 
       // Should not throw, should use empty object as fallback
+      final logger = MockDomainLogger();
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: logger,
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
       );
+
+      // The parse failure is logged with the arguments' size, not their text.
+      verify(
+        () => logger.error(
+          LogDomain.ai,
+          any<Object>(that: isA<FormatException>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'GeminiUtils',
+          message:
+              'Failed to parse tool call arguments as JSON. '
+              'Using empty object (raw 18 chars).',
+        ),
+      ).called(1);
 
       expect(body['contents'], isA<List<dynamic>>());
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
@@ -411,6 +430,7 @@ void main() {
       );
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: const [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Draft the day'),
@@ -454,6 +474,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -488,6 +509,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -528,6 +550,7 @@ void main() {
 
       // Only first tool call has signature (as per Gemini docs)
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -557,6 +580,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -578,6 +602,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -613,6 +638,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -638,6 +664,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -662,6 +689,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -695,6 +723,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.5,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
@@ -751,6 +780,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.5,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
@@ -817,6 +847,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.5,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
@@ -888,6 +919,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -907,6 +939,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -925,6 +958,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -950,6 +984,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -981,6 +1016,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -1006,6 +1042,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -1026,6 +1063,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -1051,6 +1089,7 @@ void main() {
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
+        domainLogger: MockDomainLogger(),
         messages: messages,
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
@@ -1093,6 +1132,7 @@ void main() {
         ];
 
         final body = GeminiUtils.buildMultiTurnRequestBody(
+          domainLogger: MockDomainLogger(),
           messages: messages,
           temperature: 0.5,
           thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),

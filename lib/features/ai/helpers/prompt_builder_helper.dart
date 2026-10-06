@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -21,13 +21,17 @@ class PromptBuilderHelper {
     required this.aiInputRepository,
     required this.journalRepository,
     required this.taskSummaryResolver,
+    required this._domainLogger,
   });
+
+  static const _subDomain = 'PromptBuilderHelper';
 
   final AiInputRepository aiInputRepository;
   final JournalRepository journalRepository;
   final TaskSummaryResolver taskSummaryResolver;
-  DomainLogger? get _loggingService =>
-      getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null;
+
+  /// Receives the lookup traces and placeholder injection failures.
+  final DomainLogger _domainLogger;
 
   /// Get effective message from prompt config, using preconfigured if tracking is enabled
   String getEffectiveMessage({
@@ -276,16 +280,18 @@ class PromptBuilderHelper {
     );
 
     if (summary == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'No task summary found for task $taskId',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return '[No task summary available]';
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Found task summary for $taskId (${summary.length} chars)',
-      name: 'PromptBuilderHelper',
+      subDomain: _subDomain,
     );
     return summary;
   }
@@ -310,9 +316,10 @@ class PromptBuilderHelper {
     }
 
     if (categoryId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Speech dictionary: no category found for entity ${entity.id}',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return [];
     }
@@ -324,18 +331,23 @@ class PromptBuilderHelper {
         final cache = getIt<EntitiesCacheService>();
         category = cache.getCategoryById(categoryId);
       }
-    } catch (e) {
-      developer.log(
-        'Speech dictionary: error getting category $categoryId: $e',
-        name: 'PromptBuilderHelper',
+    } catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Speech dictionary: error getting category $categoryId',
       );
       return [];
     }
 
     if (category == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Speech dictionary: category $categoryId not found in cache',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
+        level: InsightLevel.warn,
       );
       return [];
     }
@@ -343,17 +355,19 @@ class PromptBuilderHelper {
     // Get the speech dictionary
     final dictionary = category.speechDictionary;
     if (dictionary == null || dictionary.isEmpty) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Speech dictionary: category ${category.id} has no dictionary',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return [];
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Speech dictionary: found ${dictionary.length} terms from '
       '$source category ${category.id}',
-      name: 'PromptBuilderHelper',
+      subDomain: _subDomain,
     );
 
     return dictionary;
@@ -452,9 +466,10 @@ class PromptBuilderHelper {
     // Get the task (directly or via linked entity)
     final task = entity is Task ? entity : await _findLinkedTask(entity);
     if (task == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Correction examples: no task found for entity ${entity.id}',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return '';
     }
@@ -462,9 +477,10 @@ class PromptBuilderHelper {
     // Get the category ID from the task
     final categoryId = task.meta.categoryId;
     if (categoryId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Correction examples: task ${task.id} has no category',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return '';
     }
@@ -476,18 +492,23 @@ class PromptBuilderHelper {
         final cache = getIt<EntitiesCacheService>();
         category = cache.getCategoryById(categoryId);
       }
-    } catch (e) {
-      developer.log(
-        'Correction examples: error getting category $categoryId: $e',
-        name: 'PromptBuilderHelper',
+    } catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Correction examples: error getting category $categoryId',
       );
       return '';
     }
 
     if (category == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Correction examples: category $categoryId not found in cache',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
+        level: InsightLevel.warn,
       );
       return '';
     }
@@ -495,19 +516,21 @@ class PromptBuilderHelper {
     // Get the correction examples
     final examples = category.correctionExamples;
     if (examples == null || examples.isEmpty) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Correction examples: category ${category.id} has no examples',
-        name: 'PromptBuilderHelper',
+        subDomain: _subDomain,
       );
       return '';
     }
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Correction examples: injecting '
       '${examples.length > kMaxCorrectionExamples ? kMaxCorrectionExamples : examples.length} '
       'examples (of ${examples.length} total) from category '
       '${category.id}',
-      name: 'PromptBuilderHelper',
+      subDomain: _subDomain,
     );
 
     return formatCorrectionExamplesPrompt(examples);
@@ -519,12 +542,12 @@ class PromptBuilderHelper {
     required Object error,
     required StackTrace stackTrace,
   }) {
-    _loggingService?.error(
+    _domainLogger.error(
       LogDomain.ai,
-      'Failed to inject {{$placeholder}} for entity=${entity.id}: '
-      '$error',
+      error,
       stackTrace: stackTrace,
       subDomain: 'placeholder_injection',
+      message: 'Failed to inject {{$placeholder}} for entity=${entity.id}',
     );
   }
 }

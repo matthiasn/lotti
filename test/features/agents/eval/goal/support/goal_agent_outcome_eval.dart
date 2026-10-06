@@ -887,6 +887,7 @@ GoalOutcomeEvalBench buildGoalOutcomeEvalBench({
   });
 
   final workflow = GoalAgentWorkflow(
+    domainLogger: MockDomainLogger(),
     repository: repository,
     syncService: syncService,
     phaseA: GoalAgentPhaseA(

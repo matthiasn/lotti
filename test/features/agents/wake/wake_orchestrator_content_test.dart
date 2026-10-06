@@ -174,6 +174,7 @@ void main() {
             var wakeExecuted = false;
             final cg =
                 WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: WakeRunner(),
@@ -211,6 +212,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -263,6 +265,7 @@ void main() {
 
             var wakeExecuted = false;
             final cg = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: WakeRunner(),
@@ -295,6 +298,7 @@ void main() {
 
           var wakeExecuted = false;
           final cg = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: WakeRunner(),
@@ -341,6 +345,7 @@ void main() {
             var taskCheckerCalled = false;
             var wakeExecuted = false;
             final cg = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: WakeRunner(),
@@ -382,6 +387,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -442,6 +448,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -478,6 +485,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -515,6 +523,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -557,6 +566,7 @@ void main() {
             String? executedAgentId;
             final cg =
                 WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: WakeRunner(),
@@ -610,6 +620,7 @@ void main() {
           var wakeExecuted = false;
           final cg =
               WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: mockRepository,
                 queue: queue,
                 runner: WakeRunner(),
@@ -652,6 +663,7 @@ void main() {
 
             final cg =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: WakeRunner(),
@@ -684,6 +696,7 @@ void main() {
 
           final cg =
               WakeOrchestrator(
+                  domainLogger: MockDomainLogger(),
                   repository: mockRepository,
                   queue: queue,
                   runner: WakeRunner(),
@@ -722,6 +735,7 @@ void main() {
 
             final cg =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: WakeRunner(),
@@ -761,6 +775,7 @@ void main() {
 
             final cg =
                 WakeOrchestrator(
+                    domainLogger: MockDomainLogger(),
                     repository: mockRepository,
                     queue: queue,
                     runner: WakeRunner(),

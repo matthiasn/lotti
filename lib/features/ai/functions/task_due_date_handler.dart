@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/repositories/task_field_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -115,11 +116,18 @@ class TaskDueDateHandler {
   /// - [journalRepository]: Repository for persisting task updates.
   /// - [onTaskUpdated]: Optional callback invoked when the task is updated.
   ///   Use this to sync state across multiple handlers.
+  /// - `domainLogger`: Receives the handler's traces and failures.
   TaskDueDateHandler({
     required this.task,
     required this.journalRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
   });
+
+  static const _subDomain = 'TaskDueDateHandler';
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   /// The task being processed.
   ///
@@ -168,10 +176,12 @@ class TaskDueDateHandler {
       final (:reason, :confidence) =
           TaskFunctionArgs.extractReasonAndConfidence(args);
 
-      developer.log(
-        'Processing update_task_due_date: $dueDateStr '
-        '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
-        name: 'TaskDueDateHandler',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Processing update_task_due_date (dueDate provided: '
+        '${dueDateStr != null}, confidence: $confidence, '
+        'reason ${reason?.length ?? 0} chars)',
+        subDomain: _subDomain,
       );
 
       // Validate date string is provided
@@ -207,9 +217,10 @@ class TaskDueDateHandler {
         final formattedDate = currentDue.toIso8601String().split('T')[0];
         final message =
             'Due date already set to $formattedDate. No change needed.';
-        developer.log(
-          'Due date unchanged: $formattedDate',
-          name: 'TaskDueDateHandler',
+        _domainLogger.log(
+          LogDomain.ai,
+          'Due date unchanged, nothing to write',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(
@@ -231,7 +242,12 @@ class TaskDueDateHandler {
           case TaskFieldWriteFailed():
             const message =
                 'Failed to update due date: repository returned false.';
-            developer.log(message, name: 'TaskDueDateHandler');
+            _domainLogger.log(
+              LogDomain.ai,
+              message,
+              subDomain: _subDomain,
+              level: InsightLevel.warn,
+            );
             _sendResponse(call.id, message, manager);
             return const TaskDueDateResult(
               success: false,
@@ -243,7 +259,7 @@ class TaskDueDateHandler {
             const message =
                 "Nothing applied: the task's due date changed since this "
                 'call read it, so it stays as it is.';
-            developer.log(message, name: 'TaskDueDateHandler');
+            _domainLogger.log(LogDomain.ai, message, subDomain: _subDomain);
             _sendResponse(call.id, message, manager);
             return const TaskDueDateResult(success: true, message: message);
           case TaskFieldWritten(task: final stored):
@@ -252,9 +268,10 @@ class TaskDueDateHandler {
         }
 
         final message = 'Task due date updated to $dueDateStr.';
-        developer.log(
-          'Successfully set task due date to $dueDateStr',
-          name: 'TaskDueDateHandler',
+        _domainLogger.log(
+          LogDomain.ai,
+          'Successfully set task due date',
+          subDomain: _subDomain,
         );
         _sendResponse(call.id, message, manager);
 
@@ -266,11 +283,12 @@ class TaskDueDateHandler {
       } catch (e, s) {
         const message =
             'Failed to set due date. Continuing without due date update.';
-        developer.log(
-          'Failed to update task due date',
-          name: 'TaskDueDateHandler',
-          error: e,
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
           stackTrace: s,
+          subDomain: _subDomain,
+          message: 'Failed to update task due date',
         );
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(
@@ -281,11 +299,12 @@ class TaskDueDateHandler {
       }
     } catch (e, s) {
       const message = 'Error processing task due date update.';
-      developer.log(
-        'Error processing update_task_due_date: $e',
-        name: 'TaskDueDateHandler',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: s,
+        subDomain: _subDomain,
+        message: 'Error processing update_task_due_date',
       );
       _sendResponse(call.id, message, manager);
       return TaskDueDateResult(

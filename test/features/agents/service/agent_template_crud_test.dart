@@ -39,6 +39,7 @@ void main() {
     when(() => mockSync.upsertLink(any())).thenAnswer((_) async {});
 
     crud = AgentTemplateCrud(
+      domainLogger: MockDomainLogger(),
       repository: mockRepo,
       syncService: mockSync,
     );

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -36,6 +35,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/repositories/speech_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -363,15 +363,17 @@ class EntryController extends AsyncNotifier<EntryState?> {
   }
 
   Future<void> _syncDailyOsTaskTitle(String taskId, String title) async {
+    final logger = ref.read(domainLoggerProvider);
     for (final hook in ref.read(taskTitleChangedHooksProvider)) {
       try {
         await hook(taskId, title);
       } catch (e, stackTrace) {
-        developer.log(
-          'Failed to sync a title change for task $taskId: $e',
-          name: 'EntryController',
-          error: e,
+        logger.error(
+          LogDomain.persistence,
+          e,
           stackTrace: stackTrace,
+          subDomain: 'EntryController',
+          message: 'Failed to sync a title change for task $taskId',
         );
       }
     }
@@ -630,6 +632,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// Removes an incompatible membership after a successful privacy toggle.
   /// The repository rechecks the current task, project, and link atomically.
   Future<void> _dropPrivacyMismatchedProjectLink(String taskId) async {
+    final logger = ref.read(domainLoggerProvider);
     try {
       await ref
           .read(projectRepositoryProvider)
@@ -638,11 +641,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
             onlyIfPrivacyMismatched: true,
           );
     } catch (e, stackTrace) {
-      developer.log(
-        'Failed to drop privacy-incompatible project link for entry $id: $e',
-        name: 'EntryController',
-        error: e,
+      logger.error(
+        LogDomain.persistence,
+        e,
         stackTrace: stackTrace,
+        subDomain: 'EntryController',
+        message: 'Failed to drop privacy-incompatible project link for $id',
       );
     }
   }
@@ -822,6 +826,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
   Future<bool> pasteCoverArt() async {
     final entry = state.value?.entry;
     if (entry is! Task) return false;
+    final logger = ref.read(domainLoggerProvider);
     ImportedImage? imported;
     try {
       imported = await importFirstClipboardImage(
@@ -833,11 +838,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
       if (imported == null) return false;
       if (await setCoverArt(imported.id)) return true;
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to paste cover art',
-        name: 'EntryController',
-        error: error,
+      logger.error(
+        LogDomain.persistence,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'EntryController',
+        message: 'Failed to paste cover art',
       );
     }
     if (imported != null && imported.created) {

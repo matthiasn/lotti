@@ -157,6 +157,7 @@ DayAgentShutdownService dayAgentShutdownService(Ref ref) {
     templateService: ref.watch(agentTemplateServiceProvider),
     profileResolver: ProfileResolver(
       aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+      domainLogger: ref.watch(domainLoggerProvider),
     ),
     inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     categoryById: cachedCategoryById,

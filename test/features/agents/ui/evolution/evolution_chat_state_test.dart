@@ -231,7 +231,10 @@ void main() {
               modelId: 'model-1',
               processor: processor,
               genUiBridge: bridge,
-              eventHandler: GenUiEventHandler(processor: processor)..listen(),
+              eventHandler: GenUiEventHandler(
+                domainLogger: MockDomainLogger(),
+                processor: processor,
+              )..listen(),
             ),
           );
           when(
@@ -352,7 +355,10 @@ void main() {
             modelId: 'model-1',
             processor: processor,
             genUiBridge: bridge,
-            eventHandler: GenUiEventHandler(processor: processor)..listen(),
+            eventHandler: GenUiEventHandler(
+              domainLogger: MockDomainLogger(),
+              processor: processor,
+            )..listen(),
           );
 
           stubSuccessfulStart(
@@ -763,7 +769,10 @@ void main() {
             modelId: 'model-1',
             processor: processor,
             genUiBridge: bridge,
-            eventHandler: GenUiEventHandler(processor: processor)..listen(),
+            eventHandler: GenUiEventHandler(
+              domainLogger: MockDomainLogger(),
+              processor: processor,
+            )..listen(),
           ),
         );
 
@@ -798,7 +807,10 @@ void main() {
           modelId: 'model-1',
           processor: processor,
           genUiBridge: bridge,
-          eventHandler: GenUiEventHandler(processor: processor)..listen(),
+          eventHandler: GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen(),
         );
 
         stubSuccessfulStart(
@@ -861,8 +873,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           const testProposal = PendingProposal(
             generalDirective: 'new directives',
@@ -922,8 +936,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           const testProposal = PendingProposal(
             generalDirective: 'new directives',
@@ -1004,8 +1020,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
           final soulVersion = makeTestSoulDocumentVersion(version: 4);
 
           stubSuccessfulStart(
@@ -1063,8 +1081,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           stubSuccessfulStart(
             response: 'Review the soul proposal.',
@@ -1120,8 +1140,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           stubSuccessfulStart(
             response: 'Review the soul proposal.',
@@ -1171,8 +1193,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           stubSuccessfulStart(
             response: 'Let us rate categories.',
@@ -1226,8 +1250,10 @@ void main() {
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
-          final eventHandler = GenUiEventHandler(processor: processor)
-            ..listen();
+          final eventHandler = GenUiEventHandler(
+            domainLogger: MockDomainLogger(),
+            processor: processor,
+          )..listen();
 
           stubSuccessfulStart(
             response: 'Want to rate me?',
@@ -1423,7 +1449,10 @@ void main() {
             modelId: 'model-1',
             processor: processor,
             genUiBridge: bridge,
-            eventHandler: GenUiEventHandler(processor: processor)..listen(),
+            eventHandler: GenUiEventHandler(
+              domainLogger: MockDomainLogger(),
+              processor: processor,
+            )..listen(),
           );
 
           stubSuccessfulStart(

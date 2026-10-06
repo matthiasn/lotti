@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -13,6 +11,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// CTA shown on the task details page when no agent is yet attached to the
@@ -106,6 +105,7 @@ Future<void> _createTaskAgent(
   final categoryId = entryState.meta.categoryId;
   final allowedCategoryIds = categoryId != null ? {categoryId} : <String>{};
 
+  final logger = ref.read(domainLoggerProvider);
   try {
     final service = ref.read(taskAgentServiceProvider);
     final templateService = ref.read(agentTemplateServiceProvider);
@@ -149,11 +149,12 @@ Future<void> _createTaskAgent(
       ref.invalidate(taskAgentProvider(taskId));
     }
   } catch (e, s) {
-    developer.log(
-      'Failed to create task agent',
-      name: 'AiSummaryCard',
-      error: e.runtimeType,
+    logger.error(
+      LogDomain.agentWorkflow,
+      e,
       stackTrace: s,
+      subDomain: 'AiSummaryCard',
+      message: 'Failed to create task agent',
     );
     if (context.mounted) {
       context.showToast(

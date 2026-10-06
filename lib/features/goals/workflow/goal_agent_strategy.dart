@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// A banner brief accumulated from one `create_goal_ad` call.
@@ -46,6 +46,7 @@ class GoalAgentStrategy extends ConversationStrategy
     with ObservationRecordParsing, AgentMessageRecording {
   GoalAgentStrategy({
     required this.syncService,
+    required this.domainLogger,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -59,6 +60,10 @@ class GoalAgentStrategy extends ConversationStrategy
 
   @override
   final AgentSyncService syncService;
+
+  /// Structured logger for argument-parsing and persistence failures.
+  @override
+  final DomainLogger domainLogger;
   @override
   final String agentId;
   @override
@@ -163,12 +168,15 @@ class GoalAgentStrategy extends ConversationStrategy
       Map<String, dynamic> args;
       try {
         args = parseAgentToolArguments(call.function.arguments);
-      } catch (e) {
-        developer.log(
-          'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=${utf8.encode(call.function.arguments).length}, '
-          'errorType=${e.runtimeType})',
-          name: 'GoalAgentStrategy',
+      } catch (e, stackTrace) {
+        domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
+          stackTrace: stackTrace,
+          subDomain: 'GoalAgentStrategy',
+          message:
+              'Failed to parse tool call arguments for $toolName '
+              '(rawBytes=${utf8.encode(call.function.arguments).length})',
         );
         await _reject(
           call: call,

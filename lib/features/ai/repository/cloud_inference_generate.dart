@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Text and image generation paths for [CloudInferenceRepository].
@@ -28,6 +28,7 @@ class CloudInferenceGenerate {
     required this._mistralRepository,
     required this._mistralOcrRepository,
     required this._helpers,
+    required this._domainLogger,
   });
 
   final OllamaInferenceRepository _ollamaRepository;
@@ -36,6 +37,9 @@ class CloudInferenceGenerate {
   final MistralInferenceRepository _mistralRepository;
   final MistralOcrRepository _mistralOcrRepository;
   final CloudInferenceRequestHelpers _helpers;
+  final DomainLogger _domainLogger;
+
+  static const _logTag = 'CloudInferenceRepository';
 
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
@@ -57,13 +61,14 @@ class CloudInferenceGenerate {
     if (provider?.inferenceProviderType == InferenceProviderType.sherpa) {
       throw UnsupportedError('sherpa-onnx supports audio transcription only');
     }
-    developer.log(
-      'CloudInferenceRepository.generate called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider?.inferenceProviderType}\n'
-      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
-      '  systemMessage: ${systemMessage?.length ?? 0} chars',
-      name: 'CloudInferenceRepository',
+    _domainLogger.log(
+      LogDomain.ai,
+      'generate: model=$model, '
+      'provider=${provider?.inferenceProviderType.name}, '
+      'tools=${tools?.length ?? 0} '
+      '(${tools?.map((t) => t.function.name).join(', ') ?? 'none'}), '
+      'systemMessage=${systemMessage?.length ?? 0} chars',
+      subDomain: _logTag,
     );
 
     // For Ollama, use the dedicated repository
@@ -142,9 +147,11 @@ class CloudInferenceGenerate {
         );
 
     if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Passing ${tools.length} tools to OpenAI API: '
+        '${tools.map((t) => t.function.name).join(', ')}',
+        subDomain: _logTag,
       );
     }
 
@@ -260,9 +267,11 @@ class CloudInferenceGenerate {
         : null;
 
     if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Passing ${tools.length} tools to image API: '
+        '${tools.map((t) => t.function.name).join(', ')}',
+        subDomain: _logTag,
       );
     }
 

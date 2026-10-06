@@ -208,6 +208,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
   }) {
     final pendingSets = ledger.pendingSets;
     final toolDispatcher = TaskToolDispatcher(
+      domainLogger: domainLogger,
       journalDb: journalDb,
       journalRepository: this.journalRepository,
       checklistRepository: this.checklistRepository,
@@ -222,6 +223,7 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
     );
 
     return TaskAgentStrategy(
+      domainLogger: domainLogger,
       // Withhold `update_report` from the opening turn so the wake does the
       // work before it reports on it. Null when the flag is off, which
       // leaves one fixed tool list for the conversation as before.

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -233,6 +234,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -290,6 +292,7 @@ void main() {
           );
 
           final handler = TaskLabelHandler(
+            domainLogger: MockDomainLogger(),
             task: taskWith3Labels,
             processor: mockProcessor,
           );
@@ -341,6 +344,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -373,6 +377,7 @@ void main() {
 
       test('returns no-op when all labels are low confidence', () async {
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -399,6 +404,7 @@ void main() {
 
       test('returns no-op when labels array is empty', () async {
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -412,6 +418,7 @@ void main() {
       });
 
       test('handles processor exception', () async {
+        final logger = MockDomainLogger();
         when(
           () => mockProcessor.processAssignment(
             taskId: any(named: 'taskId'),
@@ -426,6 +433,7 @@ void main() {
         ).thenThrow(Exception('DB error'));
 
         final handler = TaskLabelHandler(
+          domainLogger: logger,
           task: task,
           processor: mockProcessor,
         );
@@ -439,6 +447,16 @@ void main() {
         expect(result.success, isFalse);
         expect(result.didWrite, isFalse);
         expect(result.error, contains('DB error'));
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<Exception>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'TaskLabelHandler',
+            message: 'Failed to assign labels',
+          ),
+        ).called(1);
       });
 
       test('passes existing label IDs to processor', () async {
@@ -468,6 +486,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: taskWithLabels,
           processor: mockProcessor,
         );
@@ -515,6 +534,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -558,6 +578,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -609,6 +630,7 @@ void main() {
         );
 
         final handler = TaskLabelHandler(
+          domainLogger: MockDomainLogger(),
           task: task,
           processor: mockProcessor,
         );
@@ -634,6 +656,7 @@ void main() {
             meta: task.meta.copyWith(labelIds: scenario.existingIds),
           );
           final handler = TaskLabelHandler(
+            domainLogger: MockDomainLogger(),
             task: taskWithExisting,
             processor: localProcessor,
           );

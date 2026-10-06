@@ -1,7 +1,5 @@
 // ignore_for_file: specify_nonobvious_property_types
 
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai/skill_type.dart';
@@ -163,10 +161,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
         final link = ref.keepAlive();
         final loggingService = ref.watch(domainLoggerProvider);
         try {
-          developer.log(
+          loggingService.log(
+            LogDomain.ai,
             'triggerSkill: entityId=${params.entityId}, '
             'skillId=${params.skillId}, linkedTaskId=${params.linkedTaskId}',
-            name: 'UnifiedAiController',
+            subDomain: 'UnifiedAiController',
           );
 
           final skill = ref
@@ -272,11 +271,12 @@ final triggerSkillProvider = FutureProvider.autoDispose
             return;
           }
 
-          developer.log(
+          loggingService.log(
+            LogDomain.ai,
             'triggerSkill: resolved profile for ${params.entityId} '
             '(linkedTaskId=$linkedTaskId), '
             'running ${skill.skillType}',
-            name: 'UnifiedAiController',
+            subDomain: 'UnifiedAiController',
           );
 
           final automationResult = AutomationResult(
@@ -338,9 +338,10 @@ final triggerSkillProvider = FutureProvider.autoDispose
               );
           }
 
-          developer.log(
+          loggingService.log(
+            LogDomain.ai,
             'triggerSkill: completed for ${params.entityId}',
-            name: 'UnifiedAiController',
+            subDomain: 'UnifiedAiController',
           );
         } catch (error, stackTrace) {
           loggingService.error(
@@ -527,10 +528,15 @@ typedef TriggerNewInferenceParams = ({
 final triggerNewInferenceProvider = FutureProvider.autoDispose
     .family<void, TriggerNewInferenceParams>(
       (ref, params) async {
-        developer.log(
-          'triggerNewInference called: entityId=${params.entityId}, promptId=${params.promptId}, linkedEntityId=${params.linkedEntityId}',
-          name: 'UnifiedAiController',
-        );
+        ref
+            .read(domainLoggerProvider)
+            .log(
+              LogDomain.ai,
+              'triggerNewInference called: entityId=${params.entityId}, '
+              'promptId=${params.promptId}, '
+              'linkedEntityId=${params.linkedEntityId}',
+              subDomain: 'UnifiedAiController',
+            );
         // Get the controller instance (this will create it if it doesn't exist)
         final controller = ref.read(
           unifiedAiControllerProvider((

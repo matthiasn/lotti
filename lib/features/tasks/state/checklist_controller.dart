@@ -1,7 +1,6 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/database/shown_checklist_items.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:meta/meta.dart';
 
@@ -64,6 +64,7 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   List<String> _listed = const [];
 
   void _listen() {
+    final logger = ref.read(domainLoggerProvider);
     _updateSubscription = ref
         .read(updateNotificationsProvider)
         .updateStream
@@ -72,10 +73,6 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
         ) async {
           final hit = affectedIds.intersection(subscribedIds);
           if (hit.isEmpty) return;
-          developer.log(
-            'notify received id=$id hit=$hit subscribed=$subscribedIds',
-            name: 'ChecklistController',
-          );
           if (!ref.mounted) return;
           final latest = await _fetch();
           if (!ref.mounted) return;
@@ -87,9 +84,14 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
               ..addAll(latest.data.linkedChecklistItems)
               ..addAll(_listed);
           }
-          developer.log(
-            'state updated id=$id items=${latest?.data.linkedChecklistItems.length}',
-            name: 'ChecklistController',
+          // One line per notification would flood the file during a sync
+          // burst; a sampled count keeps the signal.
+          logger.logSampled(
+            LogDomain.tasks,
+            'state updated id=$id hit=${hit.length} '
+            'items=${latest?.data.linkedChecklistItems.length}',
+            sampleKey: 'checklistStateUpdated',
+            subDomain: 'ChecklistController',
           );
           state = AsyncData(latest);
         });

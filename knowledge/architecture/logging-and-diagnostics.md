@@ -28,6 +28,10 @@ sources:
     resource: ../../lib/services/window_service.dart
     title: Ordered shutdown and final log flush
     last_modified: 2026-08-01
+  - id: developer-log-guard
+    resource: ../../tool/logging/developer_log_guard.dart
+    title: dart:developer logging guard
+    last_modified: 2026-10-06
   - id: slow-query-logging
     resource: ../../lib/database/slow_query_logging.dart
     title: SlowQueryInterceptor
@@ -168,14 +172,16 @@ does no flag wiring of its own.
 
 ## `dart:developer` is not a second channel
 
-`developer.log` reaches only a debugger or DevTools, but it bypasses every rule
-`DomainLogger` enforces, and it is where prompts, tool arguments and model
-output kept turning up. Outside `lib/services/`, where logging itself is
-implemented, `tool/logging/validate.dart` ratchets those calls per file
-against `tool/logging/baseline.json`: a file's count may fall, never rise, and
-a new file may not introduce one. A fall fails too until `--update-baseline`
-records it, so the baseline is never behind the tree. CI runs it in the analyze workflow, and so
-does `make developer_log_check`. It counts on the token stream, and resolves a
+`developer.log` reaches only a debugger or DevTools. It never prints to the
+terminal of `flutter run` and never reaches the log files, so a failure caught
+and logged there leaves no trace a user or maintainer would find, and it
+bypasses every rule `DomainLogger` enforces. Outside `lib/services/`, where
+logging itself is implemented, nothing calls it: a caught error goes to
+`DomainLogger.error` with its stack trace, and a progress trace goes to
+`DomainLogger.log` under the fitting domain. `tool/logging/validate.dart` keeps
+it that way by failing on any file outside `lib/services/` that logs through
+`dart:developer`. CI runs it in the analyze workflow, and so does
+`make developer_log_check`. It counts on the token stream, and resolves a
 `part` file through its library's import.
 
 Two smaller leaks are closed with it. Provider error bodies stay out of

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -117,8 +116,8 @@ class TaskAgentWorkflow with AgentErrorLogging {
     required this.labelsRepository,
     required this.syncService,
     required this.templateService,
+    required this.domainLogger,
     this.soulDocumentService,
-    this.domainLogger,
     this.embeddingStore,
     this.embeddingRepository,
     this.taskAgentService,
@@ -162,9 +161,9 @@ class TaskAgentWorkflow with AgentErrorLogging {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
 
-  /// Optional domain logger for structured, PII-safe logging.
+  /// Domain logger for structured, PII-safe logging.
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;

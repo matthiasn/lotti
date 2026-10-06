@@ -33,7 +33,10 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = OllamaEmbeddingRepository(httpClient: mockHttpClient);
+    repository = OllamaEmbeddingRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: mockHttpClient,
+    );
   });
 
   /// Creates a valid embedding response body with [dims] float values.

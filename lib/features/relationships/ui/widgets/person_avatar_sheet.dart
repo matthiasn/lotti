@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
@@ -10,6 +8,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One of the avatar sheet's flows — [PersonPhotoActions.chooseAvatar],
@@ -37,6 +37,11 @@ Future<PersonPhotoOutcome?> showPersonAvatarSheet({
   PersonPhotoActions? actions,
 }) async {
   final pageContext = context;
+  // Read before the first await: the flow can outlive the page's element.
+  final logger = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(domainLoggerProvider);
   final flow = await DsActionModal.show<PersonPhotoFlow>(
     context: context,
     title: context.messages.relationshipPhotoSheetTitle(
@@ -56,11 +61,12 @@ Future<PersonPhotoOutcome?> showPersonAvatarSheet({
     // A picker, a file copy or the crop surface that throws is, to the user,
     // a photo that could not be saved — the same failure the Photo card
     // reports — not an error escaping a tap handler.
-    developer.log(
-      'Failed to change a photo',
-      name: 'PersonAvatarSheet',
-      error: e,
+    logger.error(
+      LogDomain.general,
+      e,
       stackTrace: s,
+      subDomain: 'PersonAvatarSheet',
+      message: 'Failed to change a photo',
     );
     outcome = PersonPhotoOutcome.failed;
   }

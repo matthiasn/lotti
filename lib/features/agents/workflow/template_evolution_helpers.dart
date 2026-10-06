@@ -29,12 +29,13 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
             updatedAt: now,
           ),
         );
-        developer.log(
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'Auto-abandoned stale session '
           '${DomainLogger.sanitizeId(session.id)} '
           '(#${session.sessionNumber}) for template '
           '${DomainLogger.sanitizeId(templateId)}',
-          name: _logTag,
+          subDomain: _logTag,
         );
       }
     }

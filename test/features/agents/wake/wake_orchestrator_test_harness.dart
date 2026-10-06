@@ -892,6 +892,7 @@ void configureWakeOrchestratorTestSuite() {
     stubWakeRepositoryDefaults(mockRepository);
 
     orchestrator = WakeOrchestrator(
+      domainLogger: MockDomainLogger(),
       repository: mockRepository,
       queue: queue,
       runner: runner,

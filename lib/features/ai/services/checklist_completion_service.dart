@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 final AsyncNotifierProvider<
   ChecklistCompletionService,
@@ -26,17 +27,20 @@ class ChecklistCompletionService
 
   /// Add multiple suggestions at once
   void addSuggestions(List<ChecklistCompletionSuggestion> suggestions) {
-    developer.log(
-      'ChecklistCompletionService.addSuggestions called with ${suggestions.length} suggestions',
-      name: 'ChecklistCompletionService',
-    );
-
-    for (final suggestion in suggestions) {
-      developer.log(
-        '  - ${suggestion.checklistItemId}: ${suggestion.confidence.name}',
-        name: 'ChecklistCompletionService',
-      );
-    }
+    // One line per batch, not per suggestion: the confidence spread is the
+    // signal, the item ids are in the suggestions themselves.
+    final byConfidence = {
+      for (final level in ChecklistCompletionConfidence.values)
+        level.name: suggestions.where((s) => s.confidence == level).length,
+    };
+    ref
+        .read(domainLoggerProvider)
+        .log(
+          LogDomain.ai,
+          'addSuggestions called with ${suggestions.length} suggestions '
+          '$byConfidence',
+          subDomain: 'ChecklistCompletionService',
+        );
 
     state = AsyncData(suggestions);
   }

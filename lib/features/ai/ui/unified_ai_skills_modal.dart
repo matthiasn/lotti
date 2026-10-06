@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -23,6 +23,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -148,11 +150,14 @@ class UnifiedAiModal {
           // Close the modal first
           Navigator.of(modalSheetContext).pop();
 
-          developer.log(
-            'AI popup menu skill trigger: entity=${journalEntity.id}, '
-            'skill=${skill.id}, linkedFrom=$linkedFromId',
-            name: 'UnifiedAiPopUpMenu',
-          );
+          ref
+              .read(domainLoggerProvider)
+              .log(
+                LogDomain.ai,
+                'AI popup menu skill trigger: entity=${journalEntity.id}, '
+                'skill=${skill.id}, linkedFrom=$linkedFromId',
+                subDomain: 'UnifiedAiPopUpMenu',
+              );
 
           // Determine the linked task ID for profile resolution and
           // persistence. Some task timeline entries arrive without a
@@ -237,6 +242,7 @@ class UnifiedAiModal {
     required WidgetRef ref,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
+    final logger = ref.read(domainLoggerProvider);
     final linkedTask = await _resolveLinkedTask(
       journalEntity: journalEntity,
       preferredTaskId: preferredTaskId,
@@ -244,9 +250,11 @@ class UnifiedAiModal {
     );
 
     if (linkedTask == null) {
-      developer.log(
+      logger.log(
+        LogDomain.ai,
         'No linked task found for entity: ${journalEntity.id}',
-        name: 'UnifiedAiPopUpMenu',
+        subDomain: 'UnifiedAiPopUpMenu',
+        level: InsightLevel.warn,
       );
       return;
     }

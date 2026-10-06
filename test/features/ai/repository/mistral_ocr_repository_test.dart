@@ -7,6 +7,8 @@ import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 /// A non-timeout, non-format transport error to exercise the generic
 /// `Exception` branch.
 class _TransportFailure implements Exception {
@@ -35,7 +37,10 @@ void main() {
     MistralOcrRepository repoWithHandler(
       Future<http.Response> Function(http.Request request) handler,
     ) {
-      final repo = MistralOcrRepository(httpClient: MockClient(handler));
+      final repo = MistralOcrRepository(
+        domainLogger: MockDomainLogger(),
+        httpClient: MockClient(handler),
+      );
       addTearDown(repo.close);
       return repo;
     }
@@ -91,7 +96,10 @@ void main() {
       test('close leaves an injected client open', () {
         final injected = _RecordingClient();
 
-        MistralOcrRepository(httpClient: injected).close();
+        MistralOcrRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: injected,
+        ).close();
 
         expect(injected.closed, isFalse);
       });
@@ -99,7 +107,10 @@ void main() {
       test('close disposes the client created by its factory', () {
         final owned = _RecordingClient();
 
-        MistralOcrRepository(clientFactory: () => owned).close();
+        MistralOcrRepository(
+          domainLogger: MockDomainLogger(),
+          clientFactory: () => owned,
+        ).close();
 
         expect(owned.closed, isTrue);
       });

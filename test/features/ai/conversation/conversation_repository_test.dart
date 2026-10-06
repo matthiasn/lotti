@@ -15,7 +15,9 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -220,6 +222,7 @@ void main() {
   late ConversationRepository repository;
   late MockOllamaInferenceRepository mockOllamaRepo;
   late MockConversationStrategy mockStrategy;
+  late MockDomainLogger mockLogger;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -233,7 +236,10 @@ void main() {
   });
 
   setUp(() {
-    container = ProviderContainer();
+    mockLogger = MockDomainLogger();
+    container = ProviderContainer(
+      overrides: [domainLoggerProvider.overrideWithValue(mockLogger)],
+    );
     repository = container.read(conversationRepositoryProvider.notifier);
     mockOllamaRepo = MockOllamaInferenceRepository();
     mockStrategy = MockConversationStrategy();
@@ -1043,6 +1049,15 @@ void main() {
         );
 
         expect(manager.lastError, contains('API Error'));
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'ConversationRepository',
+            message: 'Error during conversation turn',
+          ),
+        ).called(1);
       });
 
       test(

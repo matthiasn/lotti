@@ -1095,8 +1095,10 @@ void main() {
           (_) => const Stream.empty(),
         );
 
-        final eventHandler = GenUiEventHandler(processor: mockProcessor)
-          ..listen();
+        final eventHandler = GenUiEventHandler(
+          domainLogger: MockDomainLogger(),
+          processor: mockProcessor,
+        )..listen();
 
         return ActiveEvolutionSession(
           sessionId: sessionId,

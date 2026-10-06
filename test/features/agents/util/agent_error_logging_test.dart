@@ -11,12 +11,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-/// A workflow-shaped adopter: nullable logger, `agentWorkflow` domain.
+/// A workflow-shaped adopter: `agentWorkflow` domain.
 class _Workflow with AgentErrorLogging {
   _Workflow(this.domainLogger);
 
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
@@ -27,24 +27,10 @@ class _Runtime with AgentErrorLogging {
   _Runtime(this.domainLogger);
 
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
-}
-
-/// An adopter that overrides the derived name.
-class _Renamed with AgentErrorLogging {
-  _Renamed(this.domainLogger);
-
-  @override
-  final DomainLogger? domainLogger;
-
-  @override
-  LogDomain get errorLogDomain => LogDomain.agentRuntime;
-
-  @override
-  String get errorLogName => 'CustomName';
 }
 
 void main() {
@@ -62,7 +48,7 @@ void main() {
     ).thenAnswer((_) {});
   });
 
-  group('with a structured logger', () {
+  group('logError', () {
     test('logs the error as the subject and the message as context', () {
       // The asymmetry matters to the log surfaces: when there is a cause, the
       // cause is the logged object and the human sentence is metadata.
@@ -127,45 +113,6 @@ void main() {
     });
   });
 
-  group('without a structured logger', () {
-    // The fallback writes to `developer.log`, whose output is not observable
-    // from a test binding. These assert the reachable contract — that the
-    // fallback is taken silently and cannot throw — rather than pretending to
-    // verify the console text.
-    test('does not touch the logger and completes', () {
-      expect(
-        () => _Workflow(null).logError('wake failed', error: StateError('x')),
-        returnsNormally,
-      );
-      verifyNever(
-        () => logger.error(
-          any<LogDomain>(),
-          any<Object>(),
-          message: any<String?>(named: 'message'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      );
-    });
-
-    test('completes with no cause and no stack trace', () {
-      expect(() => _Runtime(null).logError('idle'), returnsNormally);
-    });
-  });
-
-  group('errorLogName', () {
-    test('defaults to the concrete type, so a rename cannot leave it stale', () {
-      // This is why the name is derived rather than restated per class: the
-      // seven hand-written copies each hard-coded a string that a rename would
-      // silently orphan.
-      expect(_Workflow(logger).errorLogName, '_Workflow');
-      expect(_Runtime(logger).errorLogName, '_Runtime');
-    });
-
-    test('is overridable when a class needs a name that is not its own', () {
-      expect(_Renamed(logger).errorLogName, 'CustomName');
-    });
-  });
-
   group('logInfo', () {
     setUp(() {
       when(
@@ -200,16 +147,6 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       );
-    });
-
-    test('is dropped without a structured logger', () {
-      // Progress lines are diagnostics: unlike errors they have no console
-      // fallback, so a logger-less adopter stays silent.
-      expect(
-        () => _Workflow(null).logInfo('resolved template'),
-        returnsNormally,
-      );
-      verifyZeroInteractions(logger);
     });
   });
 }

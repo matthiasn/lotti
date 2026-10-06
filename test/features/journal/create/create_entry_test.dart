@@ -9,6 +9,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -87,11 +89,13 @@ void main() {
   group('Create Entry Tests - ', () {
     late SettingsDb settingsDb;
     late JournalDb journalDb;
+    late MockDomainLogger logger;
 
     // Per-test fresh databases + GetIt registrations: no state accumulates
     // across tests, so no test can depend on entries created by another.
     setUp(() async {
       setFakeDocumentsPath();
+      logger = MockDomainLogger();
 
       settingsDb = SettingsDb(inMemoryDatabase: true);
       journalDb = JournalDb(inMemoryDatabase: true);
@@ -207,7 +211,7 @@ void main() {
     });
 
     test('createTask creates and stores a task', () async {
-      final task = await createTask();
+      final task = await createTask(domainLogger: logger);
 
       expect(task, isNotNull);
       expect(task, isA<Task>());
@@ -230,7 +234,10 @@ void main() {
         // The link picker creates from a search miss, where the query the user
         // typed already is the title. Applying it after the write would leave
         // the task briefly nameless in every list that reads it.
-        final task = await createTask(title: 'Write the migration guide');
+        final task = await createTask(
+          domainLogger: logger,
+          title: 'Write the migration guide',
+        );
 
         expect(task?.data.title, 'Write the migration guide');
 
@@ -245,13 +252,17 @@ void main() {
       'createTask inherits privacy from a link-free context and indexes the '
       'title',
       () async {
-        final parent = await createTask(title: 'Private parent');
+        final parent = await createTask(
+          domainLogger: logger,
+          title: 'Private parent',
+        );
         await getIt<PersistenceLogic>().updateJournalEntity(
           parent!.copyWith(meta: parent.meta.copyWith(private: true)),
           parent.meta.copyWith(private: true),
         );
 
         final child = await createTask(
+          domainLogger: logger,
           title: 'Child of a private task',
           inheritContextFrom: parent.meta.id,
         );
@@ -290,6 +301,7 @@ void main() {
       await getIt<PersistenceLogic>().createDbEntity(project);
 
       final task = await createTask(
+        domainLogger: logger,
         projectId: projectId,
         labelIds: labelIds,
         status: 'IN PROGRESS',
@@ -326,7 +338,11 @@ void main() {
         final before = await journalDb.select(journalDb.journal).get();
 
         expect(
-          await createTask(projectId: 'project', linkedId: 'parent'),
+          await createTask(
+            domainLogger: logger,
+            projectId: 'project',
+            linkedId: 'parent',
+          ),
           isNull,
         );
 
@@ -348,7 +364,11 @@ void main() {
           parent.copyWith(meta: parent.meta.copyWith(private: privacy)),
         );
 
-        final task = await createTask(projectId: 'project', linkedId: 'parent');
+        final task = await createTask(
+          domainLogger: logger,
+          projectId: 'project',
+          linkedId: 'parent',
+        );
         expect(task, isNotNull);
         final stored = await journalDb.journalEntityById(task!.meta.id);
         expect(stored?.meta.private, privacy);
@@ -369,7 +389,7 @@ void main() {
         project.copyWith(meta: project.meta.copyWith(private: true)),
       );
 
-      final task = await createTask(projectId: projectId);
+      final task = await createTask(domainLogger: logger, projectId: projectId);
 
       expect(task, isNotNull);
       final persisted = await journalDb.journalEntityById(task!.meta.id);
@@ -396,7 +416,7 @@ void main() {
 
         for (final projectId in [missingProjectId, failingProjectId]) {
           expect(
-            await createTask(projectId: projectId),
+            await createTask(domainLogger: logger, projectId: projectId),
             isNull,
             reason: '$projectId must abort task creation',
           );
@@ -404,6 +424,23 @@ void main() {
             () => projectRepository.getProjectById(projectId),
           ).called(1);
         }
+        verify(
+          () => logger.log(
+            LogDomain.persistence,
+            'Could not resolve project $missingProjectId before task creation',
+            subDomain: 'createTask',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        verify(
+          () => logger.error(
+            LogDomain.persistence,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'createTask',
+            message: 'Failed to resolve category for project $failingProjectId',
+          ),
+        ).called(1);
         verifyNever(
           () => projectRepository.linkTaskToProject(
             projectId: any(named: 'projectId'),
@@ -435,6 +472,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         final task = await createTask(
+          domainLogger: logger,
           projectId: projectId,
           categoryId: 'conflicting-filter-category',
         );
@@ -482,7 +520,10 @@ void main() {
           });
 
           expect(
-            await createTask(projectId: scenario.projectId),
+            await createTask(
+              domainLogger: logger,
+              projectId: scenario.projectId,
+            ),
             isNull,
             reason: '${scenario.projectId} must surface its link failure',
           );
@@ -498,6 +539,29 @@ void main() {
             isNull,
             reason: 'a failed explicit link must not leave an orphaned task',
           );
+          if (scenario.throws) {
+            verify(
+              () => logger.error(
+                LogDomain.persistence,
+                any<Object>(that: isA<StateError>()),
+                stackTrace: any(named: 'stackTrace'),
+                subDomain: 'createTask',
+                message:
+                    'Failed to assign project ${scenario.projectId} '
+                    'to task $createdTaskId',
+              ),
+            ).called(1);
+          } else {
+            verify(
+              () => logger.log(
+                LogDomain.persistence,
+                'Could not assign project ${scenario.projectId} '
+                'to task $createdTaskId',
+                subDomain: 'createTask',
+                level: InsightLevel.warn,
+              ),
+            ).called(1);
+          }
         }
       },
     );
@@ -532,7 +596,7 @@ void main() {
         });
 
         await expectLater(
-          createTask(projectId: projectId),
+          createTask(domainLogger: logger, projectId: projectId),
           throwsA(
             isA<StateError>().having(
               (error) => error.message,
@@ -580,7 +644,10 @@ void main() {
           return false;
         });
 
-        expect(await createTask(projectId: projectId), isNull);
+        expect(
+          await createTask(domainLogger: logger, projectId: projectId),
+          isNull,
+        );
 
         expect(createdTaskId, isNotNull);
         expect(
@@ -597,6 +664,7 @@ void main() {
       expect(parent, isNotNull);
 
       final task = await createTask(
+        domainLogger: logger,
         linkedId: parent!.meta.id,
         categoryId: testCategoryId,
       );
@@ -624,7 +692,11 @@ void main() {
               })
             >{
               'createTextEntry': createTextEntry,
-              'createTask': createTask,
+              'createTask': ({linkedId, categoryId}) => createTask(
+                domainLogger: logger,
+                linkedId: linkedId,
+                categoryId: categoryId,
+              ),
               'createEvent': createEvent,
             };
 
@@ -688,7 +760,10 @@ void main() {
       when(() => mockCache.getCategoryById(testCategoryId)).thenReturn(null);
 
       // Create a parent task.
-      final parentTask = await createTask(categoryId: testCategoryId);
+      final parentTask = await createTask(
+        domainLogger: logger,
+        categoryId: testCategoryId,
+      );
       expect(parentTask, isNotNull);
 
       // Create a project in the same category.
@@ -731,6 +806,7 @@ void main() {
 
       // Create a follow-up task linked to the parent.
       final followUp = await createTask(
+        domainLogger: logger,
         linkedId: parentTask.meta.id,
         categoryId: testCategoryId,
       );
@@ -743,7 +819,7 @@ void main() {
     });
 
     test('createTask without linked task does not assign project', () async {
-      final task = await createTask();
+      final task = await createTask(domainLogger: logger);
       expect(task, isNotNull);
 
       final project = await getIt<JournalDb>().getProjectForTask(task!.meta.id);
@@ -790,7 +866,7 @@ void main() {
 
     test('createChecklist creates checklist for valid task', () async {
       // Create a task first
-      final task = await createTask();
+      final task = await createTask(domainLogger: logger);
       expect(task, isNotNull);
 
       // Create ProviderContainer and get a real Ref for testing

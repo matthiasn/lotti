@@ -2,8 +2,6 @@
 /// per-activation rating prompt.
 library;
 
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -11,6 +9,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -184,6 +184,7 @@ Future<void> openNudgeBanner(
   if (entry.kind != NudgeBannerKind.relationship) return;
   final container = ProviderScope.containerOf(context, listen: false);
   final interactions = ref.read(nudgeInteractionsProvider);
+  final logger = ref.read(domainLoggerProvider);
   DateTime? pausedUntil;
   try {
     pausedUntil = await interactions.snooze(
@@ -193,11 +194,12 @@ Future<void> openNudgeBanner(
       reason: NudgeSnoozeReason.opened,
     );
   } on Object catch (error, stackTrace) {
-    developer.log(
-      'Could not pause the opened reminder ${entry.nudge.id}',
-      name: 'openNudgeBanner',
-      error: error,
+    logger.error(
+      LogDomain.agentRuntime,
+      error,
       stackTrace: stackTrace,
+      subDomain: 'openNudgeBanner',
+      message: 'Could not pause the opened reminder ${entry.nudge.id}',
     );
   }
   _hideLocally(container, entry, pausedUntil);

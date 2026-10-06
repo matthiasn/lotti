@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
 import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
@@ -49,14 +50,23 @@ export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
 /// [GeminiUtils] for URI and request body construction and for minimal
 /// framing cleanup.
 class GeminiInferenceRepository {
-  GeminiInferenceRepository({http.Client? httpClient})
-    : this._(httpClient ?? http.Client());
+  GeminiInferenceRepository({
+    required DomainLogger domainLogger,
+    http.Client? httpClient,
+  }) : this._(httpClient ?? http.Client(), domainLogger);
 
-  GeminiInferenceRepository._(http.Client httpClient)
+  GeminiInferenceRepository._(http.Client httpClient, DomainLogger domainLogger)
     : _httpClient = httpClient,
-      _streamSender = GeminiStreamSender(httpClient: httpClient);
+      _domainLogger = domainLogger,
+      _streamSender = GeminiStreamSender(
+        httpClient: httpClient,
+        domainLogger: domainLogger,
+      );
 
   final http.Client _httpClient;
+
+  /// Records requests, stream caps and fallback failures.
+  final DomainLogger _domainLogger;
   final GeminiStreamSender _streamSender;
 
   // -------------------------------------------------------------------------
@@ -128,9 +138,10 @@ class GeminiInferenceRepository {
       toolChoice: toolChoice,
     );
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.ai,
       'Gemini streamGenerateContent request to: $endpoint',
-      name: 'GeminiInferenceRepository',
+      subDomain: 'GeminiInferenceRepository',
     );
 
     http.Request buildStreamRequest() {
@@ -267,9 +278,12 @@ class GeminiInferenceRepository {
                 text: text,
               );
               if (totalCharsEmitted >= kMaxStreamingChars) {
-                developer.log(
-                  'Max streaming char cap reached ($kMaxStreamingChars). Terminating stream early.',
-                  name: 'GeminiInferenceRepository',
+                _domainLogger.log(
+                  LogDomain.ai,
+                  'Max streaming char cap reached ($kMaxStreamingChars). '
+                  'Terminating stream early.',
+                  subDomain: 'GeminiInferenceRepository',
+                  level: InsightLevel.warn,
                 );
                 return; // end generator and cancel stream
               }
@@ -288,6 +302,7 @@ class GeminiInferenceRepository {
               final toolCallId = 'tool_turn0_$currentIndex';
 
               captureSignatureIfPresent(
+                domainLogger: _domainLogger,
                 part: p,
                 toolCallId: toolCallId,
                 functionName: name,
@@ -412,13 +427,14 @@ class GeminiInferenceRepository {
           );
         }
       } else {
-        developer.log(
-          'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode} '
-          'for model "$model" at $nonStreamingEndpoint '
-          '(body: ${fallbackResp.body.length} chars, not logged — it can '
-          'echo the prompt). '
-          'If this is a transient error or rate limit, please try again.',
-          name: 'GeminiInferenceRepository',
+        _domainLogger.error(
+          LogDomain.ai,
+          'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode}',
+          subDomain: 'GeminiInferenceRepository',
+          message:
+              'model "$model" at $nonStreamingEndpoint '
+              '(body: ${fallbackResp.body.length} chars, not logged — it can '
+              'echo the prompt)',
         );
       }
     }
@@ -442,6 +458,7 @@ class GeminiInferenceRepository {
     int? turnIndex,
   }) => generateGeminiTextWithMessages(
     sender: _streamSender,
+    domainLogger: _domainLogger,
     messages: messages,
     model: model,
     temperature: temperature,
@@ -466,6 +483,7 @@ class GeminiInferenceRepository {
     List<ProcessedReferenceImage>? referenceImages,
   }) => generateGeminiImage(
     httpClient: _httpClient,
+    domainLogger: _domainLogger,
     prompt: prompt,
     model: model,
     provider: provider,

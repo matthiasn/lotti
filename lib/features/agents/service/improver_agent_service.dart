@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -20,8 +18,12 @@ class ImproverAgentService {
     required this.agentService,
     required this.repository,
     required this.syncService,
+    required this._domainLogger,
     this.onPersistedStateChanged,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentService agentService;
   final AgentRepository repository;
@@ -96,10 +98,11 @@ class ImproverAgentService {
     });
     onPersistedStateChanged?.call(agentId);
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Scheduled next ritual for ${DomainLogger.sanitizeId(agentId)} '
       'at $nextWake',
-      name: 'ImproverAgentService',
+      subDomain: 'ImproverAgentService',
     );
   }
 }

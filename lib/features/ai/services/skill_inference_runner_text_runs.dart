@@ -212,6 +212,7 @@ extension _SkillTextRuns on SkillInferenceRunner {
               entityId: audioEntryId,
               aiInputRepo: _aiInputRepository,
               entityTypeName: 'audio summary',
+              domainLogger: _loggingService,
             );
         if (currentAudio == null) {
           throw StateError('Audio entity $audioEntryId disappeared mid-run');

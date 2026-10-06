@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Maximum dimension for reference images sent to Gemini.
 /// Images larger than this are resized to fit within this boundary.
@@ -40,9 +40,13 @@ class ProcessedReferenceImage {
 /// - Returns the processed image with metadata
 ///
 /// Note: Output is always JPEG regardless of input format for consistency.
+///
+/// A file that cannot be decoded or compressed yields `null`, and the failure
+/// is reported to [domainLogger].
 Future<ProcessedReferenceImage?> processReferenceImage({
   required String filePath,
   required String imageId,
+  required DomainLogger domainLogger,
 }) async {
   final file = File(filePath);
   if (!file.existsSync()) return null;
@@ -88,10 +92,13 @@ Future<ProcessedReferenceImage?> processReferenceImage({
       // Always JPEG since that's what FlutterImageCompress outputs
       mimeType: 'image/jpeg',
     );
-  } catch (e) {
-    developer.log(
-      'Failed to process reference image $imageId: $e',
-      name: 'ImageProcessingUtils',
+  } catch (e, stackTrace) {
+    domainLogger.error(
+      LogDomain.ai,
+      e,
+      stackTrace: stackTrace,
+      subDomain: 'ImageProcessingUtils',
+      message: 'Failed to process reference image $imageId',
     );
     return null;
   } finally {

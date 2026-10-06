@@ -119,6 +119,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     // 6. Resolve inference profile → provider.
     final profileResolver = ProfileResolver(
       aiConfigRepository: this.aiConfigRepository,
+      domainLogger: domainLogger,
     );
     final resolvedProfile = templateCtx != null
         ? await profileResolver.resolve(
@@ -234,6 +235,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         domainLogger: domainLogger,
       );
       final strategy = ProjectAgentStrategy(
+        domainLogger: domainLogger,
         syncService: syncService,
         agentId: agentId,
         threadId: threadId,

@@ -302,6 +302,7 @@ void main() {
           );
           var executions = 0;
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -543,6 +544,7 @@ void main() {
             });
 
             final generatedOrchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: generatedRepository,
               queue: generatedQueue,
               runner: generatedRunner,
@@ -882,6 +884,7 @@ void main() {
           final firstGate = Completer<Map<String, VectorClock>?>();
           final started = <String>[];
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -923,6 +926,7 @@ void main() {
           };
           final started = <String>[];
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1712,6 +1716,7 @@ void main() {
         fakeAsync((async) {
           final order = <String>[];
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1738,6 +1743,7 @@ void main() {
         fakeAsync((async) {
           var executed = false;
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1773,6 +1779,7 @@ void main() {
           fakeAsync((async) {
             var executed = false;
             orchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: runner,
@@ -1805,6 +1812,7 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator = WakeOrchestrator(
+              domainLogger: MockDomainLogger(),
               repository: mockRepository,
               queue: queue,
               runner: runner,
@@ -1837,6 +1845,7 @@ void main() {
         fakeAsync((async) {
           final thrown = StateError('boom');
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1862,6 +1871,7 @@ void main() {
         fakeAsync((async) {
           final gate = Completer<Map<String, VectorClock>?>();
           orchestrator = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: mockRepository,
             queue: queue,
             runner: runner,
@@ -1962,6 +1972,7 @@ void main() {
         final ran = <String>[];
         final runtime =
             WakeOrchestrator(
+                domainLogger: MockDomainLogger(),
                 repository: device.repository,
                 queue: WakeQueue(),
                 runner: WakeRunner(),
@@ -2237,6 +2248,7 @@ void main() {
         await withClock(Clock.fixed(today), () async {
           final device = await seededDevice('host-a', budgetIdentity());
           final runtime = WakeOrchestrator(
+            domainLogger: MockDomainLogger(),
             repository: device.repository,
             queue: WakeQueue(),
             runner: WakeRunner(),
@@ -2289,6 +2301,7 @@ void main() {
           sent = [];
           executions = 0;
           coordinator = AgentWakeCoordinator(
+            domainLogger: MockDomainLogger(),
             readInputs: (_) {
               final held = heldInputs;
               heldInputs = null;

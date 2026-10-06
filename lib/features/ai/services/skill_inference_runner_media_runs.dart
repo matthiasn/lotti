@@ -28,9 +28,11 @@ extension _SkillMediaRuns on SkillInferenceRunner {
       geminiThinkingMode,
     );
     if (provider == null || modelId == null) {
-      developer.log(
+      _loggingService.log(
+        LogDomain.ai,
         'Profile missing image recognition provider/model for $imageEntryId',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return;
     }
@@ -190,6 +192,7 @@ extension _SkillMediaRuns on SkillInferenceRunner {
               entityId: imageEntryId,
               aiInputRepo: _aiInputRepository,
               entityTypeName: 'image analysis',
+              domainLogger: _loggingService,
             );
         if (currentImage == null) {
           throw StateError('Image entity $imageEntryId disappeared mid-run');
@@ -375,10 +378,11 @@ extension _SkillMediaRuns on SkillInferenceRunner {
         );
 
         // 5. Generate image via the cloud inference repository.
-        developer.log(
+        _loggingService.log(
+          LogDomain.ai,
           'Generating cover art for task $linkedTaskId '
           '(${referenceImages?.length ?? 0} reference images)',
-          name: _logTag,
+          subDomain: _logTag,
         );
 
         final start = DateTime.now();

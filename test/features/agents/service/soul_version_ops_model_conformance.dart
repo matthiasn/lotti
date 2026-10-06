@@ -9,6 +9,7 @@ class _SoulDocument implements VersionedDocument {
   static const _soulId = 'soul-conformance';
 
   SoulVersionOps _ops(AgentReplica device) => SoulVersionOps(
+    domainLogger: MockDomainLogger(),
     repository: device.repository,
     syncService: device.syncService,
   );

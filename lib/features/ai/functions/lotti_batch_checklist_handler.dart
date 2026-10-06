@@ -1,15 +1,16 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for batch checklist item creation in Lotti
@@ -18,10 +19,16 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     required this.task,
     required this.autoChecklistService,
     required this.checklistRepository,
+    required this._domainLogger,
     this.onTaskUpdated,
     this.approval,
     this.derivedIds,
   });
+
+  static const _subDomain = 'LottiBatchChecklistHandler';
+
+  /// Receives the handler's traces and failures.
+  final DomainLogger _domainLogger;
 
   final ChecklistItemProvenance? approval;
 
@@ -289,11 +296,12 @@ Do NOT recreate the items that were already successful.''';
         );
       }
     } catch (e, s) {
-      developer.log(
-        'Error creating batch checklist items for task ${task.id}',
-        name: 'LottiBatchChecklistHandler',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: s,
+        subDomain: _subDomain,
+        message: 'Error creating batch checklist items for task ${task.id}',
       );
       // Return partial success count
     }
@@ -381,9 +389,12 @@ Do NOT recreate the items that were already successful.''';
         onTaskUpdated?.call(refreshedEntity);
       } else if (refreshedEntity == null) {
         // Task was deleted, stop processing
-        developer.log(
-          'Task ${currentTask.id} was deleted, stopping batch checklist processing',
-          name: 'LottiBatchChecklistHandler',
+        _domainLogger.log(
+          LogDomain.ai,
+          'Task ${currentTask.id} was deleted, stopping batch checklist '
+          'processing',
+          subDomain: _subDomain,
+          level: InsightLevel.warn,
         );
       }
     }

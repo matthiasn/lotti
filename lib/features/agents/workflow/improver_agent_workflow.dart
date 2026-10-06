@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -10,6 +8,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/ritual_context_builder.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Orchestrates the improver agent ritual workflow.
 ///
@@ -26,6 +25,7 @@ class ImproverAgentWorkflow {
     required this.improverService,
     required this.templateService,
     required this.syncService,
+    required this._domainLogger,
   });
 
   final FeedbackExtractionService feedbackService;
@@ -33,6 +33,7 @@ class ImproverAgentWorkflow {
   final ImproverAgentService improverService;
   final AgentTemplateService templateService;
   final AgentSyncService syncService;
+  final DomainLogger _domainLogger;
 
   static const _logTag = 'ImproverAgentWorkflow';
 
@@ -86,18 +87,20 @@ class ImproverAgentWorkflow {
         since: since,
       );
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Extracted ${feedback.items.length} feedback items for '
         'template $targetTemplateId (since $since)',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       // 5. Threshold gate — skip if insufficient feedback.
       if (feedback.items.length < minFeedbackThreshold) {
-        developer.log(
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'Skipped ritual — insufficient feedback '
           '(${feedback.items.length} < $minFeedbackThreshold)',
-          name: _logTag,
+          subDomain: _logTag,
         );
 
         // Record a no-op observation.
@@ -195,28 +198,32 @@ class ImproverAgentWorkflow {
         runKey: runKey,
       );
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Started ritual session for template $targetTemplateId',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return const WakeResult(success: true);
     } catch (e, s) {
-      developer.log(
-        'Ritual workflow failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'Ritual workflow failed',
       );
 
       // Best effort: schedule next wake even on failure.
       try {
         await improverService.scheduleNextRitual(agentId);
-      } catch (scheduleError) {
-        developer.log(
-          'Failed to schedule next ritual after error',
-          name: _logTag,
-          error: scheduleError.runtimeType,
+      } catch (scheduleError, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          scheduleError,
+          stackTrace: stackTrace,
+          subDomain: _logTag,
+          message: 'Failed to schedule next ritual after error',
         );
       }
 

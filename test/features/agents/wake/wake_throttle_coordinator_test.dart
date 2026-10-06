@@ -371,7 +371,7 @@ void main() {
       onDrainRequested: onDrainRequested,
       onPersistedStateChanged: onPersistedStateChanged,
       throttleWindowFor: (_) => _generatedThrottleWindow,
-      domainLogger: domainLogger,
+      domainLogger: domainLogger ?? MockDomainLogger(),
     );
   }
 
@@ -380,6 +380,7 @@ void main() {
       fakeAsync((async) {
         final drains = <DateTime>[];
         final coordinator = WakeThrottleCoordinator(
+          domainLogger: MockDomainLogger(),
           repository: repository,
           onDrainRequested: () async => drains.add(clock.now()),
           throttleWindowFor: (agentId) => agentId == 'hourly'
@@ -531,6 +532,7 @@ void main() {
         });
         final changed = <String>[];
         final coordinator = WakeThrottleCoordinator(
+          domainLogger: MockDomainLogger(),
           repository: transactionRepository,
           onDrainRequested: () async {},
           onPersistedStateChanged: changed.add,
@@ -862,6 +864,7 @@ void main() {
 
       fakeAsync((async) {
         final coordinator = WakeThrottleCoordinator(
+          domainLogger: MockDomainLogger(),
           repository: transactionRepository,
           onDrainRequested: () async {},
           throttleWindowFor: (_) => _generatedThrottleWindow,

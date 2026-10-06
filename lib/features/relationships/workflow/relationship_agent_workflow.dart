@@ -74,8 +74,8 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required this._conversationRepository,
     required this._cloudInferenceRepository,
     required this._aiConfigRepository,
+    required this._domainLogger,
     this._factsRenderer = const RelationshipFactsRenderer(),
-    this._domainLogger,
     this._categoryProfileLookup,
     this._alertCopy,
   });
@@ -88,7 +88,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   final CloudInferenceRepository _cloudInferenceRepository;
   final AiConfigRepository _aiConfigRepository;
   final RelationshipFactsRenderer _factsRenderer;
-  final DomainLogger? _domainLogger;
+  final DomainLogger _domainLogger;
 
   /// The person's category default profile, the third step of
   /// [resolveRelationshipAgentModel]. Null skips the category fallback.
@@ -100,7 +100,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   final AgentAlertCopy? _alertCopy;
 
   @override
-  DomainLogger? get domainLogger => _domainLogger;
+  DomainLogger get domainLogger => _domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentWorkflow;
@@ -295,6 +295,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         relationship: relationship,
         agentIdentity: agentIdentity,
         aiConfigRepository: _aiConfigRepository,
+        domainLogger: _domainLogger,
         categoryProfileLookup: _categoryProfileLookup,
       );
     } catch (error, stackTrace) {
@@ -331,6 +332,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       for (final n in nudges.where((n) => n.status == NudgeStatus.active)) n.id,
     };
     final strategy = RelationshipAgentStrategy(
+      domainLogger: domainLogger,
       syncService: _syncService,
       agentId: agentId,
       threadId: threadId,
@@ -551,7 +553,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       await _stampWakeOutcome(agentId: agentId, succeeded: true);
       return WakeResult(success: true, reportUpdated: reportHeadAdvanced);
     } catch (error, stackTrace) {
-      _domainLogger?.error(
+      _domainLogger.error(
         LogDomain.agentWorkflow,
         error,
         subDomain: 'relationshipPhaseB',

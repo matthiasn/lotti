@@ -7,6 +7,7 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -69,6 +70,12 @@ AiResponseEntry _aiResponseEntry({
         as AiResponseEntry;
 
 void main() {
+  late MockDomainLogger logger;
+
+  setUp(() {
+    logger = MockDomainLogger();
+  });
+
   group('TaskSummaryResolver', () {
     late MockAgentRepository repo;
 
@@ -76,14 +83,24 @@ void main() {
       repo = MockAgentRepository();
     });
 
+    void verifyLookupErrorLogged(String message) => verify(
+      () => logger.error(
+        LogDomain.ai,
+        any(that: isA<StateError>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'TaskSummaryResolver',
+        message: message,
+      ),
+    ).called(1);
+
     test('returns null when both sources are empty and repo is null', () async {
-      final resolver = TaskSummaryResolver(null);
+      final resolver = TaskSummaryResolver(null, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       expect(summary, isNull);
     });
 
     test('falls back to legacy summary when repo is null', () async {
-      final resolver = TaskSummaryResolver(null);
+      final resolver = TaskSummaryResolver(null, domainLogger: logger);
       final earlier = _aiResponseEntry(
         id: 'r1',
         response: 'older',
@@ -102,7 +119,7 @@ void main() {
     });
 
     test('ignores non-taskSummary AI response types', () async {
-      final resolver = TaskSummaryResolver(null);
+      final resolver = TaskSummaryResolver(null, domainLogger: logger);
       final wrongType = _aiResponseEntry(
         id: 'r1',
         response: 'not a summary',
@@ -144,7 +161,7 @@ void main() {
         },
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summaries = await resolver.resolveMany(
         ['task-1', 'task-2', 'task-3', 'task-1'],
         linkedEntitiesByTaskId: {
@@ -197,7 +214,7 @@ void main() {
           dateFrom: DateTime(2026, 4, 11),
         );
 
-        final resolver = TaskSummaryResolver(repo);
+        final resolver = TaskSummaryResolver(repo, domainLogger: logger);
         final summaries = await resolver.resolveMany(
           ['task-1'],
           linkedEntitiesByTaskId: {
@@ -206,6 +223,7 @@ void main() {
         );
 
         expect(summaries, {'task-1': 'legacy survives'});
+        verifyLookupErrorLogged('Error fetching agent reports for 1 tasks');
       },
     );
 
@@ -216,7 +234,7 @@ void main() {
           () => repo.getLinksTo(any(), type: any(named: 'type')),
         ).thenAnswer((_) async => <AgentLink>[]);
 
-        final resolver = TaskSummaryResolver(repo);
+        final resolver = TaskSummaryResolver(repo, domainLogger: logger);
         final summary = await resolver.resolve('task-1');
         expect(summary, isNull);
       },
@@ -242,7 +260,7 @@ void main() {
         ),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       expect(summary, 'full report content');
     });
@@ -268,7 +286,7 @@ void main() {
         ),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       expect(summary, 'short tldr');
     });
@@ -294,7 +312,7 @@ void main() {
         ),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       expect(summary, 'real content');
     });
@@ -320,7 +338,7 @@ void main() {
         ),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       // Empty agent report → falls back to legacy summaries (none provided).
       expect(summary, isNull);
@@ -352,7 +370,7 @@ void main() {
         ),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve('task-1');
       expect(summary, 'newest report');
       verifyNever(
@@ -380,7 +398,7 @@ void main() {
         dateFrom: DateTime(2026, 4, 5),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve(
         'task-1',
         linkedEntities: [legacy],
@@ -399,12 +417,13 @@ void main() {
         dateFrom: DateTime(2026, 4, 5),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve(
         'task-1',
         linkedEntities: [legacy],
       );
       expect(summary, 'legacy summary');
+      verifyLookupErrorLogged('Error fetching agent report for task task-1');
     });
 
     test('falls back to legacy when getLatestReport throws', () async {
@@ -427,12 +446,13 @@ void main() {
         dateFrom: DateTime(2026, 4, 5),
       );
 
-      final resolver = TaskSummaryResolver(repo);
+      final resolver = TaskSummaryResolver(repo, domainLogger: logger);
       final summary = await resolver.resolve(
         'task-1',
         linkedEntities: [legacy],
       );
       expect(summary, 'legacy summary');
+      verifyLookupErrorLogged('Error fetching agent report for task task-1');
     });
   });
 
@@ -443,7 +463,7 @@ void main() {
     ).test(
       'tldr wins when non-blank, content is the fallback, blank -> null',
       (scenario) {
-        final resolver = TaskSummaryResolver(null);
+        final resolver = TaskSummaryResolver(null, domainLogger: logger);
         final report = makeTestReport(
           id: 'r-prop',
           agentId: 'agent-prop',

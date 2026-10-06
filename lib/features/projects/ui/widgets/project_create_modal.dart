@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
@@ -26,6 +24,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -111,6 +110,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     final templateService = ref.read(agentTemplateServiceProvider);
     final agentService = ref.read(projectAgentServiceProvider);
     final persistence = ref.read(persistenceLogicProvider);
+    final logger = ref.read(domainLoggerProvider);
     final categoryId = _categoryId;
     final categoryProfileId = getIt<EntitiesCacheService>()
         .getCategoryById(categoryId)
@@ -147,6 +147,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
         // Provision a project agent if a projectAgent template exists.
         // Uses pre-captured services so this works even after the modal closes.
         await _provisionProjectAgent(
+          logger: logger,
           templateService: templateService,
           agentService: agentService,
           projectId: created.meta.id,
@@ -173,11 +174,12 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
         );
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to create project',
-        name: 'ProjectCreateForm',
-        error: e,
+      logger.error(
+        LogDomain.tasks,
+        e,
         stackTrace: s,
+        subDomain: 'ProjectCreateForm',
+        message: 'Failed to create project',
       );
       if (mounted) {
         context.showToast(
@@ -226,7 +228,8 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   /// Prefers category-scoped templates when a category ID is available,
   /// falling back to the global template list — consistent with the
   /// task-agent flow in `task_agent_report_section.dart`.
-  /// Silently skips if no template exists — agent creation is non-fatal.
+  /// Silently skips if no template exists — agent creation is non-fatal, and
+  /// a failure is reported to [logger].
   ///
   /// The agent takes the category's default inference profile
   /// ([categoryProfileId]), the same default a new task's agent gets, so a
@@ -235,6 +238,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   /// profile, and the agent keeps the template's profile or model — unlike a
   /// task agent, which is created disabled in that case.
   Future<void> _provisionProjectAgent({
+    required DomainLogger logger,
     required AgentTemplateService templateService,
     required ProjectAgentService agentService,
     required String projectId,
@@ -280,11 +284,12 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
         setupOriginEntityId: categoryId,
       );
     } catch (e, s) {
-      developer.log(
-        'Failed to provision project agent',
-        name: 'ProjectCreateForm',
-        error: e,
+      logger.error(
+        LogDomain.tasks,
+        e,
         stackTrace: s,
+        subDomain: 'ProjectCreateForm',
+        message: 'Failed to provision project agent',
       );
     }
   }

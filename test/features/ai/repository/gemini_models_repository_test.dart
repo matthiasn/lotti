@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
 import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 void main() {
   const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
   const apiKey = 'gemini-key';
@@ -17,7 +19,10 @@ void main() {
   GeminiModelsRepository repoWithHandler(
     Future<http.Response> Function(http.Request request) handler,
   ) {
-    final repo = GeminiModelsRepository(httpClient: MockClient(handler));
+    final repo = GeminiModelsRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: MockClient(handler),
+    );
     addTearDown(repo.close);
     return repo;
   }

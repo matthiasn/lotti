@@ -41,8 +41,8 @@ class ScheduledWakeManager with AgentErrorLogging {
     required this._repository,
     required this._orchestrator,
     required this._syncService,
+    required this.domainLogger,
     this.checkInterval = const Duration(hours: 1),
-    this.domainLogger,
     this.onPersistedStateChanged,
     this.requiresLease,
     this.localHostId,
@@ -59,7 +59,7 @@ class ScheduledWakeManager with AgentErrorLogging {
   final WakeOrchestrator _orchestrator;
   final AgentSyncService _syncService;
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
@@ -928,6 +928,6 @@ class ScheduledWakeManager with AgentErrorLogging {
   }
 
   void _log(String message) {
-    domainLogger?.log(LogDomain.agentRuntime, message, subDomain: 'schedule');
+    domainLogger.log(LogDomain.agentRuntime, message, subDomain: 'schedule');
   }
 }

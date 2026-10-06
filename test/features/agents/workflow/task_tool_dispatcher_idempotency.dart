@@ -800,6 +800,7 @@ void _registerIdempotency(_Db Function() fixture) {
         );
         await getIt<PersistenceLogic>().createDbEntity(project);
         projects = ProjectToolDispatcher(
+          domainLogger: MockDomainLogger(),
           projectRepository: repository,
           persistenceLogic: getIt<PersistenceLogic>(),
           entitiesCacheService: getIt<EntitiesCacheService>(),
@@ -1013,6 +1014,7 @@ void _registerIdempotency(_Db Function() fixture) {
           isTrue,
         );
         final dispatcher = TaskToolDispatcher(
+          domainLogger: MockDomainLogger(),
           journalDb: f.db,
           journalRepository: buildJournalRepository(),
           checklistRepository: ChecklistRepository(
@@ -1069,6 +1071,7 @@ void _registerIdempotency(_Db Function() fixture) {
 
       test('create_task files the task it finds in the project', () async {
         final projects = ProjectToolDispatcher(
+          domainLogger: MockDomainLogger(),
           projectRepository: repository,
           persistenceLogic: getIt<PersistenceLogic>(),
           entitiesCacheService: getIt<EntitiesCacheService>(),

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Background embedding generation service.
@@ -39,13 +39,19 @@ class EmbeddingService {
     required this.journalDb,
     required this.updateNotifications,
     required this.aiConfigRepository,
+    required this._domainLogger,
   });
+
+  static const _subDomain = 'EmbeddingService';
 
   final EmbeddingStore embeddingStore;
   final OllamaEmbeddingRepository embeddingRepository;
   final JournalDb journalDb;
   final UpdateNotifications updateNotifications;
   final AiConfigRepository aiConfigRepository;
+
+  /// Receives the failures of a batch and of each entity in it.
+  final DomainLogger _domainLogger;
 
   /// How long a failed id waits before it is retried, unless the failure
   /// named its own retry time.
@@ -187,11 +193,12 @@ class EmbeddingService {
       try {
         labelResolver = await EmbeddingProcessor.buildLabelResolver(journalDb);
       } on Object catch (e, stackTrace) {
-        developer.log(
-          'Failed to build label resolver; continuing without labels: $e',
-          error: e,
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
           stackTrace: stackTrace,
-          name: 'EmbeddingService',
+          subDomain: _subDomain,
+          message: 'Failed to build label resolver; continuing without labels',
         );
       }
 
@@ -210,22 +217,24 @@ class EmbeddingService {
           );
           _failedAttempts.remove(entityId);
         } catch (e, stackTrace) {
-          developer.log(
-            'Failed to generate embedding for $entityId: $e',
-            error: e,
+          _domainLogger.error(
+            LogDomain.ai,
+            e,
             stackTrace: stackTrace,
-            name: 'EmbeddingService',
+            subDomain: _subDomain,
+            message: 'Failed to generate embedding for $entityId',
           );
           // Don't block other entities, but don't lose this one either.
           _retryLater(entityId, e);
         }
       }
     } on Object catch (e, stackTrace) {
-      developer.log(
-        'Embedding batch preflight failed: $e',
-        error: e,
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
         stackTrace: stackTrace,
-        name: 'EmbeddingService',
+        subDomain: _subDomain,
+        message: 'Embedding batch preflight failed',
       );
       _pendingEntityIds.clear();
     } finally {

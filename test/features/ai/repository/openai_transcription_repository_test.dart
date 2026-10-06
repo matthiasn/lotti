@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/repository/openai_transcription_repository.dar
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 /// Streaming 200-OK stub that records the outgoing request — shared by the
 /// prompt-present / prompt-absent multipart-shape tests.
 ({http.Client client, http.BaseRequest? Function() captured})
@@ -96,7 +98,9 @@ void main() {
       final testAudioBase64 = base64Encode([1, 2, 3]);
 
       test('throws ArgumentError for empty model', () {
-        final repo = OpenAiTranscriptionRepository();
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -109,7 +113,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty audioBase64', () {
-        final repo = OpenAiTranscriptionRepository();
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -122,7 +128,9 @@ void main() {
       });
 
       test('throws ArgumentError for empty apiKey', () {
-        final repo = OpenAiTranscriptionRepository();
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+        );
 
         expect(
           () => repo.transcribeAudio(
@@ -154,7 +162,10 @@ void main() {
             );
           });
 
-          final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+          final repo = OpenAiTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
+            httpClient: mockClient,
+          );
 
           final responses = await repo
               .transcribeAudio(
@@ -175,7 +186,10 @@ void main() {
 
       test('includes prompt field when provided', () async {
         final stub = _stubStreamingOk();
-        final repo = OpenAiTranscriptionRepository(httpClient: stub.client);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -200,7 +214,10 @@ void main() {
 
       test('does not include prompt field when null', () async {
         final stub = _stubStreamingOk();
-        final repo = OpenAiTranscriptionRepository(httpClient: stub.client);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: stub.client,
+        );
 
         await repo
             .transcribeAudio(
@@ -224,7 +241,10 @@ void main() {
           );
         });
 
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -255,7 +275,10 @@ void main() {
           return http.Response('Internal Server Error', 500);
         });
 
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -283,7 +306,10 @@ void main() {
           );
         });
 
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo
@@ -308,6 +334,7 @@ void main() {
         fakeAsync((async) {
           final neverResponds = Completer<http.StreamedResponse>();
           final repo = OpenAiTranscriptionRepository(
+            domainLogger: MockDomainLogger(),
             httpClient: MockClient.streaming(
               (request, _) => neverResponds.future,
             ),
@@ -348,7 +375,10 @@ void main() {
           throw Exception('Network error');
         });
 
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final repo = OpenAiTranscriptionRepository(
+          domainLogger: MockDomainLogger(),
+          httpClient: mockClient,
+        );
 
         await expectLater(
           repo

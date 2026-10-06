@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -17,6 +15,8 @@ import 'package:lotti/features/design_system/components/progress_bars/design_sys
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Explicit device-local downloads, separate from synced model configurations.
@@ -274,16 +274,18 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
   }
 
   Future<void> _modelsChanged(ProviderContainer container) async {
+    final logger = container.read(domainLoggerProvider);
     try {
       container.invalidate(sherpaInstalledModelIdsProvider);
       await container.read(localNodeCapabilitiesChangedProvider)();
     } catch (error, stackTrace) {
       // A sync failure does not undo a successful local file operation.
-      developer.log(
-        'Failed to advertise updated speech capability',
-        name: 'SherpaModelsSection',
-        error: error,
+      logger.error(
+        LogDomain.speech,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'SherpaModelsSection',
+        message: 'Failed to advertise updated speech capability',
       );
     }
   }

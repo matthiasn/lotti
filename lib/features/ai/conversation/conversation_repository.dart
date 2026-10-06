@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_call_impact.dart';
@@ -14,7 +13,9 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_re
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
@@ -72,8 +73,15 @@ class ConversationRepository extends Notifier<void> {
   final _sendQueues = <String, Completer<void>>{};
   final _uuid = const Uuid();
 
+  static const _subDomain = 'ConversationRepository';
+
+  /// Read in [build], not on use: a [sendMessage] queued behind another
+  /// starts after an await, when `ref` may already be disposed.
+  late DomainLogger _logger;
+
   @override
   void build() {
+    _logger = ref.read(domainLoggerProvider);
     ref.onDispose(_conversations.clear);
   }
 
@@ -344,9 +352,10 @@ class ConversationRepository extends Notifier<void> {
       // An aborted agent wake — cancelled, paused or timed out — must not
       // start another paid turn; its result would be discarded anyway.
       if (isAgentWakeAborted) {
-        developer.log(
+        _logger.log(
+          LogDomain.ai,
           'agent wake aborted — stopping before the next model turn',
-          name: 'ConversationRepository',
+          subDomain: _subDomain,
         );
         break;
       }
@@ -527,12 +536,13 @@ class ConversationRepository extends Notifier<void> {
         final rawContent = contentBuffer.toString();
         final persistedContent = stripThinkBlocks(rawContent);
 
-        developer.log(
+        _logger.log(
+          LogDomain.ai,
           'Stream completed: collected ${toolCalls.length} tool calls, '
           '${rawContent.length} chars of content '
           '(${persistedContent?.length ?? 0} chars after stripping think blocks), '
           '${signatureCollector.signatures.length} signatures captured',
-          name: 'ConversationRepository',
+          subDomain: _subDomain,
         );
 
         // Pass captured signatures to manager for use in subsequent turns
@@ -546,9 +556,10 @@ class ConversationRepository extends Notifier<void> {
 
         // Process with strategy if provided
         if (strategy != null && toolCalls.isNotEmpty) {
-          developer.log(
+          _logger.log(
+            LogDomain.ai,
             'Processing ${toolCalls.length} tool calls with strategy',
-            name: 'ConversationRepository',
+            subDomain: _subDomain,
           );
           final action = await strategy.processToolCalls(
             toolCalls: toolCalls,
@@ -640,12 +651,14 @@ class ConversationRepository extends Notifier<void> {
     Object error,
     StackTrace stackTrace,
   ) {
-    // The type only: a provider error can carry the response body, which
-    // may echo the conversation. The full message still reaches the UI.
-    developer.log(
-      'Error during conversation turn (${error.runtimeType})',
-      name: 'ConversationRepository',
+    // The logger keeps the error's text out of its PII-safe log: a provider
+    // error can carry the response body, which may echo the conversation.
+    _logger.error(
+      LogDomain.ai,
+      error,
       stackTrace: stackTrace,
+      subDomain: _subDomain,
+      message: 'Error during conversation turn',
     );
     manager.lastError = error.toString();
   }

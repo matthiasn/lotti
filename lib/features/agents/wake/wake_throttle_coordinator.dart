@@ -16,8 +16,8 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     required this.repository,
     required this.onDrainRequested,
     required this.throttleWindowFor,
+    required this.domainLogger,
     this.onPersistedStateChanged,
-    this.domainLogger,
   });
 
   final AgentRepository repository;
@@ -28,7 +28,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   /// two minutes for an agent without one.
   final Duration Function(String agentId) throttleWindowFor;
   @override
-  final DomainLogger? domainLogger;
+  final DomainLogger domainLogger;
 
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
@@ -40,7 +40,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   bool _clearWorkerScheduled = false;
 
   void _log(String message, {String? subDomain}) {
-    domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
+    domainLogger.log(LogDomain.agentRuntime, message, subDomain: subDomain);
   }
 
   /// Whether [agentId] is still inside its cooldown window. Evicts the
@@ -138,7 +138,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
     _deferredDrainTimers.remove(agentId);
-    domainLogger?.logSampled(
+    domainLogger.logSampled(
       LogDomain.agentRuntime,
       'throttle cleared for ${DomainLogger.sanitizeId(agentId)}',
       sampleKey: 'throttle.clear',

@@ -115,6 +115,7 @@ void main() {
       aiInputRepository: mockAiInputRepository,
       journalRepository: MockJournalRepository(),
       taskSummaryResolver: MockTaskSummaryResolver(),
+      domainLogger: MockDomainLogger(),
     );
 
     // Default stub for task JSON calls
@@ -793,6 +794,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           when(
@@ -887,6 +889,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           when(
@@ -982,6 +985,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           when(
@@ -1054,6 +1058,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           // No linked task found
@@ -1171,6 +1176,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           taskSummaryResolver: MockTaskSummaryResolver(),
+          domainLogger: MockDomainLogger(),
         );
 
         when(
@@ -1262,6 +1268,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           // No linked task
@@ -1312,6 +1319,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           taskSummaryResolver: MockTaskSummaryResolver(),
+          domainLogger: MockDomainLogger(),
         );
 
         // Simulate an error when finding linked task
@@ -1619,6 +1627,7 @@ void main() {
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: MockDomainLogger(),
           );
 
           final audio = JournalAudio(
@@ -1888,20 +1897,11 @@ void main() {
             ),
           ).thenThrow(Exception('linked lookup exploded'));
 
-          await setUpTestGetIt(
-            additionalSetup: () {
-              // Override the real DomainLogger with a verifiable mock.
-              getIt
-                ..unregister<DomainLogger>()
-                ..registerSingleton<DomainLogger>(mockLogger);
-            },
-          );
-          addTearDown(tearDownTestGetIt);
-
           final builder = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
             taskSummaryResolver: MockTaskSummaryResolver(),
+            domainLogger: mockLogger,
           );
 
           final result = await builder.buildPromptWithData(
@@ -1913,56 +1913,25 @@ void main() {
           expect(result, equals('Transcribe: '));
           expect(result, isNot(contains('{{correction_examples}}')));
 
-          // The error was routed through _logPlaceholderFailure -> DomainLogger.
-          // The second positional arg is the formatted message built in
-          // _logPlaceholderFailure; it names the placeholder, the entity id and
-          // carries the original error (with no trailing context suffix).
+          // The error was routed through _logPlaceholderFailure -> DomainLogger:
+          // the original error object, and a message naming the placeholder
+          // and the entity id.
           final captured = verify(
             () => mockLogger.error(
               LogDomain.ai,
               captureAny(),
               stackTrace: any(named: 'stackTrace'),
               subDomain: 'placeholder_injection',
+              message:
+                  'Failed to inject {{correction_examples}} for '
+                  'entity=audio-boom',
             ),
           ).captured;
           expect(captured, hasLength(1));
-          final message = captured.single as String;
           expect(
-            message,
-            equals(
-              'Failed to inject {{correction_examples}} for '
-              'entity=audio-boom: Exception: linked lookup exploded',
-            ),
+            captured.single.toString(),
+            'Exception: linked lookup exploded',
           );
-        },
-      );
-
-      test(
-        'does not crash and still injects empty string when DomainLogger is '
-        'not registered',
-        () async {
-          // No GetIt setup at all -> _loggingService getter returns null, so
-          // _logPlaceholderFailure must no-op on the null-aware call without
-          // throwing. Confirms the placeholder is still replaced.
-          final mockJournalRepository = MockJournalRepository();
-          when(
-            () => mockJournalRepository.getLinkedEntities(
-              linkedTo: 'audio-no-logger',
-            ),
-          ).thenThrow(Exception('boom'));
-
-          final builder = PromptBuilderHelper(
-            aiInputRepository: mockAiInputRepository,
-            journalRepository: mockJournalRepository,
-            taskSummaryResolver: MockTaskSummaryResolver(),
-          );
-
-          final result = await builder.buildPromptWithData(
-            promptConfig: _correctionExamplesConfig(),
-            entity: _audioEntity('audio-no-logger'),
-          );
-
-          expect(result, equals('Transcribe: '));
         },
       );
     });
@@ -2119,6 +2088,7 @@ void main() {
         aiInputRepository: mockAiInputRepositoryAT,
         journalRepository: mockJournalRepositoryAT,
         taskSummaryResolver: MockTaskSummaryResolver(),
+        domainLogger: MockDomainLogger(),
       );
     });
 
@@ -2371,7 +2341,11 @@ void main() {
       promptBuilderCTS = PromptBuilderHelper(
         aiInputRepository: mockAiInputRepositoryCTS,
         journalRepository: mockJournalRepositoryCTS,
-        taskSummaryResolver: TaskSummaryResolver(_EmptyAgentRepository()),
+        taskSummaryResolver: TaskSummaryResolver(
+          _EmptyAgentRepository(),
+          domainLogger: MockDomainLogger(),
+        ),
+        domainLogger: MockDomainLogger(),
       );
     });
 
@@ -2809,6 +2783,7 @@ void main() {
         aiInputRepository: mockAiInputRepositorySD,
         journalRepository: mockJournalRepositorySD,
         taskSummaryResolver: MockTaskSummaryResolver(),
+        domainLogger: MockDomainLogger(),
       );
     });
 
@@ -3363,6 +3338,7 @@ void main() {
         aiInputRepository: aiInput,
         journalRepository: MockJournalRepository(),
         taskSummaryResolver: MockTaskSummaryResolver(),
+        domainLogger: MockDomainLogger(),
       );
     });
 

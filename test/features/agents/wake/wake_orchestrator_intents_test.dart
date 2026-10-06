@@ -76,6 +76,7 @@ void main() {
     queue = WakeQueue();
     runner = WakeRunner();
     orchestrator = WakeOrchestrator(
+      domainLogger: MockDomainLogger(),
       repository: mockRepository,
       queue: queue,
       runner: runner,
@@ -728,6 +729,7 @@ void main() {
         record = inv.positionalArguments.single as ScheduledWakeEntity;
       });
       final manager = ScheduledWakeManager(
+        domainLogger: MockDomainLogger(),
         repository: mockRepository,
         orchestrator: current,
         syncService: sync,

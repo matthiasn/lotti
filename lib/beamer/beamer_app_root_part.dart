@@ -11,7 +11,7 @@ class MyBeamerApp extends ConsumerStatefulWidget {
     this.userActivityService,
     this.linkedIdResolver = getIdFromSavedRoute,
     this.createTextEntryAction = createTextEntry,
-    this.createTaskAction = createTask,
+    this.createTaskAction,
     this.captureScreenshotAction = createScreenshot,
   });
 
@@ -21,7 +21,9 @@ class MyBeamerApp extends ConsumerStatefulWidget {
   /// Testable boundary around route lookup and side-effectful creation.
   final GlobalCommandLinkedIdResolver linkedIdResolver;
   final GlobalCommandCreationAction createTextEntryAction;
-  final GlobalCommandCreationAction createTaskAction;
+
+  /// Null creates the task with [createTask], reporting to the app's logger.
+  final GlobalCommandCreationAction? createTaskAction;
   final GlobalCommandCreationAction captureScreenshotAction;
 
   @override
@@ -228,7 +230,12 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       AppCommandId.createTask: AppCommandHandler(
         invoke: (_) async {
           final linkedId = await widget.linkedIdResolver();
-          await widget.createTaskAction(linkedId: linkedId);
+          final createTaskAction = widget.createTaskAction;
+          if (createTaskAction != null) {
+            await createTaskAction(linkedId: linkedId);
+          } else {
+            await createTask(domainLogger: _logger, linkedId: linkedId);
+          }
         },
       ),
       AppCommandId.captureScreenshot: AppCommandHandler(

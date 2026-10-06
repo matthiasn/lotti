@@ -7,6 +7,7 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -14,13 +15,18 @@ import '../../../mocks/mocks.dart';
 void main() {
   late SurfaceController processor;
   late GenUiBridge bridge;
+  late MockDomainLogger mockDomainLogger;
   late GenUiEventHandler handler;
 
   setUp(() {
     final catalog = buildEvolutionCatalog();
     processor = SurfaceController(catalogs: [catalog]);
     bridge = GenUiBridge(processor: processor);
-    handler = GenUiEventHandler(processor: processor)..listen();
+    mockDomainLogger = MockDomainLogger();
+    handler = GenUiEventHandler(
+      domainLogger: mockDomainLogger,
+      processor: processor,
+    )..listen();
   });
 
   tearDown(() {
@@ -107,8 +113,10 @@ void main() {
         (_) => submitController.stream,
       );
 
-      final malformedHandler = GenUiEventHandler(processor: mockProcessor)
-        ..listen();
+      final malformedHandler = GenUiEventHandler(
+        domainLogger: MockDomainLogger(),
+        processor: mockProcessor,
+      )..listen();
       addTearDown(malformedHandler.dispose);
 
       final events = <(String, String)>[];
@@ -233,6 +241,15 @@ void main() {
       );
 
       expect(events, isEmpty);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<FormatException>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'GenUiEventHandler',
+          message: 'Failed to parse ratings JSON (bytes=13)',
+        ),
+      ).called(1);
     });
 
     test('routes binary_choice_submitted event to callback', () async {

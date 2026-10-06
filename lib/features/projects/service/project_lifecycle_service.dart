@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -9,6 +7,8 @@ import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Coordinates reversible agent retirement with a project's soft deletion.
 ///
@@ -21,12 +21,16 @@ class ProjectLifecycleService {
     required this.projectAgentService,
     required this.agentService,
     required this.mutationCoordinator,
+    required this._domainLogger,
   });
 
   final ProjectRepository projectRepository;
   final ProjectAgentService projectAgentService;
   final AgentService agentService;
   final ProjectAgentMutationCoordinator mutationCoordinator;
+
+  /// Receives every failure along the retire / delete / restore path.
+  final DomainLogger _domainLogger;
 
   /// Retires all linked live agents and deletes the latest project snapshot.
   /// Returns false when deletion cannot be confirmed; compensation is then
@@ -126,11 +130,12 @@ class ProjectLifecycleService {
   }
 
   void _log(String message, Object error, StackTrace stackTrace) {
-    developer.log(
-      message,
-      name: 'ProjectLifecycleService',
-      error: error,
+    _domainLogger.error(
+      LogDomain.tasks,
+      error,
       stackTrace: stackTrace,
+      subDomain: 'ProjectLifecycleService',
+      message: message,
     );
   }
 }
@@ -141,5 +146,6 @@ final projectLifecycleServiceProvider = Provider<ProjectLifecycleService>(
     projectAgentService: ref.watch(projectAgentServiceProvider),
     agentService: ref.watch(agentServiceProvider),
     mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
 );

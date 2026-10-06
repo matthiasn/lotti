@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -22,7 +20,9 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -180,6 +180,7 @@ class _AgentSetupFlowController {
   ) async {
     if (busy.value) return false;
     busy.value = true;
+    final logger = container.read(domainLoggerProvider);
     try {
       await action();
       container
@@ -188,11 +189,12 @@ class _AgentSetupFlowController {
         ..invalidate(goalAgentResolvedSetupProvider(agentId));
       return true;
     } catch (error, stackTrace) {
-      developer.log(
-        'Task-agent setup update failed',
-        name: 'AgentModelSheet',
-        error: error,
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'AgentModelSheet',
+        message: 'Task-agent setup update failed',
       );
       if (taskMessenger.mounted) {
         taskMessenger.showDesignSystemToast(

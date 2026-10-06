@@ -9,12 +9,18 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 void main() {
   late Directory temporaryDirectory;
+  late MockDomainLogger domainLogger;
   var fileIndex = 0;
 
   setUp(() async {
+    domainLogger = MockDomainLogger();
     temporaryDirectory = await Directory.systemTemp.createTemp(
       'lotti_chat_audio_test_',
     );
@@ -100,6 +106,7 @@ void main() {
 
       final chunks = await transcribeTemporaryMp3ChatAudio(
         httpClient: client,
+        domainLogger: domainLogger,
         provider: TemporaryMp3ChatAudioProvider(
           repositoryName: '${testCase.name}Repository',
           displayName: testCase.name,
@@ -169,6 +176,7 @@ void main() {
 
     final chunks = await transcribeTemporaryMp3ChatAudio(
       httpClient: client,
+      domainLogger: domainLogger,
       provider: mistralProvider,
       model: model,
       audioBase64: base64Encode(sourceBytes),
@@ -196,6 +204,7 @@ void main() {
     await expectLater(
       transcribeTemporaryMp3ChatAudio(
         httpClient: client,
+        domainLogger: domainLogger,
         provider: mistralProvider,
         model: model,
         audioBase64: base64Encode(sourceBytes),
@@ -253,6 +262,7 @@ void main() {
       await expectLater(
         transcribeTemporaryMp3ChatAudio(
           httpClient: client,
+          domainLogger: domainLogger,
           provider: mistralProvider,
           model: model,
           audioBase64: base64Encode(sourceBytes),
@@ -294,6 +304,7 @@ void main() {
 
     final chunks = await transcribeTemporaryMp3ChatAudio(
       httpClient: client,
+      domainLogger: domainLogger,
       provider: mistralProvider,
       model: model,
       audioBase64: base64Encode(sourceBytes),
@@ -310,6 +321,15 @@ void main() {
 
     expect(chunks.single.choices?.single.delta?.content, 'the transcript');
     expect(encodedFile.existsSync(), isTrue);
+    verify(
+      () => domainLogger.error(
+        LogDomain.speech,
+        any(that: isA<FileSystemException>()),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'MistralInferenceRepository',
+        message: 'Failed to delete temporary chat-audio MP3 file',
+      ),
+    ).called(1);
   });
 
   test('request timeout signals HTTP abortion and removes the MP3', () {
@@ -326,6 +346,7 @@ void main() {
 
       transcribeTemporaryMp3ChatAudio(
         httpClient: client,
+        domainLogger: domainLogger,
         provider: mistralProvider,
         model: model,
         audioBase64: base64Encode(sourceBytes),
@@ -397,6 +418,7 @@ void main() {
 
     final subscription = transcribeTemporaryMp3ChatAudio(
       httpClient: client,
+      domainLogger: domainLogger,
       provider: mistralProvider,
       model: model,
       audioBase64: base64Encode(sourceBytes),
@@ -432,6 +454,7 @@ void main() {
     await expectLater(
       transcribeTemporaryMp3ChatAudio(
         httpClient: client,
+        domainLogger: domainLogger,
         provider: mistralProvider,
         model: model,
         audioBase64: '%%%',

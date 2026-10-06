@@ -29,6 +29,7 @@ void main() {
       subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
+      domainLogger: MockDomainLogger(),
     );
   });
 
@@ -209,6 +210,7 @@ void main() {
         subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
+        domainLogger: MockDomainLogger(),
         subjectProfileLookup: (taskId) async {
           if (taskId == 'task-with-profile') return 'inherited-profile-1';
           return null;
@@ -376,6 +378,7 @@ void main() {
           subjectAgentLookup: generatedTaskAgentService.getTaskAgentForTask,
           templateService: generatedTemplateService,
           profileResolver: generatedProfileResolver,
+          domainLogger: MockDomainLogger(),
           subjectProfileLookup: (lookupTaskId) async {
             taskProfileLookupCount++;
             expect(lookupTaskId, taskId, reason: '$scenario');
@@ -468,6 +471,7 @@ void main() {
         subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
+        domainLogger: MockDomainLogger(),
         subjectProfileLookup: subjectProfileLookup,
         categoryProfileLookup: categoryProfileLookup,
         subjectCategoryLookup: subjectCategoryLookup,

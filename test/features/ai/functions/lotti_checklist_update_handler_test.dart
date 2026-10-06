@@ -19,6 +19,7 @@ typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
 
 void main() {
   late MockChecklistRepository mockChecklistRepository;
+  late MockDomainLogger mockLogger;
   late MockJournalDb mockJournalDb;
   late LottiChecklistUpdateHandler handler;
   late Task testTask;
@@ -36,6 +37,7 @@ void main() {
 
   setUp(() async {
     mockChecklistRepository = MockChecklistRepository();
+    mockLogger = MockDomainLogger();
     // Registers core services in GetIt; the handler resolves JournalDb
     // through the locator.
     final mocks = await setUpTestGetIt();
@@ -48,6 +50,7 @@ void main() {
     handler = LottiChecklistUpdateHandler(
       task: testTask,
       checklistRepository: mockChecklistRepository,
+      domainLogger: mockLogger,
     );
   });
 
@@ -577,6 +580,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             clock: () => clockTime,
           );
         });
@@ -978,6 +982,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: taskWithoutChecklists,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
         );
 
         final result = FunctionCallResult(
@@ -1003,6 +1008,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           onTaskUpdated: (task) {
             callbackInvoked = true;
             updatedTask = task;
@@ -1336,6 +1342,7 @@ void main() {
             handler = LottiChecklistUpdateHandler(
               task: testTask,
               checklistRepository: mockChecklistRepository,
+              domainLogger: mockLogger,
               approval: approved ? next : null,
             );
             final count = await handler.executeUpdates(
@@ -1401,6 +1408,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             approval: receipt,
           );
           expect(
@@ -1513,6 +1521,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             approval: next,
           );
           final count = await handler.executeUpdates(
@@ -1554,6 +1563,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
@@ -1598,6 +1608,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             clock: () => DateTime(2026, 2, 28, 22, 35),
           );
 
@@ -1633,6 +1644,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             clock: () => clockTime,
           );
 
@@ -1679,6 +1691,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => clockTime,
         );
 
@@ -1722,6 +1735,7 @@ void main() {
           handler = LottiChecklistUpdateHandler(
             task: testTask,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             clock: () => DateTime(2026, 2, 28, 22, 35),
           );
 
@@ -1774,6 +1788,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
@@ -1805,6 +1820,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
@@ -1837,6 +1853,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
@@ -1877,6 +1894,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
@@ -1912,6 +1930,7 @@ void main() {
         handler = LottiChecklistUpdateHandler(
           task: testTask,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 

@@ -1,16 +1,14 @@
-/// Ratchets `dart:developer` logging in `lib/` down to the logging layer.
+/// Keeps `dart:developer` logging in `lib/` inside the logging layer.
 ///
 /// `DomainLogger` is the app's logging channel: it writes domain-gated,
 /// PII-reviewed telemetry to the log files, and its class doc sets the rule
 /// that messages carry ids, counts and lengths, never titles, prompts or
-/// model output. `developer.log` is a second, unreviewed channel beside it —
-/// several hundred calls, some of which logged content until they were
-/// found. The files that implement logging (`lib/services/`) may use it; any
-/// other file's count may shrink, never grow, and a file absent from the
-/// baseline may not introduce one.
+/// model output. `developer.log` is a second, unreviewed channel beside it
+/// that reaches only an attached debugger, so a failure logged there leaves
+/// no trace a user or maintainer would find. The files that implement
+/// logging (`lib/services/`) may use it; no other file may.
 library;
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
@@ -76,7 +74,8 @@ int countDeveloperLogs(String source, {String? librarySource}) {
   return count;
 }
 
-/// A file that grew, phrased as something the reader can act on.
+/// A file that logs through `dart:developer`, phrased as something the reader
+/// can act on.
 class DeveloperLogViolation {
   const DeveloperLogViolation(this.path, this.message);
 
@@ -87,7 +86,8 @@ class DeveloperLogViolation {
   String toString() => '$path: $message';
 }
 
-/// The result of a scan: each file's count, and the files that grew.
+/// The result of a scan: each offending file's count, and a violation per
+/// file.
 class GuardResult {
   const GuardResult(this.counts, this.violations);
 
@@ -98,12 +98,8 @@ class GuardResult {
 }
 
 /// Counts `dart:developer` logging in every Dart file under [root] outside
-/// [loggingLayer], and compares each against [baseline].
-GuardResult scan({
-  required Directory root,
-  required Map<String, int> baseline,
-  required String repoRoot,
-}) {
+/// [loggingLayer]; every file with a call is a violation.
+GuardResult scan({required Directory root, required String repoRoot}) {
   final counts = <String, int>{};
   final violations = <DeveloperLogViolation>[];
   final files =
@@ -126,20 +122,14 @@ GuardResult scan({
     );
     if (found == 0) continue;
     counts[rel] = found;
-    final allowed = baseline[rel] ?? 0;
-    if (found > allowed) {
-      violations.add(
-        DeveloperLogViolation(
-          rel,
-          allowed == 0
-              ? 'introduces $found `dart:developer` log call'
-                    '${found == 1 ? '' : 's'}. Log through `DomainLogger` '
-                    '(ids, counts and lengths, never content).'
-              : '`dart:developer` log calls grew from $allowed to $found. '
-                    'This file is mid-migration; it may shrink, not grow.',
-        ),
-      );
-    }
+    violations.add(
+      DeveloperLogViolation(
+        rel,
+        'has $found `dart:developer` log call${found == 1 ? '' : 's'}. Log '
+        'through `DomainLogger` — `error` with the stack trace in a catch '
+        'block, `log` otherwise (ids, counts and lengths, never content).',
+      ),
+    );
   }
   return GuardResult(counts, violations);
 }
@@ -153,39 +143,4 @@ String? _librarySourceOf(File file, String source) {
   if (uri == null) return null;
   final library = File(p.join(p.dirname(file.path), uri));
   return library.existsSync() ? library.readAsStringSync() : null;
-}
-
-/// Reads a baseline file, treating a missing one as "none tolerated".
-Map<String, int> readBaseline(File file) {
-  if (!file.existsSync()) return const {};
-  final decoded = jsonDecode(file.readAsStringSync());
-  if (decoded is! Map) return const {};
-  final files = decoded['files'];
-  if (files is! Map) return const {};
-  return {
-    for (final MapEntry(:key, :value) in files.entries)
-      key as String: (value as num).toInt(),
-  };
-}
-
-/// Serialises a baseline deterministically, so a re-run produces no diff.
-String encodeBaseline(Map<String, int> counts) {
-  final keys = counts.keys.toList()..sort();
-  final buffer = StringBuffer()
-    ..writeln('{')
-    ..writeln(
-      '  "_comment": "dart:developer log calls outside lib/services/, still '
-      'to move to DomainLogger. Regenerate with: dart run '
-      'tool/logging/validate.dart --update-baseline. This number only ever '
-      'goes down.",',
-    )
-    ..writeln('  "files": {');
-  for (var i = 0; i < keys.length; i++) {
-    final comma = i == keys.length - 1 ? '' : ',';
-    buffer.writeln('    ${jsonEncode(keys[i])}: ${counts[keys[i]]}$comma');
-  }
-  buffer
-    ..writeln('  }')
-    ..writeln('}');
-  return buffer.toString();
 }

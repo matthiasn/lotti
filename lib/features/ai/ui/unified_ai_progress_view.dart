@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +19,8 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -138,10 +139,10 @@ class _UnifiedAiProgressContentState
   /// Helper method for handling model installation completion
   /// Triggers new inference and shows progress modal
   Future<void> _handleModelInstalled(String providerType) async {
+    // Check if widget is still mounted before proceeding
+    if (!mounted) return;
+    final logger = ref.read(domainLoggerProvider);
     try {
-      // Check if widget is still mounted before proceeding
-      if (!mounted) return;
-
       // Trigger a new inference run
       await ref.read(
         triggerNewInferenceProvider((
@@ -172,11 +173,12 @@ class _UnifiedAiProgressContentState
         );
       }
     } catch (e, stack) {
-      developer.log(
-        'Error in $providerType onModelInstalled callback: $e',
-        name: 'UnifiedAiProgressContent',
-        error: e,
+      logger.error(
+        LogDomain.ai,
+        e,
         stackTrace: stack,
+        subDomain: 'UnifiedAiProgressContent',
+        message: 'Error in $providerType onModelInstalled callback',
       );
       // Don't re-throw - this is a callback error that shouldn't crash the app
     }
@@ -240,15 +242,6 @@ class _UnifiedAiProgressContentState
 
         // If there's an error, show error modal (no _hideError check)
         if (isError) {
-          // Debug logging
-          developer.log(
-            'Error detected, showExisting: ${widget.showExisting}, '
-            'entityId: ${widget.entityId}, promptId: ${widget.promptId}, '
-            'controllerState: $controllerState, error: ${controllerState?.error}, '
-            'type: ${controllerState?.error.runtimeType}',
-            name: 'UnifiedAiProgressContent',
-          );
-
           // Check for model not installed error directly from controller state
           // For showExisting mode, we need to get the controller state explicitly
           final actualControllerState = widget.showExisting
@@ -260,20 +253,10 @@ class _UnifiedAiProgressContentState
                 )
               : controllerState;
 
-          developer.log(
-            'actualControllerState: $actualControllerState, error: ${actualControllerState?.error}, type: ${actualControllerState?.error.runtimeType}',
-            name: 'UnifiedAiProgressContent',
-          );
-
           // Check for model installation errors (Ollama)
           final error = actualControllerState?.error;
           if (error is ModelNotInstalledException) {
             final modelName = error.modelName;
-
-            developer.log(
-              'ModelNotInstalledException detected for model: $modelName',
-              name: 'UnifiedAiProgressContent',
-            );
 
             return OllamaModelInstallDialog(
               modelName: modelName,

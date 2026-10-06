@@ -95,6 +95,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     // 3. Resolve inference profile (or legacy modelId) → provider.
     final profileResolver = ProfileResolver(
       aiConfigRepository: this.aiConfigRepository,
+      domainLogger: domainLogger,
     );
     final resolvedSetup = await profileResolver.resolveDetailed(
       agentConfig: agentIdentity.config,
@@ -317,6 +318,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         runKey: runKey,
         agentId: agentId,
         threadId: threadId,
+        domainLogger: domainLogger,
       );
 
       final changeSetBuilder = _buildChangeSetBuilder(
@@ -557,12 +559,13 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         );
       }
 
-      developer.log(
+      domainLogger.log(
+        LogDomain.agentWorkflow,
         'Wake completed for agent $agentId: '
         '${observations.length} observations, '
         '${executor.mutatedEntries.length} mutations, '
         '${changeSetBuilder.items.length} deferred changes',
-        name: 'TaskAgentWorkflow',
+        subDomain: 'TaskAgentWorkflow',
       );
 
       return WakeResult(

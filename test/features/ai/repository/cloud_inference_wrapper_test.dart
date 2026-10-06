@@ -290,86 +290,92 @@ void main() {
         ).called(1);
       });
 
-      test('detects and logs concatenated JSON in tool calls', () async {
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Call functions'),
-          ),
-        ];
-
-        final responseController =
-            StreamController<CreateChatCompletionStreamResponse>();
-
-        when(
-          () => mockCloudRepository.generateWithMessages(
-            messages: any(named: 'messages'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            provider: any(named: 'provider'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            tools: any(named: 'tools'),
-            thoughtSignatures: any(named: 'thoughtSignatures'),
-            signatureCollector: any(named: 'signatureCollector'),
-            reasoningEffort: any(named: 'reasoningEffort'),
-          ),
-        ).thenAnswer((_) => responseController.stream);
-
-        final resultFuture = wrapper
-            .generateTextWithMessages(
-              messages: messages,
-              model: 'gpt-4',
-              temperature: 0.7,
-              provider: provider,
-            )
-            .toList();
-
-        // Add response with concatenated JSON
-        responseController.add(
-          CreateChatCompletionStreamResponse(
-            id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0,
-                      id: 'tool-1',
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'function1',
-                        arguments: '{"a": 1}{"b": 2}', // Concatenated JSON
-                      ),
-                    ),
-                  ],
-                ),
+      test(
+        'passes concatenated JSON in tool calls through unchanged',
+        () async {
+          final messages = [
+            const ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string(
+                'Call functions',
               ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
+            ),
+          ];
 
-        await responseController.close();
-        final result = await resultFuture;
+          final responseController =
+              StreamController<CreateChatCompletionStreamResponse>();
 
-        expect(result.length, 1);
-        // The malformed JSON is passed through but logged as a warning
-        expect(
-          result
-              .first
-              .choices
-              ?.first
-              .delta
-              ?.toolCalls
-              ?.first
-              .function
-              ?.arguments,
-          contains('}{'),
-        );
-      });
+          when(
+            () => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              reasoningEffort: any(named: 'reasoningEffort'),
+            ),
+          ).thenAnswer((_) => responseController.stream);
+
+          final resultFuture = wrapper
+              .generateTextWithMessages(
+                messages: messages,
+                model: 'gpt-4',
+                temperature: 0.7,
+                provider: provider,
+              )
+              .toList();
+
+          // Add response with concatenated JSON
+          responseController.add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-response',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'function1',
+                          arguments: '{"a": 1}{"b": 2}', // Concatenated JSON
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+
+          await responseController.close();
+          final result = await resultFuture;
+
+          expect(result.length, 1);
+          // The malformed JSON is passed through; CloudInferenceGenerateMore
+          // logs it.
+          expect(
+            result
+                .first
+                .choices
+                ?.first
+                .delta
+                ?.toolCalls
+                ?.first
+                .function
+                ?.arguments,
+            contains('}{'),
+          );
+        },
+      );
 
       test('handles empty messages list', () async {
         final messages = <ChatCompletionMessage>[];

@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Sends HTTP streamed requests to Gemini with exponential backoff for rate
 /// limiting (429/503) and an initial handshake timeout.
@@ -12,12 +13,16 @@ import 'package:http/http.dart' as http;
 class GeminiStreamSender {
   GeminiStreamSender({
     required this._httpClient,
+    required this._domainLogger,
     this.maxRetries = kDefaultMaxRetries,
     this.baseDelay = kDefaultRetryBaseDelay,
     this.initialRequestTimeout = kDefaultInitialRequestTimeout,
   });
 
   final http.Client _httpClient;
+
+  /// Records each rate-limit or timeout retry.
+  final DomainLogger _domainLogger;
 
   /// Maximum retry attempts for rate-limited (429) or temporarily
   /// unavailable (503) responses.
@@ -67,10 +72,12 @@ class GeminiStreamSender {
           } else {
             delay = baseDelay * (1 << (attempt - 1));
           }
-          developer.log(
+          _domainLogger.log(
+            LogDomain.ai,
             'Rate limited (${resp.statusCode}) during $context; retrying in '
             '${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
-            name: 'GeminiInferenceRepository',
+            subDomain: 'GeminiInferenceRepository',
+            level: InsightLevel.warn,
           );
           await Future<void>.delayed(delay);
           continue;
@@ -79,10 +86,12 @@ class GeminiStreamSender {
       } on TimeoutException {
         if (attempt > maxRetries) rethrow;
         final delay = baseDelay * (1 << (attempt - 1));
-        developer.log(
+        _domainLogger.log(
+          LogDomain.ai,
           'Timeout during $context; retrying in ${delay.inMilliseconds}ms '
           '(attempt $attempt/$maxRetries)...',
-          name: 'GeminiInferenceRepository',
+          subDomain: 'GeminiInferenceRepository',
+          level: InsightLevel.warn,
         );
         await Future<void>.delayed(delay);
       }

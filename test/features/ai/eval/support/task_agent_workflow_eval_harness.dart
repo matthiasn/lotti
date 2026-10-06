@@ -180,6 +180,7 @@ class TaskAgentWorkflowEvalHarness {
       vectorClockService: getIt<VectorClockService>(),
     );
     final templateService = AgentTemplateService(
+      domainLogger: MockDomainLogger(),
       repository: agentRepository,
       syncService: syncService,
     );
@@ -191,8 +192,10 @@ class TaskAgentWorkflowEvalHarness {
     // The app's own template seeding, so the directives the model receives are
     // the ones production seeds rather than anything authored here.
     await AgentTemplateSeeding(
+      domainLogger: MockDomainLogger(),
       syncService: syncService,
       crud: AgentTemplateCrud(
+        domainLogger: MockDomainLogger(),
         repository: agentRepository,
         syncService: syncService,
       ),

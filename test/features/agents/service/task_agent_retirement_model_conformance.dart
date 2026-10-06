@@ -87,11 +87,13 @@ class _AssignDevice {
 
   void _build() {
     agents = AgentService(
+      domainLogger: MockDomainLogger(),
       repository: replica.repository,
       orchestrator: orchestrator,
       syncService: replica.syncService,
     );
     tasks = TaskAgentService(
+      domainLogger: MockDomainLogger(),
       agentService: agents,
       repository: replica.repository,
       orchestrator: orchestrator,

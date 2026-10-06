@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_call_impact.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/ai/repository/ollama_api_client.dart'
@@ -23,11 +23,19 @@ export 'package:lotti/features/ai/repository/ollama_api_client.dart'
 /// - Image analysis
 /// - Model management (installation, checking, warm-up)
 class OllamaInferenceRepository implements InferenceRepositoryInterface {
-  OllamaInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  OllamaInferenceRepository({
+    required this._domainLogger,
+    http.Client? httpClient,
+  }) : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
-  late final OllamaApiClient _api = OllamaApiClient(httpClient: _httpClient);
+
+  /// Records chat requests here and in the [OllamaApiClient].
+  final DomainLogger _domainLogger;
+  late final OllamaApiClient _api = OllamaApiClient(
+    httpClient: _httpClient,
+    domainLogger: _domainLogger,
+  );
 
   /// Generate text using Ollama's API
   ///
@@ -132,20 +140,16 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     final toolsLog = ollamaTools != null && tools != null
         ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
         : '';
-    developer.log(
-      'Preparing Ollama chat request for model: $model$toolsLog with ${messages.length} messages',
-      name: 'OllamaInferenceRepository',
+    // Each message by role and size only, on one line rather than one each.
+    final messagesLog = ollamaMessages
+        .map((msg) => '${msg['role']}:${(msg['content'] as String).length}')
+        .join(', ');
+    _domainLogger.log(
+      LogDomain.ai,
+      'Preparing Ollama chat request for model: $model$toolsLog with '
+      '${messages.length} messages (role:chars $messagesLog)',
+      subDomain: 'OllamaInferenceRepository',
     );
-
-    // Log the messages for debugging
-    for (var i = 0; i < ollamaMessages.length; i++) {
-      final msg = ollamaMessages[i];
-      developer.log(
-        'Message $i: role=${msg['role']}, '
-        'content ${(msg['content'] as String).length} chars',
-        name: 'OllamaInferenceRepository',
-      );
-    }
 
     final requestBody = {
       'model': model,

@@ -456,6 +456,7 @@ class _FieldBench {
           value,
           (copy) async {
             handler = TaskStatusHandler(
+              domainLogger: MockDomainLogger(),
               task: copy,
               journalRepository: repository,
             );
@@ -477,6 +478,7 @@ class _FieldBench {
           (copy) => copy.title,
           value,
           (copy) async => (await TaskTitleHandler(
+            domainLogger: MockDomainLogger(),
             task: copy,
             journalRepository: repository,
           ).handle(value)).didWrite,
@@ -495,6 +497,7 @@ class _FieldBench {
           (copy) async => (await TaskPriorityHandler(
             task: copy,
             journalRepository: repository,
+            domainLogger: MockDomainLogger(),
           ).processToolCall(_priorityCall(value.short))).didWrite,
           () => expected = (
             status: expected.status,

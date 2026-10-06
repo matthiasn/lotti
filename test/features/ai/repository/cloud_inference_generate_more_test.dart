@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
@@ -22,6 +23,7 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -51,6 +53,7 @@ void main() {
   late OpenAiTranscriptionRepository openAiTranscriptionRepo;
   late ProviderContainer container;
   late CloudInferenceGenerateMore generateMore;
+  late MockDomainLogger domainLogger;
 
   const baseUrl = 'http://localhost:8084';
   const model = 'gpt-4';
@@ -88,6 +91,7 @@ void main() {
       openAiTranscriptionRepository:
           openAiTranscriptionRepository ?? openAiTranscriptionRepo,
       helpers: const CloudInferenceRequestHelpers(),
+      domainLogger: domainLogger,
     );
   }
 
@@ -142,22 +146,38 @@ void main() {
   });
 
   setUp(() {
+    domainLogger = MockDomainLogger();
     sherpaRepo = MockSherpaTranscriptionRepository();
     httpClient = MockHttpClient();
     ollamaRepo = MockOllamaInferenceRepository();
     geminiRepo = MockGeminiInferenceRepository();
     dashScopeRepo = MockDashScopeInferenceRepository();
-    mistralRepo = MistralInferenceRepository(httpClient: httpClient);
-    meliousRepo = MeliousInferenceRepository(httpClient: httpClient);
+    mistralRepo = MistralInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: httpClient,
+    );
+    meliousRepo = MeliousInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: httpClient,
+    );
     mistralTranscriptionRepo = MistralTranscriptionRepository(
+      domainLogger: MockDomainLogger(),
       httpClient: httpClient,
     );
-    whisperRepo = WhisperInferenceRepository(httpClient: httpClient);
+    whisperRepo = WhisperInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: httpClient,
+    );
     omlxTranscriptionRepo = OmlxTranscriptionRepository(
+      domainLogger: MockDomainLogger(),
       httpClient: httpClient,
     );
-    voxtralRepo = VoxtralInferenceRepository(httpClient: httpClient);
+    voxtralRepo = VoxtralInferenceRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: httpClient,
+    );
     openAiTranscriptionRepo = OpenAiTranscriptionRepository(
+      domainLogger: MockDomainLogger(),
       httpClient: httpClient,
     );
     container = ProviderContainer();
@@ -652,6 +672,94 @@ void main() {
     });
   });
 
+  group('generateWithMessages concatenated tool-call arguments', () {
+    final ollamaProvider = providerOfType(InferenceProviderType.ollama);
+    const messages = [
+      ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string('hello'),
+      ),
+    ];
+
+    CreateChatCompletionStreamResponse toolCallChunk(String arguments) =>
+        CreateChatCompletionStreamResponse(
+          id: 'chunk',
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(
+                toolCalls: [
+                  ChatCompletionStreamMessageToolCallChunk(
+                    index: 0,
+                    id: 'tool-1',
+                    type: ChatCompletionStreamMessageToolCallChunkType.function,
+                    function: ChatCompletionStreamMessageFunctionCall(
+                      name: 'function1',
+                      arguments: arguments,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: 0,
+        );
+
+    Future<List<CreateChatCompletionStreamResponse>> run(String arguments) {
+      when(
+        () => ollamaRepo.generateTextWithMessages(
+          messages: messages,
+          model: 'qwen',
+          temperature: 0.7,
+          provider: ollamaProvider,
+        ),
+      ).thenAnswer((_) => Stream.value(toolCallChunk(arguments)));
+      return createGenerateMore()
+          .generateWithMessages(
+            messages: messages,
+            model: 'qwen',
+            temperature: null,
+            provider: ollamaProvider,
+          )
+          .toList();
+    }
+
+    void flagged() => domainLogger.logSampled(
+      LogDomain.ai,
+      'Concatenated JSON in tool call arguments from provider ollama',
+      sampleKey: 'concatenated_tool_call_arguments',
+      subDomain: 'CloudInferenceRepository',
+      level: InsightLevel.warn,
+    );
+
+    test(
+      'passes the chunk through and logs it, without the arguments',
+      () async {
+        final chunks = await run('{"a": 1}{"b": 2}');
+
+        expect(
+          chunks
+              .single
+              .choices
+              ?.single
+              .delta
+              ?.toolCalls
+              ?.single
+              .function
+              ?.arguments,
+          '{"a": 1}{"b": 2}',
+        );
+        verify(flagged).called(1);
+      },
+    );
+
+    test('does not log well-formed arguments', () async {
+      await run('{"a": 1}');
+
+      verifyNever(flagged);
+    });
+  });
+
   group('generateImage routing', () {
     test('routes Alibaba provider to the DashScope repository', () async {
       final alibabaProvider = providerOfType(InferenceProviderType.alibaba);
@@ -742,6 +850,9 @@ void main() {
 }
 
 class _FakeOpenAiTranscriptionRepository extends OpenAiTranscriptionRepository {
+  _FakeOpenAiTranscriptionRepository()
+    : super(domainLogger: MockDomainLogger());
+
   final prompts = <String?>[];
 
   @override
@@ -758,6 +869,8 @@ class _FakeOpenAiTranscriptionRepository extends OpenAiTranscriptionRepository {
 }
 
 class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  _FakeMistralInferenceRepository() : super(domainLogger: MockDomainLogger());
+
   final chatAudioCalls =
       <
         ({
@@ -830,6 +943,8 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
 }
 
 class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
+  _FakeMeliousInferenceRepository() : super(domainLogger: MockDomainLogger());
+
   final audioCalls =
       <
         ({

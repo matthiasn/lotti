@@ -227,6 +227,7 @@ void main() {
         'rejects a stale project category before creating an agent',
         () async {
           final scopedService = ProjectAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
@@ -305,6 +306,7 @@ void main() {
         final generatedSyncService = MockAgentSyncService();
         final generatedNotifiedAgentIds = <String>[];
         final generatedService = ProjectAgentService(
+          domainLogger: MockDomainLogger(),
           agentService: generatedAgentService,
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
@@ -656,6 +658,7 @@ void main() {
           );
           var existenceChecks = 0;
           final compensatingService = ProjectAgentService(
+            domainLogger: MockDomainLogger(),
             agentService: mockAgentService,
             repository: mockRepository,
             orchestrator: mockOrchestrator,
@@ -2245,53 +2248,5 @@ void main() {
         ).called(1);
       },
     );
-
-    group('null domainLogger fallback', () {
-      test(
-        'restoreSubscriptions logs to developer.log when domainLogger is null',
-        () async {
-          final nullLoggerService = ProjectAgentService(
-            agentService: mockAgentService,
-            repository: mockRepository,
-            orchestrator: mockOrchestrator,
-            syncService: mockSyncService,
-            projectScopeIsCurrent: (_, _) async => true,
-            mutationCoordinator: ProjectAgentMutationCoordinator(),
-          );
-
-          final failingAgent = makeIdentity(agentId: 'pa-fail');
-          final failingLink = AgentLink.agentProject(
-            id: 'link-fail',
-            fromId: 'pa-fail',
-            toId: 'project-fail',
-            createdAt: kAgentTestDate,
-            updatedAt: kAgentTestDate,
-            vectorClock: null,
-          );
-          when(
-            () => mockAgentService.listAgents(
-              lifecycle: AgentLifecycle.active,
-            ),
-          ).thenAnswer((_) async => [failingAgent]);
-          when(
-            () => mockRepository.getLinksFromMultiple(
-              ['pa-fail'],
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer(
-            (_) async => {
-              'pa-fail': [failingLink],
-            },
-          );
-          when(
-            () => mockOrchestrator.addSubscription(any()),
-          ).thenThrow(StateError('runtime registration failed'));
-
-          await nullLoggerService.restoreSubscriptions();
-
-          verify(() => mockOrchestrator.addSubscription(any())).called(1);
-        },
-      );
-    });
   });
 }

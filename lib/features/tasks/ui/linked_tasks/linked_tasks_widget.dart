@@ -593,8 +593,10 @@ Future<void> _createNewLinkedTask(
   // Read before any await: the typed link must still land if the user leaves
   // the task while the new one is being created.
   final persistence = ref.read(persistenceLogicProvider);
+  final domainLogger = ref.read(domainLoggerProvider);
 
   final newTask = await createTask(
+    domainLogger: domainLogger,
     linkedId: taskId,
     categoryId: categoryId,
   );

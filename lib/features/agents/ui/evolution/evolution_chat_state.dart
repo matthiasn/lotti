@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +9,8 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 export 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
 
@@ -32,8 +33,13 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
   static const _logTag = 'EvolutionChatState';
 
+  /// Read in [build]: the dispose-time and post-await failure paths log
+  /// through it after `ref` may no longer be usable.
+  late DomainLogger _domainLogger;
+
   @override
   Future<EvolutionChatData> build() async {
+    _domainLogger = ref.read(domainLoggerProvider);
     final workflow = ref.read(templateEvolutionWorkflowProvider);
 
     final now = clock.now();
@@ -135,11 +141,12 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
             Object e,
             StackTrace s,
           ) {
-            developer.log(
-              'abandonSession on dispose failed',
-              name: _logTag,
-              error: e.runtimeType,
+            _domainLogger.error(
+              LogDomain.agentWorkflow,
+              e,
               stackTrace: s,
+              subDomain: _logTag,
+              message: 'abandonSession on dispose failed',
             );
           }),
         );
@@ -305,11 +312,12 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
         ),
       );
     } catch (e, s) {
-      developer.log(
-        'sendMessage failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'sendMessage failed',
       );
       final current = state.value;
       if (current != null) {
@@ -434,11 +442,12 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
 
       return true;
     } catch (e, s) {
-      developer.log(
-        'approveProposal failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'approveProposal failed',
       );
       final current = state.value;
       if (current != null) {
@@ -499,11 +508,12 @@ class EvolutionChatState extends AsyncNotifier<EvolutionChatData> {
         );
       }
     } catch (e, s) {
-      developer.log(
-        'approveSoulProposal failed',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'approveSoulProposal failed',
       );
     }
   }

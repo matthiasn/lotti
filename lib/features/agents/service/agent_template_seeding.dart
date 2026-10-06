@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
@@ -27,7 +25,11 @@ class AgentTemplateSeeding {
   AgentTemplateSeeding({
     required this.syncService,
     required this.crud,
+    required this._domainLogger,
   });
+
+  /// Receives this class's log lines and caught failures.
+  final DomainLogger _domainLogger;
 
   final AgentSyncService syncService;
   final AgentTemplateCrud crud;
@@ -166,15 +168,17 @@ class AgentTemplateSeeding {
     }
 
     if (seeded.isEmpty) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Default templates already seeded, skipping',
-        name: 'AgentTemplateService',
+        subDomain: 'AgentTemplateService',
       );
     } else {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Seeded default templates: '
         '${seeded.map((d) => d.displayName).join(', ')}',
-        name: 'AgentTemplateService',
+        subDomain: 'AgentTemplateService',
       );
     }
 
@@ -237,11 +241,12 @@ class AgentTemplateSeeding {
       );
       await syncService.upsertEntity(updated);
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Seeded directive fields for template '
         '${DomainLogger.sanitizeId(template.id)} '
         '(v${activeVersion.version})',
-        name: 'AgentTemplateService',
+        subDomain: 'AgentTemplateService',
       );
     }
   }

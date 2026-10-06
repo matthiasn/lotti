@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -26,6 +25,8 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -61,6 +62,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
+    final logger = ref.read(domainLoggerProvider);
     try {
       final deleted = await ref
           .read(relationshipRepositoryProvider)
@@ -107,11 +109,12 @@ class RelationshipDetailsPage extends ConsumerWidget {
         );
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to delete relationship',
-        name: 'RelationshipDetailsPage',
-        error: e,
+      logger.error(
+        LogDomain.general,
+        e,
         stackTrace: s,
+        subDomain: 'RelationshipDetailsPage',
+        message: 'Failed to delete relationship',
       );
       if (context.mounted) {
         context.showToast(

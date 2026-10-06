@@ -93,7 +93,12 @@ class TestTaskProgressState implements TaskProgressState {
 
 class TestAiInputRepo extends AiInputRepository {
   TestAiInputRepo(super.ref, {required super.projectRepository})
-    : super(taskSummaryResolver: TaskSummaryResolver(null));
+    : super(
+        taskSummaryResolver: TaskSummaryResolver(
+          null,
+          domainLogger: MockDomainLogger(),
+        ),
+      );
 
   @override
   Future<AiInputTaskObject?> generate(String id) async {
@@ -224,7 +229,10 @@ void main() {
       final ref = containerBuilder.getRef(container);
       repository = AiInputRepository(
         ref,
-        taskSummaryResolver: TaskSummaryResolver(null),
+        taskSummaryResolver: TaskSummaryResolver(
+          null,
+          domainLogger: MockDomainLogger(),
+        ),
         projectRepository: mockProjectRepository,
         agentRepository: mockAgentRepository,
       );
@@ -595,7 +603,10 @@ void main() {
         final ref = container.read(testRefProvider);
         final repoWithoutAgent = AiInputRepository(
           ref,
-          taskSummaryResolver: TaskSummaryResolver(null),
+          taskSummaryResolver: TaskSummaryResolver(
+            null,
+            domainLogger: MockDomainLogger(),
+          ),
           projectRepository: mockProjectRepository,
         );
         when(
@@ -2162,7 +2173,10 @@ void main() {
       final ref = containerLang.read(testRefProvider);
       repository = AiInputRepository(
         ref,
-        taskSummaryResolver: TaskSummaryResolver(null),
+        taskSummaryResolver: TaskSummaryResolver(
+          null,
+          domainLogger: MockDomainLogger(),
+        ),
         projectRepository: mockProjectRepositoryLang,
       );
     });

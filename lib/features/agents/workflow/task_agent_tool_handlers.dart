@@ -52,11 +52,12 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
       _reportTldr = tldr;
       _reportOneLiner = oneLiner;
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Report updated (${_reportContent!.length} chars, '
         'tldr=${_reportTldr != null ? "${_reportTldr!.length} chars" : "none"}, '
         'oneLiner=${_reportOneLiner != null ? "${_reportOneLiner!.length} chars" : "none"})',
-        name: 'TaskAgentStrategy',
+        subDomain: 'TaskAgentStrategy',
       );
 
       manager.addToolResponse(
@@ -104,9 +105,10 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     }
     _observations.addAll(records);
 
-    developer.log(
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
       'Recorded ${records.length} observations',
-      name: 'TaskAgentStrategy',
+      subDomain: 'TaskAgentStrategy',
     );
 
     manager.addToolResponse(
@@ -156,12 +158,14 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     try {
       response = resolver != null ? await resolver(requestedTaskId) : null;
     } catch (error, stackTrace) {
-      developer.log(
-        'Failed to resolve related task details for '
-        '${DomainLogger.sanitizeId(requestedTaskId)}',
-        name: 'TaskAgentStrategy',
-        error: error.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: 'TaskAgentStrategy',
+        message:
+            'Failed to resolve related task details for '
+            '${DomainLogger.sanitizeId(requestedTaskId)}',
       );
     }
     if (response == null || response.trim().isEmpty) {

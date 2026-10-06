@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai_response_type.dart';
@@ -7,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 
 /// Resolves the best available summary for a task by checking multiple sources
@@ -24,18 +23,28 @@ import 'package:meta/meta.dart';
 /// fallback logic. Once all tasks are migrated to agents and the legacy enum
 /// values are removed, this class can be simplified to agent-report-only.
 class TaskSummaryResolver {
-  TaskSummaryResolver(this._agentRepository);
+  TaskSummaryResolver(
+    this._agentRepository, {
+    required this._domainLogger,
+  });
 
   /// A resolver reading agent reports from the registered [AgentDatabase],
   /// or legacy summaries only when the agent system is not registered.
-  factory TaskSummaryResolver.fromRegisteredAgentDatabase() =>
-      TaskSummaryResolver(
-        getIt.isRegistered<AgentDatabase>()
-            ? AgentRepository(getIt<AgentDatabase>())
-            : null,
-      );
+  factory TaskSummaryResolver.fromRegisteredAgentDatabase({
+    required DomainLogger domainLogger,
+  }) => TaskSummaryResolver(
+    getIt.isRegistered<AgentDatabase>()
+        ? AgentRepository(getIt<AgentDatabase>())
+        : null,
+    domainLogger: domainLogger,
+  );
 
   final AgentRepository? _agentRepository;
+
+  /// Records failed agent-report lookups, which fall back to legacy summaries.
+  final DomainLogger _domainLogger;
+
+  static const _logTag = 'TaskSummaryResolver';
 
   /// Returns the best available summary for [taskId], or `null` if none
   /// exists from either source.
@@ -74,10 +83,13 @@ class TaskSummaryResolver {
         reportsByTaskId.addAll(
           await repo.getLatestTaskReportsForTaskIds(ids),
         );
-      } catch (e) {
-        developer.log(
-          'Error fetching agent reports for ${ids.length} tasks: $e',
-          name: 'TaskSummaryResolver',
+      } catch (e, stackTrace) {
+        _domainLogger.error(
+          LogDomain.ai,
+          e,
+          stackTrace: stackTrace,
+          subDomain: _logTag,
+          message: 'Error fetching agent reports for ${ids.length} tasks',
         );
       }
     }
@@ -130,17 +142,21 @@ class TaskSummaryResolver {
       final summary = summaryFromReport(report);
       if (summary == null) return null;
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Found agent report for task $taskId '
         '(${summary.length} chars)',
-        name: 'TaskSummaryResolver',
+        subDomain: _logTag,
       );
 
       return summary;
-    } catch (e) {
-      developer.log(
-        'Error fetching agent report for task $taskId: $e',
-        name: 'TaskSummaryResolver',
+    } catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _logTag,
+        message: 'Error fetching agent report for task $taskId',
       );
       return null;
     }

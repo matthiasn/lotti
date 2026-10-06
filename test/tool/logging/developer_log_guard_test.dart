@@ -7,10 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 // this guard exists to detect. Leave them as literals.
 import '../../../tool/logging/developer_log_guard.dart';
 
-GuardResult scanFixture(
-  Map<String, String> files, {
-  Map<String, int> baseline = const {},
-}) {
+GuardResult scanFixture(Map<String, String> files) {
   final root = Directory.systemTemp.createTempSync('developer_log_guard');
   addTearDown(() => root.deleteSync(recursive: true));
   for (final entry in files.entries) {
@@ -18,11 +15,7 @@ GuardResult scanFixture(
       ..parent.createSync(recursive: true)
       ..writeAsStringSync(entry.value);
   }
-  return scan(
-    root: Directory('${root.path}/lib'),
-    baseline: baseline,
-    repoRoot: root.path,
-  );
+  return scan(root: Directory('${root.path}/lib'), repoRoot: root.path);
 }
 
 const _prefixed = """
@@ -132,37 +125,22 @@ void f(Logger other) {
       expect(result.counts, {'lib/features/a/part.dart': 1});
     });
 
-    test('a file at or below its baseline passes', () {
-      final result = scanFixture(
-        {'lib/features/a/x.dart': _prefixed},
-        baseline: {'lib/features/a/x.dart': 3},
-      );
+    test('a file without dart:developer logging passes', () {
+      final result = scanFixture({
+        'lib/features/a/x.dart': "void f() { print('a'); }\n",
+      });
 
+      expect(result.counts, isEmpty);
       expect(result.violations, isEmpty);
+    });
+
+    test('any file outside the logging layer that logs is a violation', () {
+      final result = scanFixture({'lib/features/a/x.dart': _prefixed});
+
       expect(result.total, 2);
+      expect(result.violations.single.path, 'lib/features/a/x.dart');
+      expect(result.violations.single.message, contains('has 2'));
+      expect(result.violations.single.message, contains('DomainLogger'));
     });
-
-    test('a new file may not introduce one; a migrating file may not grow', () {
-      final fresh = scanFixture({'lib/features/a/new.dart': _prefixed});
-      expect(fresh.violations.single.message, contains('introduces 2'));
-
-      final grown = scanFixture(
-        {'lib/features/a/x.dart': _prefixed},
-        baseline: {'lib/features/a/x.dart': 1},
-      );
-      expect(grown.violations.single.message, contains('grew from 1 to 2'));
-    });
-  });
-
-  test('the baseline round-trips deterministically', () {
-    final dir = Directory.systemTemp.createTempSync('developer_log_baseline');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    final counts = {'lib/z.dart': 1, 'lib/a.dart': 4};
-    final encoded = encodeBaseline(counts);
-    final file = File('${dir.path}/baseline.json')..writeAsStringSync(encoded);
-
-    expect(readBaseline(file), counts);
-    expect(encodeBaseline(readBaseline(file)), encoded);
-    expect(encoded, isNot(contains('_total')));
   });
 }

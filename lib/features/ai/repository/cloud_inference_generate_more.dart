@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/ai/ai_call_impact.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Audio transcription, multi-turn, image generation, model install, and
@@ -48,6 +49,7 @@ class CloudInferenceGenerateMore {
     required this._openAiTranscriptionRepository,
     required this._helpers,
     required this._sherpaRepository,
+    required this._domainLogger,
   });
 
   final OllamaInferenceRepository _ollamaRepository;
@@ -62,6 +64,9 @@ class CloudInferenceGenerateMore {
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
   final CloudInferenceRequestHelpers _helpers;
   final SherpaTranscriptionRepository Function() _sherpaRepository;
+  final DomainLogger _domainLogger;
+
+  static const _logTag = 'CloudInferenceRepository';
 
   /// Routes audio to the selected provider. Embedded sherpa transcription does
   /// not apply [speechDictionaryTerms] or task-context prompts: its current
@@ -126,9 +131,10 @@ class CloudInferenceGenerateMore {
     // accepts directly - no conversion needed.
     if (provider.inferenceProviderType == InferenceProviderType.openAi &&
         OpenAiTranscriptionRepository.isOpenAiTranscriptionModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using OpenAI transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _openAiTranscriptionRepository.transcribeAudio(
         model: model,
@@ -143,9 +149,10 @@ class CloudInferenceGenerateMore {
     // Mistral's provider-specific input_audio JSON shape.
     if (provider.inferenceProviderType == InferenceProviderType.mistral &&
         MistralInferenceRepository.isMistralChatAudioModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using Mistral chat-audio endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _mistralRepository.transcribeChatAudio(
         model: model,
@@ -164,9 +171,10 @@ class CloudInferenceGenerateMore {
     // which provides diarization, timestamps, and context_bias.
     if (provider.inferenceProviderType == InferenceProviderType.mistral &&
         MistralTranscriptionRepository.isMistralTranscriptionModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using Mistral transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _mistralTranscriptionRepository.transcribeAudio(
         model: model,
@@ -179,9 +187,10 @@ class CloudInferenceGenerateMore {
 
     if (provider.inferenceProviderType == InferenceProviderType.melious &&
         MeliousInferenceRepository.isMeliousTranscriptionModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using Melious transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _meliousRepository.transcribeAudio(
         model: model,
@@ -195,9 +204,10 @@ class CloudInferenceGenerateMore {
 
     if (provider.inferenceProviderType == InferenceProviderType.melious &&
         MeliousInferenceRepository.isMeliousChatAudioModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using Melious chat-audio endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _meliousRepository.transcribeChatAudio(
         model: model,
@@ -215,9 +225,10 @@ class CloudInferenceGenerateMore {
 
     if (provider.inferenceProviderType == InferenceProviderType.omlx &&
         OmlxTranscriptionRepository.isOmlxTranscriptionModel(model)) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.ai,
         'Using oMLX transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
+        subDomain: _logTag,
       );
       return _omlxTranscriptionRepository.transcribeAudio(
         model: model,
@@ -231,9 +242,11 @@ class CloudInferenceGenerateMore {
     // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
     // OpenAI-compatible chat completions format with audio content parts.
     if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Passing ${tools.length} tools to audio API: '
+        '${tools.map((t) => t.function.name).join(', ')}',
+        subDomain: _logTag,
       );
     }
 
@@ -319,6 +332,9 @@ class CloudInferenceGenerateMore {
   /// - Gemini: Uses native Gemini API with thought signature support
   /// - Others: Fall back to single-prompt mode (conversation flattened)
   ///
+  /// Every provider's stream passes through [_flagConcatenatedToolArguments],
+  /// which logs malformed (concatenated) tool-call arguments.
+  ///
   /// Parameters:
   /// - [messages]: Full conversation history
   /// - [model]: Model ID
@@ -352,16 +368,78 @@ class CloudInferenceGenerateMore {
       throw UnsupportedError('sherpa-onnx supports audio transcription only');
     }
 
-    developer.log(
-      'CloudInferenceRepository.generateWithMessages called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider.inferenceProviderType}\n'
-      '  messages: ${messages.length}\n'
-      '  tools: ${tools?.length ?? 0}\n'
-      '  hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}',
-      name: 'CloudInferenceRepository',
+    _domainLogger.log(
+      LogDomain.ai,
+      'generateWithMessages: model=$model, '
+      'provider=${provider.inferenceProviderType.name}, '
+      'messages=${messages.length}, tools=${tools?.length ?? 0}, '
+      'hasSignatures=${thoughtSignatures?.isNotEmpty ?? false}, '
+      'turnIndex=$turnIndex, forcedToolChoice=${toolChoice != null}',
+      subDomain: _logTag,
     );
 
+    return _flagConcatenatedToolArguments(
+      _routeWithMessages(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        provider: provider,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+        thoughtSignatures: thoughtSignatures,
+        signatureCollector: signatureCollector,
+        turnIndex: turnIndex,
+        geminiThinkingMode: geminiThinkingMode,
+        reasoningEffort: reasoningEffort,
+        impactCollector: impactCollector,
+      ),
+      provider,
+    );
+  }
+
+  /// Passes [stream] through unchanged, logging (sampled) every chunk whose
+  /// tool-call arguments hold concatenated JSON objects (`}{`) — the sign of
+  /// a provider returning malformed tool calls. Never logs the arguments.
+  Stream<CreateChatCompletionStreamResponse> _flagConcatenatedToolArguments(
+    Stream<CreateChatCompletionStreamResponse> stream,
+    AiConfigInferenceProvider provider,
+  ) => stream.map((chunk) {
+    final toolCalls = chunk.choices?.firstOrNull?.delta?.toolCalls;
+    final concatenated =
+        toolCalls?.any(
+          (call) => call.function?.arguments?.contains('}{') ?? false,
+        ) ??
+        false;
+    if (concatenated) {
+      _domainLogger.logSampled(
+        LogDomain.ai,
+        'Concatenated JSON in tool call arguments from provider '
+        '${provider.inferenceProviderType.name}',
+        sampleKey: 'concatenated_tool_call_arguments',
+        subDomain: _logTag,
+        level: InsightLevel.warn,
+      );
+    }
+    return chunk;
+  });
+
+  /// Routes a [generateWithMessages] call to the provider's implementation.
+  Stream<CreateChatCompletionStreamResponse> _routeWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double? temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
+    InferenceImpactCollector? impactCollector,
+  }) {
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
       final finalThinking = _helpers.resolveGeminiThinkingConfig(
@@ -438,9 +516,11 @@ class CloudInferenceGenerateMore {
     );
 
     if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
+      _domainLogger.log(
+        LogDomain.ai,
+        'Passing ${tools.length} tools to multi-turn API: '
+        '${tools.map((t) => t.function.name).join(', ')}',
+        subDomain: _logTag,
       );
     }
 
@@ -493,13 +573,13 @@ class CloudInferenceGenerateMore {
     List<ProcessedReferenceImage>? referenceImages,
     InferenceImpactCollector? impactCollector,
   }) async {
-    developer.log(
-      'CloudInferenceRepository.generateImage called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider.inferenceProviderType}\n'
-      '  promptLength: ${prompt.length}\n'
-      '  referenceImages: ${referenceImages?.length ?? 0}',
-      name: 'CloudInferenceRepository',
+    _domainLogger.log(
+      LogDomain.ai,
+      'generateImage: model=$model, '
+      'provider=${provider.inferenceProviderType.name}, '
+      'promptLength=${prompt.length}, '
+      'referenceImages=${referenceImages?.length ?? 0}',
+      subDomain: _logTag,
     );
 
     switch (provider.inferenceProviderType) {

@@ -26,11 +26,13 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         active.templateId,
       );
       if (currentSoulVersion == null) {
-        developer.log(
+        _domainLogger.log(
+          LogDomain.agentWorkflow,
           'No soul assigned to template '
           '${DomainLogger.sanitizeId(active.templateId)} — '
           'cannot approve soul proposal',
-          name: _logTag,
+          subDomain: _logTag,
+          level: InsightLevel.warn,
         );
         return null;
       }
@@ -63,21 +65,24 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         ..currentCoachingStyle = newVersion.coachingStyle
         ..currentAntiSycophancyPolicy = newVersion.antiSycophancyPolicy;
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Approved soul proposal for session '
         '${DomainLogger.sanitizeId(sessionId)} → '
         'soul version v${newVersion.version}',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return newVersion;
     } catch (e, s) {
-      developer.log(
-        'approveSoulProposal failed for session '
-        '${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message:
+            'approveSoulProposal failed for session '
+            '${DomainLogger.sanitizeId(sessionId)}',
       );
       return null;
     }
@@ -92,10 +97,11 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     active.strategy.clearSoulProposal();
 
     if (hadProposal) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Rejected soul proposal for session '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
+        subDomain: _logTag,
       );
     }
   }
@@ -111,19 +117,23 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     final sync = syncService;
     final fbService = feedbackService;
     if (soulSvc == null || svc == null || sync == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'soulDocumentService, templateService, and syncService are '
         'required for soul sessions',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
 
     // Only one active session per soul at a time.
     if (getActiveSessionForSoul(soulId) != null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Session already active for soul ${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -131,18 +141,22 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     // Resolve soul document and active version.
     final soul = await soulSvc.getSoul(soulId);
     if (soul == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Soul ${DomainLogger.sanitizeId(soulId)} not found',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
 
     final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
     if (currentVersion == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No active version for soul ${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -163,10 +177,12 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     }
 
     if (modelId == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No templates using soul ${DomainLogger.sanitizeId(soulId)} — '
         'cannot determine model',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -174,13 +190,16 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: this.aiConfigRepository,
+      domainLogger: _domainLogger,
       logTag: _logTag,
     );
     if (inferenceSlot == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Cannot resolve provider for soul-session model '
         '(modelIdLength=${modelId.length})',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -210,12 +229,14 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
             until: now,
           );
         } catch (e, s) {
-          developer.log(
-            'Feedback aggregation failed for soul '
-            '${DomainLogger.sanitizeId(soulId)}',
-            name: _logTag,
-            error: e.runtimeType,
+          _domainLogger.error(
+            LogDomain.agentWorkflow,
+            e,
             stackTrace: s,
+            subDomain: _logTag,
+            message:
+                'Feedback aggregation failed for soul '
+                '${DomainLogger.sanitizeId(soulId)}',
           );
         }
       }
@@ -263,7 +284,10 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       final catalog = buildEvolutionCatalog();
       final processor = SurfaceController(catalogs: [catalog]);
       final bridge = GenUiBridge(processor: processor);
-      final eventHandler = GenUiEventHandler(processor: processor)..listen();
+      final eventHandler = GenUiEventHandler(
+        processor: processor,
+        domainLogger: _domainLogger,
+      )..listen();
 
       // Strategy with soul fields populated, no template directives.
       final strategy = EvolutionStrategy(
@@ -312,11 +336,12 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
 
       return _extractLastAssistantContent(conversationId);
     } catch (e, s) {
-      developer.log(
-        'Failed to start soul session',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message: 'Failed to start soul session',
       );
       await abandonSession(sessionId: sessionId);
       return null;
@@ -339,10 +364,12 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
 
     final proposal = active.strategy.latestSoulProposal;
     if (proposal == null) {
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'No soul proposal to approve for '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
+        subDomain: _logTag,
+        level: InsightLevel.warn,
       );
       return null;
     }
@@ -365,9 +392,11 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         // Resolve current soul version to fill in unchanged fields.
         final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
         if (currentVersion == null) {
-          developer.log(
+          _domainLogger.log(
+            LogDomain.agentWorkflow,
             'No active soul version for ${DomainLogger.sanitizeId(soulId)}',
-            name: _logTag,
+            subDomain: _logTag,
+            level: InsightLevel.warn,
           );
           return null;
         }
@@ -442,29 +471,34 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       try {
         onSessionCompleted?.call(soulId, sessionId);
       } catch (e, s) {
-        developer.log(
-          'onSessionCompleted failed for soul session '
-          '${DomainLogger.sanitizeId(sessionId)}',
-          name: _logTag,
-          error: e.runtimeType,
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          e,
           stackTrace: s,
+          subDomain: _logTag,
+          message:
+              'onSessionCompleted failed for soul session '
+              '${DomainLogger.sanitizeId(sessionId)}',
         );
       }
 
-      developer.log(
+      _domainLogger.log(
+        LogDomain.agentWorkflow,
         'Completed soul session ${DomainLogger.sanitizeId(sessionId)} → '
         'version v${newVersion.version}',
-        name: _logTag,
+        subDomain: _logTag,
       );
 
       return newVersion;
     } catch (e, s) {
-      developer.log(
-        'completeSoulSession failed for '
-        '${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: _logTag,
+        message:
+            'completeSoulSession failed for '
+            '${DomainLogger.sanitizeId(sessionId)}',
       );
       return null;
     }

@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
+import '../../../mocks/mocks.dart' show MockDomainLogger;
+
 void main() {
   const baseUrl = 'https://api.openai.com/v1';
   const apiKey = 'sk-test';
@@ -17,7 +19,10 @@ void main() {
   OpenAiModelsRepository repoWithHandler(
     Future<http.Response> Function(http.Request request) handler,
   ) {
-    final repo = OpenAiModelsRepository(httpClient: MockClient(handler));
+    final repo = OpenAiModelsRepository(
+      domainLogger: MockDomainLogger(),
+      httpClient: MockClient(handler),
+    );
     addTearDown(repo.close);
     return repo;
   }

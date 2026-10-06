@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -171,6 +172,7 @@ ChatCompletionMessageToolCall _toolCall({
   Future<Set<String>> Function()? resolveExistingTaskRelations,
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
+  DomainLogger? domainLogger,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -188,6 +190,7 @@ ChatCompletionMessageToolCall _toolCall({
       );
 
   final strategy = TaskAgentStrategy(
+    domainLogger: domainLogger ?? MockDomainLogger(),
     executor: executor,
     syncService: syncService,
     agentId: agentId,
@@ -2539,10 +2542,12 @@ void main() {
       );
 
       test('a failing flush does not abort the turn', () async {
+        final logger = MockDomainLogger();
         final bench = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
           flushChangeSet: () async => throw Exception('write failed'),
+          domainLogger: logger,
         );
 
         final action = await bench.strategy.processToolCalls(
@@ -2566,6 +2571,18 @@ void main() {
           hasLength(1),
           reason: 'the proposal stays staged for the final write',
         );
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'TaskAgentStrategy',
+            message: any(
+              named: 'message',
+              that: contains('Incremental change-set flush failed'),
+            ),
+          ),
+        ).called(1);
       });
     });
 

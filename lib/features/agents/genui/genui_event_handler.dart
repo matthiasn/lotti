@@ -1,17 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:genui/genui.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Routes GenUI surface events to the evolution chat logic.
 ///
 /// Listens on [SurfaceController.onSubmit] for [ChatMessage]s containing
 /// [UiInteractionPart]s and dispatches them to registered callbacks.
 class GenUiEventHandler {
-  GenUiEventHandler({required this.processor});
+  GenUiEventHandler({
+    required this.processor,
+    required this._domainLogger,
+  });
 
   final SurfaceController processor;
+
+  /// Receives the failures of malformed surface events.
+  final DomainLogger _domainLogger;
 
   /// Called when the user taps approve or reject on a skill proposal surface.
   ///
@@ -49,11 +55,12 @@ class GenUiEventHandler {
         _processInteraction(interactionPart.interaction);
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to handle GenUI event',
-        name: 'GenUiEventHandler',
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'GenUiEventHandler',
+        message: 'Failed to handle GenUI event',
       );
     }
   }
@@ -83,12 +90,14 @@ class GenUiEventHandler {
             onRatingsSubmitted?.call(action.surfaceId, ratings);
           }
         } catch (e, s) {
-          developer.log(
-            'Failed to parse ratings JSON '
-            '(bytes=${utf8.encode(ratingsJson).length})',
-            name: 'GenUiEventHandler',
-            error: e.runtimeType,
+          _domainLogger.error(
+            LogDomain.agentWorkflow,
+            e,
             stackTrace: s,
+            subDomain: 'GenUiEventHandler',
+            message:
+                'Failed to parse ratings JSON '
+                '(bytes=${utf8.encode(ratingsJson).length})',
           );
         }
       } else if (name == 'ab_comparison_submitted') {
@@ -102,12 +111,14 @@ class GenUiEventHandler {
             }
           }
         } catch (e, s) {
-          developer.log(
-            'Failed to parse AB comparison JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
-            name: 'GenUiEventHandler',
-            error: e.runtimeType,
+          _domainLogger.error(
+            LogDomain.agentWorkflow,
+            e,
             stackTrace: s,
+            subDomain: 'GenUiEventHandler',
+            message:
+                'Failed to parse AB comparison JSON '
+                '(bytes=${utf8.encode(payloadJson).length})',
           );
         }
       } else if (name == 'binary_choice_submitted') {
@@ -121,21 +132,24 @@ class GenUiEventHandler {
             }
           }
         } catch (e, s) {
-          developer.log(
-            'Failed to parse binary choice JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
-            name: 'GenUiEventHandler',
-            error: e.runtimeType,
+          _domainLogger.error(
+            LogDomain.agentWorkflow,
+            e,
             stackTrace: s,
+            subDomain: 'GenUiEventHandler',
+            message:
+                'Failed to parse binary choice JSON '
+                '(bytes=${utf8.encode(payloadJson).length})',
           );
         }
       }
     } catch (e, s) {
-      developer.log(
-        'Failed to process GenUI interaction',
-        name: 'GenUiEventHandler',
-        error: e.runtimeType,
+      _domainLogger.error(
+        LogDomain.agentWorkflow,
+        e,
         stackTrace: s,
+        subDomain: 'GenUiEventHandler',
+        message: 'Failed to process GenUI interaction',
       );
     }
   }

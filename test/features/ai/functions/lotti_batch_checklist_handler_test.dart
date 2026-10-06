@@ -2,9 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,6 +21,7 @@ const _uuid = Uuid();
 void main() {
   late MockAutoChecklistService mockAutoChecklistService;
   late MockChecklistRepository mockChecklistRepository;
+  late MockDomainLogger mockLogger;
   late MockJournalDb mockJournalDb;
   late LottiBatchChecklistHandler handler;
   late Task testTask;
@@ -31,6 +34,7 @@ void main() {
   setUp(() async {
     mockAutoChecklistService = MockAutoChecklistService();
     mockChecklistRepository = MockChecklistRepository();
+    mockLogger = MockDomainLogger();
     // Registers core services in GetIt; the handler resolves JournalDb
     // through the locator.
     final mocks = await setUpTestGetIt();
@@ -42,6 +46,7 @@ void main() {
       task: testTask,
       autoChecklistService: mockAutoChecklistService,
       checklistRepository: mockChecklistRepository,
+      domainLogger: mockLogger,
     );
   });
 
@@ -132,6 +137,7 @@ void main() {
           task: testTask,
           autoChecklistService: mockAutoChecklistService,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           approval: approval,
         );
         final count = await handler.createBatchItems(
@@ -842,6 +848,7 @@ void main() {
           task: testTask,
           autoChecklistService: mockAutoChecklistService,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           onTaskUpdated: (task) {
             callbackInvoked = true;
             updatedTask = task;
@@ -919,6 +926,7 @@ void main() {
             task: testTask,
             autoChecklistService: mockAutoChecklistService,
             checklistRepository: mockChecklistRepository,
+            domainLogger: mockLogger,
             onTaskUpdated: (_) => callbackInvoked = true,
           );
 
@@ -986,6 +994,14 @@ void main() {
           verify(
             () => mockJournalDb.journalEntityById(taskWithChecklist.meta.id),
           ).called(2);
+          verify(
+            () => mockLogger.log(
+              LogDomain.ai,
+              any(that: contains('was deleted')),
+              subDomain: 'LottiBatchChecklistHandler',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
         },
       );
 
@@ -1012,6 +1028,15 @@ void main() {
         // Assert: error is swallowed, no items recorded.
         expect(count, 0);
         expect(handler.failedItems, isEmpty);
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'LottiBatchChecklistHandler',
+            message: any(named: 'message'),
+          ),
+        ).called(1);
         verifyNever(
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: any(named: 'taskId'),
@@ -1427,6 +1452,7 @@ void main() {
           task: bareTask,
           autoChecklistService: mockAutoChecklistService,
           checklistRepository: mockChecklistRepository,
+          domainLogger: mockLogger,
           derivedIds: (checklist: checklistInput, item: itemInput),
         );
         when(
