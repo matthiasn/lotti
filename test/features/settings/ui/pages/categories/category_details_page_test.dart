@@ -279,9 +279,11 @@ void main() {
         // followed by the dedicated Options card for the switch tiles.
         expect(find.text('Basic settings'), findsOneWidget);
         expect(find.text('Options'), findsOneWidget);
-        expect(find.byType(SettingsFormSection), findsNWidgets(7));
-        // The knowledge brief has its own section between the AI defaults
-        // and the speech dictionary, and shows the stored text.
+        expect(find.byType(SettingsFormSection), findsNWidgets(6));
+        // The speech dictionary is an entity of its own, edited under
+        // Settings → Definitions; the category no longer carries a section.
+        expect(find.text('Speech recognition'), findsNothing);
+        // The knowledge brief has its own section after the AI defaults.
         expect(find.text('Category knowledge'), findsOneWidget);
         // Correction examples live in a SettingsFormSection whose header
         // owns the title — the widget renders no duplicate of its own.
