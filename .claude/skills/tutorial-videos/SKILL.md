@@ -156,6 +156,10 @@ not exact strings.
   `tts/gemini.py`; voices/styles per locale in `config/voices.yaml`.
 - **Speed/pacing knobs**: `timewarp.py` (`MAX_SPEED`, lead-in, narration
   gap); per-step floors in the scenario YAML.
-- **Character overlay (future)**: render transparent PNG frames via the
-  character film-strip harness and composite as an extra layer keyed to
-  `timeline.json` step ids.
+- **Talking avatar (prototype)**: `python3 -m tutorial_videos
+  avatar-preview --wav <wav>` renders every candidate character saying a
+  WAV; `avatar-overlay --video <built mp4>` puts the chosen one in the
+  corner, lip-synced to `<stem>.narration.wav`. A new character is a
+  `Character` in `tutorial_videos/avatar/characters.py` (four mouth levels,
+  open/closed eyes) — check it at badge size with `avatar-preview` before
+  using it. See the README's "Talking avatar (prototype)".
