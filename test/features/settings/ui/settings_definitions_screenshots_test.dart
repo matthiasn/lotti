@@ -533,10 +533,10 @@ final List<SpeechDictionaryEntry> _dictionary = [
     misheardAs: const ['Project Wattle', 'Project Waddel'],
   ),
   SpeechDictionaryEntry(
-    id: speechDictionaryEntryId('Sir Flaps-a-Lot'),
+    id: speechDictionaryEntryId(_t('Sir Flaps-a-Lot', 'Sir Flatterviel')),
     createdAt: _created,
     updatedAt: _created,
-    term: 'Sir Flaps-a-Lot',
+    term: _t('Sir Flaps-a-Lot', 'Sir Flatterviel'),
     vectorClock: null,
     categoryIds: [manualDemoCategoryId],
     misheardAs: const ['Sir Flaps a Lot', 'Sure Flaps-a-lot'],
@@ -993,7 +993,10 @@ void main() {
           overrides: dictionaryOverrides(),
           home: const SpeechDictionaryListPage(),
         );
-        expect(find.text('Sir Flaps-a-Lot'), findsOneWidget);
+        expect(
+          find.text(_t('Sir Flaps-a-Lot', 'Sir Flatterviel')),
+          findsOneWidget,
+        );
         expect(
           find.text(_messages(tester).settingsSpeechDictionaryAllCategories),
           findsOneWidget,

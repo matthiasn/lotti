@@ -1,0 +1,57 @@
+---
+title: Mantener un diccionario de voz
+description: Enseña a la transcripción los nombres, lugares y jerga que siempre escribe mal.
+---
+
+# Mantener un diccionario de voz
+
+El reconocimiento de voz escribe lo que oye. Los nombres, lugares y términos de
+proyecto que no conoce salen mal escritos: **Project Waddle** como «Project
+Wattle». El diccionario de voz es la lista de palabras que Lotti debe escribir
+bien, una sola vez para toda la app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Diccionario de voz con Europa para todas las categorías, Project Waddle para Mission Control y Operaciones de pingüinos, y Sir Flaps-a-Lot para Operaciones de pingüinos"
+  caption="Cada término muestra dónde se aplica. La búsqueda también encuentra un término por una grafía con la que se oyó mal."
+/>
+
+## Añadir un término
+
+1. Abre **Ajustes → Definiciones → Diccionario de voz**.
+2. Elige **Añadir término**, o escribe la palabra en la búsqueda y elige
+   **Añadir «…»** cuando nada coincida.
+3. Escribe el término exactamente como debe escribirse.
+
+También puedes seleccionar una palabra en el texto de cualquier entrada y elegir
+**Añadir al diccionario**. Se añade para la categoría de esa entrada.
+
+## Limitar un término a categorías
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="El término Project Waddle limitado a Mission Control y Operaciones de pingüinos, mal oído como Project Wattle y Project Waddel"
+  caption="Sin categoría elegida, un término se aplica en todas partes."
+/>
+
+Con **Elegir categorías** un término solo se usa en grabaciones de esas
+categorías, para que la jerga no se cuele en transcripciones ajenas. Sin
+selección, se aplica a todas las categorías.
+
+## Mal oído como
+
+Anota las grafías con las que un término suele salir, separadas por punto y
+coma. Lotti añade también las que corrige. Son pistas, nunca reemplazos
+automáticos: una grafía mal oída también puede ser una palabra real que se
+quería decir, y decide el contexto.
+
+## Cómo se corrigen las transcripciones
+
+Cuando una grabación de una tarea se transcribe con un motor de reconocimiento
+como Whisper, el paso que escribe su resumen de una línea y su resumen también
+corrige los términos del diccionario mal oídos. El texto de la grabación aparece
+una sola vez, ya corregido, y sigue siendo editable. Un modelo multimodal que
+escucha el audio por sí mismo lee el diccionario en su propio prompt.
+
+Los términos que tenían antes tus categorías se trasladaron automáticamente,
+cada uno limitado a las categorías que lo tenían.

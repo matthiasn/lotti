@@ -1,0 +1,56 @@
+---
+title: Vést slovník pro přepis řeči
+description: Nauč přepis jména, místa a odborné výrazy, které pořád píše špatně.
+---
+
+# Vést slovník pro přepis řeči
+
+Rozpoznávání řeči zapisuje, co slyší. Jména, místa a projektové výrazy, které
+nezná, vycházejí špatně — **Project Waddle** jako „Project Wattle“. Slovník pro
+přepis řeči je seznam slov, která má Lotti psát správně, vedený jednou pro celou
+aplikaci.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Slovník pro přepis řeči s výrazem Europa pro všechny kategorie, Project Waddle pro Mission Control a Tučňáčí provoz a Sir Flaps-a-Lot pro Tučňáčí provoz"
+  caption="Každý výraz ukazuje, kde platí. Hledání najde výraz i podle podoby, v jaké byl přeslechnut."
+/>
+
+## Přidat výraz
+
+1. Otevři **Nastavení → Definice → Slovník pro přepis řeči**.
+2. Vyber **Přidat výraz**, nebo napiš slovo do hledání a vyber
+   **Přidat „…“**, když nic neodpovídá.
+3. Zadej výraz přesně tak, jak se má psát.
+
+Slovo můžeš také označit v textu libovolného záznamu a vybrat **Přidat do
+slovníku**. Přidá se pro kategorii toho záznamu.
+
+## Omezit výraz na kategorie
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="Výraz Project Waddle omezený na Mission Control a Tučňáčí provoz, přeslechnutý jako Project Wattle a Project Waddel"
+  caption="Bez vybrané kategorie platí výraz všude."
+/>
+
+Přes **Vybrat kategorie** platí výraz jen pro nahrávky v těchto kategoriích,
+aby se odborné výrazy nedostaly do nesouvisejících přepisů. Bez výběru platí pro
+všechny kategorie.
+
+## Přeslechnuto jako
+
+Zapiš podoby, ve kterých výraz často vychází, oddělené středníky. Lotti přidává i
+ty, které opraví. Jsou to vodítka, nikdy automatické náhrady: přeslechnutá
+podoba může být i skutečné slovo, které bylo myšleno, a rozhoduje kontext.
+
+## Jak se přepisy opravují
+
+Když nahrávku v úkolu přepíše rozpoznávač řeči, jako je Whisper, krok, který
+píše její jednořádkové shrnutí a shrnutí, opraví i výrazy ze slovníku, které
+přepis přeslechl. Text nahrávky se objeví jednou, už opravený, a dá se dál
+upravovat. Multimodální model, který zvuk poslouchá sám, čte slovník místo toho
+ve vlastním promptu.
+
+Výrazy, které měly tvoje kategorie dřív, se převzaly automaticky, každý omezený
+na kategorie, které ho měly.

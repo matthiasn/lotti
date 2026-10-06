@@ -292,13 +292,35 @@
     },
     {
       "id": "categories/automation",
-      "title": "Category speech and automation context",
+      "title": "Category knowledge and automation context",
       "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
       "variants": {
         "mobile-light": "categories_automation_mobile_light.png",
         "mobile-dark": "categories_automation_mobile_dark.png",
         "desktop-light": "categories_automation_desktop_light.png",
         "desktop-dark": "categories_automation_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech-dictionary/list",
+      "title": "Speech dictionary",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_dictionary_list_mobile_light.png",
+        "mobile-dark": "speech_dictionary_list_mobile_dark.png",
+        "desktop-light": "speech_dictionary_list_desktop_light.png",
+        "desktop-dark": "speech_dictionary_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech-dictionary/detail",
+      "title": "Speech dictionary term",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_dictionary_detail_mobile_light.png",
+        "mobile-dark": "speech_dictionary_detail_mobile_dark.png",
+        "desktop-light": "speech_dictionary_detail_desktop_light.png",
+        "desktop-dark": "speech_dictionary_detail_desktop_dark.png"
       }
     },
     {

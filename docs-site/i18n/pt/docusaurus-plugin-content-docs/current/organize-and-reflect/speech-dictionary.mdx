@@ -1,0 +1,57 @@
+---
+title: Manter um dicionário de voz
+description: Ensina à transcrição os nomes, lugares e jargão que ela continua a escrever mal.
+---
+
+# Manter um dicionário de voz
+
+O reconhecimento de voz escreve o que ouve. Nomes, lugares e termos de projeto
+que não conhece saem mal escritos — **Project Waddle** como «Project Wattle». O
+dicionário de voz é a lista das palavras que a Lotti deve escrever bem, mantida
+uma só vez para toda a app.
+
+<ManualScreenshot
+  caseId="speech-dictionary/list"
+  alt="Dicionário de voz com Europa para todas as categorias, Project Waddle para Mission Control e Penguin Operations, e Sir Flaps-a-Lot para Penguin Operations"
+  caption="Cada termo mostra onde se aplica. A pesquisa também encontra um termo por uma grafia com que foi mal ouvido."
+/>
+
+## Adicionar um termo
+
+1. Abre **Configurações → Definições → Dicionário de voz**.
+2. Escolhe **Adicionar termo**, ou escreve a palavra na pesquisa e escolhe
+   **Adicionar «…»** quando nada corresponder.
+3. Escreve o termo exatamente como deve ser escrito.
+
+Também podes selecionar uma palavra no texto de qualquer entrada e escolher
+**Adicionar ao dicionário**. É adicionada para a categoria dessa entrada.
+
+## Limitar um termo a categorias
+
+<ManualScreenshot
+  caseId="speech-dictionary/detail"
+  alt="O termo Project Waddle limitado a Mission Control e Penguin Operations, mal ouvido como Project Wattle e Project Waddel"
+  caption="Sem categoria escolhida, um termo aplica-se em todo o lado."
+/>
+
+Com **Escolher categorias**, um termo só se aplica a gravações dessas
+categorias, para que o jargão não se infiltre em transcrições alheias. Sem
+seleção, aplica-se a todas as categorias.
+
+## Mal ouvido como
+
+Indica as grafias com que um termo costuma sair, separadas por ponto e vírgula.
+A Lotti acrescenta também as que corrige. São pistas, nunca substituições
+automáticas: uma grafia mal ouvida também pode ser uma palavra real que se
+queria dizer, e decide o contexto.
+
+## Como as transcrições são corrigidas
+
+Quando uma gravação de uma tarefa é transcrita por um motor de reconhecimento
+como o Whisper, o passo que escreve o resumo numa linha e o resumo também
+corrige os termos do dicionário mal ouvidos. O texto da gravação aparece uma só
+vez, já corrigido, e continua editável. Um modelo multimodal que ouve o áudio
+por si lê o dicionário no seu próprio prompt.
+
+Os termos que as tuas categorias tinham antes foram transferidos
+automaticamente, cada um limitado às categorias que o tinham.
