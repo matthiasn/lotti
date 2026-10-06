@@ -81,6 +81,12 @@ class _RelationshipSuggestionsBandState
     });
   }
 
+  /// The batch runs in the proposal service and outlives this band: the chat
+  /// host builds it lazily, so scrolling away disposes it mid-batch, and the
+  /// confirmations the user asked for still happen. Everything read through
+  /// `ref` is read before the first await; the per-row updates touch the
+  /// widget only while it is mounted, and the notification that refreshes the
+  /// person's other surfaces goes out either way.
   Future<void> _confirmAll(List<PendingSuggestion> rows) async {
     if (_bulkBusy || rows.isEmpty) return;
     final kinds = rows
@@ -94,37 +100,33 @@ class _RelationshipSuggestionsBandState
         _resolving[_key(row)] = row;
       }
     });
+    final service = ref.read(relationshipProposalServiceProvider);
+    final highlighter = ref.read(relationshipTaskHighlightProvider.notifier);
+    final notifier = ref.read(updateNotificationsProvider);
+    final agentId = relationshipAgentIdFor(widget.relationshipId);
+    final byKey = {for (final row in rows) _key(row): row};
     try {
-      for (final row in rows) {
-        ToolExecutionResult result;
-        try {
-          result = await _confirm(row);
-        } catch (exception, stackTrace) {
-          // The user hears about it through the toast below; the log is what
-          // says which proposal threw and why.
-          developer.log(
-            'confirming a proposal threw',
-            name: 'RelationshipSuggestionsBand',
-            error: exception,
-            stackTrace: stackTrace,
-          );
-          result = const ToolExecutionResult(
-            success: false,
-            output: 'Confirmation failed',
-          );
-        }
-        if (!mounted) return;
-        if (result.success) {
-          setState(() => _confirmed.add(_key(row)));
-        } else {
-          _end(row, removed: false);
-          context.showToast(
-            tone: DesignSystemToastTone.error,
-            title: context.messages.relationshipErrorLinkTaskFailed,
-          );
-        }
-        _refresh();
-      }
+      await service.confirmAll(
+        [for (final row in rows) (row.changeSet, row.itemIndex)],
+        onEach: (set, index, result) {
+          final row =
+              byKey[RelationshipProposalSnapshot.itemKey(set.id, index)]!;
+          if (result.success && result.mutatedEntityId != null) {
+            highlighter.highlight(result.mutatedEntityId!);
+          }
+          notifier.notifyUiOnly({agentId});
+          if (!mounted) return;
+          if (result.success) {
+            setState(() => _confirmed.add(_key(row)));
+          } else {
+            _end(row, removed: false);
+            context.showToast(
+              tone: DesignSystemToastTone.error,
+              title: context.messages.relationshipErrorLinkTaskFailed,
+            );
+          }
+        },
+      );
     } finally {
       if (mounted) setState(() => _bulkBusy = false);
     }

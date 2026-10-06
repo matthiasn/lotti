@@ -570,4 +570,59 @@ void main() {
       },
     );
   }
+
+  group('confirmAll', () {
+    final second = set.copyWith(id: 'set-2');
+    final third = set.copyWith(id: 'set-3');
+
+    test('confirms every item in order, past a throw and a refusal', () async {
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) async => RelationshipTaskCreationResult(testTask));
+      when(
+        () => confirmation.confirmItem(second, 0),
+      ).thenThrow(StateError('write failed'));
+      when(() => confirmation.confirmItem(third, 0)).thenAnswer(
+        (_) async =>
+            const ToolExecutionResult(success: false, output: 'Refused'),
+      );
+      final seen = <(String, bool)>[];
+      final results = await service.confirmAll(
+        [(set, 0), (second, 0), (third, 0)],
+        onEach: (set, index, result) => seen.add((set.id, result.success)),
+      );
+      expect(results.map((result) => result.success), [true, false, false]);
+      expect(results[1].output, 'Confirmation failed');
+      expect(seen, [(set.id, true), (second.id, false), (third.id, false)]);
+      verifyInOrder([
+        () => confirmation.confirmItem(set, 0),
+        () => confirmation.confirmItem(second, 0),
+        () => confirmation.confirmItem(third, 0),
+      ]);
+      expect(await service.receipt(set, 0), testTask);
+    });
+
+    // The band's listener runs after the band may be gone; whatever it
+    // throws is its own problem, not the remaining confirmations'.
+    test('a listener that throws does not stop the batch', () async {
+      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(
+          success: true,
+          output: 'Created',
+          mutatedEntityId: 'task',
+        ),
+      );
+      var calls = 0;
+      final results = await service.confirmAll(
+        [(set, 0), (second, 0)],
+        onEach: (_, _, _) {
+          calls++;
+          throw StateError('the band is gone');
+        },
+      );
+      expect(results.map((result) => result.success), [true, true]);
+      expect(calls, 2);
+      verify(() => confirmation.confirmItem(second, 0)).called(1);
+    });
+  });
 }

@@ -1496,6 +1496,12 @@ It folds after three pending rows, offers bulk confirmation only for a single
 kind, keeps per-row buttons and swipes inert during bulk writes, links evidence
 to the check-in editor, and provides handled history and
 undo. Confirmation briefly highlights the created task in the Tasks card.
+A bulk confirmation runs in the proposal service (`confirmAll`), not in the
+band: the chat host builds the band lazily, so scrolling away disposes it
+mid-batch, and the loop that once lived in the band stopped there with the
+remaining proposals still pending. The band updates its rows while it is
+mounted; the confirmations happen either way, and the person's other surfaces
+are notified of each.
 It does not use the task-specific `ChangeSetNotificationService`.
 
 The shared chat projection carries each reply's `runKey`.

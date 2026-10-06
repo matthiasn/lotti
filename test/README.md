@@ -652,6 +652,11 @@ survive the reset by design, and stubs live on mock instances, so
 matches in isolation but fails in a bundled run, suspect a matcher leak in a
 test that ran earlier in the bundle — or the mixin-default pitfall below.
 
+Mocktail's own defaults already satisfy `any()` for every typed collection:
+`<Never>[]`, `<Never, Never>{}` and `<Never>{}` are subtypes of any `List<T>`,
+`Map<K, V>` and `Set<T>`, so a parameter typed `List<(ChangeSetEntity, int)>`
+needs no `registerFallbackValue`. Register one only for a class of its own.
+
 ## GetIt and view state leak across files in a bundle too
 
 `getIt` and the test view (`physicalSize`, `devicePixelRatio`) are shared by

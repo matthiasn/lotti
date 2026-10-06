@@ -99,6 +99,37 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The service's batch over the mocked per-item confirm: every item in
+  /// order, a throw counted as a failure, each result handed to `onEach` —
+  /// what `RelationshipProposalService.confirmAll` does, pinned by its own
+  /// suite. Here it lets the band's tests keep stubbing `confirm`.
+  void stubConfirmAll() {
+    when(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).thenAnswer((invocation) async {
+      final items =
+          invocation.positionalArguments.single as List<(ChangeSetEntity, int)>;
+      final onEach =
+          invocation.namedArguments[#onEach]
+              as void Function(ChangeSetEntity, int, ToolExecutionResult)?;
+      final results = <ToolExecutionResult>[];
+      for (final (set, index) in items) {
+        ToolExecutionResult result;
+        try {
+          result = await service.confirm(set, index);
+        } catch (_) {
+          result = const ToolExecutionResult(
+            success: false,
+            output: 'Confirmation failed',
+          );
+        }
+        results.add(result);
+        onEach?.call(set, index, result);
+      }
+      return results;
+    });
+  }
+
   testWidgets('folds beyond three and offers Confirm all only for one kind', (
     tester,
   ) async {
@@ -190,6 +221,7 @@ void main() {
       when(
         () => service.confirm(any(), any()),
       ).thenThrow(StateError('write failed'));
+      stubConfirmAll();
       await pump(
         tester,
         () => RelationshipProposalSnapshot(
@@ -352,6 +384,7 @@ void main() {
           mutatedEntityId: 'task-${set.id}',
         );
       });
+      stubConfirmAll();
       var snapshot = RelationshipProposalSnapshot(
         suggestions: UnifiedSuggestionList(open: rows, activity: const []),
       );
@@ -457,6 +490,7 @@ void main() {
       when(
         () => service.confirm(rows[1].changeSet, 0),
       ).thenAnswer((_) => second.future);
+      stubConfirmAll();
       when(() => service.reject(any(), any())).thenAnswer((_) async => true);
       await pump(
         tester,
@@ -493,4 +527,79 @@ void main() {
       expect(find.textContaining('Commitment 1'), findsNothing);
     },
   );
+
+  // The chat host builds the band lazily, so scrolling away disposes it
+  // mid-batch. The loop that lived in the band returned at `!mounted` and the
+  // remaining proposals stayed pending; the service's batch goes on.
+  testWidgets('the batch finishes after the band unmounts', (tester) async {
+    final rows = [proposal(0), proposal(1)];
+    final first = Completer<ToolExecutionResult>();
+    final second = Completer<ToolExecutionResult>();
+    when(
+      () => service.confirm(rows[0].changeSet, 0),
+    ).thenAnswer((_) => first.future);
+    when(
+      () => service.confirm(rows[1].changeSet, 0),
+    ).thenAnswer((_) => second.future);
+    stubConfirmAll();
+    final shown = ValueNotifier(true);
+    addTearDown(shown.dispose);
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        ValueListenableBuilder<bool>(
+          valueListenable: shown,
+          builder: (_, visible, _) => visible
+              ? const RelationshipSuggestionsBand(
+                  relationshipId: 'person',
+                  checkIns: [],
+                )
+              : const SizedBox.shrink(),
+        ),
+        overrides: [
+          relationshipProposalServiceProvider.overrideWithValue(service),
+          relationshipSuggestionListProvider('person').overrideWith(
+            (ref) async => RelationshipProposalSnapshot(
+              suggestions: UnifiedSuggestionList(
+                open: rows,
+                activity: const [],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand)),
+    );
+    await tester.tap(find.text('Confirm all'));
+    await tester.pump();
+    verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+    shown.value = false;
+    await tester.pump();
+    expect(find.byType(RelationshipSuggestionsBand), findsNothing);
+    first.complete(
+      const ToolExecutionResult(
+        success: true,
+        output: 'Created',
+        mutatedEntityId: 'task-set-0',
+      ),
+    );
+    await tester.pump();
+    verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+    second.complete(
+      const ToolExecutionResult(
+        success: true,
+        output: 'Created',
+        mutatedEntityId: 'task-set-1',
+      ),
+    );
+    await tester.pump();
+    expect(container.read(relationshipTaskHighlightProvider), {
+      'task-set-0',
+      'task-set-1',
+    });
+    await tester.pump(const Duration(seconds: 4));
+  });
 }

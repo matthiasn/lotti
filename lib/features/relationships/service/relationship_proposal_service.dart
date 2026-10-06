@@ -132,6 +132,50 @@ class RelationshipProposalService {
     }
   }
 
+  /// Confirms [items] one after another, each as [confirm] does, and hands
+  /// every result to [onEach] as it lands. The batch is this service's, not
+  /// the widget's that asked for it: the chat host builds its suggestions
+  /// band lazily, so scrolling away disposes the band mid-batch, and a loop
+  /// that lived in the band stopped there with the remaining proposals still
+  /// pending. A confirmation that throws counts as a failed result and the
+  /// batch goes on; so does a listener that throws.
+  Future<List<ToolExecutionResult>> confirmAll(
+    List<(ChangeSetEntity, int)> items, {
+    void Function(ChangeSetEntity set, int index, ToolExecutionResult result)?
+    onEach,
+  }) async {
+    final results = <ToolExecutionResult>[];
+    for (final (set, index) in items) {
+      ToolExecutionResult result;
+      try {
+        result = await confirm(set, index);
+      } catch (error, stackTrace) {
+        developer.log(
+          'confirming a proposal threw',
+          name: 'RelationshipProposalService',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        result = const ToolExecutionResult(
+          success: false,
+          output: 'Confirmation failed',
+        );
+      }
+      results.add(result);
+      try {
+        onEach?.call(set, index, result);
+      } catch (error, stackTrace) {
+        developer.log(
+          'a batch confirmation listener threw',
+          name: 'RelationshipProposalService',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    return results;
+  }
+
   /// Resolves a history row against its current durable change set.
   Future<bool> undoById(String setId, int index) async {
     final set = await repository.getEntity(setId);
