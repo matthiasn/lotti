@@ -6,6 +6,8 @@ Usage (from ``tools/tutorial_videos``)::
     python3 -m tutorial_videos tts      --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos publish  --scenario create_task_from_audio --locale de
+    python3 -m tutorial_videos avatar-preview --wav narration.wav
+    python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/create_task_from_audio_de.mp4
 
 Every command also takes ``--device desktop|mobile`` (default ``desktop``).
 Mobile renders the real app at a phone-shaped window
@@ -26,6 +28,11 @@ OpenMontage composition into the final MP4, then WebVTT captions (see
 ``captions.py``) written alongside it. ``publish`` uploads the already-built
 MP4 and its captions to Cloudflare R2 (see ``publish.py``) and prints their
 public URLs.
+
+``avatar-preview`` and ``avatar-overlay`` (prototype, see ``avatar/cli.py``)
+take no scenario: the first renders the candidate talking-avatar characters
+saying a WAV, the second lays the chosen one into the corner of a built MP4,
+lip-synced to its narration mix.
 """
 
 from __future__ import annotations
@@ -37,6 +44,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .avatar import AvatarError
+from .avatar.cli import register as register_avatar_commands
 from .captions import build_vtt
 from .compose import ComposeError, compose_video
 from .publish import PublishError, publish_video
@@ -260,10 +269,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         p.add_argument("--out-dir", default=str(DEFAULT_OUT))
         p.set_defaults(handler=handler)
+    register_avatar_commands(sub, default_out=DEFAULT_OUT)
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
     except (
+        AvatarError,
         ComposeError,
         PublishError,
         ScenarioError,

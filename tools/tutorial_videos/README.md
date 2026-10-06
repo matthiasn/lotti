@@ -303,18 +303,67 @@ The recipe is in
 
 Full step-by-step runbook: `.claude/skills/tutorial-videos/SKILL.md`.
 
-## Future: character overlay
+## Talking avatar (prototype)
 
-The character engine (`lib/features/character/`) renders deterministic
-transparent-background PNG frames (`film_strip_test.dart`). Composition is
-layer-based: the overlay becomes an additional alpha layer keyed to
-`timeline.json` step ids — no pipeline changes required.
+A narrator with a face: a small cartoon character in a round badge that
+lip-syncs the narration from the bottom-right corner. Stdlib-only, in
+`tutorial_videos/avatar/`:
+
+```mermaid
+flowchart LR
+    WAV[narration WAV] --> LV[lipsync.frame_levels\nRMS per video frame]
+    LV --> MT[lipsync.mouth_track\nmouth level 0..3]
+    MT --> PT[track.pose_track\n+ seeded blink_track]
+    PT --> RL[track.run_lengths]
+    CH[characters.py\nflat shapes per pose] --> RA[raster.py\nanti-aliased PNG per distinct pose]
+    PT --> RA
+    RL --> FC[render.write_concat\nffconcat: one entry per run]
+    RA --> FC
+    FC --> FF[ffmpeg overlay]
+```
+
+- **Characters** (`characters.py`) are data: a badge background, a fixed
+  body, open/closed eyes and four mouth shapes from closed to wide open.
+  Three options so far: `pip` (a penguin from the demo world, the beak
+  talks), `bolt` (a robot with a glowing screen face) and `mochi` (a round
+  cat).
+- **Lip-sync** (`lipsync.py`) is loudness-driven: each frame's RMS, relative
+  to the clip's 95th-percentile loudness, picks the mouth level, so it works
+  on any WAV — today's Gemini clips included — without word timings. The
+  mouth only closes after two quiet frames, so it doesn't snap shut between
+  syllables.
+- **Rendering** (`render.py`) draws only the distinct poses (at most eight)
+  and lets an ffconcat list hold each run of identical frames, so a
+  three-minute video costs a few seconds of drawing, and a rebuild is
+  reproducible (blinks are seeded).
+
+```sh
+# Every character saying a WAV, as square previews -> build/tutorial_videos/avatar/
+python3 -m tutorial_videos avatar-preview --wav narration.wav
+# The badge in the corner of a built tutorial, lip-synced to the narration
+# mix compose.py wrote beside it (<stem>.narration.wav) -> <stem>_avatar.mp4
+python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4 --character pip
+```
+
+The badge is 22% of the video height (desktop and mobile get the same
+proportions). The overlay always ends with the tutorial: the badge track is
+built one frame longer than the video and cut there (`shortest=1`) —
+without that, ffmpeg freezes the tutorial's last frame for as long as the
+badge track runs.
+
+**Known limitation:** the narration mix also holds the dictation clip (the
+"user" speaking into the app), so the avatar mouths that too. Driving it
+from the manifest's per-step narration clips instead fixes that; it's not
+part of the prototype.
 
 ## Tests
 
 `tests/` (stdlib `unittest`, no network): scenario validation, TTS caching,
-manifest shape, time-warp planning, and the App Preview's pacing, cut and
-narration placement. Run from `tools/tutorial_videos`:
+manifest shape, time-warp planning, the App Preview's pacing, cut and
+narration placement, and the avatar (`test_avatar_*.py`, one file per
+module, plus `test_main.py` for the CLI wiring). The avatar's two
+end-to-end ffmpeg tests skip themselves when `ffmpeg`/`ffprobe` are not
+installed. Run from `tools/tutorial_videos`:
 
 ```sh
 python3 -m unittest discover -s tests
