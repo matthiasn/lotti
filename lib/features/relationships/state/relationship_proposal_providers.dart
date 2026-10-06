@@ -50,8 +50,33 @@ relationshipProposalServiceProvider = Provider(
     journalDb: ref.watch(journalDbProvider),
     relationshipRepository: ref.watch(relationshipRepositoryProvider),
     taskRemover: ref.watch(relationshipToolDispatcherProvider).removeTask,
+    domainLogger: ref.watch(domainLoggerProvider),
+    onConfirmingChanged: ref
+        .read(relationshipConfirmingItemsProvider.notifier)
+        .replace,
   ),
 );
+
+/// The proposals being confirmed right now — in flight, or queued in a batch
+/// the service is running — as `setId:index` keys. The service writes it;
+/// every band reads it. A band built mid-batch (the chat host builds its band
+/// lazily, and the person's card and docked chat each hold one) has none of
+/// its own busy state, so it keeps those rows, and a second batch, out of
+/// reach from here, and learns of a batch the moment another band starts it.
+final relationshipConfirmingItemsProvider =
+    NotifierProvider<RelationshipConfirmingItems, Set<String>>(
+      RelationshipConfirmingItems.new,
+    );
+
+class RelationshipConfirmingItems extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  /// Publishes [keys] as the set being confirmed, frozen for its readers.
+  void replace(Set<String> keys) {
+    state = Set.unmodifiable(keys);
+  }
+}
 
 /// The shared suggestion rows plus durable destinations of confirmed tasks.
 class RelationshipProposalSnapshot {

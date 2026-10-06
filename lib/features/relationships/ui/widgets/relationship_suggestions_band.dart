@@ -86,17 +86,29 @@ class _RelationshipSuggestionsBandState
   /// confirmations the user asked for still happen. Everything read through
   /// `ref` is read before the first await; the per-row updates touch the
   /// widget only while it is mounted, and the notification that refreshes the
-  /// person's other surfaces goes out either way.
+  /// person's other surfaces goes out either way. A row another band's batch
+  /// already holds is left to it — the card and the docked chat can both be
+  /// pressed before either rebuilds — and a press that finds every row held
+  /// only rebuilds, so this band shows the batch as running.
   Future<void> _confirmAll(List<PendingSuggestion> rows) async {
     if (_bulkBusy || rows.isEmpty) return;
     final kinds = rows
         .map((row) => resolveKind(row.item.toolName, row.item.args))
         .toSet();
     if (kinds.length != 1) return;
+    final held = ref.read(relationshipConfirmingItemsProvider);
+    final mine = [
+      for (final row in rows)
+        if (!held.contains(_key(row))) row,
+    ];
+    if (mine.isEmpty) {
+      setState(() {});
+      return;
+    }
     setState(() {
       _bulkBusy = true;
       _all = true;
-      for (final row in rows) {
+      for (final row in mine) {
         _resolving[_key(row)] = row;
       }
     });
@@ -104,10 +116,10 @@ class _RelationshipSuggestionsBandState
     final highlighter = ref.read(relationshipTaskHighlightProvider.notifier);
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = relationshipAgentIdFor(widget.relationshipId);
-    final byKey = {for (final row in rows) _key(row): row};
+    final byKey = {for (final row in mine) _key(row): row};
     try {
       await service.confirmAll(
-        [for (final row in rows) (row.changeSet, row.itemIndex)],
+        [for (final row in mine) (row.changeSet, row.itemIndex)],
         onEach: (set, index, result) {
           final row =
               byKey[RelationshipProposalSnapshot.itemKey(set.id, index)]!;
@@ -242,13 +254,11 @@ class _RelationshipSuggestionsBandState
         )
         .toList();
     // A batch outlives the band that started it; a band built again mid-batch
-    // learns of it from the service and keeps every row inert until it ends.
-    final service = ref.watch(relationshipProposalServiceProvider);
+    // learns of it from the set the service publishes and keeps every row
+    // inert until it ends.
+    final confirming = ref.watch(relationshipConfirmingItemsProvider);
     final batchRunning =
-        _bulkBusy ||
-        current.any(
-          (row) => service.isConfirming(row.changeSet.id, row.itemIndex),
-        );
+        _bulkBusy || current.any((row) => confirming.contains(_key(row)));
     // Once the ledger acknowledges a removal, forget the local tombstone.
     // A peer can then reopen the same item without it staying hidden here.
     final currentKeys = current.map(_key).toSet();

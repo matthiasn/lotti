@@ -36,7 +36,6 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
     service = MockRelationshipProposalService();
-    when(() => service.isConfirming(any(), any())).thenReturn(false);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
   });
@@ -595,15 +594,18 @@ void main() {
     tester,
   ) async {
     final rows = [proposal(0), proposal(1)];
-    when(
-      () => service.isConfirming(rows[1].changeSet.id, 0),
-    ).thenReturn(true);
     await pump(
       tester,
       () => RelationshipProposalSnapshot(
         suggestions: UnifiedSuggestionList(open: rows, activity: const []),
       ),
     );
+    ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand)),
+    ).read(relationshipConfirmingItemsProvider.notifier).replace({
+      RelationshipProposalSnapshot.itemKey(rows[1].changeSet.id, 0),
+    });
+    await tester.pump();
     expect(find.text('Confirm all').hitTestable(), findsNothing);
     await tester.tap(find.byIcon(LottiIcons.confirm).first);
     await tester.pump();
@@ -611,5 +613,77 @@ void main() {
     verifyNever(
       () => service.confirmAll(any(), onEach: any(named: 'onEach')),
     );
+  });
+
+  // The person's card and its docked chat each hold a band. Both can be
+  // pressed before either rebuilds; the first press reserves the rows in the
+  // service, which publishes them, and the second finds them held and starts
+  // nothing — no second batch, no spurious failure toasts.
+  testWidgets('a second band pressing Confirm all mid-batch starts nothing', (
+    tester,
+  ) async {
+    final rows = [proposal(0), proposal(1)];
+    final first = Completer<ToolExecutionResult>();
+    when(() => service.confirm(any(), any())).thenAnswer((_) => first.future);
+    late ProviderContainer container;
+    when(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).thenAnswer((invocation) {
+      final items =
+          invocation.positionalArguments.single as List<(ChangeSetEntity, int)>;
+      container.read(relationshipConfirmingItemsProvider.notifier).replace({
+        for (final (set, index) in items)
+          RelationshipProposalSnapshot.itemKey(set.id, index),
+      });
+      return RelationshipProposalService.confirmEach(
+        items,
+        confirm: service.confirm,
+        onEach:
+            invocation.namedArguments[#onEach] as BatchConfirmationListener?,
+      );
+    });
+    final snapshot = RelationshipProposalSnapshot(
+      suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const Column(
+          children: [
+            RelationshipSuggestionsBand(relationshipId: 'person', checkIns: []),
+            RelationshipSuggestionsBand(relationshipId: 'person', checkIns: []),
+          ],
+        ),
+        overrides: [
+          relationshipProposalServiceProvider.overrideWithValue(service),
+          relationshipSuggestionListProvider(
+            'person',
+          ).overrideWith((ref) async => snapshot),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(RelationshipSuggestionsBand).first),
+    );
+    final buttons = find.text('Confirm all');
+    expect(buttons, findsNWidgets(2));
+    await tester.tap(buttons.first);
+    await tester.tap(buttons.last);
+    await tester.pump();
+    verify(
+      () => service.confirmAll(any(), onEach: any(named: 'onEach')),
+    ).called(1);
+    verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+    expect(find.text('Confirm all').hitTestable(), findsNothing);
+    first.complete(
+      const ToolExecutionResult(success: true, output: 'Created'),
+    );
+    await tester.pump();
+    verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.pump(const Duration(seconds: 4));
   });
 }

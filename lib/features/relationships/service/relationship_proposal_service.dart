@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -8,11 +7,13 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Hears each result of a [RelationshipProposalService.confirmAll] batch.
 typedef BatchConfirmationListener =
@@ -29,6 +30,8 @@ class RelationshipProposalService {
     required this.journalDb,
     required this.relationshipRepository,
     required this.taskRemover,
+    required this.domainLogger,
+    this.onConfirmingChanged,
   });
 
   final ChangeSetConfirmationService confirmation;
@@ -38,6 +41,14 @@ class RelationshipProposalService {
   final RelationshipRepository relationshipRepository;
   final Future<bool> Function(Task, {String? allowedRelationshipId})
   taskRemover;
+  final DomainLogger domainLogger;
+
+  /// Hears the set of items being confirmed — in flight, or queued in a
+  /// running batch — as `setId:index` keys, on every change. The bands read
+  /// it through a provider of its own, so a band's build never needs this
+  /// service's dependencies.
+  final void Function(Set<String> keys)? onConfirmingChanged;
+  static const _logSubDomain = 'RelationshipProposalService';
   final _busy = <String>{};
   final _queued = <String>{};
   final _receipts = <String, Task>{};
@@ -94,7 +105,7 @@ class RelationshipProposalService {
 
   Future<ToolExecutionResult> confirm(ChangeSetEntity set, int index) async {
     final key = _key(set.id, index);
-    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_busy.add(key)) {
+    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_claim(key)) {
       return const ToolExecutionResult(
         success: false,
         output: 'Proposal is unavailable',
@@ -123,17 +134,18 @@ class RelationshipProposalService {
         } catch (error, stackTrace) {
           // Confirmation already created the task. Never offer a second create
           // because persisting its receipt failed; this session can still undo.
-          developer.log(
-            'Could not persist relationship task receipt',
-            name: 'RelationshipProposalService',
-            error: error,
+          domainLogger.error(
+            LogDomain.agentWorkflow,
+            error,
             stackTrace: stackTrace,
+            subDomain: _logSubDomain,
+            message: 'Could not persist relationship task receipt',
           );
         }
       }
       return result;
     } finally {
-      _busy.remove(key);
+      _release(key);
     }
   }
 
@@ -147,6 +159,19 @@ class RelationshipProposalService {
     return _busy.contains(key) || _queued.contains(key);
   }
 
+  bool _claim(String key) {
+    if (!_busy.add(key)) return false;
+    _publish();
+    return true;
+  }
+
+  void _release(String key) {
+    _busy.remove(key);
+    _publish();
+  }
+
+  void _publish() => onConfirmingChanged?.call({..._busy, ..._queued});
+
   /// Confirms [items] one after another, each as [confirm] does, and hands
   /// every result to [onEach] as it lands. The batch is this service's, not
   /// the widget's that asked for it: the chat host builds its suggestions
@@ -154,37 +179,51 @@ class RelationshipProposalService {
   /// that lived in the band stopped there with the remaining proposals still
   /// pending. Every item counts as [isConfirming] until its result is in,
   /// and leaves before [onEach] hears of it, so a refresh the listener
-  /// triggers already sees it settled.
+  /// triggers already sees it settled. An item another batch already holds
+  /// is left to that batch — the person's card and its docked chat each show
+  /// a band, and both can be pressed before either hears of the other — so
+  /// it is neither confirmed twice nor reported here, and only this batch's
+  /// items are released when it ends.
   Future<List<ToolExecutionResult>> confirmAll(
     List<(ChangeSetEntity, int)> items, {
     BatchConfirmationListener? onEach,
   }) async {
-    final keys = [for (final (set, index) in items) _key(set.id, index)];
+    final mine = [
+      for (final item in items)
+        if (!isConfirming(item.$1.id, item.$2)) item,
+    ];
+    final keys = [for (final (set, index) in mine) _key(set.id, index)];
     _queued.addAll(keys);
+    _publish();
     try {
       return await confirmEach(
-        items,
+        mine,
         confirm: (set, index) async {
           try {
             return await confirm(set, index);
           } finally {
             _queued.remove(_key(set.id, index));
+            _publish();
           }
         },
         onEach: onEach,
+        logger: domainLogger,
       );
     } finally {
       _queued.removeAll(keys);
+      _publish();
     }
   }
 
   /// The loop under [confirmAll]: [confirm] on each item in order, and
   /// [onEach] with each result. A confirmation that throws counts as a failed
-  /// result and the batch goes on; so does a listener that throws.
+  /// result and the batch goes on; so does a listener that throws. Both are
+  /// reported to [logger], when there is one.
   static Future<List<ToolExecutionResult>> confirmEach(
     List<(ChangeSetEntity, int)> items, {
     required Future<ToolExecutionResult> Function(ChangeSetEntity, int) confirm,
     BatchConfirmationListener? onEach,
+    DomainLogger? logger,
   }) async {
     final results = <ToolExecutionResult>[];
     for (final (set, index) in items) {
@@ -192,11 +231,12 @@ class RelationshipProposalService {
       try {
         result = await confirm(set, index);
       } catch (error, stackTrace) {
-        developer.log(
-          'confirming a proposal threw',
-          name: 'RelationshipProposalService',
-          error: error,
+        logger?.error(
+          LogDomain.agentWorkflow,
+          error,
           stackTrace: stackTrace,
+          subDomain: _logSubDomain,
+          message: 'confirming a proposal threw',
         );
         result = const ToolExecutionResult(
           success: false,
@@ -207,11 +247,12 @@ class RelationshipProposalService {
       try {
         onEach?.call(set, index, result);
       } catch (error, stackTrace) {
-        developer.log(
-          'a batch confirmation listener threw',
-          name: 'RelationshipProposalService',
-          error: error,
+        logger?.error(
+          LogDomain.agentWorkflow,
+          error,
           stackTrace: stackTrace,
+          subDomain: _logSubDomain,
+          message: 'a batch confirmation listener threw',
         );
       }
     }
@@ -226,13 +267,13 @@ class RelationshipProposalService {
 
   Future<bool> reject(ChangeSetEntity set, int index) async {
     final key = _key(set.id, index);
-    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_busy.add(key)) {
+    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_claim(key)) {
       return false;
     }
     try {
       return await confirmation.rejectItem(set, index);
     } finally {
-      _busy.remove(key);
+      _release(key);
     }
   }
 
@@ -244,7 +285,7 @@ class RelationshipProposalService {
   /// the task as removed and reopens the item.
   Future<bool> undo(ChangeSetEntity set, int index) async {
     final key = _key(set.id, index);
-    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_busy.add(key)) {
+    if (set.agentId != relationshipAgentIdFor(set.taskId) || !_claim(key)) {
       return false;
     }
     try {
@@ -294,7 +335,7 @@ class RelationshipProposalService {
       if (reopened) _receipts.remove(key);
       return reopened;
     } finally {
-      _busy.remove(key);
+      _release(key);
     }
   }
 
@@ -344,17 +385,20 @@ class RelationshipProposalService {
         taskId: taskId,
       );
       if (!unlinked) {
-        developer.log(
+        domainLogger.log(
+          LogDomain.agentWorkflow,
           'Task removed; relationship link cleanup was refused',
-          name: 'RelationshipProposalService',
+          subDomain: _logSubDomain,
+          level: InsightLevel.warn,
         );
       }
     } catch (error, stackTrace) {
-      developer.log(
-        'Task removed; relationship link cleanup failed',
-        name: 'RelationshipProposalService',
-        error: error,
+      domainLogger.error(
+        LogDomain.agentWorkflow,
+        error,
         stackTrace: stackTrace,
+        subDomain: _logSubDomain,
+        message: 'Task removed; relationship link cleanup failed',
       );
     }
   }
