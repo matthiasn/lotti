@@ -55,6 +55,7 @@
   "overrides": {
     "serialize-javascript": "7.0.5",
     "js-yaml": "^4.3.2",
-    "nanoid": "^3.3.17"
+    "nanoid": "^3.3.17",
+    "tinypool": "^2.1.2"
   }
 }
