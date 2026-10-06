@@ -102,8 +102,9 @@ overwrite a category change made elsewhere within the same sync window.
 
 `CategoryDefinition.speechDictionary` is no longer written or read for
 transcription. `SpeechDictionaryMigration` runs at every start: it turns each
-term of every live category's list into one entry limited to all the
-categories holding it (`legacySpeechDictionaryEntries`), and writes those
+term of every live category's list — private categories included, whatever
+the privacy toggle shows — into one entry limited to all the categories
+holding it (`legacySpeechDictionaryEntries`), and writes those
 **the device holds no entry for** — live or deleted — at the epoch stamp,
 through `PersistenceLogic.seedEntityDefinition`.
 
@@ -189,7 +190,10 @@ limit.
 # Editing
 
 *Settings → Definitions → Speech dictionary* lists the terms with where each
-applies, searchable by term and by misheard spelling; an entry's page edits
+applies, searchable by term and by misheard spelling. While private entries
+are hidden, a term limited only to private categories is hidden with them,
+and private categories drop out of every term's scope; transcription still
+reads every entry, since a recording in a private category is private itself. An entry's page edits
 the term, its categories and its misheard spellings. The editor's *Add to
 Dictionary* on a text selection adds the selected word limited to the entry's
 category, widens a term limited elsewhere to it, and without a category adds
