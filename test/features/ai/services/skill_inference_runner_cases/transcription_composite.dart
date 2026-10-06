@@ -342,11 +342,13 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
 
       test('a recording deleted while its summary ran gets no text', () async {
         await stubRun(dictionary: [kubernetes]);
-        var deleted = false;
+        stubSummary(firstOccurrence);
         var current = makeAudioEntity();
+        // Gone once the model has answered: the re-read before persisting
+        // finds nothing.
         when(
           () => mockAiInputRepo.getEntity('audio-1'),
-        ).thenAnswer((_) async => deleted ? null : current);
+        ).thenAnswer((_) async => lastSummaryCall == null ? current : null);
         when(
           () => mockJournalRepo.updateJournalEntity(
             any(),
@@ -357,26 +359,6 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
           textWrites.add(current.entryText?.plainText);
           return true;
         });
-        stubSummary(firstOccurrence);
-        // The model's call is where the recording goes away.
-        when(
-          () => mockCloudRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
-            systemMessage: any(named: 'systemMessage'),
-            tools: any(named: 'tools'),
-            toolChoice: any(named: 'toolChoice'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-            impactCollector: any(named: 'impactCollector'),
-          ),
-        ).thenAnswer((_) {
-          deleted = true;
-          return const Stream.empty();
-        });
 
         await runner.runTranscription(
           audioEntryId: 'audio-1',
@@ -384,6 +366,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
           linkedTaskId: 'task-1',
         );
 
+        expect(lastSummaryCall, isNotNull);
         expect(textWrites, [null]);
         verifyNever(
           () => mockAiInputRepo.createAiResponseEntry(
