@@ -29,11 +29,13 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         inferenceProviderType: InferenceProviderType.whisper,
       );
 
-      /// A transcription on [transcriptionProvider] for the profile that
-      /// automates the summary; [automated] false is the user's own tap.
+      /// A transcription on [transcriptionProvider] for a profile that
+      /// automates it and, with [automatesSummary], the summary too;
+      /// [automated] false is the user's own tap.
       AutomationResult transcriptionFor({
         required AiConfigInferenceProvider transcriptionProvider,
         bool automated = true,
+        bool automatesSummary = true,
         AiConfigSkill? skill,
       }) => AutomationResult(
         handled: true,
@@ -42,9 +44,16 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
           thinkingProvider: testInferenceProvider(id: 'p-flash'),
           transcriptionModelId: 'whisper-large-v3',
           transcriptionProvider: transcriptionProvider,
-          skillAssignments: const [
-            SkillAssignment(skillId: skillTranscribeContextId, automate: true),
-            SkillAssignment(skillId: skillAudioSummaryId, automate: true),
+          skillAssignments: [
+            const SkillAssignment(
+              skillId: skillTranscribeContextId,
+              automate: true,
+            ),
+            if (automatesSummary)
+              const SkillAssignment(
+                skillId: skillAudioSummaryId,
+                automate: true,
+              ),
           ],
         ),
         skill: skill ?? findBuiltInSkill(skillTranscribeContextId),
@@ -467,6 +476,64 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
 
         expect(textWrites, [null, corrected]);
       });
+
+      // The category automates speech recognition in the task context and
+      // nothing else: the run must be the same composite step the AI menu
+      // starts, through to the corrected text and the linked summary.
+      test(
+        'the category automating speech recognition in the task context '
+        'alone still gets the composite step and its summary',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [null, corrected]);
+          expect(lastSummaryCall, isNotNull);
+          final response =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: 'audio-1',
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(response.type, AiResponseType.audioSummary);
+        },
+      );
+
+      test(
+        'an automated plain transcription without an automated summary '
+        'stays plain',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+              skill: findBuiltInSkill(skillTranscribeId),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [raw]);
+          expect(lastSummaryCall, isNull);
+        },
+      );
 
       test(
         'the plain transcription asked for by the user stays plain',

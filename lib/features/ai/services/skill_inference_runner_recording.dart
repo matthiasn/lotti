@@ -13,16 +13,20 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
   /// - **A task must be resolved.** The summary is framed by the task it
   ///   belongs to; goal and person check-ins and standalone voice notes
   ///   transcribe as before and get no summary.
-  /// - **An automated transcription** chains the profile's automated audio
-  ///   summary, as it always has: only `ProfileAutomationService` sets a
-  ///   `skillAssignment`, and only after the category's consent check.
-  /// - **A transcription the user asked for in the task's context**, on a
-  ///   speech-to-text engine, chains the built-in summary: on such an engine
-  ///   recognizing speech in a task's context *is* the composite step — the
-  ///   engine cannot read the task or the dictionary, so the correction
-  ///   against them is part of what was asked for. The plain transcription
-  ///   skill, and a multimodal model that read both in its own prompt, chain
-  ///   nothing.
+  /// - **Speech recognized in the task's context on a speech-to-text
+  ///   engine** chains the summary however it was started — from the AI
+  ///   menu or by the category's automation. On such an engine that skill
+  ///   *is* the composite step: the engine cannot read the task or the
+  ///   dictionary, so the correction against them is part of what was asked
+  ///   for. An automated run uses the profile's automated audio summary when
+  ///   it has one, and otherwise the built-in summary, attributed to the
+  ///   automation that started it.
+  /// - **Any other automated transcription** — the plain skill, or a
+  ///   multimodal model that read the task and the dictionary in its own
+  ///   prompt — chains the profile's automated audio summary only, as it
+  ///   always has: only `ProfileAutomationService` sets a `skillAssignment`,
+  ///   and only after the category's consent check. Started by hand, it
+  ///   chains nothing.
   AutomationResult? _audioSummaryFollowUp({
     required AutomationResult automationResult,
     required AiConfigSkill transcriptionSkill,
@@ -32,17 +36,19 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     final profile = automationResult.resolvedProfile;
     if (linkedTaskId == null || profile == null) return null;
 
-    if (automationResult.skillAssignment != null) {
-      final automated = profile.skillAssignments
-          .where((a) => a.automate)
-          .map((a) => (assignment: a, skill: findBuiltInSkill(a.skillId)))
-          .where((pair) => pair.skill?.skillType == SkillType.audioSummary)
-          .firstOrNull;
-      if (automated == null) return null;
+    final automatedRun = automationResult.skillAssignment;
+    final automatedSummary = automatedRun == null
+        ? null
+        : profile.skillAssignments
+              .where((a) => a.automate)
+              .map((a) => (assignment: a, skill: findBuiltInSkill(a.skillId)))
+              .where((pair) => pair.skill?.skillType == SkillType.audioSummary)
+              .firstOrNull;
+    if (automatedSummary != null) {
       return AutomationResult(
         handled: true,
-        skill: automated.skill,
-        skillAssignment: automated.assignment,
+        skill: automatedSummary.skill,
+        skillAssignment: automatedSummary.assignment,
         resolvedProfile: profile,
       );
     }
@@ -56,6 +62,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     return AutomationResult(
       handled: true,
       skill: summary,
+      skillAssignment: automatedRun,
       resolvedProfile: profile,
     );
   }
