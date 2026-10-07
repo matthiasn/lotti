@@ -35,6 +35,15 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
   }) {
     final profile = automationResult.resolvedProfile;
     if (linkedTaskId == null || profile == null) return null;
+    // A summary needs a thinking model that can call its tool. The direct
+    // speech-to-text fallback, run without an inference profile, puts its
+    // transcription model in that slot; no summary is scheduled then, and
+    // the transcript is written at once instead of held for a call that
+    // `_summarizeRecording` would skip.
+    if (profile.thinkingModel case final model?
+        when !model.supportsFunctionCalling) {
+      return null;
+    }
 
     final automatedRun = automationResult.skillAssignment;
     final automatedSummary = automatedRun == null

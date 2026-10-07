@@ -349,6 +349,11 @@ The gates, all deliberate:
 - **A task must resolve.** The skill's `fullTask` context policy has nothing to
   read otherwise, and the summary is framed by the task. Goal and person
   check-ins and standalone voice notes transcribe as before and get no summary.
+- **The thinking model must be able to call tools.** The summary publishes
+  through a pinned tool call. The direct speech-to-text fallback, used when no
+  inference profile applies, puts its transcription model in the thinking
+  slot; such a run schedules no summary, so the transcript is written at once
+  rather than held for a call that would be skipped.
 - **Speech recognized in the task's context on a speech-to-text engine always
   chains the summary**, however the run started — the AI menu, the category's
   automation, the synced-audio dispatcher or an inference backfill. On such an

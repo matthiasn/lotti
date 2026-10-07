@@ -408,65 +408,6 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           ).called(1);
         },
       );
-
-      test(
-        "a failure thrown outside the summary's status tracking is logged "
-        'and swallowed, so the persisted transcript still stands',
-        () async {
-          final audio = makeAudioEntity();
-          await stubTranscriptionThrough(audio);
-          stubLoggingException();
-          // The skip notice for a tool-less thinking model is logged before
-          // status tracking starts; a logger failing there is the one way
-          // for the summary call itself to throw.
-          final loggerFailure = StateError('log sink closed');
-          when(
-            () => mockLoggingService.log(
-              any<LogDomain>(),
-              any<String>(),
-              subDomain: 'runAudioSummary',
-            ),
-          ).thenThrow(loggerFailure);
-
-          await runner.runTranscription(
-            audioEntryId: 'audio-1',
-            automationResult: makeTranscriptionResultWithSummary(
-              thinkingModel:
-                  AiConfig.model(
-                        id: 'flash-no-tools',
-                        name: 'Flash without tools',
-                        providerModelId: 'models/gemini-flash',
-                        inferenceProviderId: 'p-flash',
-                        createdAt: DateTime(2024),
-                        inputModalities: const [Modality.text],
-                        outputModalities: const [Modality.text],
-                        isReasoningModel: false,
-                      )
-                      as AiConfigModel,
-            ),
-            linkedTaskId: 'task-1',
-          );
-
-          verifyNotSummarized();
-          verify(
-            () => mockLoggingService.error(
-              LogDomain.ai,
-              loggerFailure,
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              subDomain: 'maybeRunAudioSummary',
-            ),
-          ).called(1);
-          final persisted =
-              verify(
-                    () => mockJournalRepo.updateJournalEntity(
-                      captureAny(),
-                      onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
-                    ),
-                  ).captured.last
-                  as JournalAudio;
-          expect(persisted.entryText?.plainText, longTranscript);
-        },
-      );
     });
   }
 }
