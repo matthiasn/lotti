@@ -44,6 +44,7 @@
       <description>
         <p>Changed: "Repair vector clocks" now covers settings definitions too. Running it once, on any one device, brings categories, labels and the other definitions saved before this update into the same order; until then they sync as before.</p>
         <p>Fixed: categories, labels, habits, dashboards, measurables and dictionary terms no longer go missing on a synced device. Each change to one now carries its place in the order of changes, so a device that missed it asks for it once it learns of it - from a later change of the same device or that device's periodic announcement - and gets it back, as it already does for entries. When two devices change the same one at once, both keep the later change, whichever arrives first, and a change made on a device whose clock runs behind still replaces the version it was made from.</p>
+        <p>Fixed: recordings transcribed automatically in a task now get the same corrected text and summary as transcribing them by hand. When a category ran speech recognition in the task context on its own, the recording kept the engine's raw text, with dictionary terms still misspelled, and no summary appeared unless the summary was also set to run automatically. It now goes through the same step as the AI menu: the transcript is corrected against the speech dictionary, written once, and summarized.</p>
       </description>
     </release>
     <release version="1.1.45" date="2026-10-07">
