@@ -336,6 +336,15 @@ class ProfileResolver {
           )
         : null;
 
+    final audioPostProcessingSlot = config.audioPostProcessingModelId == null
+        ? null
+        : await resolveInferenceProviderForProfileSlot(
+            modelId: config.audioPostProcessingModelId!,
+            aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
+            logTag: _logTag,
+          );
+
     final imageGenerationSlot = config.imageGenerationModelId != null
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.imageGenerationModelId!,
@@ -362,6 +371,13 @@ class ProfileResolver {
       transcriptionModelId: transcriptionSlot?.model.providerModelId,
       transcriptionProvider: transcriptionSlot?.provider,
       transcriptionModel: transcriptionSlot?.model,
+      audioPostProcessingModelId:
+          audioPostProcessingSlot?.model.providerModelId,
+      audioPostProcessingProvider: audioPostProcessingSlot?.provider,
+      audioPostProcessingModel: audioPostProcessingSlot?.model,
+      audioPostProcessingModelUnavailable:
+          config.audioPostProcessingModelId != null &&
+          audioPostProcessingSlot == null,
       imageGenerationModelId: imageGenerationSlot?.model.providerModelId,
       imageGenerationProvider: imageGenerationSlot?.provider,
       imageGenerationModel: imageGenerationSlot?.model,

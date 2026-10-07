@@ -5285,6 +5285,8 @@
   "imageViewerPreviousTooltip": "Previous image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
+  "inferenceProfileAudioPostProcessing": "Audio post-processing",
+  "inferenceProfileAudioPostProcessingUsesThinking": "Uses thinking model when unset",
   "inferenceProfileChat": "Chat model",
   "inferenceProfileChatUsesThinking": "Uses thinking model when unset",
   "inferenceProfileChooseModelTitle": "Choose a model",

@@ -166,9 +166,7 @@ extension _ImageAnalysisTierCases on _SkillInferenceTestSetup {
       );
 
       for (final invalidTier in <String, Map<String, Object?>>{
-        'overlong one-liner': {
-          EntrySummaryToolArgs.oneLiner: 'x' * 149,
-        },
+        'empty one-liner': {EntrySummaryToolArgs.oneLiner: '   '},
         'empty TLDR': {EntrySummaryToolArgs.tldr: '   '},
       }.entries) {
         test(

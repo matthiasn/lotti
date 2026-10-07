@@ -32,6 +32,37 @@ void main() {
     );
   });
 
+  test('audio post-processing model survives sync JSON, can be cleared, and '
+      'is absent from profiles written before it existed', () {
+    final profile =
+        AiConfig.inferenceProfile(
+              id: 'profile-post',
+              name: 'Separate post-processing',
+              createdAt: DateTime.utc(2026),
+              thinkingModelId: 'agent-row',
+              audioPostProcessingModelId: 'post-row',
+            )
+            as AiConfigInferenceProfile;
+    AiConfigInferenceProfile roundTrip(AiConfigInferenceProfile value) =>
+        AiConfig.fromJson(
+              jsonDecode(jsonEncode(value.toJson())) as Map<String, dynamic>,
+            )
+            as AiConfigInferenceProfile;
+    final restored = roundTrip(profile);
+    expect(restored.audioPostProcessingModelId, 'post-row');
+    expect(restored.thinkingModelId, 'agent-row');
+    final cleared = roundTrip(
+      restored.copyWith(audioPostProcessingModelId: null),
+    );
+    expect(cleared.audioPostProcessingModelId, isNull);
+    final legacy = profile.toJson()..remove('audioPostProcessingModelId');
+    expect(
+      (AiConfig.fromJson(legacy) as AiConfigInferenceProfile)
+          .audioPostProcessingModelId,
+      isNull,
+    );
+  });
+
   group('AiConfigInferenceProfile.pinnedHostId', () {
     final createdAt = DateTime.utc(2026, 3, 15, 12);
 

@@ -8668,6 +8668,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Peut être choisi pour de nouvelles entrées si actif';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Post-traitement audio';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Utilise le modèle de réflexion si aucun n’est choisi';
+
+  @override
   String get inferenceProfileChat => 'Modèle de chat';
 
   @override

@@ -3305,6 +3305,8 @@
   "imageViewerPreviousTooltip": "Imaginea anterioară",
   "inactiveLabel": "Inactiv",
   "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",
+  "inferenceProfileAudioPostProcessing": "Postprocesare audio",
+  "inferenceProfileAudioPostProcessingUsesThinking": "Fără model selectat, se folosește modelul de gândire",
   "inferenceProfileChat": "Model de chat",
   "inferenceProfileChatUsesThinking": "Fără model de chat selectat, se folosește modelul de gândire",
   "inferenceProfileChooseModelTitle": "Alegeți un model",

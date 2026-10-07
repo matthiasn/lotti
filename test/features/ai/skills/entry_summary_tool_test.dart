@@ -175,56 +175,35 @@ void main() {
       });
     }
 
-    test('accepts a one-liner exactly at the length limit', () {
-      final atLimit = 'x' * entrySummaryOneLinerMaxChars;
+    test(
+      'accepts a one-liner far over the length the schema asks for, as '
+      'it came — the target is a hint, never a reason to lose the summary',
+      () {
+        // 166 characters: the length a thinking model wrote when a 140 cap
+        // still rejected the call and the whole summary with it.
+        final long = 'x' * 166;
 
-      final summary = parseEntrySummaryToolCall([
-        _call(_args(oneLiner: atLimit)),
-      ]);
+        final summary = parseEntrySummaryToolCall([
+          _call(_args(oneLiner: ' $long ')),
+        ]);
 
-      expect(summary.oneLiner.length, entrySummaryOneLinerMaxChars);
-    });
+        expect(summary.oneLiner, long);
+        expect(
+          summary.oneLiner.length,
+          greaterThan(entrySummaryOneLinerTargetChars),
+        );
+      },
+    );
 
-    test('rejects a one-liner one character over the limit, reporting '
-        'both lengths so the retry prompt can name them', () {
-      final overLimit = 'x' * (entrySummaryOneLinerMaxChars + 1);
-
-      expect(
-        () => parseEntrySummaryToolCall([_call(_args(oneLiner: overLimit))]),
-        throwsA(
-          isA<EntrySummaryToolException>().having(
-            (e) => e.reason,
-            'reason',
-            allOf(
-              contains('${entrySummaryOneLinerMaxChars + 1} chars'),
-              contains('$entrySummaryOneLinerMaxChars limit'),
-            ),
-          ),
-        ),
-      );
-    });
-
-    test('measures the one-liner limit after trimming, so padding alone '
-        'cannot push a valid line over', () {
-      final padded = ' ${'x' * entrySummaryOneLinerMaxChars} ';
-
-      final summary = parseEntrySummaryToolCall([
-        _call(_args(oneLiner: padded)),
-      ]);
-
-      expect(summary.oneLiner.length, entrySummaryOneLinerMaxChars);
-    });
-
-    test('does not cap the tldr or the summary — only the one-liner is '
-        'rendered on a single line', () {
-      final long = 'x' * (entrySummaryOneLinerMaxChars * 10);
+    test('does not cap the tldr or the summary either', () {
+      final long = 'x' * (entrySummaryOneLinerTargetChars * 10);
 
       final summary = parseEntrySummaryToolCall([
         _call(_args(tldr: long, summary: long)),
       ]);
 
-      expect(summary.tldr.length, entrySummaryOneLinerMaxChars * 10);
-      expect(summary.summary.length, entrySummaryOneLinerMaxChars * 10);
+      expect(summary.tldr, long);
+      expect(summary.summary, long);
     });
   });
 
@@ -238,8 +217,9 @@ void main() {
       );
     });
 
-    test('recovers the body rejected by strict one-liner validation', () {
-      final calls = [_call(_args(oneLiner: 'x' * 149))];
+    test('recovers the body the strict parser rejects for an empty '
+        'one-liner', () {
+      final calls = [_call(_args(oneLiner: '   '))];
       expect(
         () => parseEntrySummaryToolCall(calls),
         throwsA(isA<EntrySummaryToolException>()),
@@ -300,8 +280,8 @@ void main() {
       expect(parameters['additionalProperties'], isFalse);
     });
 
-    test('states the one-liner character budget in the schema the model '
-        'reads, so the limit and the prompt cannot drift apart', () {
+    test('asks for a concise one-liner in the schema the model reads, as a '
+        'target rather than a limit', () {
       final properties =
           entrySummaryTool.function.parameters!['properties']!
               as Map<String, dynamic>;
@@ -310,7 +290,7 @@ void main() {
 
       expect(
         oneLiner['description'],
-        contains('$entrySummaryOneLinerMaxChars characters'),
+        contains('ideally under $entrySummaryOneLinerTargetChars characters'),
       );
     });
 

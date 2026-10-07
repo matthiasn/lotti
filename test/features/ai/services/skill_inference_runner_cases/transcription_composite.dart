@@ -31,19 +31,29 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
 
       /// A transcription on [transcriptionProvider] for a profile that
       /// automates it and, with [automatesSummary], the summary too;
-      /// [automated] false is the user's own tap.
+      /// [automated] false is the user's own tap. [postProcessingModel] is
+      /// the profile's audio post-processing slot, on provider `p-post`;
+      /// [postProcessingUnavailable] is that slot set but unresolvable here.
       AutomationResult transcriptionFor({
         required AiConfigInferenceProvider transcriptionProvider,
         bool automated = true,
         bool automatesSummary = true,
         AiConfigSkill? skill,
         AiConfigModel? thinkingModel,
+        AiConfigModel? postProcessingModel,
+        bool postProcessingUnavailable = false,
       }) => AutomationResult(
         handled: true,
         resolvedProfile: ResolvedProfile(
           thinkingModelId: 'models/gemini-flash',
           thinkingProvider: testInferenceProvider(id: 'p-flash'),
           thinkingModel: thinkingModel,
+          audioPostProcessingModelId: postProcessingModel?.providerModelId,
+          audioPostProcessingProvider: postProcessingModel == null
+              ? null
+              : testInferenceProvider(id: 'p-post'),
+          audioPostProcessingModel: postProcessingModel,
+          audioPostProcessingModelUnavailable: postProcessingUnavailable,
           transcriptionModelId: 'whisper-large-v3',
           transcriptionProvider: transcriptionProvider,
           skillAssignments: [
@@ -593,6 +603,152 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
 
           expect(textWrites, [raw]);
           expect(lastSummaryCall, isNull);
+        },
+      );
+
+      for (final automated in [true, false]) {
+        test(
+          "the composite step runs on the profile's audio post-processing "
+          'model when one is set — '
+          '${automated ? 'started by the category' : 'started by hand'}',
+          () async {
+            await stubRun(dictionary: [kubernetes]);
+            stubSummary(firstOccurrence);
+
+            await runner.runTranscription(
+              audioEntryId: 'audio-1',
+              automationResult: transcriptionFor(
+                transcriptionProvider: whisper(),
+                automated: automated,
+                postProcessingModel: testAiModel(
+                  id: 'post-row',
+                  providerModelId: 'post-native',
+                ).copyWith(supportsFunctionCalling: true),
+              ),
+              linkedTaskId: 'task-1',
+            );
+
+            expect(textWrites, [null, corrected]);
+            expect(lastSummaryCall!.namedArguments[#model], 'post-native');
+            expect(
+              (lastSummaryCall!.namedArguments[#provider]
+                      as AiConfigInferenceProvider)
+                  .id,
+              'p-post',
+            );
+            final data =
+                verify(
+                      () => mockAiInputRepo.createAiResponseEntry(
+                        id: any(named: 'id'),
+                        data: captureAny(named: 'data'),
+                        start: any(named: 'start'),
+                        linkedId: 'audio-1',
+                        categoryId: any(named: 'categoryId'),
+                      ),
+                    ).captured.single
+                    as AiResponseData;
+            expect(data.model, 'post-native');
+          },
+        );
+      }
+
+      test(
+        'without a post-processing model the composite step runs on the '
+        'thinking model, as before',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [null, corrected]);
+          expect(
+            lastSummaryCall!.namedArguments[#model],
+            'models/gemini-flash',
+          );
+        },
+      );
+
+      test(
+        'a tool-capable post-processing model gets the summary although the '
+        'thinking model cannot call tools',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+              thinkingModel: testAiModel(providerModelId: 'whisper-large-v3'),
+              postProcessingModel: testAiModel(
+                id: 'post-row',
+                providerModelId: 'post-native',
+              ).copyWith(supportsFunctionCalling: true),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [null, corrected]);
+          expect(lastSummaryCall!.namedArguments[#model], 'post-native');
+        },
+      );
+
+      test(
+        'a post-processing model this device cannot resolve fails the step '
+        'visibly and never falls back to the thinking model — the transcript '
+        'is still written, uncorrected',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              postProcessingUnavailable: true,
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [null, raw]);
+          expect(lastSummaryCall, isNull);
+          verifyNever(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+          for (final id in ['audio-1', 'task-1']) {
+            expect(
+              container.read(
+                inferenceStatusControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.audioSummary,
+                )),
+              ),
+              InferenceStatus.error,
+            );
+            expect(
+              container.read(
+                inferenceErrorControllerProvider((
+                  id: id,
+                  aiResponseType: AiResponseType.audioSummary,
+                )),
+              ),
+              contains('Audio post-processing model unavailable'),
+            );
+          }
         },
       );
 

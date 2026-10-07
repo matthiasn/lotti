@@ -44,6 +44,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   String? _thinkingHighEndModelId;
   String? _imageRecognitionModelId;
   String? _transcriptionModelId;
+  String? _audioPostProcessingModelId;
   String? _imageGenerationModelId;
   bool _desktopOnly = false;
   String? _pinnedHostId;
@@ -70,6 +71,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
           _thinkingHighEndModelId != null ||
           _imageRecognitionModelId != null ||
           _transcriptionModelId != null ||
+          _audioPostProcessingModelId != null ||
           _imageGenerationModelId != null ||
           _desktopOnly ||
           _pinnedHostId != null ||
@@ -82,6 +84,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         _thinkingHighEndModelId != p.thinkingHighEndModelId ||
         _imageRecognitionModelId != p.imageRecognitionModelId ||
         _transcriptionModelId != p.transcriptionModelId ||
+        _audioPostProcessingModelId != p.audioPostProcessingModelId ||
         _imageGenerationModelId != p.imageGenerationModelId ||
         _desktopOnly != p.desktopOnly ||
         _pinnedHostId != p.pinnedHostId ||
@@ -99,6 +102,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _thinkingHighEndModelId = p?.thinkingHighEndModelId;
     _imageRecognitionModelId = p?.imageRecognitionModelId;
     _transcriptionModelId = p?.transcriptionModelId;
+    _audioPostProcessingModelId = p?.audioPostProcessingModelId;
     _imageGenerationModelId = p?.imageGenerationModelId;
     _pinnedHostId = p?.pinnedHostId;
     _desktopOnly = p?.desktopOnly ?? false;
@@ -261,6 +265,21 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               onModelSelected: (id) =>
                   setState(() => _transcriptionModelId = id),
             ),
+            SizedBox(height: tokens.spacing.step4),
+
+            // Audio post-processing (optional): corrects a transcript
+            // against the speech dictionary and summarizes the recording,
+            // publishing through a tool call — hence the same filter as
+            // Thinking, which it falls back to.
+            ModelSlotField(
+              label: messages.inferenceProfileAudioPostProcessing,
+              hintText:
+                  messages.inferenceProfileAudioPostProcessingUsesThinking,
+              modelId: _audioPostProcessingModelId,
+              filter: (m) => m.supportsFunctionCalling,
+              onModelSelected: (id) =>
+                  setState(() => _audioPostProcessingModelId = id),
+            ),
             const SizedBox(height: 16),
 
             // Image generation model (optional)
@@ -298,6 +317,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 ?_thinkingHighEndModelId,
                 ?_imageRecognitionModelId,
                 ?_transcriptionModelId,
+                ?_audioPostProcessingModelId,
                 ?_imageGenerationModelId,
               },
               onChanged: (value) => setState(() => _pinnedHostId = value),
@@ -465,6 +485,10 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         _transcriptionModelId,
         models,
       );
+      final audioPostProcessingModelId = _normalizeModelSlotId(
+        _audioPostProcessingModelId,
+        models,
+      );
       final imageGenerationModelId = _normalizeModelSlotId(
         _imageGenerationModelId,
         models,
@@ -491,6 +515,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 thinkingHighEndModelId: thinkingHighEndModelId,
                 imageRecognitionModelId: imageRecognitionModelId,
                 transcriptionModelId: transcriptionModelId,
+                audioPostProcessingModelId: audioPostProcessingModelId,
                 imageGenerationModelId: imageGenerationModelId,
                 desktopOnly: _desktopOnly,
                 skillAssignments: _sanitizedSkillAssignments(

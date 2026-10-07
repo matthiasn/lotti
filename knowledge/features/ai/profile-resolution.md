@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Profile resolution, pinning and locality
-description: Which profile drives a run, how model slots survive sync duplicates, and the fail-closed check that keeps synced audio off cloud providers.
+description: Which profile drives a run, the optional Chat and audio post-processing slots, how model slots survive sync duplicates, and the fail-closed check that keeps synced audio off cloud providers.
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
@@ -15,11 +15,11 @@ sources:
   - id: resolver
     resource: ../../../lib/features/ai/util/profile_resolver.dart
     title: ProfileResolver
-    last_modified: 2026-09-12
+    last_modified: 2026-10-07
   - id: locality
     resource: ../../../lib/features/ai/helpers/profile_locality.dart
     title: profileIsLocal
-    last_modified: 2026-09-06
+    last_modified: 2026-10-07
   - id: pinning-ui
     resource: ../../../lib/features/ai/ui/widgets/profile_pinning_selector.dart
     title: Profile pinning selector
@@ -102,7 +102,9 @@ The setting does not change authoritative setups or enable automation policies.
 **Only the thinking slot is fatal to profile resolution.** Optional slots
 resolve best-effort. An explicitly selected but unavailable Chat model sets
 `ResolvedProfile.chatModelUnavailable`: agent wakes still resolve, while query
-chat presents its existing recoverable setup error.
+chat presents its existing recoverable setup error. An unavailable audio
+post-processing model sets `audioPostProcessingModelUnavailable` the same way,
+and only the recording summary fails.
 
 # Choosing a chat model
 
@@ -122,6 +124,33 @@ Chat participates in provider usage, pinning capabilities, locality checks and
 demo-copy reference pruning. A selected Chat model counts as a user edit during
 seed-profile migration and orphan cleanup; seeding does not introduce a Chat
 default or clear an unavailable selection.
+
+# Choosing an audio post-processing model
+
+The editor's optional **Audio post-processing** slot picks the model for the
+step after a transcription: correcting the transcript against the speech
+dictionary and writing the recording's one-liner, TLDR and summary. It
+accepts the same tool-capable models as Thinking, because the step publishes
+through a tool call. Set it to keep that step on, for example, DeepSeek while
+agents think on GLM; existing profiles have no selection and keep running the
+step on Thinking.
+
+`audioPostProcessingModelId` stores a model row id and syncs with the profile.
+Its resolved route is independent of an agent's direct Thinking override;
+unset, `effectiveAudioPostProcessing*` inherits the resolved Thinking route.
+Selected but unavailable, the step fails visibly instead of switching models —
+see [execution paths](execution-paths.md) for how a held transcript is still
+written.
+
+Like Chat, the slot participates in provider usage, pinning capabilities,
+locality checks — it reads the transcript of synced audio, so a cloud model
+here makes a profile non-local — and demo-copy reference pruning, and counts
+as a user edit during seed-profile migration and orphan cleanup. Seeding sets
+no default for it.
+
+An older client drops the field when it saves the profile, since it does not
+know it: editing a profile on a device that predates the slot clears the
+selection, as it did for Chat.
 
 # Model slots and sync hygiene
 

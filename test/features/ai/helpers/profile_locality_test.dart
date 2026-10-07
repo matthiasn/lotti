@@ -166,6 +166,7 @@ AiConfigInferenceProfile _profile({
   String id = 'profile-1',
   String thinkingModelId = 'thinking-model',
   String? chatModelId,
+  String? audioPostProcessingModelId,
   String? thinkingHighEndModelId,
   String? imageRecognitionModelId,
   String? transcriptionModelId,
@@ -177,6 +178,7 @@ AiConfigInferenceProfile _profile({
         createdAt: DateTime.utc(2026, 3, 15),
         thinkingModelId: thinkingModelId,
         chatModelId: chatModelId,
+        audioPostProcessingModelId: audioPostProcessingModelId,
         thinkingHighEndModelId: thinkingHighEndModelId,
         imageRecognitionModelId: imageRecognitionModelId,
         transcriptionModelId: transcriptionModelId,
@@ -289,6 +291,46 @@ void main() {
         isFalse,
       );
       expect(await profileIsLocal(_profile(), repo), isTrue);
+    },
+  );
+
+  test(
+    'a cloud or unresolved audio post-processing slot prevents local-only '
+    'classification — it reads the transcript of synced audio',
+    () async {
+      stubModelWithProvider(
+        providerModelId: 'thinking-model',
+        providerType: InferenceProviderType.ollama,
+      );
+      stubModelWithProvider(
+        providerModelId: 'post-model',
+        providerType: InferenceProviderType.openAi,
+      );
+      stubModelWithProvider(
+        providerModelId: 'local-post-model',
+        providerType: InferenceProviderType.ollama,
+      );
+      expect(
+        await profileIsLocal(
+          _profile(audioPostProcessingModelId: 'post-model'),
+          repo,
+        ),
+        isFalse,
+      );
+      expect(
+        await profileIsLocal(
+          _profile(audioPostProcessingModelId: 'missing-post'),
+          repo,
+        ),
+        isFalse,
+      );
+      expect(
+        await profileIsLocal(
+          _profile(audioPostProcessingModelId: 'local-post-model'),
+          repo,
+        ),
+        isTrue,
+      );
     },
   );
 

@@ -174,6 +174,12 @@ sealed class AiConfig with _$AiConfig {
     /// Model config id for audio transcription.
     String? transcriptionModelId,
 
+    /// Optional model config id for audio post-processing: the step after a
+    /// transcription that corrects the transcript against the speech
+    /// dictionary and writes the recording's one-liner, TLDR and summary.
+    /// When unset, the step runs on the thinking model.
+    String? audioPostProcessingModelId,
+
     /// Model config id for image generation.
     String? imageGenerationModelId,
 

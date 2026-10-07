@@ -3746,6 +3746,8 @@
   "imageViewerPreviousTooltip": "Föregående bild",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kan väljas för nya poster när du är på",
+  "inferenceProfileAudioPostProcessing": "Efterbearbetning av ljud",
+  "inferenceProfileAudioPostProcessingUsesThinking": "Använder resonemangsmodellen om inget väljs",
   "inferenceProfileChat": "Chattmodell",
   "inferenceProfileChatUsesThinking": "Använder resonemangsmodellen om inget väljs",
   "inferenceProfileChooseModelTitle": "Välj en modell",

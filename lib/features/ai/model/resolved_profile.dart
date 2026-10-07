@@ -28,6 +28,10 @@ class ResolvedProfile {
     this.transcriptionModelId,
     this.transcriptionProvider,
     this.transcriptionModel,
+    this.audioPostProcessingModelId,
+    this.audioPostProcessingProvider,
+    this.audioPostProcessingModel,
+    this.audioPostProcessingModelUnavailable = false,
     this.imageGenerationModelId,
     this.imageGenerationProvider,
     this.imageGenerationModel,
@@ -87,6 +91,25 @@ class ResolvedProfile {
   /// The configured model row used for transcription, when set.
   final AiConfigModel? transcriptionModel;
 
+  /// Provider-native model id and configured route for audio post-processing:
+  /// correcting a transcript against the speech dictionary and summarizing
+  /// the recording. Unset slots use the resolved thinking route.
+  final String? audioPostProcessingModelId;
+  final AiConfigInferenceProvider? audioPostProcessingProvider;
+  final AiConfigModel? audioPostProcessingModel;
+
+  /// An explicitly configured audio post-processing slot could not resolve.
+  /// The step fails rather than quietly running on the thinking model the
+  /// user chose it over.
+  final bool audioPostProcessingModelUnavailable;
+
+  String get effectiveAudioPostProcessingModelId =>
+      audioPostProcessingModelId ?? thinkingModelId;
+  AiConfigInferenceProvider get effectiveAudioPostProcessingProvider =>
+      audioPostProcessingProvider ?? thinkingProvider;
+  AiConfigModel? get effectiveAudioPostProcessingModel =>
+      audioPostProcessingModel ?? thinkingModel;
+
   /// The provider-native model id for image generation (nullable).
   final String? imageGenerationModelId;
 
@@ -136,6 +159,10 @@ class ResolvedProfile {
       transcriptionModelId: transcriptionModelId,
       transcriptionProvider: transcriptionProvider,
       transcriptionModel: transcriptionModel,
+      audioPostProcessingModelId: audioPostProcessingModelId,
+      audioPostProcessingProvider: audioPostProcessingProvider,
+      audioPostProcessingModel: audioPostProcessingModel,
+      audioPostProcessingModelUnavailable: audioPostProcessingModelUnavailable,
       imageGenerationModelId: imageGenerationModelId,
       imageGenerationProvider: imageGenerationProvider,
       imageGenerationModel: imageGenerationModel,
@@ -166,13 +193,18 @@ class ResolvedProfile {
           transcriptionModelId == other.transcriptionModelId &&
           transcriptionProvider == other.transcriptionProvider &&
           transcriptionModel == other.transcriptionModel &&
+          audioPostProcessingModelId == other.audioPostProcessingModelId &&
+          audioPostProcessingProvider == other.audioPostProcessingProvider &&
+          audioPostProcessingModel == other.audioPostProcessingModel &&
+          audioPostProcessingModelUnavailable ==
+              other.audioPostProcessingModelUnavailable &&
           imageGenerationModelId == other.imageGenerationModelId &&
           imageGenerationProvider == other.imageGenerationProvider &&
           imageGenerationModel == other.imageGenerationModel &&
           _listEquals.equals(skillAssignments, other.skillAssignments);
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     thinkingModelId,
     thinkingProvider,
     thinkingModel,
@@ -189,11 +221,15 @@ class ResolvedProfile {
     transcriptionModelId,
     transcriptionProvider,
     transcriptionModel,
+    audioPostProcessingModelId,
+    audioPostProcessingProvider,
+    audioPostProcessingModel,
+    audioPostProcessingModelUnavailable,
     imageGenerationModelId,
     imageGenerationProvider,
     imageGenerationModel,
     _listEquals.hash(skillAssignments),
-  );
+  ]);
 }
 
 /// Outcome of resolving a task-agent inference setup.

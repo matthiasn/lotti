@@ -2,6 +2,11 @@
 
 ## 2026-10-07
 * **Update**: [AI execution paths](features/ai/execution-paths.md),
+  [profile resolution](features/ai/profile-resolution.md) — the recording
+  summary runs on the profile's optional audio post-processing model, falling
+  back to Thinking only when none is set, and a one-liner longer than the
+  schema asks for is persisted rather than rejected.
+* **Update**: [AI execution paths](features/ai/execution-paths.md),
   [speech dictionary](features/speech/dictionary.md) — the task-context
   transcription on a speech-to-text engine chains its correcting summary
   however it was started, automation included.

@@ -109,7 +109,7 @@ void main() {
         imageRecognitionModelId: 'vision-model',
         transcriptionModelId: 'audio-model',
         imageGenerationModelId: 'image-gen-model',
-      );
+      ).copyWith(audioPostProcessingModelId: 'post-model');
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -124,6 +124,8 @@ void main() {
       expect(find.text('vision-model'), findsOneWidget);
       expect(find.text('Transcription'), findsOneWidget);
       expect(find.text('audio-model'), findsOneWidget);
+      expect(find.text('Audio post-processing'), findsOneWidget);
+      expect(find.text('post-model'), findsOneWidget);
       expect(find.text('Image Generation'), findsOneWidget);
       expect(find.text('image-gen-model'), findsOneWidget);
     });
@@ -145,6 +147,7 @@ void main() {
       expect(find.text('Thinking'), findsOneWidget);
       expect(find.text('Image Recognition'), findsNothing);
       expect(find.text('Transcription'), findsNothing);
+      expect(find.text('Audio post-processing'), findsNothing);
       expect(find.text('Image Generation'), findsNothing);
     });
   });

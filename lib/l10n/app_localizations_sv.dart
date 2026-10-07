@@ -8540,6 +8540,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan väljas för nya poster när du är på';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Efterbearbetning av ljud';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Använder resonemangsmodellen om inget väljs';
+
+  @override
   String get inferenceProfileChat => 'Chattmodell';
 
   @override

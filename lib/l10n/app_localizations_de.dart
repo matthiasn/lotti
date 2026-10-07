@@ -8591,6 +8591,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kann für neue Einträge gewählt werden, wenn aktiv';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Audio-Nachbearbeitung';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Ohne Auswahl wird das Denkmodell verwendet';
+
+  @override
   String get inferenceProfileChat => 'Chat-Modell';
 
   @override

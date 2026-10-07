@@ -11,7 +11,7 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-09-26
+    last_modified: 2026-10-07
   - id: auto-trigger
     resource: ../../../lib/features/speech/helpers/automatic_prompt_trigger.dart
     title: AutomaticPromptTrigger
@@ -349,11 +349,13 @@ The gates, all deliberate:
 - **A task must resolve.** The skill's `fullTask` context policy has nothing to
   read otherwise, and the summary is framed by the task. Goal and person
   check-ins and standalone voice notes transcribe as before and get no summary.
-- **The thinking model must be able to call tools.** The summary publishes
-  through a pinned tool call. The direct speech-to-text fallback, used when no
-  inference profile applies, puts its transcription model in the thinking
-  slot; such a run schedules no summary, so the transcript is written at once
-  rather than held for a call that would be skipped.
+- **The post-processing model must be able to call tools.** The summary
+  publishes through a pinned tool call, on the profile's audio
+  post-processing model or, without one, its thinking model (see below). The
+  direct speech-to-text fallback, used when no inference profile applies,
+  puts its transcription model in the thinking slot and sets no
+  post-processing model; such a run schedules no summary, so the transcript is
+  written at once rather than held for a call that would be skipped.
 - **Speech recognized in the task's context on a speech-to-text engine always
   chains the summary**, however the run started — the AI menu, the category's
   automation, the synced-audio dispatcher or an inference backfill. On such an
@@ -396,17 +398,30 @@ Two properties are contract rather than detail:
   outright; the single-tool list is what steers those. `parseEntrySummaryToolCall`
   decodes typed arguments — the same shape the
   agents' `update_report` uses. A rejected call (no tool call, wrong tool,
-  missing field, one-liner over `entrySummaryOneLinerMaxChars`) buys exactly
-  one forced retry, whose tokens are merged with the first attempt's so a model
-  that needed prompting twice is not billed as if it needed one.
-- **It runs on the profile's thinking slot**, the same model as the task agent.
-  Not for cost: the inference-profile form is the only place that slot can be
-  set, its picker is filtered to `supportsFunctionCalling` models, and the slot
-  is required — so it is the one slot guaranteed to be able to call a tool. Any
-  other slot could hold a model that cannot. The resolve-time
-  `supportsFunctionCalling` check in `runAudioSummary` is an assertion for
-  programmatically-seeded profiles and wrong capability flags, not a fallback
-  path.
+  a tier missing, not a string or empty) buys exactly one forced retry, whose
+  tokens are merged with the first attempt's so a model that needed prompting
+  twice is not billed as if it needed one. The one-liner's length is not
+  checked: the schema asks for one under `entrySummaryOneLinerTargetChars`,
+  and a longer one is persisted as it came. A cap once rejected the whole
+  call — and with it the summary and the corrected transcript — over a label
+  the collapsed card ellipsizes anyway, and some thinking models overshoot it
+  routinely.
+- **It runs on the profile's audio post-processing slot**
+  (`audioPostProcessingModelId`), and without one on its thinking slot — the
+  same model as the task agent. The separate slot exists because the model
+  that writes the best corrections and summaries is not necessarily the one
+  that runs agents best, and changing the agents' model to fix one must not
+  degrade the other. Neither choice is about cost: the inference-profile form
+  filters both pickers to `supportsFunctionCalling` models and requires the
+  thinking slot, so whichever resolves can call a tool. An explicit
+  per-run `overrideModelId` still wins over both. A post-processing model
+  that is set but does not resolve on this device
+  (`audioPostProcessingModelUnavailable`) fails the step through its status
+  tracking instead of falling back to thinking: a held transcript is written
+  uncorrected, and the error is shown on the recording and its task. The
+  resolve-time `supportsFunctionCalling` check in `runAudioSummary` is an
+  assertion for programmatically-seeded profiles and wrong capability flags,
+  not a fallback path.
 
 Transcripts are sent **whole**. There is no input ceiling and no truncation: a
 transcript too large for the model's context fails the call, and the failure

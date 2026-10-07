@@ -322,6 +322,7 @@ bool _isUntouchedMeliousGeneration1Profile(
       profile.name == 'Melious.ai' &&
       profile.description == null &&
       profile.chatModelId == null &&
+      profile.audioPostProcessingModelId == null &&
       _slotMatchesProviderModelId(
         profile.thinkingModelId,
         meliousQwen35122BA10BModelId,
@@ -369,6 +370,7 @@ bool _isUntouchedMeliousDefaultProfile(
       profile.name == 'Melious.ai' &&
       profile.description == null &&
       profile.chatModelId == null &&
+      profile.audioPostProcessingModelId == null &&
       _meliousThinkingSlotMatchesDefaultOrLegacy(
         profile.thinkingModelId,
         models,
@@ -515,6 +517,7 @@ bool _isUntouchedOmlxProfileMissingTranscription(
 ) {
   return profile.description == null &&
       profile.chatModelId == null &&
+      profile.audioPostProcessingModelId == null &&
       profile.thinkingHighEndModelId == null &&
       _slotMatchesProviderModelId(
         profile.thinkingModelId,
@@ -542,6 +545,7 @@ bool _isUntouchedLegacyLocalPowerSeed(
       profile.name == _legacyLocalPowerName &&
       profile.description == null &&
       profile.chatModelId == null &&
+      profile.audioPostProcessingModelId == null &&
       profile.thinkingHighEndModelId == null &&
       _slotMatchesProviderModelId(
         profile.thinkingModelId,
@@ -593,6 +597,7 @@ bool _isRemovableOrphanedSeed(
   if (!nameUntouched ||
       profile.description != null ||
       profile.chatModelId != null ||
+      profile.audioPostProcessingModelId != null ||
       profile.pinnedHostId != null ||
       profile.isDefault != template.isDefault ||
       profile.desktopOnly != template.desktopOnly) {
@@ -639,6 +644,11 @@ AiConfigInferenceProfile _withResolvedModelConfigIds(
     ),
     transcriptionModelId: _resolveOptionalModelSlot(
       profile.transcriptionModelId,
+      models,
+      preferredProviderIds: preferredProviderIds,
+    ),
+    audioPostProcessingModelId: _resolveOptionalModelSlot(
+      profile.audioPostProcessingModelId,
       models,
       preferredProviderIds: preferredProviderIds,
     ),

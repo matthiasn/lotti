@@ -190,6 +190,125 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
       );
 
       test(
+        'persists a one-liner longer than the schema asks for on the first '
+        'call — a long label never costs the summary or a retry',
+        () async {
+          // 166 characters, the length a thinking model wrote when a 140 cap
+          // still rejected the call.
+          const longOneLiner =
+              'The team agreed to ship the export flow behind a feature flag '
+              'early next week, after the staging migration finishes and the '
+              'on-call rotation has signed off on it too.';
+          expect(longOneLiner.length, 166);
+          final audio = makeAudioEntity(
+            id: 'audio-long',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          stubGenerate(() => [makeToolCallChunk(oneLiner: longOneLiner)]);
+          stubLoggingEvent();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-long',
+            automationResult: makeAudioSummaryResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          verify(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+          final data =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: 'audio-long',
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(data.oneLiner, longOneLiner);
+          expect(data.tldr, 'The team chose a flagged rollout.');
+        },
+      );
+
+      test(
+        "runs on the profile's audio post-processing model when one is set, "
+        'and on the thinking model when not',
+        () async {
+          final audio = makeAudioEntity(
+            id: 'audio-slot',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          stubGenerate(() => [makeToolCallChunk()]);
+          stubLoggingEvent();
+          final postProcessing = testAiModel(
+            id: 'post-row',
+            providerModelId: 'post-native',
+          ).copyWith(supportsFunctionCalling: true);
+
+          for (final profile in [
+            ResolvedProfile(
+              thinkingModelId: 'models/gemini-flash',
+              thinkingProvider: testInferenceProvider(id: 'p-flash'),
+              audioPostProcessingModelId: postProcessing.providerModelId,
+              audioPostProcessingProvider: testInferenceProvider(id: 'p-post'),
+              audioPostProcessingModel: postProcessing,
+            ),
+            ResolvedProfile(
+              thinkingModelId: 'models/gemini-flash',
+              thinkingProvider: testInferenceProvider(id: 'p-flash'),
+            ),
+          ]) {
+            await runner.runAudioSummary(
+              audioEntryId: 'audio-slot',
+              automationResult: AutomationResult(
+                handled: true,
+                resolvedProfile: profile,
+                skill: testAudioSummarySkill,
+              ),
+              linkedTaskId: 'task-1',
+            );
+          }
+
+          final captured = verify(
+            () => mockCloudRepo.generate(
+              any(),
+              model: captureAny(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: captureAny(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).captured;
+          expect(captured, hasLength(4));
+          expect(captured[0], 'post-native');
+          expect((captured[1] as AiConfigInferenceProvider).id, 'p-post');
+          expect(captured[2], 'models/gemini-flash');
+          expect((captured[3] as AiConfigInferenceProvider).id, 'p-flash');
+        },
+      );
+
+      test(
         'sends the FULL transcript with no truncation, however long, and pins '
         'the summary tool',
         () async {

@@ -8525,6 +8525,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kan vælges til nye indførsler, når den er på';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Efterbehandling af lyd';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Bruger tænkemodellen, når der ikke er valgt en';
+
+  @override
   String get inferenceProfileChat => 'Chatmodel';
 
   @override
