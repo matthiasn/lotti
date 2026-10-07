@@ -40,6 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.47" date="2026-10-07">
+      <description>
+        <p>Added: inference profiles can name their own model for audio post-processing. The step after a transcription - correcting the transcript against the speech dictionary and writing the recording's one-liner, TLDR and summary - can now run on a model of its own, chosen in the profile under "Audio post-processing", instead of always on the thinking model your agents use. Profiles without one keep using the thinking model.</p>
+        <p>Changed: "Skip once" now sits beside the countdown on the task's AI summary. When a summary is out of date and an automatic update is about to run, "Skip once" appears next to "Update now · 1:30" on the card itself, so you can decline a paid run where it is announced instead of opening the agent internals first.</p>
+        <p>Changed: adding a speech dictionary term starts from what you searched for. When you type a word into the dictionary's search field and then press "Add term", the new entry's term is already filled in with what you typed, the same way the "Add ..." offer under an unmatched search has worked. Before, that button opened an empty form and the word had to be typed a second time.</p>
+        <p>Fixed: a summary with a long one-liner is no longer thrown away. When the model wrote a one-line label of more than 140 characters, the whole summary was rejected with an error, and a recording transcribed in a task kept its uncorrected text. The longer label is now kept as written.</p>
+        <p>Fixed: "Skip once" no longer claims a task summary is up to date. Skipping the countdown to a task agent's next automatic update used to flip its summary to "Up to date", even though the summary still missed the change that started the countdown. Skipping now saves only the run: the summary keeps reading "Out of date" until the next update or "Update now" refreshes it.</p>
+      </description>
+    </release>
     <release version="1.1.46" date="2026-10-07">
       <description>
         <p>Changed: "Repair vector clocks" now covers settings definitions too. Running it once, on any one device, brings categories, labels and the other definitions saved before this update into the same order; until then they sync as before.</p>
