@@ -7,6 +7,8 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -350,6 +352,138 @@ void main() {
       verifyNever(() => taskAgentService.triggerReanalysis(any()));
       // The explanation lives with the setup row, in the internals panel.
       expect(find.byIcon(LottiIcons.info), findsNothing);
+    });
+  });
+
+  group('AiSummaryCard – skip once beside the countdown', () {
+    final now = DateTime(2026, 5, 4, 12);
+    Finder skipAction() =>
+        find.byKey(const ValueKey('taskAgentSkipScheduledUpdate'));
+
+    /// A card whose summary is behind a change still waiting out its
+    /// 90-second countdown.
+    Future<void> pumpCounting(
+      WidgetTester tester, {
+      required MockTaskAgentService taskAgentService,
+      MockDomainLogger? logger,
+    }) async {
+      final bench = AgentTestBench(
+        identity: makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: true),
+        ),
+        state: makeTestState(
+          nextWakeAt: now.add(const Duration(seconds: 90)),
+        ).copyWith(reportFreshAt: DateTime(2026, 5, 4, 11)),
+        taskAgentService: taskAgentService,
+        report: makeTestReport(tldr: 'Old summary.'),
+        extraOverrides: [
+          if (logger != null) domainLoggerProvider.overrideWithValue(logger),
+        ],
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets(
+      'the countdown offers Skip once, which cancels just that run and '
+      'keeps the summary out of date',
+      (tester) async {
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.cancelScheduledWake(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(now), () async {
+          await pumpCounting(tester, taskAgentService: taskAgentService);
+
+          expect(find.text('Update now · 1:30'), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
+
+          await tester.tap(skipAction());
+          await tester.pump();
+        });
+
+        verify(
+          () => taskAgentService.cancelScheduledWake(
+            makeTestIdentity().agentId,
+          ),
+        ).called(1);
+        verifyNever(() => taskAgentService.triggerReanalysis(any()));
+        // The time leaves; the word does not — the summary is still behind.
+        expect(find.text('Update now · 1:30'), findsNothing);
+        expect(skipAction(), findsNothing);
+        expect(find.text('Out of date'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('taskAgentWakeButton')),
+            matching: find.text('Update now'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'a skip that failed is logged, toasted, and gives the countdown back',
+      (tester) async {
+        final taskAgentService = MockTaskAgentService();
+        final logger = MockDomainLogger();
+        when(
+          () => taskAgentService.cancelScheduledWake(any()),
+        ).thenAnswer((_) async => throw StateError('cancel failed'));
+
+        await withClock(Clock.fixed(now), () async {
+          await pumpCounting(
+            tester,
+            taskAgentService: taskAgentService,
+            logger: logger,
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        });
+
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace', that: isNotNull),
+            subDomain: 'AiSummaryCard',
+            message: 'Failed to cancel scheduled wake',
+          ),
+        ).called(1);
+        expect(find.text('Error'), findsOneWidget);
+        // The wake is still scheduled, so the reader can try again.
+        expect(find.text('Update now · 1:30'), findsOneWidget);
+        expect(skipAction(), findsOneWidget);
+      },
+    );
+
+    testWidgets('a skip failing after the card is gone shows no toast', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      final pending = Completer<void>();
+      when(
+        () => taskAgentService.cancelScheduledWake(any()),
+      ).thenAnswer((_) => pending.future);
+
+      await withClock(Clock.fixed(now), () async {
+        await pumpCounting(
+          tester,
+          taskAgentService: taskAgentService,
+          logger: MockDomainLogger(),
+        );
+        await tester.tap(skipAction());
+        await tester.pump();
+      });
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      pending.completeError(StateError('cancel failed'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Error'), findsNothing);
     });
   });
 }

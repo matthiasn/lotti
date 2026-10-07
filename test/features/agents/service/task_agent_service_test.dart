@@ -1374,14 +1374,136 @@ void main() {
     });
 
     group('cancelScheduledWake', () {
-      test('delegates to the shared pending-wake cancellation path', () {
+      final now = DateTime(2026, 5, 4, 12);
+      final countdown = now.add(const Duration(seconds: 90));
+
+      setUp(() {
         when(() => mockAgentService.cancelPendingWake('agent-1')).thenReturn(
           null,
         );
+        when(
+          () => mockAgentService.markReportStale('agent-1'),
+        ).thenAnswer((_) async {});
+      });
 
-        service.cancelScheduledWake('agent-1');
+      Future<void> skipWith(AgentStateEntity? state) {
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        return withClock(
+          Clock.fixed(now),
+          () => service.cancelScheduledWake('agent-1'),
+        );
+      }
 
+      test('marks a fresh report stale before its countdown goes', () async {
+        // The countdown is the queued change's only trace: cancelling it
+        // without the mark read "Up to date" over a report that is behind.
+        await skipWith(
+          makeState().copyWith(
+            nextWakeAt: countdown,
+            reportFreshAt: now.subtract(const Duration(minutes: 5)),
+          ),
+        );
+
+        verifyInOrder([
+          () => mockAgentService.markReportStale('agent-1'),
+          () => mockAgentService.cancelPendingWake('agent-1'),
+        ]);
+      });
+
+      test('leaves an already stale report as it is', () async {
+        await skipWith(
+          makeState().copyWith(
+            nextWakeAt: countdown,
+            reportStaleAt: now.subtract(const Duration(minutes: 1)),
+            reportFreshAt: now.subtract(const Duration(minutes: 5)),
+          ),
+        );
+
+        verifyNever(() => mockAgentService.markReportStale(any()));
         verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
+      });
+
+      test('marks nothing when no countdown is pending', () async {
+        for (final deadline in [
+          null,
+          now,
+          now.subtract(const Duration(seconds: 1)),
+        ]) {
+          clearInteractions(mockAgentService);
+          await skipWith(makeState().copyWith(nextWakeAt: deadline));
+
+          verifyNever(() => mockAgentService.markReportStale(any()));
+          verify(
+            () => mockAgentService.cancelPendingWake('agent-1'),
+          ).called(1);
+        }
+      });
+
+      test('marks nothing for an agent without a state row', () async {
+        await skipWith(null);
+
+        verifyNever(() => mockAgentService.markReportStale(any()));
+        verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
+      });
+
+      test(
+        'a state that cannot be read cancels nothing, so the caller can '
+        'restore the countdown',
+        () async {
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenThrow(StateError('db closed'));
+
+          final logger = MockDomainLogger();
+          final loggedService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+            domainLogger: logger,
+          );
+
+          await expectLater(
+            loggedService.cancelScheduledWake('agent-1'),
+            throwsStateError,
+          );
+          verifyNever(() => mockAgentService.cancelPendingWake(any()));
+          // Nothing was cancelled, so nothing may say it was.
+          verifyNever(
+            () => logger.log(
+              LogDomain.agentRuntime,
+              any(that: contains('scheduled wake cancelled')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          );
+        },
+      );
+
+      test('logs the cancellation once the wake is gone', () async {
+        final logger = MockDomainLogger();
+        final loggedService = TaskAgentService(
+          agentService: mockAgentService,
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+          domainLogger: logger,
+        );
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => null);
+
+        await loggedService.cancelScheduledWake('agent-1');
+
+        verifyInOrder([
+          () => mockAgentService.cancelPendingWake('agent-1'),
+          () => logger.log(
+            LogDomain.agentRuntime,
+            any(that: contains('scheduled wake cancelled')),
+            subDomain: 'lifecycle',
+          ),
+        ]);
       });
     });
 

@@ -87,6 +87,9 @@ void main() {
     await bufferController.close();
     await completedController.close();
     container.dispose();
+    // The suite shares one isolate in CI: leave GetIt as setUp found it, or
+    // the next file to register a DomainLogger fails on "already registered".
+    await getIt.reset();
   });
 
   group('Audio Recording Checkbox Settings', () {

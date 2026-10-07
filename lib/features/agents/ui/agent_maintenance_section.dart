@@ -106,14 +106,6 @@ class _AgentMaintenanceSectionState
     extends ConsumerState<AgentMaintenanceSection> {
   bool _automationBusy = false;
 
-  /// The deadline *Skip once* was tapped against, so the countdown withdraws
-  /// on the tap rather than on the round trip.
-  ///
-  /// The deadline rather than a bare flag: a wake rescheduled while the band
-  /// is open carries a new timestamp, and a boolean would have kept its
-  /// countdown hidden behind a cancellation of the run before it.
-  DateTime? _skippedWakeAt;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -160,8 +152,7 @@ class _AgentMaintenanceSectionState
         inferenceAvailable &&
         automaticUpdatesEnabled &&
         !isRunning &&
-        remaining > Duration.zero &&
-        nextWakeAt != _skippedWakeAt;
+        remaining > Duration.zero;
 
     return Container(
       key: const ValueKey('agentMaintenanceSection'),
@@ -204,7 +195,7 @@ class _AgentMaintenanceSectionState
                   onRunNow: inferenceAvailable ? _runNow : null,
                   onSkipScheduledUpdate:
                       widget.scope.kind == AgentMaintenanceKind.task
-                      ? () => unawaited(_skipScheduledUpdate(nextWakeAt))
+                      ? _skipScheduledUpdate
                       : null,
                   onCountdownExpired: () {
                     if (mounted) setState(() {});
@@ -304,23 +295,14 @@ class _AgentMaintenanceSectionState
 
   /// Task agents only: a project agent's next update is a synced slot that
   /// any later change or restart re-arms, so skipping it would not stick.
-  Future<void> _skipScheduledUpdate(DateTime? wakeAt) async {
-    setState(() => _skippedWakeAt = wakeAt);
-    final cancelled = await _guarded(
-      'Failed to cancel scheduled wake',
-      () async => ref
-          .read(taskAgentServiceProvider)
-          .cancelScheduledWake(widget.agentId),
-    );
-    // The latch is optimistic — it hides the countdown on the tap rather than
-    // on the round trip. A cancellation that did not happen leaves the wake
-    // scheduled and about to fire, so the countdown and its Skip action have
-    // to come back; otherwise the band reads "Updates on changes" over a
-    // pending run and the user is left with a toast and no way to retry.
-    if (!cancelled && mounted) {
-      setState(() => _skippedWakeAt = null);
-    }
-  }
+  ///
+  /// Completes with whether the wake was cancelled; the row hides the
+  /// countdown on the tap and gives it back on `false`.
+  Future<bool> _skipScheduledUpdate() => _guarded(
+    'Failed to cancel scheduled wake',
+    () =>
+        ref.read(taskAgentServiceProvider).cancelScheduledWake(widget.agentId),
+  );
 
   Future<void> _updateAutomaticUpdates({required bool enabled}) async {
     if (_automationBusy) return;

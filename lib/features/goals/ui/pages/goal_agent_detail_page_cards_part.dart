@@ -551,11 +551,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                       onRunNow: () => ref
                           .read(goalHabitCompletionServiceProvider)
                           .requestReportRefresh(widget.agentId),
-                      onSkipScheduledUpdate: () {
+                      onSkipScheduledUpdate: () async {
                         ref
                             .read(goalAgentServiceProvider)
                             .skipPendingReportRefresh(widget.agentId);
                         setState(() => _cancelledManually = true);
+                        return true;
                       },
                       onCountdownExpired: () =>
                           ref.invalidate(agentStateProvider(widget.agentId)),

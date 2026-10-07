@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Tristate;
 
 import 'package:clock/clock.dart';
@@ -32,7 +33,7 @@ void main() {
     bool compact = false,
     ValueChanged<bool>? onAutomaticUpdatesChanged,
     VoidCallback? onRunNow,
-    VoidCallback? onSkipScheduledUpdate,
+    Future<bool> Function()? onSkipScheduledUpdate,
     VoidCallback? onCountdownExpired,
   }) {
     return AgentAutomationRow(
@@ -48,7 +49,7 @@ void main() {
       compact: compact,
       onAutomaticUpdatesChanged: onAutomaticUpdatesChanged ?? (_) {},
       onRunNow: onRunNow,
-      onSkipScheduledUpdate: onSkipScheduledUpdate ?? () {},
+      onSkipScheduledUpdate: onSkipScheduledUpdate ?? () async => true,
       onCountdownExpired: onCountdownExpired ?? () {},
     );
   }
@@ -371,7 +372,10 @@ void main() {
             showCountdown: true,
             nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
             onRunNow: () => runs++,
-            onSkipScheduledUpdate: () => skips++,
+            onSkipScheduledUpdate: () async {
+              skips++;
+              return true;
+            },
           ),
         );
 
@@ -897,7 +901,10 @@ void main() {
             showCountdown: true,
             nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
             onRunNow: () {},
-            onSkipScheduledUpdate: () => skips++,
+            onSkipScheduledUpdate: () async {
+              skips++;
+              return true;
+            },
           ),
         );
 
@@ -1451,6 +1458,358 @@ void main() {
       expect(tester.getTopLeft(trigger()), triggerOffset);
       expect(tester.getTopLeft(toggle()), toggleOffset);
       expect(tester.getTopLeft(find.text('Skip once')), skipOffset);
+    });
+  });
+
+  group('skip once', () {
+    Finder skipAction() =>
+        find.byKey(const ValueKey('taskAgentSkipScheduledUpdate'));
+    final deadline = now.add(const Duration(minutes: 1, seconds: 30));
+
+    Widget compactRow({
+      DateTime? nextWakeAt,
+      bool isStale = true,
+      bool isRunning = false,
+      bool inferenceAvailable = true,
+      Future<bool> Function()? onSkip,
+    }) => AgentAutomationRow.compact(
+      inferenceAvailable: inferenceAvailable,
+      isRunning: isRunning,
+      hasReportContent: true,
+      isStale: isStale,
+      nextWakeAt: nextWakeAt,
+      showsFreshConfirmation: false,
+      onRunNow: () {},
+      onSkipScheduledUpdate: onSkip,
+    );
+
+    group('compact form', () {
+      testWidgets('offers Skip once beside the counting trigger', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () async => true),
+          );
+
+          expect(skipAction(), findsOneWidget);
+          expect(find.text('Skip once'), findsOneWidget);
+          expect(find.textContaining('1:30'), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('agentAutomationRowCompactStacked')),
+            findsNothing,
+          );
+          // Hugging the trigger it qualifies, on the same line — not floated
+          // midway along the row.
+          final gap =
+              tester.getTopLeft(trigger()).dx -
+              tester.getTopRight(skipAction()).dx;
+          expect(gap, tokensOf(tester).spacing.step3);
+          expect(
+            tester.getCenter(skipAction()).dy,
+            moreOrLessEquals(tester.getCenter(trigger()).dy, epsilon: 2),
+          );
+        });
+      });
+
+      testWidgets('offers no Skip once when the host gives no skip', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(tester, compactRow(nextWakeAt: deadline));
+
+          expect(find.textContaining('1:30'), findsOneWidget);
+          expect(skipAction(), findsNothing);
+        });
+      });
+
+      testWidgets('offers no Skip once without a countdown to cancel', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          final cases = <String, Widget>{
+            'no deadline': compactRow(onSkip: () async => true),
+            'deadline passed': compactRow(
+              nextWakeAt: now.subtract(const Duration(seconds: 1)),
+              onSkip: () async => true,
+            ),
+            'running': compactRow(
+              nextWakeAt: deadline,
+              isRunning: true,
+              onSkip: () async => true,
+            ),
+            'no inference': compactRow(
+              nextWakeAt: deadline,
+              inferenceAvailable: false,
+              onSkip: () async => true,
+            ),
+          };
+          for (final MapEntry(key: reason, value: row) in cases.entries) {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await pumpRow(tester, row);
+            expect(skipAction(), findsNothing, reason: reason);
+          }
+        });
+      });
+
+      testWidgets('a skip withdraws the countdown at once and keeps the '
+          'summary out of date', (tester) async {
+        var skips = 0;
+        final pending = Completer<bool>();
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(
+              nextWakeAt: deadline,
+              onSkip: () {
+                skips++;
+                return pending.future;
+              },
+            ),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+
+          // Before the round trip: the time and the action are gone, the
+          // remedy stays, and nothing claims the summary is current.
+          expect(skips, 1);
+          expect(skipAction(), findsNothing);
+          expect(find.textContaining('1:30'), findsNothing);
+          expect(find.text('Update now'), findsOneWidget);
+          expect(find.text('Out of date'), findsOneWidget);
+
+          pending.complete(true);
+          await tester.pump();
+          expect(skipAction(), findsNothing);
+          expect(find.text('Out of date'), findsOneWidget);
+        });
+      });
+
+      testWidgets('a skip that failed gives the countdown and Skip back', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () async => false),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await tester.pump();
+
+          expect(skipAction(), findsOneWidget);
+          expect(find.textContaining('1:30'), findsOneWidget);
+        });
+      });
+
+      testWidgets('a skip that threw gives the countdown and Skip back, and '
+          'still reports the error', (tester) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(
+              nextWakeAt: deadline,
+              onSkip: () async => throw StateError('cancel failed'),
+            ),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await tester.pump();
+
+          // Not swallowed: reported like any widget callback's failure.
+          expect(tester.takeException(), isA<StateError>());
+          expect(skipAction(), findsOneWidget);
+          expect(find.textContaining('1:30'), findsOneWidget);
+        });
+      });
+
+      testWidgets('a new deadline after a skip counts down again', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () async => true),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          expect(find.textContaining('1:30'), findsNothing);
+
+          // The latch is the skipped deadline, not a flag: the next change's
+          // countdown is a different run and must show.
+          await pumpRow(
+            tester,
+            compactRow(
+              nextWakeAt: now.add(const Duration(seconds: 45)),
+              onSkip: () async => true,
+            ),
+          );
+          expect(find.textContaining('0:45'), findsOneWidget);
+          expect(skipAction(), findsOneWidget);
+        });
+      });
+
+      testWidgets('a failure reported after a new deadline arrived leaves '
+          'the new countdown alone', (tester) async {
+        final pending = Completer<bool>();
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () => pending.future),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await pumpRow(
+            tester,
+            compactRow(
+              nextWakeAt: now.add(const Duration(seconds: 45)),
+              onSkip: () => pending.future,
+            ),
+          );
+
+          pending.complete(false);
+          await tester.pump();
+          expect(find.textContaining('0:45'), findsOneWidget);
+          expect(skipAction(), findsOneWidget);
+        });
+      });
+
+      testWidgets('a skip resolving after the row is gone is ignored', (
+        tester,
+      ) async {
+        final pending = Completer<bool>();
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () => pending.future),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          pending.complete(false);
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+        });
+      });
+
+      testWidgets('Skip once leaves with the countdown when it runs out', (
+        tester,
+      ) async {
+        var current = now;
+        await withClock(Clock(() => current), () async {
+          await pumpRow(
+            tester,
+            compactRow(
+              nextWakeAt: now.add(const Duration(seconds: 2)),
+              onSkip: () async => true,
+            ),
+          );
+          expect(skipAction(), findsOneWidget);
+
+          current = now.add(const Duration(seconds: 2));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+
+          // Nothing is left to skip once the run is due.
+          expect(find.text('Update now'), findsOneWidget);
+          expect(skipAction(), findsNothing);
+        });
+      });
+
+      testWidgets('fits a narrow German phone beside the countdown', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: deadline, onSkip: () async => true),
+            width: 320,
+            locale: const Locale('de'),
+            textScaler: const TextScaler.linear(1.3),
+          );
+
+          expect(tester.takeException(), isNull);
+          // Three cannot share 320px here: Skip takes its own line, under
+          // the trigger, and squeezes neither the word nor the time.
+          expect(
+            find.byKey(const ValueKey('agentAutomationRowCompactStacked')),
+            findsOneWidget,
+          );
+          expect(skipAction(), findsOneWidget);
+          expect(
+            tester.getTopLeft(skipAction()).dy,
+            greaterThanOrEqualTo(tester.getBottomLeft(trigger()).dy),
+          );
+          expect(find.text('Veraltet'), findsOneWidget);
+          expect(find.textContaining('1:30'), findsOneWidget);
+          final label = tester.renderObject<RenderParagraph>(
+            find.textContaining('Jetzt aktualisieren'),
+          );
+          expect(label.didExceedMaxLines, isFalse);
+        });
+      });
+    });
+
+    group('full band', () {
+      testWidgets('a skip keeps the summary out of date while the caller '
+          'catches up', (tester) async {
+        final pending = Completer<bool>();
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            subject(
+              automaticUpdatesEnabled: true,
+              showCountdown: true,
+              nextWakeAt: deadline,
+              hasReportContent: true,
+              onRunNow: () {},
+              onSkipScheduledUpdate: () => pending.future,
+            ),
+          );
+          // The countdown alone makes it out of date — the caller's own flag
+          // has not caught up.
+          expect(find.text('Out of date'), findsOneWidget);
+
+          await tester.tap(skipAction());
+          await tester.pump();
+
+          // The bug: with the countdown gone this read "Up to date".
+          expect(find.text('Out of date'), findsOneWidget);
+          expect(find.text('Up to date'), findsNothing);
+          expect(find.textContaining('1:30'), findsNothing);
+          expect(find.text('Updates on changes'), findsOneWidget);
+          expect(skipAction(), findsNothing);
+          pending.complete(true);
+          await tester.pump();
+        });
+      });
+
+      testWidgets('a skip that failed gives the countdown and Skip back', (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            subject(
+              automaticUpdatesEnabled: true,
+              showCountdown: true,
+              nextWakeAt: deadline,
+              hasReportContent: true,
+              onRunNow: () {},
+              onSkipScheduledUpdate: () async => false,
+            ),
+          );
+          await tester.tap(skipAction());
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.textContaining('1:30'), findsOneWidget);
+          expect(skipAction(), findsOneWidget);
+        });
+      });
     });
   });
 }

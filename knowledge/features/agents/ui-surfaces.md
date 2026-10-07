@@ -15,15 +15,15 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-09-23
+    last_modified: 2026-10-07
   - id: automation-row
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
-    last_modified: 2026-09-14
+    last_modified: 2026-10-07
   - id: maintenance
     resource: ../../../lib/features/agents/ui/agent_maintenance_section.dart
     title: AgentMaintenanceSection
-    last_modified: 2026-09-20
+    last_modified: 2026-10-07
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
@@ -172,15 +172,25 @@ current summary or a run in flight (*Thinking…*) never shows a time.
 Ticking digits move nothing here either: the label uses tabular figures
 (`DesignSystemButton.tabularFigures`), and the button holds the widest width it
 has shown for the current deadline, so `10:00` → `9:59` cannot pull its leading
-edge in. The full schedule sentence, *Skip once* and the switch stay in the
-internals panel. The project card reads the watermark alone for `isStale` and
+edge in.
+
+A task card also puts *Skip once* beside that counting trigger
+(`AgentAutomationRow.compact(onSkipScheduledUpdate: …)`): the countdown is
+where a paid run is announced, so it is where the reader can decline it,
+without first opening the internals panel. It is offered only while the
+trigger counts, and leaves with the time when the deadline passes. The row
+measures the freshness word, *Skip once* and the counting trigger at the live
+locale and text scale; when the three cannot share a line, *Skip once* takes
+its own line under the trigger rather than squeezing the word or truncating
+the time. The full schedule sentence and the switch stay in the internals
+panel. The project card reads the watermark alone for `isStale` and
 passes its next update slot (`projectNextUpdateProvider`) as the deadline, so
 a stale project summary reads *Out of date* beside *Update now · 34:59*; it
 keeps `showsFreshConfirmation: false`, so its strip still takes no height
 while its report is current.
 
-Everything else that used to sit in a footer under the summary — the schedule,
-*Skip once*, the automatic-updates switch, the model identity and the setup
+Everything else that used to sit in a footer under the summary — the schedule
+sentence, the automatic-updates switch, the model identity and the setup
 chevron — is **agent plumbing**, and lives behind *Open agent internals*. That
 is six controls the primary reading surface no longer carries.
 
@@ -227,7 +237,13 @@ the agent, and `TaskAgentService` is where that write lives.
 
 *Skip once* latches the **deadline** it was tapped against, not a boolean, so a
 wake rescheduled while the panel is open counts down again instead of staying
-hidden behind a cancellation of the run before it.
+hidden behind a cancellation of the run before it. The latch lives in
+`AgentAutomationRow`, so the band and the task card share it: the countdown
+withdraws on the tap, the row keeps reading *Out of date* until the caller's
+state catches up, and a skip callback that completes `false` (the band's and
+the card's both log and toast the failure) or throws gives the countdown and its
+action back for a retry; a throw is reported through `FlutterError.reportError`
+rather than lost.
 
 Its `aiCard.footerWash` and hairline **are** the container; nothing inside
 draws a second fill, border or radius. An earlier revision boxed the automation
@@ -267,6 +283,16 @@ the trigger, so running the agent by hand meant cancelling the schedule first.
 Cancelling one pending run is a worded `Skip once` grouped with the countdown it
 cancels — not a bare glyph beside the switch it does not control. It calls
 `cancelScheduledWake` and leaves automatic updates on.
+
+**Skipping saves the run, not the fact that the summary is behind.** A change
+waiting out its countdown does not move `reportStaleAt` — the throttle deadline
+is its only trace, which is why the card reads `isReportBehindAt`. Cancelling
+the deadline alone therefore left a report that missed the change reading *Up
+to date*. `TaskAgentService.cancelScheduledWake` first marks the report stale
+(`AgentService.markReportStale`) when the state is behind but not yet stale,
+then cancels the pending wake, so the summary keeps reading *Out of date* until
+the next change's run or *Update now* refreshes it — the same mark disabling
+automatic updates writes over a pending countdown.
 
 **Accent is spent on the trigger alone.** It sits at
 `DesignSystemButtonSize.dense` — the caption tier — so accent means "this starts

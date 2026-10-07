@@ -453,7 +453,7 @@ void main() {
       final taskAgentService = MockTaskAgentService();
       when(
         () => taskAgentService.cancelScheduledWake(any()),
-      ).thenAnswer((_) {});
+      ).thenAnswer((_) async {});
 
       await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
         await tester.pumpWidget(
@@ -550,7 +550,7 @@ void main() {
         final taskAgentService = MockTaskAgentService();
         when(
           () => taskAgentService.cancelScheduledWake(any()),
-        ).thenAnswer((_) {});
+        ).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
           AgentDomainEntity? current = makeTestState(
@@ -608,6 +608,87 @@ void main() {
 
           expect(find.text('Skip once'), findsOneWidget);
           expect(find.textContaining('1:30'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'after a skip the band still says the summary is out of date',
+      (tester) async {
+        // The reported bug: Skip once flipped the band to "Up to date" though
+        // the report still missed the change the countdown was waiting on.
+        final now = DateTime(2026, 5, 4, 12);
+        final reportFreshAt = now.subtract(const Duration(minutes: 5));
+        AgentDomainEntity? current = makeTestState(
+          nextWakeAt: now.add(const Duration(seconds: 30)),
+        ).copyWith(reportFreshAt: reportFreshAt);
+        final taskAgentService = MockTaskAgentService();
+        late ProviderContainer container;
+        when(() => taskAgentService.cancelScheduledWake(any())).thenAnswer((
+          _,
+        ) async {
+          // What the service persists: the stale mark, then no deadline.
+          current = makeTestState().copyWith(
+            reportStaleAt: now,
+            reportFreshAt: reportFreshAt,
+          );
+          container.invalidate(agentStateProvider(agentId));
+        });
+
+        await withClock(Clock.fixed(now), () async {
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+              overrides: [
+                agentIdentityProvider.overrideWith(
+                  (ref, id) async => makeTestIdentity(
+                    config: const AgentConfig(automaticUpdatesEnabled: true),
+                  ),
+                ),
+                inheritedTaskWakeCadenceProvider.overrideWith(
+                  (ref, categoryId) => AgentWakeCadence.hourly,
+                ),
+                agentStateProvider.overrideWith((ref, id) async => current),
+                agentReportProvider.overrideWith(
+                  (ref, id) async => makeTestReport(tldr: 'Tldr line.'),
+                ),
+                agentIsRunningProvider.overrideWith(
+                  (ref, id) => Stream.value(false),
+                ),
+                taskAgentResolvedSetupProvider.overrideWith(
+                  (ref, id) async => resolvedSetup,
+                ),
+                taskAgentServiceProvider.overrideWith(
+                  (ref) => taskAgentService,
+                ),
+              ],
+              child: const SingleChildScrollView(
+                child: AgentMaintenanceSection(
+                  agentId: agentId,
+                  scope: AgentMaintenanceScope(
+                    kind: AgentMaintenanceKind.task,
+                    entityId: entityId,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          container = ProviderScope.containerOf(
+            tester.element(find.byType(AgentMaintenanceSection)),
+          );
+          expect(find.text('Out of date'), findsOneWidget);
+
+          await tester.tap(
+            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          );
+          await tester.pumpAndSettle();
+
+          verify(() => taskAgentService.cancelScheduledWake(agentId)).called(1);
+          expect(find.text('Out of date'), findsOneWidget);
+          expect(find.text('Up to date'), findsNothing);
+          expect(find.textContaining('0:30'), findsNothing);
+          expect(find.text('Skip once'), findsNothing);
         });
       },
     );
