@@ -2875,7 +2875,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Doplň vektorové hodiny odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout.';
+      'Doplň vektorové hodiny definicím nastavení (kategoriím, štítkům, návykům, nástěnkám, měřitelným veličinám a slovníkovým výrazům), odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout. Stačí to spustit na jednom zařízení.';
 
   @override
   String get backfillClocksFailed => 'Vektorové hodiny se nepodařilo opravit';
@@ -2919,6 +2919,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'Události využití AI';
+
+  @override
+  String get backfillRecordsDefinitions => 'Definice nastavení';
 
   @override
   String get backfillRecordsEntryLinks => 'Odkazy mezi záznamy';

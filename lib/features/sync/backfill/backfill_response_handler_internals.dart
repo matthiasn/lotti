@@ -13,7 +13,8 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
 
   bool _payloadStoreWired(SyncSequencePayloadType type) => switch (type) {
     SyncSequencePayloadType.journalEntity ||
-    SyncSequencePayloadType.entryLink => true,
+    SyncSequencePayloadType.entryLink ||
+    SyncSequencePayloadType.entityDefinition => true,
     SyncSequencePayloadType.agentEntity ||
     SyncSequencePayloadType.agentLink => _agentRepository != null,
     SyncSequencePayloadType.notification ||
@@ -348,6 +349,26 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
             originatingHostId: originatingHostId,
           ),
           typeName: 'consumptionEvent',
+        );
+      case SyncSequencePayloadType.entityDefinition:
+        // Answered with the current version, under the join of every clock
+        // it has met: it covers the requested counter whichever version won.
+        return _processAgentBackfillEntry<EntityDefinition>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          durable: durable,
+          loadPayload: () => _journalDb.definitionById(payloadId),
+          getVectorClock: (definition) => definition.vectorClock,
+          buildSyncMessage: (definition) => SyncMessage.entityDefinition(
+            status: SyncEntryStatus.update,
+            entityDefinition: definition,
+            originatingHostId: originatingHostId,
+          ),
+          typeName: 'entityDefinition',
         );
     }
   }

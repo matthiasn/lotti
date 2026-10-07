@@ -552,6 +552,96 @@ void main() {
     },
   );
 
+  group('SyncEntityDefinition sequence tracking', () {
+    final habit = HabitDefinition(
+      id: 'habit-1',
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      vectorClock: const VectorClock({'hostA': 9, 'peer': 2}),
+      name: 'Read',
+      description: '',
+      private: false,
+      active: true,
+      habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+    );
+
+    late MockSyncSequenceLogService sequenceLog;
+
+    setUp(() {
+      sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    SyncEntityDefinition queued() {
+      final companion =
+          verify(
+                () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+              ).captured.single
+              as OutboxCompanion;
+      return SyncMessage.fromJson(
+            jsonDecode(companion.message.value) as Map<String, dynamic>,
+          )
+          as SyncEntityDefinition;
+    }
+
+    test(
+      'a definition is sent as this host and its counter is bound to it, so '
+      'a peer that misses it can ask for it',
+      () async {
+        await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: habit,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(queued().originatingHostId, 'hostA');
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: 'habit-1',
+            vectorClock: const VectorClock({'hostA': 9, 'peer': 2}),
+            payloadType: SyncSequencePayloadType.entityDefinition,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a backfill answer keeps the host it names', () async {
+      await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: habit,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'peer',
+        ),
+      );
+
+      expect(queued().originatingHostId, 'peer');
+    });
+
+    test('a clockless definition records nothing', () async {
+      await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+        SyncMessage.entityDefinition(
+          entityDefinition: habit.copyWith(vectorClock: null),
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      verifyNever(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+  });
+
   test('enqueueMessage logs SyncAiConfig', () async {
     final cfg = SyncMessage.aiConfig(
       aiConfig: AiConfig.inferenceProvider(

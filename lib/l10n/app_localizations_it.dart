@@ -2881,7 +2881,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Aggiungi un orologio vettoriale ai collegamenti tra voci, alle entità e ai collegamenti degli agenti salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+      'Aggiungi un orologio vettoriale alle definizioni delle impostazioni (categorie, etichette, abitudini, dashboard, misurabili e termini del dizionario), ai collegamenti tra voci, alle entità degli agenti e ai collegamenti degli agenti salvati senza orologio vettoriale, così i tuoi altri dispositivi possono ordinarli e riceverli. Basta eseguirlo su un solo dispositivo.';
 
   @override
   String get backfillClocksFailed =>
@@ -2925,6 +2925,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'Eventi di utilizzo dell\'IA';
+
+  @override
+  String get backfillRecordsDefinitions => 'Definizioni delle impostazioni';
 
   @override
   String get backfillRecordsEntryLinks => 'Collegamenti tra voci';

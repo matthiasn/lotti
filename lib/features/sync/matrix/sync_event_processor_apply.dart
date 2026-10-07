@@ -43,63 +43,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           syncMessage: msg,
           journalDb: journalDb,
         );
-      case SyncEntityDefinition(:final entityDefinition):
-        final measurable = entityDefinition is MeasurableDataType
-            ? entityDefinition
-            : null;
-        final fts5Db = _fts5Db;
-        final previousMeasurable = measurable != null && fts5Db != null
-            ? await journalDb.getMeasurableDataTypeById(measurable.id)
-            : null;
-        final linesAffected = await journalDb.upsertEntityDefinition(
-          entityDefinition,
-        );
-        if (linesAffected == 0) {
-          // The journal kept a newer copy. Nothing changed locally, so there
-          // is nothing to reindex or announce — reindexing from this stale
-          // copy would rewrite search rows with labels the app no longer
-          // shows.
-          _loggingService.log(
-            LogDomain.sync,
-            'Skipped older definition ${entityDefinition.id}',
-            subDomain: 'processor.apply.entityDefinition.skipped',
-          );
-          return null;
-        }
-        if (measurable != null &&
-            fts5Db != null &&
-            measurementDefinitionAffectsFts(previousMeasurable, measurable)) {
-          try {
-            final entries = await journalDb
-                .getMeasurementsByTypeIncludingPrivate(
-                  type: measurable.id,
-                  rangeStart: DateTime(1),
-                  rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
-                );
-            await fts5Db.reindexMeasurements(measurable, entries);
-          } catch (exception, stackTrace) {
-            // Search rows are derived. Keep the synced definition even if its
-            // local index cannot be refreshed right now.
-            _loggingService.error(
-              LogDomain.sync,
-              exception,
-              stackTrace: stackTrace,
-              subDomain: 'processor.apply.entityDefinition.reindex',
-            );
-          }
-        }
-        final typeNotification = switch (entityDefinition) {
-          CategoryDefinition() => categoriesNotification,
-          HabitDefinition() => habitsNotification,
-          DashboardDefinition() => dashboardsNotification,
-          MeasurableDataType() => measurablesNotification,
-          LabelDefinition() => labelsNotification,
-          SpeechDictionaryEntry() => speechDictionaryNotification,
-        };
-        _updateNotifications.notify(
-          {entityDefinition.id, typeNotification},
-          fromSync: true,
-        );
+      case final SyncEntityDefinition msg:
+        await _applyEntityDefinition(msg: msg, journalDb: journalDb);
         return null;
       case SyncAiConfig(:final aiConfig, :final versionStamp):
         // Ordered by stamp, not by arrival: a send that timed out and lands

@@ -201,6 +201,7 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
@@ -1178,6 +1179,9 @@ class MockAgentRepository extends Mock implements AgentRepository {
 }
 
 class MockConsumptionRepository extends Mock implements ConsumptionRepository {}
+
+class MockDefinitionClockStamper extends Mock
+    implements DefinitionClockStamper {}
 
 class MockAiAttributionService extends Mock implements AiAttributionService {}
 

@@ -1294,6 +1294,12 @@ void main() {
         () => repo.fetchTotalsForSteps(any()),
       ).thenAnswer((_) async => <SyncStep, int>{});
       when(
+        () => repo.backfillDefinitionClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
         () => repo.backfillAgentEntityClocks(
           onProgress: any(named: 'onProgress'),
           onDetailedProgress: any(named: 'onDetailedProgress'),
@@ -1351,16 +1357,23 @@ void main() {
       for (var i = 0; i < 12; i++) {
         await tester.pump(const Duration(milliseconds: 250));
       }
-      // The action requests exactly the three clock steps as one repair —
-      // they are the same fix over three tables, and each no-ops when nothing
-      // is missing a clock. The stamping itself is covered directly in
-      // test/database/maintenance_test.dart.
+      // The action requests exactly the four clock steps as one repair —
+      // they are the same fix over different tables, and each no-ops when
+      // nothing is missing a clock. The stamping itself is covered in the
+      // repository's and the definition stamper's tests.
       verify(
         () => repo.fetchTotalsForSteps({
+          SyncStep.backfillDefinitionClocks,
           SyncStep.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks,
           SyncStep.backfillEntryLinkClocks,
         }),
+      ).called(1);
+      verify(
+        () => repo.backfillDefinitionClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
       ).called(1);
       verify(
         () => repo.backfillAgentEntityClocks(
@@ -1389,6 +1402,12 @@ void main() {
       when(
         () => repo.fetchTotalsForSteps(any()),
       ).thenAnswer((_) async => <SyncStep, int>{});
+      when(
+        () => repo.backfillDefinitionClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
       when(
         () => repo.backfillAgentEntityClocks(
           onProgress: any(named: 'onProgress'),
@@ -1704,6 +1723,12 @@ void main() {
         when(
           () => repo.fetchTotalsForSteps(any()),
         ).thenAnswer((_) => totals.future);
+        when(
+          () => repo.backfillDefinitionClocks(
+            onProgress: any(named: 'onProgress'),
+            onDetailedProgress: any(named: 'onDetailedProgress'),
+          ),
+        ).thenAnswer((_) async {});
         when(
           () => repo.backfillAgentEntityClocks(
             onProgress: any(named: 'onProgress'),

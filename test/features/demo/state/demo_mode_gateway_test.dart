@@ -538,7 +538,13 @@ void main() {
           category.id: jsonEncode(category.toJson()),
         },
       );
-      await handle.writeEntityDefinition(category.copyWith(name: 'Edited'));
+      // An edit is stamped after the seed it changes.
+      await handle.writeEntityDefinition(
+        category.copyWith(
+          name: 'Edited',
+          updatedAt: category.updatedAt.add(const Duration(minutes: 1)),
+        ),
+      );
 
       expect(
         await gateway.refreshStaleDemoWorld(locale: const Locale('fr')),

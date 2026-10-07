@@ -1245,7 +1245,7 @@
     }
   },
   "backfillCatchUpDescription": "Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.",
-  "backfillClocksDescription": "Versieh Eintragsverknüpfungen, Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.",
+  "backfillClocksDescription": "Versieh Einstellungsdefinitionen (Kategorien, Labels, Gewohnheiten, Dashboards, Messgrößen und Wörterbuchbegriffe), Eintragsverknüpfungen, Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können. Es reicht, das auf einem Gerät auszuführen.",
   "backfillClocksFailed": "Vektoruhren konnten nicht repariert werden",
   "backfillClocksTitle": "Vektoruhren",
   "backfillClocksTrigger": "Vektoruhren reparieren",
@@ -1264,6 +1264,7 @@
   "backfillRecordsAgentEntities": "Agenten-Entitäten",
   "backfillRecordsAgentLinks": "Agenten-Verknüpfungen",
   "backfillRecordsConsumptionEvents": "KI-Nutzungsereignisse",
+  "backfillRecordsDefinitions": "Einstellungsdefinitionen",
   "backfillRecordsEntryLinks": "Eintragsverknüpfungen",
   "backfillRecordsHint": "Gelöschte eingeschlossen. Synchrone Geräte zeigen hier dieselben Zahlen; die erfassten Zähler können sich zwischen ihnen unterscheiden.",
   "backfillRecordsJournal": "Journaleinträge",

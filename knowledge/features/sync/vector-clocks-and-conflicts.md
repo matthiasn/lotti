@@ -183,8 +183,9 @@ tombstone for entry links, the notification repository, the consumption sync,
 `AgentSyncService` for agent entities and links, and the maintenance and
 historical re-stamps. The two link writers were missing it until
 [ADR 0078](../../../docs/adr/0078-entry-link-versions-are-ordered.md).
-Creates pass none. Entity definitions reserve no counter at all: a local edit
-carries the stored clock and moves `updatedAt` past the stored one.
+Creates pass none. Entity definitions reserve too, on top of the stored
+clock, but settle concurrent versions last-writer-wins under the join of both
+clocks rather than as conflicts — see [definition clocks](definition-clocks.md).
 
 That is a different question from `originatingHostId`:
 

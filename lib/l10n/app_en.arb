@@ -1935,7 +1935,7 @@
     }
   },
   "backfillCatchUpDescription": "Pull recent missing entries from peers right now.",
-  "backfillClocksDescription": "Add a vector clock to entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them.",
+  "backfillClocksDescription": "Add a vector clock to settings definitions (categories, labels, habits, dashboards, measurables and dictionary terms), entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them. Running it on one device is enough.",
   "backfillClocksFailed": "Could not repair vector clocks",
   "backfillClocksTitle": "Vector clocks",
   "backfillClocksTrigger": "Repair vector clocks",
@@ -1954,6 +1954,7 @@
   "backfillRecordsAgentEntities": "Agent entities",
   "backfillRecordsAgentLinks": "Agent links",
   "backfillRecordsConsumptionEvents": "AI usage events",
+  "backfillRecordsDefinitions": "Settings definitions",
   "backfillRecordsEntryLinks": "Entry links",
   "backfillRecordsHint": "Deletions included. Devices that are in sync show the same numbers here; tracked counters can differ between them.",
   "backfillRecordsJournal": "Journal entries",

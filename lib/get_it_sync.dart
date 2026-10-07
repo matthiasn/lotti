@@ -206,7 +206,13 @@ Future<String? Function()> _registerMatrixSyncStack({
     // coverage:ignore-end
     logging: domainLogger,
   );
-  syncEventProcessor.onboardingSyncService = onboardingSyncService;
+  syncEventProcessor
+    ..onboardingSyncService = onboardingSyncService
+    ..definitionClockStamper = DefinitionClockStamper(
+      journalDb: journalDb,
+      vectorClockService: vectorClockService,
+      outboxService: outboxService,
+    );
   matrixService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
 
   // Sync-node profile broadcaster: probes the local node's capabilities and

@@ -27,14 +27,22 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
     required String? host,
     required String? hostHash,
   }) async {
-    final localCounter = msg.entityDefinition.vectorClock?.vclock[host];
+    final definition = msg.entityDefinition;
+    final localCounter = definition.vectorClock?.vclock[host];
     final subject = '$hostHash:$localCounter';
-    return enqueueSimple(
+    await enqueueSimple(
       commonFields: commonFields,
       subject: subject,
       logMessage:
           'enqueue type=SyncEntityDefinition '
-          'subject=$subject id=${msg.entityDefinition.id}',
+          'subject=$subject id=${definition.id}',
+    );
+    // Binds this host's counter in the definition's clock, so a peer that
+    // missed it can ask for it and get the definition back.
+    await recordAgentSent(
+      entryId: definition.id,
+      vectorClock: definition.vectorClock,
+      payloadType: SyncSequencePayloadType.entityDefinition,
     );
   }
 

@@ -1466,7 +1466,7 @@
     }
   },
   "backfillCatchUpDescription": "Extraia entradas ausentes recentes de colegas agora mesmo.",
-  "backfillClocksDescription": "Adiciona um relógio vetorial às ligações entre entradas, às entidades e às ligações dos agentes guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.",
+  "backfillClocksDescription": "Adiciona um relógio vetorial às definições das configurações (categorias, etiquetas, hábitos, painéis, mensuráveis e termos do dicionário), às ligações entre entradas, às entidades e às ligações dos agentes guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber. Basta executá-lo num só dispositivo.",
   "backfillClocksFailed": "Não foi possível reparar os relógios vetoriais",
   "backfillClocksTitle": "Relógios vetoriais",
   "backfillClocksTrigger": "Reparar relógios vetoriais",
@@ -1485,6 +1485,7 @@
   "backfillRecordsAgentEntities": "Entidades de agentes",
   "backfillRecordsAgentLinks": "Ligações de agentes",
   "backfillRecordsConsumptionEvents": "Eventos de utilização de IA",
+  "backfillRecordsDefinitions": "Definições das configurações",
   "backfillRecordsEntryLinks": "Ligações entre entradas",
   "backfillRecordsHint": "Inclui os eliminados. Dispositivos sincronizados mostram aqui os mesmos números; os contadores registados podem diferir entre eles.",
   "backfillRecordsJournal": "Entradas do diário",

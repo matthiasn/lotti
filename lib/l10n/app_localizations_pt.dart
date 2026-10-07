@@ -2871,7 +2871,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Adiciona um relógio vetorial às ligações entre entradas, às entidades e às ligações dos agentes guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.';
+      'Adiciona um relógio vetorial às definições das configurações (categorias, etiquetas, hábitos, painéis, mensuráveis e termos do dicionário), às ligações entre entradas, às entidades e às ligações dos agentes guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber. Basta executá-lo num só dispositivo.';
 
   @override
   String get backfillClocksFailed =>
@@ -2915,6 +2915,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backfillRecordsConsumptionEvents => 'Eventos de utilização de IA';
+
+  @override
+  String get backfillRecordsDefinitions => 'Definições das configurações';
 
   @override
   String get backfillRecordsEntryLinks => 'Ligações entre entradas';

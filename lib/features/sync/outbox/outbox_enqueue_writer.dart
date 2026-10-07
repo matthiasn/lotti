@@ -268,6 +268,10 @@ class OutboxEnqueueWriter {
       final SyncAgentEntity msg => prepareAgentEntity(msg, host),
       final SyncAgentLink msg => prepareAgentLink(msg, host),
       final SyncConsumptionEvent msg => prepareConsumptionEvent(msg, host),
+      final SyncEntityDefinition msg =>
+        msg.originatingHostId == null && host != null
+            ? msg.copyWith(originatingHostId: host)
+            : msg,
       final SyncConfigFlag msg =>
         msg.originatingHostId == null && host != null
             ? msg.copyWith(originatingHostId: host)

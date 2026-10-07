@@ -791,8 +791,9 @@ ignores it — an empty inventory would read as "the advertiser holds nothing
 in this range" and push the whole range back.
 
 The stores (`deep_backfill_stores.dart`, `allDeepBackfillStores`) cover
-journal entries, entry links, agent entities and links, notifications and AI
-consumption events, all registered with the sync stack. Each reads its own
+journal entries, entry links, agent entities and links, notifications, AI
+consumption events and entity definitions — the last one store over their six
+tables (`DefinitionDeepBackfillStore`) — all registered with the sync stack. Each reads its own
 database, so none waits on another feature's runtime. Agent stores used to
 join only once the agent runtime had wired itself into the processor; a
 device whose agent start-up failed first advertised and counted no agent

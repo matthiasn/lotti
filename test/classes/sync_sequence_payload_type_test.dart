@@ -14,6 +14,7 @@ void main() {
           SyncSequencePayloadType.notification,
           SyncSequencePayloadType.notificationStateUpdate,
           SyncSequencePayloadType.consumptionEvent,
+          SyncSequencePayloadType.entityDefinition,
         ],
       );
     });

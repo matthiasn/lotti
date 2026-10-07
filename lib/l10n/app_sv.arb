@@ -1467,7 +1467,7 @@
     }
   },
   "backfillCatchUpDescription": "Hämta nyligen saknade poster från kollegor just nu.",
-  "backfillClocksDescription": "Ge länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem.",
+  "backfillClocksDescription": "Ge inställningsdefinitioner (kategorier, etiketter, vanor, instrumentpaneler, mätvärden och ordlisteord), länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem. Det räcker att köra det på en enhet.",
   "backfillClocksFailed": "Det gick inte att reparera vektorklockorna",
   "backfillClocksTitle": "Vektorklockor",
   "backfillClocksTrigger": "Reparera vektorklockor",
@@ -1486,6 +1486,7 @@
   "backfillRecordsAgentEntities": "Agententiteter",
   "backfillRecordsAgentLinks": "Agentlänkar",
   "backfillRecordsConsumptionEvents": "AI-användningshändelser",
+  "backfillRecordsDefinitions": "Inställningsdefinitioner",
   "backfillRecordsEntryLinks": "Länkar mellan poster",
   "backfillRecordsHint": "Raderade ingår. Synkroniserade enheter visar samma siffror här; spårade räknare kan skilja sig mellan dem.",
   "backfillRecordsJournal": "Journalposter",

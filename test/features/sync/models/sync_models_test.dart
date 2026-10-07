@@ -13,6 +13,7 @@ void main() {
         SyncStep.habits,
         SyncStep.aiSettings,
         SyncStep.savedTaskFilters,
+        SyncStep.backfillDefinitionClocks,
         SyncStep.backfillAgentEntityClocks,
         SyncStep.backfillAgentLinkClocks,
         SyncStep.backfillEntryLinkClocks,

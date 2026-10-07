@@ -1466,7 +1466,7 @@
     }
   },
   "backfillCatchUpDescription": "Trek recente ontbrekende items uit van collega's nu.",
-  "backfillClocksDescription": "Geef koppelingen tussen items, agententiteiten en agentkoppelingen die zonder vectorklok zijn opgeslagen er alsnog een, zodat je andere apparaten ze kunnen ordenen en ontvangen.",
+  "backfillClocksDescription": "Geef instellingsdefinities (categorieën, labels, gewoontes, dashboards, meetwaarden en woordenboektermen), koppelingen tussen items, agententiteiten en agentkoppelingen die zonder vectorklok zijn opgeslagen er alsnog een, zodat je andere apparaten ze kunnen ordenen en ontvangen. Het is genoeg om dit op één apparaat uit te voeren.",
   "backfillClocksFailed": "Vectorklokken konden niet worden hersteld",
   "backfillClocksTitle": "Vectorklokken",
   "backfillClocksTrigger": "Vectorklokken herstellen",
@@ -1485,6 +1485,7 @@
   "backfillRecordsAgentEntities": "Agententiteiten",
   "backfillRecordsAgentLinks": "Agentkoppelingen",
   "backfillRecordsConsumptionEvents": "AI-gebruiksgebeurtenissen",
+  "backfillRecordsDefinitions": "Instellingsdefinities",
   "backfillRecordsEntryLinks": "Koppelingen tussen items",
   "backfillRecordsHint": "Inclusief verwijderde. Gesynchroniseerde apparaten tonen hier dezelfde aantallen; de bijgehouden tellers kunnen tussen hen verschillen.",
   "backfillRecordsJournal": "Dagboekitems",

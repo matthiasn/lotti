@@ -86,15 +86,15 @@ Their persistence, ordering and suppression semantics live in
 
 ## Sequence-tracked payloads
 
-Only a subset participates in `(hostId, counter)` accounting — the seven
+Only a subset participates in `(hostId, counter)` accounting — the eight
 members of `SyncSequencePayloadType`:
 
 `journalEntity`, `entryLink`, `agentEntity`, `agentLink`, `notification`,
-`notificationStateUpdate`, `consumptionEvent`.
+`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`.
 
 The enum's ordinal is **persisted** in the sequence log, so existing values
 must never be reordered. New values are appended at the end only —
-`consumptionEvent` was added that way.
+`consumptionEvent` and then `entityDefinition` were added that way.
 
 Sequence-tracked payloads may carry:
 
@@ -114,6 +114,15 @@ builds new ones. Agent-wake writes hit the outbox as individual
 `agentEntity` / `agentLink` rows, and the generic dequeue-time bundler
 coalesces them (see [send path](send-path.md)). Children of any in-flight legacy
 bundle resurface through per-`(host, counter)` backfill on demand.
+
+# Entity definitions: sequence-tracked
+
+`entityDefinition` carries a category, label, habit, dashboard, measurable or
+speech dictionary entry, its vector clock and the `originatingHostId` that
+sent it. It is recorded in the sequence log under
+`SyncSequencePayloadType.entityDefinition` on both ends, so a lost version is
+asked for and answered like any tracked payload. How the clocks are written
+and settled is in [definition clocks](definition-clocks.md).
 
 # Saved task filters: per-item, not sequence-tracked
 

@@ -4797,7 +4797,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillClocksDescription.
   ///
   /// In en, this message translates to:
-  /// **'Add a vector clock to entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them.'**
+  /// **'Add a vector clock to settings definitions (categories, labels, habits, dashboards, measurables and dictionary terms), entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them. Running it on one device is enough.'**
   String get backfillClocksDescription;
 
   /// No description provided for @backfillClocksFailed.
@@ -4865,6 +4865,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI usage events'**
   String get backfillRecordsConsumptionEvents;
+
+  /// No description provided for @backfillRecordsDefinitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings definitions'**
+  String get backfillRecordsDefinitions;
 
   /// No description provided for @backfillRecordsEntryLinks.
   ///

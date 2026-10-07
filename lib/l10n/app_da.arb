@@ -1467,7 +1467,7 @@
     }
   },
   "backfillCatchUpDescription": "Træk nyligt manglende poster fra jævnaldrende lige nu.",
-  "backfillClocksDescription": "Giv links mellem poster, agententiteter og agentlinks, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan ordne og modtage dem.",
+  "backfillClocksDescription": "Giv indstillingsdefinitioner (kategorier, etiketter, vaner, dashboards, målinger og ordbogsord), links mellem poster, agententiteter og agentlinks, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan ordne og modtage dem. Det er nok at køre det på én enhed.",
   "backfillClocksFailed": "Kunne ikke reparere vektorure",
   "backfillClocksTitle": "Vektorure",
   "backfillClocksTrigger": "Reparer vektorure",
@@ -1486,6 +1486,7 @@
   "backfillRecordsAgentEntities": "Agententiteter",
   "backfillRecordsAgentLinks": "Agentlinks",
   "backfillRecordsConsumptionEvents": "AI-forbrugshændelser",
+  "backfillRecordsDefinitions": "Indstillingsdefinitioner",
   "backfillRecordsEntryLinks": "Links mellem poster",
   "backfillRecordsHint": "Inklusive slettede. Enheder, der er synkroniseret, viser de samme tal her; sporede tællere kan variere mellem dem.",
   "backfillRecordsJournal": "Journalposter",

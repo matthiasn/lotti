@@ -236,26 +236,20 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
   ) {
     return _upsertDefinitionIfNotOlder(
       entityDefinition,
-      readExistingSerialized: () => _serializedById(
-        measurableTypes,
-        entityDefinition.id,
+      table: measurableTypes,
+      write: (definition) => into(measurableTypes).insertOnConflictUpdate(
+        measurableDbEntity(definition as MeasurableDataType),
       ),
-      write: () => into(
-        measurableTypes,
-      ).insertOnConflictUpdate(measurableDbEntity(entityDefinition)),
     );
   }
 
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) {
     return _upsertDefinitionIfNotOlder(
       habitDefinition,
-      readExistingSerialized: () => _serializedById(
-        habitDefinitions,
-        habitDefinition.id,
+      table: habitDefinitions,
+      write: (definition) => into(habitDefinitions).insertOnConflictUpdate(
+        habitDefinitionDbEntity(definition as HabitDefinition),
       ),
-      write: () => into(
-        habitDefinitions,
-      ).insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition)),
     );
   }
 
@@ -264,12 +258,9 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
   ) {
     return _upsertDefinitionIfNotOlder(
       dashboardDefinition,
-      readExistingSerialized: () => _serializedById(
-        dashboardDefinitions,
-        dashboardDefinition.id,
-      ),
-      write: () => into(dashboardDefinitions).insertOnConflictUpdate(
-        dashboardDefinitionDbEntity(dashboardDefinition),
+      table: dashboardDefinitions,
+      write: (definition) => into(dashboardDefinitions).insertOnConflictUpdate(
+        dashboardDefinitionDbEntity(definition as DashboardDefinition),
       ),
     );
   }
@@ -279,12 +270,9 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
   ) {
     return _upsertDefinitionIfNotOlder(
       categoryDefinition,
-      readExistingSerialized: () => _serializedById(
-        categoryDefinitions,
-        categoryDefinition.id,
-      ),
-      write: () => into(categoryDefinitions).insertOnConflictUpdate(
-        categoryDefinitionDbEntity(categoryDefinition),
+      table: categoryDefinitions,
+      write: (definition) => into(categoryDefinitions).insertOnConflictUpdate(
+        categoryDefinitionDbEntity(definition as CategoryDefinition),
       ),
     );
   }
@@ -303,22 +291,14 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return linesAffected;
   }
 
-  /// Unlike the other definitions, two copies of an entry with the same
-  /// `updatedAt` are ordered by content, so devices that receive them in
-  /// opposite orders still keep the same one (SpeechDictionarySync.tla,
-  /// `TotalOrder`). Exact ties are not rare here: every device migrates a
-  /// legacy term at the same fixed stamp.
   Future<int> upsertSpeechDictionaryEntry(SpeechDictionaryEntry entry) {
     return _upsertDefinitionIfNotOlder(
       entry,
-      readExistingSerialized: () => _serializedById(
-        speechDictionaryEntries,
-        entry.id,
-      ),
-      write: () => into(
-        speechDictionaryEntries,
-      ).insertOnConflictUpdate(speechDictionaryEntryDbEntity(entry)),
-      orderTiesByContent: true,
+      table: speechDictionaryEntries,
+      write: (definition) =>
+          into(speechDictionaryEntries).insertOnConflictUpdate(
+            speechDictionaryEntryDbEntity(definition as SpeechDictionaryEntry),
+          ),
     );
   }
 
@@ -327,15 +307,32 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
   ) {
     return _upsertDefinitionIfNotOlder(
       labelDefinition,
-      readExistingSerialized: () => _serializedById(
-        labelDefinitions,
-        labelDefinition.id,
+      table: labelDefinitions,
+      write: (definition) => into(labelDefinitions).insertOnConflictUpdate(
+        labelDefinitionDbEntity(definition as LabelDefinition),
       ),
-      write: () => into(
-        labelDefinitions,
-      ).insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition)),
     );
   }
+
+  /// Every definition table, in the order [definitionById] searches them.
+  List<TableInfo<Table, Object?>> get _definitionTables => [
+    categoryDefinitions,
+    labelDefinitions,
+    habitDefinitions,
+    dashboardDefinitions,
+    measurableTypes,
+    speechDictionaryEntries,
+  ];
+
+  TableInfo<Table, Object?> _tableOf(EntityDefinition definition) =>
+      definition.map<TableInfo<Table, Object?>>(
+        measurableDataType: (_) => measurableTypes,
+        habit: (_) => habitDefinitions,
+        dashboard: (_) => dashboardDefinitions,
+        categoryDefinition: (_) => categoryDefinitions,
+        labelDefinition: (_) => labelDefinitions,
+        speechDictionaryEntry: (_) => speechDictionaryEntries,
+      );
 
   /// The stored JSON document for [id] in [table], or null when absent.
   ///
@@ -354,73 +351,126 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return row?.read<String>('serialized');
   }
 
-  /// Writes [incoming] unless the stored definition is strictly newer.
-  ///
-  /// Definitions replicate as whole documents and the local edit paths
-  /// refresh `updatedAt` so that "the later edit wins" on sync. This is
-  /// where that rule is enforced: an older definition arriving late — a
-  /// delayed sync event, a historical re-send — must not overwrite a newer
-  /// local one, and an older live copy must not resurrect a newer deletion.
-  /// When both sides carry a vector clock that orders them, the clock
-  /// decides; otherwise `updatedAt` does, and an exact tie applies
-  /// [incoming] so a local re-save never silently disappears.
-  ///
-  /// Only `updatedAt` and `vectorClock` of the stored document are decoded,
-  /// never the whole document, which for legacy dashboards may not parse.
-  /// Read and write share one transaction so the decision cannot interleave
-  /// with another writer. Returns the write's result, or 0 when skipped.
-  ///
-  /// With [orderTiesByContent], an exact tie instead applies [incoming] only
-  /// when its canonical JSON sorts at or after the stored document's, so the
-  /// winner does not depend on arrival order. A local re-save that loses
-  /// that comparison is re-stamped by the caller (`_writeLocalEdit`).
-  Future<int> _upsertDefinitionIfNotOlder(
-    EntityDefinition incoming, {
-    required Future<String?> Function() readExistingSerialized,
-    required Future<int> Function() write,
-    bool orderTiesByContent = false,
-  }) {
-    return transaction(() async {
-      final existingSerialized = await readExistingSerialized();
-      if (existingSerialized != null) {
-        final existing =
-            json.decode(existingSerialized) as Map<String, dynamic>;
-        if (_definitionIsOlder(incoming, than: existing) ||
-            (orderTiesByContent &&
-                _losesContentTie(
-                  incoming,
-                  than: existing,
-                  storedSerialized: existingSerialized,
-                ))) {
-          DevLogger.log(
-            name: 'JournalDb',
-            message:
-                'Skipping older definition ${incoming.id}: '
-                'incoming ${incoming.updatedAt.toIso8601String()} '
-                'vs stored ${existing['updatedAt']}',
+  /// The definition stored under [id], whichever kind it is, deleted and
+  /// private ones included — what a backfill request for one of its
+  /// counters is answered with. Null when no table holds [id], or when the
+  /// stored document no longer parses.
+  Future<EntityDefinition?> definitionById(String id) async {
+    for (final table in _definitionTables) {
+      final serialized = await _serializedById(table, id);
+      if (serialized == null) continue;
+      try {
+        return EntityDefinition.fromJson(
+          json.decode(serialized) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// Every stored definition that carries no vector clock, deleted and
+  /// private ones included: what the manual clock migration stamps. A
+  /// document that no longer parses is left out — it cannot be re-sent.
+  Future<List<EntityDefinition>> clocklessDefinitions() async {
+    final clockless = <EntityDefinition>[];
+    for (final table in _definitionTables) {
+      final rows = await customSelect(
+        'SELECT serialized FROM ${table.actualTableName} '
+        r"WHERE json_type(serialized, '$.vectorClock') IS NULL "
+        r"OR json_type(serialized, '$.vectorClock') = 'null'",
+        readsFrom: {table},
+      ).get();
+      for (final row in rows) {
+        try {
+          clockless.add(
+            EntityDefinition.fromJson(
+              json.decode(row.read<String>('serialized'))
+                  as Map<String, dynamic>,
+            ),
           );
-          return 0;
+        } catch (_) {
+          // Unparseable legacy document: nothing to stamp or send.
         }
       }
-      return write();
+    }
+    return clockless;
+  }
+
+  /// Writes [incoming] where the recency gate lets it, and keeps the stored
+  /// clock the join of every version the row has met.
+  ///
+  /// Definitions replicate as whole documents, each local write carrying
+  /// the next own counter on top of the stored clock (DefinitionClocks.tla):
+  ///
+  /// - a version whose clock dominates the stored one is written, one the
+  ///   stored clock dominates — a late or repeated arrival — is not;
+  /// - two concurrent versions are settled last-writer-wins: the later
+  ///   `updatedAt`, then the greater content (the document without its
+  ///   clock), so every device keeps the same one whatever the arrival
+  ///   order. The kept version is stored under the join of both clocks,
+  ///   strictly greater than either, so the resolution spends no counter and
+  ///   sends nothing;
+  /// - a row written by an older build carries no clock. A clockless copy
+  ///   never displaces a clocked row; a clockless row meets any copy by
+  ///   `updatedAt` and content alone, and when it is kept against a clocked
+  ///   copy the caller stamps it on top of that copy's clock.
+  ///
+  /// Only `updatedAt` and `vectorClock` of the stored document are decoded,
+  /// never the whole document, which for legacy dashboards may not parse;
+  /// the join is written into the stored JSON in place. Read and write share
+  /// one transaction so the decision cannot interleave with another writer.
+  /// Returns the write's result, or 0 when [incoming] was not written.
+  Future<int> _upsertDefinitionIfNotOlder(
+    EntityDefinition incoming, {
+    required TableInfo<Table, Object?> table,
+    required Future<int> Function(EntityDefinition definition) write,
+  }) {
+    return transaction(() async {
+      final storedSerialized = await _serializedById(table, incoming.id);
+      if (storedSerialized == null) return write(incoming);
+      final stored = json.decode(storedSerialized) as Map<String, dynamic>;
+      final decision = _decide(incoming, stored);
+      switch (decision) {
+        case _Write():
+          return write(incoming);
+        case _WriteJoined(:final clock):
+          return write(incoming.copyWith(vectorClock: clock));
+        case _KeepJoined(:final clock):
+          await customUpdate(
+            'UPDATE ${table.actualTableName} '
+            r"SET serialized = json_set(serialized, '$.vectorClock', "
+            'json(?)) WHERE id = ?',
+            variables: [
+              Variable.withString(jsonEncode(clock.toJson())),
+              Variable.withString(incoming.id),
+            ],
+            updates: {table},
+          );
+        case _Keep():
+      }
+      DevLogger.log(
+        name: 'JournalDb',
+        message:
+            'Kept stored definition ${incoming.id}: '
+            'incoming ${incoming.updatedAt.toIso8601String()} '
+            '${incoming.vectorClock?.canonicalKey} vs stored '
+            '${stored['updatedAt']} ${_stampOf(stored).vectorClock?.canonicalKey}',
+      );
+      return 0;
     });
   }
 
   /// The `updatedAt` and `vectorClock` of the stored copy of [definition],
   /// or null when no row exists. Reads by id with no `deleted`/`private`
-  /// filter — the same view the recency gate uses — so a caller whose write
-  /// was refused can build a copy that is genuinely newer than what is
-  /// stored.
+  /// filter — the same view the recency gate uses — so a local write can
+  /// build a version that supersedes what is stored.
   Future<DefinitionStamp?> definitionStamp(EntityDefinition definition) async {
-    final table = definition.map<TableInfo<Table, Object?>>(
-      measurableDataType: (_) => measurableTypes,
-      habit: (_) => habitDefinitions,
-      dashboard: (_) => dashboardDefinitions,
-      categoryDefinition: (_) => categoryDefinitions,
-      labelDefinition: (_) => labelDefinitions,
-      speechDictionaryEntry: (_) => speechDictionaryEntries,
+    final serialized = await _serializedById(
+      _tableOf(definition),
+      definition.id,
     );
-    final serialized = await _serializedById(table, definition.id);
     if (serialized == null) return null;
     return _stampOf(json.decode(serialized) as Map<String, dynamic>);
   }
@@ -436,43 +486,56 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
-  /// Whether [incoming] carries the stored `updatedAt` exactly but sorts
-  /// before the stored document by canonical JSON — the content order that
-  /// settles a tie the same way on every device.
-  static bool _losesContentTie(
-    EntityDefinition incoming, {
-    required Map<String, dynamic> than,
-    required String storedSerialized,
-  }) {
-    final storedUpdatedAt = _stampOf(than).updatedAt;
-    if (storedUpdatedAt == null ||
-        !incoming.updatedAt.isAtSameMomentAs(storedUpdatedAt)) {
-      return false;
+  /// What the gate does with [incoming] against the [stored] document.
+  static _GateDecision _decide(
+    EntityDefinition incoming,
+    Map<String, dynamic> stored,
+  ) {
+    final storedClock = _stampOf(stored).vectorClock;
+    final incomingClock = incoming.vectorClock;
+    if (incomingClock == null) {
+      return storedClock == null && _isLater(incoming, stored)
+          ? const _Write()
+          : const _Keep();
     }
-    return jsonEncode(incoming).compareTo(storedSerialized) < 0;
+    if (storedClock == null) {
+      return _isLater(incoming, stored) ? const _Write() : const _Keep();
+    }
+    switch (VectorClock.compare(storedClock, incomingClock)) {
+      case VclockStatus.b_gt_a:
+        return const _Write();
+      case VclockStatus.a_gt_b:
+        return const _Keep();
+      // One clock should name one document; should two ever differ under
+      // it, they are ordered like any concurrent pair, so every device keeps
+      // the same one. An identical re-delivery rewrites what is stored.
+      case VclockStatus.equal:
+        return _isLater(incoming, stored) ? const _Write() : const _Keep();
+      case VclockStatus.concurrent:
+        final joined = VectorClock.merge(storedClock, incomingClock);
+        return _isLater(incoming, stored)
+            ? _WriteJoined(joined)
+            : _KeepJoined(joined);
+    }
   }
 
-  static bool _definitionIsOlder(
-    EntityDefinition incoming, {
-    required Map<String, dynamic> than,
-  }) {
-    final stored = _stampOf(than);
-    final incomingClock = incoming.vectorClock;
-    final storedClock = stored.vectorClock;
-    if (incomingClock != null && storedClock != null) {
-      switch (VectorClock.compare(storedClock, incomingClock)) {
-        case VclockStatus.a_gt_b:
-          return true;
-        case VclockStatus.b_gt_a:
-          return false;
-        case VclockStatus.equal:
-        case VclockStatus.concurrent:
-          break;
-      }
+  /// Last-writer-wins between [incoming] and the [stored] document: the
+  /// later `updatedAt`, then, on an exact tie, the greater content — the
+  /// canonical JSON without the clock, which differs between devices that
+  /// joined different clocks into the same version. Identical content counts
+  /// as later, so a clockless re-delivery of the stored version applies.
+  static bool _isLater(EntityDefinition incoming, Map<String, dynamic> stored) {
+    final storedUpdatedAt = _stampOf(stored).updatedAt;
+    if (storedUpdatedAt == null) return true;
+    if (!incoming.updatedAt.isAtSameMomentAs(storedUpdatedAt)) {
+      return incoming.updatedAt.isAfter(storedUpdatedAt);
     }
-    final storedUpdatedAt = stored.updatedAt;
-    return storedUpdatedAt != null &&
-        incoming.updatedAt.isBefore(storedUpdatedAt);
+    String content(Map<String, dynamic> document) =>
+        jsonEncode(Map<String, dynamic>.of(document)..remove('vectorClock'));
+    return content(
+          json.decode(jsonEncode(incoming)) as Map<String, dynamic>,
+        ).compareTo(content(stored)) >=
+        0;
   }
 }
 
@@ -480,3 +543,32 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
 /// only for a document that has none, which no writer produces) and its
 /// `vectorClock`.
 typedef DefinitionStamp = ({DateTime? updatedAt, VectorClock? vectorClock});
+
+/// The recency gate's verdict on an incoming definition.
+sealed class _GateDecision {
+  const _GateDecision();
+}
+
+/// Write the incoming version as it is.
+final class _Write extends _GateDecision {
+  const _Write();
+}
+
+/// Write the incoming version under the join of both clocks.
+final class _WriteJoined extends _GateDecision {
+  const _WriteJoined(this.clock);
+
+  final VectorClock clock;
+}
+
+/// Keep the stored version, under the join of both clocks.
+final class _KeepJoined extends _GateDecision {
+  const _KeepJoined(this.clock);
+
+  final VectorClock clock;
+}
+
+/// Keep the stored version unchanged.
+final class _Keep extends _GateDecision {
+  const _Keep();
+}

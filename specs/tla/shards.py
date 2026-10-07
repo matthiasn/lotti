@@ -168,6 +168,11 @@ SECONDS = {
     "SavedTaskFilterSyncThree": 200,
     "SavedTaskFilterSync": 35,
     "SpeechDictionarySync": 5,
+    # Measured locally (20 workers) when added; refresh from CI.
+    "DefinitionClocks": 2,
+    "DefinitionClocksThree": 20,
+    "DefinitionClocksLossy": 300,
+    "SyncPipelineDefinition": 2,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,
     # Measured locally (4 shared cores) when added; refresh from CI.

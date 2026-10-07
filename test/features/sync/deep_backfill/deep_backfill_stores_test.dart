@@ -482,6 +482,7 @@ void main() {
       SyncSequencePayloadType.agentLink,
       SyncSequencePayloadType.notification,
       SyncSequencePayloadType.consumptionEvent,
+      SyncSequencePayloadType.entityDefinition,
     ]);
     for (final store in stores) {
       expect(await store.count(), 0, reason: '${store.payloadType} reads');

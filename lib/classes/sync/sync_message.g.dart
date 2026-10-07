@@ -104,6 +104,7 @@ SyncEntityDefinition _$SyncEntityDefinitionFromJson(
     json['entityDefinition'] as Map<String, dynamic>,
   ),
   status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  originatingHostId: json['originatingHostId'] as String?,
   $type: json['runtimeType'] as String?,
 );
 
@@ -112,6 +113,7 @@ Map<String, dynamic> _$SyncEntityDefinitionToJson(
 ) => <String, dynamic>{
   'entityDefinition': instance.entityDefinition,
   'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'originatingHostId': instance.originatingHostId,
   'runtimeType': instance.$type,
 };
 
@@ -544,6 +546,7 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.notification: 'notification',
   SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
   SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
+  SyncSequencePayloadType.entityDefinition: 'entityDefinition',
 };
 
 SyncDeepBackfillRequest _$SyncDeepBackfillRequestFromJson(

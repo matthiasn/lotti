@@ -102,6 +102,12 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
       case SyncSequencePayloadType.consumptionEvent:
         final event = await consumptionRepository?.getEvent(payloadId);
         return (exists: event != null, vectorClock: event?.vectorClock);
+      case SyncSequencePayloadType.entityDefinition:
+        final definition = await _journalDb.definitionById(payloadId);
+        return (
+          exists: definition != null,
+          vectorClock: definition?.vectorClock,
+        );
     }
   }
 
