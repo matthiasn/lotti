@@ -30,7 +30,8 @@ const _listUrl = '/settings/speech-dictionary';
 ///
 /// Edit mode (with [entryId]) waits for the entry to arrive from
 /// [speechDictionaryEntryProvider]; add mode (with an optional
-/// [initialTerm] prefill, as from the list's "no match" action) needs none.
+/// [initialTerm] prefill — what the list's search field held when its
+/// create button or "no match" action was taken) needs none.
 /// Save and delete beam back to the list rather than popping, since the
 /// desktop detail pane is inline.
 class SpeechDictionaryDetailsPage extends ConsumerStatefulWidget {

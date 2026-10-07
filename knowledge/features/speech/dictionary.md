@@ -48,6 +48,10 @@ sources:
     resource: ../../../specs/tla/TranscriptionRun.tla
     title: TranscriptionRun TLA+ model
     last_modified: 2026-10-06
+  - id: list-page
+    resource: ../../../lib/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart
+    title: The settings list and the add page URL it seeds from the search
+    last_modified: 2026-10-07
 ---
 
 # One entry per term
@@ -193,10 +197,16 @@ applies, searchable by term and by misheard spelling. While private entries
 are hidden, a term limited only to private categories is hidden with them,
 and private categories drop out of every term's scope; transcription still
 reads every entry, since a recording in a private category is private itself. An entry's page edits
-the term, its categories and its misheard spellings. The editor's *Add to
-Dictionary* on a text selection adds the selected word limited to the entry's
-category, widens a term limited elsewhere to it, and without a category adds
-it for all.
+the term, its categories and its misheard spellings. Both ways into the add
+page from the list — the create button and the "Add …" action under an
+unmatched search — seed the term with the trimmed search query, carried as
+the `term` query parameter of `/settings/speech-dictionary/create`
+(`speechDictionaryCreateUrl` in
+[speech_dictionary_list_page.dart](../../../lib/features/speech_dictionary/ui/pages/speech_dictionary_list_page.dart));
+the shared list shell hands every create button the current query. The
+editor's *Add to Dictionary* on a text selection adds the selected word
+limited to the entry's category, widens a term limited elsewhere to it, and
+without a category adds it for all.
 
 # Related
 

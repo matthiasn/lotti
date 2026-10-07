@@ -102,9 +102,14 @@ class DefinitionsListPage<T> extends StatefulWidget {
   /// Title of the error state; the error itself renders underneath.
   final String errorTitle;
 
-  /// Semantic label + handler for the floating create button.
+  /// Semantic label for the create button.
   final String createLabel;
-  final VoidCallback onCreate;
+
+  /// Handler for every create button — the header action, the embedded
+  /// toolbar button, the floating button and the empty state's inline one.
+  /// It receives the trimmed search query (empty when nothing is typed) so a
+  /// page can seed its editor with what the user was looking for.
+  final void Function(String query) onCreate;
 
   /// Optional override for the search haystack (e.g. labels also match
   /// on description). Defaults to [displayName].
@@ -143,7 +148,11 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
     }
   }
 
-  String get _queryLower => _queryRaw.trim().toLowerCase();
+  String get _queryTrimmed => _queryRaw.trim();
+
+  String get _queryLower => _queryTrimmed.toLowerCase();
+
+  void _create() => widget.onCreate(_queryTrimmed);
 
   void _onQueryChanged(String value) {
     setState(() => _queryRaw = value);
@@ -206,7 +215,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
           : DesignSystemBottomNavigationFabPadding(
               child: DesignSystemFloatingActionButton(
                 semanticLabel: widget.createLabel,
-                onPressed: widget.onCreate,
+                onPressed: _create,
               ),
             ),
     );
@@ -289,7 +298,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
   Widget _createButton() => DesignSystemButton(
     label: widget.createLabel,
     leadingIcon: LottiIcons.add,
-    onPressed: widget.onCreate,
+    onPressed: _create,
   );
 
   /// The embedded toolbar: the search field, when there is anything to
@@ -315,7 +324,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
   }
 
   Widget _buildEmptySliver(BuildContext context, {required bool noItemsAtAll}) {
-    final query = _queryRaw.trim();
+    final query = _queryTrimmed;
     if (!noItemsAtAll && query.isNotEmpty) {
       return SliverFillRemaining(
         child: _ListStateMessage(
