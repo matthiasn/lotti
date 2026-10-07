@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entries. When two devices change the same one at once, both keep the later
   change, whichever arrives first, and a change made on a device whose clock
   runs behind still replaces the version it was made from.
+- **Recordings transcribed automatically in a task now get the same
+  corrected text and summary as transcribing them by hand.** When a category
+  ran speech recognition in the task context on its own, the recording kept
+  the engine's raw text, with dictionary terms still misspelled, and no
+  summary appeared unless the summary was also set to run automatically. It
+  now goes through the same step as the AI menu: the transcript is corrected
+  against the speech dictionary, written once, and summarized.
 
 ## [1.1.45]
 
