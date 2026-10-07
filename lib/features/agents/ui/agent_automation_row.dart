@@ -31,6 +31,52 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   /// Rebuilds the age label when it would next read differently.
   Timer? _ageTimer;
 
+  /// The deadline *Skip once* was tapped against, so the countdown withdraws
+  /// on the tap rather than on the round trip.
+  ///
+  /// The deadline rather than a bare flag: a wake rescheduled meanwhile
+  /// carries a new timestamp, and a boolean would have kept its countdown
+  /// hidden behind a cancellation of the run before it.
+  DateTime? _skippedWakeAt;
+
+  /// Whether the deadline on screen is the one just skipped.
+  bool get _skipPending =>
+      _skippedWakeAt != null && _skippedWakeAt == widget.nextWakeAt;
+
+  /// Hides the countdown, then asks [skip] to cancel the run.
+  ///
+  /// The tap cannot await, so both outcomes are handled on the future
+  /// itself: a skip that did not happen — refused or thrown — leaves the wake
+  /// scheduled and about to fire, so the countdown and its action come back
+  /// for a retry, and a throw is reported the way any widget callback's
+  /// failure is rather than lost.
+  void _skipScheduledUpdate(Future<bool> Function() skip) {
+    final wakeAt = widget.nextWakeAt;
+    setState(() => _skippedWakeAt = wakeAt);
+    void release() {
+      if (mounted && _skippedWakeAt == wakeAt) {
+        setState(() => _skippedWakeAt = null);
+      }
+    }
+
+    skip().then(
+      (skipped) {
+        if (!skipped) release();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        release();
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'agents',
+            context: ErrorDescription('while skipping the scheduled update'),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -96,7 +142,8 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   bool get _countdownVisible =>
       widget.showCountdown &&
       widget.nextWakeAt != null &&
-      _widthAnchorSeconds > 0;
+      _widthAnchorSeconds > 0 &&
+      !_skipPending;
 
   /// The one answer to "is this summary current?" that the label, glyph and
   /// tooltip all read. A scheduled update exists because something changed
@@ -113,9 +160,13 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   /// follows the flag alone: a failed run advances nothing and must not read
   /// as fresh. Which runs count is the caller's to say
   /// ([AgentAutomationRow.isRefreshingReport]); by default every run does.
+  ///
+  /// A skipped countdown is the same proof until the caller's flag catches
+  /// up: skipping saves the run, not the fact that the summary is behind.
   bool get _isOutdated =>
       widget.isStale ||
       _countdownVisible ||
+      _skipPending ||
       (widget.isRefreshingReport ?? widget.isRunning);
 
   /// The schedule wording at each width tier, longest first, rendered against
@@ -183,23 +234,38 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
       // The countdown rides in the trigger only beside "Out of date": under a
       // fresh summary, or in place of "Thinking…", it would promise an update
       // that is not the point.
-      final trigger =
+      final counting =
           outdated &&
-              freshnessLabel != null &&
-              !widget.isRunning &&
-              widget.inferenceAvailable &&
-              pendingWakeAt != null &&
-              pendingWakeAt.isAfter(clock.now())
+          freshnessLabel != null &&
+          !widget.isRunning &&
+          widget.inferenceAvailable &&
+          !_skipPending &&
+          pendingWakeAt != null &&
+          pendingWakeAt.isAfter(clock.now());
+      final trigger = counting
           ? _CountdownUpdateNowButton(
               key: ValueKey(pendingWakeAt),
               nextWakeAt: pendingWakeAt,
               onRunNow: widget.onRunNow,
+              onExpired: () {
+                if (mounted) setState(() {});
+              },
             )
           : _UpdateNowButton(
               isRunning: widget.isRunning,
               onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
             );
-      final row = Row(
+      // Skip once sits beside the countdown it cancels: a reader who sees a
+      // paid run announced can decline it there, without opening the panel.
+      final onSkip = widget.onSkipScheduledUpdate;
+      final skip = counting && onSkip != null
+          ? _SkipAction(
+              label: messages.taskAgentSkipScheduledUpdate,
+              tooltip: messages.taskAgentCancelTimerTooltip,
+              onSkip: () => _skipScheduledUpdate(onSkip),
+            )
+          : null;
+      Widget line(List<Widget> trailing) => Row(
         key: const ValueKey('agentAutomationRowCompact'),
         mainAxisAlignment: freshnessLabel == null
             ? MainAxisAlignment.end
@@ -214,9 +280,60 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
                 child: freshness,
               ),
             ),
-          trigger,
+          ...trailing,
         ],
       );
+      final Widget row;
+      if (skip == null) {
+        row = line([trigger]);
+      } else {
+        // Measured against the time the deadline was handed over with — the
+        // widest the label will be — so ticking never flips the layout.
+        final metrics = _AutomationMetrics.measure(
+          context,
+          freshnessLabel: freshnessLabel,
+          scheduleLabels: const [],
+          skipLabel: messages.taskAgentSkipScheduledUpdate,
+          triggerLabel: messages.taskAgentUpdateNowCountdown(
+            formatCountdown(_widthAnchorSeconds),
+          ),
+          settingLabel: '',
+        );
+        row = LayoutBuilder(
+          builder: (context, constraints) {
+            // Skip hugs the trigger it qualifies. When the three cannot share
+            // a line — German at 1.3x on a 320px phone — Skip takes its own
+            // line under the trigger rather than squeezing the state word or
+            // truncating the time.
+            if (metrics.freshnessWidth +
+                    metrics.skipWidth +
+                    metrics.triggerWidth <=
+                constraints.maxWidth) {
+              // One trailing group: `spaceBetween` would otherwise float
+              // Skip midway between the word and the trigger it qualifies.
+              return line([
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    skip,
+                    SizedBox(width: tokens.spacing.step3),
+                    trigger,
+                  ],
+                ),
+              ]);
+            }
+            return Column(
+              key: const ValueKey('agentAutomationRowCompactStacked'),
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                line([trigger]),
+                skip,
+              ],
+            );
+          },
+        );
+      }
       // A band in a reading column pays for the air under it, and this pair
       // brings none of its own: the dense trigger is a 24-high box and the
       // word beside it is bare text, so without this the status sat four
@@ -231,6 +348,7 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
       );
     }
 
+    final onSkip = widget.onSkipScheduledUpdate;
     final anchorLabels = _scheduleLabels(context, _widthAnchorSeconds);
     final metrics = _AutomationMetrics.measure(
       context,
@@ -327,7 +445,9 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
                 ),
                 skipLabel: metrics.skipLabel,
                 skipTooltip: messages.taskAgentCancelTimerTooltip,
-                onSkip: _countdownVisible ? widget.onSkipScheduledUpdate : null,
+                onSkip: _countdownVisible && onSkip != null
+                    ? () => _skipScheduledUpdate(onSkip)
+                    : null,
                 stacked: layout.scheduleStacked,
               );
 

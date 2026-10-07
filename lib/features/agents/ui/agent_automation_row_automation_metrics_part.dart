@@ -81,6 +81,10 @@ class AgentAutomationRow extends StatefulWidget {
   /// trigger reads "Update now · 1:30", so an out-of-date summary also says
   /// that it is about to fix itself. It reports no expiry — the time simply
   /// leaves the label once it reaches zero.
+  ///
+  /// [onSkipScheduledUpdate], when given, puts *Skip once* beside that
+  /// countdown, so the run can be skipped where it is announced rather than
+  /// only from the agent internals panel.
   const AgentAutomationRow.compact({
     required this.inferenceAvailable,
     required this.isRunning,
@@ -91,6 +95,7 @@ class AgentAutomationRow extends StatefulWidget {
     this.reportUpdatedAt,
     this.isRefreshingReport,
     this.showsFreshConfirmation = true,
+    this.onSkipScheduledUpdate,
     super.key,
   }) : compact = true,
        automaticUpdatesEnabled = false,
@@ -98,7 +103,6 @@ class AgentAutomationRow extends StatefulWidget {
        showCountdown = false,
        showsIdleScheduleLabel = false,
        onAutomaticUpdatesChanged = null,
-       onSkipScheduledUpdate = null,
        onCountdownExpired = null;
 
   /// Whether the row still renders while the report is current.
@@ -171,9 +175,15 @@ class AgentAutomationRow extends StatefulWidget {
   final ValueChanged<bool>? onAutomaticUpdatesChanged;
   final VoidCallback? onRunNow;
 
-  /// Cancels the pending automatic update, leaving automatic updates on.
-  /// Null on the compact form, which shows no countdown to cancel.
-  final VoidCallback? onSkipScheduledUpdate;
+  /// Cancels the pending automatic update, leaving automatic updates on, and
+  /// completes with whether it did.
+  ///
+  /// The row withdraws the countdown on the tap rather than on the round
+  /// trip, and keeps reading "Out of date" meanwhile — skipping a run does
+  /// not make the summary current. A `false` gives the countdown and its
+  /// action back, because the wake is then still scheduled. Null where
+  /// nothing may be skipped: no action is offered.
+  final Future<bool> Function()? onSkipScheduledUpdate;
 
   /// Null on the compact form, whose deadline is never rendered and so never
   /// expires.
@@ -284,16 +294,19 @@ class _FreshnessCluster extends StatelessWidget {
 /// digit counts are equal widths, and the button holds the widest width it
 /// has shown for this deadline, so `10:00` → `9:59` does not pull its edge in
 /// either. Callers key it by the deadline, which resets that width. Once the
-/// deadline passes it is the plain trigger again.
+/// deadline passes it is the plain trigger again, and [onExpired] tells the
+/// row, whose *Skip once* beside it has nothing left to skip.
 class _CountdownUpdateNowButton extends StatefulWidget {
   const _CountdownUpdateNowButton({
     required this.nextWakeAt,
     required this.onRunNow,
+    required this.onExpired,
     super.key,
   });
 
   final DateTime nextWakeAt;
   final VoidCallback? onRunNow;
+  final VoidCallback onExpired;
 
   @override
   State<_CountdownUpdateNowButton> createState() =>
@@ -307,7 +320,9 @@ class _CountdownUpdateNowButtonState extends State<_CountdownUpdateNowButton>
 
   @override
   void onCountdownExpired() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    widget.onExpired();
   }
 
   @override

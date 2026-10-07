@@ -452,6 +452,36 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
+  /// Skips the pending automatic update, leaving automatic updates on.
+  ///
+  /// Completes with whether the wake was cancelled, so the strip can give the
+  /// countdown back when it was not. A failure is reported once — logged for
+  /// the developer, a toast for the user — rather than escaping a tap.
+  Future<bool> _skipScheduledUpdate(String agentId) async {
+    // Read before the await: the card may be gone by the time it fails.
+    final service = ref.read(taskAgentServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      await service.cancelScheduledWake(agentId);
+      return true;
+    } catch (error, stackTrace) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'AiSummaryCard',
+        message: 'Failed to cancel scheduled wake',
+      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
+      }
+      return false;
+    }
+  }
+
   /// Builds the Supertonic playback control that reads [text] aloud, deriving
   /// its mode and progress from the app-wide [TtsPlaybackController]. [text] is
   /// whatever the body currently shows (TL;DR alone when collapsed, TL;DR plus
@@ -573,6 +603,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       onRunNow: inferenceAvailable
           ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)
           : null,
+      // The countdown is where a paid run is announced, so it is also where
+      // it can be declined — the same skip the agent internals panel offers.
+      onSkipScheduledUpdate: () => _skipScheduledUpdate(agentId),
     );
     // *Chat* leads the header's trailing rail, a disc beside the read-aloud
     // disc. Null while query chat is off, so an invisible button never

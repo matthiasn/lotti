@@ -15,7 +15,7 @@
     "lib/features/agents/service/project_activity_monitor.dart": 2,
     "lib/features/agents/state/agent_providers.dart": 2,
     "lib/features/agents/state/agent_wiring.dart": 1,
-    "lib/features/agents/ui/agent_maintenance_section.dart": 5,
+    "lib/features/agents/ui/agent_maintenance_section.dart": 4,
     "lib/features/agents/ui/agent_nav_helpers.dart": 1,
     "lib/features/agents/ui/ai_summary_card.dart": 2,
     "lib/features/agents/ui/ai_summary_card/proposal_row_part.dart": 4,

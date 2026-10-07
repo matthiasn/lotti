@@ -704,17 +704,33 @@ class TaskAgentService {
     );
   }
 
-  /// Cancel a scheduled wake for [agentId].
+  /// Cancel a scheduled wake for [agentId] — *Skip once*.
   ///
   /// Clears the throttle deadline, cancels the deferred drain timer, and
   /// removes any queued subscription jobs — so no automatic wake will fire.
-  void cancelScheduledWake(String agentId) {
+  ///
+  /// The skip saves the run, not the fact that the report is behind. A
+  /// change waiting out its countdown does not move `reportStaleAt` — the
+  /// throttle deadline is its only trace — so cancelling the deadline alone
+  /// would read as "Up to date" over a summary that still misses the change.
+  /// The stale mark is therefore written first, before the deadline goes;
+  /// the next change or *Update now* still refreshes the report as usual.
+  Future<void> cancelScheduledWake(String agentId) async {
+    final state = await repository.getAgentState(agentId);
+    // Behind but not stale: exactly the pending countdown and nothing else.
+    if (state != null &&
+        !state.isReportStale &&
+        state.isReportBehindAt(clock.now())) {
+      await agentService.markReportStale(agentId);
+    }
+    agentService.cancelPendingWake(agentId);
+    // Logged once the wake is gone: a state that cannot be read cancels
+    // nothing, and must not leave a line saying otherwise.
     domainLogger.log(
       LogDomain.agentRuntime,
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    agentService.cancelPendingWake(agentId);
   }
 
   /// Register a wake subscription for a task agent.
