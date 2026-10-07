@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
+import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -14,10 +16,15 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The recorder embedded in the check-in composer's narrative field
-/// (design 2026-09-13, options 1b / 2b): a live level strip, the running
-/// time, the reassurance that audio is on disk as it goes, and Discard ·
-/// Pause · Stop. It starts recording the moment it is mounted — the user
-/// already pressed *Dictate* — and reports one of three outcomes:
+/// (design 2026-09-13, options 1b / 2b): the app's voice anatomy — the
+/// live level strip over the Daily OS voice orb, the orb breathing with
+/// the same level — then the running time, the reassurance that audio is
+/// on disk as it goes, and Discard · Pause · Stop. The orb is the Capture
+/// surface's control as well as its picture: tapping it while live stops,
+/// like Capture's, and while paused resumes, so a user who learned voice
+/// on Daily OS finds the same thing under their finger here. It starts
+/// recording the moment it is mounted — the user already pressed
+/// *Dictate* — and reports one of three outcomes:
 ///
 /// - [onRecorded] with the audio entry the recording became and how long it
 ///   ran;
@@ -199,7 +206,33 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
             ),
           ),
         ),
-        SizedBox(height: tokens.spacing.step4),
+        // `step5` air on both sides of the orb, the voice zone's own rule:
+        // the listening shader spills past the button field, so the strip
+        // above and the clock below need clearance for it to breathe.
+        SizedBox(height: tokens.spacing.step5),
+        // The orb is a control, so it stays outside the strip's
+        // `ExcludeSemantics` and announces its own verb.
+        Center(
+          child: VoiceButton(
+            key: const ValueKey('check-in-recorder-orb'),
+            phase: live ? CapturePhase.listening : CapturePhase.idle,
+            dbfs: state.dBFS,
+            size: tokens.spacing.step11,
+            semanticLabel: live
+                ? messages.audioRecordingStop
+                : messages.audioRecordingResume,
+            // Inert until the take is actually running: before `record`
+            // lands, or after a refused start, there is nothing to resume.
+            onTap: _busy
+                ? null
+                : live
+                ? _stop
+                : paused
+                ? () => unawaited(_controller.resume())
+                : null,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step5),
         // Tabular mono figures, so the tick never moves the controls beneath
         // it; the same `m:ss` shape the saved-audio line and the chip use.
         Text(

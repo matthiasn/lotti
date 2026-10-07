@@ -645,6 +645,12 @@ would over-inset it. Exposed as a function because a sliver and a
 `bottomNavigationBar` cannot be children of that widget.
 
 The [action bar](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart)
+lays its controls out the way the task and entry bars do: a centred `Wrap`
+in which the filled *Log check-in* hugs its label (`DsGlassPill` without
+`expand`) and the mic and channel follow one `step4` apart, wrapping to a
+second line at large text on a narrow phone. It never stretches the primary
+to the column — on a desktop window that made it a bar-wide slab beside two
+pills, a shape no other strip in the app has. It
 resolves its third control once when built: the first channel, in the
 person's own order, for which `ContactLauncher.canLaunch` answers yes — a
 call on a phone, email on a desktop with a mail client, nothing where neither
@@ -1645,8 +1651,9 @@ The composer's parts, top to bottom:
   keyboard focus and nothing else, and it is the field's only frame: the
   `TextField` inside silences every border the app's
   `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
-  ring the text inside the hairline): the red dot, the waveform and the
-  filled Stop say "live". The phases swap in place rather than through an
+  ring the text inside the hairline): the red dot, the level strip, the
+  listening orb and the filled Stop say "live". The phases swap in place
+  rather than through an
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
   pass.
@@ -1668,8 +1675,9 @@ The composer's parts, top to bottom:
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
   recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate
   lives in every other phase, and Discard is quiet
-  too: red on this surface is the live dot alone, and the level meter is
-  the prose ink rather than the accent, which means pressable. The clock
+  too: red on this surface is the live dot alone, and the level strip is
+  the prose ink rather than the accent, which means pressable — the orb
+  beneath it wears the accent because it *is* pressable. The clock
   reads to assistive technology in words (`checkInSpokenClockLabel`: "23
   seconds"), as do the saved-audio captions. A held Save carries its reason
   as a semantics hint, so a reader landing on the control hears the next
@@ -1932,10 +1940,20 @@ and once the words are read back it touches the check-in holding them
 (`touchCheckInsHolding`), so the briefing catches up.
 
 The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
-embedded in the field rather than pushed as a sheet: a live level strip,
-the running time in tabular mono figures on a fixed `h:mm:ss` shape (so the
-tick never moves the controls beneath it), the line saying audio is on disk
-as it goes, and Discard · Pause · Stop. It drives the app-wide
+embedded in the field rather than pushed as a sheet, and it wears the app's
+one voice anatomy rather than a meter of its own: the live level strip over
+Daily OS's [`VoiceButton`](../../lib/features/daily_os_next/ui/widgets/voice_button.dart)
+— the orb `listening` on the recorder's dBFS while the take is live,
+`idle` while it is paused, `step11` wide with the voice zone's `step5` air
+on both sides — then the running time in tabular mono figures on a fixed
+`h:mm:ss` shape (so the tick never moves the controls beneath it), the line
+saying audio is on disk as it goes, and Discard · Pause · Stop. The orb is
+a control as in Capture: tapped live it stops (the same `stop` as the
+button), tapped paused it resumes, and it is inert — no tap — before
+`record` has landed, after a refused start, and while a stop is in flight.
+Because the orb's shader and breath repeat for as long as the take is live,
+a test with a mounted recorder pumps by hand; `pumpAndSettle` never returns
+(the Capture surface's rule too). It drives the app-wide
 `AudioRecorderController` the way the recording sheet does — `record` on
 mount with the person as `linkedId` and `transcriptionHandledByCaller`,
 `stop` handing back the entry id and the length the clock stood at — and

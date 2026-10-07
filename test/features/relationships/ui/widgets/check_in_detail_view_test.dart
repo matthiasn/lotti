@@ -433,7 +433,11 @@ void main() {
       await pump(tester);
 
       await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
-      await tester.pumpAndSettle();
+      // By hand: the recorder's orb breathes while the take is live, so
+      // nothing settles until Stop.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
 
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
@@ -478,9 +482,14 @@ void main() {
     await pump(tester);
 
     await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
-    await tester.pumpAndSettle();
+    // By hand until the take is cancelled: the live orb never settles.
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.text('Discard').last);
     await tester.pumpAndSettle();
 

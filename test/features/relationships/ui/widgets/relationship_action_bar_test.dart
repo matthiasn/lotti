@@ -158,7 +158,9 @@ void main() {
         .designTokens;
     expect(pill.label, 'Log check-in');
     expect(pill.fillColor, tokens.colors.interactive.enabled);
-    expect(pill.expand, isTrue);
+    // Hugging, not stretched: the primary is as wide as its word, the
+    // shape the task and entry bars give theirs.
+    expect(pill.expand, isFalse);
     // One verb for voice across the feature: the bar's mic wears the
     // composer's own word rather than a second one ("Speak check-in").
     expect(
@@ -168,6 +170,64 @@ void main() {
           )
           .label,
       'Dictate',
+    );
+  });
+
+  testWidgets('on a wide window the primary keeps its measure and the '
+      'controls sit centred, like the task bar — never a column-wide slab', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      channels: const [mobile],
+      surface: const Size(1280, 800),
+    );
+
+    final primaryKey = find.byKey(const ValueKey('person-action-log-check-in'));
+    final primary = tester.getRect(primaryKey);
+    final channel = tester.getRect(channelButton);
+    final strip = tester.getRect(find.byType(DesignSystemGlassStrip));
+    final context = tester.element(primaryKey);
+
+    expect(
+      primary.width,
+      closeTo(
+        DsGlassPill.intrinsicWidth(context, label: 'Log check-in'),
+        0.5,
+      ),
+      reason: 'the pill hugs its label',
+    );
+    expect(primary.width, lessThan(strip.width / 3));
+    // The group — primary · Dictate · Call — is centred on the strip.
+    expect(
+      (primary.left + channel.right) / 2,
+      closeTo(strip.center.dx, 0.5),
+    );
+    // Neighbours one `step4` apart, the row's own gap.
+    final tokens = context.designTokens;
+    final mic = tester.getRect(
+      find.byKey(const ValueKey('person-action-speak')),
+    );
+    expect(mic.left - primary.right, closeTo(tokens.spacing.step4, 0.5));
+    expect(channel.left - mic.right, closeTo(tokens.spacing.step4, 0.5));
+  });
+
+  testWidgets('at large text on a narrow phone the controls wrap to a second '
+      'line rather than overflow', (tester) async {
+    setTestSurfaceSize(tester, const Size(320, 640));
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pump(tester, channels: const [mobile]);
+
+    expect(tester.takeException(), isNull);
+    final primary = tester.getRect(
+      find.byKey(const ValueKey('person-action-log-check-in')),
+    );
+    final channel = tester.getRect(channelButton);
+    expect(
+      channel.top,
+      greaterThan(primary.bottom - 1),
+      reason: 'a second line',
     );
   });
 

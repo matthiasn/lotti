@@ -1485,6 +1485,81 @@ void main() {
     );
   });
 
+  // The second place a check-in is dictated: more audio on one already
+  // logged, where the recorder takes the action bar's place. Captured so
+  // the voice anatomy can be compared with the composer's.
+  for (final (device, viewport) in [
+    (proDevice, 'mobile'),
+    (desktopDevice, 'desktop'),
+  ]) {
+    testWidgets('$viewport check-in detail, dictating — dark', (tester) async {
+      final held = [pipTake, pipCorrection];
+      for (final entry in held) {
+        when(
+          () => getIt<JournalDb>().journalEntityById(entry.id),
+        ).thenAnswer((_) async => entry);
+      }
+      final recorder = FakeAudioRecorderController();
+      await pumpSurface(
+        tester,
+        home: const Scaffold(
+          body: SafeArea(
+            child: CheckInDetailView(
+              relationshipId: _pipId,
+              checkInId: 'check-pip-3',
+            ),
+          ),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(report: briefing()),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          checkInTranscriptionServiceProvider.overrideWithValue(
+            StubCheckInTranscriptionService(),
+          ),
+          sortedLinkedEntriesProvider('check-pip-3').overrideWith(
+            (ref) => [
+              for (final entry in held)
+                EntryLink.basic(
+                  id: 'check-pip-3->${entry.id}',
+                  fromId: 'check-pip-3',
+                  toId: entry.id,
+                  createdAt: entry.meta.dateFrom,
+                  updatedAt: entry.meta.dateFrom,
+                  vectorClock: null,
+                ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
+      // By hand: the recorder's orb breathes while the take is live.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(recorder.recordCalls.single.linkedId, 'check-pip-3');
+      for (var i = 0; i < CheckInInlineRecorder.amplitudeWindow; i++) {
+        recorder.tick(
+          progress: const Duration(seconds: 23),
+          dBFS: -48 + 30 * math.sin(i / 3).abs(),
+        );
+        await tester.pump();
+      }
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
+        findsOne,
+        reason: "the recorder takes the action bar's place",
+      );
+      await captureScreenshot(
+        tester,
+        'check_in_detail_dictating_${viewport}_dark',
+        subdir: _subdir,
+      );
+    });
+  }
+
   testWidgets('mobile person page, post-call offer — dark', (tester) async {
     await pumpSurface(
       tester,
@@ -1826,7 +1901,11 @@ void main() {
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
-        await tester.pumpAndSettle();
+        // By hand: the recorder's orb breathes for as long as the take is
+        // live, so the tree never settles until Stop.
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         expect(
           find.byKey(const ValueKey('check-in-inline-recorder')),
           findsOne,
@@ -1931,7 +2010,9 @@ void main() {
         // retry, and Save does not wait for it.
         recorder.recordFailure = null;
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
-        await tester.pumpAndSettle();
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));

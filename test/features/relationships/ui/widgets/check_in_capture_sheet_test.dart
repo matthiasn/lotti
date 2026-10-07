@@ -276,10 +276,21 @@ void main() {
   );
 
   /// Presses *Dictate* and settles the preflight: the recorder is up.
+  /// A few frames of a live recording — enough for the preflight's awaits,
+  /// the recorder's post-frame `record` and a modal's transition.
+  Future<void> pumpRecording(WidgetTester tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  /// Presses *Dictate* and pumps the preflight through by hand: once the
+  /// recorder is up its orb breathes for as long as the take is live, so
+  /// the tree never "settles" while recording.
   Future<void> startDictation(WidgetTester tester) async {
     await tester.ensureVisible(dictate);
     await tester.tap(dictate);
-    await tester.pumpAndSettle();
+    await pumpRecording(tester);
   }
 
   /// Presses *Stop* on the inline recorder and pumps what follows by hand:
@@ -1052,7 +1063,7 @@ void main() {
     testWidgets('startSpeaking opens the recorder after the first frame '
         'without a tap', (tester) async {
       await tester.pumpWidget(buildForm(startSpeaking: true));
-      await tester.pumpAndSettle();
+      await pumpRecording(tester);
       expect(inlineRecorder, findsOneWidget);
       expect(recorder.recordCalls, hasLength(1));
     });
@@ -1152,8 +1163,7 @@ void main() {
       await startDictation(tester);
       await stopRecording(tester);
       recorder.stopResult = 'audio-2';
-      await tester.tap(dictate);
-      await tester.pumpAndSettle();
+      await startDictation(tester);
       await stopRecording(tester);
 
       expect(take('audio-1'), findsOneWidget);
@@ -1204,7 +1214,7 @@ void main() {
       await type(tester, 'Typed only.');
       await startDictation(tester);
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
-      await tester.pumpAndSettle();
+      await pumpRecording(tester);
       await tester.tap(find.text('Discard').last);
       await tester.pumpAndSettle();
 
@@ -1483,7 +1493,7 @@ void main() {
       expect(find.byKey(const ValueKey('check-in-preparing')), findsOneWidget);
 
       preflight.complete();
-      await tester.pumpAndSettle();
+      await pumpRecording(tester);
       expect(inlineRecorder, findsOneWidget);
     });
 
@@ -1664,7 +1674,7 @@ void main() {
 
       await startDictation(tester);
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
-      await tester.pumpAndSettle();
+      await pumpRecording(tester);
       expect(
         find.text(
           'Discard this check-in and the recording? The recording will be '
@@ -1831,7 +1841,7 @@ void main() {
       expect(recorder.modalVisibleLog, [true]);
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
-      await tester.pumpAndSettle();
+      await pumpRecording(tester);
       // A recording is a draft: the guard asks first.
       await tester.tap(find.text('Discard').last);
       await tester.pumpAndSettle();

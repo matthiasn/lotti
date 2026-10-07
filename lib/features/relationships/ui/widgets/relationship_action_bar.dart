@@ -15,8 +15,11 @@ import 'package:material_ui/material_ui.dart';
 
 /// The person page's sticky bottom bar (design 2026-09-06 §2–3), replacing
 /// the floating button: *Log check-in* · mic · the platform's actionable
-/// channel. The same glass strip the task page docks, so the two pages
-/// end the same way.
+/// channel. The same glass strip the task page docks, and the same shape
+/// on it — the controls hug their labels and sit centred, so the two pages
+/// end the same way. The filled primary never stretches to the column: on
+/// a desktop window that made it a bar-wide slab beside two pills, which
+/// no other strip in the app does.
 ///
 /// The channel control is the first channel, in the person's own order,
 /// that the platform can actually open — a call on a phone, email on a
@@ -165,20 +168,23 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     if (labelledChannel) slack -= upgrade(channelLabel);
     final labelledMic = slack >= upgrade(micLabel);
 
-    return Row(
+    // Centred and hugging, like the task and entry bars: a `Wrap` rather
+    // than a `Row`, so at large text on a narrow phone the controls take a
+    // second line instead of overflowing.
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: spacing.step4,
+      runSpacing: spacing.step4,
       children: [
-        Expanded(
-          child: DsGlassPill(
-            key: const ValueKey('person-action-log-check-in'),
-            label: messages.relationshipLogCheckIn,
-            icon: LottiIcons.greeting,
-            expand: true,
-            fillColor: tokens.colors.interactive.enabled,
-            foregroundColor: tokens.colors.text.onInteractiveAlert,
-            onTap: widget.onLogCheckIn,
-          ),
+        DsGlassPill(
+          key: const ValueKey('person-action-log-check-in'),
+          label: messages.relationshipLogCheckIn,
+          icon: LottiIcons.greeting,
+          fillColor: tokens.colors.interactive.enabled,
+          foregroundColor: tokens.colors.text.onInteractiveAlert,
+          onTap: widget.onLogCheckIn,
         ),
-        SizedBox(width: spacing.step4),
         if (labelledMic)
           DsGlassPill(
             key: const ValueKey('person-action-speak'),
@@ -193,8 +199,7 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
             semanticLabel: micLabel,
             onPressed: widget.onSpeak,
           ),
-        if (reachable != null) ...[
-          SizedBox(width: spacing.step4),
+        if (reachable != null)
           if (labelledChannel)
             DsGlassPill(
               key: const ValueKey('person-action-channel'),
@@ -225,7 +230,6 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
                 ),
               ),
             ),
-        ],
       ],
     );
   }
