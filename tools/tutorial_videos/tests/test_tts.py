@@ -7,6 +7,7 @@ import struct
 import sys
 import tempfile
 import unittest
+import wave
 from pathlib import Path
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]
@@ -14,8 +15,11 @@ sys.path.insert(0, str(TOOL_ROOT))
 
 from tutorial_videos.scenario import load_scenario  # noqa: E402
 from tutorial_videos.tts.base import (  # noqa: E402
+    TtsError,
     VoiceSpec,
+    clip_cache_key,
     load_voices,
+    pcm_to_wav,
     render_scenario_clips,
     synthesize_cached,
     wav_duration_seconds,
@@ -28,8 +32,19 @@ def _wav(seconds: float) -> bytes:
     pcm = b"\x00\x00" * int(SAMPLE_RATE * seconds)
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", 36 + len(pcm), b"WAVE", b"fmt ", 16, 1, 1,
-        SAMPLE_RATE, SAMPLE_RATE * 2, 2, 16, b"data", len(pcm),
+        b"RIFF",
+        36 + len(pcm),
+        b"WAVE",
+        b"fmt ",
+        16,
+        1,
+        1,
+        SAMPLE_RATE,
+        SAMPLE_RATE * 2,
+        2,
+        16,
+        b"data",
+        len(pcm),
     )
     return header + pcm
 
@@ -42,9 +57,11 @@ class FakeEngine:
 
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.requests: list[dict] = []
 
-    def synthesize(self, *, text: str, voice: str, style: str) -> bytes:
+    def synthesize(self, *, text: str, voice: str, style: str, settings: dict) -> bytes:
         self.calls.append(text)
+        self.requests.append({"voice": voice, "style": style, "settings": settings})
         return _wav(max(0.5, len(text) / 10))
 
 
@@ -143,25 +160,143 @@ class TtsPrePassTest(unittest.TestCase):
         self.assertEqual(path.stat().st_mtime_ns, stamp)
         self.assertEqual(len(engine.calls), 1)
 
-    def test_voices_yaml_loads_streams(self):
-        engine_name, _model, streams = load_voices(
-            TOOL_ROOT / "config" / "voices.yaml"
+    def test_voice_settings_reach_the_engine_and_style_can_be_empty(self):
+        engine = FakeEngine()
+        streams = {
+            "narrator": VoiceSpec(voice="N", style={}, settings={"stability": 0.5}),
+            "user_voice": VoiceSpec(voice="U", style={}, settings={"speed": 1.1}),
+        }
+        render_scenario_clips(
+            self.scenario,
+            "de",
+            engine,
+            streams,
+            cache_dir=self.tmp / "cache",
+            manifest_path=self.tmp / "manifest.json",
         )
+        self.assertIn(
+            {"voice": "N", "style": "", "settings": {"stability": 0.5}},
+            engine.requests,
+        )
+        self.assertIn(
+            {"voice": "U", "style": "", "settings": {"speed": 1.1}}, engine.requests
+        )
+
+    def test_changed_voice_settings_synthesize_again(self):
+        engine = FakeEngine()
+        for settings in ({"stability": 0.5}, {"stability": 0.5}, {"stability": 0.6}):
+            synthesize_cached(
+                engine,
+                voice="N",
+                style="",
+                text="hello",
+                settings=settings,
+                cache_dir=self.tmp,
+            )
+        self.assertEqual(len(engine.calls), 2)
+
+
+class ClipCacheKeyTest(unittest.TestCase):
+    def test_a_clip_without_settings_keeps_the_key_it_always_had(self):
+        # Recorded before voice settings existed: every Gemini clip already
+        # in a cache must stay a hit, never be synthesized (and paid) again.
+        self.assertEqual(
+            clip_cache_key(
+                engine="gemini",
+                model="models/gemini-3.1-flash-tts-preview",
+                voice="Algieba",
+                style="Speak calmly:",
+                text="Hello Lotti",
+            ),
+            "3dcd1c8e5083c67867b87688",
+        )
+
+    def test_empty_settings_are_the_same_as_none(self):
+        base = dict(engine="e", model="m", voice="v", style="", text="t")
+        self.assertEqual(clip_cache_key(**base, settings={}), clip_cache_key(**base))
+
+    def test_settings_change_the_key_whatever_their_order(self):
+        base = dict(engine="e", model="m", voice="v", style="", text="t")
+        ordered = clip_cache_key(**base, settings={"a": 1, "b": 2})
+        self.assertNotEqual(ordered, clip_cache_key(**base))
+        self.assertEqual(ordered, clip_cache_key(**base, settings={"b": 2, "a": 1}))
+        self.assertNotEqual(ordered, clip_cache_key(**base, settings={"a": 1, "b": 3}))
+
+
+class VoiceSpecTest(unittest.TestCase):
+    def test_style_for_returns_the_locales_instruction(self):
+        spec = VoiceSpec(voice="N", style={"en": "calm:", "de": "ruhig:"})
+        self.assertEqual(spec.style_for("de"), "ruhig:")
+
+    def test_style_for_is_empty_without_style_instructions(self):
+        self.assertEqual(VoiceSpec(voice="N", style={}).style_for("de"), "")
+
+    def test_style_for_a_missing_locale_is_a_config_gap(self):
+        with self.assertRaises(KeyError):
+            VoiceSpec(voice="N", style={"en": "calm:"}).style_for("de")
+
+    def test_settings_default_to_empty(self):
+        self.assertEqual(VoiceSpec(voice="N", style={}).settings, {})
+
+
+class PcmToWavTest(unittest.TestCase):
+    def test_wraps_pcm_as_16_bit_mono_at_the_given_rate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "clip.wav"
+            path.write_bytes(pcm_to_wav(b"\x01\x00" * 16_000, 16_000))
+            self.assertEqual(wav_duration_seconds(path), 1.0)
+            with wave.open(str(path), "rb") as wav:
+                self.assertEqual(
+                    (wav.getnchannels(), wav.getsampwidth(), wav.getframerate()),
+                    (1, 2, 16_000),
+                )
+                self.assertEqual(wav.readframes(2), b"\x01\x00\x01\x00")
+
+
+VOICES_YAML = TOOL_ROOT / "config" / "voices.yaml"
+
+
+class LoadVoicesTest(unittest.TestCase):
+    def test_defaults_to_gemini_with_a_style_per_locale(self):
+        engine_name, model, streams = load_voices(VOICES_YAML)
         self.assertEqual(engine_name, "gemini")
-        self.assertIn("narrator", streams)
-        self.assertIn("user_voice", streams)
-        # Distinct voices (user decision, config/voices.yaml's own doc
-        # comment): the narrator audibly "speaks into Lotti" when dictating,
-        # so a shared voice would confuse the two streams.
-        self.assertNotEqual(
-            streams["narrator"].voice, streams["user_voice"].voice
-        )
-        self.assertNotEqual(
-            streams["narrator"].style["en"], streams["user_voice"].style["en"]
-        )
+        self.assertTrue(model.startswith("models/gemini"))
         for spec in streams.values():
             self.assertIn("en", spec.style)
             self.assertIn("de", spec.style)
+            self.assertEqual(spec.settings, {})
+
+    def test_elevenlabs_is_configured_with_voice_settings_not_styles(self):
+        engine_name, model, streams = load_voices(VOICES_YAML, engine="elevenlabs")
+        self.assertEqual(engine_name, "elevenlabs")
+        self.assertEqual(model, "eleven_multilingual_v2")
+        for spec in streams.values():
+            self.assertEqual(spec.style, {})
+            self.assertIn("stability", spec.settings)
+
+    def test_every_engine_gives_the_dictation_its_own_voice(self):
+        # Distinct voices (user decision, config/voices.yaml's own doc
+        # comment): the narrator audibly "speaks into Lotti" when dictating,
+        # so a shared voice would confuse the two streams.
+        for engine in ("gemini", "elevenlabs"):
+            with self.subTest(engine=engine):
+                _name, _model, streams = load_voices(VOICES_YAML, engine=engine)
+                self.assertEqual(set(streams), {"narrator", "user_voice"})
+                self.assertNotEqual(
+                    streams["narrator"].voice, streams["user_voice"].voice
+                )
+
+    def test_gemini_styles_differ_between_the_two_voices(self):
+        _name, _model, streams = load_voices(VOICES_YAML)
+        self.assertNotEqual(
+            streams["narrator"].style["en"], streams["user_voice"].style["en"]
+        )
+
+    def test_an_unconfigured_engine_names_the_configured_ones(self):
+        with self.assertRaises(TtsError) as raised:
+            load_voices(VOICES_YAML, engine="polly")
+        self.assertIn("polly", str(raised.exception))
+        self.assertIn("gemini, elevenlabs", str(raised.exception))
 
 
 if __name__ == "__main__":

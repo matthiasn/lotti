@@ -1,6 +1,6 @@
 ---
 name: tutorial-videos
-description: Build, debug, extend, localize, or publish the automated tutorial videos — the workbench that drives the real Linux app under Xvfb (virtual mic, live Voxtral transcription, task-agent proposals), records the screen, narrates with Gemini TTS, fast-forwards waits, composes MP4s via OpenMontage, and uploads finished videos to Cloudflare R2 for docs-site embedding. Use when asked to "build/regenerate the tutorial video(s)", add a tutorial scenario, add a tutorial locale, fix a broken tutorial run, adapt the pipeline, or upload/publish a video.
+description: Build, debug, extend, localize, or publish the automated tutorial videos — the workbench that drives the real Linux app under Xvfb (virtual mic, live Voxtral transcription, task-agent proposals), records the screen, narrates with Gemini or ElevenLabs TTS, fast-forwards waits, composes MP4s via OpenMontage, and uploads finished videos to Cloudflare R2 for docs-site embedding. Use when asked to "build/regenerate the tutorial video(s)", add a tutorial scenario, add a tutorial locale, fix a broken tutorial run, adapt the pipeline, or upload/publish a video.
 argument-hint: "<what to do, e.g. 'build de+en', 'add scenario X', 'debug the failing run'>"
 ---
 
@@ -25,6 +25,9 @@ Preconditions (fail fast if missing):
 - `.env` at repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,
   `MELIOUS_BASE_URL`. If absent, the keys can be extracted from the dev
   app's `ai_config.sqlite` provider rows (never print or commit them).
+  `ELEVENLABS_API_KEY` too when narrating with ElevenLabs
+  (`--tts-engine elevenlabs`) — that one is not in the app's config, ask
+  the user for it.
 - Sibling `../OpenMontage` checkout at the commit pinned in
   `tools/tutorial_videos/config/openmontage.pin`, bootstrapped via
   `make -C ../OpenMontage setup`.
@@ -64,7 +67,7 @@ Python `make tutorial_video_publish` resolves to.
 ## The pipeline in one paragraph
 
 `python3 -m tutorial_videos build` (run from `tools/tutorial_videos/`) does:
-Gemini-TTS pre-pass (cached by content hash → durations manifest) → Xvfb +
+TTS pre-pass (Gemini by default, `--tts-engine elevenlabs` to switch; cached by content hash → durations manifest) → Xvfb +
 virtual-mic null sink + ffmpeg x11grab capture → `fvm flutter drive` runs
 `integration_test/tutorial/<scenario>_tutorial_test.dart` against the real
 app (penguin demo world + Melious/Voxtral/Qwen agent config seeded, UI
@@ -99,8 +102,10 @@ plans fast-forward segments for the waits (narration never overlaps) →
    `dictionary`, every step's `narration`, the dictation step's
    `dictation_text`. Write informal register (du/tu) per repo l10n rules;
    keep the penguin vocabulary.
-2. Add per-stream `style` lines for the locale in `config/voices.yaml`
-   (style prompts in the target language — Voxtral/Gemini behave better).
+2. Add per-stream `style` lines for the locale under `engines.gemini` in
+   `config/voices.yaml` (style prompts in the target language —
+   Voxtral/Gemini behave better). ElevenLabs needs nothing per locale, as
+   long as `eleven_multilingual_v2` supports the language.
 3. `python3 -m tutorial_videos validate --scenario <s> --locale <l>` must
    pass, then build. The app UI localizes itself via `LOTTI_MANUAL_LOCALE`
    (same mechanism as manual screenshots; for a wholly new app locale, run
@@ -153,13 +158,15 @@ not exact strings.
   (compose twice, compare `ffmpeg -f framemd5` of the streams — never file
   hashes).
 - **TTS vendor**: implement the `TtsEngine` protocol (`tts/base.py`) next to
-  `tts/gemini.py`; voices/styles per locale in `config/voices.yaml`.
+  `tts/gemini.py` and `tts/elevenlabs.py`, register it with its `.env` key
+  in `tts/engines.py`, and give it an `engines.<name>` block (model + both
+  streams) in `config/voices.yaml`. Voices: switch ElevenLabs ones by
+  changing the voice id there; the README's "TTS engines" has the details.
 - **Speed/pacing knobs**: `timewarp.py` (`MAX_SPEED`, lead-in, narration
   gap); per-step floors in the scenario YAML.
 - **Talking avatar (prototype)**: `python3 -m tutorial_videos
-  avatar-preview --wav <wav>` renders every candidate character saying a
-  WAV; `avatar-overlay --video <built mp4>` puts the chosen one in the
-  corner, lip-synced to `<stem>.narration.wav`. A new character is a
-  `Character` in `tutorial_videos/avatar/characters.py` (four mouth levels,
-  open/closed eyes) — check it at badge size with `avatar-preview` before
-  using it. See the README's "Talking avatar (prototype)".
+  avatar-preview --wav <wav>` renders Pip (the penguin, `PIP` in
+  `tutorial_videos/avatar/characters.py`) saying a WAV;
+  `avatar-overlay --video <built mp4>` puts it in the corner, lip-synced to
+  `<stem>.narration.wav`. Check any art change at badge size with
+  `avatar-preview` first. See the README's "Talking avatar (prototype)".

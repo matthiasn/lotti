@@ -12,10 +12,10 @@ from unittest import mock
 import avatar_helpers  # noqa: F401  (puts the tool on sys.path)
 
 from tutorial_videos.avatar import cli
-from tutorial_videos.avatar.characters import CHARACTERS
+from tutorial_videos.avatar.characters import PIP
 
 
-def _run(argv: list[str]) -> tuple[int, str, argparse.Namespace]:
+def _run(argv: list[str]) -> tuple[int, str]:
     parser = argparse.ArgumentParser()
     cli.register(
         parser.add_subparsers(dest="command", required=True), default_out=Path("/out")
@@ -24,32 +24,34 @@ def _run(argv: list[str]) -> tuple[int, str, argparse.Namespace]:
     stdout = io.StringIO()
     with contextlib.redirect_stdout(stdout):
         code = args.handler(args)
-    return code, stdout.getvalue(), args
+    return code, stdout.getvalue()
 
 
 class AvatarPreviewTest(unittest.TestCase):
-    def test_renders_every_character_by_default(self):
+    def test_defaults_to_a_480px_30fps_preview_in_the_build_folder(self):
         with mock.patch.object(
             cli, "render_preview", side_effect=lambda c, wav, out, **_: out
         ) as render:
-            code, stdout, _ = _run(["avatar-preview", "--wav", "n.wav"])
+            code, stdout = _run(["avatar-preview", "--wav", "n.wav"])
 
         self.assertEqual(code, 0)
-        self.assertEqual(
-            [call.args[0].name for call in render.call_args_list], list(CHARACTERS)
+        render.assert_called_once_with(
+            PIP,
+            Path("n.wav"),
+            Path("/out/avatar/avatar_pip.mp4"),
+            size=480,
+            work_dir=Path("/out/avatar/work"),
+            fps=30,
         )
-        for name in CHARACTERS:
-            self.assertIn(f"OK: /out/avatar/avatar_{name}.mp4", stdout)
+        self.assertIn("OK: /out/avatar/avatar_pip.mp4", stdout)
 
-    def test_renders_one_character_with_its_own_paths_and_settings(self):
+    def test_size_fps_and_folder_can_be_chosen(self):
         with mock.patch.object(cli, "render_preview") as render:
             _run(
                 [
                     "avatar-preview",
                     "--wav",
                     "n.wav",
-                    "--character",
-                    "bolt",
                     "--size",
                     "240",
                     "--fps",
@@ -60,42 +62,36 @@ class AvatarPreviewTest(unittest.TestCase):
             )
 
         render.assert_called_once_with(
-            CHARACTERS["bolt"],
+            PIP,
             Path("n.wav"),
-            Path("/tmp/x/avatar_bolt.mp4"),
+            Path("/tmp/x/avatar_pip.mp4"),
             size=240,
-            work_dir=Path("/tmp/x/work/bolt"),
+            work_dir=Path("/tmp/x/work"),
             fps=25,
         )
 
-    def test_defaults_to_a_480px_30fps_preview(self):
-        with mock.patch.object(cli, "render_preview") as render:
-            _run(["avatar-preview", "--wav", "n.wav", "--character", "pip"])
-        self.assertEqual(render.call_args.kwargs["size"], 480)
-        self.assertEqual(render.call_args.kwargs["fps"], 30)
-
-    def test_an_unknown_character_is_refused(self):
+    def test_a_wav_is_required(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            _run(["avatar-preview", "--wav", "n.wav", "--character", "dragon"])
+            _run(["avatar-preview"])
 
 
 class AvatarOverlayTest(unittest.TestCase):
     def test_defaults_read_the_narration_mix_beside_the_video(self):
         with mock.patch.object(cli, "render_overlay") as render:
-            code, stdout, _ = _run(["avatar-overlay", "--video", "/b/intro_de.mp4"])
+            code, stdout = _run(["avatar-overlay", "--video", "/b/intro_de.mp4"])
 
         self.assertEqual(code, 0)
         render.assert_called_once_with(
-            CHARACTERS["pip"],
+            PIP,
             Path("/b/intro_de.mp4"),
             Path("/b/intro_de.narration.wav"),
             Path("/b/intro_de_avatar.mp4"),
-            work_dir=Path("/b/avatar_work/intro_de_pip"),
+            work_dir=Path("/b/avatar_work/intro_de"),
             fps=30,
         )
         self.assertIn("OK: /b/intro_de_avatar.mp4", stdout)
 
-    def test_explicit_narration_output_and_character_are_used(self):
+    def test_explicit_narration_and_output_are_used(self):
         with mock.patch.object(cli, "render_overlay") as render:
             _run(
                 [
@@ -106,19 +102,17 @@ class AvatarOverlayTest(unittest.TestCase):
                     "/n.wav",
                     "--out",
                     "/o/final.mp4",
-                    "--character",
-                    "mochi",
                     "--fps",
                     "24",
                 ]
             )
 
         render.assert_called_once_with(
-            CHARACTERS["mochi"],
+            PIP,
             Path("/b/v.mp4"),
             Path("/n.wav"),
             Path("/o/final.mp4"),
-            work_dir=Path("/o/avatar_work/v_mochi"),
+            work_dir=Path("/o/avatar_work/v"),
             fps=24,
         )
 

@@ -17,6 +17,9 @@ desktop one). Desktop output keeps its original unsuffixed filename/R2 key
 for backward compatibility; mobile output gets a ``_mobile`` suffix
 (``<scenario>_<locale>_mobile.mp4`` etc.) so both variants coexist.
 
+``tts`` and ``build`` also take ``--tts-engine gemini|elevenlabs`` to override
+``config/voices.yaml``'s default engine for one run.
+
 ``validate`` checks the scenario is buildable for the locale without any
 network access. ``tts`` runs the pre-pass: renders (or reuses cached) clips
 and writes the durations manifest consumed by the Dart harness and the
@@ -51,8 +54,9 @@ from .compose import ComposeError, compose_video
 from .publish import PublishError, publish_video
 from .scenario import ScenarioError, load_scenario
 from .session import ScreenCapture, SessionError, VirtualMic, XvfbDisplay
-from .tts.base import load_voices, render_scenario_clips
-from .tts.gemini import GeminiTts, read_env_key
+from .tts.base import TtsError, load_voices, render_scenario_clips
+from .tts.engines import ENGINES, create_engine
+from .tts.gemini import read_env_key
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = TOOL_ROOT.parents[1]
@@ -108,10 +112,10 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_tts(args: argparse.Namespace) -> int:
     scenario = _load(args)
-    engine_name, model, streams = load_voices(TOOL_ROOT / "config" / "voices.yaml")
-    if engine_name != "gemini":
-        raise SystemExit(f"unknown TTS engine: {engine_name}")
-    engine = GeminiTts(read_env_key(REPO_ROOT / ".env", "GEMINI_API_KEY"), model)
+    engine_name, model, streams = load_voices(
+        TOOL_ROOT / "config" / "voices.yaml", engine=args.tts_engine
+    )
+    engine = create_engine(engine_name, model, REPO_ROOT / ".env")
 
     out_dir = Path(args.out_dir)
     manifest = render_scenario_clips(
@@ -268,6 +272,10 @@ def main(argv: list[str] | None = None) -> int:
             "--device", choices=sorted(DEVICE_SIZES), default="desktop"
         )
         p.add_argument("--out-dir", default=str(DEFAULT_OUT))
+        if name in ("tts", "build"):
+            # Overrides voices.yaml's default `engine:` for this run — e.g.
+            # to hear a scenario in ElevenLabs voices next to Gemini's.
+            p.add_argument("--tts-engine", choices=sorted(ENGINES))
         p.set_defaults(handler=handler)
     register_avatar_commands(sub, default_out=DEFAULT_OUT)
     args = parser.parse_args(argv)
@@ -279,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
         PublishError,
         ScenarioError,
         SessionError,
+        TtsError,
         FileNotFoundError,
         KeyError,
     ) as err:

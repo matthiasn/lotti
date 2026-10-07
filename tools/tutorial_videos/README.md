@@ -71,7 +71,8 @@ toggle is stored.
 Requirements:
 
 - `.env` at the repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,
-  `MELIOUS_BASE_URL` (never committed).
+  `MELIOUS_BASE_URL` (never committed), plus `ELEVENLABS_API_KEY` for
+  narrating with ElevenLabs (see "TTS engines" below).
 - A sibling **OpenMontage** checkout at `../OpenMontage`, set up and pinned
   per `config/openmontage.pin`.
 - Host packages: `Xvfb`, `ffmpeg`, `pactl`/`paplay` (PipeWire or PulseAudio),
@@ -120,7 +121,7 @@ One-time setup:
 ```mermaid
 flowchart LR
     subgraph cloud [Cloud]
-        GTTS[Gemini TTS]
+        GTTS[Gemini or ElevenLabs TTS]
         MEL[Melious: Voxtral chat + Qwen thinking]
     end
     subgraph host [Host orchestrator - python3 -m tutorial_videos]
@@ -174,8 +175,8 @@ Narration length differs per locale, cloud latency varies, and waits get
 fast-forwarded — so nothing is synced in real time:
 
 1. The **TTS pre-pass** (`tts/`) renders narrator + user-voice clips (Gemini
-   TTS, cached by content hash) and writes a **manifest** with measured
-   durations.
+   or ElevenLabs TTS, cached by content hash) and writes a **manifest** with
+   measured durations.
 2. The **Dart harness** paces each step to
    `max(min_duration, narration + pad)`, records every pure-wait span longer
    than 3s (`pumpUntil` instrumentation), and emits **`timeline.json`**:
@@ -303,6 +304,30 @@ The recipe is in
 
 Full step-by-step runbook: `.claude/skills/tutorial-videos/SKILL.md`.
 
+## TTS engines
+
+`config/voices.yaml` configures each engine's model and its two voices
+(narrator, user voice); its `engine:` is the default, and `tts`/`build
+--tts-engine <name>` overrides it for one run — the way to hear a scenario
+in both before switching the default:
+
+```sh
+python3 -m tutorial_videos build --scenario category_setup --locale de --tts-engine elevenlabs
+```
+
+| Engine | Adapter | `.env` key | Delivery is set by |
+|---|---|---|---|
+| `gemini` (default) | `tts/gemini.py` | `GEMINI_API_KEY` | a spoken style instruction per locale (`style:`) |
+| `elevenlabs` | `tts/elevenlabs.py` | `ELEVENLABS_API_KEY` | the voice and its ElevenLabs `voice_settings` (`settings:`) |
+
+Both return 24 kHz mono PCM, wrapped into WAV by `tts/base.py`. ElevenLabs
+uses `eleven_multilingual_v2`, which reads the language off the text, so one
+voice narrates every locale. Clips are cached per engine, model, voice,
+style and settings — switching engines back and forth never re-synthesizes,
+and a voice without settings keeps the cache key it had before settings
+existed. Both builds of a scenario write the same output name, so the second
+overwrites the first: copy the MP4 away before building the other.
+
 ## Talking avatar (prototype)
 
 A narrator with a face: a small cartoon character in a round badge that
@@ -322,11 +347,10 @@ flowchart LR
     FC --> FF[ffmpeg overlay]
 ```
 
-- **Characters** (`characters.py`) are data: a badge background, a fixed
-  body, open/closed eyes and four mouth shapes from closed to wide open.
-  Three options so far: `pip` (a penguin from the demo world, the beak
-  talks), `bolt` (a robot with a glowing screen face) and `mochi` (a round
-  cat).
+- **The character** (`characters.py`) is Pip, a penguin from the demo
+  world whose beak does the talking. A character is data: a badge
+  background, a fixed body, open/closed eyes and four mouth shapes from
+  closed to wide open.
 - **Lip-sync** (`lipsync.py`) is loudness-driven: each frame's RMS, relative
   to the clip's 95th-percentile loudness, picks the mouth level, so it works
   on any WAV — today's Gemini clips included — without word timings. The
@@ -338,11 +362,11 @@ flowchart LR
   reproducible (blinks are seeded).
 
 ```sh
-# Every character saying a WAV, as square previews -> build/tutorial_videos/avatar/
+# Pip saying a WAV, as a square preview -> build/tutorial_videos/avatar/avatar_pip.mp4
 python3 -m tutorial_videos avatar-preview --wav narration.wav
 # The badge in the corner of a built tutorial, lip-synced to the narration
 # mix compose.py wrote beside it (<stem>.narration.wav) -> <stem>_avatar.mp4
-python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4 --character pip
+python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4
 ```
 
 The badge is 22% of the video height (desktop and mobile get the same
@@ -360,8 +384,9 @@ part of the prototype.
 
 `tests/` (stdlib `unittest`, no network): scenario validation, TTS caching,
 manifest shape, time-warp planning, the App Preview's pacing, cut and
-narration placement, and the avatar (`test_avatar_*.py`, one file per
-module, plus `test_main.py` for the CLI wiring). The avatar's two
+narration placement, both TTS adapters with HTTP patched out
+(`test_tts_*.py`), and the avatar (`test_avatar_*.py`, one file per module),
+plus `test_main.py` for the CLI wiring. The avatar's two
 end-to-end ffmpeg tests skip themselves when `ffmpeg`/`ffprobe` are not
 installed. Run from `tools/tutorial_videos`:
 
