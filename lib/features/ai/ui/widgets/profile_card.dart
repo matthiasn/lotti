@@ -84,6 +84,11 @@ class ProfileCard extends StatelessWidget {
                   label: context.messages.inferenceProfileTranscription,
                   modelId: profile.transcriptionModelId!,
                 ),
+              if (profile.audioPostProcessingModelId != null)
+                ProfileSlotRow(
+                  label: context.messages.inferenceProfileAudioPostProcessing,
+                  modelId: profile.audioPostProcessingModelId!,
+                ),
               if (profile.imageGenerationModelId != null)
                 ProfileSlotRow(
                   label: context.messages.inferenceProfileImageGeneration,

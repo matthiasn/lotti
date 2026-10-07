@@ -8649,6 +8649,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se puede elegir para nuevas entradas cuando está activo';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Posprocesamiento de audio';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Si no se configura, usa el modelo de pensamiento';
+
+  @override
   String get inferenceProfileChat => 'Modelo de chat';
 
   @override

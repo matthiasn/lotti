@@ -8625,6 +8625,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Lze vybrat pro nové záznamy, když je zapnuto';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Následné zpracování zvuku';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Pokud není nastaven, použije se model pro uvažování';
+
+  @override
   String get inferenceProfileChat => 'Model pro chat';
 
   @override

@@ -3305,6 +3305,8 @@
   "imageViewerPreviousTooltip": "Image précédente",
   "inactiveLabel": "Inactif",
   "inactiveSwitchDescription": "Peut être choisi pour de nouvelles entrées si actif",
+  "inferenceProfileAudioPostProcessing": "Post-traitement audio",
+  "inferenceProfileAudioPostProcessingUsesThinking": "Utilise le modèle de réflexion si aucun n’est choisi",
   "inferenceProfileChat": "Modèle de chat",
   "inferenceProfileChatUsesThinking": "Utilise le modèle de réflexion si aucun n’est choisi",
   "inferenceProfileChooseModelTitle": "Choisis un modèle",

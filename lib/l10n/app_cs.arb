@@ -3312,6 +3312,8 @@
   "imageViewerPreviousTooltip": "Předchozí obrázek",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
+  "inferenceProfileAudioPostProcessing": "Následné zpracování zvuku",
+  "inferenceProfileAudioPostProcessingUsesThinking": "Pokud není nastaven, použije se model pro uvažování",
   "inferenceProfileChat": "Model pro chat",
   "inferenceProfileChatUsesThinking": "Pokud není nastaven, použije se model pro uvažování",
   "inferenceProfileChooseModelTitle": "Vyber model",

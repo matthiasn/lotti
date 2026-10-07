@@ -8694,6 +8694,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Poate fi ales pentru intrări noi când este activ';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Postprocesare audio';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Fără model selectat, se folosește modelul de gândire';
+
+  @override
   String get inferenceProfileChat => 'Model de chat';
 
   @override

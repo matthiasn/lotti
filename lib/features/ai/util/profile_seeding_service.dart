@@ -324,9 +324,9 @@ class ProfileSeedingService {
       ),
       // Prompt-generation skills run on the thinking slot (the high-end
       // slot falls back to it at resolution time). Audio summarization runs
-      // on the same slot, deliberately: it publishes through a pinned tool
-      // call, and the thinking slot is the one the profile form constrains
-      // to tool-capable models.
+      // on the optional audio post-processing slot, which falls back to the
+      // thinking slot in the same way — so the required thinking slot is
+      // what decides whether a summary can run at all.
       SkillType.promptGeneration => _slotResolvesToModelRow(
         profile.thinkingModelId,
         models,

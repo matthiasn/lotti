@@ -14292,6 +14292,18 @@ abstract class AppLocalizations {
   /// **'Can be chosen for new entries when on'**
   String get inactiveSwitchDescription;
 
+  /// No description provided for @inferenceProfileAudioPostProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio post-processing'**
+  String get inferenceProfileAudioPostProcessing;
+
+  /// No description provided for @inferenceProfileAudioPostProcessingUsesThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses thinking model when unset'**
+  String get inferenceProfileAudioPostProcessingUsesThinking;
+
   /// No description provided for @inferenceProfileChat.
   ///
   /// In en, this message translates to:

@@ -124,6 +124,76 @@ void main() {
     );
   }
 
+  for (final slotState in [
+    'unset',
+    'available',
+    'missing-model',
+    'missing-provider',
+  ]) {
+    test(
+      'audio post-processing slot $slotState resolves on its own route, '
+      'falls back to thinking only when unset, and flags an unresolvable one',
+      () async {
+        final thinking = testAiModel(
+          id: 'thinking-row',
+          providerModelId: 'thinking-native',
+          inferenceProviderId: 'thinking-provider',
+        );
+        final postProcessing = testAiModel(
+          id: 'post-row',
+          providerModelId: 'post-native',
+          inferenceProviderId: 'post-provider',
+        );
+        final profile =
+            testInferenceProfile(
+              id: 'profile',
+              thinkingModelId: thinking.id,
+            ).copyWith(
+              audioPostProcessingModelId: slotState == 'unset'
+                  ? null
+                  : postProcessing.id,
+            );
+        final configs = <String, AiConfig>{
+          profile.id: profile,
+          thinking.id: thinking,
+          if (slotState != 'missing-model') postProcessing.id: postProcessing,
+          'thinking-provider': testInferenceProvider(id: 'thinking-provider'),
+          if (slotState != 'missing-provider')
+            'post-provider': testInferenceProvider(id: 'post-provider'),
+        };
+        when(
+          () => mockAiConfig.getConfigById(any()),
+        ).thenAnswer((call) async => configs[call.positionalArguments.first]);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => configs.values.whereType<AiConfigModel>().toList(),
+        );
+
+        final resolved = (await resolver.resolveByProfileId('profile'))!;
+
+        expect(
+          resolved.audioPostProcessingModelUnavailable,
+          slotState.startsWith('missing'),
+        );
+        if (slotState == 'available') {
+          expect(resolved.effectiveAudioPostProcessingModelId, 'post-native');
+          expect(resolved.effectiveAudioPostProcessingModel, postProcessing);
+          expect(
+            resolved.effectiveAudioPostProcessingProvider.id,
+            'post-provider',
+          );
+        } else {
+          expect(resolved.audioPostProcessingModelId, isNull);
+          expect(
+            resolved.effectiveAudioPostProcessingModelId,
+            'thinking-native',
+          );
+        }
+      },
+    );
+  }
+
   group('ProfileResolver', () {
     test(
       'standalone agents use Settings default and preserve explicit routes',

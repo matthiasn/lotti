@@ -872,6 +872,7 @@ void main() {
       List<String> skillIds, {
       String? imageRecognitionModelId,
       String? chatModelId,
+      String? audioPostProcessingModelId,
     }) => AiConfig.inferenceProfile(
       id: id,
       name: 'Profile $id',
@@ -879,6 +880,7 @@ void main() {
       thinkingModelId: thinkingModelId,
       imageRecognitionModelId: imageRecognitionModelId,
       chatModelId: chatModelId,
+      audioPostProcessingModelId: audioPostProcessingModelId,
       skillAssignments: [
         for (final skillId in skillIds)
           SkillAssignment(skillId: skillId, automate: true),
@@ -915,6 +917,7 @@ void main() {
           const ['user-skill', 'seeded-skill'],
           imageRecognitionModelId: 'fixture-model',
           chatModelId: 'fixture-model',
+          audioPostProcessingModelId: 'fixture-model',
         ),
         // User profile whose REQUIRED thinking slot is a fictional model:
         // it would arrive fundamentally broken, so it must stay behind
@@ -975,6 +978,7 @@ void main() {
           .whereType<AiConfigInferenceProfile>()
           .single;
       expect(carriedProfile.chatModelId, isNull);
+      expect(carriedProfile.audioPostProcessingModelId, isNull);
       expect(
         carriedProfile.imageRecognitionModelId,
         isNull,
@@ -1211,6 +1215,7 @@ void main() {
           'user-model',
           const [],
           chatModelId: 'user-model',
+          audioPostProcessingModelId: 'user-model',
         ),
       );
       final copier = DemoDataCopier(newId: sequentialIds());
@@ -1268,6 +1273,7 @@ void main() {
           .whereType<AiConfigInferenceProfile>()
           .singleWhere((config) => config.id == 'user-chat-profile');
       expect(chatProfile.chatModelId, 'user-model');
+      expect(chatProfile.audioPostProcessingModelId, 'user-model');
     });
 
     test('a profile already live in the TARGET is not re-saved, but the '

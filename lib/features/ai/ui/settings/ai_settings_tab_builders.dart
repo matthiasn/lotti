@@ -214,7 +214,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
   /// doesn't carry a provider id — it just references model rows. Walk
   /// the model slots in priority order
   /// (thinking → chat → thinking-high-end → image recognition → transcription
-  /// → image generation) and pick the first model whose owning provider
+  /// → audio post-processing → image generation) and pick the first model whose owning provider
   /// we can resolve. Returns null when none of the slots resolve — the
   /// card paints neutral chrome in that case rather than impersonating
   /// Gemini.
@@ -229,6 +229,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
       profile.thinkingHighEndModelId,
       profile.imageRecognitionModelId,
       profile.transcriptionModelId,
+      profile.audioPostProcessingModelId,
       profile.imageGenerationModelId,
     ];
     for (final candidate in candidates) {

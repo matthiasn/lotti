@@ -8549,6 +8549,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan worden gekozen voor nieuwe items wanneer op';
 
   @override
+  String get inferenceProfileAudioPostProcessing => 'Audio-nabewerking';
+
+  @override
+  String get inferenceProfileAudioPostProcessingUsesThinking =>
+      'Gebruikt het denkmodel als er niets is ingesteld';
+
+  @override
   String get inferenceProfileChat => 'Chatmodel';
 
   @override

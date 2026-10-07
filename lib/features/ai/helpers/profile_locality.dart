@@ -32,6 +32,7 @@ Future<bool> profileIsLocal(
   final referencedModelIds = <String>{
     profile.thinkingModelId,
     ?profile.chatModelId,
+    ?profile.audioPostProcessingModelId,
     if (profile.thinkingHighEndModelId != null) profile.thinkingHighEndModelId!,
     if (profile.imageRecognitionModelId != null)
       profile.imageRecognitionModelId!,

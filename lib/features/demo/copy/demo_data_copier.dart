@@ -406,6 +406,7 @@ class DemoDataCopier {
       thinkingHighEndModelId: keep(profile.thinkingHighEndModelId),
       imageRecognitionModelId: keep(profile.imageRecognitionModelId),
       transcriptionModelId: keep(profile.transcriptionModelId),
+      audioPostProcessingModelId: keep(profile.audioPostProcessingModelId),
       imageGenerationModelId: keep(profile.imageGenerationModelId),
       skillAssignments: [
         for (final assignment in profile.skillAssignments)
@@ -675,6 +676,7 @@ class DemoDataCopier {
         thinkingHighEndModelId: keep(config.thinkingHighEndModelId),
         imageRecognitionModelId: keep(config.imageRecognitionModelId),
         transcriptionModelId: keep(config.transcriptionModelId),
+        audioPostProcessingModelId: keep(config.audioPostProcessingModelId),
         imageGenerationModelId: keep(config.imageGenerationModelId),
         skillAssignments: [
           for (final assignment in config.skillAssignments)

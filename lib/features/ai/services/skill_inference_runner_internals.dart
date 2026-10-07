@@ -215,15 +215,20 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
   }
 
   /// Resolves the `(provider, modelId, model)` target used by audio
-  /// summarization.
+  /// summarization — the post-processing step that also corrects a
+  /// transcript against the speech dictionary.
   ///
-  /// The fallback is the profile's regular thinking slot — the same model the
-  /// task agent runs on. That slot is chosen for a hard reason, not for cost:
-  /// the summary is published through a pinned tool call, and the inference
-  /// profile form is the only place a thinking model can be set, where the
-  /// picker is filtered to `supportsFunctionCalling` models and the slot is
-  /// required. Any other slot could hold a model that cannot call tools at
-  /// all.
+  /// The fallback is the profile's audio post-processing slot, and without
+  /// one its regular thinking slot — the same model the task agent runs on.
+  /// Both are chosen for a hard reason, not for cost: the summary is
+  /// published through a pinned tool call, and the inference profile form
+  /// filters both pickers to `supportsFunctionCalling` models and requires
+  /// the thinking slot. Any other slot could hold a model that cannot call
+  /// tools at all.
+  ///
+  /// A post-processing slot that is set but does not resolve on this device
+  /// yields an empty target: the caller fails the step rather than run it
+  /// on the thinking model the user chose another model over.
   Future<_InferenceTarget> _resolveAudioSummaryTarget({
     required ResolvedProfile profile,
     required String? overrideModelId,
@@ -231,11 +236,13 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     return _resolveOverrideTarget(
       overrideModelId: overrideModelId,
       slotKind: _OverrideSlotKind.audioSummary,
-      fallback: () => (
-        provider: profile.thinkingProvider,
-        modelId: profile.thinkingModelId,
-        model: profile.thinkingModel,
-      ),
+      fallback: () => profile.audioPostProcessingModelUnavailable
+          ? (provider: null, modelId: null, model: null)
+          : (
+              provider: profile.effectiveAudioPostProcessingProvider,
+              modelId: profile.effectiveAudioPostProcessingModelId,
+              model: profile.effectiveAudioPostProcessingModel,
+            ),
     );
   }
 

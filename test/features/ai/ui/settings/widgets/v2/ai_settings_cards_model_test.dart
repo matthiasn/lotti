@@ -164,16 +164,21 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(
             AiProfileCard(
-              profile: hProfile(
-                thinking: 'reasoning-id',
-                imageRecognition: 'vision-id',
-                // transcription + imageGeneration left null.
-              ).copyWith(chatModelId: 'chat-id'),
+              profile:
+                  hProfile(
+                    thinking: 'reasoning-id',
+                    imageRecognition: 'vision-id',
+                    // transcription + imageGeneration left null.
+                  ).copyWith(
+                    chatModelId: 'chat-id',
+                    audioPostProcessingModelId: 'post-id',
+                  ),
               isInUse: false,
               providerTypeFor: () => InferenceProviderType.anthropic,
               modelLookup: (id) => switch (id) {
                 'reasoning-id' => 'Reasoning Model',
                 'chat-id' => 'Chat Model',
+                'post-id' => 'Editing Model',
                 _ => 'Vision Model',
               },
               onTap: () {},
@@ -183,6 +188,8 @@ void main() {
         await tester.pump();
         expect(find.text('Chat model'), findsOneWidget);
         expect(find.text('Chat Model'), findsOneWidget);
+        expect(find.text('Audio post-processing'), findsOneWidget);
+        expect(find.text('Editing Model'), findsOneWidget);
         expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Reasoning Model'), findsOneWidget);
         expect(find.text('Image recognition'), findsOneWidget);

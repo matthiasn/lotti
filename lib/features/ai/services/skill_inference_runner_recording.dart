@@ -35,13 +35,17 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
   }) {
     final profile = automationResult.resolvedProfile;
     if (linkedTaskId == null || profile == null) return null;
-    // A summary needs a thinking model that can call its tool. The direct
-    // speech-to-text fallback, run without an inference profile, puts its
-    // transcription model in that slot; no summary is scheduled then, and
-    // the transcript is written at once instead of held for a call that
-    // `_summarizeRecording` would skip.
-    if (profile.thinkingModel case final model?
-        when !model.supportsFunctionCalling) {
+    // A summary needs a post-processing model that can call its tool. The
+    // direct speech-to-text fallback, run without an inference profile, puts
+    // its transcription model in the thinking slot it falls back to; no
+    // summary is scheduled then, and the transcript is written at once
+    // instead of held for a call that `_summarizeRecording` would skip. A
+    // post-processing model that does not resolve here is not judged by the
+    // thinking model it would otherwise fall back to: the summary is still
+    // scheduled, so its run reports the missing model.
+    if (!profile.audioPostProcessingModelUnavailable &&
+        profile.effectiveAudioPostProcessingModel?.supportsFunctionCalling ==
+            false) {
       return null;
     }
 
@@ -188,19 +192,33 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
       profile: profile,
       overrideModelId: overrideModelId,
     );
-    // The fallback is the profile's *required* thinking slot, so the target
-    // always carries a provider and a model id.
-    final provider = target.provider!;
-    final modelId = target.modelId!;
+    final provider = target.provider;
+    final modelId = target.modelId;
+    // Only a post-processing model the profile names but this device cannot
+    // resolve leaves the target empty — the thinking slot it otherwise falls
+    // back to is required. Fail where the user sees it, through the status
+    // tracking, instead of quietly running on the model they chose another
+    // one over; a held transcript is still written, uncorrected.
+    if (provider == null || modelId == null) {
+      await _withStatusTracking(
+        entityId: audioEntryId,
+        responseType: skill.skillType.toResponseType,
+        subDomain: 'runAudioSummary',
+        linkedTaskId: linkedTaskId,
+        body: () async =>
+            throw StateError('Audio post-processing model unavailable'),
+      );
+      return null;
+    }
     final effectiveThinkingMode = _geminiThinkingModeForTarget(
       target,
       geminiThinkingMode,
     );
 
-    // The thinking slot is constrained to tool-capable models by the profile
-    // form, so this is an assertion rather than a fallback: it only fires for
-    // a profile seeded programmatically or a model row whose capability flag
-    // is wrong. Firing a pinned tool call at a model that cannot call tools
+    // The profile form constrains both slots this can resolve to — audio
+    // post-processing and thinking — to tool-capable models, so this is an
+    // assertion rather than a fallback: it only fires for a profile seeded
+    // programmatically or a model row whose capability flag is wrong. Firing a pinned tool call at a model that cannot call tools
     // burns the call and returns nothing usable.
     if (target.model != null && !target.model!.supportsFunctionCalling) {
       _loggingService.log(
@@ -314,7 +332,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
         }
 
         // One forced retry covers the common failure — a model that narrates
-        // instead of calling, or a one-liner over the cap — without turning a
+        // instead of calling, or leaves a tier out — without turning a
         // misbehaving model into an unbounded loop. Spend from both attempts
         // is billed, even when the retry fails too.
         var attempt = await callModel(promptResult.userMessage);

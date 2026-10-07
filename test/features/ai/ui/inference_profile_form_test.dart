@@ -149,6 +149,83 @@ void main() {
       );
     }
 
+    for (final clear in [false, true]) {
+      testWidgets(
+        'audio post-processing model can be ${clear ? 'cleared' : 'selected'} '
+        'from tool-capable models only, without changing thinking',
+        (tester) async {
+          final thinking = testAiModel(
+            id: 'thinking-row',
+          ).copyWith(name: 'Agent reasoning', supportsFunctionCalling: true);
+          final postProcessing = testAiModel(
+            id: 'post-row',
+          ).copyWith(name: 'Careful editor', supportsFunctionCalling: true);
+          final toolless = testAiModel(
+            id: 'toolless-row',
+          ).copyWith(name: 'Plain writer', supportsFunctionCalling: false);
+          final audioOnly = testAiModel(id: 'audio-only-row').copyWith(
+            name: 'Audio listener',
+            supportsFunctionCalling: true,
+            inputModalities: [Modality.audio],
+          );
+          final profile =
+              testInferenceProfile(
+                thinkingModelId: thinking.id,
+              ).copyWith(
+                audioPostProcessingModelId: clear ? postProcessing.id : null,
+              );
+          await tester.pumpWidget(
+            buildSubject(
+              existingProfile: profile,
+              models: [thinking, postProcessing, toolless, audioOnly],
+            ),
+          );
+          await tester.pumpAndSettle();
+          final save = find.widgetWithIcon(DesignSystemButton, LottiIcons.save);
+          expect(tester.widget<DesignSystemButton>(save).onPressed, isNull);
+          await tester.scrollUntilVisible(
+            find.text('Audio post-processing'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          if (clear) {
+            await tester.tap(
+              find.descendant(
+                of: _pickerField('Audio post-processing'),
+                matching: find.byIcon(LottiIcons.close),
+              ),
+            );
+          } else {
+            expect(
+              find.descendant(
+                of: _pickerField('Audio post-processing'),
+                matching: find.text('Uses thinking model when unset'),
+              ),
+              findsOneWidget,
+            );
+            await tester.tap(_pickerTapTarget('Audio post-processing'));
+            await tester.pumpAndSettle();
+            // The step reads the transcript as text and publishes through a
+            // tool call, so a model lacking either is never offered.
+            expect(find.text('Plain writer'), findsNothing);
+            expect(find.text('Audio listener'), findsNothing);
+            await tester.tap(find.text('Careful editor'));
+          }
+          await tester.pumpAndSettle();
+          expect(tester.widget<DesignSystemButton>(save).onPressed, isNotNull);
+          await tester.tap(save);
+          await tester.pumpAndSettle();
+          final saved = fakeProfileController.savedProfiles.single;
+          expect(saved.thinkingModelId, thinking.id);
+          expect(
+            saved.audioPostProcessingModelId,
+            clear ? isNull : postProcessing.id,
+          );
+        },
+      );
+    }
+
     testWidgets('shows create title when no existing profile', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -205,14 +282,14 @@ void main() {
       expect(switchTile.value, isTrue);
     });
 
-    testWidgets('shows all six model slot fields', (tester) async {
+    testWidgets('shows all seven model slot fields', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.byType(SettingsPickerField, skipOffstage: false),
-        findsNWidgets(6),
+        findsNWidgets(7),
       );
       for (final label in [
         'Thinking *',
@@ -220,6 +297,7 @@ void main() {
         'Thinking (High-End)',
         'Image Recognition',
         'Transcription',
+        'Audio post-processing',
         'Image Generation',
       ]) {
         expect(find.text(label, skipOffstage: false), findsOneWidget);
@@ -343,6 +421,7 @@ void main() {
         'Thinking (High-End)',
         'Image Recognition',
         'Transcription',
+        'Audio post-processing',
         'Image Generation',
       ]) {
         await tester.scrollUntilVisible(

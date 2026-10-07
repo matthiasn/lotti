@@ -80,6 +80,113 @@ void main() {
       },
     );
 
+    test(
+      'audio post-processing uses its own route when set, inherits the '
+      'thinking route when not, and keeps both through thinking replacement',
+      () {
+        final postProcessing = testAiModel(
+          id: 'post-row',
+          providerModelId: 'post-row',
+        );
+        final thinking = testAiModel(
+          id: 'thinking-row',
+          providerModelId: 'thinking-row',
+        );
+        final override = testAiModel(id: 'override-row');
+        final unset = ResolvedProfile(
+          thinkingModelId: thinking.providerModelId,
+          thinkingProvider: provider1,
+          thinkingModel: thinking,
+        );
+        expect(unset.effectiveAudioPostProcessingModelId, 'thinking-row');
+        expect(unset.effectiveAudioPostProcessingProvider, provider1);
+        expect(unset.effectiveAudioPostProcessingModel, thinking);
+
+        final set = ResolvedProfile(
+          thinkingModelId: thinking.providerModelId,
+          thinkingProvider: provider1,
+          thinkingModel: thinking,
+          audioPostProcessingModelId: postProcessing.providerModelId,
+          audioPostProcessingProvider: provider2,
+          audioPostProcessingModel: postProcessing,
+        );
+        expect(set.effectiveAudioPostProcessingModelId, 'post-row');
+        expect(set.effectiveAudioPostProcessingProvider, provider2);
+        expect(set.effectiveAudioPostProcessingModel, postProcessing);
+
+        // A replaced thinking route moves an unset slot along with it, and
+        // leaves a set one where it is.
+        final unsetReplaced = unset.withThinkingRoute(
+          model: override,
+          provider: provider2,
+        );
+        expect(unsetReplaced.effectiveAudioPostProcessingModel, override);
+        final setReplaced = set.withThinkingRoute(
+          model: override,
+          provider: provider1,
+        );
+        expect(setReplaced.effectiveAudioPostProcessingModel, postProcessing);
+        expect(setReplaced.effectiveAudioPostProcessingProvider, provider2);
+        expect(
+          ResolvedProfile(
+                thinkingModelId: 'thinking',
+                thinkingProvider: provider1,
+                audioPostProcessingModelUnavailable: true,
+              )
+              .withThinkingRoute(model: override, provider: provider1)
+              .audioPostProcessingModelUnavailable,
+          isTrue,
+        );
+
+        final variants = <ResolvedProfile>{
+          unset,
+          set,
+          ResolvedProfile(
+            thinkingModelId: thinking.providerModelId,
+            thinkingProvider: provider1,
+            thinkingModel: thinking,
+            audioPostProcessingModelId: 'different',
+            audioPostProcessingProvider: provider2,
+            audioPostProcessingModel: postProcessing,
+          ),
+          ResolvedProfile(
+            thinkingModelId: thinking.providerModelId,
+            thinkingProvider: provider1,
+            thinkingModel: thinking,
+            audioPostProcessingModelId: postProcessing.providerModelId,
+            audioPostProcessingProvider: provider1,
+            audioPostProcessingModel: postProcessing,
+          ),
+          ResolvedProfile(
+            thinkingModelId: thinking.providerModelId,
+            thinkingProvider: provider1,
+            thinkingModel: thinking,
+            audioPostProcessingModelId: postProcessing.providerModelId,
+            audioPostProcessingProvider: provider2,
+            audioPostProcessingModel: override,
+          ),
+          ResolvedProfile(
+            thinkingModelId: thinking.providerModelId,
+            thinkingProvider: provider1,
+            thinkingModel: thinking,
+            audioPostProcessingModelUnavailable: true,
+          ),
+        };
+        expect(variants, hasLength(6));
+        expect(
+          set.hashCode,
+          ResolvedProfile(
+            thinkingModelId: thinking.providerModelId,
+            thinkingProvider: provider1,
+            thinkingModel: thinking,
+            audioPostProcessingModelId: postProcessing.providerModelId,
+            audioPostProcessingProvider: provider2,
+            audioPostProcessingModel: postProcessing,
+          ).hashCode,
+        );
+      },
+    );
+
     test('equal instances are equal', () {
       final a = ResolvedProfile(
         thinkingModelId: 'model-a',

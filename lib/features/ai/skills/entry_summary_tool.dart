@@ -20,14 +20,13 @@ abstract final class EntrySummaryToolArgs {
   static const required = <String>[oneLiner, tldr, summary];
 }
 
-/// Upper bound on the one-liner, in characters.
+/// The one-liner length the schema asks for, in characters.
 ///
-/// The collapsed audio card renders it on a single ellipsized line, so
-/// anything past roughly this length is invisible anyway. Enforced as a
-/// *rejection* rather than a truncation: a one-liner that needs cutting is
-/// a model that ignored the instruction, and the retry usually fixes it,
-/// whereas a mid-word truncation is permanent.
-const entrySummaryOneLinerMaxChars = 140;
+/// A hint, never a limit: the collapsed audio card renders the one-liner on a
+/// single ellipsized line, so a shorter one reads better, but a longer one is
+/// persisted as it came. Rejecting it would throw away the whole summary over
+/// a label the card cuts anyway, and some models overshoot it routinely.
+const entrySummaryOneLinerTargetChars = 140;
 
 /// The typed result of a successful [entrySummaryToolName] call.
 ///
@@ -94,9 +93,9 @@ const Map<String, Object> entrySummaryToolProperties = {
   EntrySummaryToolArgs.oneLiner: {
     'type': 'string',
     'description':
-        'ONE plain sentence naming what this recording is about, at '
-        'most $entrySummaryOneLinerMaxChars characters. This is shown '
-        'as the collapsed label for the recording in the task log, so '
+        'ONE plain sentence naming what this recording is about, '
+        'ideally under $entrySummaryOneLinerTargetChars characters. This is '
+        'shown as the collapsed label for the recording in the task log, so '
         'it must stand alone and be specific — never "a voice note" or '
         '"the user discusses several topics". No markdown, no bullet '
         'points, no leading label, no trailing ellipsis.',
@@ -132,8 +131,9 @@ ChatCompletionToolChoiceOption? entrySummaryToolChoiceFor(String modelId) =>
 
 /// Decodes and validates the [entrySummaryToolName] call out of [toolCalls].
 ///
-/// Throws [EntrySummaryToolException] when the call is missing, malformed, or
-/// violates the contract the schema states. Throwing rather than returning
+/// Throws [EntrySummaryToolException] when the call is missing or malformed,
+/// or a tier is missing, not a string, or empty. A one-liner longer than
+/// [entrySummaryOneLinerTargetChars] is accepted. Throwing rather than returning
 /// null is deliberate: every failure here is worth one forced retry, and the
 /// caller distinguishes "no summary this time" from "something is wrong with
 /// this model" by the reason string.
@@ -149,17 +149,8 @@ EntrySummary parseEntrySummaryToolCall(
   String toolName = entrySummaryToolName,
 }) {
   final args = _decodeEntrySummaryToolCall(toolCalls, toolName);
-
-  final oneLiner = _requireSummaryField(args, EntrySummaryToolArgs.oneLiner);
-  if (oneLiner.length > entrySummaryOneLinerMaxChars) {
-    throw EntrySummaryToolException(
-      '"${EntrySummaryToolArgs.oneLiner}" is ${oneLiner.length} chars, '
-      'over the $entrySummaryOneLinerMaxChars limit',
-    );
-  }
-
   return EntrySummary(
-    oneLiner: oneLiner,
+    oneLiner: _requireSummaryField(args, EntrySummaryToolArgs.oneLiner),
     tldr: _requireSummaryField(args, EntrySummaryToolArgs.tldr),
     summary: _requireSummaryField(args, EntrySummaryToolArgs.summary),
   );

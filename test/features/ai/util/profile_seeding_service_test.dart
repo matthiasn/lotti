@@ -751,9 +751,20 @@ void main() {
       );
     });
 
-    test(
-      'keeps a renamed seed — user-touched rows are never removed',
-      () async {
+    for (final (edit, touch)
+        in <
+          (
+            String,
+            AiConfigInferenceProfile Function(AiConfigInferenceProfile),
+          )
+        >[
+          ('a renamed seed', (p) => p.copyWith(name: 'My cloud profile')),
+          (
+            'a seed with an audio post-processing model chosen',
+            (p) => p.copyWith(audioPostProcessingModelId: 'chosen-model'),
+          ),
+        ]) {
+      test('keeps $edit — user-touched rows are never removed', () async {
         when(
           () => mockRepo.getConfigsByType(
             AiConfigType.inferenceProvider,
@@ -765,11 +776,7 @@ void main() {
             AiConfigType.inferenceProfile,
             includeDeleted: any(named: 'includeDeleted'),
           ),
-        ).thenAnswer(
-          (_) async => [
-            templateFor(profileMeliousId).copyWith(name: 'My cloud profile'),
-          ],
-        );
+        ).thenAnswer((_) async => [touch(templateFor(profileMeliousId))]);
 
         await service.removeOrphanedDefaultSeeds();
 
@@ -779,8 +786,8 @@ void main() {
             fromSync: any(named: 'fromSync'),
           ),
         );
-      },
-    );
+      });
+    }
 
     test(
       'keeps a seed rewired to a usable provider of another type',
