@@ -41,6 +41,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -56,6 +57,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -433,6 +435,7 @@ class TutorialAppHarness {
     required this.persistenceLogic,
     required this.userActivityService,
     required this.world,
+    required this.autoShowOnboarding,
     required List<Object> closeables,
   }) : _closeables = closeables; // ignore: prefer_initializing_formals
 
@@ -444,6 +447,11 @@ class TutorialAppHarness {
   final PersistenceLogic persistenceLogic;
   final UserActivityService userActivityService;
   final ManualDemoWorld world;
+
+  /// Whether the FTUE welcome auto-shows after boot, as it does on a real
+  /// first run. Off for every scenario but the onboarding one, which records
+  /// that very flow.
+  final bool autoShowOnboarding;
   final List<Object> _closeables;
 
   /// Boots the harness.
@@ -463,6 +471,8 @@ class TutorialAppHarness {
   /// relative dates (due today, logged last Tuesday) — the tutorials keep the
   /// fixture's fixed clock for determinism, a store capture passes the real
   /// one so the tracked time lands in this month and nothing reads overdue.
+  /// [autoShowOnboarding] lets the FTUE welcome open by itself after boot,
+  /// as on a real first run; every other scenario keeps it suppressed.
   static Future<TutorialAppHarness> setUp({
     required List<AiConfig> aiConfigs,
     required String languageCode,
@@ -470,6 +480,7 @@ class TutorialAppHarness {
     ThemeMode themeMode = ThemeMode.dark,
     bool seedHistory = false,
     bool seedDemoWorld = true,
+    bool autoShowOnboarding = false,
     bool inMemoryJournal = true,
     Map<String, bool> configFlags = const {},
     Future<Uint8List> Function(Uri uri)? downloadMedia,
@@ -572,11 +583,29 @@ class TutorialAppHarness {
     final geolocationService = GeolocationService(
       loggingService: domainLogger,
     );
+    // The onboarding flow's measurement store, as `get_it.dart` wires it:
+    // the first-task structuring service reads the repository from getIt.
+    // In memory, like every other store here.
+    final onboardingMetricsDb = OnboardingMetricsDb(
+      inMemoryDatabase: true,
+      background: false,
+      documentsDirectoryProvider: () async => documentsDirectory,
+    );
+    final onboardingMetricsRepository = OnboardingMetricsRepository(
+      db: onboardingMetricsDb,
+      logger: domainLogger,
+      hasExistingUserData: () async =>
+          await journalDb.countAllJournalEntries() > 0,
+    );
 
     getIt
       ..registerSingleton<DomainLogger>(domainLogger)
       ..registerSingleton<MetadataService>(metadataService)
       ..registerSingleton<GeolocationService>(geolocationService)
+      ..registerSingleton<OnboardingMetricsDb>(onboardingMetricsDb)
+      ..registerSingleton<OnboardingMetricsRepository>(
+        onboardingMetricsRepository,
+      )
       ..registerSingleton<PersistenceLogic>(buildPersistenceLogic())
       ..registerSingleton<EditorStateService>(EditorStateService())
       ..registerSingleton<LinkService>(LinkService())
@@ -642,7 +671,9 @@ class TutorialAppHarness {
       persistenceLogic: persistenceLogic,
       userActivityService: userActivityService,
       world: world,
+      autoShowOnboarding: autoShowOnboarding,
       closeables: [
+        onboardingMetricsDb,
         agentDatabase,
         dayProcessingDb,
         editorDb,
@@ -730,7 +761,9 @@ class TutorialAppHarness {
     outboxServiceProvider.overrideWithValue(
       getIt<OutboxService>() as MockOutboxService,
     ),
-    shouldAutoShowOnboardingProvider.overrideWith((ref) async => false),
+    shouldAutoShowOnboardingProvider.overrideWith(
+      (ref) async => autoShowOnboarding,
+    ),
     shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
     settingsDbProvider.overrideWithValue(getIt<SettingsDb>()),
@@ -769,6 +802,8 @@ class TutorialAppHarness {
           case final AgentDatabase db:
             await db.close();
           case final DayProcessingDb db:
+            await db.close();
+          case final OnboardingMetricsDb db:
             await db.close();
         }
       } on Object {
@@ -868,16 +903,34 @@ class TutorialDriver {
     await tester.pump(const Duration(milliseconds: 16));
   }
 
+  /// How long the cursor takes to glide to a tap target, on the recorded
+  /// clock.
+  static const cursorGlide = Duration(milliseconds: 500);
+
   /// Glides the overlay cursor to [finder]'s center, pulses a press, and
   /// performs the actual (synthetic) tap.
+  ///
+  /// The glide is paced by the recorded clock, not by a frame count: a screen
+  /// that is slow to draw under Xvfb (the onboarding category step's
+  /// frosted-glass blur) takes far longer than 16ms a frame, and a fixed
+  /// number of frames then crawled across it for seconds. Slow frames now
+  /// skip ahead along the same eased path, so every glide lasts
+  /// [cursorGlide] however heavy the page.
   Future<void> tapLikeUser(Finder finder) async {
     final target = tester.getCenter(finder.first);
     final start = cursor.position.value;
-    const steps = 22;
-    for (var i = 1; i <= steps; i++) {
-      final t = i / steps;
-      final eased = Curves.easeInOut.transform(t);
-      cursor.position.value = Offset.lerp(start, target, eased)!;
+    final glideStart = timeline.elapsed;
+    while (true) {
+      final t =
+          ((timeline.elapsed - glideStart).inMicroseconds /
+                  cursorGlide.inMicroseconds)
+              .clamp(0.0, 1.0);
+      cursor.position.value = Offset.lerp(
+        start,
+        target,
+        Curves.easeInOut.transform(t),
+      )!;
+      if (t >= 1) break;
       await tick();
     }
     await tester.pump(const Duration(milliseconds: 150));

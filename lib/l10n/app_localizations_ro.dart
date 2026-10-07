@@ -10884,18 +10884,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Continuați';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Alegeți un aspect pentru microfon. Îl puteți schimba oricând în Setări.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Modern — orb de energie';
-
-  @override
-  String get onboardingRecordingStyleTitle =>
-      'Cum doriți să arate înregistrarea?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Încercați cu vocea';

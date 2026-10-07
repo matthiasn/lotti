@@ -22,6 +22,11 @@ from .characters import MOUTH_LEVELS
 # level further (one threshold per open level).
 DEFAULT_THRESHOLDS = (0.15, 0.4, 0.7)
 
+# Frames at or under this loudness are silence — the gaps between steps and
+# the fast-forwarded waits of a whole tutorial — and stay out of the speech
+# reference, so a mostly-silent track still opens the mouth on its speech.
+NOISE_FLOOR = 0.01
+
 
 def frame_levels(path: Path, fps: int) -> list[float]:
     """RMS loudness (0..1) of each video frame's slice of a 16-bit PCM WAV.
@@ -61,17 +66,17 @@ def mouth_track(
 ) -> list[int]:
     """Quantizes loudness into mouth levels 0..``MOUTH_LEVELS - 1``.
 
-    Levels are judged against the clip's 95th-percentile loudness, so a quiet
-    and a loud voice animate alike. The mouth only closes after
-    ``close_hold`` quiet frames in a row: the short dips between syllables
-    keep it moving instead of snapping shut on every one."""
+    Levels are judged against the 95th-percentile loudness of the frames
+    above ``NOISE_FLOOR`` — the clip's own speech, however little of the
+    track it covers — so a quiet and a loud voice animate alike. The mouth
+    only closes after ``close_hold`` quiet frames in a row: the short dips
+    between syllables keep it moving instead of snapping shut on every one."""
     if len(thresholds) != MOUTH_LEVELS - 1:
         raise ValueError(f"need {MOUTH_LEVELS - 1} thresholds, got {len(thresholds)}")
-    if not levels:
-        return []
-    reference = sorted(levels)[min(len(levels) - 1, int(0.95 * len(levels)))]
-    if reference <= 0:
+    speech = sorted(level for level in levels if level > NOISE_FLOOR)
+    if not speech:
         return [0] * len(levels)
+    reference = speech[min(len(speech) - 1, int(0.95 * len(speech)))]
     track = []
     current = quiet = 0
     for level in levels:

@@ -10746,17 +10746,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Analog — VU-Meter';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Weiter';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Wähl einen Look fürs Mikro. Du kannst ihn jederzeit in den Einstellungen ändern.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Modern — Energie-Orb';
-
-  @override
-  String get onboardingRecordingStyleTitle => 'Wie soll die Aufnahme wirken?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Mit deiner Stimme testen';

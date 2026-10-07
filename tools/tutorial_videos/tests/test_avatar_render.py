@@ -15,7 +15,9 @@ from avatar_helpers import decode_png, pixel, write_wav
 from tutorial_videos.avatar import AvatarError
 from tutorial_videos.avatar import render
 from tutorial_videos.avatar.characters import PIP, Pose
+from tutorial_videos.avatar.lipsync import frame_levels
 from tutorial_videos.avatar.render import (
+    POSITIONS,
     badge_size,
     build_track,
     overlay_command,
@@ -56,6 +58,10 @@ class _TempDirTest(unittest.TestCase):
             [12000, -12000] * (half // 2) + [0] * half,
             rate=rate,
         )
+
+    def _levels(self, seconds: float = 1.0, fps: int = 10) -> list[float]:
+        """The per-frame loudness of ``_speech``: loud, then silent."""
+        return frame_levels(self._speech(seconds), fps)
 
 
 class PoseImagesTest(_TempDirTest):
@@ -107,7 +113,7 @@ class WriteConcatTest(_TempDirTest):
 class BuildTrackTest(_TempDirTest):
     def test_the_track_lasts_as_long_as_the_narration(self):
         concat = build_track(
-            PIP, self._speech(1.0), fps=10, size=8, work_dir=self.dir / "w"
+            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
         )
 
         self.assertEqual(concat, self.dir / "w" / "pip.ffconcat")
@@ -115,7 +121,7 @@ class BuildTrackTest(_TempDirTest):
 
     def test_the_mouth_moves_while_speaking_and_rests_after(self):
         concat = build_track(
-            PIP, self._speech(1.0), fps=10, size=8, work_dir=self.dir / "w"
+            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
         )
 
         files = [
@@ -127,7 +133,7 @@ class BuildTrackTest(_TempDirTest):
     def test_min_frames_keeps_the_avatar_idling_past_the_narration(self):
         concat = build_track(
             PIP,
-            self._speech(1.0),
+            self._levels(1.0),
             fps=10,
             size=8,
             work_dir=self.dir / "w",
@@ -137,7 +143,7 @@ class BuildTrackTest(_TempDirTest):
 
     def test_every_listed_image_exists_next_to_the_list(self):
         concat = build_track(
-            PIP, self._speech(1.0), fps=10, size=8, work_dir=self.dir / "w"
+            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
         )
         for line in concat.read_text().splitlines():
             if line.startswith("file"):
@@ -174,7 +180,7 @@ class CommandsTest(unittest.TestCase):
         )
         self.assertEqual(command[-1], "o.mp4")
 
-    def test_the_overlay_sits_bottom_right_and_keeps_the_audio(self):
+    def test_the_overlay_sits_top_right_by_default_and_keeps_the_audio(self):
         command = overlay_command(
             video=Path("v.mp4"),
             concat=Path("t.ffconcat"),
@@ -183,10 +189,42 @@ class CommandsTest(unittest.TestCase):
             margin=12,
         )
         graph = command[command.index("-filter_complex") + 1]
-        self.assertIn("overlay=W-w-12:H-h-12:shortest=1", graph)
+        self.assertIn("overlay=W-w-12:12:shortest=1", graph)
         self.assertIn("0:a?", command)
         self.assertEqual(command[command.index("-c:a") + 1], "copy")
         self.assertEqual(command[command.index("-i") + 1], "v.mp4")
+
+    def test_every_corner_places_the_badge_a_margin_in_from_its_edges(self):
+        expected = {
+            "top_right": "overlay=W-w-12:12:",
+            "top_left": "overlay=12:12:",
+            "bottom_right": "overlay=W-w-12:H-h-12:",
+            "bottom_left": "overlay=12:H-h-12:",
+        }
+        self.assertEqual(sorted(expected), sorted(POSITIONS))
+        for position, placement in expected.items():
+            with self.subTest(position=position):
+                command = overlay_command(
+                    video=Path("v.mp4"),
+                    concat=Path("t.ffconcat"),
+                    out=Path("o.mp4"),
+                    fps=30,
+                    margin=12,
+                    position=position,
+                )
+                self.assertIn(placement, command[command.index("-filter_complex") + 1])
+
+    def test_an_unknown_corner_is_refused(self):
+        with self.assertRaises(AvatarError) as raised:
+            overlay_command(
+                video=Path("v.mp4"),
+                concat=Path("t.ffconcat"),
+                out=Path("o.mp4"),
+                fps=30,
+                margin=12,
+                position="centre",
+            )
+        self.assertIn("centre", str(raised.exception))
 
 
 class RunFfmpegTest(unittest.TestCase):
@@ -250,7 +288,7 @@ class RenderOverlayTest(_TempDirTest):
             result = render_overlay(
                 PIP,
                 Path("tutorial.mp4"),
-                self._speech(1.0),
+                self._levels(1.0),
                 out,
                 work_dir=self.dir / "w",
                 fps=10,
@@ -264,11 +302,27 @@ class RenderOverlayTest(_TempDirTest):
         image = next((self.dir / "w").glob("*.png"))
         self.assertEqual(decode_png(image.read_bytes())[:2], (22, 22))
         command = run.call_args.args[0]
-        # 15% of the 22px badge, rounded.
+        # Top right by default, 15% of the 22px badge in from the edges.
         self.assertIn(
-            "overlay=W-w-3:H-h-3", command[command.index("-filter_complex") + 1]
+            "overlay=W-w-3:3:", command[command.index("-filter_complex") + 1]
         )
         self.assertEqual(command[-1], str(out))
+
+    def test_the_corner_is_passed_through(self):
+        with mock.patch.object(
+            render, "probe_video", return_value=(1920, 100, 2.0)
+        ), mock.patch.object(render, "run_ffmpeg") as run:
+            render_overlay(
+                PIP,
+                Path("tutorial.mp4"),
+                self._levels(1.0),
+                self.dir / "o.mp4",
+                work_dir=self.dir / "w",
+                fps=10,
+                position="bottom_left",
+            )
+        command = run.call_args.args[0]
+        self.assertIn("overlay=3:H-h-3:", command[command.index("-filter_complex") + 1])
 
 
 @unittest.skipUnless(HAS_FFMPEG, "ffmpeg/ffprobe not installed")
@@ -363,7 +417,7 @@ class RealFfmpegTest(_TempDirTest):
         out = render_overlay(
             PIP,
             self._tutorial(),
-            self._speech(0.5, rate=8000),
+            frame_levels(self._speech(0.5, rate=8000), 10),
             self.dir / "o.mp4",
             work_dir=self.dir / "w",
             fps=10,
@@ -377,7 +431,7 @@ class RealFfmpegTest(_TempDirTest):
         out = render_overlay(
             PIP,
             self._tutorial(),
-            self._speech(3.0, rate=8000),
+            frame_levels(self._speech(3.0, rate=8000), 10),
             self.dir / "o.mp4",
             work_dir=self.dir / "w",
             fps=10,

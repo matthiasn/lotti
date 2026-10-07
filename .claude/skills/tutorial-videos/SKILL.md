@@ -164,9 +164,12 @@ not exact strings.
   changing the voice id there; the README's "TTS engines" has the details.
 - **Speed/pacing knobs**: `timewarp.py` (`MAX_SPEED`, lead-in, narration
   gap); per-step floors in the scenario YAML.
-- **Talking avatar (prototype)**: `python3 -m tutorial_videos
-  avatar-preview --wav <wav>` renders Pip (the penguin, `PIP` in
-  `tutorial_videos/avatar/characters.py`) saying a WAV;
-  `avatar-overlay --video <built mp4>` puts it in the corner, lip-synced to
-  `<stem>.narration.wav`. Check any art change at badge size with
-  `avatar-preview` first. See the README's "Talking avatar (prototype)".
+- **Talking avatar**: `make tutorial_video TUTORIAL_AVATAR=1` (or `build
+  --avatar`) lays Pip (the penguin, `PIP` in
+  `tutorial_videos/avatar/characters.py`) into the top-right corner of the
+  finished video, lip-synced to the narrator clips only — never the
+  dictation. `--avatar-position` / `avatar-overlay --position` move it to
+  another corner; `avatar-overlay --video <built mp4>` adds it to an
+  already-built video as `<stem>_avatar.mp4`; `avatar-preview --wav <wav>`
+  renders Pip alone — check any art change at badge size with it first.
+  See the README's "Talking avatar".

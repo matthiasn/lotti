@@ -20,8 +20,8 @@ import 'package:material_ui/material_ui.dart';
 /// Hosts the presentational [OnboardingFirstTaskView] and wires it to the
 /// **shared** [captureControllerProvider] (the same mic/transcription pipeline the
 /// Daily OS capture screen uses — no bespoke audio wiring), to the persisted
-/// [recordingStyleProvider] (so the visual the user picked one step earlier is
-/// the one that records their first task), and to the
+/// [recordingStyleProvider] (the orb unless the user picked the VU meter in
+/// Settings → Recording Style), and to the
 /// [onboardingCaptureToTaskServiceProvider] orchestrator that turns the
 /// transcript into a real task.
 ///
@@ -141,8 +141,8 @@ class _OnboardingFirstTaskStepState
       _maybeStructure(next);
     });
 
-    // The style picked one step earlier; while the preference is still loading
-    // (or on a load error) the signature orb stands in.
+    // The recording-style preference — the orb unless the user chose the VU
+    // meter in Settings; while it loads (or on a load error) the orb stands in.
     final style =
         ref.watch(recordingStyleProvider).asData?.value ??
         RecordingStyle.modern;

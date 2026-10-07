@@ -264,6 +264,11 @@ from the fake-time policy, see `test/README.md`.
   animations at ~10fps, which reads as mushy cross-fades on video.
 - Start the timeline only after startup settles — the Logbook auto-select
   navigates on its own right after boot.
+- **A capture can drift off the app's clock** — under load x11grab once
+  wrote a 234s file for 181s of app time, and the picture lagged the
+  narration by almost a minute while every other check passed. `compose.py`
+  (`check_capture_length`) now refuses a capture more than 3s or 5% off the
+  head plus the timeline; the fix is to rebuild that video.
 - **OpenMontage output is stream-deterministic, not byte-identical** —
   compare decoded streams (`ffmpeg -f framemd5`), never file hashes.
 
@@ -289,6 +294,18 @@ A scenario's `dictionary` is optional for this reason: required once a
 scenario dictates or declares one, absent from a script that seeds nothing.
 The recipe is in
 [knowledge/conventions/screenshots.md](../../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
+
+## The onboarding scenario starts empty
+
+`onboarding_first_run` records the real first-run flow, so it is the one
+scenario that boots with **no demo world and no provider**
+(`seedDemoWorld: false`, `aiConfigs: const []`) and lets the FTUE welcome
+open by itself (`autoShowOnboarding: true`). The Melious key it pastes comes
+from `MELIOUS_API_KEY`; the field stays obscured and the test asserts that
+before and after typing, so the published video only ever shows dots. The
+harness registers the onboarding metrics store (in memory) because the
+first-task structuring reads it from getIt — without it the flow dies on the
+thinking frame.
 
 ## Adding a scenario or locale
 
@@ -328,15 +345,17 @@ and a voice without settings keeps the cache key it had before settings
 existed. Both builds of a scenario write the same output name, so the second
 overwrites the first: copy the MP4 away before building the other.
 
-## Talking avatar (prototype)
+## Talking avatar
 
-A narrator with a face: a small cartoon character in a round badge that
-lip-syncs the narration from the bottom-right corner. Stdlib-only, in
+A narrator with a face: Pip, a small cartoon penguin in a round badge, lip-syncs
+the narration from a corner of the video. Stdlib-only, in
 `tutorial_videos/avatar/`:
 
 ```mermaid
 flowchart LR
-    WAV[narration WAV] --> LV[lipsync.frame_levels\nRMS per video frame]
+    MF[manifest + timeline] --> NT[narration_track.narration_levels\nnarrator clips on the warped clock]
+    NT --> LV[per-frame loudness]
+    WAV[a plain WAV] --> FL[lipsync.frame_levels\nRMS per video frame] --> LV
     LV --> MT[lipsync.mouth_track\nmouth level 0..3]
     MT --> PT[track.pose_track\n+ seeded blink_track]
     PT --> RL[track.run_lengths]
@@ -351,9 +370,17 @@ flowchart LR
   world whose beak does the talking. A character is data: a badge
   background, a fixed body, open/closed eyes and four mouth shapes from
   closed to wide open.
+- **What it lip-syncs to** (`narration_track.py`): the narrator clips
+  alone, each dropped at its step's warped start through the same
+  `timewarp.plan_segments` as `compose.py` and `captions.py`. The narration
+  mix beside the video also carries the dictation — the "user" speaking
+  into the app — so syncing to that file would make Pip mouth the user's
+  words too; the manifest's clips are read instead, and the dictation clip
+  is never opened.
 - **Lip-sync** (`lipsync.py`) is loudness-driven: each frame's RMS, relative
-  to the clip's 95th-percentile loudness, picks the mouth level, so it works
-  on any WAV — today's Gemini clips included — without word timings. The
+  to the 95th percentile of the frames above a small noise floor — the
+  track's own speech, however little of a mostly-silent tutorial it covers —
+  picks the mouth level, so it works on any WAV without word timings. The
   mouth only closes after two quiet frames, so it doesn't snap shut between
   syllables.
 - **Rendering** (`render.py`) draws only the distinct poses (at most eight)
@@ -364,21 +391,29 @@ flowchart LR
 ```sh
 # Pip saying a WAV, as a square preview -> build/tutorial_videos/avatar/avatar_pip.mp4
 python3 -m tutorial_videos avatar-preview --wav narration.wav
-# The badge in the corner of a built tutorial, lip-synced to the narration
-# mix compose.py wrote beside it (<stem>.narration.wav) -> <stem>_avatar.mp4
+# Pip in the corner of a built tutorial, lip-synced to the narrator clips its
+# manifest and timeline name (found beside the video) -> <stem>_avatar.mp4
 python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4
+# Or as part of the build, under the video's own name (publish and the docs
+# site need no change): `make tutorial_video TUTORIAL_AVATAR=1`
+python3 -m tutorial_videos build --scenario category_setup --locale en --avatar
 ```
 
 The badge is 22% of the video height (desktop and mobile get the same
-proportions). The overlay always ends with the tutorial: the badge track is
-built one frame longer than the video and cut there (`shortest=1`) —
-without that, ffmpeg freezes the tutorial's last frame for as long as the
-badge track runs.
+proportions) and sits **top right** by default: bottom right covers the
+form's primary button on desktop (Create, Save) and the bottom navigation on
+mobile, while the top row holds only the page title on the left and the
+real-time HUD in the centre. `--position` / `--avatar-position` take
+`top_right`, `top_left`, `bottom_right` or `bottom_left`. The overlay always
+ends with the tutorial: the badge track is built one frame longer than the
+video and cut there (`shortest=1`) — without that, ffmpeg freezes the
+tutorial's last frame for as long as the badge track runs. The output may
+hold one more frame than the input: the composed video's first frame sits a
+few milliseconds in, and the overlay re-stamps from zero.
 
-**Known limitation:** the narration mix also holds the dictation clip (the
-"user" speaking into the app), so the avatar mouths that too. Driving it
-from the manifest's per-step narration clips instead fixes that; it's not
-part of the prototype.
+For a video without a manifest and timeline, `avatar-overlay --narration
+<wav>` (or, those files missing, `<stem>.narration.wav` beside the video)
+syncs to a WAV instead — including whatever that WAV carries.
 
 ## Tests
 

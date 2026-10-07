@@ -10698,17 +10698,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Absolute';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Doorgaan';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Kies een zoekopdracht voor de microfoon. Je kunt het op elk moment wijzigen in Instellingen.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Moderne energiebol';
-
-  @override
-  String get onboardingRecordingStyleTitle => 'Hoe moet het opnemen voelen?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Probeer het met je stem';

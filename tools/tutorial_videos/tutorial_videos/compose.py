@@ -29,6 +29,49 @@ class ComposeError(RuntimeError):
     pass
 
 
+# How far the raw capture may run past (or short of) the app's own clock
+# before the picture can no longer be trusted to match the narration.
+CAPTURE_DRIFT_SECONDS = 3.0
+CAPTURE_DRIFT_FRACTION = 0.05
+
+
+def check_capture_length(
+    *, capture_seconds: float, offset: float, timeline_total: float
+) -> None:
+    """Refuses a capture whose length does not match the time the app ran.
+
+    The capture should last the head before timeline zero (``offset``) plus
+    the timeline itself. A screen grabber that falls behind under load keeps
+    stamping frames on its own clock, so its file runs long: the trim and
+    warp then cut the wrong span, and the picture lags the narration by up to
+    a minute while every check downstream still passes. One Romanian build
+    came out 29% long this way; this fails such a run loudly instead."""
+    expected = offset + timeline_total
+    drift = capture_seconds - expected
+    if abs(drift) > max(CAPTURE_DRIFT_SECONDS, expected * CAPTURE_DRIFT_FRACTION):
+        raise ComposeError(
+            f"the capture lasts {capture_seconds:.1f}s but the app ran "
+            f"{expected:.1f}s (drift {drift:+.1f}s): the screen recording fell "
+            "out of step with the app — rebuild this video"
+        )
+
+
+def probe_duration(path: Path) -> float:
+    """Seconds of media in ``path``, by ffprobe."""
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "csv=p=0", str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ComposeError(f"ffprobe failed on {path}: {result.stderr.strip()}")
+    return float(result.stdout.strip())
+
+
 def openmontage_root(repo_root: Path) -> Path:
     pin = (TOOL_ROOT / "config" / "openmontage.pin").read_text()
     root = repo_root.parent / "OpenMontage"
@@ -79,6 +122,11 @@ def compose_video(
         raise ComposeError(
             f"capture started after timeline zero (offset {offset:.2f}s)"
         )
+    check_capture_length(
+        capture_seconds=probe_duration(capture),
+        offset=offset,
+        timeline_total=float(timeline["total"]),
+    )
 
     narration_by_id = {
         step["id"]: step["narration"] for step in manifest["steps"]

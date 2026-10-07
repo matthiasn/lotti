@@ -108,6 +108,18 @@ class MouthTrackTest(unittest.TestCase):
         levels = [0.1] * 99 + [1.0]
         self.assertEqual(mouth_track(levels)[:99], [3] * 99)
 
+    def test_sparse_speech_in_a_mostly_silent_track_still_opens_the_mouth(self):
+        # A whole tutorial is mostly silence (gaps, fast-forwarded waits):
+        # the reference comes from the spoken frames alone, so 3% of speech
+        # is not judged against a reference the silence dragged to zero.
+        levels = [0.0] * 97 + [0.5] * 3
+        self.assertEqual(mouth_track(levels)[97:], [3, 3, 3])
+        self.assertEqual(mouth_track(levels)[:95], [0] * 95)
+
+    def test_noise_under_the_floor_never_opens_the_mouth(self):
+        # Faint hiss is not speech, even when it is the loudest thing there.
+        self.assertEqual(mouth_track([0.005, 0.009, 0.0]), [0, 0, 0])
+
 
 if __name__ == "__main__":
     unittest.main()

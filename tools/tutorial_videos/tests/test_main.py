@@ -42,13 +42,101 @@ class AvatarCommandsTest(unittest.TestCase):
 
     def test_an_avatar_failure_is_reported_as_an_error_exit(self):
         stderr = io.StringIO()
-        with mock.patch.object(
+        with mock.patch.object(avatar_cli, "levels_for", return_value=[]), mock.patch.object(
             avatar_cli, "render_overlay", side_effect=AvatarError("ffmpeg failed")
         ), contextlib.redirect_stderr(stderr):
             code = entry.main(["avatar-overlay", "--video", "v.mp4"])
 
         self.assertEqual(code, 2)
         self.assertIn("ERROR: ffmpeg failed", stderr.getvalue())
+
+
+class BuildCommandTest(unittest.TestCase):
+    """``build`` with the recording, composition and captions stubbed out:
+    what it does around them, and what ``--avatar`` adds."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.out = Path(self._tmp.name)
+        self.timeline = {
+            "total": 1.0,
+            "zero_epoch_ms": 0,
+            "steps": [],
+            "waits": [],
+            "dictations": [],
+        }
+        (self.out / "category_setup_en.timeline.json").write_text(
+            json.dumps(self.timeline)
+        )
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _build(self, *extra: str, drive_code: int = 0) -> tuple[int, dict]:
+        def fake_compose(**kwargs):
+            kwargs["output"].write_bytes(b"mp4")
+            return kwargs["output"]
+
+        argv = ["build", "--scenario", "category_setup", "--locale", "en"]
+        with mock.patch.object(
+            entry, "create_engine", return_value=FakeEngine()
+        ), mock.patch.object(entry, "_read_env_pairs", return_value={}), mock.patch.object(
+            entry, "XvfbDisplay"
+        ), mock.patch.object(entry, "VirtualMic"), mock.patch.object(
+            entry, "ScreenCapture"
+        ) as capture, mock.patch.object(
+            entry.subprocess, "run", return_value=mock.Mock(returncode=drive_code)
+        ), mock.patch.object(
+            entry, "compose_video", side_effect=fake_compose
+        ) as compose, mock.patch.object(
+            entry, "build_vtt", return_value="WEBVTT\n"
+        ), mock.patch.object(entry, "overlay_in_place") as overlay, contextlib.redirect_stdout(
+            io.StringIO()
+        ), contextlib.redirect_stderr(io.StringIO()):
+            capture.return_value.__enter__.return_value.start_epoch_ms = 0
+            code = entry.main([*argv, "--out-dir", str(self.out), *extra])
+        return code, {"compose": compose, "overlay": overlay}
+
+    def test_without_the_flag_the_video_is_composed_captioned_and_left_alone(self):
+        code, calls = self._build()
+
+        self.assertEqual(code, 0)
+        calls["compose"].assert_called_once()
+        self.assertTrue((self.out / "category_setup_en.vtt").is_file())
+        calls["overlay"].assert_not_called()
+
+    def test_avatar_lays_pip_into_the_finished_video_top_right(self):
+        code, calls = self._build("--avatar")
+
+        self.assertEqual(code, 0)
+        calls["overlay"].assert_called_once()
+        video = calls["overlay"].call_args.args[0]
+        kwargs = calls["overlay"].call_args.kwargs
+        self.assertEqual(video, self.out / "category_setup_en.mp4")
+        self.assertEqual(kwargs["position"], "top_right")
+        self.assertEqual(kwargs["timeline"], self.timeline)
+        self.assertTrue(kwargs["manifest"]["steps"])
+        self.assertEqual(kwargs["work_dir"], self.out / "avatar_work" / "category_setup_en")
+
+    def test_the_avatars_corner_can_be_chosen(self):
+        _, calls = self._build("--avatar", "--avatar-position", "bottom_left")
+        self.assertEqual(calls["overlay"].call_args.kwargs["position"], "bottom_left")
+
+    def test_a_mobile_build_overlays_its_own_suffixed_video(self):
+        (self.out / "category_setup_en_mobile.timeline.json").write_text(
+            json.dumps(self.timeline)
+        )
+        _, calls = self._build("--avatar", "--device", "mobile")
+        self.assertEqual(
+            calls["overlay"].call_args.args[0], self.out / "category_setup_en_mobile.mp4"
+        )
+
+    def test_a_failed_drive_stops_before_composing(self):
+        code, calls = self._build("--avatar", drive_code=1)
+
+        self.assertEqual(code, 1)
+        calls["compose"].assert_not_called()
+        calls["overlay"].assert_not_called()
 
 
 class TtsCommandTest(unittest.TestCase):

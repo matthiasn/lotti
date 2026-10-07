@@ -147,7 +147,6 @@ enum _OnboardingCase {
   providers,
   apiKey,
   success,
-  recordingStyle,
   categories,
   firstTask,
   taskCreated,
@@ -160,7 +159,6 @@ extension on _OnboardingCase {
     _OnboardingCase.providers => 'providers',
     _OnboardingCase.apiKey => 'api_key',
     _OnboardingCase.success => 'success',
-    _OnboardingCase.recordingStyle => 'recording_style',
     _OnboardingCase.categories => 'categories',
     _OnboardingCase.firstTask => 'first_task',
     _OnboardingCase.taskCreated => 'task_created',
@@ -393,20 +391,10 @@ void main() {
     expect(find.text(messages.onboardingSuccessTitle), findsOneWidget);
   }
 
-  Future<void> driveToRecordingStyle(WidgetTester tester) async {
+  Future<void> driveToCategories(WidgetTester tester) async {
     await driveToSuccess(tester);
     final messages = _messages(tester);
     await tapText(tester, messages.onboardingSuccessContinue);
-    expect(
-      find.text(messages.onboardingRecordingStyleTitle),
-      findsOneWidget,
-    );
-  }
-
-  Future<void> driveToCategories(WidgetTester tester) async {
-    await driveToRecordingStyle(tester);
-    final messages = _messages(tester);
-    await tapText(tester, messages.onboardingRecordingStyleContinue);
     expect(
       find.text(messages.onboardingCategoryTitle),
       findsOneWidget,
@@ -537,8 +525,6 @@ void main() {
           await driveToApiKey(tester);
         case _OnboardingCase.success:
           await driveToSuccess(tester);
-        case _OnboardingCase.recordingStyle:
-          await driveToRecordingStyle(tester);
         case _OnboardingCase.categories:
           await driveToCategories(tester);
         case _OnboardingCase.firstTask:
