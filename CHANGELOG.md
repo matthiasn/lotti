@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.47]
+
+### Added
+
+- **Inference profiles can name their own model for audio post-processing.**
+  The step after a transcription — correcting the transcript against the
+  speech dictionary and writing the recording's one-liner, TLDR and summary —
+  can now run on a model of its own, chosen in the profile under "Audio
+  post-processing", instead of always on the thinking model your agents use.
+  Profiles without one keep using the thinking model.
+
+### Changed
+
+- ***Skip once* now sits beside the countdown on the task's AI summary.** When
+  a summary is out of date and an automatic update is about to run, *Skip
+  once* appears next to "Update now · 1:30" on the card itself, so you can
+  decline a paid run where it is announced instead of opening the agent
+  internals first.
+- **Adding a speech dictionary term starts from what you searched for.** When
+  you type a word into the dictionary's search field and then press *Add
+  term*, the new entry's term is already filled in with what you typed, the
+  same way the "Add …" offer under an unmatched search has worked. Before,
+  that button opened an empty form and the word had to be typed a second
+  time.
+
+### Fixed
+
+- **A summary with a long one-liner is no longer thrown away.** When the model
+  wrote a one-line label of more than 140 characters, the whole summary was
+  rejected with an error, and a recording transcribed in a task kept its
+  uncorrected text. The longer label is now kept as written.
+- ***Skip once* no longer claims a task summary is up to date.** Skipping the
+  countdown to a task agent's next automatic update used to flip its summary
+  to "Up to date", even though the summary still missed the change that
+  started the countdown. Skipping now saves only the run: the summary keeps
+  reading "Out of date" until the next update or *Update now* refreshes it.
+
 ## [1.1.46]
 
 ### Changed
