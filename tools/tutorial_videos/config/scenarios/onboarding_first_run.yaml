@@ -1,0 +1,439 @@
+# Tutorial scenario: a brand-new user's first minutes — the welcome screen,
+# connecting Melious with an API key (typed on camera, never shown), choosing
+# the first life areas, and dictating the first task, which Lotti turns into a
+# real task with a title and a checklist.
+#
+# The app starts EMPTY (no demo world, no provider): exactly what a first run
+# sees. The key is read from MELIOUS_API_KEY and only ever rendered as dots.
+# Schema as documented in create_task_from_audio.yaml.
+
+scenario: onboarding_first_run
+
+title:
+  en: Your first minutes with Lotti
+  de: Deine ersten Minuten mit Lotti
+  fr: Tes premières minutes avec Lotti
+  it: I tuoi primi minuti con Lotti
+  es: Tus primeros minutos con Lotti
+  cs: Tvoje první minuty s Lotti
+  nl: Je eerste minuten met Lotti
+  ro: Primele dumneavoastră minute cu Lotti
+  pt: Seus primeiros minutos com o Lotti
+  da: Dine første minutter med Lotti
+  sv: Dina första minuter med Lotti
+
+dictionary:
+  en:
+    - emperor penguin roll call
+    - zero-gravity feeder
+    - sardines
+  de:
+    - Appell der Kaiserpinguine
+    - Schwerelosigkeits-Futterautomat
+    - Sardinen
+  fr:
+    - appel des manchots empereurs
+    - distributeur de nourriture en apesanteur
+    - sardines
+  it:
+    - appello dei pinguini imperatore
+    - distributore di cibo a gravità zero
+    - sardine
+  es:
+    - pase de lista de los pingüinos emperador
+    - comedero de gravedad cero
+    - sardinas
+  cs:
+    - nástup císařských tučňáků
+    - beztížné krmítko
+    - sardinky
+  nl:
+    - appel van de keizerspinguïns
+    - zwaartekrachtloze voederautomaat
+    - sardientjes
+  ro:
+    - apelul pinguinilor imperiali
+    - hrănitorul cu gravitație zero
+    - sardine
+  pt:
+    - chamada dos pinguins-imperadores
+    - alimentador de gravidade zero
+    - sardinhas
+  da:
+    - kejserpingvinernes navneopråb
+    - vægtløs foderautomat
+    - sardiner
+  sv:
+    - kejsarpingvinernas upprop
+    - viktlös matningsautomat
+    - sardiner
+
+steps:
+  - id: welcome
+    min_duration: 5.0
+    narration:
+      en: >-
+        This is Lotti, the first time you open it. Say what's on your
+        mind, and it becomes a task — kept on your own device, nowhere
+        else. Let's get you set up.
+      de: >-
+        Das ist Lotti, beim allerersten Start. Sag, was dir durch den
+        Kopf geht, und daraus wird eine Aufgabe — gespeichert auf deinem
+        eigenen Gerät, sonst nirgends. Richten wir alles ein.
+      fr: >-
+        Voici Lotti, la toute première fois que tu l'ouvres. Dis ce qui
+        te passe par la tête, et ça devient une tâche — gardée sur ton
+        propre appareil, nulle part ailleurs. Configurons tout ça.
+      it: >-
+        Questo è Lotti, la prima volta che lo apri. Di' quello che hai
+        in mente, e diventa un'attività — conservata sul tuo
+        dispositivo, da nessun'altra parte. Prepariamo tutto.
+      es: >-
+        Esto es Lotti, la primera vez que lo abres. Di lo que tienes en
+        mente y se convierte en una tarea — guardada en tu propio
+        dispositivo, en ningún otro sitio. Vamos a configurarlo.
+      cs: >-
+        Tohle je Lotti při úplně prvním spuštění. Řekni, co máš na
+        mysli, a stane se z toho úkol — uložený ve tvém vlastním
+        zařízení, nikde jinde. Pojďme to nastavit.
+      nl: >-
+        Dit is Lotti, de allereerste keer dat je het opent. Zeg wat je
+        bezighoudt, en het wordt een taak — bewaard op je eigen
+        apparaat, nergens anders. Laten we alles instellen.
+      ro: >-
+        Acesta este Lotti, la prima deschidere. Spuneți ce aveți în
+        minte și devine o sarcină — păstrată pe propriul dispozitiv,
+        nicăieri altundeva. Haideți să configurăm totul.
+      pt: >-
+        Este é o Lotti, na primeira vez que você o abre. Diga o que está
+        pensando, e isso vira uma tarefa — guardada no seu próprio
+        dispositivo, em nenhum outro lugar. Vamos configurar tudo.
+      da: >-
+        Det her er Lotti, første gang du åbner den. Sig, hvad du har i
+        tankerne, så bliver det til en opgave — gemt på din egen enhed,
+        ingen andre steder. Lad os sætte det op.
+      sv: >-
+        Det här är Lotti, första gången du öppnar den. Säg vad du har i
+        tankarna, så blir det en uppgift — sparad på din egen enhet,
+        ingen annanstans. Nu ställer vi in allt.
+
+  - id: choose_brain
+    min_duration: 3.0
+    narration:
+      en: >-
+        To understand you, Lotti needs an AI brain. Choose one.
+      de: >-
+        Um dich zu verstehen, braucht Lotti ein KI-Gehirn. Wähle eins
+        aus.
+      fr: >-
+        Pour te comprendre, Lotti a besoin d'un cerveau IA. Choisis-en
+        un.
+      it: >-
+        Per capirti, Lotti ha bisogno di un cervello IA. Scegline uno.
+      es: >-
+        Para entenderte, Lotti necesita un cerebro de IA. Elige uno.
+      cs: >-
+        Aby ti Lotti rozuměla, potřebuje mozek AI. Vyber si jeden.
+      nl: >-
+        Om je te begrijpen heeft Lotti een AI-brein nodig. Kies er een.
+      ro: >-
+        Pentru a vă înțelege, Lotti are nevoie de un creier AI. Alegeți
+        unul.
+      pt: >-
+        Para entender você, o Lotti precisa de um cérebro de IA. Escolha
+        um.
+      da: >-
+        For at forstå dig har Lotti brug for en AI-hjerne. Vælg en.
+      sv: >-
+        För att förstå dig behöver Lotti en AI-hjärna. Välj en.
+
+  - id: pick_melious
+    min_duration: 3.0
+    narration:
+      en: >-
+        Melious is the simple choice — one key covers listening and
+        thinking.
+      de: >-
+        Melious ist die einfache Wahl — ein Schlüssel deckt Zuhören und
+        Denken ab.
+      fr: >-
+        Melious est le choix simple — une seule clé pour écouter et
+        réfléchir.
+      it: >-
+        Melious è la scelta semplice — una sola chiave per ascoltare e
+        pensare.
+      es: >-
+        Melious es la opción sencilla — una sola clave sirve para
+        escuchar y pensar.
+      cs: >-
+        Melious je jednoduchá volba — jeden klíč pokryje poslech i
+        přemýšlení.
+      nl: >-
+        Melious is de eenvoudige keuze — één sleutel voor luisteren én
+        nadenken.
+      ro: >-
+        Melious este alegerea simplă — o singură cheie acoperă
+        ascultarea și gândirea.
+      pt: >-
+        Melious é a escolha simples — uma só chave cobre ouvir e pensar.
+      da: >-
+        Melious er det enkle valg — én nøgle dækker både lytning og
+        tænkning.
+      sv: >-
+        Melious är det enkla valet — en nyckel täcker både lyssnande och
+        tänkande.
+
+  - id: paste_key
+    min_duration: 6.0
+    narration:
+      en: >-
+        Paste your API key. It stays hidden, and it stays on your device
+        — Lotti checks it right away.
+      de: >-
+        Füge deinen API-Schlüssel ein. Er bleibt verborgen und bleibt
+        auf deinem Gerät — Lotti prüft ihn sofort.
+      fr: >-
+        Colle ta clé API. Elle reste cachée, et elle reste sur ton
+        appareil — Lotti la vérifie tout de suite.
+      it: >-
+        Incolla la tua chiave API. Resta nascosta, e resta sul tuo
+        dispositivo — Lotti la controlla subito.
+      es: >-
+        Pega tu clave API. Se queda oculta, y se queda en tu dispositivo
+        — Lotti la comprueba al momento.
+      cs: >-
+        Vlož svůj API klíč. Zůstane skrytý a zůstane ve tvém zařízení —
+        Lotti ho hned ověří.
+      nl: >-
+        Plak je API-sleutel. Hij blijft verborgen en blijft op je
+        apparaat — Lotti controleert hem meteen.
+      ro: >-
+        Lipiți cheia API. Rămâne ascunsă și rămâne pe dispozitivul
+        dumneavoastră — Lotti o verifică imediat.
+      pt: >-
+        Cole sua chave de API. Ela fica oculta e fica no seu dispositivo
+        — o Lotti a verifica na hora.
+      da: >-
+        Indsæt din API-nøgle. Den forbliver skjult, og den bliver på din
+        enhed — Lotti tjekker den med det samme.
+      sv: >-
+        Klistra in din API-nyckel. Den förblir dold och stannar på din
+        enhet — Lotti kontrollerar den direkt.
+
+  - id: connected
+    min_duration: 3.0
+    narration:
+      en: >-
+        You're connected. That's the hard part done.
+      de: >-
+        Du bist verbunden. Das Schwierigste ist geschafft.
+      fr: >-
+        La connexion est faite. Le plus dur est derrière toi.
+      it: >-
+        Connessione riuscita. La parte difficile è fatta.
+      es: >-
+        Conexión lista. Lo más difícil ya está hecho.
+      cs: >-
+        Spojení je hotové. To nejtěžší máš za sebou.
+      nl: >-
+        Je bent verbonden. Het moeilijkste is gedaan.
+      ro: >-
+        Conexiunea este gata. Partea grea s-a terminat.
+      pt: >-
+        Conexão feita. A parte difícil já passou.
+      da: >-
+        Du er forbundet. Det sværeste er klaret.
+      sv: >-
+        Du är ansluten. Det svåraste är avklarat.
+
+  - id: choose_areas
+    min_duration: 5.0
+    narration:
+      en: >-
+        Categories keep the areas of your life apart. Pick the ones you
+        want — Lotti will transcribe your recordings in them
+        automatically.
+      de: >-
+        Kategorien halten deine Lebensbereiche auseinander. Wähle die,
+        die du willst — Lotti transkribiert deine Aufnahmen darin
+        automatisch.
+      fr: >-
+        Les catégories séparent les domaines de ta vie. Choisis ceux que
+        tu veux — Lotti transcrira automatiquement tes enregistrements
+        dedans.
+      it: >-
+        Le categorie tengono separate le aree della tua vita. Scegli
+        quelle che vuoi — Lotti trascriverà automaticamente le tue
+        registrazioni al loro interno.
+      es: >-
+        Las categorías separan las áreas de tu vida. Elige las que
+        quieras — Lotti transcribirá tus grabaciones en ellas
+        automáticamente.
+      cs: >-
+        Kategorie od sebe oddělují oblasti tvého života. Vyber si ty,
+        které chceš — Lotti v nich bude tvoje nahrávky automaticky
+        přepisovat.
+      nl: >-
+        Categorieën houden de gebieden van je leven uit elkaar. Kies de
+        categorieën die je wilt — Lotti zet je opnames daarin
+        automatisch om in tekst.
+      ro: >-
+        Categoriile separă ariile din viața dumneavoastră. Alegeți-le pe
+        cele dorite — Lotti va transcrie automat înregistrările din ele.
+      pt: >-
+        As categorias separam as áreas da sua vida. Escolha as que
+        quiser — o Lotti vai transcrever suas gravações nelas
+        automaticamente.
+      da: >-
+        Kategorier holder dine livsområder adskilt. Vælg dem, du vil
+        have — Lotti transskriberer automatisk dine optagelser i dem.
+      sv: >-
+        Kategorier håller isär dina livsområden. Välj de du vill ha —
+        Lotti transkriberar automatiskt dina inspelningar i dem.
+
+  - id: first_task
+    min_duration: 6.0
+    dictation: true
+    narration:
+      en: >-
+        Now the fun part. Tap, and just say what you need to do.
+      de: >-
+        Jetzt der schöne Teil. Tippe, und sag einfach, was du erledigen
+        musst.
+      fr: >-
+        Maintenant, la partie amusante. Touche, et dis simplement ce que
+        tu dois faire.
+      it: >-
+        Ora la parte divertente. Tocca e di' semplicemente cosa devi
+        fare.
+      es: >-
+        Ahora lo divertido. Toca y di simplemente lo que tienes que
+        hacer.
+      cs: >-
+        A teď ta zábavná část. Klepni a prostě řekni, co potřebuješ
+        udělat.
+      nl: >-
+        Nu het leuke deel. Tik, en zeg gewoon wat je moet doen.
+      ro: >-
+        Acum, partea frumoasă. Atingeți și spuneți pur și simplu ce
+        aveți de făcut.
+      pt: >-
+        Agora a parte divertida. Toque e diga simplesmente o que você
+        precisa fazer.
+      da: >-
+        Nu kommer den sjove del. Tryk, og sig bare, hvad du skal gøre.
+      sv: >-
+        Nu kommer det roliga. Tryck, och säg bara vad du behöver göra.
+    dictation_text:
+      en: >-
+        Order sardines for Friday's emperor penguin roll call, and check
+        the zero-gravity feeder before they arrive.
+      de: >-
+        Sardinen für den Appell der Kaiserpinguine am Freitag bestellen,
+        und vorher den Schwerelosigkeits-Futterautomaten prüfen.
+      fr: >-
+        Commander des sardines pour l'appel des manchots empereurs de
+        vendredi, et vérifier le distributeur de nourriture en
+        apesanteur avant leur arrivée.
+      it: >-
+        Ordinare le sardine per l'appello dei pinguini imperatore di
+        venerdì, e controllare il distributore di cibo a gravità zero
+        prima che arrivino.
+      es: >-
+        Pedir sardinas para el pase de lista de los pingüinos emperador
+        del viernes, y revisar el comedero de gravedad cero antes de que
+        lleguen.
+      cs: >-
+        Objednat sardinky na páteční nástup císařských tučňáků a před
+        jejich příjezdem zkontrolovat beztížné krmítko.
+      nl: >-
+        Sardientjes bestellen voor het appel van de keizerspinguïns op
+        vrijdag, en de zwaartekrachtloze voederautomaat controleren
+        voordat ze aankomen.
+      ro: >-
+        Să comand sardine pentru apelul pinguinilor imperiali de vineri
+        și să verific hrănitorul cu gravitație zero înainte să sosească.
+      pt: >-
+        Pedir sardinhas para a chamada dos pinguins-imperadores de
+        sexta, e verificar o alimentador de gravidade zero antes que
+        eles cheguem.
+      da: >-
+        Bestil sardiner til kejserpingvinernes navneopråb på fredag, og
+        tjek den vægtløse foderautomat, før de kommer.
+      sv: >-
+        Beställ sardiner till kejsarpingvinernas upprop på fredag, och
+        kolla den viktlösa matningsautomaten innan de kommer.
+
+  - id: task_appears
+    min_duration: 6.0
+    narration:
+      en: >-
+        Lotti listens, writes it down, and turns it into a task with a
+        title and a checklist. Tap it to open it.
+      de: >-
+        Lotti hört zu, schreibt mit und macht daraus eine Aufgabe mit
+        Titel und Checkliste. Tippe darauf, um sie zu öffnen.
+      fr: >-
+        Lotti écoute, prend note et en fait une tâche avec un titre et
+        une checklist. Touche-la pour l'ouvrir.
+      it: >-
+        Lotti ascolta, prende nota e la trasforma in un'attività con un
+        titolo e una checklist. Toccala per aprirla.
+      es: >-
+        Lotti escucha, lo anota y lo convierte en una tarea con un
+        título y una lista de tareas. Tócala para abrirla.
+      cs: >-
+        Lotti poslouchá, zapíše si to a udělá z toho úkol s názvem a
+        seznamem úkolů. Klepni na něj a otevři ho.
+      nl: >-
+        Lotti luistert, schrijft het op en maakt er een taak van met een
+        titel en een checklist. Tik erop om hem te openen.
+      ro: >-
+        Lotti ascultă, notează și transformă totul într-o sarcină cu un
+        titlu și o listă de verificare. Atingeți-o pentru a o deschide.
+      pt: >-
+        O Lotti ouve, anota e transforma isso em uma tarefa com um
+        título e uma checklist. Toque nela para abri-la.
+      da: >-
+        Lotti lytter, skriver med og laver det til en opgave med en
+        titel og en tjekliste. Tryk på den for at åbne den.
+      sv: >-
+        Lotti lyssnar, skriver ner det och gör det till en uppgift med
+        en titel och en checklista. Tryck på den för att öppna den.
+
+  - id: outro
+    min_duration: 4.0
+    narration:
+      en: >-
+        And that's your first task. From here, explore categories,
+        checklists, and everything else — at your own pace.
+      de: >-
+        Und das ist deine erste Aufgabe. Von hier aus entdecke
+        Kategorien, Checklisten und alles andere — in deinem Tempo.
+      fr: >-
+        Et voilà ta première tâche. À partir d'ici, explore les
+        catégories, les checklists et tout le reste — à ton rythme.
+      it: >-
+        Ed ecco la tua prima attività. Da qui, esplora categorie,
+        checklist e tutto il resto — con i tuoi tempi.
+      es: >-
+        Y esa es tu primera tarea. Desde aquí, explora las categorías,
+        las listas y todo lo demás — a tu ritmo.
+      cs: >-
+        A tohle je tvůj první úkol. Odsud můžeš objevovat kategorie,
+        seznamy úkolů a všechno ostatní — svým tempem.
+      nl: >-
+        En dat is je eerste taak. Ontdek vanaf hier categorieën,
+        checklists en al het andere — in je eigen tempo.
+      ro: >-
+        Și aceasta este prima dumneavoastră sarcină. De aici, explorați
+        categoriile, listele și tot restul — în ritmul dumneavoastră.
+      pt: >-
+        E essa é sua primeira tarefa. A partir daqui, explore
+        categorias, checklists e todo o resto — no seu ritmo.
+      da: >-
+        Og det er din første opgave. Herfra kan du udforske kategorier,
+        tjeklister og alt det andet — i dit eget tempo.
+      sv: >-
+        Och det är din första uppgift. Härifrån kan du utforska
+        kategorier, checklistor och allt annat — i din egen takt.

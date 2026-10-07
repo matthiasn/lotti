@@ -4616,10 +4616,7 @@
     "description": "Positive boolean value in the onboarding metrics debug view."
   },
   "onboardingRecordingStyleAnalogue": "Absolute",
-  "onboardingRecordingStyleContinue": "Doorgaan",
-  "onboardingRecordingStyleExplanation": "Kies een zoekopdracht voor de microfoon. Je kunt het op elk moment wijzigen in Instellingen.",
   "onboardingRecordingStyleModern": "Moderne energiebol",
-  "onboardingRecordingStyleTitle": "Hoe moet het opnemen voelen?",
   "onboardingRecordingStyleTryVoice": "Probeer het met je stem",
   "onboardingSuccessContinue": "Aan de slag",
   "onboardingSuccessSubtitle": "Je AI-hersenen zijn verbonden en klaar om je woorden in taken te veranderen.",

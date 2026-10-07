@@ -568,15 +568,9 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
 
-    // Success leads into the recording-style step. Its previews loop, so step
-    // it with bounded pumps and continue with the default style.
-    expect(find.text('How should recording feel?'), findsOneWidget);
-    await tester.tap(find.text('Continue'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    // Then the category step; the "why areas?" disclosure opens the
-    // per-category-AI explanation, then dismisses.
+    // Success leads straight into the category step — the recording style is
+    // no longer asked here; it stays a Settings preference. The "why areas?"
+    // disclosure opens the per-category-AI explanation, then dismisses.
     expect(find.text('Where should your AI work?'), findsOneWidget);
     await tester.tap(find.text('Why areas?'));
     await tester.pumpAndSettle();

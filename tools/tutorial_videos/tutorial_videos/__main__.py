@@ -6,6 +6,7 @@ Usage (from ``tools/tutorial_videos``)::
     python3 -m tutorial_videos tts      --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos publish  --scenario create_task_from_audio --locale de
+    python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de --avatar
     python3 -m tutorial_videos avatar-preview --wav narration.wav
     python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/create_task_from_audio_de.mp4
 
@@ -28,14 +29,16 @@ the desktop and mobile builds of the same (scenario, locale). ``build`` runs
 the full pipeline: TTS pre-pass, then the real app under Xvfb driven by
 `flutter drive` with the virtual microphone and screen capture, then
 OpenMontage composition into the final MP4, then WebVTT captions (see
-``captions.py``) written alongside it. ``publish`` uploads the already-built
+``captions.py``) written alongside it; with ``--avatar`` the talking avatar
+is then laid into the MP4 under its own name (``--avatar-position`` picks
+the corner). ``publish`` uploads the already-built
 MP4 and its captions to Cloudflare R2 (see ``publish.py``) and prints their
 public URLs.
 
-``avatar-preview`` and ``avatar-overlay`` (prototype, see ``avatar/cli.py``)
-take no scenario: the first renders the candidate talking-avatar characters
-saying a WAV, the second lays the chosen one into the corner of a built MP4,
-lip-synced to its narration mix.
+``avatar-preview`` and ``avatar-overlay`` (see ``avatar/cli.py``) take no
+scenario: the first renders Pip, the talking avatar, saying a WAV; the second
+lays Pip into the corner of an already-built MP4, lip-synced to the narrator
+clips its manifest and timeline name.
 """
 
 from __future__ import annotations
@@ -48,7 +51,9 @@ import sys
 from pathlib import Path
 
 from .avatar import AvatarError
+from .avatar.cli import overlay_in_place
 from .avatar.cli import register as register_avatar_commands
+from .avatar.render import DEFAULT_POSITION, POSITIONS
 from .captions import build_vtt
 from .compose import ComposeError, compose_video
 from .publish import PublishError, publish_video
@@ -210,6 +215,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
     manifest = json.loads(manifest_path.read_text())
+    timeline = json.loads(timeline_path.read_text())
     compose_video(
         repo_root=REPO_ROOT,
         capture=capture_path,
@@ -225,10 +231,19 @@ def cmd_build(args: argparse.Namespace) -> int:
         build_vtt(
             scenario=_load(args),
             locale=args.locale,
-            timeline=json.loads(timeline_path.read_text()),
+            timeline=timeline,
             manifest=manifest,
         )
     )
+
+    if args.avatar:
+        overlay_in_place(
+            video_path,
+            manifest=manifest,
+            timeline=timeline,
+            position=args.avatar_position,
+            work_dir=out_dir / "avatar_work" / scenario_locale,
+        )
 
     print(f"OK: {video_path}")
     return 0
@@ -276,6 +291,17 @@ def main(argv: list[str] | None = None) -> int:
             # Overrides voices.yaml's default `engine:` for this run — e.g.
             # to hear a scenario in ElevenLabs voices next to Gemini's.
             p.add_argument("--tts-engine", choices=sorted(ENGINES))
+        if name == "build":
+            p.add_argument(
+                "--avatar",
+                action="store_true",
+                help="lay Pip, the talking avatar, into the finished video",
+            )
+            p.add_argument(
+                "--avatar-position",
+                choices=sorted(POSITIONS),
+                default=DEFAULT_POSITION,
+            )
         p.set_defaults(handler=handler)
     register_avatar_commands(sub, default_out=DEFAULT_OUT)
     args = parser.parse_args(argv)

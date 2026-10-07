@@ -604,12 +604,15 @@ TUTORIAL_LOCALES ?= en de
 # suffixed output). See tools/tutorial_videos/tutorial_videos/__main__.py's
 # DEVICE_SIZES.
 TUTORIAL_DEVICE ?= desktop
+# Set TUTORIAL_AVATAR=1 to lay Pip, the talking avatar, into the corner of
+# the finished video (see tools/tutorial_videos/README.md, "Talking avatar").
+TUTORIAL_AVATAR ?=
 
 .PHONY: tutorial_video
 tutorial_video:
 	cd tools/tutorial_videos && python3 -m tutorial_videos build \
 	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE) \
-	  --device $(TUTORIAL_DEVICE)
+	  --device $(TUTORIAL_DEVICE) $(if $(TUTORIAL_AVATAR),--avatar)
 
 .PHONY: tutorial_videos_all
 tutorial_videos_all:

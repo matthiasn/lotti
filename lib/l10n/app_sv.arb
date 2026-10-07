@@ -4617,10 +4617,7 @@
     "description": "Positive boolean value in the onboarding metrics debug view."
   },
   "onboardingRecordingStyleAnalogue": "Analog — VU-mätare",
-  "onboardingRecordingStyleContinue": "Fortsätt",
-  "onboardingRecordingStyleExplanation": "Välj en look till mikrofonen. Du kan ändra det när som helst i Inställningar.",
   "onboardingRecordingStyleModern": "Modern — energiklot",
-  "onboardingRecordingStyleTitle": "Hur ska inspelning kännas?",
   "onboardingRecordingStyleTryVoice": "Prova med din röst",
   "onboardingSuccessContinue": "Sätt igång",
   "onboardingSuccessSubtitle": "Din AI-hjärna är uppkopplad och redo att omvandla dina ord till uppgifter.",

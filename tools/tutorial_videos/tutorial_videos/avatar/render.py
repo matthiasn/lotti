@@ -22,9 +22,22 @@ from .track import blink_track, pad_track, pose_track, run_lengths
 DEFAULT_FPS = 30
 
 # The badge's diameter as a share of the video height, and its gap to the
-# bottom-right corner as a share of the badge.
+# corner as a share of the badge.
 BADGE_HEIGHT_FRACTION = 0.22
 BADGE_MARGIN_FRACTION = 0.15
+
+# Where the badge sits: ffmpeg overlay ``x:y`` expressions, with ``{m}`` for
+# the margin. Top right is the default — on desktop the bottom-right corner
+# holds the form's primary button (Create, Save), on mobile the bottom
+# navigation, while the top row carries only the page title on the left and
+# the real-time HUD in the centre.
+POSITIONS = {
+    "top_right": "W-w-{m}:{m}",
+    "top_left": "{m}:{m}",
+    "bottom_right": "W-w-{m}:H-h-{m}",
+    "bottom_left": "{m}:H-h-{m}",
+}
+DEFAULT_POSITION = "top_right"
 
 
 def pose_image_name(character: Character, pose: Pose) -> str:
@@ -69,7 +82,7 @@ def write_concat(
 
 def build_track(
     character: Character,
-    narration: Path,
+    levels: list[float],
     *,
     fps: int,
     size: int,
@@ -77,9 +90,10 @@ def build_track(
     min_frames: int = 0,
     seed: int = 7,
 ) -> Path:
-    """Lip-syncs ``character`` to ``narration`` (blinking, idling to at least
-    ``min_frames``) and returns the ffconcat list of its pose images."""
-    mouths = pad_track(mouth_track(frame_levels(narration, fps)), min_frames)
+    """Lip-syncs ``character`` to the per-frame loudness ``levels`` (blinking,
+    idling to at least ``min_frames``) and returns the ffconcat list of its
+    pose images."""
+    mouths = pad_track(mouth_track(levels), min_frames)
     poses = pose_track(mouths, blink_track(len(mouths), fps, seed=seed))
     images = render_pose_images(character, poses, size, work_dir)
     concat = work_dir / f"{character.name}.ffconcat"
@@ -133,15 +147,27 @@ def preview_command(
 
 
 def overlay_command(
-    *, video: Path, concat: Path, out: Path, fps: int, margin: int
+    *,
+    video: Path,
+    concat: Path,
+    out: Path,
+    fps: int,
+    margin: int,
+    position: str = DEFAULT_POSITION,
 ) -> list[str]:
-    """The ffmpeg call laying the badge into ``video``'s bottom-right corner,
+    """The ffmpeg call laying the badge into ``video``'s ``position`` corner,
     keeping its audio untouched.
 
     ``shortest=1`` ends the output with the tutorial: without it, ffmpeg
     freezes the tutorial's last frame for as long as the badge track runs.
     The track is always built a little longer than the video, so only the
     badge is ever cut short."""
+    if position not in POSITIONS:
+        raise AvatarError(
+            f"unknown avatar position {position!r}; choose from "
+            f"{', '.join(POSITIONS)}"
+        )
+    place = POSITIONS[position].format(m=margin)
     return [
         "ffmpeg",
         "-y",
@@ -157,7 +183,7 @@ def overlay_command(
         str(concat),
         "-filter_complex",
         f"[1:v]format=rgba[badge];"
-        f"[0:v][badge]overlay=W-w-{margin}:H-h-{margin}:shortest=1,"
+        f"[0:v][badge]overlay={place}:shortest=1,"
         f"format=yuv420p[v]",
         "-map",
         "[v]",
@@ -219,7 +245,9 @@ def render_preview(
     fps: int = DEFAULT_FPS,
 ) -> Path:
     """A ``size``-pixel square clip of ``character`` saying ``narration``."""
-    concat = build_track(character, narration, fps=fps, size=size, work_dir=work_dir)
+    concat = build_track(
+        character, frame_levels(narration, fps), fps=fps, size=size, work_dir=work_dir
+    )
     out.parent.mkdir(parents=True, exist_ok=True)
     run_ffmpeg(
         preview_command(
@@ -232,13 +260,15 @@ def render_preview(
 def render_overlay(
     character: Character,
     video: Path,
-    narration: Path,
+    levels: list[float],
     out: Path,
     *,
     work_dir: Path,
     fps: int = DEFAULT_FPS,
+    position: str = DEFAULT_POSITION,
 ) -> Path:
-    """``video`` with ``character`` lip-syncing ``narration`` in its corner.
+    """``video`` with ``character`` in its ``position`` corner, its mouth
+    following the per-frame loudness ``levels``.
 
     The badge is sized from the video's height, so a desktop and a mobile
     build get the same proportions, and idles to the video's very end — its
@@ -248,7 +278,7 @@ def render_overlay(
     size = badge_size(height)
     concat = build_track(
         character,
-        narration,
+        levels,
         fps=fps,
         size=size,
         work_dir=work_dir,
@@ -262,6 +292,7 @@ def render_overlay(
             out=out,
             fps=fps,
             margin=round(size * BADGE_MARGIN_FRACTION),
+            position=position,
         )
     )
     return out
