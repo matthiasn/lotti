@@ -84,7 +84,7 @@ Gate(st, in) ==
     ELSE IF ~in.hasClock THEN st
     ELSE IF ~st.hasClock
     THEN IF ~NullFallsBack \/ Later(in, st) THEN in ELSE st
-    ELSE IF st.clock = in.clock THEN st
+    ELSE IF st.clock = in.clock THEN IF Later(in, st) THEN in ELSE st
     ELSE IF Leq(st.clock, in.clock) THEN in
     ELSE IF Leq(in.clock, st.clock) THEN st
     ELSE LET w == IF Later(in, st) THEN in ELSE st

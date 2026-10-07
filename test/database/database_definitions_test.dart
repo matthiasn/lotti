@@ -404,16 +404,31 @@ void main() {
         },
       );
 
-      test('re-delivering the stored version keeps it', () async {
+      // One clock should name one document; two that differ under it are
+      // ordered like a concurrent pair, the same way on every device.
+      test('two documents under one clock settle on the later', () async {
         final stored = categoryMindfulness.copyWith(
           name: 'Stored',
           updatedAt: base,
           vectorClock: const VectorClock({'a': 1}),
         );
-        await db!.upsertEntityDefinition(stored);
+        final later = stored.copyWith(
+          name: 'Later',
+          updatedAt: base.add(const Duration(minutes: 1)),
+        );
 
-        expect(await db!.upsertEntityDefinition(stored), 0);
-        expect(await storedCategoryName(categoryMindfulness.id), 'Stored');
+        Future<String?> settle(
+          CategoryDefinition first,
+          CategoryDefinition second,
+        ) async {
+          await clearAllTables(db!);
+          await db!.upsertEntityDefinition(first);
+          await db!.upsertEntityDefinition(second);
+          return storedCategoryName(categoryMindfulness.id);
+        }
+
+        expect(await settle(stored, later), 'Later');
+        expect(await settle(later, stored), 'Later');
       });
 
       test(

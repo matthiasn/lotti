@@ -505,8 +505,12 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
       case VclockStatus.b_gt_a:
         return const _Write();
       case VclockStatus.a_gt_b:
-      case VclockStatus.equal:
         return const _Keep();
+      // One clock should name one document; should two ever differ under
+      // it, they are ordered like any concurrent pair, so every device keeps
+      // the same one. An identical re-delivery rewrites what is stored.
+      case VclockStatus.equal:
+        return _isLater(incoming, stored) ? const _Write() : const _Keep();
       case VclockStatus.concurrent:
         final joined = VectorClock.merge(storedClock, incomingClock);
         return _isLater(incoming, stored)

@@ -1291,9 +1291,11 @@ void main() {
           ),
         ).thenAnswer((_) async => const VectorClock({'host-1': 7}));
         final progress = <double>[];
+        final detailed = <List<int>>[];
 
         await syncMaintenanceRepository.backfillDefinitionClocks(
           onProgress: progress.add,
+          onDetailedProgress: (p, t) => detailed.add([p, t]),
         );
 
         final stamped = legacy.copyWith(
@@ -1307,6 +1309,10 @@ void main() {
                 as SyncEntityDefinition;
         expect(sent.entityDefinition, stamped);
         expect(progress, [1.0]);
+        expect(detailed, [
+          [0, 1],
+          [1, 1],
+        ]);
       },
     );
 
@@ -1317,14 +1323,17 @@ void main() {
           () => mockJournalDb.clocklessDefinitions(),
         ).thenAnswer((_) async => []);
         final detailed = <List<int>>[];
+        final progress = <double>[];
 
         await syncMaintenanceRepository.backfillDefinitionClocks(
+          onProgress: progress.add,
           onDetailedProgress: (p, t) => detailed.add([p, t]),
         );
 
         expect(detailed, [
           [0, 0],
         ]);
+        expect(progress, [1.0]);
         verifyNever(() => mockJournalDb.upsertEntityDefinition(any()));
         verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
       },

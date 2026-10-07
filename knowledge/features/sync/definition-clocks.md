@@ -96,7 +96,8 @@ flowchart TD
     L2 -- no --> KS[keep stored;<br/>receive path stamps it]
     E -- yes --> F{compare clocks}
     F -- incoming dominates --> W
-    F -- stored dominates or equal --> K
+    F -- stored dominates --> K
+    F -- equal --> L1
     F -- concurrent --> L3{incoming later?}
     L3 -- yes --> WJ[write incoming<br/>under the join]
     L3 -- no --> KJ[keep stored,<br/>rewrite its clock to the join]
@@ -105,8 +106,10 @@ flowchart TD
 *Later* is last-writer-wins: the later `updatedAt`, and on an exact tie the
 greater canonical JSON of the document **without its clock** — devices that
 joined different clocks into one version must still order it the same way.
-Identical content counts as later, so a clockless re-delivery of the stored
-version applies.
+Identical content counts as later, so a re-delivery of the stored version
+rewrites it unchanged. Two different documents under one clock — which no
+writer produces, but a hand-written or legacy row can — are ordered the same
+way, so every device keeps the same one.
 
 **The join is the resolution.** Two concurrent versions settle on one, stored
 under the pointwise maximum of both clocks (`VectorClock.merge`). That clock
