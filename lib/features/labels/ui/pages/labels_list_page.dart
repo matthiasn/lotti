@@ -65,7 +65,7 @@ class LabelsListPage extends ConsumerWidget {
       ),
       errorTitle: messages.settingsLabelsErrorLoading,
       createLabel: messages.settingsLabelsCreateTitle,
-      onCreate: () => beamToNamed('/settings/labels/create'),
+      onCreate: (_) => beamToNamed('/settings/labels/create'),
       itemBuilder: (context, label, {required ListRowDivider divider}) =>
           _LabelListItem(
             label: label,

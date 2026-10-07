@@ -23,7 +23,7 @@ Future<void> _pumpPage(
   Widget Function(BuildContext context, String query)? noMatchActionBuilder,
   String? initialSearchTerm,
   ValueChanged<String>? searchCallback,
-  VoidCallback? onCreate,
+  void Function(String query)? onCreate,
   bool showHeader = true,
 }) async {
   await tester.pumpWidget(
@@ -44,7 +44,7 @@ Future<void> _pumpPage(
         noMatchMessage: (query) => 'No items match "$query"',
         errorTitle: 'Failed to load items',
         createLabel: 'Create item',
-        onCreate: onCreate ?? () {},
+        onCreate: onCreate ?? (_) {},
         searchText: searchText,
         noMatchActionBuilder: noMatchActionBuilder,
         initialSearchTerm: initialSearchTerm,
@@ -97,7 +97,7 @@ Future<Color> _pumpHoverRows(
         noMatchMessage: (query) => 'No items match "$query"',
         errorTitle: 'Failed to load items',
         createLabel: 'Create item',
-        onCreate: () {},
+        onCreate: (_) {},
       ),
     ),
   );
@@ -393,7 +393,7 @@ void main() {
           await _pumpPage(
             tester,
             itemsAsync: const AsyncValue.data(['Apple']),
-            onCreate: () => created = true,
+            onCreate: (_) => created = true,
           );
 
           final fab = find.byType(DesignSystemFloatingActionButton);
@@ -412,6 +412,65 @@ void main() {
           semantics.dispose();
         },
       );
+
+      testWidgets('hands over an empty query while nothing is typed', (
+        tester,
+      ) async {
+        String? query;
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Apple']),
+          onCreate: (value) => query = value,
+        );
+
+        await tester.tap(find.byType(DesignSystemFloatingActionButton));
+
+        expect(query, '');
+      });
+
+      testWidgets('hands over the typed query, trimmed', (tester) async {
+        String? query;
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Apple']),
+          onCreate: (value) => query = value,
+        );
+
+        await _enterQuery(tester, '  app ');
+        await tester.tap(find.byType(DesignSystemFloatingActionButton));
+
+        expect(query, 'app');
+      });
+
+      testWidgets('hands over a query that matches nothing', (tester) async {
+        String? query;
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Apple']),
+          onCreate: (value) => query = value,
+        );
+
+        await _enterQuery(tester, 'Pear');
+        expect(find.text('No items match "Pear"'), findsOneWidget);
+        await tester.tap(find.byType(DesignSystemFloatingActionButton));
+
+        expect(query, 'Pear');
+      });
+
+      testWidgets('a query cleared again hands over nothing', (tester) async {
+        String? query;
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Apple']),
+          onCreate: (value) => query = value,
+        );
+
+        await _enterQuery(tester, 'Pear');
+        await _enterQuery(tester, '');
+        await tester.tap(find.byType(DesignSystemFloatingActionButton));
+
+        expect(query, '');
+      });
     });
 
     group('initialSearchTerm', () {
@@ -474,7 +533,7 @@ void main() {
     await _pumpPage(
       tester,
       itemsAsync: const AsyncValue.data([]),
-      onCreate: () => created = true,
+      onCreate: (_) => created = true,
     );
 
     final inlineCreate = find.descendant(
@@ -487,6 +546,26 @@ void main() {
     expect(created, isTrue);
   });
 
+  testWidgets("the empty state's inline create hands over an empty query", (
+    tester,
+  ) async {
+    String? query;
+    await _pumpPage(
+      tester,
+      itemsAsync: const AsyncValue.data([]),
+      onCreate: (value) => query = value,
+    );
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DesignSystemButton),
+        matching: find.text('Create item'),
+      ),
+    );
+
+    expect(query, '');
+  });
+
   testWidgets(
     'desktop replaces the corner FAB with a header create button',
     (tester) async {
@@ -496,7 +575,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      var created = false;
+      String? created;
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           MediaQuery(
@@ -514,7 +593,7 @@ void main() {
               noMatchMessage: (query) => 'No items match "$query"',
               errorTitle: 'Failed to load items',
               createLabel: 'Create item',
-              onCreate: () => created = true,
+              onCreate: (query) => created = query,
             ),
           ),
         ),
@@ -529,7 +608,12 @@ void main() {
       expect(headerCreate, findsOneWidget);
 
       await tester.tap(headerCreate);
-      expect(created, isTrue);
+      expect(created, '');
+
+      // The header button carries the search query like the FAB does.
+      await _enterQuery(tester, 'alp');
+      await tester.tap(headerCreate);
+      expect(created, 'alp');
     },
   );
 
@@ -687,7 +771,7 @@ void main() {
         tester,
         itemsAsync: const AsyncValue.data(['Alpha']),
         showHeader: false,
-        onCreate: () => created++,
+        onCreate: (_) => created++,
       );
 
       expect(find.byType(DesignSystemSearch), findsOneWidget);
@@ -707,6 +791,25 @@ void main() {
 
       await tester.tap(toolbarCreate());
       expect(created, 1);
+    });
+
+    testWidgets('the toolbar create button hands over the trimmed query', (
+      tester,
+    ) async {
+      String? query;
+      await _pumpPage(
+        tester,
+        itemsAsync: const AsyncValue.data(['Alpha']),
+        showHeader: false,
+        onCreate: (value) => query = value,
+      );
+
+      await tester.tap(toolbarCreate());
+      expect(query, '');
+
+      await _enterQuery(tester, ' Omega ');
+      await tester.tap(toolbarCreate());
+      expect(query, 'Omega');
     });
 
     testWidgets('the toolbar search still filters the rows', (tester) async {

@@ -63,7 +63,7 @@ class DashboardSettingsPage extends ConsumerWidget {
       noMatchMessage: messages.settingsDashboardsNoMatchQuery,
       errorTitle: messages.settingsDashboardsErrorLoading,
       createLabel: messages.settingsDashboardsCreateTitle,
-      onCreate: () => beamToNamed('/settings/dashboards/create'),
+      onCreate: (_) => beamToNamed('/settings/dashboards/create'),
       itemBuilder: (context, dashboard, {required ListRowDivider divider}) =>
           _DashboardListItem(dashboard: dashboard, divider: divider),
     );

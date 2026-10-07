@@ -50,7 +50,7 @@ class CategoriesListPage extends ConsumerWidget {
       noMatchMessage: messages.settingsCategoriesNoMatchQuery,
       errorTitle: messages.settingsCategoriesErrorLoading,
       createLabel: messages.settingsCategoriesCreateTitle,
-      onCreate: () => beamToNamed('/settings/categories/create'),
+      onCreate: (_) => beamToNamed('/settings/categories/create'),
       itemBuilder: (context, category, {required ListRowDivider divider}) =>
           _CategoryListItem(
             category: category,

@@ -147,14 +147,157 @@ void main() {
     expect(beamedTo, ['/settings/speech-dictionary/create?term=Kubernetes']);
   });
 
-  testWidgets('the create button opens an empty entry', (tester) async {
+  group('speechDictionaryCreateUrl', () {
+    test('is the plain add page without a term', () {
+      expect(
+        speechDictionaryCreateUrl(''),
+        '/settings/speech-dictionary/create',
+      );
+    });
+
+    test('treats a whitespace-only term as none', () {
+      expect(
+        speechDictionaryCreateUrl('  \t '),
+        '/settings/speech-dictionary/create',
+      );
+    });
+
+    test('seeds the add page with the trimmed term', () {
+      expect(
+        speechDictionaryCreateUrl(' Kubernetes '),
+        '/settings/speech-dictionary/create?term=Kubernetes',
+      );
+    });
+
+    test('encodes a term the URL could not carry as it is', () {
+      expect(
+        speechDictionaryCreateUrl('Sir Flaps-a-Lot & Co?'),
+        '/settings/speech-dictionary/create'
+        '?term=Sir%20Flaps-a-Lot%20%26%20Co%3F',
+      );
+    });
+
+    test('round-trips through the query parameter', () {
+      const term = 'Kirkjubæjarklaustur / Europa';
+      final url = Uri.parse(speechDictionaryCreateUrl(term));
+      expect(url.queryParameters['term'], term);
+    });
+  });
+
+  group('the create button', () {
+    Finder createButton() =>
+        find.bySemanticsLabel(messages.settingsSpeechDictionaryCreateTitle);
+
+    testWidgets('opens an empty entry while nothing is searched', (
+      tester,
+    ) async {
+      await pumpList(tester, [_entry('Lotti')]);
+
+      await tester.tap(createButton());
+
+      expect(beamedTo, ['/settings/speech-dictionary/create']);
+    });
+
+    testWidgets('seeds the entry with a search that matches nothing', (
+      tester,
+    ) async {
+      await pumpList(tester, [_entry('Lotti')]);
+
+      await tester.enterText(find.byType(TextField).first, 'Kubernetes');
+      await tester.pump();
+      expect(
+        find.text(messages.settingsSpeechDictionaryNoMatchQuery('Kubernetes')),
+        findsOneWidget,
+      );
+      await tester.tap(createButton());
+
+      expect(beamedTo, ['/settings/speech-dictionary/create?term=Kubernetes']);
+    });
+
+    testWidgets('seeds the entry with a search that still matches', (
+      tester,
+    ) async {
+      await pumpList(tester, [_entry('Lotti'), _entry('Lotti Sync')]);
+
+      await tester.enterText(find.byType(TextField).first, 'lotti');
+      await tester.pump();
+      expect(find.byType(DesignSystemListItem), findsNWidgets(2));
+      await tester.tap(createButton());
+
+      expect(beamedTo, ['/settings/speech-dictionary/create?term=lotti']);
+    });
+
+    testWidgets('trims and encodes what was typed', (tester) async {
+      await pumpList(tester, [_entry('Lotti')]);
+
+      await tester.enterText(find.byType(TextField).first, '  Project Waddle ');
+      await tester.pump();
+      await tester.tap(createButton());
+
+      expect(beamedTo, [
+        '/settings/speech-dictionary/create?term=Project%20Waddle',
+      ]);
+    });
+
+    testWidgets('opens an empty entry again once the search is cleared', (
+      tester,
+    ) async {
+      await pumpList(tester, [_entry('Lotti')]);
+
+      await tester.enterText(find.byType(TextField).first, 'Kubernetes');
+      await tester.pump();
+      await tester.enterText(find.byType(TextField).first, '');
+      await tester.pump();
+      await tester.tap(createButton());
+
+      expect(beamedTo, ['/settings/speech-dictionary/create']);
+    });
+
+    testWidgets('in the panel body carries the search along too', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: withServiceOverrides([
+            speechDictionaryEntriesProvider.overrideWith(
+              (ref) => Stream.value([_entry('Lotti')]),
+            ),
+            entitiesCacheServiceProvider.overrideWithValue(cache),
+          ]),
+          child: makeTestableWidgetWithScaffold(
+            const SpeechDictionaryListBody(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField).first, 'Europa');
+      await tester.pump();
+      await tester.tap(createButton());
+
+      expect(beamedTo, ['/settings/speech-dictionary/create?term=Europa']);
+    });
+  });
+
+  testWidgets('the no-match action and the create button agree on the URL', (
+    tester,
+  ) async {
     await pumpList(tester, [_entry('Lotti')]);
 
+    await tester.enterText(find.byType(TextField).first, 'Europa');
+    await tester.pump();
+    await tester.tap(
+      find.text(messages.settingsSpeechDictionaryNoMatchCreate('Europa')),
+    );
     await tester.tap(
       find.bySemanticsLabel(messages.settingsSpeechDictionaryCreateTitle),
     );
 
-    expect(beamedTo, ['/settings/speech-dictionary/create']);
+    expect(beamedTo, [
+      '/settings/speech-dictionary/create?term=Europa',
+      '/settings/speech-dictionary/create?term=Europa',
+    ]);
   });
 
   testWidgets('an empty dictionary explains what it is for', (tester) async {

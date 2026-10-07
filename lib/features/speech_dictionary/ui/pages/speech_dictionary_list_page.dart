@@ -25,12 +25,24 @@ class SpeechDictionaryListBody extends StatelessWidget {
       const SpeechDictionaryListPage(showHeader: false);
 }
 
+const _listUrl = '/settings/speech-dictionary';
+
+/// The add page, seeded with [term] when there is one: whatever was typed
+/// into the search field is already the new entry's term, whether the user
+/// takes the create button or the "no match" action.
+String speechDictionaryCreateUrl(String term) {
+  final trimmed = term.trim();
+  if (trimmed.isEmpty) return '$_listUrl/create';
+  return '$_listUrl/create?term=${Uri.encodeComponent(trimmed)}';
+}
+
 /// The speech dictionary on the shared [DefinitionsListPage] shell.
 ///
 /// Each row leads with the term's first letter, followed by the term and,
 /// as its second line, the categories it is limited to (or "All
-/// categories"). Search also matches misheard spellings, and a query with
-/// no match offers adding it as a term.
+/// categories"). Search also matches misheard spellings; a query with no
+/// match offers adding it as a term, and the create button carries the
+/// query along too, so the editor opens with it filled in.
 class SpeechDictionaryListPage extends ConsumerWidget {
   const SpeechDictionaryListPage({this.showHeader = true, super.key});
 
@@ -56,14 +68,11 @@ class SpeechDictionaryListPage extends ConsumerWidget {
       noMatchActionBuilder: (context, query) => DesignSystemButton(
         label: context.messages.settingsSpeechDictionaryNoMatchCreate(query),
         leadingIcon: LottiIcons.add,
-        onPressed: () {
-          final encoded = Uri.encodeComponent(query);
-          beamToNamed('/settings/speech-dictionary/create?term=$encoded');
-        },
+        onPressed: () => beamToNamed(speechDictionaryCreateUrl(query)),
       ),
       errorTitle: messages.settingsSpeechDictionaryErrorLoading,
       createLabel: messages.settingsSpeechDictionaryCreateTitle,
-      onCreate: () => beamToNamed('/settings/speech-dictionary/create'),
+      onCreate: (query) => beamToNamed(speechDictionaryCreateUrl(query)),
       itemBuilder: (context, entry, {required ListRowDivider divider}) =>
           _EntryListItem(
             entry: entry,
@@ -137,7 +146,7 @@ class _EntryListItem extends StatelessWidget {
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
       onHoverChanged: divider.onHoverChanged,
-      onTap: () => beamToNamed('/settings/speech-dictionary/${entry.id}'),
+      onTap: () => beamToNamed('$_listUrl/${entry.id}'),
     );
   }
 }

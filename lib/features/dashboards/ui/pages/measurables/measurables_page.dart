@@ -61,7 +61,7 @@ class MeasurablesPage extends ConsumerWidget {
       noMatchMessage: messages.settingsMeasurablesNoMatchQuery,
       errorTitle: messages.settingsMeasurablesErrorLoading,
       createLabel: messages.settingsMeasurablesCreateTitle,
-      onCreate: () => beamToNamed('/settings/measurables/create'),
+      onCreate: (_) => beamToNamed('/settings/measurables/create'),
       itemBuilder: (context, dataType, {required ListRowDivider divider}) =>
           _MeasurableListItem(item: dataType, divider: divider),
     );

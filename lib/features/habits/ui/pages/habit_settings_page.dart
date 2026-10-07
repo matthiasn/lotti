@@ -68,7 +68,7 @@ class HabitSettingsPage extends ConsumerWidget {
       noMatchMessage: messages.settingsHabitsNoMatchQuery,
       errorTitle: messages.settingsHabitsErrorLoading,
       createLabel: messages.settingsHabitsCreateTitle,
-      onCreate: () => beamToNamed('/settings/habits/create'),
+      onCreate: (_) => beamToNamed('/settings/habits/create'),
       itemBuilder: (context, habit, {required ListRowDivider divider}) =>
           _HabitListItem(habit: habit, divider: divider),
     );
