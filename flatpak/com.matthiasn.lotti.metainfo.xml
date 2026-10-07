@@ -40,6 +40,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.46" date="2026-10-07">
+      <description>
+        <p>Changed: "Repair vector clocks" now covers settings definitions too. Running it once, on any one device, brings categories, labels and the other definitions saved before this update into the same order; until then they sync as before.</p>
+        <p>Fixed: categories, labels, habits, dashboards, measurables and dictionary terms no longer go missing on a synced device. Each change to one now carries its place in the order of changes, so a device that missed it asks for it once it learns of it - from a later change of the same device or that device's periodic announcement - and gets it back, as it already does for entries. When two devices change the same one at once, both keep the later change, whichever arrives first, and a change made on a device whose clock runs behind still replaces the version it was made from.</p>
+      </description>
+    </release>
     <release version="1.1.45" date="2026-10-07">
       <description>
         <p>Added: one speech dictionary for the whole app. Names, places and jargon that speech recognition gets wrong now live in Settings → Definitions → Speech dictionary, entered once and used everywhere. A term can be limited to some areas, so a word from one project never "corrects" a recording about another, and it can list the spellings it tends to come out as. The terms kept on areas before are carried over, limited to those areas.</p>
