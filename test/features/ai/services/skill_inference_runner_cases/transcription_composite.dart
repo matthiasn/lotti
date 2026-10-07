@@ -29,22 +29,33 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         inferenceProviderType: InferenceProviderType.whisper,
       );
 
-      /// A transcription on [transcriptionProvider] for the profile that
-      /// automates the summary; [automated] false is the user's own tap.
+      /// A transcription on [transcriptionProvider] for a profile that
+      /// automates it and, with [automatesSummary], the summary too;
+      /// [automated] false is the user's own tap.
       AutomationResult transcriptionFor({
         required AiConfigInferenceProvider transcriptionProvider,
         bool automated = true,
+        bool automatesSummary = true,
         AiConfigSkill? skill,
+        AiConfigModel? thinkingModel,
       }) => AutomationResult(
         handled: true,
         resolvedProfile: ResolvedProfile(
           thinkingModelId: 'models/gemini-flash',
           thinkingProvider: testInferenceProvider(id: 'p-flash'),
+          thinkingModel: thinkingModel,
           transcriptionModelId: 'whisper-large-v3',
           transcriptionProvider: transcriptionProvider,
-          skillAssignments: const [
-            SkillAssignment(skillId: skillTranscribeContextId, automate: true),
-            SkillAssignment(skillId: skillAudioSummaryId, automate: true),
+          skillAssignments: [
+            const SkillAssignment(
+              skillId: skillTranscribeContextId,
+              automate: true,
+            ),
+            if (automatesSummary)
+              const SkillAssignment(
+                skillId: skillAudioSummaryId,
+                automate: true,
+              ),
           ],
         ),
         skill: skill ?? findBuiltInSkill(skillTranscribeContextId),
@@ -340,6 +351,63 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         ).called(1);
       });
 
+      // The run reports through its status tracking and writes the held
+      // text in a `finally`; a logger failing while it reports a refused
+      // write is the one way for a failure to escape it. The follow-up's
+      // catch keeps it from failing a transcription that was saved.
+      test(
+        "a failure thrown outside the summary's status tracking is logged "
+        'and swallowed, so the saved transcript still stands',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+          var current = makeAudioEntity();
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => current);
+          final saved = <JournalAudio>[];
+          when(
+            () => mockJournalRepo.updateJournalEntity(
+              any(),
+              onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+            ),
+          ).thenAnswer((invocation) async {
+            // The transcript's own write lands; every text write is refused.
+            if (saved.isNotEmpty) return false;
+            current = invocation.positionalArguments.first as JournalAudio;
+            saved.add(current);
+            return true;
+          });
+          final loggerFailure = StateError('log sink closed');
+          when(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'runTranscription.writeText',
+            ),
+          ).thenThrow(loggerFailure);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              loggerFailure,
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'maybeRunAudioSummary',
+            ),
+          ).called(1);
+          expect(saved.single.data.transcripts?.last.transcript, raw);
+        },
+      );
+
       test('a recording deleted while its summary ran gets no text', () async {
         await stubRun(dictionary: [kubernetes]);
         stubSummary(firstOccurrence);
@@ -467,6 +535,88 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
 
         expect(textWrites, [null, corrected]);
       });
+
+      // The category automates speech recognition in the task context and
+      // nothing else: the run must be the same composite step the AI menu
+      // starts, through to the corrected text and the linked summary.
+      test(
+        'the category automating speech recognition in the task context '
+        'alone still gets the composite step and its summary',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [null, corrected]);
+          expect(lastSummaryCall, isNotNull);
+          final response =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: 'audio-1',
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(response.type, AiResponseType.audioSummary);
+        },
+      );
+
+      // The direct speech-to-text fallback, run without an inference
+      // profile, puts its transcription model in the thinking slot.
+      test(
+        'a profile whose thinking model cannot call tools schedules no '
+        'summary and writes the transcript at once',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+              thinkingModel: testAiModel(providerModelId: 'whisper-large-v3'),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [raw]);
+          expect(lastSummaryCall, isNull);
+        },
+      );
+
+      test(
+        'an automated plain transcription without an automated summary '
+        'stays plain',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automatesSummary: false,
+              skill: findBuiltInSkill(skillTranscribeId),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [raw]);
+          expect(lastSummaryCall, isNull);
+        },
+      );
 
       test(
         'the plain transcription asked for by the user stays plain',

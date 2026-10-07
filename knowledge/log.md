@@ -1,6 +1,10 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-07
+* **Update**: [AI execution paths](features/ai/execution-paths.md),
+  [speech dictionary](features/speech/dictionary.md) — the task-context
+  transcription on a speech-to-text engine chains its correcting summary
+  however it was started, automation included.
 * **Addition**: [Definition clocks](features/sync/definition-clocks.md) — every
   definition version under a vector clock, concurrent edits settled
   last-writer-wins under the joined clock, sequence-log and deep backfill for

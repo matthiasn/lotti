@@ -143,12 +143,13 @@ flowchart TD
   SumC -->|failed or skipped| Raw["_writeTranscriptText:<br/>raw transcript"]
 ```
 
-A summary follows a transcription in a task's context when the run was
-automated and the profile automates the audio summary — the consent rules of
-[execution paths](../ai/execution-paths.md#audio-summaries) — or when the user
-asked for the task-context transcription skill on a speech-to-text engine,
-where recognizing speech in a task's context *is* this composite step. The
-plain transcription skill never chains.
+A summary always follows the task-context transcription skill on a
+speech-to-text engine, whether the user asked for it or the category's
+automation ran it: recognizing speech in a task's context *is* this composite
+step. Any other transcription in a task's context chains one only when the run
+was automated and the profile automates the audio summary — the consent rules
+of [execution paths](../ai/execution-paths.md#audio-summaries). The plain
+transcription skill never chains on its own.
 
 **One call, two jobs.** The audio summary publishes through
 `publish_recording_summary`: the three summary tiers plus `corrections`, each

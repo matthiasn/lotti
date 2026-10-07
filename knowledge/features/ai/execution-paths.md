@@ -344,23 +344,35 @@ every route that produces a transcript — automatic recording trigger, synced-a
 dispatcher, manual picker and Retry, relationship and goal check-ins — gets the
 same follow-up exactly once, and only after the transcript was saved.
 
-Three gates, all deliberate:
+The gates, all deliberate:
 
 - **A task must resolve.** The skill's `fullTask` context policy has nothing to
   read otherwise, and the summary is framed by the task. Goal and person
   check-ins and standalone voice notes transcribe as before and get no summary.
-- **The transcription itself must have been automated**, which a non-null
-  `AutomationResult.skillAssignment` records — with one exception: the
-  task-context transcription skill asked for by the user on a speech-to-text
-  engine chains the built-in summary, because on such an engine the summary
-  call is what corrects the transcript against the task and the dictionary
-  (the composite step; the plain transcription skill never chains). Only the automated paths set it,
-  and only those passed the category's automatic-inference consent check — the
-  manual picker and `requestTranscription` skip that check because a gesture is
-  its own consent, and that consent covers the transcription asked for, not a
-  second call.
-- **The profile must assign the summary skill with `automate: true`.** The
-  already-resolved profile is reused rather than walked again.
+- **The thinking model must be able to call tools.** The summary publishes
+  through a pinned tool call. The direct speech-to-text fallback, used when no
+  inference profile applies, puts its transcription model in the thinking
+  slot; such a run schedules no summary, so the transcript is written at once
+  rather than held for a call that would be skipped.
+- **Speech recognized in the task's context on a speech-to-text engine always
+  chains the summary**, however the run started — the AI menu, the category's
+  automation, the synced-audio dispatcher or an inference backfill. On such an
+  engine the summary call is what corrects the transcript against the task
+  and the dictionary (the composite step), so it is part of the action asked
+  for, not a second one. An automated run uses the profile's automated audio
+  summary assignment when there is one and otherwise the built-in summary,
+  attributed to the automation that started it. The two routes once decided
+  this differently, and an automation without a separate automated summary
+  wrote Whisper's raw text and never summarized.
+- **Any other transcription** — the plain skill, or a multimodal model that read
+  the task and the dictionary in its own prompt — chains the summary only when
+  it was automated, which a non-null `AutomationResult.skillAssignment`
+  records, **and** the profile assigns the summary skill with `automate: true`
+  (the already-resolved profile is reused rather than walked again). Only the
+  automated paths set the assignment, and only those passed the category's
+  automatic-inference consent check — the manual picker and
+  `requestTranscription` skip that check because a gesture is its own consent,
+  and that consent covers the transcription asked for, not a second call.
 
 This gate is only on the *automatic* follow-up. `SkillType.audioSummary` is
 also manually selectable from the AI popup on any task-linked recording, which
