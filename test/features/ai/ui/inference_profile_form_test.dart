@@ -163,6 +163,11 @@ void main() {
           final toolless = testAiModel(
             id: 'toolless-row',
           ).copyWith(name: 'Plain writer', supportsFunctionCalling: false);
+          final audioOnly = testAiModel(id: 'audio-only-row').copyWith(
+            name: 'Audio listener',
+            supportsFunctionCalling: true,
+            inputModalities: [Modality.audio],
+          );
           final profile =
               testInferenceProfile(
                 thinkingModelId: thinking.id,
@@ -172,7 +177,7 @@ void main() {
           await tester.pumpWidget(
             buildSubject(
               existingProfile: profile,
-              models: [thinking, postProcessing, toolless],
+              models: [thinking, postProcessing, toolless, audioOnly],
             ),
           );
           await tester.pumpAndSettle();
@@ -201,9 +206,10 @@ void main() {
             );
             await tester.tap(_pickerTapTarget('Audio post-processing'));
             await tester.pumpAndSettle();
-            // The step publishes through a tool call, so a model that
-            // cannot call tools is never offered.
+            // The step reads the transcript as text and publishes through a
+            // tool call, so a model lacking either is never offered.
             expect(find.text('Plain writer'), findsNothing);
+            expect(find.text('Audio listener'), findsNothing);
             await tester.tap(find.text('Careful editor'));
           }
           await tester.pumpAndSettle();

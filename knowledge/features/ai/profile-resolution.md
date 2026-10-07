@@ -130,8 +130,8 @@ default or clear an unavailable selection.
 The editor's optional **Audio post-processing** slot picks the model for the
 step after a transcription: correcting the transcript against the speech
 dictionary and writing the recording's one-liner, TLDR and summary. It
-accepts the same tool-capable models as Thinking, because the step publishes
-through a tool call. Set it to keep that step on, for example, DeepSeek while
+accepts tool-capable models that take text input, because the step reads the
+transcript as text and publishes through a tool call. Set it to keep that step on, for example, DeepSeek while
 agents think on GLM; existing profiles have no selection and keep running the
 step on Thinking.
 

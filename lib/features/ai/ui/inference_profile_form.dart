@@ -269,14 +269,16 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
 
             // Audio post-processing (optional): corrects a transcript
             // against the speech dictionary and summarizes the recording,
-            // publishing through a tool call — hence the same filter as
-            // Thinking, which it falls back to.
+            // reading the transcript as text and publishing through a tool
+            // call — hence text input plus Thinking's filter.
             ModelSlotField(
               label: messages.inferenceProfileAudioPostProcessing,
               hintText:
                   messages.inferenceProfileAudioPostProcessingUsesThinking,
               modelId: _audioPostProcessingModelId,
-              filter: (m) => m.supportsFunctionCalling,
+              filter: (m) =>
+                  m.supportsFunctionCalling &&
+                  m.inputModalities.contains(Modality.text),
               onModelSelected: (id) =>
                   setState(() => _audioPostProcessingModelId = id),
             ),

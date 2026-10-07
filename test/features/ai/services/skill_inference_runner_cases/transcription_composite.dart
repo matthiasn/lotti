@@ -701,56 +701,62 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         },
       );
 
-      test(
-        'a post-processing model this device cannot resolve fails the step '
-        'visibly and never falls back to the thinking model — the transcript '
-        'is still written, uncorrected',
-        () async {
-          await stubRun(dictionary: [kubernetes]);
-          stubSummary(firstOccurrence);
+      for (final toollessThinking in [false, true]) {
+        test(
+          'a post-processing model this device cannot resolve fails the step '
+          'visibly and never falls back to the thinking model — the '
+          'transcript is still written, uncorrected'
+          '${toollessThinking ? ', however unable that thinking model' : ''}',
+          () async {
+            await stubRun(dictionary: [kubernetes]);
+            stubSummary(firstOccurrence);
 
-          await runner.runTranscription(
-            audioEntryId: 'audio-1',
-            automationResult: transcriptionFor(
-              transcriptionProvider: whisper(),
-              postProcessingUnavailable: true,
-            ),
-            linkedTaskId: 'task-1',
-          );
+            await runner.runTranscription(
+              audioEntryId: 'audio-1',
+              automationResult: transcriptionFor(
+                transcriptionProvider: whisper(),
+                postProcessingUnavailable: true,
+                thinkingModel: toollessThinking
+                    ? testAiModel(providerModelId: 'whisper-large-v3')
+                    : null,
+              ),
+              linkedTaskId: 'task-1',
+            );
 
-          expect(textWrites, [null, raw]);
-          expect(lastSummaryCall, isNull);
-          verifyNever(
-            () => mockAiInputRepo.createAiResponseEntry(
-              id: any(named: 'id'),
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          );
-          for (final id in ['audio-1', 'task-1']) {
-            expect(
-              container.read(
-                inferenceStatusControllerProvider((
-                  id: id,
-                  aiResponseType: AiResponseType.audioSummary,
-                )),
+            expect(textWrites, [null, raw]);
+            expect(lastSummaryCall, isNull);
+            verifyNever(
+              () => mockAiInputRepo.createAiResponseEntry(
+                id: any(named: 'id'),
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: any(named: 'linkedId'),
+                categoryId: any(named: 'categoryId'),
               ),
-              InferenceStatus.error,
             );
-            expect(
-              container.read(
-                inferenceErrorControllerProvider((
-                  id: id,
-                  aiResponseType: AiResponseType.audioSummary,
-                )),
-              ),
-              contains('Audio post-processing model unavailable'),
-            );
-          }
-        },
-      );
+            for (final id in ['audio-1', 'task-1']) {
+              expect(
+                container.read(
+                  inferenceStatusControllerProvider((
+                    id: id,
+                    aiResponseType: AiResponseType.audioSummary,
+                  )),
+                ),
+                InferenceStatus.error,
+              );
+              expect(
+                container.read(
+                  inferenceErrorControllerProvider((
+                    id: id,
+                    aiResponseType: AiResponseType.audioSummary,
+                  )),
+                ),
+                contains('Audio post-processing model unavailable'),
+              );
+            }
+          },
+        );
+      }
 
       test(
         'an automated plain transcription without an automated summary '

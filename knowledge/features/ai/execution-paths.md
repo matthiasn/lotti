@@ -417,8 +417,10 @@ Two properties are contract rather than detail:
   per-run `overrideModelId` still wins over both. A post-processing model
   that is set but does not resolve on this device
   (`audioPostProcessingModelUnavailable`) fails the step through its status
-  tracking instead of falling back to thinking: a held transcript is written
-  uncorrected, and the error is shown on the recording and its task. The
+  tracking instead of falling back to thinking — whatever that thinking
+  model can do, so the follow-up's tool gate does not judge it either: a held
+  transcript is written uncorrected, and the error is shown on the recording
+  and its task. The
   resolve-time `supportsFunctionCalling` check in `runAudioSummary` is an
   assertion for programmatically-seeded profiles and wrong capability flags,
   not a fallback path.

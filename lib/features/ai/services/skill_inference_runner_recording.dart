@@ -39,9 +39,13 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     // direct speech-to-text fallback, run without an inference profile, puts
     // its transcription model in the thinking slot it falls back to; no
     // summary is scheduled then, and the transcript is written at once
-    // instead of held for a call that `_summarizeRecording` would skip.
-    if (profile.effectiveAudioPostProcessingModel case final model?
-        when !model.supportsFunctionCalling) {
+    // instead of held for a call that `_summarizeRecording` would skip. A
+    // post-processing model that does not resolve here is not judged by the
+    // thinking model it would otherwise fall back to: the summary is still
+    // scheduled, so its run reports the missing model.
+    if (!profile.audioPostProcessingModelUnavailable &&
+        profile.effectiveAudioPostProcessingModel?.supportsFunctionCalling ==
+            false) {
       return null;
     }
 
