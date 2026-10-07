@@ -11,21 +11,32 @@ from __future__ import annotations
 
 import hashlib
 import json
+import struct
 import wave
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
 from ..scenario import Scenario
 
 
+class TtsError(Exception):
+    """A TTS engine is misconfigured or its API refused a request."""
+
+
 class TtsEngine(Protocol):
-    """A text-to-speech backend (see ``gemini.py`` for the default)."""
+    """A text-to-speech backend (``gemini.py``, ``elevenlabs.py``).
+
+    An engine uses whichever of ``style`` and ``settings`` it understands:
+    Gemini takes a per-locale style instruction, ElevenLabs per-voice
+    settings. ``voices.yaml`` only configures the one each engine reads."""
 
     name: str
     model: str
 
-    def synthesize(self, *, text: str, voice: str, style: str) -> bytes:
+    def synthesize(
+        self, *, text: str, voice: str, style: str, settings: dict
+    ) -> bytes:
         """Return complete WAV bytes for ``text``."""
         ...
 
@@ -34,18 +45,56 @@ class TtsEngine(Protocol):
 class VoiceSpec:
     voice: str
     style: dict[str, str]  # locale -> style instruction
+    settings: dict = field(default_factory=dict)  # engine-specific voice settings
+
+    def style_for(self, locale: str) -> str:
+        """The style instruction for ``locale``.
+
+        Empty for an engine configured without style instructions (the
+        voice and its settings carry the delivery); a locale missing from a
+        configured style map is a config gap and raises ``KeyError``."""
+        if not self.style:
+            return ""
+        return self.style[locale]
 
 
-def load_voices(path: Path) -> tuple[str, str, dict[str, VoiceSpec]]:
-    """Load ``voices.yaml`` -> (engine name, model, stream -> VoiceSpec)."""
+def load_voices(
+    path: Path, engine: str | None = None
+) -> tuple[str, str, dict[str, VoiceSpec]]:
+    """Load ``voices.yaml`` -> (engine name, model, stream -> VoiceSpec).
+
+    ``engine`` picks one of the configured engines; ``None`` takes the
+    file's default ``engine:``."""
     import yaml
 
     raw = yaml.safe_load(path.read_text())
+    name = engine or raw["engine"]
+    if name not in raw["engines"]:
+        raise TtsError(
+            f"no voices configured for TTS engine {name!r} in {path} "
+            f"(configured: {', '.join(raw['engines'])})"
+        )
+    config = raw["engines"][name]
     streams = {
-        stream: VoiceSpec(voice=spec["voice"], style=dict(spec.get("style", {})))
-        for stream, spec in raw["streams"].items()
+        stream: VoiceSpec(
+            voice=spec["voice"],
+            style=dict(spec.get("style", {})),
+            settings=dict(spec.get("settings", {})),
+        )
+        for stream, spec in config["streams"].items()
     }
-    return raw["engine"], raw["model"], streams
+    return name, config["model"], streams
+
+
+def pcm_to_wav(pcm: bytes, sample_rate: int) -> bytes:
+    """Wraps 16-bit mono little-endian PCM — what both engines return — in
+    a WAV container."""
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + len(pcm), b"WAVE", b"fmt ", 16, 1, 1,
+        sample_rate, sample_rate * 2, 2, 16, b"data", len(pcm),
+    )
+    return header + pcm
 
 
 def wav_duration_seconds(path: Path) -> float:
@@ -54,9 +103,20 @@ def wav_duration_seconds(path: Path) -> float:
 
 
 def clip_cache_key(
-    *, engine: str, model: str, voice: str, style: str, text: str
+    *,
+    engine: str,
+    model: str,
+    voice: str,
+    style: str,
+    text: str,
+    settings: dict | None = None,
 ) -> str:
-    payload = "\x1f".join((engine, model, voice, style, text))
+    parts = [engine, model, voice, style, text]
+    # Only voices with settings add them, so every clip cached before
+    # settings existed keeps its key and is never synthesized again.
+    if settings:
+        parts.append(json.dumps(settings, sort_keys=True))
+    payload = "\x1f".join(parts)
     return hashlib.sha256(payload.encode()).hexdigest()[:24]
 
 
@@ -67,16 +127,26 @@ def synthesize_cached(
     style: str,
     text: str,
     cache_dir: Path,
+    settings: dict | None = None,
 ) -> Path:
-    """Return the cached WAV for this exact (engine, voice, style, text),
-    synthesizing only on cache miss — repeat builds never re-hit the API."""
+    """Return the cached WAV for this exact (engine, voice, style, settings,
+    text), synthesizing only on cache miss — repeat builds never re-hit the
+    API."""
+    settings = settings or {}
     cache_dir.mkdir(parents=True, exist_ok=True)
     key = clip_cache_key(
-        engine=engine.name, model=engine.model, voice=voice, style=style, text=text
+        engine=engine.name,
+        model=engine.model,
+        voice=voice,
+        style=style,
+        text=text,
+        settings=settings,
     )
     path = cache_dir / f"{key}.wav"
     if not path.exists():
-        path.write_bytes(engine.synthesize(text=text, voice=voice, style=style))
+        path.write_bytes(
+            engine.synthesize(text=text, voice=voice, style=style, settings=settings)
+        )
     return path
 
 
@@ -110,7 +180,8 @@ def render_scenario_clips(
         clip = synthesize_cached(
             engine,
             voice=narrator.voice,
-            style=narrator.style[locale],
+            style=narrator.style_for(locale),
+            settings=narrator.settings,
             text=step.narration[locale],
             cache_dir=cache_dir,
         )
@@ -126,7 +197,8 @@ def render_scenario_clips(
             dictation_clip = synthesize_cached(
                 engine,
                 voice=user_voice.voice,
-                style=user_voice.style[locale],
+                style=user_voice.style_for(locale),
+                settings=user_voice.settings,
                 text=step.dictation_text[locale],
                 cache_dir=cache_dir,
             )

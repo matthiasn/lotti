@@ -11,20 +11,12 @@ from __future__ import annotations
 
 import base64
 import json
-import struct
 import urllib.request
 from pathlib import Path
 
+from .base import pcm_to_wav
+
 SAMPLE_RATE = 24_000
-
-
-def _pcm_to_wav(pcm: bytes) -> bytes:
-    header = struct.pack(
-        "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", 36 + len(pcm), b"WAVE", b"fmt ", 16, 1, 1,
-        SAMPLE_RATE, SAMPLE_RATE * 2, 2, 16, b"data", len(pcm),
-    )
-    return header + pcm
 
 
 def read_env_key(env_path: Path, name: str) -> str:
@@ -41,7 +33,11 @@ class GeminiTts:
         self._api_key = api_key
         self.model = model
 
-    def synthesize(self, *, text: str, voice: str, style: str) -> bytes:
+    def synthesize(
+        self, *, text: str, voice: str, style: str, settings: dict
+    ) -> bytes:
+        # Gemini has no per-voice settings: the style instruction, spoken
+        # ahead of the text, carries the delivery.
         body = {
             "contents": [{"parts": [{"text": f"{style} {text}"}]}],
             "generationConfig": {
@@ -68,4 +64,4 @@ class GeminiTts:
                 f"Gemini TTS returned no audio for voice {voice!r}: {payload}"
             )
         part = candidates[0]["content"]["parts"][0]
-        return _pcm_to_wav(base64.b64decode(part["inlineData"]["data"]))
+        return pcm_to_wav(base64.b64decode(part["inlineData"]["data"]), SAMPLE_RATE)

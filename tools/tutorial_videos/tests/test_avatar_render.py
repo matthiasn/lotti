@@ -14,7 +14,7 @@ from avatar_helpers import decode_png, pixel, write_wav
 
 from tutorial_videos.avatar import AvatarError
 from tutorial_videos.avatar import render
-from tutorial_videos.avatar.characters import Pose, get_character
+from tutorial_videos.avatar.characters import PIP, Pose
 from tutorial_videos.avatar.render import (
     badge_size,
     build_track,
@@ -29,7 +29,6 @@ from tutorial_videos.avatar.render import (
     write_concat,
 )
 
-PIP = get_character("pip")
 HAS_FFMPEG = bool(shutil.which("ffmpeg") and shutil.which("ffprobe"))
 
 
