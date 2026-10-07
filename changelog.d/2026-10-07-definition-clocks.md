@@ -2,7 +2,9 @@
 - **Categories, labels, habits, dashboards, measurables and dictionary terms
   no longer go missing on a synced device.** Each change to one now carries
   its place in the order of changes, so a device that missed it asks for it
-  and gets it back, as it already does for entries. When two devices change
+  once it learns of it — from a later change of the same device or that
+  device's periodic announcement — and gets it back, as it already does for
+  entries. When two devices change
   the same one at once, both keep the later change, whichever arrives first,
   and a change made on a device whose clock runs behind still replaces the
   version it was made from.

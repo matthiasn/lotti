@@ -1467,7 +1467,7 @@
     }
   },
   "backfillCatchUpDescription": "Tirare le ultime voci scomparse dai colleghi in questo momento.",
-  "backfillClocksDescription": "Aggiungi un orologio vettoriale alle definizioni delle impostazioni (categorie, etichette, abitudini, dashboard, misurabili e termini del dizionario), ai collegamenti tra voci, alle entità e ai collegamenti degli agenti salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli. Basta eseguirlo su un solo dispositivo.",
+  "backfillClocksDescription": "Aggiungi un orologio vettoriale alle definizioni delle impostazioni (categorie, etichette, abitudini, dashboard, misurabili e termini del dizionario), ai collegamenti tra voci, alle entità degli agenti e ai collegamenti degli agenti salvati senza orologio vettoriale, così i tuoi altri dispositivi possono ordinarli e riceverli. Basta eseguirlo su un solo dispositivo.",
   "backfillClocksFailed": "Impossibile riparare gli orologi vettoriali",
   "backfillClocksTitle": "Orologi vettoriali",
   "backfillClocksTrigger": "Ripara gli orologi vettoriali",

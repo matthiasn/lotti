@@ -99,6 +99,31 @@ void main() {
     },
   );
 
+  test(
+    'a stored document that no longer parses is skipped, and the rest of '
+    'the request is still sent',
+    () async {
+      await db.customStatement(
+        'INSERT INTO dashboard_definitions '
+        '(id, created_at, updated_at, last_reviewed, serialized, name, '
+        'deleted, private, active) '
+        "VALUES ('broken', 0, 0, 0, '{\"runtimeType\": \"nope\"}', "
+        "'Broken', 0, 0, 1)",
+      );
+
+      expect(
+        await store.enqueueCurrent({'broken', 'a-label'}, withMedia: {}),
+        1,
+      );
+      final sent =
+          verify(
+                () => outbox.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncEntityDefinition;
+      expect(sent.entityDefinition, label);
+    },
+  );
+
   test('a write to any definition table is reported', () async {
     var changes = 0;
     final subscription = store.changes.listen((_) => changes++);

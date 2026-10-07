@@ -2883,7 +2883,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Complète les définitions de réglages (catégories, étiquettes, habitudes, tableaux de bord, mesures et termes du dictionnaire), les liens entre entrées, les entités et les liens d\'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir. Le lancer sur un seul appareil suffit.';
+      'Complète les définitions de réglages (catégories, étiquettes, habitudes, tableaux de bord, éléments mesurables et termes du dictionnaire), les liens entre entrées, les entités et les liens d\'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir. Le lancer sur un seul appareil suffit.';
 
   @override
   String get backfillClocksFailed =>

@@ -1245,7 +1245,7 @@
     }
   },
   "backfillCatchUpDescription": "Solicita ahora a los pares las entradas faltantes recientes.",
-  "backfillClocksDescription": "Añade un reloj vectorial a las definiciones de ajustes (categorías, etiquetas, hábitos, paneles, mediciones y términos del diccionario), a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos. Basta con ejecutarlo en un dispositivo.",
+  "backfillClocksDescription": "Añade un reloj vectorial a las definiciones de ajustes (categorías, etiquetas, hábitos, paneles, valores medibles y términos del diccionario), a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos. Basta con ejecutarlo en un dispositivo.",
   "backfillClocksFailed": "No se pudieron reparar los relojes vectoriales",
   "backfillClocksTitle": "Relojes vectoriales",
   "backfillClocksTrigger": "Reparar relojes vectoriales",

@@ -1245,7 +1245,7 @@
     }
   },
   "backfillCatchUpDescription": "Récupère maintenant les entrées manquantes récentes depuis tes pairs.",
-  "backfillClocksDescription": "Complète les définitions de réglages (catégories, étiquettes, habitudes, tableaux de bord, mesures et termes du dictionnaire), les liens entre entrées, les entités et les liens d'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir. Le lancer sur un seul appareil suffit.",
+  "backfillClocksDescription": "Complète les définitions de réglages (catégories, étiquettes, habitudes, tableaux de bord, éléments mesurables et termes du dictionnaire), les liens entre entrées, les entités et les liens d'agent enregistrés sans horloge vectorielle, pour que tes autres appareils puissent les ordonner et les recevoir. Le lancer sur un seul appareil suffit.",
   "backfillClocksFailed": "Impossible de réparer les horloges vectorielles",
   "backfillClocksTitle": "Horloges vectorielles",
   "backfillClocksTrigger": "Réparer les horloges vectorielles",

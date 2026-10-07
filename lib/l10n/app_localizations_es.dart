@@ -2870,7 +2870,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backfillClocksDescription =>
-      'Añade un reloj vectorial a las definiciones de ajustes (categorías, etiquetas, hábitos, paneles, mediciones y términos del diccionario), a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos. Basta con ejecutarlo en un dispositivo.';
+      'Añade un reloj vectorial a las definiciones de ajustes (categorías, etiquetas, hábitos, paneles, valores medibles y términos del diccionario), a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos. Basta con ejecutarlo en un dispositivo.';
 
   @override
   String get backfillClocksFailed =>

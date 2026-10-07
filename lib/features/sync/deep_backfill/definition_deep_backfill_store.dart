@@ -87,11 +87,19 @@ class DefinitionDeepBackfillStore extends DeepBackfillStore {
     for (final table in _tables) {
       final rows = await table.serializedByIds(ids);
       for (final serialized in rows.values) {
+        final EntityDefinition definition;
+        try {
+          definition = EntityDefinition.fromJson(
+            jsonDecode(serialized) as Map<String, dynamic>,
+          );
+        } catch (_) {
+          // A legacy document that no longer parses (a dashboard, for one)
+          // cannot be sent; it must not stop the rest of the request.
+          continue;
+        }
         await _outboxService.enqueueMessage(
           SyncMessage.entityDefinition(
-            entityDefinition: EntityDefinition.fromJson(
-              jsonDecode(serialized) as Map<String, dynamic>,
-            ),
+            entityDefinition: definition,
             status: SyncEntryStatus.update,
           ),
         );
