@@ -195,6 +195,38 @@ void main() {
     },
   );
 
+  test(
+    "this device's own definition echoing back is skipped, not rewritten, "
+    'announced or recorded again',
+    () async {
+      final vectorClockService = MockVectorClockService();
+      when(vectorClockService.getHost).thenAnswer((_) async => 'host-self');
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: sequenceLog,
+        vectorClockService: vectorClockService,
+      );
+      journalAnswers(1);
+      receive(label, originatingHostId: 'host-self');
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => journalDb.upsertEntityDefinition(any()));
+      verifyNever(
+        () => updateNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      );
+      verifyNothingRecorded();
+    },
+  );
+
   test('a copy that names no sending host is not recorded', () async {
     journalAnswers(1);
     receive(label, originatingHostId: null);

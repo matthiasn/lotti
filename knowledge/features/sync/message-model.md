@@ -86,15 +86,15 @@ Their persistence, ordering and suppression semantics live in
 
 ## Sequence-tracked payloads
 
-Only a subset participates in `(hostId, counter)` accounting — the seven
+Only a subset participates in `(hostId, counter)` accounting — the eight
 members of `SyncSequencePayloadType`:
 
 `journalEntity`, `entryLink`, `agentEntity`, `agentLink`, `notification`,
-`notificationStateUpdate`, `consumptionEvent`.
+`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`.
 
 The enum's ordinal is **persisted** in the sequence log, so existing values
 must never be reordered. New values are appended at the end only —
-`consumptionEvent` was added that way.
+`consumptionEvent` and then `entityDefinition` were added that way.
 
 Sequence-tracked payloads may carry:
 

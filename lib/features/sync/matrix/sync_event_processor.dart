@@ -552,7 +552,7 @@ class SyncEventProcessor {
   }
 
   /// Returns the `originatingHostId` field for any [SyncMessage] family
-  /// that carries one. Families without the field (`SyncEntityDefinition`,
+  /// that carries one. Families without the field (
   /// `SyncAiConfig`, `SyncAiConfigDelete`, `SyncSavedTaskFilter`,
   /// `SyncSavedTaskFilterDelete`, `SyncThemingSelection`,
   /// `SyncBackfillRequest`, `SyncBackfillResponse`) return null and bypass
@@ -560,6 +560,7 @@ class SyncEventProcessor {
   /// `fromSync` flag in `SavedTaskFiltersRepository` to suppress re-enqueue.
   static String? _originatingHostIdOf(SyncMessage message) => switch (message) {
     final SyncJournalEntity m => m.originatingHostId,
+    final SyncEntityDefinition m => m.originatingHostId,
     final SyncEntryLink m => m.originatingHostId,
     final SyncConfigFlag m => m.originatingHostId,
     final SyncAgentEntity m => m.originatingHostId,
