@@ -48,13 +48,24 @@ void main() {
   });
 
   group('iOS — location permission', () {
-    test('declares a when-in-use purpose string', () {
+    test('declares a non-empty when-in-use purpose string', () {
+      final description = RegExp(
+        r'<key>NSLocationWhenInUseUsageDescription</key>\s*'
+        '<string>(.*?)</string>',
+        dotAll: true,
+      ).firstMatch(_infoPlist())?.group(1);
+
       expect(
-        _infoPlist(),
-        contains('<key>NSLocationWhenInUseUsageDescription</key>'),
+        description,
+        isNotNull,
         reason:
             'geolocator_apple requests when-in-use only while this key is '
             'present; without it, it falls through to requesting Always',
+      );
+      expect(
+        description!.trim(),
+        isNotEmpty,
+        reason: 'App Review rejects a permission prompt with no stated purpose',
       );
     });
   });
