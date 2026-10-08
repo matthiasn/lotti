@@ -138,9 +138,22 @@ void main() {
           isTrue,
         );
 
+        final disabled = ResolvedProfile(
+          thinkingModelId: thinking.providerModelId,
+          thinkingProvider: provider1,
+          thinkingModel: thinking,
+          audioPostProcessingDisabled: true,
+        );
+        expect(
+          disabled
+              .withThinkingRoute(model: override, provider: provider1)
+              .audioPostProcessingDisabled,
+          isTrue,
+        );
         final variants = <ResolvedProfile>{
           unset,
           set,
+          disabled,
           ResolvedProfile(
             thinkingModelId: thinking.providerModelId,
             thinkingProvider: provider1,
@@ -172,7 +185,7 @@ void main() {
             audioPostProcessingModelUnavailable: true,
           ),
         };
-        expect(variants, hasLength(6));
+        expect(variants, hasLength(7));
         expect(
           set.hashCode,
           ResolvedProfile(

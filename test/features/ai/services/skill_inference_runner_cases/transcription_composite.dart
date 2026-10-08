@@ -42,6 +42,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         AiConfigModel? thinkingModel,
         AiConfigModel? postProcessingModel,
         bool postProcessingUnavailable = false,
+        bool postProcessingDisabled = false,
       }) => AutomationResult(
         handled: true,
         resolvedProfile: ResolvedProfile(
@@ -54,6 +55,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
               : testInferenceProvider(id: 'p-post'),
           audioPostProcessingModel: postProcessingModel,
           audioPostProcessingModelUnavailable: postProcessingUnavailable,
+          audioPostProcessingDisabled: postProcessingDisabled,
           transcriptionModelId: 'whisper-large-v3',
           transcriptionProvider: transcriptionProvider,
           skillAssignments: [
@@ -759,8 +761,43 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
       }
 
       test(
-        'an automated plain transcription without an automated summary '
-        'stays plain',
+        'a check-in with no task is framed by the person it is about, and a '
+        'name it expects is corrected though the dictionary does not know it',
+        () async {
+          // No dictionary term reaches the recording; only the check-in's
+          // expected name does.
+          await stubRun();
+          stubSummary(firstOccurrence);
+          final person = fallbackRelationshipEntry;
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'audio-1'),
+          ).thenAnswer((_) async => [person]);
+          when(
+            () => mockAiInputRepo.getEntity(person.meta.id),
+          ).thenAnswer((_) async => person);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              automated: false,
+            ),
+            knownTerms: const ['Kubernetes'],
+          );
+
+          expect(textWrites, [null, corrected]);
+          final prompt = lastSummaryCall!.positionalArguments.first as String;
+          expect(prompt, contains('**Person Context:**'));
+          expect(prompt, contains('"name": "Fallback Person"'));
+          expect(prompt, contains('**Speech Dictionary:**\n'));
+          expect(prompt, contains('- Kubernetes'));
+          expect(prompt, isNot(contains('**Task Context:**')));
+        },
+      );
+
+      test(
+        'a profile that stands in for none post-processes nothing, whatever '
+        'its speech-to-text model claims to support',
         () async {
           await stubRun(dictionary: [kubernetes]);
           stubSummary(firstOccurrence);
@@ -769,8 +806,12 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
             audioEntryId: 'audio-1',
             automationResult: transcriptionFor(
               transcriptionProvider: whisper(),
-              automatesSummary: false,
-              skill: findBuiltInSkill(skillTranscribeId),
+              postProcessingDisabled: true,
+              // The fallback's thinking slot is the speech model; its row
+              // may well be flagged as calling tools.
+              thinkingModel: testAiModel(
+                providerModelId: 'whisper-large-v3',
+              ).copyWith(supportsFunctionCalling: true),
             ),
             linkedTaskId: 'task-1',
           );
@@ -780,8 +821,34 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         },
       );
 
+      for (final automated in [true, false]) {
+        test(
+          'the plain transcription on a speech-to-text engine is corrected '
+          'too — ${automated ? 'automated without an automated summary' : 'asked for by the user'}',
+          () async {
+            await stubRun(dictionary: [kubernetes]);
+            stubSummary(firstOccurrence);
+
+            await runner.runTranscription(
+              audioEntryId: 'audio-1',
+              automationResult: transcriptionFor(
+                transcriptionProvider: whisper(),
+                automated: automated,
+                automatesSummary: false,
+                skill: findBuiltInSkill(skillTranscribeId),
+              ),
+              linkedTaskId: 'task-1',
+            );
+
+            expect(textWrites, [null, corrected]);
+            expect(lastSummaryCall, isNotNull);
+          },
+        );
+      }
+
       test(
-        'the plain transcription asked for by the user stays plain',
+        'a multimodal model asked by hand writes its text at once and '
+        'chains nothing — it read the dictionary in its own prompt',
         () async {
           await stubRun(dictionary: [kubernetes]);
           stubSummary(firstOccurrence);
@@ -789,7 +856,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
           await runner.runTranscription(
             audioEntryId: 'audio-1',
             automationResult: transcriptionFor(
-              transcriptionProvider: whisper(),
+              transcriptionProvider: testInferenceProvider(id: 'p-omni'),
               automated: false,
               skill: findBuiltInSkill(skillTranscribeId),
             ),

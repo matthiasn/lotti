@@ -41,6 +41,11 @@ class TaskSummaryResolver {
 
   final AgentRepository? _agentRepository;
 
+  /// The agent repository reports are read from; null without the agent
+  /// system. Shared with the readers that frame other subjects by their
+  /// agents' reports, so the agent database is looked up in one place.
+  AgentRepository? get agentRepository => _agentRepository;
+
   /// Records failed agent-report lookups, which fall back to legacy summaries.
   final DomainLogger _domainLogger;
 

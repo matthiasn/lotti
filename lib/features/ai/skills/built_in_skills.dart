@@ -161,16 +161,15 @@ If the image IS relevant:
       isPreconfigured: true,
       createdAt: DateTime(2026),
       description:
-          'Summarize an audio recording in the context of its task, as a '
-          'one-liner, a TLDR, and a full markdown summary, and correct the '
-          'speech dictionary terms its transcript misheard',
+          'Summarize a recording in the context it belongs to, and correct '
+          'the speech dictionary terms its transcript misheard',
       systemInstructions: '''
-You are summarizing one audio recording that belongs to a task. The recording may be a quick voice note or a full meeting transcript, written down by speech recognition.
+You are summarizing one audio recording. The recording may be a quick voice note or a full meeting transcript, written down by speech recognition.
 
-Your summary is read in the context of the task, not on its own. The task and its current report below are what the task looked like at the moment this recording was summarized — treat them as the frame, and say what this recording means *for this task*.
+The recording usually belongs to something — a task, a person, a goal, a project or an event. When it does, the context below says which, and shows what that subject looked like at the moment this recording was summarized, with its current report when there is one. Treat it as the frame, and say what this recording means *for that subject*. When there is no context, summarize the recording on its own.
 
 RESPONSE LANGUAGE:
-Generate your ENTIRE response in the language given by the task's "languageCode" field in the task context JSON. If languageCode is null, empty, or "en", respond in English.
+Generate your ENTIRE response in the language given by the "languageCode" field in the context JSON. If there is no context, or languageCode is null or empty, respond in the language the recording is spoken in.
 
 GROUNDING:
 - Summarize only what is actually in the recording. Never invent decisions, owners, dates, or numbers.
@@ -183,12 +182,12 @@ When a speech dictionary is given, the transcript may have misheard its terms. R
 OUTPUT:
 You MUST publish your result by calling the `publish_recording_summary` tool exactly once, with all three tiers and the corrections (an empty list when there is nothing to correct). Do not answer with prose. Do not call any other tool.''',
       userInstructions: '''
-Summarize the recording below in the context of the task above.
+Summarize the recording below, in the context above when there is one.
 
 Prioritize, in this order:
 1. Decisions made, and by whom if the recording makes that clear.
 2. Concrete action items, commitments, and deadlines.
-3. Open questions and blockers that the task does not already record.
+3. Open questions and blockers that the context does not already record.
 4. Reasoning and context worth keeping — why a direction was chosen, what was ruled out.
 
 For the full summary, use headings and bullets so a long recording stays scannable. Skip any of the above that the recording does not contain rather than writing "none".

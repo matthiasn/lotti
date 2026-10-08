@@ -32,6 +32,7 @@ class ResolvedProfile {
     this.audioPostProcessingProvider,
     this.audioPostProcessingModel,
     this.audioPostProcessingModelUnavailable = false,
+    this.audioPostProcessingDisabled = false,
     this.imageGenerationModelId,
     this.imageGenerationProvider,
     this.imageGenerationModel,
@@ -103,6 +104,12 @@ class ResolvedProfile {
   /// user chose it over.
   final bool audioPostProcessingModelUnavailable;
 
+  /// Nothing post-processes this profile's transcripts: it stands in for no
+  /// profile at all (the direct speech-to-text fallback with no Settings
+  /// default), so its thinking slot is no model to fall back to. Unlike
+  /// [audioPostProcessingModelUnavailable], no step is scheduled to fail.
+  final bool audioPostProcessingDisabled;
+
   String get effectiveAudioPostProcessingModelId =>
       audioPostProcessingModelId ?? thinkingModelId;
   AiConfigInferenceProvider get effectiveAudioPostProcessingProvider =>
@@ -163,6 +170,7 @@ class ResolvedProfile {
       audioPostProcessingProvider: audioPostProcessingProvider,
       audioPostProcessingModel: audioPostProcessingModel,
       audioPostProcessingModelUnavailable: audioPostProcessingModelUnavailable,
+      audioPostProcessingDisabled: audioPostProcessingDisabled,
       imageGenerationModelId: imageGenerationModelId,
       imageGenerationProvider: imageGenerationProvider,
       imageGenerationModel: imageGenerationModel,
@@ -198,6 +206,7 @@ class ResolvedProfile {
           audioPostProcessingModel == other.audioPostProcessingModel &&
           audioPostProcessingModelUnavailable ==
               other.audioPostProcessingModelUnavailable &&
+          audioPostProcessingDisabled == other.audioPostProcessingDisabled &&
           imageGenerationModelId == other.imageGenerationModelId &&
           imageGenerationProvider == other.imageGenerationProvider &&
           imageGenerationModel == other.imageGenerationModel &&
@@ -225,6 +234,7 @@ class ResolvedProfile {
     audioPostProcessingProvider,
     audioPostProcessingModel,
     audioPostProcessingModelUnavailable,
+    audioPostProcessingDisabled,
     imageGenerationModelId,
     imageGenerationProvider,
     imageGenerationModel,

@@ -97,8 +97,13 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
                   (entity is! JournalAudio && entity is! JournalEntry))) {
             return false;
           }
+          // A recording's summary frames itself by whatever the recording
+          // belongs to, or by the speech dictionary alone, so it is offered
+          // on every recording — which also makes it the way to finish a
+          // recording whose post-processing never did.
           if (!hasTaskContext &&
-              skill.contextPolicy == ContextPolicy.fullTask) {
+              skill.contextPolicy == ContextPolicy.fullTask &&
+              skill.skillType != SkillType.audioSummary) {
             return false;
           }
           final modalities = skill.requiredInputModalities;
@@ -189,9 +194,15 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // Defensive guard: a skill that needs full task context cannot run
           // without a linked task. The popup filter hides these skills for
           // standalone entries, and the graph lookup above covers task-linked
-          // entries whose caller did not pass `linkedTaskId`.
+          // entries whose caller did not pass `linkedTaskId`. A recording's
+          // transcription and summary are the exception: they frame
+          // themselves by whatever the recording belongs to — a goal
+          // check-in transcribes with the task-context skill — and fall back
+          // to the speech dictionary.
           if (linkedTaskId == null &&
-              skill.contextPolicy == ContextPolicy.fullTask) {
+              skill.contextPolicy == ContextPolicy.fullTask &&
+              skill.skillType != SkillType.transcription &&
+              skill.skillType != SkillType.audioSummary) {
             loggingService.log(
               LogDomain.ai,
               'Skipping ${params.skillId} for ${params.entityId}: '
@@ -206,6 +217,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // back to the entry category's `defaultProfileId`.
           final resolver = ref.read(profileAutomationResolverProvider);
           final isTranscription = skill.skillType == SkillType.transcription;
+          final isSummary = skill.skillType == SkillType.audioSummary;
           ResolvedProfile? resolvedProfile;
           if (linkedTaskId != null) {
             resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
@@ -216,7 +228,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
             final categoryId = entity?.categoryId;
             if (categoryId != null) {
               resolvedProfile = await resolver.resolveForCategory(categoryId);
-            } else if (!isTranscription) {
+            } else if (!isTranscription && !isSummary) {
               await _declineSkill(
                 ref,
                 entityId: params.entityId,
@@ -246,6 +258,15 @@ final triggerSkillProvider = FutureProvider.autoDispose
             if (fallback.handled) {
               resolvedProfile = fallback.resolvedProfile;
             }
+          }
+
+          // A recording's summary frames itself by whatever the recording
+          // belongs to and needs only a model that can call its tool, so a
+          // recording no task or category profile reaches — the shape of a
+          // goal check-in — is summarized on the device's Settings default.
+          // Without it the menu would offer a summary it then declines.
+          if (isSummary && resolvedProfile == null) {
+            resolvedProfile = await resolver.resolveDefaultProfile();
           }
 
           // A profile that resolves but owns no transcription slot is as

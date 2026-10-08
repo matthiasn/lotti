@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-08
+* **Update**: [AI execution paths](features/ai/execution-paths.md),
+  [speech dictionary](features/speech/dictionary.md),
+  [profile resolution](features/ai/profile-resolution.md),
+  [relationships](features/relationships.md), [goals](features/goals.md) —
+  every speech-to-text transcription is post-processed, framed by what the
+  recording belongs to; check-ins lose their separate name pass; the direct
+  fallback borrows the Settings default's post-processing route; goal
+  check-ins transcribe again.
+
 ## 2026-10-07
 * **Update**: [AI execution paths](features/ai/execution-paths.md),
   [profile resolution](features/ai/profile-resolution.md) — the recording

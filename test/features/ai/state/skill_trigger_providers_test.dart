@@ -998,6 +998,18 @@ void main() {
         skillType: SkillType.transcription,
         modalities: [Modality.audio],
       );
+      final audioSummary =
+          AiConfig.skill(
+                id: 'skill-audio-summary',
+                name: 'Summarize Recording',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.audioSummary,
+                requiredInputModalities: [Modality.audio],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
       final taskContextTranscribe =
           AiConfig.skill(
                 id: 'skill-transcribe-task',
@@ -1040,6 +1052,7 @@ void main() {
           skillRegistryProvider.overrideWithValue([
             plainTranscribe,
             taskContextTranscribe,
+            audioSummary,
             coverArt,
             compactCoverArt,
           ]),
@@ -1059,7 +1072,13 @@ void main() {
           linkedFromId: null,
         )).future,
       );
-      expect(standaloneSkills.map((s) => s.id), ['skill-transcribe-plain']);
+      // A recording's summary frames itself by whatever the recording
+      // belongs to, so it is offered without a task — the way to finish one
+      // whose post-processing never did.
+      expect(standaloneSkills.map((s) => s.id), [
+        'skill-transcribe-plain',
+        'skill-audio-summary',
+      ]);
 
       // With a linked task, the full-task skills are no longer hidden — the
       // text-only cover-art skill still passes for an audio entity because
@@ -2151,120 +2170,125 @@ void main() {
       },
     );
 
-    test(
-      'resolves via category and runs transcription for standalone audio',
-      () async {
-        final skill =
-            AiConfig.skill(
-                  id: 'skill-transcribe',
-                  name: 'Transcription',
-                  createdAt: DateTime(2024, 3, 15),
-                  skillType: SkillType.transcription,
-                  requiredInputModalities: [Modality.audio],
-                  systemInstructions: 'System',
-                  userInstructions: 'User',
-                )
-                as AiConfigSkill;
+    for (final policy in [ContextPolicy.none, ContextPolicy.fullTask]) {
+      test(
+        'resolves via category and runs transcription for standalone audio '
+        '(${policy.name}) — the task-context skill too, as a goal check-in '
+        'uses it, framed by what the recording belongs to',
+        () async {
+          final skill =
+              AiConfig.skill(
+                    id: 'skill-transcribe',
+                    name: 'Transcription',
+                    createdAt: DateTime(2024, 3, 15),
+                    skillType: SkillType.transcription,
+                    requiredInputModalities: [Modality.audio],
+                    contextPolicy: policy,
+                    systemInstructions: 'System',
+                    userInstructions: 'User',
+                  )
+                  as AiConfigSkill;
 
-        final audioEntity = JournalAudio(
-          meta: Metadata(
-            id: 'standalone-audio-1',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            categoryId: 'cat-journal',
-          ),
-          data: AudioData(
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            audioFile: 'voice.mp3',
-            audioDirectory: '/recordings',
-            duration: const Duration(minutes: 2),
-          ),
-        );
-
-        final thinkingProvider =
-            AiConfig.inferenceProvider(
-                  id: 'ollama-prov',
-                  name: 'Ollama',
-                  inferenceProviderType: InferenceProviderType.ollama,
-                  apiKey: '',
-                  baseUrl: 'http://localhost:11434',
-                  createdAt: DateTime(2024, 3, 15),
-                )
-                as AiConfigInferenceProvider;
-        final transcriptionProvider =
-            AiConfig.inferenceProvider(
-                  id: 'ollama-voxtral',
-                  name: 'Ollama (Voxtral)',
-                  inferenceProviderType: InferenceProviderType.ollama,
-                  apiKey: '',
-                  baseUrl: 'http://localhost:11434',
-                  createdAt: DateTime(2024, 3, 15),
-                )
-                as AiConfigInferenceProvider;
-        final resolvedProfile = ResolvedProfile(
-          thinkingModelId: 'thinking-model',
-          thinkingProvider: thinkingProvider,
-          transcriptionModelId: 'voxtral',
-          transcriptionProvider: transcriptionProvider,
-        );
-
-        when(
-          () => mockJournalDb.journalEntityById('standalone-audio-1'),
-        ).thenAnswer((_) async => audioEntity);
-        when(
-          () => mockResolver.resolveForCategory('cat-journal'),
-        ).thenAnswer((_) async => resolvedProfile);
-        when(
-          () => mockRunner.runTranscription(
-            audioEntryId: any(named: 'audioEntryId'),
-            automationResult: any(named: 'automationResult'),
-            linkedTaskId: any(named: 'linkedTaskId'),
-            overrideModelId: any(named: 'overrideModelId'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) async {});
-
-        final testContainer = ProviderContainer(
-          overrides: withServiceOverrides([
-            skillRegistryProvider.overrideWithValue([skill]),
-            profileAutomationResolverProvider.overrideWithValue(mockResolver),
-            profileAutomationServiceProvider.overrideWithValue(
-              mockAutomationService,
+          final audioEntity = JournalAudio(
+            meta: Metadata(
+              id: 'standalone-audio-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              categoryId: 'cat-journal',
             ),
-            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-            journalDbProvider.overrideWithValue(mockJournalDb),
-          ]),
-        );
-        containersToDispose.add(testContainer);
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              audioFile: 'voice.mp3',
+              audioDirectory: '/recordings',
+              duration: const Duration(minutes: 2),
+            ),
+          );
 
-        await testContainer.read(
-          triggerSkillProvider((
-            entityId: 'standalone-audio-1',
-            skillId: 'skill-transcribe',
-            linkedTaskId: null,
-            referenceImages: null,
-            overrideModelId: null,
-            geminiThinkingMode: null,
-          )).future,
-        );
+          final thinkingProvider =
+              AiConfig.inferenceProvider(
+                    id: 'ollama-prov',
+                    name: 'Ollama',
+                    inferenceProviderType: InferenceProviderType.ollama,
+                    apiKey: '',
+                    baseUrl: 'http://localhost:11434',
+                    createdAt: DateTime(2024, 3, 15),
+                  )
+                  as AiConfigInferenceProvider;
+          final transcriptionProvider =
+              AiConfig.inferenceProvider(
+                    id: 'ollama-voxtral',
+                    name: 'Ollama (Voxtral)',
+                    inferenceProviderType: InferenceProviderType.ollama,
+                    apiKey: '',
+                    baseUrl: 'http://localhost:11434',
+                    createdAt: DateTime(2024, 3, 15),
+                  )
+                  as AiConfigInferenceProvider;
+          final resolvedProfile = ResolvedProfile(
+            thinkingModelId: 'thinking-model',
+            thinkingProvider: thinkingProvider,
+            transcriptionModelId: 'voxtral',
+            transcriptionProvider: transcriptionProvider,
+          );
 
-        verify(
-          () => mockResolver.resolveForCategory('cat-journal'),
-        ).called(1);
-        verifyNever(() => mockResolver.resolveForSubject(any()));
-        verify(
-          () => mockRunner.runTranscription(
-            audioEntryId: 'standalone-audio-1',
-            automationResult: any(named: 'automationResult'),
-            overrideModelId: any(named: 'overrideModelId'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).called(1);
-      },
-    );
+          when(
+            () => mockJournalDb.journalEntityById('standalone-audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockResolver.resolveForCategory('cat-journal'),
+          ).thenAnswer((_) async => resolvedProfile);
+          when(
+            () => mockRunner.runTranscription(
+              audioEntryId: any(named: 'audioEntryId'),
+              automationResult: any(named: 'automationResult'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              overrideModelId: any(named: 'overrideModelId'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(mockResolver),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'standalone-audio-1',
+              skillId: 'skill-transcribe',
+              linkedTaskId: null,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          verify(
+            () => mockResolver.resolveForCategory('cat-journal'),
+          ).called(1);
+          verifyNever(() => mockResolver.resolveForSubject(any()));
+          verify(
+            () => mockRunner.runTranscription(
+              audioEntryId: 'standalone-audio-1',
+              automationResult: any(named: 'automationResult'),
+              overrideModelId: any(named: 'overrideModelId'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).called(1);
+        },
+      );
+    }
 
     test(
       'aborts standalone fullTask skill without invoking resolver',
@@ -2480,6 +2504,124 @@ void main() {
         ).called(1);
       },
     );
+
+    for (final hasDefault in [true, false]) {
+      test(
+        'summarizes a recording no task or category profile reaches on the '
+        'Settings default — ${hasDefault ? 'and runs it' : 'and declines without one'}',
+        () async {
+          final skill =
+              AiConfig.skill(
+                    id: 'skill-audio-summary',
+                    name: 'Summarize Recording',
+                    createdAt: DateTime(2024, 3, 15),
+                    skillType: SkillType.audioSummary,
+                    requiredInputModalities: [Modality.audio],
+                    contextPolicy: ContextPolicy.fullTask,
+                    systemInstructions: 'System',
+                    userInstructions: 'User',
+                  )
+                  as AiConfigSkill;
+          // A goal check-in's shape: no task, no category.
+          final audioEntity = JournalAudio(
+            meta: Metadata(
+              id: 'goal-audio',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+            ),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              audioFile: 'check-in.m4a',
+              audioDirectory: '/recordings',
+              duration: const Duration(minutes: 1),
+            ),
+          );
+          final defaultProfile = ResolvedProfile(
+            thinkingModelId: 'thinking-model',
+            thinkingProvider:
+                AiConfig.inferenceProvider(
+                      id: 'default-prov',
+                      name: 'Default',
+                      inferenceProviderType: InferenceProviderType.anthropic,
+                      apiKey: 'key',
+                      baseUrl: 'https://api.anthropic.com',
+                      createdAt: DateTime(2024, 3, 15),
+                    )
+                    as AiConfigInferenceProvider,
+          );
+          when(
+            () => mockJournalDb.journalEntityById('goal-audio'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockResolver.resolveDefaultProfile(),
+          ).thenAnswer((_) async => hasDefault ? defaultProfile : null);
+          when(
+            () => mockRunner.runAudioSummary(
+              audioEntryId: any(named: 'audioEntryId'),
+              automationResult: any(named: 'automationResult'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              overrideModelId: any(named: 'overrideModelId'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(
+                mockResolver,
+              ),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'goal-audio',
+              skillId: 'skill-audio-summary',
+              linkedTaskId: null,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          if (hasDefault) {
+            final result =
+                verify(
+                      () => mockRunner.runAudioSummary(
+                        audioEntryId: 'goal-audio',
+                        automationResult: captureAny(named: 'automationResult'),
+                        linkedTaskId: any(named: 'linkedTaskId'),
+                        overrideModelId: any(named: 'overrideModelId'),
+                        geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                      ),
+                    ).captured.single
+                    as AutomationResult;
+            expect(result.resolvedProfile, same(defaultProfile));
+          } else {
+            verifyNever(
+              () => mockRunner.runAudioSummary(
+                audioEntryId: any(named: 'audioEntryId'),
+                automationResult: any(named: 'automationResult'),
+                linkedTaskId: any(named: 'linkedTaskId'),
+                overrideModelId: any(named: 'overrideModelId'),
+                geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              ),
+            );
+          }
+          verifyNever(() => mockResolver.resolveForCategory(any()));
+        },
+      );
+    }
 
     test(
       'threads overrideModelId from TriggerSkillParams to '
@@ -4005,7 +4147,9 @@ class _SkillFilterScenario {
         (!hasTaskContext || (entityKind != 0 && entityKind != 1))) {
       return false;
     }
-    if (!hasTaskContext && contextPolicy == ContextPolicy.fullTask) {
+    if (!hasTaskContext &&
+        contextPolicy == ContextPolicy.fullTask &&
+        skillType != SkillType.audioSummary) {
       return false;
     }
     if (modalities.contains(Modality.audio) && entityKind != 1) return false;

@@ -607,6 +607,13 @@ class ProfileAutomationService {
       intent: intent,
     );
 
+    // No profile owns this run, so nothing names a model for the
+    // post-processing that follows a speech-to-text transcript. The device's
+    // Settings default profile does: its post-processing route, or its
+    // thinking route, corrects and summarizes the transcript. Without one the
+    // transcript is written as heard.
+    final postProcessing = await _resolver.resolveDefaultProfile();
+
     return AutomationResult(
       handled: true,
       resolvedProfile: ResolvedProfile(
@@ -619,6 +626,18 @@ class ProfileAutomationService {
         transcriptionModelId: selected.model.providerModelId,
         transcriptionProvider: selected.provider,
         transcriptionModel: selected.model,
+        audioPostProcessingModelId:
+            postProcessing?.effectiveAudioPostProcessingModelId,
+        audioPostProcessingProvider:
+            postProcessing?.effectiveAudioPostProcessingProvider,
+        audioPostProcessingModel:
+            postProcessing?.effectiveAudioPostProcessingModel,
+        audioPostProcessingModelUnavailable:
+            postProcessing?.audioPostProcessingModelUnavailable ?? false,
+        // The thinking slot holds the speech-to-text model, so without a
+        // default there is nothing to post-process with — whatever that
+        // model's capability flags say.
+        audioPostProcessingDisabled: postProcessing == null,
         skillAssignments: const [_fallbackTranscriptionAssignment],
       ),
       skill: skill,

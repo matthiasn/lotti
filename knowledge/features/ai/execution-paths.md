@@ -11,7 +11,11 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-10-07
+    last_modified: 2026-10-08
+  - id: recording-context
+    resource: ../../../lib/features/ai/repository/recording_context_resolver.dart
+    title: RecordingContextResolver — what frames a recording's post-processing
+    last_modified: 2026-10-08
   - id: auto-trigger
     resource: ../../../lib/features/speech/helpers/automatic_prompt_trigger.dart
     title: AutomaticPromptTrigger
@@ -346,47 +350,67 @@ same follow-up exactly once, and only after the transcript was saved.
 
 The gates, all deliberate:
 
-- **A task must resolve.** The skill's `fullTask` context policy has nothing to
-  read otherwise, and the summary is framed by the task. Goal and person
-  check-ins and standalone voice notes transcribe as before and get no summary.
+- **Every speech-to-text transcription is post-processed**, however the run
+  started and whatever the recording belongs to — the AI menu, a category's
+  automation, the synced-audio dispatcher, an inference backfill, a person or
+  goal check-in, a standalone voice note, plain skill or task-context skill.
+  Such an engine cannot read the speech dictionary or the recording's
+  context, so the correction against them (the composite step) is part of
+  transcribing at all, not a second action. An automated run uses the
+  profile's automated audio summary assignment when there is one and
+  otherwise the built-in summary, attributed to the automation that started
+  it.
 - **The post-processing model must be able to call tools.** The summary
   publishes through a pinned tool call, on the profile's audio
   post-processing model or, without one, its thinking model (see below). The
   direct speech-to-text fallback, used when no inference profile applies,
-  puts its transcription model in the thinking slot and sets no
-  post-processing model; such a run schedules no summary, so the transcript is
-  written at once rather than held for a call that would be skipped.
-- **Speech recognized in the task's context on a speech-to-text engine always
-  chains the summary**, however the run started — the AI menu, the category's
-  automation, the synced-audio dispatcher or an inference backfill. On such an
-  engine the summary call is what corrects the transcript against the task
-  and the dictionary (the composite step), so it is part of the action asked
-  for, not a second one. An automated run uses the profile's automated audio
-  summary assignment when there is one and otherwise the built-in summary,
-  attributed to the automation that started it. The two routes once decided
-  this differently, and an automation without a separate automated summary
-  wrote Whisper's raw text and never summarized.
-- **Any other transcription** — the plain skill, or a multimodal model that read
-  the task and the dictionary in its own prompt — chains the summary only when
-  it was automated, which a non-null `AutomationResult.skillAssignment`
-  records, **and** the profile assigns the summary skill with `automate: true`
-  (the already-resolved profile is reused rather than walked again). Only the
+  puts its transcription model in the thinking slot, so it borrows the
+  post-processing route of the device's Settings default profile
+  (`ProfileAutomationResolver.resolveDefaultProfile`); with no default
+  selected nothing can post-process, no summary is scheduled, and the
+  transcript is written at once rather than held for a call that would be
+  skipped.
+- **A multimodal transcription** — a model that read the dictionary and the
+  context in its own prompt — chains the summary only when it was automated,
+  which a non-null `AutomationResult.skillAssignment` records, **and** the
+  profile assigns the summary skill with `automate: true` (the
+  already-resolved profile is reused rather than walked again). Only the
   automated paths set the assignment, and only those passed the category's
   automatic-inference consent check — the manual picker and
   `requestTranscription` skip that check because a gesture is its own consent,
   and that consent covers the transcription asked for, not a second call.
 
-This gate is only on the *automatic* follow-up. `SkillType.audioSummary` is
-also manually selectable from the AI popup on any task-linked recording, which
-is both the backfill path for recordings that predate the feature and the way
-to refresh a stale snapshot. That path runs the same `runAudioSummary` through
-`triggerSkillProvider` and is subject to none of the gates above beyond needing
-task context.
 - **Failures never propagate.** The transcript is already persisted and is the
   valuable artifact; letting a summary failure reach `_withStatusTracking`
   would mark the transcription run as `error` and invite a retry that
   re-transcribes audio that transcribed fine.
 
+**What frames it.** `RecordingContextResolver` finds the recording's subject:
+the task in `linkedTaskId`, else the entity that links to the recording — a
+task, a person (directly, or through a check-in's `relationshipId`), a goal,
+a project or an event, in that order. The subject is a value of its own;
+`linkedTaskId` stays a task id, because it also feeds task JSON, attribution
+and the task's stale notification. The frame is the subject's header (a
+task's title and language; a person's name, nickname and language; a goal's
+title and statement; a project's or event's title) and the current report of
+the newest agent linked to it — a goal's only when written for its active
+spec version (`provenance.specVersionId == GoalData.specVersionId`). With no
+subject the dictionary alone frames the correction, and the summary is of the
+recording on its own. A check-in's expected names (`knownTerms`) join the
+correction as entries that are corrected but never learned
+(`withKnownTerms`); they replace the separate thinking-model name pass
+check-ins once had.
+
+**Reaching it by hand.** `SkillType.audioSummary` is offered from the AI popup
+on every recording, task-linked or not: it is the backfill path for
+recordings that predate the feature, the way to refresh a stale snapshot, and
+the recovery for a recording whose post-processing never finished (it fills
+the empty text, below). A recording that no task or category profile reaches —
+a goal check-in's shape — is summarized on the device's Settings default
+profile, so the offer is never one the trigger then declines. `triggerSkillProvider` lets the recording's
+transcription and summary skills through without a task even when their
+policy is `fullTask` — a goal check-in transcribes with the task-context
+skill — while every other `fullTask` skill still needs one.
 Two properties are contract rather than detail:
 
 - **The tiers come back through a tool call, never a parser.** The skill
@@ -433,10 +457,12 @@ the collapsed card's existing fallback — except a held transcript that
 dictionary terms reach, which is still worth correcting.
 
 **Everything else in the prompt is bounded.** Besides the recording's own text
-it carries the task's title and language code, the task's current report
-(`TaskSummaryResolver.resolve(fullReport: true)`), and the speech dictionary
-entries that reach the recording — never the task's log, which holds every
-other recording's transcript, nor the linked tasks: both grow without limit.
+it carries its subject's header and current report (for a task,
+`TaskSummaryResolver.resolve(fullReport: true)`), under headings named for the
+subject (`**Goal Context:**`, `**Relationship Briefing:**`, …), and the speech
+dictionary entries that reach the recording — never the subject's log, which
+holds every other recording's transcript, nor a task's linked tasks: both grow
+without limit.
 
 The collapsed audio card reads the newest summary's `oneLiner`
 (`audioSummaryOneLiner`), falling back to `audioEntryOneLiner`'s transcript

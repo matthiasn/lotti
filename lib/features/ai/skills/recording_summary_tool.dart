@@ -2,6 +2,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -130,10 +131,42 @@ String recordingCorrectionPrompt(List<SpeechDictionaryEntry> entries) {
       '${lines.join('\n')}\n\n'
       'Report in `${TranscriptNameCorrectionToolArgs.corrections}` every '
       'place in the Entry Notes where one of these terms was misheard. '
-      'Report a word only when the task and the surrounding words make clear '
-      'the term was meant: a spelling listed above can also be a real word '
+      'Report a word only when the context above and the surrounding words '
+      'make clear the term was meant: a spelling listed above can also be a '
+      'real word '
       'the speaker said. Never report an ordinary word that is not a '
       'mishearing, and leave the list empty when every term is already right.';
+}
+
+/// [entries] plus [knownTerms] — the names a caller expects, such as the
+/// person a check-in is about — as entries the correction can name.
+///
+/// A known term that is already an entry keeps that entry and its misheard
+/// spellings. The others get an uncategorized entry under their own id that
+/// is never stored, so a correction to one is applied to the transcript but
+/// learning it as a misheard spelling finds no entry and skips it: a name a
+/// check-in expects is not a dictionary term.
+List<SpeechDictionaryEntry> withKnownTerms(
+  List<SpeechDictionaryEntry> entries,
+  List<String> knownTerms,
+) {
+  final have = {for (final entry in entries) entry.term.toLowerCase()};
+  final epoch = DateTime.utc(1970);
+  return [
+    ...entries,
+    for (final term in {
+      for (final raw in knownTerms)
+        if (raw.trim() case final t when t.isNotEmpty) t,
+    })
+      if (!have.contains(term.toLowerCase()))
+        SpeechDictionaryEntry(
+          id: speechDictionaryEntryId(term),
+          createdAt: epoch,
+          updatedAt: epoch,
+          term: term,
+          vectorClock: null,
+        ),
+  ];
 }
 
 /// The misheard spellings of [entries] by term, lower-cased, as

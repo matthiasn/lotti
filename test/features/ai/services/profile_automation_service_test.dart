@@ -266,6 +266,11 @@ void main() {
     categoryAllowsAutomation = true;
     automationLookupTaskIds = [];
     mockResolver = MockProfileAutomationResolver();
+    // No Settings default profile unless a test selects one: the direct
+    // fallback then has no model to post-process with.
+    when(
+      () => mockResolver.resolveDefaultProfile(),
+    ).thenAnswer((_) async => null);
     mockAiConfig = MockAiConfigRepository();
     mockDomainLogger = MockDomainLogger();
     capturedLogLines = [];
@@ -1891,8 +1896,74 @@ void main() {
             'whisper-1',
           );
           expect(result.skill!.id, skillTranscribeContextId);
+          // With no Settings default nothing post-processes: the thinking
+          // slot holds the speech-to-text model itself.
+          expect(result.resolvedProfile!.audioPostProcessingDisabled, isTrue);
           // No task was involved, so the consent gate was never consulted.
           verifyNever(() => mockResolver.resolveForSubject(any()));
+        },
+      );
+
+      test(
+        "the fallback's transcript is post-processed on the Settings default "
+        "profile's post-processing route, since no profile of its own names "
+        'one',
+        () async {
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [makeModel()]);
+          when(
+            () => mockAiConfig.getConfigById('provider-mlx'),
+          ).thenAnswer((_) async => makeProvider());
+          final editor = testAiModel(
+            id: 'editor-row',
+            providerModelId: 'editor-native',
+          ).copyWith(supportsFunctionCalling: true);
+          final editorProvider = testInferenceProvider(id: 'editor-provider');
+          when(() => mockResolver.resolveDefaultProfile()).thenAnswer(
+            (_) async => ResolvedProfile(
+              thinkingModelId: 'thinking-native',
+              thinkingProvider: testInferenceProvider(),
+              audioPostProcessingModelId: editor.providerModelId,
+              audioPostProcessingProvider: editorProvider,
+              audioPostProcessingModel: editor,
+            ),
+          );
+
+          final profile =
+              (await service.resolveDirectTranscription()).resolvedProfile!;
+
+          expect(profile.transcriptionModelId, 'whisper-1');
+          expect(profile.effectiveAudioPostProcessingModelId, 'editor-native');
+          expect(profile.effectiveAudioPostProcessingModel, editor);
+          expect(profile.effectiveAudioPostProcessingProvider, editorProvider);
+          expect(profile.audioPostProcessingModelUnavailable, isFalse);
+          expect(profile.audioPostProcessingDisabled, isFalse);
+        },
+      );
+
+      test(
+        'a Settings default whose post-processing model is unavailable makes '
+        "the fallback's step fail visibly too",
+        () async {
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [makeModel()]);
+          when(
+            () => mockAiConfig.getConfigById('provider-mlx'),
+          ).thenAnswer((_) async => makeProvider());
+          when(() => mockResolver.resolveDefaultProfile()).thenAnswer(
+            (_) async => ResolvedProfile(
+              thinkingModelId: 'thinking-native',
+              thinkingProvider: testInferenceProvider(),
+              audioPostProcessingModelUnavailable: true,
+            ),
+          );
+
+          final profile =
+              (await service.resolveDirectTranscription()).resolvedProfile!;
+
+          expect(profile.audioPostProcessingModelUnavailable, isTrue);
         },
       );
     });
@@ -1904,6 +1975,9 @@ void main() {
       'matches generated automation assignment filtering semantics',
       (scenario) async {
         final localResolver = MockProfileAutomationResolver();
+        when(
+          localResolver.resolveDefaultProfile,
+        ).thenAnswer((_) async => null);
         final localAiConfig = MockAiConfigRepository();
         final localService = ProfileAutomationService(
           resolver: localResolver,
@@ -2016,6 +2090,9 @@ void main() {
         addTearDown(() => platform.isMacOS = wasMacOS);
 
         final localResolver = MockProfileAutomationResolver();
+        when(
+          localResolver.resolveDefaultProfile,
+        ).thenAnswer((_) async => null);
         final localAiConfig = MockAiConfigRepository();
         final localService = ProfileAutomationService(
           resolver: localResolver,

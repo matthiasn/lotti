@@ -183,6 +183,16 @@ requires a verified local model. HTTP endpoint validation is left to the
 provider. Equal-ranked models are ordered by name. The fallback works without
 a profile.
 
+Its transcription model fills the ephemeral profile's thinking slot, so the
+post-processing that follows a speech-to-text transcript borrows a route
+instead: the device's Settings default profile's audio post-processing
+model, or its thinking model (`ProfileAutomationResolver.resolveDefaultProfile`,
+copied into the ephemeral profile's post-processing slot, unavailability
+included). With no default selected the ephemeral profile is marked
+`audioPostProcessingDisabled`: nothing post-processes, whatever the
+speech-to-text model's own capability flags claim, and the transcript is
+written as heard.
+
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers installed sherpa models, then Mistral contextual Voxtral and a Mistral batch audio model; next come
 the seeded Melious Whisper Large v3 default, other Melious transcription models,

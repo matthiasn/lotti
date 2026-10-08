@@ -202,6 +202,18 @@ void main() {
     });
   });
 
+  test("the Settings default profile is the profile resolver's", () async {
+    final profile = ResolvedProfile(
+      thinkingModelId: 'thinking-native',
+      thinkingProvider: testInferenceProvider(),
+    );
+    when(
+      () => mockProfileResolver.resolveDefaultProfile(),
+    ).thenAnswer((_) async => profile);
+
+    expect(await resolver.resolveDefaultProfile(), same(profile));
+  });
+
   group('task-profile fallback', () {
     late ProfileAutomationResolver resolverWithLookup;
 

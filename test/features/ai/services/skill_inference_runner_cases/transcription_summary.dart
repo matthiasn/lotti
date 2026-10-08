@@ -129,81 +129,84 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
       void verifySummarized() => verify(summaryCall()).called(1);
       void verifyNotSummarized() => verifyNever(summaryCall());
 
-      test(
-        'summarizes after a task-linked transcription when the profile '
-        'automates the summary skill',
-        () async {
-          final audio = makeAudioEntity();
-          await stubTranscriptionThrough(audio);
-          when(
-            () => mockCloudRepo.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              provider: any(named: 'provider'),
-              systemMessage: any(named: 'systemMessage'),
-              tools: any(named: 'tools'),
-              toolChoice: any(named: 'toolChoice'),
-              geminiThinkingMode: any(named: 'geminiThinkingMode'),
-              impactCollector: any(named: 'impactCollector'),
-            ),
-          ).thenAnswer(
-            (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
-                id: 'resp-tool',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
-                          index: 0,
-                          id: 'call-1',
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: recordingSummaryToolName,
-                            arguments: jsonEncode({
-                              EntrySummaryToolArgs.oneLiner:
-                                  'Migration owners agreed.',
-                              EntrySummaryToolArgs.tldr:
-                                  'Each step has an owner.',
-                              EntrySummaryToolArgs.summary: '## Owners',
-                            }),
-                          ),
-                        ),
-                      ],
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+      for (final taskId in ['task-1', null]) {
+        test(
+          'summarizes after an automated transcription when the profile '
+          'automates the summary skill — '
+          '${taskId == null ? 'with no task, framed by nothing but the recording' : 'framed by its task'}',
+          () async {
+            final audio = makeAudioEntity();
+            await stubTranscriptionThrough(audio);
+            when(
+              () => mockCloudRepo.generate(
+                any(),
+                model: any(named: 'model'),
+                temperature: any(named: 'temperature'),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                provider: any(named: 'provider'),
+                systemMessage: any(named: 'systemMessage'),
+                tools: any(named: 'tools'),
+                toolChoice: any(named: 'toolChoice'),
+                geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                impactCollector: any(named: 'impactCollector'),
               ),
-            ]),
-          );
-
-          await runner.runTranscription(
-            audioEntryId: 'audio-1',
-            automationResult: makeTranscriptionResultWithSummary(),
-            linkedTaskId: 'task-1',
-          );
-
-          verifySummarized();
-          final data =
-              verify(
-                    () => mockAiInputRepo.createAiResponseEntry(
-                      id: any(named: 'id'),
-                      data: captureAny(named: 'data'),
-                      start: any(named: 'start'),
-                      linkedId: any(named: 'linkedId'),
-                      categoryId: any(named: 'categoryId'),
+            ).thenAnswer(
+              (_) => Stream.fromIterable([
+                CreateChatCompletionStreamResponse(
+                  id: 'resp-tool',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta(
+                        toolCalls: [
+                          ChatCompletionStreamMessageToolCallChunk(
+                            index: 0,
+                            id: 'call-1',
+                            function: ChatCompletionStreamMessageFunctionCall(
+                              name: recordingSummaryToolName,
+                              arguments: jsonEncode({
+                                EntrySummaryToolArgs.oneLiner:
+                                    'Migration owners agreed.',
+                                EntrySummaryToolArgs.tldr:
+                                    'Each step has an owner.',
+                                EntrySummaryToolArgs.summary: '## Owners',
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                      index: 0,
                     ),
-                  ).captured.single
-                  as AiResponseData;
-          expect(data.type, AiResponseType.audioSummary);
-          expect(data.oneLiner, 'Migration owners agreed.');
-        },
-      );
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+                ),
+              ]),
+            );
+
+            await runner.runTranscription(
+              audioEntryId: 'audio-1',
+              automationResult: makeTranscriptionResultWithSummary(),
+              linkedTaskId: taskId,
+            );
+
+            verifySummarized();
+            final data =
+                verify(
+                      () => mockAiInputRepo.createAiResponseEntry(
+                        id: any(named: 'id'),
+                        data: captureAny(named: 'data'),
+                        start: any(named: 'start'),
+                        linkedId: any(named: 'linkedId'),
+                        categoryId: any(named: 'categoryId'),
+                      ),
+                    ).captured.single
+                    as AiResponseData;
+            expect(data.type, AiResponseType.audioSummary);
+            expect(data.oneLiner, 'Migration owners agreed.');
+          },
+        );
+      }
 
       // The recording already held a summarizable transcript, so only the
       // outcome gate can stop a paid summary of words that are not new.
@@ -229,22 +232,6 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           );
 
           expect(errors.single, isA<StateError>());
-          verifyNotSummarized();
-        },
-      );
-
-      test(
-        'does NOT summarize a recording with no resolved task — the summary '
-        'is framed by a task, and a check-in or standalone note has none',
-        () async {
-          final audio = makeAudioEntity();
-          await stubTranscriptionThrough(audio);
-
-          await runner.runTranscription(
-            audioEntryId: 'audio-1',
-            automationResult: makeTranscriptionResultWithSummary(),
-          );
-
           verifyNotSummarized();
         },
       );

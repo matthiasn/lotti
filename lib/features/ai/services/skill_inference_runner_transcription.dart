@@ -26,8 +26,6 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
   }) async {
     final followUp = _audioSummaryFollowUp(
       automationResult: automationResult,
-      transcriptionSkill: skill,
-      linkedTaskId: linkedTaskId,
       speechToText: routesToSpeechToText(provider, modelId),
     );
     final holdText =
@@ -170,30 +168,14 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
 
         final response = collected.content.trim();
 
-        // With names to expect, the transcript is corrected against them:
-        // first by sound and spelling (against the names and the category
-        // dictionary), then by the profile's thinking model against the
-        // names alone, for what those rules cannot reach. The model's call is part of this
-        // transcription's spend.
-        var text = response;
-        AiConsumptionEvent? nameCorrectionEvent;
-        if (knownTerms.isNotEmpty && response.isNotEmpty) {
-          text = correctTranscriptTerms(response, speechDictionaryTerms).text;
-          final corrected = await _correctNamesWithThinkingModel(
-            profile: profile,
-            transcript: text,
-            // Only the names the caller expects: a category dictionary
-            // holds ordinary vocabulary, which is no name to swap in.
-            terms: knownTerms,
-            entity: entity,
-            taskId: linkedTaskId,
-            skillId: skill.id,
-          );
-          if (corrected != null) {
-            text = corrected.text;
-            nameCorrectionEvent = corrected.event;
-          }
-        }
+        // With names to expect, the transcript is corrected against them by
+        // sound and spelling (against the names and the category
+        // dictionary). What those rules cannot reach, the post-processing
+        // that follows a speech-to-text engine corrects with the names in
+        // its prompt; a multimodal model read them in its own.
+        final text = knownTerms.isNotEmpty && response.isNotEmpty
+            ? correctTranscriptTerms(response, speechDictionaryTerms).text
+            : response;
 
         // The Melious chat-audio adapter supplies provider-reported billing
         // and environmental impact through this collector; other providers
@@ -214,7 +196,6 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
           requestText:
               '${promptResult.systemMessage}\n${promptResult.userMessage}',
           responseText: collected.content,
-          additionalEvents: [?nameCorrectionEvent],
         );
 
         if (response.isEmpty) {
@@ -274,12 +255,13 @@ extension _SkillInferenceRunnerTranscription on SkillInferenceRunner {
     // transcript. The summary tracks its own status, and awaiting here still
     // orders it before the caller's agent nudge so the agent's first read sees
     // the summary and the corrected text.
-    if (followUp != null && linkedTaskId != null) {
+    if (followUp != null) {
       await _runFollowUpSummary(
         audioEntryId: audioEntryId,
         followUp: followUp,
         linkedTaskId: linkedTaskId,
         heldText: holdText ? (textAtStart: textAtStart) : null,
+        knownTerms: knownTerms,
       );
     }
     return null;

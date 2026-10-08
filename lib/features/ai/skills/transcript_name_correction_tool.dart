@@ -1,13 +1,11 @@
 import 'dart:convert';
 
-import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/utils/transcript_term_corrector.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Name of the tool the thinking model calls to propose name corrections.
-const transcriptNameCorrectionToolName = 'correct_misheard_names';
-
-/// Wire argument names for [transcriptNameCorrectionToolName].
+/// Wire argument names of the corrections a recording's post-processing
+/// reports (`recordingSummaryTool`): which misheard words became which
+/// dictionary term, quoted in their context.
 abstract final class TranscriptNameCorrectionToolArgs {
   static const corrections = 'corrections';
   static const heard = 'heard';
@@ -27,98 +25,15 @@ const transcriptNameCorrectionMaxHeardWords = 3;
 final _word = RegExp(r'\p{L}+', unicode: true);
 final _upperInitial = RegExp(r'^\p{Lu}', unicode: true);
 
-/// The tool definition handed to the thinking model.
-const ChatCompletionTool transcriptNameCorrectionTool = ChatCompletionTool(
-  type: ChatCompletionToolType.function,
-  function: FunctionObject(
-    name: transcriptNameCorrectionToolName,
-    description:
-        'Report the names in this transcript that speech recognition '
-        'misheard. You MUST call this tool exactly once, and respond with '
-        'nothing else. Report nothing when every name is already right.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        TranscriptNameCorrectionToolArgs.corrections: {
-          'type': 'array',
-          'items': {
-            'type': 'object',
-            'properties': {
-              TranscriptNameCorrectionToolArgs.heard: {
-                'type': 'string',
-                'description':
-                    'The misheard name exactly as it is written in the '
-                    'transcript, at most $transcriptNameCorrectionMaxHeardWords '
-                    'words.',
-              },
-              TranscriptNameCorrectionToolArgs.term: {
-                'type': 'string',
-                'description':
-                    'The name from the list that was said instead, spelled '
-                    'exactly as in the list.',
-              },
-              TranscriptNameCorrectionToolArgs.context: {
-                'type': 'string',
-                'description':
-                    'An exact quote from the transcript of a few words '
-                    'around this occurrence, including the misheard name. '
-                    'Report each misheard occurrence separately, with its '
-                    'own quote.',
-              },
-            },
-            'required': [
-              TranscriptNameCorrectionToolArgs.heard,
-              TranscriptNameCorrectionToolArgs.term,
-              TranscriptNameCorrectionToolArgs.context,
-            ],
-            'additionalProperties': false,
-          },
-        },
-      },
-      'required': [TranscriptNameCorrectionToolArgs.corrections],
-      'additionalProperties': false,
-    },
-  ),
-);
-
-/// Pins the model to [transcriptNameCorrectionTool]; null for the models that
-/// answer a pinned choice with prose anyway (see [forcedToolChoiceFor]).
-ChatCompletionToolChoiceOption? transcriptNameCorrectionToolChoiceFor(
-  String modelId,
-) => forcedToolChoiceFor(
-  modelId: modelId,
-  toolName: transcriptNameCorrectionToolName,
-);
-
-/// The system and user messages asking for corrections of [transcript]
-/// against [terms].
-({String system, String user}) transcriptNameCorrectionMessages({
-  required String transcript,
-  required List<String> terms,
-}) => (
-  system:
-      'You check speech-recognition transcripts for misheard names. You are '
-      'given the names the speaker is likely to mention. Report a word only '
-      'when it is one of those names written wrongly — misheard, misspelled '
-      'or split into pieces — and the context makes clear that name was '
-      'meant. Never report an ordinary word, a name that is not in the '
-      'list, or a name that is already spelled as listed.',
-  user:
-      'Names the speaker is likely to mention:\n'
-      '${terms.map((term) => '- $term').join('\n')}\n\n'
-      'Transcript:\n$transcript',
-);
-
 /// Decodes the proposals out of [toolCalls]; empty when there is no usable
-/// call. A failed check is no correction, never an error: the phonetic pass
-/// has already run, and this one only adds to it.
+/// call. A failed check is no correction, never an error: the transcript is
+/// then written as it was heard.
 ///
 /// [toolName] is the tool that carries the proposals under
-/// [TranscriptNameCorrectionToolArgs.corrections]: this one, unless another
-/// tool reports them alongside its own result.
+/// [TranscriptNameCorrectionToolArgs.corrections] alongside its own result.
 List<TranscriptNameProposal> parseTranscriptNameCorrections(
   List<ChatCompletionMessageToolCall> toolCalls, {
-  String toolName = transcriptNameCorrectionToolName,
+  required String toolName,
 }) {
   final call = toolCalls.where((c) => c.function.name == toolName).firstOrNull;
   if (call == null) return const [];
