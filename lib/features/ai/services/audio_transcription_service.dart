@@ -30,6 +30,9 @@ import 'package:lotti/utils/transcript_term_corrector.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
+
+/// The letters a chunk ends in: possibly a word the next chunk completes.
+final _trailingWord = RegExp(r'\p{L}+$', unicode: true);
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
 
 /// Whether a failed attributed transcription definitely published its single
@@ -114,6 +117,67 @@ class AudioTranscriptionService {
     target: target,
   ).join();
 
+  /// The provider and model a request without an explicit target runs on.
+  ///
+  /// Deterministic for one configuration, so a caller that let a request
+  /// discover its model can ask afterwards which kind of engine heard the
+  /// words. Throws when no audio-capable model can be used.
+  Future<({AiConfigInferenceProvider provider, AiConfigModel model})>
+  discoverTarget() async {
+    final aiRepo = ref.read(aiConfigRepositoryProvider);
+    // Fetch models and providers in parallel to reduce I/O latency
+    final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
+    final providersFuture = aiRepo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final models = await modelsFuture;
+    final providers = await providersFuture;
+
+    // Find all audio-capable models, excluding realtime-only models —
+    // they require WebSocket streaming, which this app does not use.
+    final allProviders = providers.whereType<AiConfigInferenceProvider>();
+    final audioModels = models
+        .whereType<AiConfigModel>()
+        .where(
+          (m) => m.inputModalities.contains(Modality.audio),
+        )
+        .where((m) {
+          final candidate = allProviders
+              .where((p) => p.id == m.inferenceProviderId)
+              .firstOrNull;
+          if (candidate == null) return true; // keep orphans, fail later
+          return !(candidate.inferenceProviderType ==
+                  InferenceProviderType.mistral &&
+              _isRealtimeOnlyModel(m.providerModelId));
+        })
+        .toList();
+
+    for (final candidate in audioModels.toList()) {
+      final candidateProvider = allProviders.firstWhereOrNull(
+        (provider) => provider.id == candidate.inferenceProviderId,
+      );
+      if (candidateProvider?.inferenceProviderType ==
+              InferenceProviderType.sherpa &&
+          !await ref
+              .read(sherpaModelRepositoryProvider)
+              .isAvailable(candidate.providerModelId)) {
+        audioModels.remove(candidate);
+      }
+    }
+    if (audioModels.isEmpty) {
+      throw Exception('No audio-capable models configured');
+    }
+
+    final model = _selectBatchAudioModel(audioModels, allProviders);
+    return (
+      provider: allProviders.firstWhere(
+        (p) => p.id == model.inferenceProviderId,
+        orElse: () => throw Exception('Provider not found for audio model'),
+      ),
+      model: model,
+    );
+  }
+
   /// Transcribes audio from a local file at [filePath] with streaming output.
   ///
   /// Yields each transcribed chunk as it's received from the inference provider,
@@ -136,69 +200,9 @@ class AudioTranscriptionService {
     bool terminalizeAttributionFailure = true,
     ({AiConfigInferenceProvider provider, AiConfigModel model})? target,
   }) async* {
-    final AiConfigModel model;
-    final AiConfigInferenceProvider provider;
-    if (target != null) {
-      // An explicit target (e.g. the caller's inference-profile
-      // transcription slot) skips discovery entirely.
-      model = target.model;
-      provider = target.provider;
-    } else {
-      final aiRepo = ref.read(aiConfigRepositoryProvider);
-      // Fetch models and providers in parallel to reduce I/O latency
-      final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
-      final providersFuture = aiRepo.getConfigsByType(
-        AiConfigType.inferenceProvider,
-      );
-      final models = await modelsFuture;
-      final providers = await providersFuture;
-
-      // Find all audio-capable models, excluding realtime-only models —
-      // they require WebSocket streaming, which this app does not use.
-      final allProviders = providers.whereType<AiConfigInferenceProvider>();
-      final audioModels = models
-          .whereType<AiConfigModel>()
-          .where(
-            (m) => m.inputModalities.contains(Modality.audio),
-          )
-          .where((m) {
-            final candidate = allProviders
-                .where((p) => p.id == m.inferenceProviderId)
-                .firstOrNull;
-            if (candidate == null) return true; // keep orphans, fail later
-            return !(candidate.inferenceProviderType ==
-                    InferenceProviderType.mistral &&
-                _isRealtimeOnlyModel(m.providerModelId));
-          })
-          .toList();
-
-      for (final candidate in audioModels.toList()) {
-        final candidateProvider = allProviders.firstWhereOrNull(
-          (provider) => provider.id == candidate.inferenceProviderId,
-        );
-        if (candidateProvider?.inferenceProviderType ==
-                InferenceProviderType.sherpa &&
-            !await ref
-                .read(sherpaModelRepositoryProvider)
-                .isAvailable(candidate.providerModelId)) {
-          audioModels.remove(candidate);
-        }
-      }
-      if (audioModels.isEmpty) {
-        throw Exception('No audio-capable models configured');
-      }
-
-      model = _selectBatchAudioModel(
-        audioModels,
-        allProviders,
-      );
-
-      // Get the provider for the selected model
-      provider = providers.whereType<AiConfigInferenceProvider>().firstWhere(
-        (p) => p.id == model.inferenceProviderId,
-        orElse: () => throw Exception('Provider not found for audio model'),
-      );
-    }
+    // An explicit target (e.g. the caller's inference-profile transcription
+    // slot) skips discovery entirely.
+    final (:provider, :model) = target ?? await discoverTarget();
 
     final bytes = await File(filePath).readAsBytes();
     final audioBase64 = base64Encode(bytes);
@@ -280,15 +284,28 @@ class AudioTranscriptionService {
             terminalizeFailure: terminalizeAttributionFailure,
           );
 
+    // A provider may split a word across chunks ("Van", "ja"), so the
+    // trailing letters of each chunk wait for the next one: only complete
+    // words are corrected and yielded, and the rest flushes at the end.
+    final pending = StringBuffer();
+    String corrected(String text) =>
+        correctTranscriptTerms(text, speechDictionaryTerms).text;
     try {
       await for (final chunk in stream) {
         final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
-        if (content.isNotEmpty) {
-          yield speechDictionaryTerms.isEmpty
-              ? content
-              : correctTranscriptTerms(content, speechDictionaryTerms).text;
+        if (content.isEmpty) continue;
+        if (speechDictionaryTerms.isEmpty) {
+          yield content;
+          continue;
         }
+        final text = '$pending$content';
+        final cut = _trailingWord.firstMatch(text)?.start ?? text.length;
+        pending
+          ..clear()
+          ..write(text.substring(cut));
+        if (cut > 0) yield corrected(text.substring(0, cut));
       }
+      if (pending.isNotEmpty) yield corrected(pending.toString());
     } on _ProviderTranscriptionFailure catch (failure) {
       if (capture == null) {
         final cause = failure.cause;

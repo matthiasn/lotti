@@ -138,28 +138,31 @@ dailyOsTranscriptCorrectionTargetProvider = FutureProvider(
 );
 
 /// [transcript] corrected against the speech dictionary when a speech-to-text
-/// engine [heardBy] wrote it — such an engine cannot read the dictionary,
-/// while a multimodal model spelled its terms as given — and
-/// [correctionTarget] names a model to correct it with. Otherwise, or when
-/// the correction fails, the words as heard. Shared by the foreground
-/// capture and the outbox's retries, so a retried capture is corrected too.
+/// engine heard it — such an engine cannot read the dictionary, while a
+/// multimodal model spelled its terms as given — and [correctionTarget]
+/// names a model to correct it with. [heardBy] is the explicit target the
+/// transcription ran on; without one, the route discovery chose is read
+/// back from [transcriber]. Otherwise, or when anything fails, the words as
+/// heard. Shared by the foreground capture and the outbox's retries, so a
+/// retried capture is corrected too.
 Future<String> correctHeardTranscript({
   required AudioTranscriptionService transcriber,
   required String transcript,
   required DailyOsTranscriptionTarget? heardBy,
   required Future<DailyOsTranscriptionTarget?> Function() correctionTarget,
 }) async {
-  if (heardBy == null ||
-      !routesToSpeechToText(heardBy.provider, heardBy.model.providerModelId)) {
-    return transcript;
-  }
   final DailyOsTranscriptionTarget? target;
+  final DailyOsTranscriptionTarget route;
   try {
     target = await correctionTarget();
+    if (target == null) return transcript;
+    route = heardBy ?? await transcriber.discoverTarget();
   } catch (_) {
     return transcript;
   }
-  if (target == null) return transcript;
+  if (!routesToSpeechToText(route.provider, route.model.providerModelId)) {
+    return transcript;
+  }
   return transcriber.correctTranscript(transcript, target: target);
 }
 

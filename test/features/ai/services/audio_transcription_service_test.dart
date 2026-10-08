@@ -273,6 +273,44 @@ void main() {
     await sharedTempDir.delete(recursive: true);
   });
 
+  test(
+    'discoverTarget names the provider and model a request without a target '
+    'runs on',
+    () async {
+      final aiRepo = isolatedRepo();
+      await aiRepo.saveConfig(
+        _provider(id: 'p-discover', name: 'Discovered'),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        _audioModel(
+          id: 'm-discover',
+          providerId: 'p-discover',
+          providerModelId: 'discovered-model',
+        ),
+        fromSync: true,
+      );
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(mockCloud, ['text']);
+      final svc = buildService(repo: aiRepo, cloud: mockCloud);
+
+      final discovered = await svc.discoverTarget();
+      await svc.transcribe(file.path);
+
+      expect(discovered.provider.id, 'p-discover');
+      expect(discovered.model.id, 'm-discover');
+      expect(
+        _verifyGenerateWithAudio(mockCloud).model,
+        discovered.model.providerModelId,
+      );
+      await expectLater(
+        buildService(repo: isolatedRepo()).discoverTarget(),
+        throwsException,
+      );
+    },
+  );
+
   test('an explicit target bypasses model discovery entirely', () async {
     final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
@@ -997,6 +1035,40 @@ void main() {
         expect(chunks, ['Wanja met ', 'Frida Kjellsen.']);
       },
     );
+
+    for (final (chunks, expected) in [
+      (['Van', 'ja met Frieda Kel', 'lsen.'], 'Wanja met Frida Kjellsen.'),
+      (['Vanja met Frieda Kel', 'lsen'], 'Wanja met Frida Kjellsen'),
+    ]) {
+      test(
+        'corrects a word a provider split across chunks — $chunks',
+        () async {
+          final file = await audioFile();
+          final mockCloud = MockCloudInferenceRepository();
+          _stubGenerateWithAudio(mockCloud, chunks);
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([entry('Frida Kjellsen')]),
+          );
+
+          final yielded = await svc
+              .transcribeStream(
+                file.path,
+                knownTerms: const ['Wanja'],
+                target: (provider: provider, model: model),
+              )
+              .toList();
+
+          expect(yielded.join(), expected);
+          expect(
+            yielded.where((chunk) => chunk.isEmpty),
+            isEmpty,
+            reason: 'a chunk that only starts a word yields nothing yet',
+          );
+        },
+      );
+    }
 
     test(
       'without a category only the entries for every category reach it, and '

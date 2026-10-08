@@ -417,13 +417,59 @@ void main() {
     );
 
     test(
-      'keeps the words when a multimodal model or discovery heard them, no '
-      'model can correct them, or finding one fails',
+      'reads the route discovery chose when the capture ran without a '
+      'target, and corrects only a speech-to-text one',
+      () async {
+        final transcriber = MockAudioTranscriptionService();
+        when(
+          () => transcriber.correctTranscript('heard', target: editor),
+        ).thenAnswer((_) async => 'corrected');
+        when(transcriber.discoverTarget).thenAnswer((_) async => whisper);
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'corrected',
+        );
+
+        when(transcriber.discoverTarget).thenAnswer((_) async => gemini);
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'heard',
+        );
+
+        when(transcriber.discoverTarget).thenThrow(Exception('no models'));
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'heard',
+        );
+        verify(
+          () => transcriber.correctTranscript('heard', target: editor),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps the words when a multimodal model heard them, no model can '
+      'correct them, or finding one fails — and never asks discovery then',
       () async {
         final transcriber = MockAudioTranscriptionService();
         for (final (heardBy, correctionTarget) in [
           (gemini, () async => editor),
-          (null, () async => editor),
+          (null, () async => null),
           (whisper, () async => null),
           (whisper, () => Future<DailyOsTranscriptionTarget?>.error('down')),
         ]) {

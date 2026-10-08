@@ -78,9 +78,12 @@ them; the speech dictionary reaches them here instead:
   `speechDictionaryTerms`. Today every caller passes no category, so each
   hears the global entries; a query chat's category is not threaded through
   yet. An unreadable dictionary gives no terms, never a failed request.
-- **A correction by sound and spelling for every chunk.** Each yielded chunk
-  is corrected against the same terms (`correctTranscriptTerms`) — free and
-  local, so chat drafts and onboarding get it with no extra latency.
+- **A correction by sound and spelling as the words stream.** Complete
+  words are corrected against the same terms (`correctTranscriptTerms`) as
+  they arrive; the letters a chunk ends in wait for the next chunk, since a
+  provider may split a word across two ("Van", "ja"), and flush at the end.
+  Free and local, so chat drafts and onboarding get it with no extra
+  latency.
 - **A model's correction where the caller can wait for one.**
   `correctTranscript` asks a tool-capable model, in one pinned
   `report_transcript_corrections` call, for quoted corrections against the
@@ -91,8 +94,10 @@ them; the speech dictionary reaches them here instead:
   post-processing route (`dailyOsTranscriptCorrectionTargetProvider` — its
   slot, else its thinking model, when it can call tools and resolves here),
   for words a speech-to-text engine heard, before the foreground capture
-  stores or shows them and for each outbox retry alike. A multimodal model,
-  or discovery, heard words it spelled as given; those are left alone.
+  stores or shows them and for each outbox retry alike. Without the
+  profile's transcription slot the route discovery chose is read back
+  (`discoverTarget`, deterministic for one configuration) to decide that. A
+  multimodal model spelled the terms as given; its words are left alone.
 
 # Attribution and errors
 
