@@ -8,33 +8,29 @@ typedef _HeldText = ({EntryText? textAtStart});
 /// transcript against the speech dictionary in the same call. A private
 /// extension because it uses the runner's private deps.
 extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
-  /// The summary that follows a transcription, or null when none does.
+  /// The post-processing that follows a transcription, or null when none
+  /// does.
   ///
-  /// - **A task must be resolved.** The summary is framed by the task it
-  ///   belongs to; goal and person check-ins and standalone voice notes
-  ///   transcribe as before and get no summary.
-  /// - **Speech recognized in the task's context on a speech-to-text
-  ///   engine** chains the summary however it was started — from the AI
-  ///   menu or by the category's automation. On such an engine that skill
-  ///   *is* the composite step: the engine cannot read the task or the
-  ///   dictionary, so the correction against them is part of what was asked
-  ///   for. An automated run uses the profile's automated audio summary when
-  ///   it has one, and otherwise the built-in summary, attributed to the
-  ///   automation that started it.
-  /// - **Any other automated transcription** — the plain skill, or a
-  ///   multimodal model that read the task and the dictionary in its own
-  ///   prompt — chains the profile's automated audio summary only, as it
-  ///   always has: only `ProfileAutomationService` sets a `skillAssignment`,
-  ///   and only after the category's consent check. Started by hand, it
-  ///   chains nothing.
+  /// - **On a speech-to-text engine it always follows**, however the run
+  ///   started — the AI menu, a category's automation, a check-in. Such an
+  ///   engine cannot read the speech dictionary or the recording's context,
+  ///   so the correction against them is part of transcribing at all. The
+  ///   step is framed by what the recording belongs to — its task, or the
+  ///   person, goal, project or event it was recorded for — and by the
+  ///   speech dictionary alone when nothing frames it. An automated run uses
+  ///   the profile's automated audio summary when it has one, and otherwise
+  ///   the built-in summary, attributed to the automation that started it.
+  /// - **Any other automated transcription** — a multimodal model that read
+  ///   the dictionary and the context in its own prompt — chains the
+  ///   profile's automated audio summary only: only
+  ///   `ProfileAutomationService` sets a `skillAssignment`, and only after
+  ///   the category's consent check. Started by hand, it chains nothing.
   AutomationResult? _audioSummaryFollowUp({
     required AutomationResult automationResult,
-    required AiConfigSkill transcriptionSkill,
-    required String? linkedTaskId,
     required bool speechToText,
   }) {
     final profile = automationResult.resolvedProfile;
-    if (linkedTaskId == null || profile == null) return null;
+    if (profile == null) return null;
     // A summary needs a post-processing model that can call its tool. The
     // direct speech-to-text fallback, run without an inference profile, puts
     // its transcription model in the thinking slot it falls back to; no
@@ -66,10 +62,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
       );
     }
 
-    if (!speechToText ||
-        transcriptionSkill.contextPolicy != ContextPolicy.fullTask) {
-      return null;
-    }
+    if (!speechToText) return null;
     final summary = findBuiltInSkill(skillAudioSummaryId);
     if (summary == null) return null;
     return AutomationResult(
@@ -87,8 +80,9 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
   Future<void> _runFollowUpSummary({
     required String audioEntryId,
     required AutomationResult followUp,
-    required String linkedTaskId,
+    required String? linkedTaskId,
     required _HeldText? heldText,
+    required List<String> knownTerms,
   }) async {
     try {
       await _runAudioSummary(
@@ -96,6 +90,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
         automationResult: followUp,
         linkedTaskId: linkedTaskId,
         heldText: heldText,
+        knownTerms: knownTerms,
       );
     } catch (error, stackTrace) {
       // Unreachable today — the run reports through its status tracking and
@@ -129,6 +124,8 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
   /// ignored: the text came from a model that read the dictionary itself.
   /// [fillEmptyText] treats a recording that has a transcript but no text
   /// yet as held — the state a composite step that never finished leaves.
+  /// [knownTerms] — the names a check-in expects — are corrected like
+  /// dictionary terms, but never learned into the dictionary.
   Future<void> _runAudioSummary({
     required String audioEntryId,
     required AutomationResult automationResult,
@@ -137,6 +134,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     GeminiThinkingMode? geminiThinkingMode,
     _HeldText? heldText,
     bool fillEmptyText = false,
+    List<String> knownTerms = const [],
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -164,6 +162,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
         overrideModelId: overrideModelId,
         geminiThinkingMode: geminiThinkingMode,
         correct: held != null,
+        knownTerms: knownTerms,
       );
     } finally {
       if (held != null) {
@@ -187,6 +186,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
     required String? overrideModelId,
     required GeminiThinkingMode? geminiThinkingMode,
     required bool correct,
+    required List<String> knownTerms,
   }) async {
     final target = await _resolveAudioSummaryTarget(
       profile: profile,
@@ -250,8 +250,9 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
         final entryContent = correct
             ? _latestTranscriptText(entity) ?? _resolveEntryContent(entity)
             : _resolveEntryContent(entity);
-        final entries = await _promptBuilderHelper.getSpeechDictionaryEntries(
-          entity,
+        final entries = withKnownTerms(
+          await _promptBuilderHelper.getSpeechDictionaryEntries(entity),
+          knownTerms,
         );
         // A note too short to summarize is still worth correcting.
         final worthIt =
@@ -268,19 +269,24 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
           return;
         }
 
-        final (String? taskHeader, String? taskReport) = linkedTaskId != null
-            ? await (
-                _taskHeaderJson(linkedTaskId),
-                _taskSummaryResolver.resolve(linkedTaskId, fullReport: true),
-              ).wait
-            : (null, null);
+        // Framed by what the recording belongs to; with nothing to frame
+        // it, the dictionary alone corrects the transcript.
+        final subject = await _recordingContextResolver.subjectOf(
+          audioEntryId,
+          linkedTaskId: linkedTaskId,
+        );
+        final context = subject == null
+            ? null
+            : await _recordingContextResolver.contextFor(subject);
 
         const promptBuilder = SkillPromptBuilder();
         final promptResult = promptBuilder.build(
           skill: skill,
           entryContent: entryContent,
-          taskContext: taskHeader,
-          currentTaskSummary: taskReport,
+          taskContext: context?.headerJson,
+          currentTaskSummary: context?.report,
+          contextLabel: context?.label ?? 'Task',
+          reportHeading: context?.reportHeading ?? 'Task Report',
           transcriptCorrection: recordingCorrectionPrompt(entries),
         );
 
@@ -460,17 +466,6 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
       },
     );
     return correctedText;
-  }
-
-  /// The task as the summary needs it: its title and the language the
-  /// summary is written in. Null when [taskId] is not a task.
-  Future<String?> _taskHeaderJson(String taskId) async {
-    final task = await _aiInputRepository.getEntity(taskId);
-    if (task is! Task) return null;
-    return const JsonEncoder.withIndent('    ').convert({
-      'title': task.data.title,
-      'languageCode': task.data.languageCode,
-    });
   }
 
   /// Records each applied correction as a misheard spelling of its term. A

@@ -1816,7 +1816,13 @@ Invariants worth not breaking:
   calls `triggerSkillProvider` with no task context. Without that fallback a
   check-in saved, played back, and was never transcribed, which also left the
   compactor with nothing to distill: `checkInSources` only yields entries that
-  carry text. The fallback lives on the stop path because that is the only
+  carry text. The call asks for the task-context transcription skill, whose
+  `fullTask` policy the trigger's task guard once refused without a task —
+  logging a line and skipping, so the fallback reached nothing until the
+  guard let a recording's own transcription and summary skills through. On a
+  speech-to-text engine the check-in is then post-processed like every
+  recording, framed by the goal and its report for the active spec, so the
+  text the compactor distils arrives corrected and written once. The fallback lives on the stop path because that is the only
   place every recording passes: the goal composer once asked for the
   transcript itself after awaiting the recorder, and missed every recording
   stopped from the sidebar's Stop button or the floating indicator after the

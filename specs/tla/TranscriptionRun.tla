@@ -63,9 +63,11 @@
 (*   GuardedFill        the held text's write applies only to the version *)
 (*                      it re-read                                         *)
 (*                                                                         *)
-(* Held is the composite step: a speech-to-text engine's transcript in a  *)
-(* task's context joins the history without touching the text, and the   *)
-(* text is written after the summary has corrected it.                    *)
+(* Held is the composite step: a speech-to-text engine's transcript      *)
+(* joins the history without touching the text, and the text is written   *)
+(* after the post-processing has corrected it -- for every such           *)
+(* transcription, whatever the recording belongs to, so a check-in's      *)
+(* Waiter waits through the fill too.                                     *)
 (***************************************************************************)
 EXTENDS Naturals, FiniteSets
 

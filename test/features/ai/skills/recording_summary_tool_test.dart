@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/skills/recording_summary_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
+import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 ChatCompletionMessageToolCall _call(
@@ -186,5 +187,61 @@ void main() {
         'Kubernetes': {'cuban eddies'},
       },
     );
+  });
+
+  group('withKnownTerms', () {
+    SpeechDictionaryEntry entry(String term, {List<String>? misheardAs}) =>
+        SpeechDictionaryEntry(
+          id: 'entry-$term',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          term: term,
+          vectorClock: null,
+          categoryIds: const ['cat'],
+          misheardAs: misheardAs,
+        );
+
+    test(
+      'adds each expected name once as an uncategorized entry, and keeps a '
+      'dictionary entry the name already has',
+      () {
+        final kubernetes = entry('Kubernetes', misheardAs: ['Cuban Eddies']);
+
+        final merged = withKnownTerms(
+          [kubernetes],
+          const [
+            'kubernetes',
+            ' Commander Pip Frostbeak ',
+            'Wanja',
+            'Wanja',
+            '',
+          ],
+        );
+
+        expect(merged.first, same(kubernetes));
+        expect(merged.map((e) => e.term), [
+          'Kubernetes',
+          'Commander Pip Frostbeak',
+          'Wanja',
+        ]);
+        final name = merged[1];
+        expect(name.categoryIds, isNull);
+        expect(name.misheardAs, isNull);
+        expect(name.id, speechDictionaryEntryId('Commander Pip Frostbeak'));
+      },
+    );
+
+    test('a correction to an expected name is applied like a term', () {
+      final entries = withKnownTerms(const [], const ['Wanja']);
+
+      final result = applyRecordingCorrections(
+        'Then Vanja called.',
+        const [(heard: 'Vanja', term: 'Wanja', context: 'Then Vanja called')],
+        entries,
+      );
+
+      expect(result.text, 'Then Wanja called.');
+      expect(result.applied, [(from: 'Vanja', to: 'Wanja')]);
+    });
   });
 }

@@ -3028,8 +3028,13 @@ What the model leaves out:
 - **A failed run's attribution** stays an unfinalized in-memory session, as an
   image analysis whose response was not stored does: the consumption events are
   the evidence and no output claims the work.
-- **The summary's own gates** (a task, an automated transcription, an automated
-  summary skill) and its failures, which never reach the transcription run.
+- **The post-processing's own gates** (a post-processing model that can call
+  tools; for a multimodal transcription, an automated transcription and an
+  automated summary skill) and its failures, which never reach the
+  transcription run. `TranscriptionRunHeld` keeps the `Waiter`: a check-in's
+  speech-to-text transcript is held like any other since post-processing
+  follows every speech-to-text transcription, so `WaiterResolves` is checked
+  through the fill.
 - **Daily OS capture**, which transcribes through `AudioTranscriptionService`,
   not this runner.
 

@@ -556,6 +556,43 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
         },
       );
 
+      test(
+        'names the subject a recording belongs to in its headings, and with '
+        'no context carries only the recording and the dictionary',
+        () {
+          final skill = makeSkill(
+            skillType: SkillType.audioSummary,
+            contextPolicy: ContextPolicy.fullTask,
+          );
+          final goal = builder
+              .build(
+                skill: skill,
+                taskContext: '{"title": "Waddle daily"}',
+                currentTaskSummary: 'On track.',
+                entryContent: 'Walked two kilometres.',
+                contextLabel: 'Goal',
+                reportHeading: 'Goal Report',
+              )
+              .userMessage;
+          expect(goal, contains('**Goal Context:**'));
+          expect(goal, contains('**Goal Report:**\nOn track.'));
+          expect(goal, isNot(contains('Task Context')));
+          expect(goal, isNot(contains('Task Report')));
+
+          final bare = builder
+              .build(
+                skill: skill,
+                entryContent: 'Walked two kilometres.',
+                transcriptCorrection: '**Speech Dictionary:**\n- Waddle',
+              )
+              .userMessage;
+          expect(bare, isNot(contains('Context:**')));
+          expect(bare, isNot(contains('Report:**')));
+          expect(bare, contains('**Entry Notes:**\nWalked two kilometres.'));
+          expect(bare, contains('- Waddle'));
+        },
+      );
+
       test('other skills never carry the correction block', () {
         final result = builder.build(
           skill: makeSkill(

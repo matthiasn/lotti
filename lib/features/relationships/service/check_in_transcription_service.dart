@@ -66,7 +66,11 @@ typedef CheckInTranscriptionRoute = ({String model, String provider});
 /// transcription slot. The words are corrected against the person's known
 /// terms ([relationshipKnownTerms]) plus the category speech dictionary, so
 /// a name the provider mishears still lands spelled the way the user writes
-/// it. The recording sheet disables its automatic trigger for
+/// it: by sound and spelling, and — on a speech-to-text engine — by the
+/// post-processing that follows every such transcription, framed by the
+/// person and their briefing, which also summarizes the recording. The
+/// words are offered once that is done. The recording sheet disables its
+/// automatic trigger for
 /// this capture, so this explicit request owns the one transcription run.
 /// There is no subject/category resolution or model-discovery fallback.
 ///
@@ -174,8 +178,9 @@ class CheckInTranscriptionService {
         onFailure();
         return;
       }
-      // This is a manual request: no automated skill assignment or task id.
-      // In particular, it must not start a profile's automatic summary skill.
+      // This is a manual request: no automated skill assignment or task id,
+      // so a profile's *automated* summary skill is not started; the
+      // post-processing a speech-to-text engine always gets still runs.
       var failed = false;
       await _runner.runTranscription(
         audioEntryId: audioEntryId,

@@ -5,9 +5,17 @@ import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
+  /// The tool the proposals ride on; any tool may carry them.
+  const tool = 'publish_recording_summary';
+
+  /// Parses against [tool].
+  List<TranscriptNameProposal> parse(
+    List<ChatCompletionMessageToolCall> calls,
+  ) => parseTranscriptNameCorrections(calls, toolName: tool);
+
   ChatCompletionMessageToolCall call(
     Object? arguments, {
-    String name = transcriptNameCorrectionToolName,
+    String name = tool,
   }) => ChatCompletionMessageToolCall(
     id: 'call-1',
     type: ChatCompletionMessageToolCallType.function,
@@ -21,7 +29,7 @@ void main() {
     test('reads each proposal, trimmed, with its quote, and skips malformed '
         'items', () {
       expect(
-        parseTranscriptNameCorrections([
+        parse([
           call({
             'corrections': [
               {
@@ -45,17 +53,17 @@ void main() {
 
     test('is empty — no correction, never an error — for a missing, '
         'foreign or malformed call', () {
-      expect(parseTranscriptNameCorrections(const []), isEmpty);
+      expect(parse(const []), isEmpty);
       expect(
-        parseTranscriptNameCorrections([
+        parse([
           call({'corrections': <Object>[]}, name: 'publish_entry_summary'),
         ]),
         isEmpty,
       );
-      expect(parseTranscriptNameCorrections([call('{not json')]), isEmpty);
-      expect(parseTranscriptNameCorrections([call('[1]')]), isEmpty);
+      expect(parse([call('{not json')]), isEmpty);
+      expect(parse([call('[1]')]), isEmpty);
       expect(
-        parseTranscriptNameCorrections([
+        parse([
           call({'corrections': 'none'}),
         ]),
         isEmpty,
@@ -183,17 +191,6 @@ void main() {
     });
   });
 
-  test('the prompt lists the names and carries the transcript', () {
-    final messages = transcriptNameCorrectionMessages(
-      transcript: 'Vanja traf Frostbite.',
-      terms: const ['Wanja', 'Commander Pip Frostbeak'],
-    );
-
-    expect(messages.user, contains('- Wanja\n- Commander Pip Frostbeak'));
-    expect(messages.user, endsWith('Transcript:\nVanja traf Frostbite.'));
-    expect(messages.system, contains('misheard names'));
-  });
-
   group('reading and applying for another tool', () {
     test('parses the proposals another tool carries', () {
       final calls = [
@@ -215,7 +212,10 @@ void main() {
         ),
       ];
 
-      expect(parseTranscriptNameCorrections(calls), isEmpty);
+      expect(
+        parseTranscriptNameCorrections(calls, toolName: 'other_tool'),
+        isEmpty,
+      );
       expect(
         parseTranscriptNameCorrections(
           calls,

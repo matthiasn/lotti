@@ -83,6 +83,11 @@ class ProfileAutomationResolver {
   final CategoryProfileLookup? _categoryProfileLookup;
   final SubjectCategoryLookup? _subjectCategoryLookup;
 
+  /// The device's selected Settings default profile, or null when none is
+  /// selected or it cannot resolve.
+  Future<ResolvedProfile?> resolveDefaultProfile() =>
+      _profileResolver.resolveDefaultProfile();
+
   /// Resolves the profile for the given [subjectId]'s agent.
   ///
   /// Resolution order:

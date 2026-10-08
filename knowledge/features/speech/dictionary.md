@@ -132,8 +132,8 @@ merge.
 A speech-to-text engine (Whisper and its kin, `routesToSpeechToText`) returns
 what it heard; the dictionary reaches it only as a vocabulary hint, which
 not every engine honours. A multimodal model reads the dictionary and the
-task in its own prompt and spells them as given. So the correction belongs to
-the first only.
+recording's context in its own prompt and spells them as given. So the
+correction belongs to the first only.
 
 ```mermaid
 flowchart TD
@@ -147,13 +147,12 @@ flowchart TD
   SumC -->|failed or skipped| Raw["_writeTranscriptText:<br/>raw transcript"]
 ```
 
-A summary always follows the task-context transcription skill on a
-speech-to-text engine, whether the user asked for it or the category's
-automation ran it: recognizing speech in a task's context *is* this composite
-step. Any other transcription in a task's context chains one only when the run
-was automated and the profile automates the audio summary — the consent rules
-of [execution paths](../ai/execution-paths.md#audio-summaries). The plain
-transcription skill never chains on its own.
+A summary follows every transcription on a speech-to-text engine — either
+transcription skill, whether the user asked for it or an automation ran it,
+whatever the recording belongs to: recognizing speech with such an engine
+*is* this composite step. A multimodal transcription chains one only when the
+run was automated and the profile automates the audio summary — the consent
+rules of [execution paths](../ai/execution-paths.md#audio-summaries).
 
 **One call, two jobs.** The audio summary publishes through
 `publish_recording_summary`: the three summary tiers plus `corrections`, each
@@ -183,12 +182,15 @@ fills the text.
 
 ## What the summary sees
 
-The summary prompt is bounded by the recording, not the task: this
-recording's text, the task's title and language code, the task's current
-report (`TaskSummaryResolver.resolve(fullReport: true)`), and the dictionary
-entries that reach the recording. Never the task's log — every other
-recording's transcript is in it — nor the linked tasks, which grow without
-limit.
+The summary prompt is bounded by the recording, not by what it belongs to:
+this recording's text; its subject's header and current report — a task's
+title, language and report, a person's name and relationship briefing, a
+goal's statement and its report for the active spec, a project's or event's
+title and report (`RecordingContextResolver`); and the dictionary entries that
+reach the recording, plus the names a check-in expects. Never the subject's
+log — every other recording's transcript is in it — nor a task's linked
+tasks, which grow without limit. A recording that belongs to nothing is
+corrected against the dictionary alone and summarized on its own.
 
 # Editing
 

@@ -2043,9 +2043,14 @@ terms leave the device with the recording; the subject always does. The
 runner puts these ahead of the speech dictionary terms that reach the
 recording (by the audio entry's category, which the recording inherits from
 the person; see [speech dictionary](speech/dictionary.md)) and
-corrects the finished transcript against both, so a misheard name reaches
-the field already spelled the way the user writes it. A failed read of the
-terms costs the correction, never the transcript.
+corrects the finished transcript against both — by sound and spelling, and,
+on a speech-to-text engine, in the post-processing that follows every such
+transcription, framed by the person and their relationship briefing
+([execution paths](ai/execution-paths.md#audio-summaries)) — so a misheard
+name reaches the field already spelled the way the user writes it. That step
+also summarizes the recording, and the names it corrects are never learned
+into the dictionary. A failed read of the terms costs the correction, never
+the transcript.
 # Reaching a user who has not opened the app (plan v2 phase 8)
 
 A banner needs the app running. The case a check-in reminder exists for is the

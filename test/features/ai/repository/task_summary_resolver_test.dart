@@ -93,6 +93,17 @@ void main() {
       ),
     ).called(1);
 
+    test('shares the agent repository it reads, or none without one', () {
+      expect(
+        TaskSummaryResolver(repo, domainLogger: logger).agentRepository,
+        same(repo),
+      );
+      expect(
+        TaskSummaryResolver(null, domainLogger: logger).agentRepository,
+        isNull,
+      );
+    });
+
     test('returns null when both sources are empty and repo is null', () async {
       final resolver = TaskSummaryResolver(null, domainLogger: logger);
       final summary = await resolver.resolve('task-1');

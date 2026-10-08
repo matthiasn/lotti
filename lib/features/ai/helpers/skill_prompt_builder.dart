@@ -30,6 +30,10 @@ class SkillPromptBuilder {
   /// [transcriptCorrection] is the speech dictionary block an audio summary
   /// corrects its transcript against (`recordingCorrectionPrompt`), placed
   /// right after the transcript it is about.
+  /// [contextLabel] names what [taskContext] describes and [reportHeading]
+  /// the heading an audio summary's [currentTaskSummary] goes under: a
+  /// recording is framed by its task, or by the person, goal, project or
+  /// event it belongs to.
   SkillPromptResult build({
     required AiConfigSkill skill,
     String? speechDictionary,
@@ -43,6 +47,8 @@ class SkillPromptBuilder {
     String? categoryKnowledge,
     String? pullRequests,
     String? transcriptCorrection,
+    String contextLabel = 'Task',
+    String reportHeading = 'Task Report',
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -63,6 +69,8 @@ class SkillPromptBuilder {
       categoryKnowledge: categoryKnowledge,
       pullRequests: pullRequests,
       transcriptCorrection: transcriptCorrection,
+      contextLabel: contextLabel,
+      reportHeading: reportHeading,
     );
 
     return SkillPromptResult(
@@ -113,6 +121,8 @@ class SkillPromptBuilder {
     String? categoryKnowledge,
     String? pullRequests,
     String? transcriptCorrection,
+    String contextLabel = 'Task',
+    String reportHeading = 'Task Report',
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
@@ -169,6 +179,8 @@ class SkillPromptBuilder {
         currentTaskSummary: currentTaskSummary,
         categoryKnowledge: categoryKnowledge,
         pullRequests: pullRequests,
+        contextLabel: contextLabel,
+        reportHeading: reportHeading,
       );
     }
 
@@ -307,6 +319,8 @@ class SkillPromptBuilder {
     String? currentTaskSummary,
     String? categoryKnowledge,
     String? pullRequests,
+    String contextLabel = 'Task',
+    String reportHeading = 'Task Report',
   }) {
     // For transcription with task context, inject as terminology reference.
     if (skill.skillType == SkillType.transcription) {
@@ -351,7 +365,7 @@ class SkillPromptBuilder {
       buffer
         ..writeln()
         ..writeln()
-        ..writeln('**Task Context:**')
+        ..writeln('**$contextLabel Context:**')
         ..writeln('```json')
         ..writeln(taskContext)
         ..writeln('```');
@@ -375,14 +389,14 @@ class SkillPromptBuilder {
         ..writeln(pullRequests);
     }
 
-    // An audio summary reads the task without its log, so the task's
-    // report is what tells it what the task is about.
+    // An audio summary reads its subject without the subject's log, so the
+    // subject agent's report is what tells it what the subject is about.
     if (skill.skillType == SkillType.audioSummary &&
         currentTaskSummary != null &&
         currentTaskSummary.isNotEmpty) {
       buffer
         ..writeln()
-        ..writeln('**Task Report:**')
+        ..writeln('**$reportHeading:**')
         ..writeln(currentTaskSummary);
     }
 

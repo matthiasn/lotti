@@ -97,8 +97,13 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
                   (entity is! JournalAudio && entity is! JournalEntry))) {
             return false;
           }
+          // A recording's summary frames itself by whatever the recording
+          // belongs to, or by the speech dictionary alone, so it is offered
+          // on every recording — which also makes it the way to finish a
+          // recording whose post-processing never did.
           if (!hasTaskContext &&
-              skill.contextPolicy == ContextPolicy.fullTask) {
+              skill.contextPolicy == ContextPolicy.fullTask &&
+              skill.skillType != SkillType.audioSummary) {
             return false;
           }
           final modalities = skill.requiredInputModalities;
@@ -189,9 +194,15 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // Defensive guard: a skill that needs full task context cannot run
           // without a linked task. The popup filter hides these skills for
           // standalone entries, and the graph lookup above covers task-linked
-          // entries whose caller did not pass `linkedTaskId`.
+          // entries whose caller did not pass `linkedTaskId`. A recording's
+          // transcription and summary are the exception: they frame
+          // themselves by whatever the recording belongs to — a goal
+          // check-in transcribes with the task-context skill — and fall back
+          // to the speech dictionary.
           if (linkedTaskId == null &&
-              skill.contextPolicy == ContextPolicy.fullTask) {
+              skill.contextPolicy == ContextPolicy.fullTask &&
+              skill.skillType != SkillType.transcription &&
+              skill.skillType != SkillType.audioSummary) {
             loggingService.log(
               LogDomain.ai,
               'Skipping ${params.skillId} for ${params.entityId}: '
