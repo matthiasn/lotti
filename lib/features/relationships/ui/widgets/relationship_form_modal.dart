@@ -503,7 +503,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               gap(tokens.spacing.step2),
               Text(
                 messages.relationshipKnownTermsBody,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
+                // The form's one supporting-text tier — the Reach card's
+                // caption — not a second, body-sized helper voice.
+                style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
@@ -570,7 +572,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 valueListenable: _nameController,
                 builder: (context, _, _) => Text(
                   _importantBody(context),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                  style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),

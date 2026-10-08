@@ -11,9 +11,12 @@ import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 
 /// A launcher whose answers are scripted per action and whose calls are
 /// recorded — the bar's two decisions, which channel to offer and what a
@@ -136,6 +139,11 @@ void main() {
         overrides: [
           contactLauncherProvider.overrideWithValue(launcher),
           pendingInteractionStoreProvider.overrideWithValue(store),
+          // The record button watches the app-wide recorder for this
+          // person's running take.
+          audioRecorderControllerProvider.overrideWith(
+            FakeAudioRecorderController.new,
+          ),
         ],
       ),
     );
@@ -161,16 +169,13 @@ void main() {
     // Hugging, not stretched: the primary is as wide as its word, the
     // shape the task and entry bars give theirs.
     expect(pill.expand, isFalse);
-    // One verb for voice across the feature: the bar's mic wears the
-    // composer's own word rather than a second one ("Speak check-in").
-    expect(
-      tester
-          .widget<DsGlassPill>(
-            find.byKey(const ValueKey('person-action-speak')),
-          )
-          .label,
-      'Dictate',
+    // The app's one record button, as the task and entry bars carry it —
+    // not a mic pill of this bar's own.
+    final mic = tester.widget<GlassRecordButton>(
+      find.byKey(const ValueKey('person-action-speak')),
     );
+    expect(mic.linkedId, 'rel-1');
+    expect(find.text('Dictate'), findsNothing);
   });
 
   testWidgets('on a wide window the primary keeps its measure and the '
@@ -276,11 +281,14 @@ void main() {
 
       expect(find.byIcon(LottiIcons.mail), findsOneWidget);
       expect(find.byIcon(LottiIcons.call), findsNothing);
-      // The control says what it does. A bare glyph did not say whether it
-      // opened a mail client on the tap or asked first, which is what made
-      // it the one control a cautious reader would never press.
-      expect(tester.widget<DsGlassPill>(channelButton).label, 'Email');
-      expect(find.text('Email'), findsOneWidget);
+      // A round glass button at every width, like the task bar's: the word
+      // lives in its accessible name, the row keeps one filled pill and
+      // discs around it.
+      expect(
+        tester.widget<DsGlassRoundButton>(channelButton).semanticLabel,
+        'Email',
+      );
+      expect(find.text('Email'), findsNothing);
     });
 
     testWidgets('too narrow for the words, the controls fall back to glyphs '
@@ -303,14 +311,13 @@ void main() {
       );
       final channel = tester.widget<DsGlassRoundButton>(channelButton);
       expect(channel.semanticLabel, 'Call');
+      // The record button is a disc at every width; it never joins the
+      // budgeting.
       expect(
-        tester
-            .widget<DsGlassRoundButton>(
-              find.byKey(const ValueKey('person-action-speak')),
-            )
-            .semanticLabel,
-        'Dictate',
+        find.byKey(const ValueKey('person-action-speak')),
+        findsOneWidget,
       );
+      expect(find.byType(GlassRecordButton), findsOneWidget);
     });
 
     testWidgets('the glyph fallback still launches the channel', (
@@ -373,6 +380,9 @@ void main() {
             overrides: [
               contactLauncherProvider.overrideWithValue(launcher),
               pendingInteractionStoreProvider.overrideWithValue(store),
+              audioRecorderControllerProvider.overrideWith(
+                FakeAudioRecorderController.new,
+              ),
             ],
           );
 
@@ -412,6 +422,11 @@ void main() {
         overrides: [
           contactLauncherProvider.overrideWithValue(launcher),
           pendingInteractionStoreProvider.overrideWithValue(store),
+          // The record button watches the app-wide recorder for this
+          // person's running take.
+          audioRecorderControllerProvider.overrideWith(
+            FakeAudioRecorderController.new,
+          ),
         ],
       );
 
@@ -443,6 +458,9 @@ void main() {
             overrides: [
               contactLauncherProvider.overrideWithValue(launcher),
               pendingInteractionStoreProvider.overrideWithValue(store),
+              audioRecorderControllerProvider.overrideWith(
+                FakeAudioRecorderController.new,
+              ),
             ],
           );
 

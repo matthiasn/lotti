@@ -9,17 +9,19 @@ import 'package:lotti/features/design_system/components/layout/detail_content_wi
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The person page's sticky bottom bar (design 2026-09-06 §2–3), replacing
-/// the floating button: *Log check-in* · mic · the platform's actionable
-/// channel. The same glass strip the task page docks, and the same shape
-/// on it — the controls hug their labels and sit centred, so the two pages
-/// end the same way. The filled primary never stretches to the column: on
-/// a desktop window that made it a bar-wide slab beside two pills, which
-/// no other strip in the app does.
+/// the floating button: *Log check-in* · the app's record button · the
+/// platform's actionable channel. The same glass strip the task page
+/// docks, and the same shape on it — one filled pill, the shared
+/// [GlassRecordButton], round glass controls, hugging and centred — so the
+/// two pages end the same way. The filled primary never stretches to the
+/// column: on a desktop window that made it a bar-wide slab beside two
+/// pills, which no other strip in the app does.
 ///
 /// The channel control is the first channel, in the person's own order,
 /// that the platform can actually open — a call on a phone, email on a
@@ -106,13 +108,7 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
               column.right,
               spacing.step4 + safeBottomInset,
             ),
-            child: _controls(
-              context,
-              tokens,
-              messages,
-              reachable,
-              contentWidth: constraints.maxWidth - column.horizontal,
-            ),
+            child: _controls(context, tokens, messages, reachable),
           );
         },
       ),
@@ -123,54 +119,17 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     BuildContext context,
     DsTokens tokens,
     AppLocalizations messages,
-    ReachableChannel? reachable, {
-    required double contentWidth,
-  }) {
+    ReachableChannel? reachable,
+  ) {
     final spacing = tokens.spacing;
-
-    // The channel control dials a person, or opens their mail client. A
-    // bare handset glyph does not say which, or that it happens on the
-    // tap rather than after a confirmation — so it wears its word whenever
-    // the row can afford one. `intrinsicWidth` is the design system's own
-    // budgeting helper (the navigation launcher uses it to decide whether
-    // two labelled chips fit), so the decision cannot drift from the
-    // padding and gap the pill actually lays out.
-    final channelLabel = reachable == null
-        ? null
-        : contactActionLabel(context, reachable.action);
-    // The same budgeting for the mic: it records, which is not a thing a
-    // bare glyph announces either. It wears the composer's own word —
-    // "Dictate" — so the feature has one verb for voice wherever it shows.
-    final micLabel = messages.checkInDictateButton;
-    double pill(String label) =>
-        DsGlassPill.intrinsicWidth(context, label: label);
-    const round = DsGlassRoundButton.defaultDiameter;
-    final gaps = spacing.step4 * (channelLabel == null ? 1 : 2);
-
-    // One control at a time, the channel first, because it is the one that
-    // reaches the outside world. Budgeting both together meant a phone
-    // could afford neither and *both* fell back to glyphs — worse than the
-    // labelled channel alone, which is what the row had before the mic
-    // joined the question. `slack` is the width left once the row has its
-    // gaps, its round controls and the primary's own label.
-    var slack =
-        contentWidth -
-        gaps -
-        round -
-        pill(messages.relationshipLogCheckIn) -
-        (channelLabel == null ? 0 : round);
-
-    /// What labelling a control costs: its pill, less the disc it replaces.
-    double upgrade(String label) => pill(label) - round;
-
-    final labelledChannel =
-        channelLabel != null && slack >= upgrade(channelLabel);
-    if (labelledChannel) slack -= upgrade(channelLabel);
-    final labelledMic = slack >= upgrade(micLabel);
 
     // Centred and hugging, like the task and entry bars: a `Wrap` rather
     // than a `Row`, so at large text on a narrow phone the controls take a
-    // second line instead of overflowing.
+    // second line instead of overflowing. One filled pill and round glass
+    // discs — the channel included. It used to take its word when the row
+    // could afford one, which made this the only strip in the app with
+    // two pills; the Reach card already shows the bare handset carries the
+    // scent here, and the word stays in the control's accessible name.
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -185,51 +144,30 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
           foregroundColor: tokens.colors.text.onInteractiveAlert,
           onTap: widget.onLogCheckIn,
         ),
-        if (labelledMic)
-          DsGlassPill(
-            key: const ValueKey('person-action-speak'),
-            label: micLabel,
-            icon: LottiIcons.mic,
-            onTap: widget.onSpeak,
-          )
-        else
-          DsGlassRoundButton(
-            key: const ValueKey('person-action-speak'),
-            icon: LottiIcons.mic,
-            semanticLabel: micLabel,
-            onPressed: widget.onSpeak,
-          ),
+        // The app's one record button, as the task and entry bars carry
+        // it: the accent ring idle, the alert fill while this person's take
+        // is running. A labelled "Dictate" pill here was a second mic shape
+        // beside the two bars it is meant to match.
+        GlassRecordButton(
+          key: const ValueKey('person-action-speak'),
+          linkedId: widget.relationship.id,
+          onPressed: widget.onSpeak,
+        ),
         if (reachable != null)
-          if (labelledChannel)
-            DsGlassPill(
-              key: const ValueKey('person-action-channel'),
-              label: channelLabel,
-              icon: contactActionIcon(reachable.action),
-              onTap: () => unawaited(
-                launchContactAction(
-                  context,
-                  ref,
-                  relationshipId: widget.relationship.id,
-                  channel: reachable.channel,
-                  action: reachable.action,
-                ),
-              ),
-            )
-          else
-            DsGlassRoundButton(
-              key: const ValueKey('person-action-channel'),
-              icon: contactActionIcon(reachable.action),
-              semanticLabel: channelLabel!,
-              onPressed: () => unawaited(
-                launchContactAction(
-                  context,
-                  ref,
-                  relationshipId: widget.relationship.id,
-                  channel: reachable.channel,
-                  action: reachable.action,
-                ),
+          DsGlassRoundButton(
+            key: const ValueKey('person-action-channel'),
+            icon: contactActionIcon(reachable.action),
+            semanticLabel: contactActionLabel(context, reachable.action),
+            onPressed: () => unawaited(
+              launchContactAction(
+                context,
+                ref,
+                relationshipId: widget.relationship.id,
+                channel: reachable.channel,
+                action: reachable.action,
               ),
             ),
+          ),
       ],
     );
   }

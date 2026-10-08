@@ -24,6 +24,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dar
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -36,6 +37,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
 class _RecordingNavigatorObserver extends NavigatorObserver {
@@ -138,6 +140,10 @@ void main() {
         const RelationshipsPage(),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          // The person page's record button watches the app-wide recorder.
+          audioRecorderControllerProvider.overrideWith(
+            FakeAudioRecorderController.new,
+          ),
           ...overrides,
         ],
       );
@@ -270,6 +276,10 @@ void main() {
         ),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          // The person page's record button watches the app-wide recorder.
+          audioRecorderControllerProvider.overrideWith(
+            FakeAudioRecorderController.new,
+          ),
         ],
       ),
     );
@@ -334,6 +344,10 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            // The person page's record button watches the app-wide recorder.
+            audioRecorderControllerProvider.overrideWith(
+              FakeAudioRecorderController.new,
+            ),
           ],
         ),
       );
@@ -549,6 +563,10 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            // The person page's record button watches the app-wide recorder.
+            audioRecorderControllerProvider.overrideWith(
+              FakeAudioRecorderController.new,
+            ),
             contactsServiceProvider.overrideWithValue(
               _SupportedContactsService(),
             ),
@@ -651,6 +669,14 @@ void main() {
 
     expect(find.text('Due · 1'), findsOneWidget);
     expect(find.text('On track · 2'), findsOneWidget);
+    // The last band sits under the fold on the test viewport now that the
+    // summary card carries its "without reminders" line beneath both
+    // halves; the list is lazy, so bring it on screen first.
+    await tester.scrollUntilVisible(
+      find.text('No reminders · 2'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('No reminders · 2'), findsOneWidget);
 
     // Never "Due Mon" for a lapse that happened last Monday (P5).
@@ -823,6 +849,10 @@ void main() {
             mediaQueryData: MediaQueryData(size: Size(width, 800)),
             overrides: [
               relationshipRepositoryProvider.overrideWithValue(mockRepository),
+              // The person page's record button watches the app-wide recorder.
+              audioRecorderControllerProvider.overrideWith(
+                FakeAudioRecorderController.new,
+              ),
             ],
           ),
         );

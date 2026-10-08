@@ -3445,6 +3445,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Abrir definições';
 
   @override
+  String get checkInOrbResumeHint => 'Toca para retomar';
+
+  @override
+  String get checkInOrbStopHint => 'Toca para parar';
+
+  @override
   String get checkInOrTypeHint => 'Ou escreve aqui…';
 
   @override
@@ -3468,10 +3474,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'A gravação não começou';
 
   @override
-  String get checkInRecordingHint =>
-      'Fala normalmente. As palavras aparecem aqui quando parares.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'A gravação não pôde ser guardada. Tenta de novo ou escreve o check-in.';
 
@@ -3485,9 +3487,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get checkInSaveBlockedEmpty =>
       'Acrescenta algumas palavras para guardar';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Para a gravação para guardar';
 
   @override
   String get checkInSaveButton => 'Guardar check-in';

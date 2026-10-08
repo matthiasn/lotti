@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/captions/ds_tiered_text.
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
 /// The composer's one field (design 2026-09-13): the note, with *Dictate*
@@ -118,7 +119,9 @@ class CheckInNarrativeField extends StatelessWidget {
   Widget _textField(
     BuildContext context, {
     required String hint,
-    int minLines = 5,
+    // Three lines at rest: the box agrees with its own "one line is
+    // enough"; five was an empty slab in the sheet.
+    int minLines = 3,
     bool quietHint = false,
   }) {
     final tokens = context.designTokens;
@@ -277,30 +280,15 @@ class CheckInNarrativeField extends StatelessWidget {
     );
   }
 
-  /// The recorder in place of the text, under the line that says what
-  /// happens next.
-  Widget _recording(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // The field's own text tier, centred like the recorder beneath it:
-        // pressing Dictate must not change what size the box speaks in.
-        Text(
-          messages.checkInRecordingHint,
-          key: const ValueKey('check-in-recording-hint'),
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodyLarge.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        ?recorder,
-      ],
-    );
-  }
+  /// The recorder in place of the text — and nothing over it. A line of
+  /// instruction above the orb ("Speak normally…") narrated what the orb,
+  /// its caption and the status dot already say; the check-in page's
+  /// recorder never had one and lost nothing.
+  Widget _recording(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: [?recorder],
+  );
 }
 
 /// One recording under the note: its length and where its words are on
@@ -326,7 +314,9 @@ class CheckInTakeRow extends StatelessWidget {
     final clock = checkInClockLabel(take.length);
     final meta = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontFeatures: const [FontFeature.tabularFigures()],
+      // The app's own digit features, not a bare tabular flag: the same
+      // set every People timestamp carries.
+      fontFeatures: numericBadgeFontFeatures,
     );
     final body = tokens.typography.styles.body.bodyMedium.copyWith(
       color: tokens.colors.text.highEmphasis,

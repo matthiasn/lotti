@@ -3454,6 +3454,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Apri impostazioni';
 
   @override
+  String get checkInOrbResumeHint => 'Tocca per riprendere';
+
+  @override
+  String get checkInOrbStopHint => 'Tocca per fermare';
+
+  @override
   String get checkInOrTypeHint => 'Oppure scrivilo qui…';
 
   @override
@@ -3477,10 +3483,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Registrazione non avviata';
 
   @override
-  String get checkInRecordingHint =>
-      'Parla normalmente. Le parole compariranno qui quando ti fermi.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'La registrazione non è stata salvata. Riprova o scrivi il check-in.';
 
@@ -3493,10 +3495,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty => 'Aggiungi qualche parola per salvare';
-
-  @override
-  String get checkInSaveBlockedRecording =>
-      'Ferma la registrazione per salvare';
 
   @override
   String get checkInSaveButton => 'Salva il check-in';

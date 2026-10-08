@@ -584,6 +584,23 @@ void main() {
     });
 
     group('stop', () {
+      test(
+        'isFinishing is true from the call until the stop settles, so a '
+        'host never offers a Discard whose cancel would be a no-op',
+        () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          expect(controller.isFinishing, isFalse);
+
+          final stopping = controller.stop();
+          expect(controller.isFinishing, isTrue);
+
+          await stopping;
+          expect(controller.isFinishing, isFalse);
+        },
+      );
+
       test('should return null when no audio note exists', () async {
         // Arrange
         final controller = container.read(

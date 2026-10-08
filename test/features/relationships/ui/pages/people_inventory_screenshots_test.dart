@@ -798,8 +798,14 @@ void main() {
     RelationshipProposalSnapshot? proposals,
     PendingInteraction? pending,
     List<ImportedContact> contacts = const [],
+    AudioRecorderController Function()? recorder,
   }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
+    // The person bar's record button watches the app-wide recorder; a
+    // capture that drives a take passes its own fake.
+    audioRecorderControllerProvider.overrideWith(
+      recorder ?? FakeAudioRecorderController.new,
+    ),
     relationshipAgentServiceProvider.overrideWithValue(agentService),
     relationshipReminderServiceProvider.overrideWithValue(reminders),
     contactLauncherProvider.overrideWithValue(_CapturingContactLauncher()),
@@ -1513,8 +1519,7 @@ void main() {
         device: device,
         brightness: Brightness.dark,
         overrides: [
-          ...personOverrides(report: briefing()),
-          audioRecorderControllerProvider.overrideWith(() => recorder),
+          ...personOverrides(report: briefing(), recorder: () => recorder),
           checkInTranscriptionServiceProvider.overrideWithValue(
             StubCheckInTranscriptionService(),
           ),
@@ -1885,8 +1890,7 @@ void main() {
         device: device,
         brightness: Brightness.dark,
         overrides: [
-          ...personOverrides(),
-          audioRecorderControllerProvider.overrideWith(() => recorder),
+          ...personOverrides(recorder: () => recorder),
           checkInTranscriptionServiceProvider.overrideWithValue(transcription),
         ],
       );
@@ -1926,7 +1930,7 @@ void main() {
           subdir: _subdir,
         );
 
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -1988,8 +1992,7 @@ void main() {
         device: device,
         brightness: Brightness.dark,
         overrides: [
-          ...personOverrides(),
-          audioRecorderControllerProvider.overrideWith(() => recorder),
+          ...personOverrides(recorder: () => recorder),
           checkInTranscriptionServiceProvider.overrideWithValue(transcription),
         ],
       );
@@ -2015,7 +2018,7 @@ void main() {
         }
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
         await tester.pumpAndSettle();
         expect(find.text('Transcript not received'), findsOneWidget);
         expect(

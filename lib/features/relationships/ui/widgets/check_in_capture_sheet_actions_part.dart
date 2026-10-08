@@ -1,11 +1,16 @@
 part of 'check_in_capture_sheet.dart';
 
 /// The composer's pinned actions (design 2026-09-13): *Save check-in* is
-/// always visible, and when it is held the bar says why. Cancel beside it —
-/// and, while editing, delete on the leading edge. On a phone with the
-/// keyboard up the bar slims to the context summary and a short *Save*, so
-/// the words the user is typing keep the room (option 1g). Reads the form
-/// through its [handle].
+/// visible whenever saving is a thing the user could do next, and when it
+/// is held the bar says why. Cancel beside it — and, while editing, delete
+/// on the leading edge. On a phone with the keyboard up the bar slims to
+/// the context summary and a short *Save*, so the words the user is typing
+/// keep the room (option 1g). While the recorder is up there is no bar at
+/// all: the recorder carries its own Discard · Pause and the orb, whose
+/// caption says what stops the take, and a second row of Cancel and a held
+/// Save beneath it was two action bars on one screen, with Cancel and
+/// Discard a finger apart and different fates. Reads the form through its
+/// [handle].
 class CheckInStickyActions extends StatelessWidget {
   const CheckInStickyActions({
     required this.handle,
@@ -57,9 +62,11 @@ class CheckInStickyActions extends StatelessWidget {
     AppLocalizations messages,
     CheckInSaveBlock block,
   ) => switch (block) {
-    CheckInSaveBlock.none || CheckInSaveBlock.saving => null,
+    // Recording has no bar to say why: the recorder's orb caption does.
+    CheckInSaveBlock.none ||
+    CheckInSaveBlock.saving ||
+    CheckInSaveBlock.recording => null,
     CheckInSaveBlock.preparing => messages.checkInPreparingLabel,
-    CheckInSaveBlock.recording => messages.checkInSaveBlockedRecording,
     CheckInSaveBlock.emptyNarrative => messages.checkInSaveBlockedEmpty,
   };
 
@@ -184,6 +191,18 @@ class CheckInStickyActions extends StatelessWidget {
               ),
             ),
           );
+
+          // One action bar at a time: while the recorder owns the field,
+          // its Discard · Pause and the orb are the actions, and the orb's
+          // own caption is the instruction — so the bar is nothing at all.
+          // A strip holding only "Stop recording to save" was read as a
+          // hollow bar with a second Stop instruction; the one settle when
+          // Stop brings the actions back costs less than that.
+          if (handle.block == CheckInSaveBlock.recording) {
+            return const SizedBox.shrink(
+              key: ValueKey('check-in-actions-recording'),
+            );
+          }
 
           if (wide) {
             // The dialog's footer: the reason on the leading edge where the
@@ -316,6 +335,7 @@ class _MoreHeader extends StatelessWidget {
     required this.open,
     required this.caption,
     required this.onToggle,
+    this.enabled = true,
   });
 
   final bool open;
@@ -326,6 +346,11 @@ class _MoreHeader extends StatelessWidget {
   final String caption;
   final VoidCallback onToggle;
 
+  /// Quiet and inert while the recorder owns the sheet, with the chips: a
+  /// row that stayed the brightest control the moment a take started
+  /// said the opposite of what the dimmed chips beside it said.
+  final bool enabled;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -334,19 +359,24 @@ class _MoreHeader extends StatelessWidget {
       button: true,
       expanded: open,
       label: messages.checkInMoreSection,
+      enabled: enabled,
       child: InkWell(
         key: const ValueKey('check-in-more'),
-        onTap: onToggle,
+        onTap: enabled ? onToggle : null,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         // A full touch target on a row that is mostly caption.
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: TapTargets.minimum),
           child: Row(
             children: [
+              // `subtitle2` in the medium ink: a disclosure for optional
+              // fields, not the sheet's loudest text — that is the title.
               Text(
                 messages.checkInMoreSection,
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: enabled
+                      ? tokens.colors.text.mediumEmphasis
+                      : tokens.colors.text.lowEmphasis,
                 ),
               ),
               SizedBox(width: tokens.spacing.step3),
@@ -360,7 +390,9 @@ class _MoreHeader extends StatelessWidget {
                     tiers: _captionLadder(caption),
                     textAlign: TextAlign.end,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                      color: enabled
+                          ? tokens.colors.text.mediumEmphasis
+                          : tokens.colors.text.lowEmphasis,
                     ),
                   ),
                 )
@@ -370,7 +402,9 @@ class _MoreHeader extends StatelessWidget {
               Icon(
                 open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
                 size: IconSizes.s,
-                color: tokens.colors.text.mediumEmphasis,
+                color: enabled
+                    ? tokens.colors.text.mediumEmphasis
+                    : tokens.colors.text.lowEmphasis,
               ),
             ],
           ),

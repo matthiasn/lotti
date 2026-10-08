@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -132,7 +133,7 @@ void main() {
   final save = find.byKey(const ValueKey('check-in-save'));
   final dictate = find.byKey(const ValueKey('check-in-dictate'));
   final inlineRecorder = find.byKey(const ValueKey('check-in-inline-recorder'));
-  final stop = find.byKey(const ValueKey('check-in-recorder-stop'));
+  final stop = find.byKey(const ValueKey('check-in-recorder-orb'));
 
   String narrativeText(WidgetTester tester) =>
       tester.widget<TextField>(narrative).controller!.text;
@@ -156,12 +157,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The harness prefers twelve hours, so a chip reads `2:05 PM`.
-  String clock12(DateTime t) {
-    final hour = t.hour % 12 == 0 ? 12 : t.hour % 12;
-    final minute = t.minute.toString().padLeft(2, '0');
-    return '$hour:$minute ${t.hour < 12 ? 'AM' : 'PM'}';
-  }
+  /// The feature's 24h clock — `14:05` — whatever the harness prefers: a
+  /// chip and the note stamp under it speak one dialect.
+  String clock24(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:'
+      '${t.minute.toString().padLeft(2, '0')}';
 
   bool saveEnabled(WidgetTester tester) =>
       tester.widget<DesignSystemButton>(save).onPressed != null;
@@ -565,7 +565,7 @@ void main() {
         await tester.pumpWidget(buildForm());
         await tester.pumpAndSettle();
         // The device's clock format: the test harness prefers twelve hours.
-        expect(find.text('Now · 10:30 AM'), findsOneWidget);
+        expect(find.text('Now · 10:30'), findsOneWidget);
         await type(tester, 'Words.');
         await tapSave(tester);
       });
@@ -770,7 +770,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('8:15 AM'), findsOneWidget);
+      expect(find.textContaining('08:15'), findsOneWidget);
       await tapSave(tester);
 
       final updated =
@@ -1048,8 +1048,21 @@ void main() {
         (linkedId: 'rel-001', handledByCaller: true),
       ]);
       expect(recorder.categoryIds, ['category-7']);
-      expect(saveEnabled(tester), isFalse);
-      expect(saveReason(tester), 'Stop recording to save');
+      // One action bar at a time: while the recorder owns the field its
+      // Discard · Pause and the orb are the actions, and the pinned bar
+      // keeps only the line that says what comes after Stop.
+      expect(save, findsNothing);
+      expect(find.byKey(const ValueKey('check-in-cancel')), findsNothing);
+      // No bar at all while recording — not even a reason line: the orb's
+      // caption is the instruction, and a strip holding only words read as
+      // a hollow bar with a second Stop.
+      final recordingBar = find.byKey(
+        const ValueKey('check-in-actions-recording'),
+      );
+      expect(recordingBar, findsOneWidget);
+      expect(tester.getSize(recordingBar), Size.zero);
+      expect(saveReason(tester), isNull);
+      expect(find.byType(DesignSystemGlassStrip), findsNothing);
       expect(
         tester
             .widget<DesignSystemChip>(
@@ -1834,6 +1847,39 @@ void main() {
       );
     });
 
+    testWidgets('the close holds while a stop is in flight — a Discard then '
+        'would discard nothing — and asks once the take has landed', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await startDictation(tester);
+      final gate = Completer<void>();
+      recorder.stopGate = gate;
+      await tester.tap(stop);
+      await tester.pump();
+      expect(recorder.stopCalls, 1);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await pumpRecording(tester);
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+      expect(find.textContaining('Discard this check-in'), findsNothing);
+      expect(recorder.cancelCalls, 0);
+
+      gate.complete();
+      await pumpRecording(tester);
+      expect(
+        find.byKey(const ValueKey('check-in-take-audio-1')),
+        findsOneWidget,
+        reason: 'the take landed as a row',
+      );
+      // Now the draft holds a saved take: the ordinary question, which says
+      // the recording stays.
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await pumpRecording(tester);
+      expect(find.textContaining('Discard this check-in'), findsOneWidget);
+      expect(recorder.cancelCalls, 0);
+    });
+
     testWidgets('discarded mid-recording, the sheet cancels the take and '
         'gives the floating indicator back', (tester) async {
       await openSheet(tester);
@@ -1871,7 +1917,7 @@ void main() {
         expect(summary, findsOneWidget);
         expect(
           tester.widget<DesignSystemChip>(summary).label,
-          'In person · Now · ${clock12(clock.now())} · No duration',
+          'In person · Now · ${clock24(clock.now())} · No duration',
         );
         expect(find.text('Save'), findsOneWidget);
         expect(find.text('Save check-in'), findsNothing);

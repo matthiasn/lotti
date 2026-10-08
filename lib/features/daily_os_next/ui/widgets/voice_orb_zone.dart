@@ -44,8 +44,12 @@ class VoiceOrbZone extends StatelessWidget {
   });
 
   /// Height reserved for the waveform strip whether or not it is shown.
-  @visibleForTesting
   static const double waveformSlotHeight = 24;
+
+  /// The waveform strip's width: short, a caption's measure over the orb
+  /// rather than a rule across the surface. Shared with every other host of
+  /// the orb (the check-in recorder), so the voice anatomy has one shape.
+  static const double waveformWidth = 220;
 
   /// Capture phase driving the orb visuals and the waveform slot.
   final CapturePhase phase;
@@ -90,7 +94,7 @@ class VoiceOrbZone extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   child: LiveWaveform(
                     amplitudes: amplitudes,
-                    width: 220,
+                    width: waveformWidth,
                     height: waveformSlotHeight,
                   ),
                 )

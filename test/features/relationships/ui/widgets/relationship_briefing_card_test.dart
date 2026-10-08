@@ -1105,7 +1105,7 @@ void main() {
         find.byKey(const ValueKey('relationship-agent-see-activity')),
       );
       expect(quiet.label, 'See activity');
-      expect(quiet.variant, DesignSystemButtonVariant.tertiary);
+      expect(quiet.variant, DesignSystemButtonVariant.quiet);
       // …and it is the card's one worded door to the agent's internals:
       // "Open agent internals" beside Read more was a third way to the
       // same place, collapsed or expanded.
@@ -1717,7 +1717,7 @@ void main() {
       final quiet = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('relationship-agent-see-activity')),
       );
-      expect(quiet.variant, DesignSystemButtonVariant.tertiary);
+      expect(quiet.variant, DesignSystemButtonVariant.quiet);
       expect(tester.widget<DesignSystemButton>(briefMe).label, 'Update now');
       expect(
         statusText(tester),

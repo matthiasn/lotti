@@ -1,35 +1,41 @@
 import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
-/// 24h, mono date-time formatting for the relationships surface (design
-/// plan §0.5 — "All date/time strings render in `--ff-mono` (Inconsolata)
-/// at caption sizes: `Today 14:20`, `Fri 15 Aug 19:05`. Never `Aug 18, 2026
-/// 12:44 PM` in body type").
+/// 24h date-time formatting for the relationships surface: `Today 14:20`,
+/// `Fri 15 Aug 19:05`, never `Aug 18, 2026 12:44 PM` in body type. The
+/// design plan (§0.5) first set every one of these in Inconsolata; that was
+/// the single most foreign thing on the feature — a monospace face spliced
+/// into Inter sentences, where the journal and the task timer keep the UI
+/// face and stabilise the digits with tabular figures. The dates now do
+/// the same, the recorder's running clock included.
 ///
 /// All formatters here are pure functions of a [DateTime] (and the clock),
 /// so they are unit-testable without a widget pump.
 
-/// The mono [TextStyle] for a relationship timestamp: the Inconsolata
-/// override on [base], or on the design-system caption token when the
-/// caller has no host line to match.
+/// The [TextStyle] for a relationship timestamp: [base], or the
+/// design-system caption token when the caller has no host line to match,
+/// with the app's tabular-figure features (`numericBadgeFontFeatures`, the
+/// journal's and the timer's) so a column of dates lines up digit for digit.
 ///
 /// [base] matters wherever a date sits *inside* a line of prose. The style
-/// changes face, tracking and colour and nothing else, so a timestamp in a
-/// 16pt sentence stays 16pt — pinning it to the 12pt caption tier dropped
-/// the date a size mid-sentence, which is worse than the all-mono line the
-/// split replaced.
+/// changes figures and colour and nothing else, so a timestamp in a 16pt
+/// sentence stays 16pt — pinning it to the 12pt caption tier dropped the
+/// date a size mid-sentence.
 TextStyle relationshipTimestampStyle(
   DsTokens tokens, {
   Color? color,
   TextStyle? base,
-}) => monoMetaStyle(tokens, tokens.colors, base: base, color: color);
+}) => (base ?? tokens.typography.styles.others.caption).copyWith(
+  fontFeatures: numericBadgeFontFeatures,
+  color: color ?? tokens.colors.text.lowEmphasis,
+);
 
-/// `HH:mm` in 24h, mono — the time component shared by every relationship
+/// `HH:mm` in 24h — the time component shared by every relationship
 /// timestamp.
 String _hhMm(DateTime t) =>
     '${t.hour.toString().padLeft(2, '0')}:'
@@ -40,12 +46,12 @@ String _hhMm(DateTime t) =>
 ///
 /// The abbreviations come from the locale's own date symbols rather than a
 /// hard-coded English table: a German reader gets `Fr.`, not `Fri`. The
-/// order stays weekday-day-month in every locale, because the design's mono
+/// order stays weekday-day-month in every locale, because the dates' tabular
 /// column has to line up.
 String _shortDayMonth(DateTime t, String? locale) =>
     DateFormat('E d MMM', locale).format(t);
 
-/// A mono timestamp label for a single point in time, anchored to [now].
+/// A timestamp label for a single point in time, anchored to [now].
 ///
 /// Same day → `Today 14:20`. The day before → `Yesterday 19:05`. Otherwise →
 /// `Fri 15 Aug 19:05`.
@@ -94,18 +100,18 @@ String relationshipTimestampLabelOf(
 DateTime _dayBefore(DateTime anchor) =>
     DateTime(anchor.year, anchor.month, anchor.day - 1);
 
-/// A time-only label in the device's own clock format — `14:20`, or
-/// `2:20 PM` where the system prefers twelve hours — for a time whose date
-/// is implied: the composer's started chip, the post-call offer, the card's
-/// last failed run. Resolved the way `DesignSystemTimeWheel` resolves it, so
-/// a chip and the wheel that edits it never disagree.
-String relationshipTimeLabelOf(BuildContext context, DateTime at) =>
-    MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(at),
-      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-    );
+/// A time-only label in the feature's 24h clock — `14:20` — for a time whose
+/// date is implied, a pure function of the time (no context: nothing about
+/// the device or locale changes it): the composer's started chip, the post-call offer, the
+/// card's last failed run. The same `HH:mm` every other People timestamp
+/// ends in, so a chip reading `Sat 1 Aug · 12:44` and the note stamp
+/// beneath it reading `Sat 1 Aug 12:44` agree. It used to follow the
+/// device's clock format like the time wheel does, and on a twelve-hour
+/// device the check-in page spoke two dialects a few lines apart; the wheel
+/// is a transient editor, the page is what the user reads.
+String relationshipTimeLabel(DateTime at) => _hhMm(at);
 
-/// A mono day label without a time (`Thu 23 Jul`), for a date that is a
+/// A day label without a time (`Thu 23 Jul`), for a date that is a
 /// deadline rather than an event — the summary card's next due day, the
 /// row's `first due` note.
 String relationshipDayLabel(DateTime at, {String? locale}) =>
@@ -118,7 +124,7 @@ String relationshipDayLabelOf(BuildContext context, DateTime at) =>
       locale: Localizations.localeOf(context).toString(),
     );
 
-/// A mono duration read-out for a check-in (`11 min`, `1 h`, `1 h 30`), or
+/// A duration read-out for a check-in (`11 min`, `1 h`, `1 h 30`), or
 /// null for a check-in that has no duration — a message usually has none,
 /// and the row must then say nothing rather than `0 min`.
 String? relationshipDurationLabelOf(BuildContext context, Duration duration) {
@@ -136,7 +142,7 @@ String? relationshipDurationLabelOf(BuildContext context, Duration duration) {
   );
 }
 
-/// A mono weekday-only label (`Thu`), used by the cadence due pill, in the
+/// A weekday-only label (`Thu`), used by the cadence due pill, in the
 /// locale's own abbreviation.
 String relationshipWeekdayLabel(DateTime at, {String? locale}) =>
     DateFormat.E(locale).format(at);
@@ -200,13 +206,13 @@ int? cadenceOverdueDays({
 }
 
 /// A line of prose with a date inside it, where the date — and only the date
-/// — wears the mono voice.
+/// — wears the timestamp style.
 ///
-/// Mono earns its place on a timestamp, which tabulates down a column. It
-/// costs measure on the words around one (`Call`, `Weekly`, `last spoke`),
-/// and setting a whole line in it is what wrapped `Every two / weeks` onto a
-/// ragged second line in the People rail. Splitting the line here keeps the
-/// tabular date and gives the prose its proportional face back.
+/// Tabular figures earn their place on a timestamp, which lines up down a
+/// column; the words around one (`Call`, `Weekly`, `last spoke`) keep the
+/// line's own style. The split is kept so the two parts can still differ —
+/// the date once wore a monospace face, which is what wrapped `Every two /
+/// weeks` onto a ragged second line in the People rail.
 ///
 /// [date] is located by searching [text] for its own substring rather than
 /// by index, because each line is assembled from one catalog message and a
@@ -254,8 +260,8 @@ class RelationshipLineWithDate extends StatelessWidget {
           if (at > 0) TextSpan(text: text.substring(0, at)),
           TextSpan(
             text: match,
-            // Same size and weight as the prose around it; only the face,
-            // the tracking and nothing else change.
+            // Same size and weight as the prose around it; only the figures
+            // change.
             style: relationshipTimestampStyle(
               tokens,
               base: style,

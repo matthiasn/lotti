@@ -642,9 +642,10 @@ class PersonHeaderBlock extends StatelessWidget {
     final lastSpoke = spokeAt == null
         ? messages.relationshipJustAdded
         : messages.relationshipLastSpoke(spokeAt);
+    // The nickname bare, as the composer says "with Pip": the ASCII quotes
+    // were the one un-typeset mark on the page.
     final oneLiner = [
-      if (data.nickname case final nickname? when nickname.isNotEmpty)
-        '"$nickname"',
+      if (data.nickname case final nickname? when nickname.isNotEmpty) nickname,
       lastSpoke,
     ].join(' · ');
 
@@ -654,10 +655,11 @@ class PersonHeaderBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // The hero's own extent already covers the half of the avatar
-        // below the wash; this is only the breathing room under it — and it
-        // is the break between the picture and the identity, so it gets the
-        // section gap rather than the smallest step in the stack.
-        SizedBox(height: tokens.spacing.sectionGap),
+        // below the wash; this is only the breathing room under it. `step4`,
+        // not the section gap: the avatar and the name are one identity
+        // block, and the larger gap set the name across a void from the
+        // face it belongs to.
+        SizedBox(height: tokens.spacing.step4),
         if (eyebrow.isNotEmpty) ...[
           Text(
             eyebrow,

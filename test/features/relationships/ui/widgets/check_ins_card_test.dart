@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -213,32 +213,42 @@ void main() {
           ),
         ]);
 
-        final meta = tester.widget<RelationshipLineWithDate>(
-          find.byKey(const ValueKey('check-in-row-meta')),
+        final meta = tester.widget<DsTieredText>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('check-in-row-meta')),
+            matching: find.byType(DsTieredText),
+          ),
         );
-        expect(meta.text, 'Today 12:44 · Call · 11 min');
-        // Mono on the timestamp and nothing else: `11 min` and `1 recording`
-        // are prose, and setting them in mono cost the line the measure that
-        // wrapped it around the sentiment pill.
-        expect(meta.date, 'Today 12:44');
+        // Widest first, shedding whole segments — how long, then the
+        // channel — never half a word; the date is the rung every tier
+        // keeps. One line per row, so every row keeps the same rhythm.
+        expect(meta.tiers, [
+          'Today 12:44 · Call · 11 min',
+          'Today 12:44 · Call',
+          'Today 12:44',
+        ]);
+        expect(meta.maxLines, 1);
+        // The timestamp style leads — tabular figures in the UI face, no
+        // monospace spliced into the sentence — and the tail after the
+        // first separator takes the plain caption ink.
+        expect(
+          meta.style.fontFeatures,
+          contains(const FontFeature.tabularFigures()),
+        );
         expect(meta.style.fontFamily, isNot('Inconsolata'));
-        final fonts = <String, String?>{};
-        tester
-            .widget<Text>(
-              find.descendant(
-                of: find.byKey(const ValueKey('check-in-row-meta')),
-                matching: find.byType(Text),
-              ),
-            )
-            .textSpan!
-            .visitChildren((span) {
-              if (span is TextSpan && span.text != null) {
-                fonts[span.text!] = span.style?.fontFamily;
-              }
-              return true;
-            });
-        expect(fonts['Today 12:44'], 'Inconsolata');
-        expect(fonts[' · Call · 11 min'], isNot('Inconsolata'));
+        expect(
+          meta.tailStyle?.fontFeatures ?? const <FontFeature>[],
+          isNot(contains(const FontFeature.tabularFigures())),
+        );
+        final root = tester
+            .widget<Text>(find.byKey(const ValueKey('check-in-row-meta')))
+            .textSpan!;
+        final parts = <String>[];
+        root.visitChildren((span) {
+          if (span is TextSpan && span.text != null) parts.add(span.text!);
+          return true;
+        });
+        expect(parts, ['Today 12:44', ' · Call · 11 min']);
       },
     );
 
@@ -253,10 +263,13 @@ void main() {
         ),
       ]);
 
-      final meta = tester.widget<RelationshipLineWithDate>(
-        find.byKey(const ValueKey('check-in-row-meta')),
+      final meta = tester.widget<DsTieredText>(
+        find.ancestor(
+          of: find.byKey(const ValueKey('check-in-row-meta')),
+          matching: find.byType(DsTieredText),
+        ),
       );
-      expect(meta.text, 'Yesterday 19:05 · Video call');
+      expect(meta.tiers.first, 'Yesterday 19:05 · Video call');
     });
 
     testWidgets('the sentiment pill is tinted with the sentiment colour and '
@@ -408,12 +421,17 @@ void main() {
         } else {
           expect(tester.widget<Text>(summaryFinder).data, summary);
         }
-        // What it holds rides the meta line, after when, how and how long.
+        // What it holds rides the meta line, after when, how and how long —
+        // on the widest rung; a narrow row sheds it first.
         final meta = tester
-            .widget<RelationshipLineWithDate>(
-              find.byKey(const ValueKey('check-in-row-meta')),
+            .widget<DsTieredText>(
+              find.ancestor(
+                of: find.byKey(const ValueKey('check-in-row-meta')),
+                matching: find.byType(DsTieredText),
+              ),
             )
-            .text;
+            .tiers
+            .first;
         if (holds == null) {
           expect(meta, isNot(matches(RegExp('recording|photo|comment'))));
         } else {
@@ -443,7 +461,16 @@ void main() {
       final tokens = tester
           .element(find.byType(CheckInsCardSliver))
           .designTokens;
-      expect(colorOf('c-1'), tokens.colors.text.mediumEmphasis);
+      // Status, not content: the pending words are a low-emphasis caption
+      // behind a mic glyph, never the ink of a logged note.
+      expect(colorOf('c-1'), tokens.colors.text.lowEmphasis);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('check-in-row-surface-c-1')),
+          matching: find.byIcon(LottiIcons.mic),
+        ),
+        findsOneWidget,
+      );
       expect(colorOf('c-2'), tokens.colors.text.highEmphasis);
     });
   });

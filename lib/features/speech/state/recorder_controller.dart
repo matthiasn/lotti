@@ -46,6 +46,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   bool _terminalActionInProgress = false;
   bool _startInProgress = false;
 
+  /// Whether a stop or cancel is in flight. Once either has claimed the
+  /// take, the other returns at once without doing anything — so a host
+  /// that would offer *Discard* while a stop is still saving must not: its
+  /// `cancel` would be a no-op and the take would land anyway.
+  bool get isFinishing => _terminalActionInProgress;
+
   /// Sliding-window VU meter driving the live level display.
   final VuMeter _vuMeter = VuMeter(
     windowSamples: defaultVuWindowMs ~/ intervalMs,

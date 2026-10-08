@@ -2,6 +2,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
@@ -165,39 +166,6 @@ class NextTimeCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    Widget tile(String caption, String text, Key key) => Container(
-      key: key,
-      width: double.infinity,
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      decoration: BoxDecoration(
-        // `level03` is the divider gray, not a surface: filling the tiles
-        // with it made the page's quietest content its brightest block —
-        // brighter than the Briefing card it sits under — and gave it the
-        // lift of something pressable, which it is not.
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            caption,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          Text(
-            text,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-        ],
-      ),
-    );
-
     return DesignSystemSectionCard(
       key: const ValueKey('person-next-time-card'),
       child: Column(
@@ -223,20 +191,25 @@ class NextTimeCard extends StatelessWidget {
             ),
           ],
           SizedBox(height: tokens.spacing.step4),
-          if (attention != null)
-            tile(
-              messages.relationshipPayAttentionTo,
-              attention,
-              const ValueKey('person-next-time-attention'),
-            ),
-          if (attention != null && avoid != null)
-            SizedBox(height: tokens.spacing.step3),
-          if (avoid != null)
-            tile(
-              messages.checkInAvoidLabel,
-              avoid,
-              const ValueKey('person-next-time-avoid'),
-            ),
+          // Flat, the way the check-in page sets the same notes: a framed
+          // tile made the page's quietest content its tallest block and gave
+          // it the lift of something pressable, which it is not.
+          NextTimeFacts(
+            facts: [
+              if (attention != null)
+                (
+                  caption: messages.relationshipPayAttentionTo,
+                  text: attention,
+                  key: const ValueKey('person-next-time-attention'),
+                ),
+              if (avoid != null)
+                (
+                  caption: messages.checkInAvoidLabel,
+                  text: avoid,
+                  key: const ValueKey('person-next-time-avoid'),
+                ),
+            ],
+          ),
         ],
       ),
     );

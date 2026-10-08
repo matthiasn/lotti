@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
@@ -134,7 +135,7 @@ class _CheckInsCardSliverState extends State<CheckInsCardSliver> {
   }
 }
 
-/// One check-in in the log: the interaction glyph in a circle, a mono meta
+/// One check-in in the log: the interaction glyph in a circle, a meta
 /// line (`Today 12:44 · Call · 11 min · 1 recording`) with the tinted
 /// sentiment pill in a fixed trailing slot, up to two lines of what was
 /// said, and the topics as tag pills — with a chevron, because the row opens
@@ -175,17 +176,21 @@ class CheckInRow extends StatelessWidget {
       context,
       checkIn.meta.dateTo.difference(checkIn.meta.dateFrom),
     );
-    // The date is kept as its own substring so the mono voice can be
+    // The date is kept as its own substring so the timestamp style can be
     // confined to it: `11 min` and `1 recording` are prose, and setting
-    // them in mono cost the line the measure that wrapped it around the
-    // sentiment pill.
+    // them in the date's face once cost the line the measure that wrapped
+    // it around the sentiment pill.
     final at = relationshipTimestampLabelOf(context, checkIn.meta.dateFrom);
-    final meta = [
+    final type = checkInInteractionLabel(context, data.interactionType);
+    // Widest first: the line sheds what it holds, then how long, then the
+    // channel, a whole segment at a time — never half a word under an
+    // ellipsis — and the date is the one thing every rung keeps.
+    final metaTiers = [
+      [at, type, ?duration, ?holds].join(' · '),
+      if (holds != null) [at, type, ?duration].join(' · '),
+      if (duration != null) '$at · $type',
       at,
-      checkInInteractionLabel(context, data.interactionType),
-      ?duration,
-      ?holds,
-    ].join(' · ');
+    ];
     final inset = tokens.spacing.step5;
     final radius = Radius.circular(tokens.radii.sectionCards);
 
@@ -225,31 +230,65 @@ class CheckInRow extends StatelessWidget {
                     children: [
                       Padding(
                         padding: EdgeInsets.only(top: tokens.spacing.step1),
-                        child: RelationshipLineWithDate(
-                          key: const ValueKey('check-in-row-meta'),
-                          text: meta,
-                          date: at,
-                          maxLines: 2,
-                          style: tokens.typography.styles.others.caption
+                        // One line per row, whatever fits: the date leads
+                        // in the timestamp style, the tail after the first
+                        // separator in the plain caption ink.
+                        child: DsTieredText(
+                          textKey: const ValueKey('check-in-row-meta'),
+                          tiers: metaTiers,
+                          // The People row's meta ink, not the lowest tier:
+                          // this is the dimmest text a low-vision reader
+                          // has to read on the page.
+                          style: relationshipTimestampStyle(
+                            tokens,
+                            base: tokens.typography.styles.others.caption,
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
+                          tailStyle: tokens.typography.styles.others.caption
                               .copyWith(
-                                color: tokens.colors.text.lowEmphasis,
+                                color: tokens.colors.text.mediumEmphasis,
                               ),
                         ),
                       ),
                       if (narrative != null) ...[
                         SizedBox(height: tokens.spacing.step2),
-                        Text(
-                          narrative.text,
-                          key: const ValueKey('check-in-row-summary'),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: narrative.pending
-                                    ? tokens.colors.text.mediumEmphasis
-                                    : tokens.colors.text.highEmphasis,
+                        if (narrative.pending)
+                          // Status, not content: a caption with the mic in
+                          // front, so "Transcribing…" is never mistaken for
+                          // the words of a logged note.
+                          Row(
+                            children: [
+                              Icon(
+                                LottiIcons.mic,
+                                size: IconSizes.s,
+                                color: tokens.colors.text.mediumEmphasis,
                               ),
-                        ),
+                              SizedBox(width: tokens.spacing.step2),
+                              Flexible(
+                                child: Text(
+                                  narrative.text,
+                                  key: const ValueKey('check-in-row-summary'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tokens.typography.styles.others.caption
+                                      .copyWith(
+                                        color: tokens.colors.text.lowEmphasis,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Text(
+                            narrative.text,
+                            key: const ValueKey('check-in-row-summary'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                          ),
                       ],
                       if (sentiment != null || data.topics.isNotEmpty) ...[
                         SizedBox(height: tokens.spacing.step3),
@@ -308,12 +347,12 @@ class CheckInRow extends StatelessWidget {
             if (interaction.showDividerBelow)
               Divider(
                 key: ValueKey('check-in-row-divider-${checkIn.meta.id}'),
-                height: 1,
-                thickness: 1,
+                height: BorderWidths.hairline,
+                thickness: BorderWidths.hairline,
                 color: tokens.colors.decorative.level01,
               )
             else
-              const SizedBox(height: 1),
+              const SizedBox(height: BorderWidths.hairline),
         ],
       ),
     );

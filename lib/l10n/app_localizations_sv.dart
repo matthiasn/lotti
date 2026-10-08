@@ -3420,6 +3420,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Öppna inställningar';
 
   @override
+  String get checkInOrbResumeHint => 'Tryck för att fortsätta';
+
+  @override
+  String get checkInOrbStopHint => 'Tryck för att stoppa';
+
+  @override
   String get checkInOrTypeHint => 'Eller skriv här…';
 
   @override
@@ -3443,10 +3449,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Inspelningen startade inte';
 
   @override
-  String get checkInRecordingHint =>
-      'Prata som vanligt. Orden dyker upp här när du stoppar.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'Inspelningen kunde inte sparas. Försök igen eller skriv avstämningen.';
 
@@ -3458,9 +3460,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Stoppa inspelningen för att spara';
 
   @override
   String get checkInSaveButton => 'Spara avstämning';

@@ -139,14 +139,26 @@ class FakeAudioRecorderController extends AudioRecorderController {
   @override
   Future<String?> stop() async {
     stopCalls++;
-    await stopGate?.future;
-    if (stopThrows) throw StateError('recorder gone');
-    state = state.copyWith(
-      status: AudioRecorderStatus.stopped,
-      progress: Duration.zero,
-    );
-    return stopResult;
+    _finishing = true;
+    try {
+      await stopGate?.future;
+      if (stopThrows) throw StateError('recorder gone');
+      state = state.copyWith(
+        status: AudioRecorderStatus.stopped,
+        progress: Duration.zero,
+      );
+      return stopResult;
+    } finally {
+      _finishing = false;
+    }
   }
+
+  /// True while `stop` waits on [stopGate], as the real controller's
+  /// terminal-action flag is while a stop saves.
+  bool _finishing = false;
+
+  @override
+  bool get isFinishing => _finishing;
 
   @override
   Future<void> cancel() async {

@@ -67,27 +67,33 @@ class CheckInContextChips extends StatelessWidget {
           key: const ValueKey('check-in-type'),
           label: typeLabel,
           leadingIcon: checkInInteractionIcon(type),
-          trailing: const Icon(LottiIcons.chevronDown, size: IconSizes.s),
+          trailing: enabled
+              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
+              : null,
           // Not `selected`: in the chip grammar that means "chosen among
           // peers", which the sentiment row uses; here every chip holds a
           // value, and the glyph says which.
-          size: DesignSystemChipSize.touch,
+          size: DesignSystemChipSize.compactPillTouch,
           semanticsLabel: messages.checkInTypeChipSemantics(typeLabel),
           onPressed: enabled ? onPickType : null,
         ),
         DesignSystemChip(
           key: const ValueKey('check-in-started'),
           label: startedLabel,
-          trailing: const Icon(LottiIcons.chevronDown, size: IconSizes.s),
-          size: DesignSystemChipSize.touch,
+          trailing: enabled
+              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
+              : null,
+          size: DesignSystemChipSize.compactPillTouch,
           semanticsLabel: messages.checkInTimeChipSemantics(startedLabel),
           onPressed: enabled ? onPickStart : null,
         ),
         DesignSystemChip(
           key: const ValueKey('check-in-duration'),
           label: durationLabel,
-          trailing: const Icon(LottiIcons.chevronDown, size: IconSizes.s),
-          size: DesignSystemChipSize.touch,
+          trailing: enabled
+              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
+              : null,
+          size: DesignSystemChipSize.compactPillTouch,
           semanticsLabel: messages.checkInDurationChipSemantics(durationLabel),
           onPressed: enabled ? onPickDuration : null,
         ),
@@ -97,8 +103,10 @@ class CheckInContextChips extends StatelessWidget {
             label: sentiment == null
                 ? messages.checkInSentimentLabel
                 : checkInSentimentLabel(context, sentiment!),
-            trailing: const Icon(LottiIcons.chevronDown, size: IconSizes.s),
-            size: DesignSystemChipSize.touch,
+            trailing: enabled
+                ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
+                : null,
+            size: DesignSystemChipSize.compactPillTouch,
             onPressed: enabled ? onPick : null,
           ),
       ],
@@ -177,7 +185,7 @@ String checkInStartedLabelOf(BuildContext context, DateTime at) {
   final day = sameMinute
       ? context.messages.journalDateNowButton
       : relationshipDayLabelOf(context, at);
-  return '$day · ${relationshipTimeLabelOf(context, at)}';
+  return '$day · ${relationshipTimeLabel(at)}';
 }
 
 /// *Started*: the day, then the time, as two design-system pickers — a

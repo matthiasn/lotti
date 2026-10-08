@@ -320,7 +320,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
                     SizedBox(height: tokens.spacing.step2),
                     Text(
                       messages.relationshipPostCallMeta(
-                        relationshipTimeLabelOf(context, pending.startedAt),
+                        relationshipTimeLabel(pending.startedAt),
                         minutes,
                       ),
                       key: const ValueKey('person-post-call-meta'),

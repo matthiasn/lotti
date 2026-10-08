@@ -40,9 +40,9 @@ class PeopleSummaryCard extends StatelessWidget {
     // user talks about them ("Next due Bo"), and a full name wraps the line.
     final nextDueName =
         nextDue?.relationship.data.nickname ?? nextDue?.relationship.data.title;
-    // Kept apart so the day can wear the mono face the rows already give
-    // a date: the card sat directly above a column of mono timestamps and
-    // set its own date in proportional type.
+    // Kept apart so the day can wear the timestamp style the rows already
+    // give a date: the card sits directly above a column of tabular
+    // timestamps and set its own date in plain type.
     final nextDueDay = nextDueAt == null
         ? null
         : relationshipDayLabelOf(context, nextDueAt);
@@ -50,9 +50,23 @@ class PeopleSummaryCard extends StatelessWidget {
         ? messages.relationshipsSummaryNoneDue
         : messages.relationshipsSummaryNextDue(nextDueName, nextDueDay);
 
-    return DesignSystemSectionCard(
-      key: const ValueKey('people-summary-card'),
+    // The two halves start on one line and the rule between them runs the
+    // taller half's height: centred, the left caption floated half a line
+    // below the right one and the fixed-length divider stopped short of the
+    // text — the card read as two blocks laid side by side, not one object.
+    //
+    // `IntrinsicHeight` sizes the row to its taller half; the halves are
+    // stretched to that height so their text starts on one line, and the
+    // divider fills it (`double.infinity` is clamped to the row's tight
+    // height). The intrinsic pass is safe: a box with an infinite tight
+    // height reports its child's intrinsic height, not infinity
+    // (`RenderConstrainedBox.computeMaxIntrinsicHeight`), so the row's
+    // measure comes from the text alone. Never the divider's default
+    // length: inside the intrinsic row that made the card a quarter-screen
+    // of void above the list.
+    final halves = IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _SummaryDoor(
             relationshipId: summary.mostOverdue?.relationship.meta.id,
@@ -78,10 +92,13 @@ class PeopleSummaryCard extends StatelessWidget {
                       key: const ValueKey('people-summary-due-count'),
                       // heading2, not heading1: at 35/700 the loudest glyph
                       // on the People tab was a KPI, outweighing the page
-                      // title and every person's name on it.
+                      // title and every person's name on it. The warning
+                      // *ink*, the overdue pill's own, so amber appears on
+                      // People in one form rather than two near-identical
+                      // ones a few lines apart.
                       style: styles.heading.heading2.copyWith(
                         color: summary.dueNow > 0
-                            ? tokens.colors.alert.warning.defaultColor
+                            ? tokens.colors.alert.warning.ink
                             : tokens.colors.text.highEmphasis,
                       ),
                     ),
@@ -99,9 +116,10 @@ class PeopleSummaryCard extends StatelessWidget {
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
-            child: DesignSystemDivider(
+            child: const DesignSystemDivider(
+              key: ValueKey('people-summary-divider'),
               orientation: DesignSystemDividerOrientation.vertical,
-              length: tokens.spacing.step10,
+              length: double.infinity,
             ),
           ),
           Expanded(
@@ -164,21 +182,41 @@ class PeopleSummaryCard extends StatelessWidget {
                         ),
                       ),
                   ],
-                  if (summary.notEnrolled > 0) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    Text(
-                      messages.relationshipsSummaryNotEnrolled(
-                        summary.notEnrolled,
-                      ),
-                      style: styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+
+    return DesignSystemSectionCard(
+      key: const ValueKey('people-summary-card'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          halves,
+          // A fact about the whole list, not about who is due next: under
+          // the "Next due" caption it read as a second thing about that
+          // person. One line under both halves, where it is about both.
+          if (summary.notEnrolled > 0) ...[
+            SizedBox(height: tokens.spacing.step2),
+            // The door's own `step2` inset, so the line starts under the
+            // captions rather than a step left of them.
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.spacing.step2,
+              ),
+              child: Text(
+                messages.relationshipsSummaryNotEnrolled(summary.notEnrolled),
+                key: const ValueKey('people-summary-not-enrolled'),
+                style: styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -206,6 +244,16 @@ class _SummaryDoor extends StatelessWidget {
   final Key keyValue;
   final Widget child;
 
+  /// One caption line as the text engine lays it out at the live text
+  /// scale, plus the `step1` under it: the top of the value line.
+  static double _captionLine(BuildContext context, DsTokens tokens) {
+    final caption = tokens.typography.styles.others.caption;
+    final line = MediaQuery.textScalerOf(
+      context,
+    ).scale(caption.fontSize! * (caption.height ?? 1)).ceilToDouble();
+    return line + tokens.spacing.step1;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -221,15 +269,24 @@ class _SummaryDoor extends StatelessWidget {
         onTap: () => open(id),
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.step2),
+          // Top-aligned: the card stretches both doors to the taller one,
+          // and a centred Row floated the shorter half's caption half a
+          // line below its neighbour's. The chevron steps down one caption
+          // line — the caption's *scaled* line, so it still lands on the
+          // value at large text — to sit where the eye lands.
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Flexible(child: child),
               SizedBox(width: tokens.spacing.step1),
-              Icon(
-                LottiIcons.chevronRight,
-                size: IconSizes.s,
-                color: tokens.colors.text.lowEmphasis,
+              Padding(
+                padding: EdgeInsets.only(top: _captionLine(context, tokens)),
+                child: Icon(
+                  LottiIcons.chevronRight,
+                  size: IconSizes.s,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
             ],
           ),

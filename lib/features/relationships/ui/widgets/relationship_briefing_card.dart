@@ -315,10 +315,13 @@ class _AgentCard extends StatelessWidget {
     // "Open agent internals" is not passed to the reading faces above: on
     // the task card it is the only such door, here it was a third one to the
     // same place, in vocabulary ("internals") the reader has no use for.
+    // Quiet, not tertiary: tertiary wears the accent, and beside the footer's
+    // one filled primary that made two equal teal links on a card that has
+    // one next step. The door stays; the colour says which comes first.
     final seeActivity = DesignSystemButton(
       key: const ValueKey('relationship-agent-see-activity'),
       label: messages.relationshipAgentSeeActivity,
-      variant: DesignSystemButtonVariant.tertiary,
+      variant: DesignSystemButtonVariant.quiet,
       alignsLabelToLeadingEdge: true,
       tapTargetSize: MaterialTapTargetSize.padded,
       onPressed: onOpenInternals,
