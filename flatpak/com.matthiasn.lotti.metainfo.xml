@@ -40,6 +40,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.48" date="2026-10-08">
+      <description>
+        <p>Changed: every recording transcribed by a speech-to-text engine now gets its names right and a summary, not only recordings in a task. Check-ins with a person or a goal, notes on a project or an event, and standalone voice notes go through the same step as a task's recordings: the transcript is corrected against your speech dictionary, judged against the person's, goal's, project's or event's current report where there is one, and the recording gets a one-line label, a TLDR and a summary. Without a profile of its own, a recording uses your default profile's audio post-processing model. "Summarize Recording" is now offered on every recording.</p>
+        <p>Fixed: goal check-ins are transcribed again. A spoken check-in on a goal was saved but never turned into text automatically, so the goal's agent had nothing to read from it.</p>
+      </description>
+    </release>
     <release version="1.1.47" date="2026-10-07">
       <description>
         <p>Added: inference profiles can name their own model for audio post-processing. The step after a transcription - correcting the transcript against the speech dictionary and writing the recording's one-liner, TLDR and summary - can now run on a model of its own, chosen in the profile under "Audio post-processing", instead of always on the thinking model your agents use. Profiles without one keep using the thinking model.</p>
