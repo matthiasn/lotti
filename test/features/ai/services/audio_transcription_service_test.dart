@@ -1255,6 +1255,48 @@ void main() {
         },
       );
 
+      test(
+        "a Melious correction model's impact is collected with the call",
+        () async {
+          final melious =
+              _provider(
+                    id: 'p-melious-editor',
+                    type: InferenceProviderType.melious,
+                    name: 'Melious',
+                  )
+                  as AiConfigInferenceProvider;
+          final mockCloud = MockCloudInferenceRepository();
+          stubCorrection(mockCloud, [kubernetesCorrection]);
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([entry('Kubernetes')]),
+          );
+
+          expect(
+            await svc.correctTranscript(
+              heard,
+              target: (provider: melious, model: editor),
+            ),
+            'We moved the build to Kubernetes today.',
+          );
+          verify(
+            () => mockCloud.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: melious,
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              impactCollector: any(named: 'impactCollector', that: isNotNull),
+            ),
+          ).called(1);
+        },
+      );
+
       test('a correction it cannot learn is still applied', () async {
         final mockCloud = MockCloudInferenceRepository();
         stubCorrection(mockCloud, [kubernetesCorrection]);
