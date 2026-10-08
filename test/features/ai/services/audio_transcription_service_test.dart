@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,13 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
+import 'package:lotti/features/ai/skills/transcript_correction_tool.dart';
+import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -165,10 +171,15 @@ void main() {
     required AiConfigRepository repo,
     MockCloudInferenceRepository? cloud,
     MockSherpaModelRepository? embedded,
+    MockJournalDb? journalDb,
+    MockSpeechDictionaryRepository? dictionary,
   }) {
     final container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWith((_) => repo),
+        if (journalDb != null) journalDbProvider.overrideWithValue(journalDb),
+        if (dictionary != null)
+          speechDictionaryRepositoryProvider.overrideWithValue(dictionary),
         if (embedded != null)
           sherpaModelRepositoryProvider.overrideWithValue(embedded),
         if (cloud != null)
@@ -910,7 +921,7 @@ void main() {
         final svc = buildService(repo: aiRepo, cloud: mockCloud);
         final result = await svc.transcribe(
           file.path,
-          speechDictionaryTerms: const ['Claude Code', 'macOS'],
+          knownTerms: const ['Claude Code', 'macOS'],
         );
 
         expect(result, 'mistral biased');
@@ -919,5 +930,353 @@ void main() {
         expect(args.speechDictionaryTerms, ['Claude Code', 'macOS']);
       },
     );
+  });
+
+  group('speech dictionary', () {
+    final provider =
+        _provider(id: 'p-dict', name: 'Dictionary Provider')
+            as AiConfigInferenceProvider;
+    final model =
+        _audioModel(
+              id: 'm-dict',
+              providerId: 'p-dict',
+              providerModelId: 'dict-model',
+            )
+            as AiConfigModel;
+
+    SpeechDictionaryEntry entry(
+      String term, {
+      List<String>? categoryIds,
+      List<String>? misheardAs,
+    }) => SpeechDictionaryEntry(
+      id: 'entry-$term',
+      createdAt: _createdAt,
+      updatedAt: _createdAt,
+      term: term,
+      vectorClock: null,
+      categoryIds: categoryIds,
+      misheardAs: misheardAs,
+    );
+
+    MockJournalDb dictionaryOf(List<SpeechDictionaryEntry> entries) {
+      final db = MockJournalDb();
+      when(db.getAllSpeechDictionaryEntries).thenAnswer((_) async => entries);
+      return db;
+    }
+
+    test(
+      'hints the engine with the expected words, then the entries that '
+      'reach the category, and corrects each chunk by sound and spelling',
+      () async {
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['Vanja met ', 'Frieda Kellsen.']);
+        final svc = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: dictionaryOf([
+            entry('Frida Kjellsen'),
+            entry('Floe Survey', categoryIds: ['cat-ice']),
+            entry('Penguin Parliament', categoryIds: ['cat-other']),
+          ]),
+        );
+
+        final chunks = await svc
+            .transcribeStream(
+              file.path,
+              knownTerms: const ['Wanja'],
+              dictionaryCategoryId: 'cat-ice',
+              target: (provider: provider, model: model),
+            )
+            .toList();
+
+        expect(
+          _verifyGenerateWithAudio(mockCloud).speechDictionaryTerms,
+          ['Wanja', 'Frida Kjellsen', 'Floe Survey'],
+        );
+        expect(chunks, ['Wanja met ', 'Frida Kjellsen.']);
+      },
+    );
+
+    test(
+      'without a category only the entries for every category reach it, and '
+      'an unreadable dictionary costs the hint, never the words',
+      () async {
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['Vanja.']);
+        final globalOnly = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: dictionaryOf([
+            entry('Waddle'),
+            entry('Floe Survey', categoryIds: ['cat-ice']),
+          ]),
+        );
+
+        await globalOnly.transcribe(
+          file.path,
+          target: (provider: provider, model: model),
+        );
+        expect(
+          _verifyGenerateWithAudio(mockCloud).speechDictionaryTerms,
+          ['Waddle'],
+        );
+
+        final broken = MockJournalDb();
+        when(
+          broken.getAllSpeechDictionaryEntries,
+        ).thenThrow(StateError('db closed'));
+        final unreadable = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: broken,
+        );
+        expect(
+          await unreadable.transcribe(
+            file.path,
+            target: (provider: provider, model: model),
+          ),
+          'Vanja.',
+          reason: 'no terms, so nothing to correct against',
+        );
+        expect(
+          _verifyGenerateWithAudio(mockCloud).speechDictionaryTerms,
+          isEmpty,
+        );
+      },
+    );
+
+    group('correctTranscript', () {
+      final editor =
+          (_audioModel(
+                    id: 'm-editor',
+                    providerId: 'p-dict',
+                    providerModelId: 'editor-model',
+                  )
+                  as AiConfigModel)
+              .copyWith(supportsFunctionCalling: true);
+
+      /// Streams the correction call's arguments in two fragments, the way
+      /// providers send them.
+      void stubCorrection(
+        MockCloudInferenceRepository cloud,
+        List<Map<String, String>> corrections, {
+        String toolName = transcriptCorrectionToolName,
+      }) {
+        final arguments = jsonEncode({
+          TranscriptNameCorrectionToolArgs.corrections: corrections,
+        });
+        final half = arguments.length ~/ 2;
+        CreateChatCompletionStreamResponse fragment(
+          String text, {
+          bool first = false,
+        }) => CreateChatCompletionStreamResponse(
+          id: 'resp',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(
+                toolCalls: [
+                  ChatCompletionStreamMessageToolCallChunk(
+                    index: 0,
+                    id: first ? 'call-1' : null,
+                    function: ChatCompletionStreamMessageFunctionCall(
+                      name: first ? toolName : null,
+                      arguments: text,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          usage: first
+              ? null
+              : const CompletionUsage(
+                  promptTokens: 30,
+                  completionTokens: 6,
+                  totalTokens: 36,
+                ),
+        );
+        when(
+          () => cloud.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            fragment(arguments.substring(0, half), first: true),
+            fragment(arguments.substring(half)),
+          ]),
+        );
+      }
+
+      const heard = 'We moved the build to Cuban Eddies today.';
+      const kubernetesCorrection = {
+        'heard': 'Cuban Eddies',
+        'term': 'Kubernetes',
+        'context': 'to Cuban Eddies today',
+      };
+
+      test(
+        'applies the quoted corrections in code, learns them, and records '
+        'the call with the transcription spend',
+        () async {
+          final bench = registerInteractionCapture();
+          final mockCloud = MockCloudInferenceRepository();
+          stubCorrection(mockCloud, [kubernetesCorrection]);
+          final dictionary = MockSpeechDictionaryRepository();
+          when(
+            () => dictionary.learnMisheardForms(any()),
+          ).thenAnswer((_) async => 1);
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([entry('Kubernetes')]),
+            dictionary: dictionary,
+          );
+
+          final corrected = await svc.correctTranscript(
+            heard,
+            target: (provider: provider, model: editor),
+          );
+
+          expect(corrected, 'We moved the build to Kubernetes today.');
+          verify(
+            () => dictionary.learnMisheardForms([
+              (from: 'Cuban Eddies', to: 'Kubernetes'),
+            ]),
+          ).called(1);
+          final sent =
+              verify(
+                    () => mockCloud.generate(
+                      captureAny(),
+                      model: 'editor-model',
+                      temperature: any(named: 'temperature'),
+                      baseUrl: any(named: 'baseUrl'),
+                      apiKey: any(named: 'apiKey'),
+                      provider: any(named: 'provider'),
+                      systemMessage: any(named: 'systemMessage'),
+                      tools: [transcriptCorrectionTool],
+                      toolChoice: any(named: 'toolChoice'),
+                      impactCollector: any(named: 'impactCollector'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(sent, contains('**Entry Notes:**\n$heard'));
+          expect(sent, contains('- Kubernetes'));
+          final events = capturedEvents(bench);
+          expect(
+            events.single.interactionKind,
+            AiInteractionKind.textGeneration,
+          );
+          expect(events.single.inputTokens, 30);
+        },
+      );
+
+      test(
+        'keeps the words as heard when no entry reaches them, the text is '
+        'empty, the call fails, or the model reports nothing usable',
+        () async {
+          final mockCloud = MockCloudInferenceRepository();
+          final empty = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([
+              entry('Kubernetes', categoryIds: ['cat-other']),
+            ]),
+          );
+          expect(
+            await empty.correctTranscript(
+              heard,
+              target: (provider: provider, model: editor),
+            ),
+            heard,
+          );
+          verifyZeroInteractions(mockCloud);
+
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([entry('Kubernetes')]),
+          );
+          expect(
+            await svc.correctTranscript(
+              '  ',
+              target: (provider: provider, model: editor),
+            ),
+            '  ',
+          );
+          verifyZeroInteractions(mockCloud);
+
+          // A proposal the code refuses: the quoted context is not there.
+          stubCorrection(mockCloud, [
+            {...kubernetesCorrection, 'context': 'not in the transcript'},
+          ]);
+          expect(
+            await svc.correctTranscript(
+              heard,
+              target: (provider: provider, model: editor),
+            ),
+            heard,
+          );
+
+          when(
+            () => mockCloud.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((_) => Stream.error(Exception('offline')));
+          expect(
+            await svc.correctTranscript(
+              heard,
+              target: (provider: provider, model: editor),
+            ),
+            heard,
+          );
+        },
+      );
+
+      test('a correction it cannot learn is still applied', () async {
+        final mockCloud = MockCloudInferenceRepository();
+        stubCorrection(mockCloud, [kubernetesCorrection]);
+        final dictionary = MockSpeechDictionaryRepository();
+        when(
+          () => dictionary.learnMisheardForms(any()),
+        ).thenThrow(StateError('dictionary closed'));
+        final svc = buildService(
+          repo: sharedRepo,
+          cloud: mockCloud,
+          journalDb: dictionaryOf([entry('Kubernetes')]),
+          dictionary: dictionary,
+        );
+
+        expect(
+          await svc.correctTranscript(
+            heard,
+            target: (provider: provider, model: editor),
+          ),
+          'We moved the build to Kubernetes today.',
+        );
+      });
+    });
   });
 }

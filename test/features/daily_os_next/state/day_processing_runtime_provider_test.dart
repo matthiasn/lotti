@@ -262,7 +262,8 @@ void main() {
     when(
       () => transcriber.transcribe(
         any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        knownTerms: any(named: 'knownTerms'),
+        dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
       ),
     ).thenAnswer((_) async => 'Recovered transcript');
     when(
@@ -308,7 +309,8 @@ void main() {
     verify(
       () => transcriber.transcribe(
         any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        knownTerms: any(named: 'knownTerms'),
+        dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
       ),
     ).called(4);
   });
@@ -388,6 +390,94 @@ void main() {
               as DailyOsTranscriptionTarget?;
       expect(captured?.model.providerModelId, 'profile-model');
       expect(captured?.provider.id, 'p-profile');
+    },
+  );
+
+  test(
+    'a retried capture a speech-to-text engine heard is corrected on the '
+    "planner profile's post-processing model before it is stored",
+    () async {
+      final transcriber = MockAudioTranscriptionService();
+      AiConfigInferenceProvider provider(InferenceProviderType type) =>
+          AiConfig.inferenceProvider(
+                id: 'p-${type.name}',
+                baseUrl: 'http://localhost',
+                apiKey: 'k',
+                name: type.name,
+                createdAt: DateTime(2026, 7, 21),
+                inferenceProviderType: type,
+              )
+              as AiConfigInferenceProvider;
+      AiConfigModel model(String id) =>
+          AiConfig.model(
+                id: 'm-$id',
+                name: id,
+                providerModelId: id,
+                inferenceProviderId: 'p',
+                createdAt: DateTime(2026, 7, 21),
+                inputModalities: const [Modality.audio],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
+      final whisper = (
+        provider: provider(InferenceProviderType.whisper),
+        model: model('whisper-large-v3'),
+      );
+      final editor = (
+        provider: provider(InferenceProviderType.genericOpenAi),
+        model: model('editor'),
+      );
+      const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => call.method == 'check' ? ['wifi'] : null,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      when(
+        () => transcriber.transcribe(any(), target: any(named: 'target')),
+      ).thenAnswer((_) async => 'Moved the build to Cuban Eddies.');
+      when(
+        () => transcriber.correctTranscript(
+          'Moved the build to Cuban Eddies.',
+          target: editor,
+        ),
+      ).thenAnswer((_) async => 'Moved the build to Kubernetes.');
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          audioTranscriptionServiceProvider.overrideWithValue(transcriber),
+          dailyOsTranscriptionTargetProvider.overrideWith(
+            (ref) async => whisper,
+          ),
+          dailyOsTranscriptCorrectionTargetProvider.overrideWith(
+            (ref) async => editor,
+          ),
+          ..._agentJobExecutorOverrides(),
+        ]),
+      );
+      addTearDown(container.dispose);
+      final processor = container.read(dayProcessingOutboxProcessorProvider);
+      final audio = File('${root.path}/retry.m4a')..writeAsBytesSync([1, 2]);
+      await outbox.enqueueTranscription(
+        dayId: 'dayplan-2026-07-21',
+        activityEntryId: 'activity-retry',
+        recordingSessionId: 'session-retry',
+        audioId: 'audio-retry',
+        audioPath: audio.path,
+        capturedAt: DateTime.utc(2026, 7, 21, 8),
+      );
+
+      await processor.processNext();
+
+      final saved = await outbox.getById('transcribe_session-retry');
+      expect(saved!.resultTranscript, 'Moved the build to Kubernetes.');
     },
   );
 

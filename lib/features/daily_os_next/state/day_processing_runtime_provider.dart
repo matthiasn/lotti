@@ -79,7 +79,16 @@ dayProcessingOutboxProcessorProvider = Provider((ref) {
       } catch (_) {
         // Profile resolution is best-effort; discovery still applies.
       }
-      return transcriber.transcribe(audioPath, target: transcriptionTarget);
+      return correctHeardTranscript(
+        transcriber: transcriber,
+        transcript: await transcriber.transcribe(
+          audioPath,
+          target: transcriptionTarget,
+        ),
+        heardBy: transcriptionTarget,
+        correctionTarget: () =>
+            ref.read(dailyOsTranscriptCorrectionTargetProvider.future),
+      );
     },
     attachTranscript: (job, transcript) =>
         writer.attach(job: job, transcript: transcript),

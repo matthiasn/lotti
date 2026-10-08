@@ -192,6 +192,17 @@ log — every other recording's transcript is in it — nor a task's linked
 tasks, which grow without limit. A recording that belongs to nothing is
 corrected against the dictionary alone and summarized on its own.
 
+## Words handed straight back
+
+Daily OS capture, onboarding and chat voice input transcribe through
+`AudioTranscriptionService` and take the words back rather than leaving them
+on a recording, so the summary above never runs for them. They get the
+dictionary there: its entries as the engine's vocabulary hint, a correction of
+each chunk by sound and spelling, and — for a Daily OS capture heard by a
+speech-to-text engine — the same quoted-edit correction as a model call of
+its own, before the capture is stored or shown. See
+[batch transcription](../ai/batch-transcription.md#the-speech-dictionary).
+
 # Editing
 
 *Settings → Definitions → Speech dictionary* lists the terms with where each

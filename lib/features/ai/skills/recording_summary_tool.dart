@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
+import 'package:lotti/features/ai/skills/transcript_correction_tool.dart';
 import 'package:lotti/features/ai/skills/transcript_name_correction_tool.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
@@ -35,44 +36,8 @@ const ChatCompletionTool recordingSummaryTool = ChatCompletionTool(
       'type': 'object',
       'properties': {
         ...entrySummaryToolProperties,
-        TranscriptNameCorrectionToolArgs.corrections: {
-          'type': 'array',
-          'description':
-              'Each place where the transcript has a speech dictionary term '
-              'misheard, misspelled or split into pieces. Summarize the '
-              'recording as if these were already corrected.',
-          'items': {
-            'type': 'object',
-            'properties': {
-              TranscriptNameCorrectionToolArgs.heard: {
-                'type': 'string',
-                'description':
-                    'The misheard words exactly as they are written in the '
-                    'transcript, at most '
-                    '$transcriptNameCorrectionMaxHeardWords words.',
-              },
-              TranscriptNameCorrectionToolArgs.term: {
-                'type': 'string',
-                'description':
-                    'The dictionary term that was said instead, spelled '
-                    'exactly as in the dictionary.',
-              },
-              TranscriptNameCorrectionToolArgs.context: {
-                'type': 'string',
-                'description':
-                    'An exact quote from the transcript of a few words '
-                    'around this occurrence, including the misheard words. '
-                    'Report each occurrence separately, with its own quote.',
-              },
-            },
-            'required': [
-              TranscriptNameCorrectionToolArgs.heard,
-              TranscriptNameCorrectionToolArgs.term,
-              TranscriptNameCorrectionToolArgs.context,
-            ],
-            'additionalProperties': false,
-          },
-        },
+        TranscriptNameCorrectionToolArgs.corrections:
+            transcriptCorrectionsProperty,
       },
       'required': [
         ...EntrySummaryToolArgs.required,
