@@ -5736,6 +5736,18 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get checkInOpenSettingsButton;
 
+  /// No description provided for @checkInOrbResumeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to resume'**
+  String get checkInOrbResumeHint;
+
+  /// No description provided for @checkInOrbStopHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to stop'**
+  String get checkInOrbStopHint;
+
   /// No description provided for @checkInOrTypeHint.
   ///
   /// In en, this message translates to:
@@ -5778,12 +5790,6 @@ abstract class AppLocalizations {
   /// **'Recording didn\'t start'**
   String get checkInRecordingFailedTitle;
 
-  /// No description provided for @checkInRecordingHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Speak normally. Words appear here when you stop.'**
-  String get checkInRecordingHint;
-
   /// No description provided for @checkInRecordingNotSavedBody.
   ///
   /// In en, this message translates to:
@@ -5807,12 +5813,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a few words to save'**
   String get checkInSaveBlockedEmpty;
-
-  /// No description provided for @checkInSaveBlockedRecording.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop recording to save'**
-  String get checkInSaveBlockedRecording;
 
   /// No description provided for @checkInSaveButton.
   ///

@@ -3455,6 +3455,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Otevřít nastavení';
 
   @override
+  String get checkInOrbResumeHint => 'Klepni pro pokračování';
+
+  @override
+  String get checkInOrbStopHint => 'Klepni pro zastavení';
+
+  @override
   String get checkInOrTypeHint => 'Nebo to napiš sem…';
 
   @override
@@ -3478,10 +3484,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Nahrávání se nespustilo';
 
   @override
-  String get checkInRecordingHint =>
-      'Mluv normálně. Slova se tu objeví, jakmile zastavíš.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'Nahrávku se nepodařilo uložit. Zkus to znovu, nebo check-in napiš.';
 
@@ -3493,9 +3495,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Pro uložení zastav nahrávání';
 
   @override
   String get checkInSaveButton => 'Uložit check-in';

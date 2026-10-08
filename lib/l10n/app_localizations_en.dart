@@ -3397,6 +3397,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Open settings';
 
   @override
+  String get checkInOrbResumeHint => 'Tap to resume';
+
+  @override
+  String get checkInOrbStopHint => 'Tap to stop';
+
+  @override
   String get checkInOrTypeHint => 'Or type it here…';
 
   @override
@@ -3420,10 +3426,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Recording didn\'t start';
 
   @override
-  String get checkInRecordingHint =>
-      'Speak normally. Words appear here when you stop.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'The recording could not be saved. Try again, or type the check-in.';
 
@@ -3435,9 +3437,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty => 'Add a few words to save';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Stop recording to save';
 
   @override
   String get checkInSaveButton => 'Save check-in';

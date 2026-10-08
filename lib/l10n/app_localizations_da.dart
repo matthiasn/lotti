@@ -3410,6 +3410,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Åbn indstillinger';
 
   @override
+  String get checkInOrbResumeHint => 'Tryk for at fortsætte';
+
+  @override
+  String get checkInOrbStopHint => 'Tryk for at stoppe';
+
+  @override
   String get checkInOrTypeHint => 'Eller skriv det her…';
 
   @override
@@ -3433,10 +3439,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Optagelsen startede ikke';
 
   @override
-  String get checkInRecordingHint =>
-      'Tal helt normalt. Ordene dukker op her, når du stopper.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'Optagelsen kunne ikke gemmes. Prøv igen, eller skriv check-in’et.';
 
@@ -3448,9 +3450,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Stop optagelsen for at gemme';
 
   @override
   String get checkInSaveButton => 'Gem check-in';

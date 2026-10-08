@@ -3,30 +3,35 @@ import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/device_datetime.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Adds images to a check-in: the platform's picker in production; a seam
@@ -92,6 +97,11 @@ class CheckInDetailView extends ConsumerStatefulWidget {
 
 class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   bool _recording = false;
+
+  /// The recorder a live take runs on, held from the moment Dictate is
+  /// pressed: `dispose` may not touch `ref`, and it is in `dispose` that an
+  /// escaped take gets its indicator back.
+  AudioRecorderController? _recorder;
   bool _startingComment = false;
 
   /// The newest entry change the check-in was last brought up to, so one
@@ -105,6 +115,50 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   GlobalKey _keyFor(String entryId) =>
       _entryKeys.putIfAbsent(entryId, GlobalKey.new);
 
+  /// Leaving while a take is live asks first — the recorder's own question,
+  /// since only the audio is at stake — and discards it on Discard, so a
+  /// recording can never keep running behind a page the user has left.
+  /// Returns whether to go.
+  Future<bool> _confirmLeaveRecording() async {
+    if (!_recording) return true;
+    // A stop already in flight holds the page: `cancel` would return at
+    // once without discarding anything, and the entry would land behind a
+    // page the user thought they had left. The take lands within a moment
+    // — `_onRecorded` then clears `_recording` and back works as usual.
+    if (_recorder?.isFinishing ?? false) return false;
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
+      context: context,
+      title: messages.audioRecordingDiscardDialogTitle,
+      message: messages.checkInDiscardRecordingBody,
+      cancelLabel: messages.audioRecordingDiscardDialogCancel,
+      confirmLabel: messages.audioRecordingDiscardDialogConfirm,
+    );
+    if (!confirmed || !mounted) return false;
+    await _recorder?.cancel();
+    if (mounted) setState(() => _recording = false);
+    return true;
+  }
+
+  // Both short-circuit before the first `await` when nothing is recording,
+  // so the ordinary back is as synchronous as it always was.
+  Future<void> _back() async {
+    if (_recording && !await _confirmLeaveRecording()) return;
+    if (mounted) widget.onBack?.call();
+  }
+
+  Future<void> _onPopInvoked(bool didPop, Object? result) async {
+    if (didPop) return;
+    if (_recording && !await _confirmLeaveRecording()) return;
+    if (!mounted) return;
+    // `pop` guarded by `canPop`, never `maybePop`: on a root route maybePop
+    // bubbles and re-invokes this callback, which would loop. With the take
+    // gone a pushed page pops; a root page simply stays, and the next back
+    // goes through the scope unhindered.
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop(result);
+  }
+
   /// Comments started here; any still blank when the view closes are
   /// removed, so a stray tap on *Comment* leaves nothing behind.
   final Set<String> _startedComments = {};
@@ -117,6 +171,11 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     for (final id in _startedComments) {
       unawaited(_repository.discardCommentIfBlank(id));
     }
+    // The recorder hid the floating indicator while it was up. A page torn
+    // down mid-take — a route change, the desktop pane swapping people —
+    // leaves the recording running, and the indicator is the only way left
+    // to stop it; the composer's sheet restores it the same way.
+    if (_recording) _recorder?.setModalVisible(modalVisible: false);
     super.dispose();
   }
 
@@ -335,61 +394,83 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     final detail = detailAsync.value;
     final checkIn = _checkInOf(detail);
 
-    return Column(
-      children: [
-        _TopBar(
-          onBack: widget.onBack,
-          onEdit: checkIn == null
-              ? null
-              : () => showCheckInEditSheet(context: context, checkIn: checkIn),
-        ),
-        Expanded(
-          child: checkIn == null
-              ? Center(
-                  child: detail == null && detailAsync.isLoading
-                      ? const CircularProgressIndicator()
-                      : Text(
-                          // A failed first load is an error; a person or
-                          // check-in that resolved to nothing is gone.
-                          detail == null && detailAsync.hasError
-                              ? messages.commonError
-                              : messages.relationshipCheckInGone,
-                          key: const ValueKey('check-in-detail-gone'),
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                )
-              : _Body(
-                  checkIn: checkIn,
-                  personName: detail!.relationship.data.title,
-                  entries: detail.checkInEntries[checkIn.id] ?? const [],
-                  entryKeyBuilder: _keyFor,
-                  onPickType: () => _pickType(checkIn),
-                  onPickStart: () => _pickStart(checkIn),
-                  onPickDuration: () => _pickDuration(checkIn),
-                  onPickSentiment: () => _pickSentiment(checkIn),
-                ),
-        ),
-        if (checkIn != null)
-          _CheckInActionBar(
-            recorder: _recording
-                ? CheckInInlineRecorder(
-                    key: ValueKey('check-in-detail-recorder-${checkIn.id}'),
-                    linkedId: checkIn.id,
-                    categoryId: checkIn.meta.categoryId,
-                    onRecorded: (audioEntryId, _) =>
-                        _onRecorded(checkIn, audioEntryId),
-                    onDiscarded: () => setState(() => _recording = false),
-                    onFailed: _onRecordingFailed,
-                  )
-                : null,
-            onDictate: () => setState(() => _recording = true),
-            onComment: () => _startComment(checkIn),
-            onPhoto: () => _addPhotos(checkIn),
+    // While a take is live the page does not simply pop: the system back
+    // and the bar's back both go through the discard question.
+    return PopScope(
+      canPop: !_recording,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Column(
+        children: [
+          _TopBar(
+            onBack: widget.onBack == null ? null : _back,
+            // Held — disabled, not hidden — while a take is live: an edit
+            // sheet over a running recorder, with the floating indicator
+            // hidden, was the one door left to a recording nothing on
+            // screen could stop.
+            editHeld: _recording,
+            onEdit: checkIn == null
+                ? null
+                : () =>
+                      showCheckInEditSheet(context: context, checkIn: checkIn),
           ),
-      ],
+          Expanded(
+            child: checkIn == null
+                ? Center(
+                    child: detail == null && detailAsync.isLoading
+                        ? const CircularProgressIndicator()
+                        : Text(
+                            // A failed first load is an error; a person or
+                            // check-in that resolved to nothing is gone.
+                            detail == null && detailAsync.hasError
+                                ? messages.commonError
+                                : messages.relationshipCheckInGone,
+                            key: const ValueKey('check-in-detail-gone'),
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                          ),
+                  )
+                : _Body(
+                    checkIn: checkIn,
+                    // The nickname where there is one, as the composer says
+                    // "with Pip": the title fits a line and the note comes up.
+                    personName:
+                        detail!.relationship.data.nickname ??
+                        detail.relationship.data.title,
+                    entries: detail.checkInEntries[checkIn.id] ?? const [],
+                    entryKeyBuilder: _keyFor,
+                    onPickType: () => _pickType(checkIn),
+                    onPickStart: () => _pickStart(checkIn),
+                    onPickDuration: () => _pickDuration(checkIn),
+                    onPickSentiment: () => _pickSentiment(checkIn),
+                    // Held with Edit: a picker sheet over a running recorder
+                    // was the same leak through a different door.
+                    chipsEnabled: !_recording,
+                  ),
+          ),
+          if (checkIn != null)
+            _CheckInActionBar(
+              recorder: _recording
+                  ? CheckInInlineRecorder(
+                      key: ValueKey('check-in-detail-recorder-${checkIn.id}'),
+                      linkedId: checkIn.id,
+                      categoryId: checkIn.meta.categoryId,
+                      onRecorded: (audioEntryId, _) =>
+                          _onRecorded(checkIn, audioEntryId),
+                      onDiscarded: () => setState(() => _recording = false),
+                      onFailed: _onRecordingFailed,
+                    )
+                  : null,
+              onDictate: () => setState(() {
+                _recording = true;
+                _recorder = ref.read(audioRecorderControllerProvider.notifier);
+              }),
+              onComment: () => _startComment(checkIn),
+              onPhoto: () => _addPhotos(checkIn),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -422,10 +503,13 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
 /// sheet that edits everything at once, for the fields no chip carries
 /// (topics, the notes for next time, the logged note).
 class _TopBar extends StatelessWidget {
-  const _TopBar({this.onBack, this.onEdit});
+  const _TopBar({this.onBack, this.onEdit, this.editHeld = false});
 
   final VoidCallback? onBack;
   final VoidCallback? onEdit;
+
+  /// Whether Edit is shown but takes no tap — while a take is live.
+  final bool editHeld;
 
   @override
   Widget build(BuildContext context) {
@@ -437,31 +521,26 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // The design system's icon action on both ends, as the person
+          // hero's header: a raw `IconButton` was the one Material-default
+          // control on the feature.
           if (onBack != null)
-            IconButton(
+            DesignSystemIconAction(
               key: const ValueKey('check-in-detail-back'),
+              icon: LottiIcons.back,
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               onPressed: onBack,
-              icon: const Icon(LottiIcons.back),
             ),
           const Spacer(),
+          // Edit is the page's one action, so it is a pencil in the open —
+          // the person hero's own — not the sole item of a ⋮ menu that cost
+          // a tap to find out it held one thing.
           if (onEdit != null)
-            MenuAnchor(
-              builder: (context, controller, _) => IconButton(
-                key: const ValueKey('check-in-detail-more'),
-                tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
-                onPressed: () =>
-                    controller.isOpen ? controller.close() : controller.open(),
-                icon: const Icon(LottiIcons.moreVertical),
-              ),
-              menuChildren: [
-                MenuItemButton(
-                  key: const ValueKey('check-in-detail-edit'),
-                  leadingIcon: const Icon(LottiIcons.edit),
-                  onPressed: onEdit,
-                  child: Text(context.messages.checkInEditTitle),
-                ),
-              ],
+            DesignSystemIconAction(
+              key: const ValueKey('check-in-detail-edit'),
+              icon: LottiIcons.edit,
+              tooltip: context.messages.checkInEditTitle,
+              onPressed: editHeld ? null : onEdit,
             ),
         ],
       ),
@@ -481,6 +560,7 @@ class _Body extends StatelessWidget {
     required this.onPickStart,
     required this.onPickDuration,
     required this.onPickSentiment,
+    this.chipsEnabled = true,
   });
 
   final CheckInEntry checkIn;
@@ -493,6 +573,9 @@ class _Body extends StatelessWidget {
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
   final VoidCallback onPickSentiment;
+
+  /// Whether the header chips take a tap — not while a take is live.
+  final bool chipsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -510,10 +593,15 @@ class _Body extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final gutter = math.max(
-          tokens.spacing.step5,
-          (constraints.maxWidth - kDetailContentMaxWidth) / 2,
-        );
+        // The person page's `step5` rail, less the `step2` every card on
+        // this page adds as its own margin (and the header block matches),
+        // so the three People pages put their text on one left edge.
+        final gutter =
+            math.max(
+              tokens.spacing.step5,
+              (constraints.maxWidth - kDetailContentMaxWidth) / 2,
+            ) -
+            tokens.spacing.step2;
         return ListView(
           key: const ValueKey('check-in-detail-list'),
           padding: EdgeInsets.fromLTRB(
@@ -523,53 +611,64 @@ class _Body extends StatelessWidget {
             tokens.spacing.step6,
           ),
           children: [
-            Text(
-              messages.relationshipCheckInTitle(personName),
-              key: const ValueKey('check-in-detail-title'),
-              style: tokens.typography.styles.heading.heading2.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step4),
-            CheckInContextChips(
-              type: data.interactionType,
-              startedLabel: checkInStartedLabelOf(
-                context,
-                checkIn.meta.dateFrom,
-              ),
-              durationLabel: length <= Duration.zero
-                  ? messages.checkInDurationChip
-                  : checkInDurationLabel(context, length),
-              sentiment: data.sentiment,
-              onPickType: onPickType,
-              onPickStart: onPickStart,
-              onPickDuration: onPickDuration,
-              onPickSentiment: onPickSentiment,
-            ),
-            if (data.topics.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step4),
-              Wrap(
-                key: const ValueKey('check-in-detail-topics'),
-                spacing: tokens.spacing.step2,
-                runSpacing: tokens.spacing.step2,
+            // The header block sits on the cards' edge — their `step2`
+            // margin — so the page has one left rail from the title down,
+            // as the person page already has.
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final topic in data.topics)
-                    DsPill(
-                      variant: DsPillVariant.filled,
-                      shape: DsPillShape.tag,
-                      bordered: true,
-                      label: topic,
-                      labelColor: tokens.colors.text.mediumEmphasis,
+                  // The calm page title every other page carries, not the raw
+                  // heading2: the feature's three pages share one title tier.
+                  Text(
+                    messages.relationshipCheckInTitle(personName),
+                    key: const ValueKey('check-in-detail-title'),
+                    style: calmPageTitleStyle(tokens),
+                  ),
+                  SizedBox(height: tokens.spacing.step4),
+                  CheckInContextChips(
+                    type: data.interactionType,
+                    startedLabel: checkInStartedLabelOf(
+                      context,
+                      checkIn.meta.dateFrom,
                     ),
+                    durationLabel: length <= Duration.zero
+                        ? messages.checkInDurationChip
+                        : checkInDurationLabel(context, length),
+                    sentiment: data.sentiment,
+                    onPickType: onPickType,
+                    onPickStart: onPickStart,
+                    onPickDuration: onPickDuration,
+                    onPickSentiment: onPickSentiment,
+                    enabled: chipsEnabled,
+                  ),
+                  if (data.topics.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step4),
+                    Wrap(
+                      key: const ValueKey('check-in-detail-topics'),
+                      spacing: tokens.spacing.step2,
+                      runSpacing: tokens.spacing.step2,
+                      children: [
+                        for (final topic in data.topics)
+                          DsPill(
+                            variant: DsPillVariant.filled,
+                            shape: DsPillShape.tag,
+                            bordered: true,
+                            label: topic,
+                            labelColor: tokens.colors.text.mediumEmphasis,
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-            ],
-            if (guidance.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.sectionGap),
-              _NextTimeCard(guidance: guidance),
-            ],
+            ),
             SizedBox(height: tokens.spacing.sectionGap),
+            // The user's own words first, the notes derived from them
+            // after: a reader opens a check-in for what was said.
             if (note.isNotEmpty) _NoteCard(checkIn: checkIn, note: note),
+            if (guidance.isNotEmpty) _NextTimeCard(guidance: guidance),
             if (entries.isNotEmpty)
               LinkedEntriesWidget(
                 checkIn,
@@ -603,31 +702,28 @@ class _NextTimeCard extends StatelessWidget {
     final tokens = context.designTokens;
     return DesignSystemSectionCard(
       key: const ValueKey('check-in-detail-next-time'),
+      // The note card's and the linked cards' margin: one card edge down
+      // the page, where this card alone ran to the gutter.
+      margin: EdgeInsets.only(
+        left: tokens.spacing.step2,
+        right: tokens.spacing.step2,
+        bottom: tokens.spacing.step4,
+      ),
+      // The design system's own card inset, as every card on the person
+      // page has — one People card inset — and the person page's card
+      // header, so "Next time" sits in the same tier on both pages.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.messages.relationshipNextTimeTitle,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
+          PersonCardHeader(title: context.messages.relationshipNextTimeTitle),
+          SizedBox(height: tokens.spacing.step4),
+          // The person page's own rendering of the same notes.
+          NextTimeFacts(
+            facts: [
+              for (final (label, text) in guidance)
+                (caption: label, text: text, key: null),
+            ],
           ),
-          for (final (label, text) in guidance) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              label,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step1),
-            Text(
-              text,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -646,8 +742,6 @@ class _NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final at = checkIn.meta.dateFrom.toLocal();
-    final stamp = deviceTimestampLabel(context, at);
     return DesignSystemSectionCard(
       key: const ValueKey('check-in-detail-note'),
       // The linked entry cards' own margin, so the note lines up with the
@@ -657,21 +751,20 @@ class _NoteCard extends StatelessWidget {
         right: tokens.spacing.step2,
         bottom: tokens.spacing.step4,
       ),
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step4,
-        tokens.spacing.step3,
-        tokens.spacing.step4,
-        tokens.spacing.step4,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // No date: the header's chips already say when, and a second
+          // stamp a few lines under them was the one date on the page that
+          // could disagree with them.
           Text(
-            '$stamp · ${context.messages.relationshipCheckInNoteLabel}',
+            context.messages.relationshipCheckInNoteLabel,
             key: const ValueKey('check-in-detail-note-stamp'),
+            // The medium ink: a low-emphasis caption over the user's own
+            // words said "de-emphasised" about the one thing the page is
+            // opened for.
             style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-              fontFeatures: numericBadgeFontFeatures,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -704,26 +797,28 @@ class _CheckInActionBar extends StatelessWidget {
   final VoidCallback onComment;
   final VoidCallback onPhoto;
 
-  /// The action row's width on a wide host, so the pills do not stretch
-  /// into slabs — the day-planning bar's cap.
-  static const double _actionsMaxWidth = 560;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // On the page's reading column, measured the way the person page's bar
+    // and this page's body measure it, so the three line up; the gaps are
+    // the person bar's `step4`, not a third spacing of their own.
     return DesignSystemGlassStrip(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step5,
-          tokens.spacing.step4,
-          tokens.spacing.step5,
-          tokens.spacing.step4 + safeBottom,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _actionsMaxWidth),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final column = detailContentInsets(
+            context,
+            availableWidth: constraints.maxWidth,
+          );
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              column.left,
+              tokens.spacing.step4,
+              column.right,
+              tokens.spacing.step4 + safeBottom,
+            ),
             child:
                 recorder ??
                 // Wraps rather than overflows: at large text on a narrow
@@ -732,8 +827,8 @@ class _CheckInActionBar extends StatelessWidget {
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: tokens.spacing.step3,
-                  runSpacing: tokens.spacing.step3,
+                  spacing: tokens.spacing.step4,
+                  runSpacing: tokens.spacing.step4,
                   children: [
                     DsGlassPill(
                       key: const ValueKey('check-in-detail-dictate'),
@@ -745,7 +840,11 @@ class _CheckInActionBar extends StatelessWidget {
                     ),
                     DsGlassRoundButton(
                       key: const ValueKey('check-in-detail-comment'),
-                      icon: LottiIcons.editNote,
+                      // A speech-bubble glyph, not a pencil: the page's one
+                      // pencil is Edit in the top bar, and two pencils with
+                      // two meanings on one screen were indistinguishable
+                      // before the tap.
+                      icon: LottiIcons.chat,
                       semanticLabel: messages.relationshipCheckInAddComment,
                       onPressed: onComment,
                     ),
@@ -757,8 +856,8 @@ class _CheckInActionBar extends StatelessWidget {
                     ),
                   ],
                 ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

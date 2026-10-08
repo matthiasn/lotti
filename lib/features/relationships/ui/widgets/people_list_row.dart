@@ -56,9 +56,10 @@ class PeopleListRow extends StatelessWidget {
             vertical: tokens.spacing.step3,
           ),
           child: Row(
-            // The pill labels the name, so it rides the name's line box
-            // rather than floating against the centre of a two-line row.
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // The row's default cross alignment: the avatar is centred on
+            // the text block — the Check-ins rows' rule — while the pill,
+            // inside that block, still rides the name's own line rather
+            // than the row's centre.
             children: [
               PersonaAvatar(
                 initial: personaInitial(data.title),
@@ -75,7 +76,11 @@ class PeopleListRow extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
+                        // Expanded, not Flexible: the name takes the line
+                        // and the pill sits on the row's trailing rail, one
+                        // column down the list, rather than wherever each
+                        // name happens to end.
+                        Expanded(
                           // The sparkle rides *inside* the name, as the
                           // last thing on its last line. Beside it in a
                           // Row it was pushed to the far right of a
@@ -112,8 +117,11 @@ class PeopleListRow extends StatelessWidget {
                                             'people-row-important',
                                           ),
                                           size: IconSizes.xs,
+                                          // The meta ink, not the accent:
+                                          // teal on this list means
+                                          // pressable, and a marker is not.
                                           color:
-                                              tokens.colors.interactive.enabled,
+                                              tokens.colors.text.mediumEmphasis,
                                         ),
                                       ),
                                     ),

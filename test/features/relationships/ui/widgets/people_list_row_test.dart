@@ -91,16 +91,21 @@ void main() {
       findsOneWidget,
     );
 
-    // Mono tabulates a date down the column; on `Call` and `Weekly` it only
-    // costs measure, which is what wrapped the line in the desktop rail.
-    final fonts = _spanFonts(tester);
-    expect(fonts['Today 09:05'], 'Inconsolata');
+    // Tabular figures line a date up down the column; the prose around it
+    // (`Call`, `Weekly`) keeps the line's own style. No monospace face
+    // anywhere: the date is Inter like the sentence it sits in.
+    final spans = _spanStyles(tester);
     expect(
-      fonts['Call · '],
-      isNot('Inconsolata'),
-      reason: 'the prose around the date is proportional',
+      spans['Today 09:05']?.fontFeatures,
+      contains(const FontFeature.tabularFigures()),
     );
-    expect(fonts[' · Weekly'], isNot('Inconsolata'));
+    expect(spans['Today 09:05']?.fontFamily, isNot('Inconsolata'));
+    expect(
+      spans['Call · ']?.fontFeatures ?? const <FontFeature>[],
+      isNot(contains(const FontFeature.tabularFigures())),
+      reason: 'the prose around the date is left alone',
+    );
+    expect(spans[' · Weekly']?.fontFamily, isNot('Inconsolata'));
   });
 
   testWidgets('a status line with no date in it stays one plain string', (
@@ -147,7 +152,10 @@ void main() {
         find.text('Call · Today 09:05', findRichText: true),
         findsOneWidget,
       );
-      expect(_spanFonts(tester)['Today 09:05'], 'Inconsolata');
+      expect(
+        _spanStyles(tester)['Today 09:05']?.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+      );
       expect(find.textContaining('No cadence'), findsNothing);
     });
   });
@@ -390,13 +398,13 @@ void main() {
   });
 }
 
-/// The fonts of the status line's spans, as {text: fontFamily}.
+/// The styles of the status line's spans, as {text: style}.
 ///
-/// The line is a `Text.rich` so the date can wear the mono face while the
-/// prose around it does not; this reads that tree back rather than trusting
-/// one style on the whole widget.
-Map<String, String?> _spanFonts(WidgetTester tester) {
-  final fonts = <String, String?>{};
+/// The line is a `Text.rich` so the date can wear the timestamp style while
+/// the prose around it does not; this reads that tree back rather than
+/// trusting one style on the whole widget.
+Map<String, TextStyle?> _spanStyles(WidgetTester tester) {
+  final fonts = <String, TextStyle?>{};
   tester
       .widget<Text>(
         find.descendant(
@@ -407,7 +415,7 @@ Map<String, String?> _spanFonts(WidgetTester tester) {
       .textSpan!
       .visitChildren((span) {
         if (span is TextSpan && span.text != null) {
-          fonts[span.text!] = span.style?.fontFamily;
+          fonts[span.text!] = span.style;
         }
         return true;
       });

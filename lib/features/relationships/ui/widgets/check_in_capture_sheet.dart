@@ -786,6 +786,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _MoreHeader(
           open: _moreOpen,
           caption: _moreCaption(messages),
+          enabled: speechIdle,
           onToggle: () => setState(() => _moreOpen = !_moreOpen),
         ),
         if (_moreOpen) ...[

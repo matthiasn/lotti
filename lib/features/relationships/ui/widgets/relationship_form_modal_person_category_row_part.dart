@@ -311,6 +311,24 @@ class PersonCategoryRow extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
         child: Row(
           children: [
+            // The swatch leads the value, as a category's colour does on
+            // every other row that names one; trailing, it sat where the
+            // chevron belongs.
+            if (category != null) ...[
+              Container(
+                key: const ValueKey('person-form-category-dot'),
+                width: tokens.spacing.step3,
+                height: tokens.spacing.step3,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorFromCssHex(
+                    category.color,
+                    substitute: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,21 +353,16 @@ class PersonCategoryRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (category != null) ...[
-              SizedBox(width: tokens.spacing.step3),
-              Container(
-                key: const ValueKey('person-form-category-dot'),
-                width: tokens.spacing.step3,
-                height: tokens.spacing.step3,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorFromCssHex(
-                    category.color,
-                    substitute: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ),
-            ],
+            // The chevron the context chips wear, and it ends the row:
+            // without it the row read as a read-out between two fields,
+            // not the selector it is.
+            SizedBox(width: tokens.spacing.step3),
+            Icon(
+              LottiIcons.chevronDown,
+              key: const ValueKey('person-form-category-chevron'),
+              size: IconSizes.s,
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ],
         ),
       ),

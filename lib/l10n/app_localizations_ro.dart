@@ -3469,6 +3469,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Deschideți setările';
 
   @override
+  String get checkInOrbResumeHint => 'Apăsați pentru a relua';
+
+  @override
+  String get checkInOrbStopHint => 'Apăsați pentru a opri';
+
+  @override
   String get checkInOrTypeHint => 'Sau scrieți aici…';
 
   @override
@@ -3492,10 +3498,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Înregistrarea nu a pornit';
 
   @override
-  String get checkInRecordingHint =>
-      'Vorbiți normal. Cuvintele apar aici când opriți.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'Înregistrarea nu a putut fi salvată. Încercați din nou sau scrieți check-in-ul.';
 
@@ -3509,10 +3511,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get checkInSaveBlockedEmpty =>
       'Adăugați câteva cuvinte pentru a salva';
-
-  @override
-  String get checkInSaveBlockedRecording =>
-      'Opriți înregistrarea pentru a salva';
 
   @override
   String get checkInSaveButton => 'Salvați check-in-ul';

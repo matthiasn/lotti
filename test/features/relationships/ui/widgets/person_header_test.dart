@@ -845,12 +845,12 @@ void main() {
       expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
 
       final line = oneLiner(tester);
-      expect(line.text, '"Pip" · last spoke Today 12:44');
+      expect(line.text, 'Pip · last spoke Today 12:44');
       // The mono face is spent on the timestamp and nothing else, so one
       // point in time never renders in two typefaces on one screen.
       expect(line.date, 'Today 12:44');
       expect(
-        find.text('"Pip" · last spoke Today 12:44', findRichText: true),
+        find.text('Pip · last spoke Today 12:44', findRichText: true),
         findsOneWidget,
       );
 

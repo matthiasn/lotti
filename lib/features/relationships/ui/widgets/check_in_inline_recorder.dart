@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
+import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -14,9 +17,15 @@ import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The recorder embedded in the check-in composer's narrative field
-/// (design 2026-09-13, options 1b / 2b): a live level strip, the running
-/// time, the reassurance that audio is on disk as it goes, and Discard ·
-/// Pause · Stop. It starts recording the moment it is mounted — the user
+/// (design 2026-09-13, options 1b / 2b), wearing the app's one voice
+/// anatomy — Capture's: the short teal level strip over the Daily OS voice
+/// orb, the orb breathing with the same level — then the running time, the
+/// reassurance that audio is on disk as it goes, and Discard · Pause
+/// centred beneath. The orb is the one Stop, as on Capture: tapping it
+/// while live stops, while paused resumes, and while the stop is in flight
+/// it dims and takes no tap. A filled Stop pill beside it gave the surface
+/// two primaries for one act, which every reviewer read as a second app's
+/// recorder. It starts recording the moment it is mounted — the user
 /// already pressed *Dictate* — and reports one of three outcomes:
 ///
 /// - [onRecorded] with the audio entry the recording became and how long it
@@ -34,11 +43,13 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// It drives the app-wide [AudioRecorderController] the way the recording
 /// sheet does, and hides the floating recording indicator while it is on
-/// screen. Being dismissed with the sheet does *not* stop the recording —
-/// the same rule the sheet follows — so the composer's sheet brings the
-/// indicator back once it has closed, and the user can stop the recording
-/// from there; the audio then lands in the journal linked to the person,
-/// without a transcript.
+/// screen. Being unmounted does *not* stop the recording — the recording
+/// sheet's own rule — so each host decides what leaving means: the
+/// composer and the check-in page both ask the Discard question and cancel
+/// the take on Discard, and both bring the indicator back if a take does
+/// escape (a sheet swiped away, a page torn down by a route change), so
+/// the user can stop it from there; the audio then lands in the journal
+/// linked to the host, without a transcript.
 class CheckInInlineRecorder extends ConsumerStatefulWidget {
   const CheckInInlineRecorder({
     required this.linkedId,
@@ -184,36 +195,90 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               ? messages.checkInStatusPaused
               : '',
           child: ExcludeSemantics(
-            child: LayoutBuilder(
-              builder: (context, constraints) => LiveWaveform(
+            // Capture's strip, to the pixel: its width and height, and its
+            // default teal. A field-wide strip in the prose ink read as a
+            // rule across the box rather than as the orb's meter.
+            child: Center(
+              child: LiveWaveform(
                 amplitudes: _amplitudes,
-                width: constraints.maxWidth,
-                height: tokens.spacing.step7,
+                width: VoiceOrbZone.waveformWidth,
+                height: VoiceOrbZone.waveformSlotHeight,
                 barCount: CheckInInlineRecorder.amplitudeWindow ~/ 2,
-                // The prose ink, not the accent: on this surface the accent
-                // means pressable, and a meter is not.
-                color: paused
-                    ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.text.highEmphasis,
               ),
             ),
           ),
         ),
-        SizedBox(height: tokens.spacing.step4),
-        // Tabular mono figures, so the tick never moves the controls beneath
-        // it; the same `m:ss` shape the saved-audio line and the chip use.
+        // `step5` air on both sides of the orb, the voice zone's own rule:
+        // the listening shader spills past the button field, so the strip
+        // above and the clock below need clearance for it to breathe.
+        SizedBox(height: tokens.spacing.step5),
+        // The orb is a control — the one Stop — so it stays outside the
+        // strip's `ExcludeSemantics` and announces its own verb.
+        Center(
+          child: VoiceButton(
+            key: const ValueKey('check-in-recorder-orb'),
+            // Dimmed and inert while the stop is in flight, as Capture is
+            // while it transcribes.
+            phase: _busy
+                ? CapturePhase.transcribing
+                : live
+                ? CapturePhase.listening
+                : CapturePhase.idle,
+            dbfs: state.dBFS,
+            size: tokens.spacing.step11,
+            semanticLabel: live
+                ? messages.audioRecordingStop
+                : messages.audioRecordingResume,
+            // Inert until the take is actually running: before `record`
+            // lands, or after a refused start, there is nothing to resume.
+            onTap: _busy
+                ? null
+                : live
+                ? _stop
+                : paused
+                ? () => _togglePause(state.status)
+                : null,
+          ),
+        ),
+        // The voice zone's own `step5` under the orb, so the caption sits
+        // where Capture's does.
+        SizedBox(height: tokens.spacing.step5),
+        // The orb's verb in words, Capture's caption slot: the orb is the
+        // one Stop, and a glowing picture does not say so to someone who
+        // has not learned it — they tapped Pause and waited, or feared the
+        // header's × would lose the take.
+        Text(
+          live
+              ? messages.checkInOrbStopHint
+              : paused
+              ? messages.checkInOrbResumeHint
+              : '',
+          key: const ValueKey('check-in-recorder-orb-hint'),
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        // `step2` to the clock: caption and clock are one status group under
+        // the orb; `step5` below, before Discard · Pause, so the actions read
+        // as a second group rather than a fifth line of status.
+        SizedBox(height: tokens.spacing.step2),
+        // The feature's timestamp style over the heading tier — tabular
+        // figures, so the tick never moves the controls beneath it, in the
+        // UI face: this clock was the last monospace string on People.
         Text(
           checkInClockLabel(state.progress),
           key: const ValueKey('check-in-recorder-clock'),
           // In words for a reader: "23 seconds", not "zero colon two three".
           semanticsLabel: checkInSpokenClockLabel(messages, state.progress),
           textAlign: TextAlign.center,
-          style: monoMetaStyle(
+          // `subtitle1`, not a heading: the orb is the recorder's one large
+          // thing, and a heading-sized clock under it competed with it.
+          style: relationshipTimestampStyle(
             tokens,
-            tokens.colors,
-            base: tokens.typography.styles.heading.heading3,
+            base: tokens.typography.styles.subtitle.subtitle1,
             color: tokens.colors.text.highEmphasis,
-          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
         ),
         SizedBox(height: tokens.spacing.step3),
         Row(
@@ -235,17 +300,20 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
             ),
           ],
         ),
-        SizedBox(height: tokens.spacing.step4),
-        // On the trailing rail, like Dictate, Try again and Add more: the
-        // accent action keeps one home from the first word to Save.
+        SizedBox(height: tokens.spacing.step5),
+        // Centred under the orb, the secondary acts of a Capture-shaped
+        // recorder: neither is the way forward — the orb is — so neither
+        // wears the accent.
         Wrap(
-          alignment: WrapAlignment.end,
+          alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: tokens.spacing.step3,
+          // `step5` between the two: Discard sits beside Pause, and a
+          // shaky thumb aiming at Pause must not land on the one control
+          // here that throws the take away.
+          spacing: tokens.spacing.step5,
           runSpacing: tokens.spacing.step3,
           children: [
-            // Quiet, furthest from Stop: red on this surface is the live dot
-            // alone, and the accent is for the way forward.
+            // Quiet: red on this surface is the live dot alone.
             DesignSystemButton(
               key: const ValueKey('check-in-recorder-discard'),
               label: messages.checkInDiscardRecording,
@@ -264,15 +332,6 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               size: DesignSystemButtonSize.medium,
               tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: _busy ? null : () => _togglePause(state.status),
-            ),
-            DesignSystemButton(
-              key: const ValueKey('check-in-recorder-stop'),
-              label: messages.audioRecordingStop,
-              leadingIcon: LottiIcons.stop,
-              size: DesignSystemButtonSize.medium,
-              tapTargetSize: MaterialTapTargetSize.padded,
-              isLoading: _busy,
-              onPressed: _busy ? null : _stop,
             ),
           ],
         ),

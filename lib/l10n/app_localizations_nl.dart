@@ -3425,6 +3425,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Instellingen openen';
 
   @override
+  String get checkInOrbResumeHint => 'Tik om verder te gaan';
+
+  @override
+  String get checkInOrbStopHint => 'Tik om te stoppen';
+
+  @override
   String get checkInOrTypeHint => 'Of typ het hier…';
 
   @override
@@ -3448,10 +3454,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInRecordingFailedTitle => 'Opname niet gestart';
 
   @override
-  String get checkInRecordingHint =>
-      'Praat gewoon. De woorden verschijnen hier zodra je stopt.';
-
-  @override
   String get checkInRecordingNotSavedBody =>
       'De opname kon niet worden opgeslagen. Probeer het opnieuw of typ de check-in.';
 
@@ -3465,9 +3467,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get checkInSaveBlockedEmpty =>
       'Voeg een paar woorden toe om op te slaan';
-
-  @override
-  String get checkInSaveBlockedRecording => 'Stop de opname om op te slaan';
 
   @override
   String get checkInSaveButton => 'Check-in opslaan';

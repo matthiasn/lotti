@@ -15,6 +15,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
@@ -42,6 +44,7 @@ import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 import '../../helpers/fake_pending_interaction_store.dart';
 
 /// Answers the speak flow's pre-flight probe with "no", so the mic test can
@@ -196,6 +199,10 @@ void main() {
     mediaQueryData: mediaQueryData,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
+      // The action bar's record button watches the app-wide recorder.
+      audioRecorderControllerProvider.overrideWith(
+        FakeAudioRecorderController.new,
+      ),
       relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
       relationshipReminderServiceProvider.overrideWithValue(mockReminders),
       ...overrides,
@@ -282,7 +289,7 @@ void main() {
               find.byKey(const ValueKey('person-one-liner')),
             )
             .text,
-        '"Sis" · last spoke Yesterday 10:30',
+        'Sis · last spoke Yesterday 10:30',
       );
       expect(pill(tester, 'person-pill-cadence').label, 'On track');
       expect(pill(tester, 'person-pill-reminders').label, 'Every two weeks');
@@ -292,10 +299,14 @@ void main() {
 
       expect(
         tester
-            .widget<RelationshipLineWithDate>(
-              find.byKey(const ValueKey('check-in-row-meta')),
+            .widget<DsTieredText>(
+              find.ancestor(
+                of: find.byKey(const ValueKey('check-in-row-meta')),
+                matching: find.byType(DsTieredText),
+              ),
             )
-            .text,
+            .tiers
+            .first,
         'Yesterday 10:30 · Call · 11 min',
       );
       expect(find.text('Good'), findsOneWidget);
@@ -1020,6 +1031,10 @@ void main() {
         mediaQueryData: phoneMediaQueryData,
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          // The action bar's record button watches the app-wide recorder.
+          audioRecorderControllerProvider.overrideWith(
+            FakeAudioRecorderController.new,
+          ),
           relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
           relationshipReminderServiceProvider.overrideWithValue(mockReminders),
         ],

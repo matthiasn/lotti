@@ -266,10 +266,9 @@ void main() {
     );
     expect(find.byKey(const ValueKey('check-in-narrative')), findsNothing);
     expect(find.byKey(const ValueKey('fake-recorder')), findsOneWidget);
-    expect(
-      find.text('Speak normally. Words appear here when you stop.'),
-      findsOneWidget,
-    );
+    // Nothing over the recorder: its orb, caption and the status dot say
+    // what an instruction line used to narrate.
+    expect(find.byKey(const ValueKey('check-in-recording-hint')), findsNothing);
     expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
     // The accent, not the error tone: a live take is not an error.
     // The accent hairline means focus only; the dot, the waveform and Stop

@@ -8,7 +8,11 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
@@ -157,11 +161,13 @@ void main() {
     stubDetail(checkIn());
     await pump(tester);
 
+    // The nickname where there is one, as the composer says "with Pip": the
+    // title fits a line and the note comes up above the fold.
     expect(
       tester
           .widget<Text>(find.byKey(const ValueKey('check-in-detail-title')))
           .data,
-      'Check-in with Commander Pip Frostbeak',
+      'Check-in with Pip',
     );
     expect(find.text('Call'), findsOneWidget);
     expect(find.text('11 min'), findsOneWidget);
@@ -183,9 +189,9 @@ void main() {
             find.byKey(const ValueKey('check-in-detail-note-stamp')),
           )
           .data,
-      // The device's numeric date and its own clock: 8/14/2026 on a US
-      // phone, 14.8.2026 on a German one.
-      allOf(contains('8/14/2026'), endsWith('Noted when it was logged')),
+      // No date of its own: the header's chips say when, and a second stamp
+      // under them was the one date on the page that could disagree.
+      'Noted when it was logged',
     );
     expect(find.text('Called about the launch.'), findsOneWidget);
     expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);
@@ -433,10 +439,14 @@ void main() {
       await pump(tester);
 
       await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
-      await tester.pumpAndSettle();
+      // By hand: the recorder's orb breathes while the take is live, so
+      // nothing settles until Stop.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
 
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -471,6 +481,198 @@ void main() {
     });
   });
 
+  group('leaving while a take is live', () {
+    Future<List<VoidCallback>> startRecording(WidgetTester tester) async {
+      stubDetail(checkIn());
+      final backs = await pump(tester);
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(recorder.recordCalls, hasLength(1));
+      return backs;
+    }
+
+    testWidgets('the page cannot simply pop: back asks, Keep recording stays, '
+        'Discard cancels the take and then goes back', (tester) async {
+      final backs = await startRecording(tester);
+      final scope = tester.widget<PopScope<Object?>>(
+        find.byWidgetPredicate((w) => w is PopScope),
+      );
+      expect(scope.canPop, isFalse, reason: 'a live take holds the route');
+      // Edit is held too: an edit sheet over a running recorder, with the
+      // floating indicator hidden, was the one door left to the same leak.
+      final edit = find.byKey(const ValueKey('check-in-detail-edit'));
+      expect(tester.widget<DesignSystemIconAction>(edit).onPressed, isNull);
+      // And the header chips: a picker sheet over a running recorder was
+      // the same leak through a different door.
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // The recorder's own question: only the audio is at stake here.
+      expect(find.text('Discard recording?'), findsOneWidget);
+      expect(
+        find.text('The audio is deleted. Your check-in stays open.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Keep recording'));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(backs, isEmpty);
+      expect(recorder.cancelCalls, 0);
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
+        findsOneWidget,
+        reason: 'the take goes on',
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(recorder.cancelCalls, 1, reason: 'Discard discards');
+      expect(backs, hasLength(1), reason: 'and then leaves');
+      expect(
+        tester.widget<DesignSystemIconAction>(edit).onPressed,
+        isNotNull,
+        reason: 'Edit is back once the take is gone',
+      );
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<PopScope<Object?>>(
+              find.byWidgetPredicate((w) => w is PopScope),
+            )
+            .canPop,
+        isTrue,
+      );
+    });
+
+    testWidgets('the system back goes through the same question', (
+      tester,
+    ) async {
+      await startRecording(tester);
+      NavigatorState navigator() =>
+          Navigator.of(tester.element(find.byType(CheckInDetailView)));
+
+      // Declined: the take goes on.
+      navigator().maybePop();
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Discard recording?'), findsOneWidget);
+      await tester.tap(find.text('Keep recording'));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(recorder.cancelCalls, 0);
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
+        findsOneWidget,
+      );
+
+      // Confirmed: the take is cancelled and the route is let go.
+      navigator().maybePop();
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(recorder.cancelCalls, 1);
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a stop already in flight holds back — no Discard that would '
+        'discard nothing — until the take lands, then back goes', (
+      tester,
+    ) async {
+      final backs = await startRecording(tester);
+      final gate = Completer<void>();
+      recorder.stopGate = gate;
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+      await tester.pump();
+      expect(recorder.stopCalls, 1);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // Neither a question nor a leave: `cancel` would return at once
+      // without discarding, and the entry would land behind the page.
+      expect(find.text('Discard recording?'), findsNothing);
+      expect(backs, isEmpty);
+      expect(recorder.cancelCalls, 0);
+
+      gate.complete();
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
+        findsNothing,
+        reason: 'the take landed',
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+      await tester.pump();
+      expect(backs, hasLength(1));
+      expect(find.text('Discard recording?'), findsNothing);
+    });
+
+    testWidgets('without a take, back goes straight back', (tester) async {
+      stubDetail(checkIn());
+      final backs = await pump(tester);
+      expect(
+        tester
+            .widget<PopScope<Object?>>(
+              find.byWidgetPredicate((w) => w is PopScope),
+            )
+            .canPop,
+        isTrue,
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
+      await tester.pump();
+      expect(backs, hasLength(1));
+      expect(find.text('Discard recording?'), findsNothing);
+    });
+
+    testWidgets('a page torn down mid-take gives the floating indicator back, '
+        'so the escaped recording can still be stopped', (tester) async {
+      await startRecording(tester);
+      expect(recorder.modalVisibleLog, [true]);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(recorder.modalVisibleLog, [true, false]);
+      expect(recorder.stopCalls, 0, reason: 'the take itself is left alone');
+      expect(recorder.cancelCalls, 0);
+    });
+  });
+
   testWidgets('a discarded dictation gives the bar back and adds nothing', (
     tester,
   ) async {
@@ -478,9 +680,14 @@ void main() {
     await pump(tester);
 
     await tester.tap(find.byKey(const ValueKey('check-in-detail-dictate')));
-    await tester.pumpAndSettle();
+    // By hand until the take is cancelled: the live orb never settles.
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.text('Discard').last);
     await tester.pumpAndSettle();
 
@@ -588,17 +795,56 @@ void main() {
     verifyNever(() => repository.touchCheckIn(any()));
   });
 
-  testWidgets('More → Edit check-in opens the composer for the fields no '
-      'chip carries', (tester) async {
+  testWidgets('the pencil in the top bar opens the composer for the fields '
+      'no chip carries — one tap, no menu to open first', (tester) async {
     stubDetail(checkIn());
     await pump(tester);
 
-    await tester.tap(find.byKey(const ValueKey('check-in-detail-more')));
-    await tester.pumpAndSettle();
+    // The page's one action is in the open, the person hero's own glyph;
+    // a ⋮ menu that held nothing but Edit cost a tap to learn that.
+    expect(find.byKey(const ValueKey('check-in-detail-more')), findsNothing);
+    final edit = tester.widget<DesignSystemIconAction>(
+      find.byKey(const ValueKey('check-in-detail-edit')),
+    );
+    expect(edit.icon, LottiIcons.edit);
+    expect(edit.tooltip, 'Edit check-in');
+
     await tester.tap(find.byKey(const ValueKey('check-in-detail-edit')));
     await tester.pumpAndSettle();
 
     expect(find.byType(CheckInCaptureForm), findsOneWidget);
+  });
+
+  testWidgets('without a nickname the title carries the full name', (
+    tester,
+  ) async {
+    stubDetail(checkIn());
+    when(() => repository.getRelationshipById('rel-001')).thenAnswer(
+      (_) async => person.copyWith(data: person.data.copyWith(nickname: null)),
+    );
+    await pump(tester);
+
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('check-in-detail-title')))
+          .data,
+      'Check-in with Commander Pip Frostbeak',
+    );
+  });
+
+  testWidgets('the title is the calm page title every other page carries', (
+    tester,
+  ) async {
+    stubDetail(checkIn());
+    await pump(tester);
+
+    final title = tester.widget<Text>(
+      find.byKey(const ValueKey('check-in-detail-title')),
+    );
+    final tokens = tester
+        .element(find.byKey(const ValueKey('check-in-detail-title')))
+        .designTokens;
+    expect(title.style, calmPageTitleStyle(tokens));
   });
 
   // An empty comment is no evidence; only its words are.

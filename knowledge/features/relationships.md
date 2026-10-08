@@ -306,9 +306,38 @@ width, and reads top to bottom:
   (`showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
   `showCheckInSentimentPicker`) and saving the check-in at once. The topics
   follow as tag pills. Everything no chip carries — topics, the notes for
-  next time, the logged note — stays in the composer, behind *More → Edit
-  check-in*.
-* **Next time** on a card of its own.
+  next time, the logged note — stays in the composer, behind the top bar's
+  pencil (*Edit check-in*): one `DesignSystemIconAction` in the open, the
+  person hero's own glyph, where a ⋮ menu holding that single item cost a
+  tap to learn it held one thing. The back control is the same component.
+* **Next time** on a card of its own, its facts drawn by
+  [`NextTimeFacts`](../../lib/features/relationships/ui/shared/next_time_facts.dart)
+  — the same flat caption/body pairs the person page draws. It follows the
+  logged note rather than preceding it (a reader opens a check-in for what
+  was said; the derived notes come after) and wears the note card's
+  horizontal `step2` margin, so the page has one card edge.
+* **Leaving while a take is live asks first.** The view sits in a
+  `PopScope` that holds the route while `_recording`; the system back and
+  the bar's back both run `_confirmLeaveRecording` — the recorder's own
+  Discard question, since only the audio is at stake — and Discard cancels
+  the take before leaving. A page torn down another way (a route change,
+  the desktop pane swapping people) restores the floating recording
+  indicator in `dispose` — through the recorder held in `_recorder` since
+  Dictate was pressed, because `ref` may not be touched in `dispose` — so
+  an escaped take can still be stopped; and the top bar's Edit and the
+  header's chips are held while `_recording`, since an edit sheet or a
+  picker over a running recorder was the same leak through another door. Before this, going back mid-take left a
+  recording running with nothing on screen to stop it.
+* **One rail, one tier.** The list's gutter is the person page's `step5`
+  rail less the `step2` every card adds as its margin, and the title, chips
+  and topics sit on that same `step2` edge, so the three People pages put
+  their text on one left edge; both cards take the design system's own
+  card inset, as every card on the person page does, and the Next time
+  card the person page's `PersonCardHeader`; the title names
+  the nickname where there is one (`Check-in with Pip`, as the composer
+  says — and the person hero's one-liner says `Pip`, bare, not `"Pip"` in
+  ASCII quotes); and the bar's Add comment is a speech bubble
+  (`LottiIcons.chat`), so the page's one pencil is Edit.
 * **The timeline**: the text the check-in was logged with as its first card,
   in the entry cards' shell and stamped at the check-in's start, then its
   entries through the journal's own `LinkedEntriesWidget`. The Timer / Audio
@@ -562,18 +591,28 @@ still jargon to a second-language reader, and every non-English catalog had
 already reached for a plainer verb of its own. The rule that survives is the
 one that mattered: *one phrase for the state, the marker and the control*.
 
-**Mono is confined to dates.** `RelationshipLineWithDate`
+**Tabular figures are confined to dates — and there is no mono.**
+`RelationshipLineWithDate`
 ([`ui/shared/relationship_timestamps.dart`](../../lib/features/relationships/ui/shared/relationship_timestamps.dart))
-splits a line so only the timestamp wears Inconsolata **at the size of the
-prose around it** — `relationshipTimestampStyle` takes the host style as its
-base and changes face, tracking and colour only, because pinning the span to
-the caption tier dropped the date a size mid-sentence, which is worse than
-the all-mono line the split replaced. It locates the date by searching for
-its own substring — each line is one catalog message, and a
-locale may put the date first, last or in the middle. A line with no date, or
-one whose date does not occur in it, renders whole in the base style. Mono
-tabulates a timestamp down a column; on `Call`, `Weekly` and `last spoke` it
-only costs measure, which is what wrapped `Every two / weeks` onto a ragged
+splits a line so only the timestamp wears `relationshipTimestampStyle` **at
+the size of the prose around it** — the style takes the host style as its
+base and changes figures and colour only, because pinning the span to the
+caption tier dropped the date a size mid-sentence. The design plan first set
+every date in Inconsolata; a monospace face spliced into Inter sentences was
+the single most foreign thing on the feature, where the journal and the task
+timer keep the UI face and stabilise digits with `numericBadgeFontFeatures`.
+The dates now do the same, the recorder's running clock included. Time-only
+labels (`relationshipTimeLabel`: the started chip, the post-call offer)
+are the same 24h `HH:mm` every other People timestamp ends in — they used
+to follow the device's clock like the time wheel does, and on a twelve-hour
+device the check-in page read `Sat 1 Aug · 12:44 PM` on the chip over
+`Sat 1 Aug 12:44` on the note. The split locates the date by searching for
+its own substring — each
+line is one catalog message, and a locale may put the date first, last or in
+the middle. A line with no date, or one whose date does not occur in it,
+renders whole in the base style. Tabular figures line a timestamp up down a
+column; the mono face on `Call`, `Weekly` and `last spoke`
+only cost measure, which is what wrapped `Every two / weeks` onto a ragged
 second line in the desktop rail.
 
 On desktop `RelationshipsPage` is the Tasks/Projects list-detail split:
@@ -628,9 +667,9 @@ under it — the task page's shape, on purpose:
 | Sliver | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill says the state (*On track*, or *Due since … · n days over*), and for an enrolled person — in every state, overdue included — [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) names the interval the runtime applies (`relationshipShownCadenceDays`) and opens `PersonRemindersSheet`: *How often?* with the interval pills, where a pick saves at once and re-runs the evaluation through `ensureRelationshipAgentInBackground`, and *Turn reminders off*, which keeps the stored interval. The eyebrow is the category alone; reminders are the pill's to say. It takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the mono voice on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill says the state (*On track*, or *Due since … · n days over*), and for an enrolled person — in every state, overdue included — [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) names the interval the runtime applies (`relationshipShownCadenceDays`) and opens `PersonRemindersSheet`: *How often?* with the interval pills, where a pick saves at once and re-runs the evaluation through `ensureRelationshipAgentInBackground`, and *Turn reminders off*, which keeps the stored interval. The eyebrow is the category alone; reminders are the pill's to say. It takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the tabular-figure timestamp style on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
 | Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). Directly under the header block, beside the paused-reminder callout: coming back from a call it is the most time-sensitive thing on the page, and below the briefing it was off a phone's first screen. Its `bottomGap` belongs to the offer, so no hole appears when there is none. |
-| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the newest check-in that *has* *pay attention to* / *avoid* notes (`NextTimeCard.sourceOf`), not simply the newest: the fields sit under the composer's *More*, so a quick check-in leaves them blank, and blank means "did not get to it", not "forget the last ones". When the source is older than the newest check-in the card says which one (`fromEarlier`). Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
+| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart), its facts drawn by [`NextTimeFacts`](../../lib/features/relationships/ui/shared/next_time_facts.dart) — flat caption/body pairs, the same widget the check-in page uses, where a bordered tile per fact made the page's quietest content its tallest block and gave it the lift of something pressable | From the newest check-in that *has* *pay attention to* / *avoid* notes (`NextTimeCard.sourceOf`), not simply the newest: the fields sit under the composer's *More*, so a quick check-in leaves them blank, and blank means "did not get to it", not "forget the last ones". When the source is older than the newest check-in the card says which one (`fromEarlier`). Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
 | Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
 | Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. The rows are the Tasks and Projects lists' grouped rows (`GroupedCardRowSurface`): edge to edge under the header, the hover fill spanning the row, the last one rounded into the card, and the divider beside a hovered row giving way (`buildGroupedCardRowInteractions`). Each row carries a chevron, the sentiment in a fixed trailing slot, what the check-in holds on its meta line, and at most two lines of what was said. |
 | Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
@@ -645,6 +684,16 @@ would over-inset it. Exposed as a function because a sliver and a
 `bottomNavigationBar` cannot be children of that widget.
 
 The [action bar](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart)
+lays its controls out the way the task and entry bars do: a centred `Wrap`
+in which the filled *Log check-in* hugs its label (`DsGlassPill` without
+`expand`), the app's shared `GlassRecordButton` — the task and entry bars'
+own mic, lit by this person's running take — and the channel as a
+`DsGlassRoundButton` (its word in the accessible name; a labelled channel
+pill made this the only strip in the app with two pills) follow one
+`step4` apart, wrapping to a
+second line at large text on a narrow phone. It never stretches the primary
+to the column — on a desktop window that made it a bar-wide slab beside two
+pills, a shape no other strip in the app has. It
 resolves its third control once when built: the first channel, in the
 person's own order, for which `ContactLauncher.canLaunch` answers yes — a
 call on a phone, email on a desktop with a mail client, nothing where neither
@@ -1645,8 +1694,9 @@ The composer's parts, top to bottom:
   keyboard focus and nothing else, and it is the field's only frame: the
   `TextField` inside silences every border the app's
   `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
-  ring the text inside the hairline): the red dot, the waveform and the
-  filled Stop say "live". The phases swap in place rather than through an
+  ring the text inside the hairline): the red dot, the level strip, the
+  listening orb and the filled Stop say "live". The phases swap in place
+  rather than through an
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
   pass.
@@ -1656,20 +1706,36 @@ The composer's parts, top to bottom:
   owns the field. Opened from the post-call offer the chips
   are prefilled and a caption beneath says where the numbers came from.
 * *More*: optional sentiment, topics and next-time guidance, folded unless
-  the edited check-in already carries any of them.
+  the edited check-in already carries any of them. Its header is
+  `subtitle2` in the medium ink — a disclosure, not the sheet's loudest
+  text — and it goes quiet and inert with the chips while the recorder
+  owns the sheet (`_MoreHeader.enabled`).
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
-  in the modal's sticky bar: *Save check-in* always visible, and when it is
-  held, why — on two lines when the bar is stacked above
-  `TextScales.large`, reserved by `CheckInStickyActions.height`. Cancel is
+  in the modal's sticky bar: *Save check-in* visible whenever saving is the
+  next thing the user could do, and when it is held, why — on two lines
+  when the bar is stacked above `TextScales.large`, reserved by
+  `CheckInStickyActions.height`. While the recorder is up
+  (`CheckInSaveBlock.recording`) the bar keeps only that reason line
+  (`check-in-actions-recording`, a zero-size box): the recorder carries
+  Discard · Pause and the orb, whose caption says what stops the take, and
+  a second row of Cancel and a held Save beneath it was two action bars on
+  one screen, Cancel and Discard a finger apart with different fates. Not
+  even the reason line survives — a strip holding only "Stop recording to
+  save" read as a hollow bar with a second Stop instruction — so
+  `blockLabel` answers null for `recording`, and the one settle when Stop
+  brings the actions back is accepted. Cancel is
   the button's `quiet` variant on both viewports, so the one bright shape in
   the bar is Save's even while Save is held — and when the bar stacks, Save
   leads and Cancel sits centred beneath it, the design system's rule for
   every stacked bar; on the phone Cancel's label sits on the content column
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
-  recorder's Discard · Pause · Stop sit on the trailing rail, where Dictate
-  lives in every other phase, and Discard is quiet
-  too: red on this surface is the live dot alone, and the level meter is
-  the prose ink rather than the accent, which means pressable. The clock
+  recorder's Discard · Pause sit centred under the orb — the orb is the one
+  Stop, as on Capture — and Discard is quiet: red on this surface is the
+  live dot alone, and neither secondary wears the accent because the orb,
+  the way forward, does. The level strip is Capture's: `220 × 24`
+  (`VoiceOrbZone.waveformWidth` / `waveformSlotHeight`) in its default teal,
+  centred over the orb, where a field-wide strip in the prose ink read as a
+  rule across the box. The clock
   reads to assistive technology in words (`checkInSpokenClockLabel`: "23
   seconds"), as do the saved-audio captions. A held Save carries its reason
   as a semantics hint, so a reader landing on the control hears the next
@@ -1732,11 +1798,13 @@ sequenceDiagram
   H->>F: the published callback runs
 ```
 
-The *started* chip reads its time through `relationshipTimeLabelOf`, which
-resolves the device's twelve- or twenty-four-hour preference exactly as
-`DesignSystemTimeWheel` does, so the chip and the wheel that edits it never
-disagree; the post-call offer and the card's last-failed-run time go
-through the same helper.
+The *started* chip reads its time through `relationshipTimeLabel`, a pure
+function of the time that always emits the feature's 24h `HH:mm` — the
+same clock every other People timestamp ends in, so the chip and the note
+stamp under it agree. It used to follow the device's twelve- or
+twenty-four-hour preference as `DesignSystemTimeWheel` does; the wheel is a
+transient editor, and on a twelve-hour device the page read two dialects a
+few lines apart. The post-call offer goes through the same helper.
 
 **Save waits for words, and only words.** The rule is one pure function,
 `checkInSaveBlockOf` in
@@ -1932,10 +2000,27 @@ and once the words are read back it touches the check-in holding them
 (`touchCheckInsHolding`), so the briefing catches up.
 
 The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
-embedded in the field rather than pushed as a sheet: a live level strip,
-the running time in tabular mono figures on a fixed `h:mm:ss` shape (so the
-tick never moves the controls beneath it), the line saying audio is on disk
-as it goes, and Discard · Pause · Stop. It drives the app-wide
+embedded in the field rather than pushed as a sheet, and it wears the app's
+one voice anatomy rather than a meter of its own — Capture's: the short teal
+level strip (`VoiceOrbZone.waveformWidth` × `waveformSlotHeight`) over Daily
+OS's [`VoiceButton`](../../lib/features/daily_os_next/ui/widgets/voice_button.dart)
+— the orb `listening` on the recorder's dBFS while the take is live,
+`idle` while it is paused, `transcribing` (dimmed) while a stop is in
+flight, `step11` wide with the voice zone's `step5` air on both sides — the
+orb's verb in words beneath it (`checkInOrbStopHint` / `checkInOrbResumeHint`,
+Capture's caption slot: a glowing picture does not say "stop" to someone who
+has not learned it), then the running time in `relationshipTimestampStyle`
+over `heading3` — tabular figures in the UI face, the last monospace string
+on People gone — on a fixed `h:mm:ss` shape (so the tick never moves the
+controls beneath it), the line saying audio is on disk as it goes, and
+Discard · Pause centred beneath. The orb is the one Stop, as on Capture:
+tapped live it stops, tapped paused it resumes, and it is inert — no tap —
+before `record` has landed, after a refused start, and while a stop is in
+flight. A filled Stop pill beside it gave the surface two
+primaries for one act, which every reviewer read as a second app's recorder.
+Because the orb's shader and breath repeat for as long as the take is live,
+a test with a mounted recorder pumps by hand; `pumpAndSettle` never returns
+(the Capture surface's rule too). It drives the app-wide
 `AudioRecorderController` the way the recording sheet does — `record` on
 mount with the person as `linkedId` and `transcriptionHandledByCaller`,
 `stop` handing back the entry id and the length the clock stood at — and

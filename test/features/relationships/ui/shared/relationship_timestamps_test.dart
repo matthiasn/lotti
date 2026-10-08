@@ -6,6 +6,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -13,7 +14,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../../../widget_test_utils.dart';
 
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
@@ -122,39 +122,13 @@ void main() {
     });
   });
 
-  group('relationshipTimeLabelOf', () {
-    Future<String> labelUnder(
-      WidgetTester tester, {
-      required bool alwaysUse24HourFormat,
-    }) async {
-      late String label;
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(
-            builder: (context) {
-              label = relationshipTimeLabelOf(
-                context,
-                DateTime(2026, 8, 18, 14, 5),
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-          mediaQueryData: MediaQueryData(
-            alwaysUse24HourFormat: alwaysUse24HourFormat,
-          ),
-        ),
-      );
-      return label;
-    }
-
-    testWidgets("follows the device's clock format, as the time wheel does", (
-      tester,
-    ) async {
-      expect(await labelUnder(tester, alwaysUse24HourFormat: true), '14:05');
-      expect(
-        await labelUnder(tester, alwaysUse24HourFormat: false),
-        '2:05 PM',
-      );
+  group('relationshipTimeLabel', () {
+    test("is the feature's 24h clock, a pure function of the time — no "
+        'device or locale input, so a chip and the note stamp under it '
+        'speak one dialect', () {
+      expect(relationshipTimeLabel(DateTime(2026, 8, 18, 14, 5)), '14:05');
+      expect(relationshipTimeLabel(DateTime(2026, 8, 18, 9, 7)), '09:07');
+      expect(relationshipTimeLabel(DateTime(2026, 8, 18)), '00:00');
     });
   });
 
@@ -420,6 +394,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rendered, 'Do');
+    });
+  });
+
+  group('relationshipTimestampStyle', () {
+    const tokens = dsTokensDark;
+
+    test('is the caption token with tabular figures and the low-emphasis '
+        'ink when the caller has no host line — and no monospace face', () {
+      final style = relationshipTimestampStyle(tokens);
+      expect(style.fontSize, tokens.typography.styles.others.caption.fontSize);
+      expect(style.color, tokens.colors.text.lowEmphasis);
+      expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
+      expect(style.fontFamily, isNot('Inconsolata'));
+    });
+
+    test('inside a line of prose it keeps the host size and takes the '
+        "caller's colour — only the figures change", () {
+      final host = tokens.typography.styles.body.bodyLarge;
+      final style = relationshipTimestampStyle(
+        tokens,
+        base: host,
+        color: tokens.colors.text.highEmphasis,
+      );
+      expect(style.fontSize, host.fontSize);
+      expect(style.fontWeight, host.fontWeight);
+      expect(style.color, tokens.colors.text.highEmphasis);
+      expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
     });
   });
 

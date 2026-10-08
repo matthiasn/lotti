@@ -60,6 +60,14 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
       Navigator.of(context).pop();
       return;
     }
+    // A stop already in flight holds the sheet: `cancel` would return at
+    // once without discarding anything, and the take would land in the
+    // journal behind a closed sheet. It lands within a moment, and the
+    // composer then asks the ordinary question.
+    if (_phase is CheckInSpeechRecording &&
+        (widget.handle.recorder?.isFinishing ?? false)) {
+      return;
+    }
     final messages = context.messages;
     // The question says what discarding does to the audio: a live take is
     // deleted with the draft; a recording already in the journal stays.

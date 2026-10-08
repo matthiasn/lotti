@@ -220,7 +220,6 @@
     "lib/features/relationships/ui/pages/contact_import_page.dart": {"spacing":1},
     "lib/features/relationships/ui/pages/relationships_page.dart": {"spacing":1},
     "lib/features/relationships/ui/shared/persona_avatar.dart": {"typography":3},
-    "lib/features/relationships/ui/widgets/check_ins_card.dart": {"spacing":1},
     "lib/features/relationships/ui/widgets/relationship_briefing_card.dart": {"spacing":1},
     "lib/features/relationships/ui/widgets/relationship_briefing_card_relationship_briefing_card_state_part.dart": {"spacing":3},
     "lib/features/settings/ui/pages/advanced/about_page.dart": {"typography":1,"color":3},

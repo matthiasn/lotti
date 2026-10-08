@@ -73,6 +73,19 @@ void main() {
       // the card was the largest, most saturated block on the tab and gave
       // the reader no reason to believe it did anything.
       expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+      // Both doors start on one line, whatever their heights: a centred
+      // door floated the shorter half's caption half a line below the
+      // other's. The chevrons step down to the value line, under the
+      // captions.
+      final dueCaption = tester.getRect(find.text('Due now'));
+      final nextCaption = tester.getRect(find.text('Next due'));
+      expect(dueCaption.top, closeTo(nextCaption.top, 0.5));
+      for (final chevron in find.byIcon(LottiIcons.chevronRight).evaluate()) {
+        expect(
+          tester.getRect(find.byWidget(chevron.widget)).top,
+          greaterThan(dueCaption.top),
+        );
+      }
 
       await tester.tap(find.byKey(const ValueKey('people-summary-due-open')));
       await tester.pumpAndSettle();
@@ -88,6 +101,35 @@ void main() {
         overdue.relationship.meta.id,
         next.relationship.meta.id,
       ]);
+    });
+
+    testWidgets('at large text the chevrons still sit on the value line, '
+        'under the taller caption', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          PeopleSummaryCard(
+            summary: summary(
+              dueNow: 1,
+              nextDue: person('Tilly'),
+              nextDueAt: DateTime(2026, 8, 19),
+              mostOverdue: person('Pip'),
+            ),
+            onOpenNextDue: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final caption = tester.getRect(find.text('Due now'));
+      for (final chevron in find.byIcon(LottiIcons.chevronRight).evaluate()) {
+        expect(
+          tester.getRect(find.byWidget(chevron.widget)).top,
+          greaterThanOrEqualTo(caption.bottom - 0.5),
+          reason: 'a fixed step drifted into the scaled caption',
+        );
+      }
     });
 
     testWidgets('a half with nobody behind it is inert and shows no handle', (
@@ -148,19 +190,35 @@ void main() {
     expect(find.text('Next due'), findsOneWidget);
     expect(find.text('Bo'), findsOneWidget);
     expect(find.text('Thu 23 Jul'), findsOneWidget);
-    expect(
-      tester
-          .widget<Text>(
-            find.byKey(const ValueKey('people-summary-next-due-day')),
-          )
-          .style
-          ?.fontFamily,
-      'Inconsolata',
-    );
+    final day = tester
+        .widget<Text>(find.byKey(const ValueKey('people-summary-next-due-day')))
+        .style;
+    // The feature's date style: tabular figures in the UI face, not a
+    // monospace face of its own.
+    expect(day?.fontFeatures, contains(const FontFeature.tabularFigures()));
+    expect(day?.fontFamily, isNot('Inconsolata'));
     expect(find.text('1 person without reminders'), findsOneWidget);
-    // A non-zero due count is the one thing on the card that may shout.
+    // The card hugs its two facts: the divider runs the taller half's
+    // height and no further. Its default length inside the intrinsic row
+    // once made the card a quarter-screen of void above the list.
+    final divider = tester.getRect(
+      find.byKey(const ValueKey('people-summary-divider')),
+    );
+    final dueCaption = tester.getRect(find.text('Due now'));
+    final nextCaption = tester.getRect(find.text('Next due'));
+    final nextDay = tester.getRect(find.text('Thu 23 Jul'));
+    expect(divider.height, lessThan(120), reason: 'hugs four text lines');
+    expect(divider.top, lessThanOrEqualTo(dueCaption.top + 0.5));
+    expect(divider.bottom, greaterThanOrEqualTo(nextDay.bottom - 0.5));
+    expect(
+      dueCaption.top,
+      closeTo(nextCaption.top, 0.5),
+      reason: 'the halves start on one line',
+    );
+    // A non-zero due count is the one thing on the card that may shout —
+    // in the overdue pill's own warning ink, so amber has one form here.
     final tokens = tester.element(find.byType(PeopleSummaryCard)).designTokens;
-    expect(numeralColor(tester), tokens.colors.alert.warning.defaultColor);
+    expect(numeralColor(tester), tokens.colors.alert.warning.ink);
   });
 
   testWidgets('a calm morning reads as a quiet zero — no warning ink, and '
