@@ -634,6 +634,10 @@ class ProfileAutomationService {
             postProcessing?.effectiveAudioPostProcessingModel,
         audioPostProcessingModelUnavailable:
             postProcessing?.audioPostProcessingModelUnavailable ?? false,
+        // The thinking slot holds the speech-to-text model, so without a
+        // default there is nothing to post-process with — whatever that
+        // model's capability flags say.
+        audioPostProcessingDisabled: postProcessing == null,
         skillAssignments: const [_fallbackTranscriptionAssignment],
       ),
       skill: skill,

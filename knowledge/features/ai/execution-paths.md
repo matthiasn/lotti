@@ -380,6 +380,11 @@ The gates, all deliberate:
   `requestTranscription` skip that check because a gesture is its own consent,
   and that consent covers the transcription asked for, not a second call.
 
+- **Failures never propagate.** The transcript is already persisted and is the
+  valuable artifact; letting a summary failure reach `_withStatusTracking`
+  would mark the transcription run as `error` and invite a retry that
+  re-transcribes audio that transcribed fine.
+
 **What frames it.** `RecordingContextResolver` finds the recording's subject:
 the task in `linkedTaskId`, else the entity that links to the recording — a
 task, a person (directly, or through a check-in's `relationshipId`), a goal,
@@ -400,15 +405,12 @@ check-ins once had.
 on every recording, task-linked or not: it is the backfill path for
 recordings that predate the feature, the way to refresh a stale snapshot, and
 the recovery for a recording whose post-processing never finished (it fills
-the empty text, below). `triggerSkillProvider` lets the recording's
+the empty text, below). A recording that no task or category profile reaches —
+a goal check-in's shape — is summarized on the device's Settings default
+profile, so the offer is never one the trigger then declines. `triggerSkillProvider` lets the recording's
 transcription and summary skills through without a task even when their
 policy is `fullTask` — a goal check-in transcribes with the task-context
 skill — while every other `fullTask` skill still needs one.
-- **Failures never propagate.** The transcript is already persisted and is the
-  valuable artifact; letting a summary failure reach `_withStatusTracking`
-  would mark the transcription run as `error` and invite a retry that
-  re-transcribes audio that transcribed fine.
-
 Two properties are contract rather than detail:
 
 - **The tiers come back through a tool call, never a parser.** The skill

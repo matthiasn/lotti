@@ -217,6 +217,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // back to the entry category's `defaultProfileId`.
           final resolver = ref.read(profileAutomationResolverProvider);
           final isTranscription = skill.skillType == SkillType.transcription;
+          final isSummary = skill.skillType == SkillType.audioSummary;
           ResolvedProfile? resolvedProfile;
           if (linkedTaskId != null) {
             resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
@@ -227,7 +228,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
             final categoryId = entity?.categoryId;
             if (categoryId != null) {
               resolvedProfile = await resolver.resolveForCategory(categoryId);
-            } else if (!isTranscription) {
+            } else if (!isTranscription && !isSummary) {
               await _declineSkill(
                 ref,
                 entityId: params.entityId,
@@ -257,6 +258,15 @@ final triggerSkillProvider = FutureProvider.autoDispose
             if (fallback.handled) {
               resolvedProfile = fallback.resolvedProfile;
             }
+          }
+
+          // A recording's summary frames itself by whatever the recording
+          // belongs to and needs only a model that can call its tool, so a
+          // recording no task or category profile reaches — the shape of a
+          // goal check-in — is summarized on the device's Settings default.
+          // Without it the menu would offer a summary it then declines.
+          if (isSummary && resolvedProfile == null) {
+            resolvedProfile = await resolver.resolveDefaultProfile();
           }
 
           // A profile that resolves but owns no transcription slot is as

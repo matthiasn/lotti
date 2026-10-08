@@ -188,8 +188,10 @@ post-processing that follows a speech-to-text transcript borrows a route
 instead: the device's Settings default profile's audio post-processing
 model, or its thinking model (`ProfileAutomationResolver.resolveDefaultProfile`,
 copied into the ephemeral profile's post-processing slot, unavailability
-included). With no default selected nothing post-processes, and the transcript
-is written as heard.
+included). With no default selected the ephemeral profile is marked
+`audioPostProcessingDisabled`: nothing post-processes, whatever the
+speech-to-text model's own capability flags claim, and the transcript is
+written as heard.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers installed sherpa models, then Mistral contextual Voxtral and a Mistral batch audio model; next come

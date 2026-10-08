@@ -1896,6 +1896,9 @@ void main() {
             'whisper-1',
           );
           expect(result.skill!.id, skillTranscribeContextId);
+          // With no Settings default nothing post-processes: the thinking
+          // slot holds the speech-to-text model itself.
+          expect(result.resolvedProfile!.audioPostProcessingDisabled, isTrue);
           // No task was involved, so the consent gate was never consulted.
           verifyNever(() => mockResolver.resolveForSubject(any()));
         },
@@ -1935,6 +1938,7 @@ void main() {
           expect(profile.effectiveAudioPostProcessingModel, editor);
           expect(profile.effectiveAudioPostProcessingProvider, editorProvider);
           expect(profile.audioPostProcessingModelUnavailable, isFalse);
+          expect(profile.audioPostProcessingDisabled, isFalse);
         },
       );
 

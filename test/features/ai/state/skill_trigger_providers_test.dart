@@ -2505,6 +2505,124 @@ void main() {
       },
     );
 
+    for (final hasDefault in [true, false]) {
+      test(
+        'summarizes a recording no task or category profile reaches on the '
+        'Settings default — ${hasDefault ? 'and runs it' : 'and declines without one'}',
+        () async {
+          final skill =
+              AiConfig.skill(
+                    id: 'skill-audio-summary',
+                    name: 'Summarize Recording',
+                    createdAt: DateTime(2024, 3, 15),
+                    skillType: SkillType.audioSummary,
+                    requiredInputModalities: [Modality.audio],
+                    contextPolicy: ContextPolicy.fullTask,
+                    systemInstructions: 'System',
+                    userInstructions: 'User',
+                  )
+                  as AiConfigSkill;
+          // A goal check-in's shape: no task, no category.
+          final audioEntity = JournalAudio(
+            meta: Metadata(
+              id: 'goal-audio',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+            ),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              audioFile: 'check-in.m4a',
+              audioDirectory: '/recordings',
+              duration: const Duration(minutes: 1),
+            ),
+          );
+          final defaultProfile = ResolvedProfile(
+            thinkingModelId: 'thinking-model',
+            thinkingProvider:
+                AiConfig.inferenceProvider(
+                      id: 'default-prov',
+                      name: 'Default',
+                      inferenceProviderType: InferenceProviderType.anthropic,
+                      apiKey: 'key',
+                      baseUrl: 'https://api.anthropic.com',
+                      createdAt: DateTime(2024, 3, 15),
+                    )
+                    as AiConfigInferenceProvider,
+          );
+          when(
+            () => mockJournalDb.journalEntityById('goal-audio'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockResolver.resolveDefaultProfile(),
+          ).thenAnswer((_) async => hasDefault ? defaultProfile : null);
+          when(
+            () => mockRunner.runAudioSummary(
+              audioEntryId: any(named: 'audioEntryId'),
+              automationResult: any(named: 'automationResult'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              overrideModelId: any(named: 'overrideModelId'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final testContainer = ProviderContainer(
+            overrides: withServiceOverrides([
+              skillRegistryProvider.overrideWithValue([skill]),
+              profileAutomationResolverProvider.overrideWithValue(
+                mockResolver,
+              ),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockAutomationService,
+              ),
+              skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+            ]),
+          );
+          containersToDispose.add(testContainer);
+
+          await testContainer.read(
+            triggerSkillProvider((
+              entityId: 'goal-audio',
+              skillId: 'skill-audio-summary',
+              linkedTaskId: null,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).future,
+          );
+
+          if (hasDefault) {
+            final result =
+                verify(
+                      () => mockRunner.runAudioSummary(
+                        audioEntryId: 'goal-audio',
+                        automationResult: captureAny(named: 'automationResult'),
+                        linkedTaskId: any(named: 'linkedTaskId'),
+                        overrideModelId: any(named: 'overrideModelId'),
+                        geminiThinkingMode: any(named: 'geminiThinkingMode'),
+                      ),
+                    ).captured.single
+                    as AutomationResult;
+            expect(result.resolvedProfile, same(defaultProfile));
+          } else {
+            verifyNever(
+              () => mockRunner.runAudioSummary(
+                audioEntryId: any(named: 'audioEntryId'),
+                automationResult: any(named: 'automationResult'),
+                linkedTaskId: any(named: 'linkedTaskId'),
+                overrideModelId: any(named: 'overrideModelId'),
+                geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              ),
+            );
+          }
+          verifyNever(() => mockResolver.resolveForCategory(any()));
+        },
+      );
+    }
+
     test(
       'threads overrideModelId from TriggerSkillParams to '
       'SkillInferenceRunner.runImageAnalysis when the skill type is '

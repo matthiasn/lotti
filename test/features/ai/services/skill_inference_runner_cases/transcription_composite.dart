@@ -42,6 +42,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
         AiConfigModel? thinkingModel,
         AiConfigModel? postProcessingModel,
         bool postProcessingUnavailable = false,
+        bool postProcessingDisabled = false,
       }) => AutomationResult(
         handled: true,
         resolvedProfile: ResolvedProfile(
@@ -54,6 +55,7 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
               : testInferenceProvider(id: 'p-post'),
           audioPostProcessingModel: postProcessingModel,
           audioPostProcessingModelUnavailable: postProcessingUnavailable,
+          audioPostProcessingDisabled: postProcessingDisabled,
           transcriptionModelId: 'whisper-large-v3',
           transcriptionProvider: transcriptionProvider,
           skillAssignments: [
@@ -790,6 +792,32 @@ extension _TranscriptionCompositeCases on _SkillInferenceTestSetup {
           expect(prompt, contains('**Speech Dictionary:**\n'));
           expect(prompt, contains('- Kubernetes'));
           expect(prompt, isNot(contains('**Task Context:**')));
+        },
+      );
+
+      test(
+        'a profile that stands in for none post-processes nothing, whatever '
+        'its speech-to-text model claims to support',
+        () async {
+          await stubRun(dictionary: [kubernetes]);
+          stubSummary(firstOccurrence);
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: transcriptionFor(
+              transcriptionProvider: whisper(),
+              postProcessingDisabled: true,
+              // The fallback's thinking slot is the speech model; its row
+              // may well be flagged as calling tools.
+              thinkingModel: testAiModel(
+                providerModelId: 'whisper-large-v3',
+              ).copyWith(supportsFunctionCalling: true),
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          expect(textWrites, [raw]);
+          expect(lastSummaryCall, isNull);
         },
       );
 
