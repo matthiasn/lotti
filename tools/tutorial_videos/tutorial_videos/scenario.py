@@ -7,6 +7,9 @@ module loads a scenario and validates that a requested locale is fully
 buildable — missing text for a locale fails loudly here, before any API call
 or app launch.
 
+A scenario may name its talking avatar (``avatar:``, one of
+``avatar.characters.CHARACTERS``); without one it gets the default, Pip.
+
 The dictionary is optional: the App Store preview (``app_store_preview``)
 walks the app without the tutorial harness and seeds nothing. A scenario
 that dictates, or that declares a dictionary at all, must carry one for every
@@ -19,6 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+
+from .avatar.characters import CHARACTERS, DEFAULT_CHARACTER
 
 
 class ScenarioError(ValueError):
@@ -40,6 +45,7 @@ class Scenario:
     title: dict[str, str]
     dictionary: dict[str, list[str]]
     steps: list[Step]
+    avatar: str = DEFAULT_CHARACTER
 
     @property
     def dictation_step(self) -> Step | None:
@@ -129,9 +135,17 @@ def load_scenario(path: Path) -> Scenario:
                 f"{path}: dictionary[{locale!r}] must be a list of terms"
             )
 
+    avatar = raw.get("avatar", DEFAULT_CHARACTER)
+    if avatar not in CHARACTERS:
+        raise ScenarioError(
+            f"{path}: unknown avatar {avatar!r}; choose from "
+            f"{', '.join(sorted(CHARACTERS))}"
+        )
+
     return Scenario(
         name=name,
         title=dict(raw.get("title") or {}),
         dictionary={k: list(v) for k, v in dictionary_raw.items()},
         steps=steps,
+        avatar=avatar,
     )

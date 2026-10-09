@@ -33,8 +33,9 @@ Done on this branch (see the commits on `feat/tutorial-avatar-prototype`):
 | Piece | Where | State |
 |---|---|---|
 | Avatar rasterizer + PNG encoder (stdlib-only) | `tools/tutorial_videos/tutorial_videos/avatar/raster.py` | done, tested |
-| Pip, the only character | `avatar/characters.py` (`PIP`) | done, tested |
+| Pip, the default character; Theo, the onboarding's (2026-10-09) | `avatar/characters.py` (`CHARACTERS`), scenario `avatar:` | done, tested |
 | Loudness lip-sync, 4 mouth levels | `avatar/lipsync.py` | done, tested |
+| Acting: nods, tilts, brows, glances, breathing | `avatar/acting.py`, layered `avatar/render.py` | done, tested |
 | Seeded blinking, pose runs | `avatar/track.py` | done, tested |
 | Preview + corner overlay via ffmpeg | `avatar/render.py` | done, tested (incl. 2 real-ffmpeg tests) |
 | `avatar-preview` / `avatar-overlay` commands | `avatar/cli.py`, `tutorial_videos/__main__.py` | done, tested |
@@ -419,6 +420,13 @@ manifest-paced `driver.step(...)`) and `create_task_from_audio_tutorial_test.dar
 - [x] `validate` for `en` and `de`.
 - [x] `make tutorial_video TUTORIAL_SCENARIO=onboarding_first_run TUTORIAL_LOCALE=en TUTORIAL_AVATAR=1`
       (2026-10-09: 137 s, Gemini, Pip top right). Mobile still to do.
+      Later on 2026-10-09 the onboarding switched to Theo (`avatar: theo`);
+      the desktop locales were re-composed from their captures and given
+      Theo, without re-recording.
+      Then the badge learned to act (`avatar/acting.py`): nods, per-phrase
+      head tilts, brow lifts, breathing, glances at the app in pauses —
+      rendered as moving layers through ffmpeg `sendcmd`, still a few dozen
+      drawn images per video.
 - [ ] Review against the runbook's checklist: cursor glides, HUD clock
       top-centre, key obscured, transcript and task visible, narration audible
       at each step start, duration ≈ warped timeline total, Pip not covering

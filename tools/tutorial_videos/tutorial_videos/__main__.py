@@ -31,14 +31,16 @@ the full pipeline: TTS pre-pass, then the real app under Xvfb driven by
 OpenMontage composition into the final MP4, then WebVTT captions (see
 ``captions.py``) written alongside it; with ``--avatar`` the talking avatar
 is then laid into the MP4 under its own name (``--avatar-position`` picks
-the corner). ``publish`` uploads the already-built
+the corner; the character is the scenario's ``avatar:``, or
+``--avatar-character``). ``publish`` uploads the already-built
 MP4 and its captions to Cloudflare R2 (see ``publish.py``) and prints their
 public URLs.
 
 ``avatar-preview`` and ``avatar-overlay`` (see ``avatar/cli.py``) take no
-scenario: the first renders Pip, the talking avatar, saying a WAV; the second
-lays Pip into the corner of an already-built MP4, lip-synced to the narrator
-clips its manifest and timeline name.
+scenario: the first renders a talking avatar (Pip unless ``--character``
+names another) saying a WAV; the second lays it into the corner of an
+already-built MP4, lip-synced to the narrator clips its manifest and timeline
+name.
 """
 
 from __future__ import annotations
@@ -53,6 +55,7 @@ from pathlib import Path
 from .avatar import AvatarError
 from .avatar.cli import overlay_in_place
 from .avatar.cli import register as register_avatar_commands
+from .avatar.characters import CHARACTERS
 from .avatar.render import DEFAULT_POSITION, POSITIONS
 from .captions import build_vtt
 from .compose import ComposeError, compose_video
@@ -243,6 +246,7 @@ def cmd_build(args: argparse.Namespace) -> int:
             timeline=timeline,
             position=args.avatar_position,
             work_dir=out_dir / "avatar_work" / scenario_locale,
+            character=args.avatar_character or _load(args).avatar,
         )
 
     print(f"OK: {video_path}")
@@ -295,7 +299,12 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument(
                 "--avatar",
                 action="store_true",
-                help="lay Pip, the talking avatar, into the finished video",
+                help="lay the talking avatar into the finished video",
+            )
+            p.add_argument(
+                "--avatar-character",
+                choices=sorted(CHARACTERS),
+                help="overrides the scenario's avatar: (default Pip)",
             )
             p.add_argument(
                 "--avatar-position",

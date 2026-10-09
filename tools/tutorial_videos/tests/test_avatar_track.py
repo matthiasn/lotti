@@ -10,7 +10,6 @@ from tutorial_videos.avatar.characters import Pose
 from tutorial_videos.avatar.track import (
     blink_track,
     pad_track,
-    pose_track,
     run_lengths,
 )
 
@@ -70,17 +69,6 @@ class PadTrackTest(unittest.TestCase):
         mouths = [1]
         pad_track(mouths, 3)
         self.assertEqual(mouths, [1])
-
-
-class PoseTrackTest(unittest.TestCase):
-    def test_pairs_each_mouth_with_its_frame_eye_state(self):
-        self.assertEqual(
-            pose_track([0, 2], [False, True]), [Pose(0, False), Pose(2, True)]
-        )
-
-    def test_rejects_tracks_of_different_lengths(self):
-        with self.assertRaises(ValueError):
-            pose_track([0, 1], [False])
 
 
 class RunLengthsTest(unittest.TestCase):

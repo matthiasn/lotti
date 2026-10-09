@@ -14,20 +14,25 @@ from avatar_helpers import decode_png, pixel, write_wav
 
 from tutorial_videos.avatar import AvatarError
 from tutorial_videos.avatar import render
-from tutorial_videos.avatar.characters import PIP, Pose
+from tutorial_videos.avatar.acting import Motion, act
+from tutorial_videos.avatar.characters import PIP, THEO, Pose
 from tutorial_videos.avatar.lipsync import frame_levels
 from tutorial_videos.avatar.render import (
     POSITIONS,
+    BadgeTrack,
     badge_size,
     build_track,
     overlay_command,
     pose_image_name,
     preview_command,
     probe_video,
+    render_layers,
     render_overlay,
     render_pose_images,
     render_preview,
     run_ffmpeg,
+    head_canvas,
+    write_commands,
     write_concat,
 )
 
@@ -65,15 +70,19 @@ class _TempDirTest(unittest.TestCase):
 
 
 class PoseImagesTest(_TempDirTest):
-    def test_the_name_spells_out_mouth_and_eyes(self):
+    def test_the_name_spells_out_mouth_eyes_gaze_and_brows(self):
         self.assertEqual(
             pose_image_name(PIP, Pose(2, True)), "pip_mouth2_eyes_closed.png"
         )
         self.assertEqual(
-            pose_image_name(PIP, Pose(0, False)), "pip_mouth0_eyes_open.png"
+            pose_image_name(PIP, Pose(0, False)), "pip_mouth0_eyes_open0.png"
+        )
+        self.assertEqual(
+            pose_image_name(THEO, Pose(1, False, 3, True)),
+            "theo_mouth1_eyes_open3_brows.png",
         )
 
-    def test_writes_one_round_badge_png_per_distinct_pose(self):
+    def test_writes_one_face_png_per_distinct_pose(self):
         a, b = Pose(0, False), Pose(3, True)
 
         images = render_pose_images(PIP, [a, b, a, a], 20, self.dir / "poses")
@@ -84,9 +93,67 @@ class PoseImagesTest(_TempDirTest):
             sorted(path.name for path in images.values()),
         )
         width, height, rgba = decode_png(images[b].read_bytes())
-        self.assertEqual((width, height), (20, 20))
-        self.assertEqual(pixel(rgba, 20, 0, 0)[3], 0)
-        self.assertEqual(pixel(rgba, 20, 10, 10)[3], 255)
+        self.assertEqual((width, height), (30, 30))  # the head canvas
+        # Only the face: the corners are see-through.
+        self.assertEqual(pixel(rgba, 30, 0, 0)[3], 0)
+
+
+class LayersTest(_TempDirTest):
+    def setUp(self):
+        super().setUp()
+        self.layers = render_layers(THEO, 40, self.dir / "l")
+
+    def _png(self, name: str, size: int = 40) -> bytes:
+        width, height, rgba = decode_png(self.layers[name].read_bytes())
+        self.assertEqual((width, height), (size, size))
+        return rgba
+
+    def test_writes_the_five_still_layers(self):
+        self.assertEqual(
+            sorted(self.layers), ["background", "body", "head", "mask", "ring"]
+        )
+        for path in self.layers.values():
+            self.assertTrue(path.is_file(), path)
+
+    def test_the_background_fills_the_square(self):
+        rgba = self._png("background")
+        self.assertEqual(pixel(rgba, 40, 0, 0), (*THEO.background[:3], 255))
+
+    def test_the_mask_is_a_white_disc_on_black(self):
+        rgba = self._png("mask")
+        self.assertEqual(pixel(rgba, 40, 0, 0), (0, 0, 0, 255))
+        self.assertEqual(pixel(rgba, 40, 20, 20), (255, 255, 255, 255))
+
+    def test_the_head_is_drawn_around_its_pivot_on_a_larger_canvas(self):
+        # 1.5 times the badge, so the hair above a low pivot is not cut off.
+        rgba = self._png("head", head_canvas(40))
+        # Theo's neck pivot sits just inside his chin: the canvas centre is
+        # skin, and every edge of the canvas is clear.
+        self.assertEqual(pixel(rgba, 60, 30, 29)[3], 255)
+        for x, y in ((30, 0), (0, 30), (59, 30), (30, 59)):
+            self.assertEqual(pixel(rgba, 60, x, y)[3], 0, (x, y))
+
+
+class WriteCommandsTest(_TempDirTest):
+    def test_moves_every_layer_in_supersampled_pixels_and_skips_repeats(self):
+        still = Motion(0.1, (0.0, 0.0), (0.0, 0.0), 0.0)
+        moved = Motion(0.1, (0.1, 0.0), (0.2, 0.05), 0.05)
+        path = self.dir / "c.cmd"
+
+        write_commands([still, still, moved], 10, 100, (5, 7), path)
+
+        lines = path.read_text().splitlines()
+        self.assertEqual(len(lines), 2)  # the repeated frame says nothing
+        self.assertEqual(
+            lines[0],
+            "0.0000 rotate@head a 0.10000, rotate@face a 0.10000, overlay@body y 0, "
+            "overlay@head x 5, overlay@head y 7, overlay@face x 5, overlay@face y 7;",
+        )
+        self.assertEqual(
+            lines[1],
+            "0.2000 overlay@body y 5, overlay@head x 15, overlay@face x 25, "
+            "overlay@face y 12;",
+        )
 
 
 class WriteConcatTest(_TempDirTest):
@@ -111,43 +178,51 @@ class WriteConcatTest(_TempDirTest):
 
 
 class BuildTrackTest(_TempDirTest):
-    def test_the_track_lasts_as_long_as_the_narration(self):
-        concat = build_track(
-            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
+    def _track(self, **kwargs) -> BadgeTrack:
+        return build_track(
+            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w", **kwargs
         )
 
-        self.assertEqual(concat, self.dir / "w" / "pip.ffconcat")
-        self.assertAlmostEqual(sum(_concat_durations(concat)), 1.0)
+    def test_the_track_lasts_as_long_as_the_narration(self):
+        track = self._track()
+
+        self.assertEqual(track.faces, self.dir / "w" / "pip.ffconcat")
+        self.assertAlmostEqual(sum(_concat_durations(track.faces)), 1.0)
 
     def test_the_mouth_moves_while_speaking_and_rests_after(self):
-        concat = build_track(
-            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
-        )
-
         files = [
-            line for line in concat.read_text().splitlines() if line.startswith("file")
+            line
+            for line in self._track().faces.read_text().splitlines()
+            if line.startswith("file")
         ]
-        self.assertIn("mouth3", files[0])
+        self.assertTrue(any("mouth3" in f for f in files[:3]))
         self.assertIn("mouth0", files[-1])
 
     def test_min_frames_keeps_the_avatar_idling_past_the_narration(self):
-        concat = build_track(
-            PIP,
-            self._levels(1.0),
-            fps=10,
-            size=8,
-            work_dir=self.dir / "w",
-            min_frames=30,
-        )
-        self.assertAlmostEqual(sum(_concat_durations(concat)), 3.0)
+        track = self._track(min_frames=30)
+        self.assertAlmostEqual(sum(_concat_durations(track.faces)), 3.0)
+        last = track.commands.read_text().splitlines()[-1]
+        self.assertLess(float(last.split()[0]), 3.0)
 
-    def test_every_listed_image_exists_next_to_the_list(self):
-        concat = build_track(
-            PIP, self._levels(1.0), fps=10, size=8, work_dir=self.dir / "w"
-        )
-        for line in concat.read_text().splitlines():
+    def test_every_file_exists_and_layers_are_drawn_at_twice_the_size(self):
+        track = self._track()
+        for path in (track.background, track.body, track.ring, track.mask):
+            self.assertEqual(decode_png(path.read_bytes())[:2], (16, 16), path)
+        self.assertEqual(decode_png(track.head.read_bytes())[:2], (24, 24))
+        for line in track.faces.read_text().splitlines():
             if line.startswith("file"):
-                self.assertTrue((concat.parent / line.split("'")[1]).is_file(), line)
+                self.assertTrue((track.faces.parent / line.split("'")[1]).is_file())
+        self.assertTrue(track.commands.is_file())
+        self.assertEqual(track.size, 8)
+
+    def test_the_layers_sit_where_the_pivot_puts_them(self):
+        # Pip's pivot is (0.5, 0.72) of 16px, i.e. (8, 12); the 24px head
+        # canvas is centred on it.
+        self.assertEqual(self._track().origin, (-4, 0))
+
+    def test_an_empty_narration_is_an_error(self):
+        with self.assertRaises(AvatarError):
+            build_track(PIP, [], fps=10, size=8, work_dir=self.dir / "w")
 
 
 class BadgeSizeTest(unittest.TestCase):
@@ -160,65 +235,110 @@ class BadgeSizeTest(unittest.TestCase):
         self.assertEqual(badge_size(1), 2)
 
 
+TRACK = BadgeTrack(
+    background=Path("bg.png"),
+    body=Path("body.png"),
+    head=Path("head.png"),
+    faces=Path("faces.ffconcat"),
+    commands=Path("/w/pip.cmd"),
+    ring=Path("ring.png"),
+    mask=Path("mask.png"),
+    size=40,
+    origin=(0, 18),
+)
+
+
 class CommandsTest(unittest.TestCase):
+    def _graph(self, command: list[str]) -> str:
+        return command[command.index("-filter_complex") + 1]
+
+    def test_the_badge_is_composited_from_its_layers_and_moved_by_commands(self):
+        graph = self._graph(
+            overlay_command(
+                video=Path("v.mp4"), track=TRACK, out=Path("o.mp4"), fps=30, margin=6
+            )
+        )
+        self.assertIn("sendcmd=f='/w/pip.cmd'", graph)
+        self.assertIn("rotate@head=", graph)
+        self.assertIn("rotate@face=", graph)
+        self.assertIn("overlay@head=x=0:y=18", graph)
+        self.assertIn("alphamerge", graph)
+        self.assertIn("scale=40:40:flags=area[badge]", graph)
+
+    def test_every_layer_is_an_input_after_the_video(self):
+        command = overlay_command(
+            video=Path("v.mp4"), track=TRACK, out=Path("o.mp4"), fps=30, margin=6
+        )
+        inputs = [command[i + 1] for i, a in enumerate(command) if a == "-i"]
+        self.assertEqual(
+            inputs,
+            ["v.mp4", "bg.png", "body.png", "head.png", "faces.ffconcat",
+             "ring.png", "mask.png"],
+        )  # fmt: skip
+
+    def test_a_windows_style_command_path_is_escaped_for_the_filtergraph(self):
+        track = BadgeTrack(**{**TRACK.__dict__, "commands": Path("C:/w/pip.cmd")})
+        graph = self._graph(
+            overlay_command(
+                video=Path("v.mp4"), track=track, out=Path("o.mp4"), fps=30, margin=6
+            )
+        )
+        self.assertIn("sendcmd=f='C\\:/w/pip.cmd'", graph)
+
     def test_the_preview_centers_the_badge_and_plays_the_narration(self):
         command = preview_command(
-            concat=Path("t.ffconcat"),
-            narration=Path("n.wav"),
-            out=Path("o.mp4"),
-            fps=25,
-            canvas=64,
+            track=TRACK, narration=Path("n.wav"), out=Path("o.mp4"), fps=25, canvas=64
         )
         self.assertEqual(command[0], "ffmpeg")
         self.assertIn("color=c=0xF4F1EA:s=64x64:r=25", command)
-        self.assertIn(
-            "overlay=(W-w)/2:(H-h)/2:shortest=1",
-            command[command.index("-filter_complex") + 1],
-        )
+        self.assertIn("overlay=(W-w)/2:(H-h)/2:shortest=1", self._graph(command))
         self.assertEqual(
-            command[command.index("-map", command.index("[v]")) + 1], "2:a"
+            command[command.index("-map", command.index("[v]")) + 1], "7:a"
         )
         self.assertEqual(command[-1], "o.mp4")
 
-    def test_the_overlay_sits_top_right_by_default_and_keeps_the_audio(self):
+    def test_the_overlay_slides_in_top_right_by_default_and_keeps_the_audio(self):
         command = overlay_command(
-            video=Path("v.mp4"),
-            concat=Path("t.ffconcat"),
-            out=Path("o.mp4"),
-            fps=30,
-            margin=12,
+            video=Path("v.mp4"), track=TRACK, out=Path("o.mp4"), fps=30, margin=12
         )
-        graph = command[command.index("-filter_complex") + 1]
-        self.assertIn("overlay=W-w-12:12:shortest=1", graph)
+        self.assertIn(
+            "overlay='W-w-12+(52)*pow(1-min(1,max(0,(t-0.3)/0.6)),3):12'"
+            ":eval=frame:shortest=1",
+            self._graph(command),
+        )
         self.assertIn("0:a?", command)
         self.assertEqual(command[command.index("-c:a") + 1], "copy")
-        self.assertEqual(command[command.index("-i") + 1], "v.mp4")
 
     def test_every_corner_places_the_badge_a_margin_in_from_its_edges(self):
         expected = {
-            "top_right": "overlay=W-w-12:12:",
-            "top_left": "overlay=12:12:",
-            "bottom_right": "overlay=W-w-12:H-h-12:",
-            "bottom_left": "overlay=12:H-h-12:",
+            "top_right": "overlay='W-w-12+",
+            "top_left": "overlay='12-",
+            "bottom_right": "overlay='W-w-12+",
+            "bottom_left": "overlay='12-",
         }
+        rows = {"top_right": ":12'", "top_left": ":12'", "bottom_right": ":H-h-12'",
+                "bottom_left": ":H-h-12'"}  # fmt: skip
         self.assertEqual(sorted(expected), sorted(POSITIONS))
         for position, placement in expected.items():
             with self.subTest(position=position):
-                command = overlay_command(
-                    video=Path("v.mp4"),
-                    concat=Path("t.ffconcat"),
-                    out=Path("o.mp4"),
-                    fps=30,
-                    margin=12,
-                    position=position,
+                graph = self._graph(
+                    overlay_command(
+                        video=Path("v.mp4"),
+                        track=TRACK,
+                        out=Path("o.mp4"),
+                        fps=30,
+                        margin=12,
+                        position=position,
+                    )
                 )
-                self.assertIn(placement, command[command.index("-filter_complex") + 1])
+                self.assertIn(placement, graph)
+                self.assertIn(rows[position], graph)
 
     def test_an_unknown_corner_is_refused(self):
         with self.assertRaises(AvatarError) as raised:
             overlay_command(
                 video=Path("v.mp4"),
-                concat=Path("t.ffconcat"),
+                track=TRACK,
                 out=Path("o.mp4"),
                 fps=30,
                 margin=12,
@@ -299,13 +419,14 @@ class RenderOverlayTest(_TempDirTest):
         # Narration is 1s; the video is 2s, so the badge idles for the rest
         # and one frame beyond — the overlay then ends with the video.
         self.assertAlmostEqual(sum(_concat_durations(concat)), 2.1)
-        image = next((self.dir / "w").glob("*.png"))
-        self.assertEqual(decode_png(image.read_bytes())[:2], (22, 22))
+        image = self.dir / "w" / "pip_background.png"
+        # 22% of 100px, even, drawn at twice that.
+        self.assertEqual(decode_png(image.read_bytes())[:2], (44, 44))
         command = run.call_args.args[0]
+        graph = command[command.index("-filter_complex") + 1]
         # Top right by default, 15% of the 22px badge in from the edges.
-        self.assertIn(
-            "overlay=W-w-3:3:", command[command.index("-filter_complex") + 1]
-        )
+        self.assertIn("overlay='W-w-3+(25)*", graph)
+        self.assertIn("scale=22:22:", graph)
         self.assertEqual(command[-1], str(out))
 
     def test_the_corner_is_passed_through(self):
@@ -322,7 +443,9 @@ class RenderOverlayTest(_TempDirTest):
                 position="bottom_left",
             )
         command = run.call_args.args[0]
-        self.assertIn("overlay=3:H-h-3:", command[command.index("-filter_complex") + 1])
+        graph = command[command.index("-filter_complex") + 1]
+        self.assertIn("overlay='3-(25)*", graph)
+        self.assertIn(":H-h-3'", graph)
 
 
 @unittest.skipUnless(HAS_FFMPEG, "ffmpeg/ffprobe not installed")
@@ -437,6 +560,39 @@ class RealFfmpegTest(_TempDirTest):
             fps=10,
         )
         self.assertEqual(self._video_stream(out)["nb_frames"], "10")
+
+    def test_the_badge_acts_between_frames_even_while_silent(self):
+        """The sendcmd motion reaches the picture: with no speech at all the
+        badge still breathes and turns to watch the app."""
+        source = self.dir / "wide.mp4"
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+             "-i", "color=c=gray:s=480x270:r=10", "-t", "3",
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", str(source)],
+            check=True,
+        )  # fmt: skip
+        silence = [0.0] * 30
+        out = render_overlay(
+            THEO, source, silence, self.dir / "o.mp4", work_dir=self.dir / "w", fps=10
+        )
+        # Two frames with the very same face image: only motion can tell
+        # them apart.
+        poses, _ = act(silence, 10, 31)
+        self.assertEqual(poses[10], poses[24])
+        crops = []
+        for frame in (10, 24):  # both after the slide-in
+            crops.append(
+                subprocess.run(
+                    ["ffmpeg", "-loglevel", "error", "-i", str(out),
+                     "-vf", f"select=eq(n\\,{frame}),crop=58:58:413:8",
+                     "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                    capture_output=True,
+                    check=True,
+                ).stdout
+            )  # fmt: skip
+        # Encoding noise alone stays far below one grey level on average.
+        difference = sum(abs(a - b) for a, b in zip(*crops)) / len(crops[0])
+        self.assertGreater(difference, 0.5)
 
 
 if __name__ == "__main__":
