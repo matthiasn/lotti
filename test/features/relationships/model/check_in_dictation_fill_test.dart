@@ -75,6 +75,28 @@ class _Scenario {
 }
 
 void main() {
+  group('CheckInContext', () {
+    test('equals a context with the same fields only, and names them', () {
+      final context = CheckInContext(
+        type: CheckInInteractionType.call,
+        start: DateTime(2026, 3, 15, 9),
+        duration: const Duration(minutes: 45),
+      );
+      final same = CheckInContext(
+        type: CheckInInteractionType.call,
+        start: DateTime(2026, 3, 15, 9),
+        duration: const Duration(minutes: 45),
+      );
+      expect(context, same);
+      expect(context.hashCode, same.hashCode);
+      expect(context, isNot(_opening));
+      expect(
+        context.toString(),
+        allOf(contains('call'), contains('09:00'), contains('0:45')),
+      );
+    });
+  });
+
   group('fillCheckInContextFromTakes', () {
     test('fills every field the words name, and says which', () {
       final fill = _fill(['she called me at 9 am for 45 minutes']);

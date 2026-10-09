@@ -114,6 +114,8 @@ void main() {
       'about half an hour': const Duration(minutes: 30),
       'a quarter of an hour': const Duration(minutes: 15),
       'three quarters of an hour': const Duration(minutes: 45),
+      'two and a quarter hours': const Duration(minutes: 135),
+      'an hour and a quarter': const Duration(minutes: 75),
       '1.5 hours': const Duration(minutes: 90),
       'an hour and 15 minutes': const Duration(minutes: 75),
       'eine halbe Stunde': const Duration(minutes: 30),
@@ -152,6 +154,11 @@ void main() {
         _read('from 11 pm to 1 am').duration,
         const Duration(hours: 2),
         reason: 'a range that crosses midnight ends the next day',
+      );
+      expect(
+        _read('from 11 pm to 1').duration,
+        const Duration(hours: 2),
+        reason: 'an unmarked end after a pm start is the early hours',
       );
     });
 
@@ -198,6 +205,36 @@ void main() {
         expect(_read(words).interactionType, expected);
       });
     }
+  });
+
+  group('CheckInDictationFacts', () {
+    test('equals facts with the same fields only, and names them', () {
+      final facts = CheckInDictationFacts(
+        startedAt: DateTime(2026, 3, 15, 15),
+        duration: const Duration(minutes: 45),
+        interactionType: CheckInInteractionType.call,
+      );
+      final same = CheckInDictationFacts(
+        startedAt: DateTime(2026, 3, 15, 15),
+        duration: const Duration(minutes: 45),
+        interactionType: CheckInInteractionType.call,
+      );
+      expect(facts, same);
+      expect(facts.hashCode, same.hashCode);
+      expect(
+        facts,
+        isNot(
+          CheckInDictationFacts(
+            startedAt: DateTime(2026, 3, 15, 15),
+            duration: const Duration(minutes: 45),
+          ),
+        ),
+      );
+      expect(
+        facts.toString(),
+        allOf(contains('15:00'), contains('0:45'), contains('call')),
+      );
+    });
   });
 
   group('nothing said', () {
