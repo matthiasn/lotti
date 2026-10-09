@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.50]
+
+### Added
+
+- **A dictated check-in fills in when it happened, how long it ran and how
+  you connected.** Say "a video call at 3 pm, we talked for about 45
+  minutes", and the check-in's start, duration and type are set from it.
+  The words are read on your device, in English or German, and anything
+  unclear is left as it was. A detail you already picked yourself, or one
+  from a call you placed from the person's page, is never changed, and
+  everything filled in stays editable before you save.
+
+### Changed
+
+- **Your speech dictionary now reaches every voice input, not only
+  recordings.** Dictating into a chat with an agent, capturing your day in
+  Daily OS and the first task in onboarding now send your dictionary's terms
+  to the speech recognition and fix near-misses of them in the text right
+  away. A Daily OS capture heard by a speech-to-text engine such as Whisper is
+  also corrected by your planner profile's audio post-processing model before
+  you review it.
+
 ## [1.1.49]
 
 ### Changed
