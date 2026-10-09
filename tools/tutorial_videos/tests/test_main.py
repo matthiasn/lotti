@@ -118,6 +118,22 @@ class BuildCommandTest(unittest.TestCase):
         self.assertTrue(kwargs["manifest"]["steps"])
         self.assertEqual(kwargs["work_dir"], self.out / "avatar_work" / "category_setup_en")
 
+    def test_the_avatar_is_the_scenarios_own_character(self):
+        # category_setup names no avatar, so it gets the default.
+        _, calls = self._build("--avatar")
+        self.assertEqual(calls["overlay"].call_args.kwargs["character"], "pip")
+
+    def test_the_avatar_character_flag_overrides_the_scenario(self):
+        _, calls = self._build("--avatar", "--avatar-character", "theo")
+        self.assertEqual(calls["overlay"].call_args.kwargs["character"], "theo")
+
+    def test_an_unknown_avatar_character_is_refused(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            entry.main(
+                ["build", "--scenario", "category_setup", "--locale", "en",
+                 "--avatar-character", "walrus"]
+            )
+
     def test_the_avatars_corner_can_be_chosen(self):
         _, calls = self._build("--avatar", "--avatar-position", "bottom_left")
         self.assertEqual(calls["overlay"].call_args.kwargs["position"], "bottom_left")

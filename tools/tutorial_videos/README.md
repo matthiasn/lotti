@@ -347,8 +347,12 @@ overwrites the first: copy the MP4 away before building the other.
 
 ## Talking avatar
 
-A narrator with a face: Pip, a small cartoon penguin in a round badge, lip-syncs
-the narration from a corner of the video. Stdlib-only, in
+A narrator with a face: a cartoon character in a round badge presents the
+narration from a corner of the video. It does not just move its mouth: it
+nods on stressed syllables, re-poses its head for each phrase, lifts its
+brows for emphasis, breathes, darts its eyes, and in a pause watches the app
+before turning back to the viewer. Pip, a penguin, is the default; Theo, a
+man in round glasses, presents the onboarding. Stdlib-only (plus ffmpeg), in
 `tutorial_videos/avatar/`:
 
 ```mermaid
@@ -356,25 +360,38 @@ flowchart LR
     MF[manifest + timeline] --> NT[narration_track.narration_levels\nnarrator clips on the warped clock]
     NT --> LV[per-frame loudness]
     WAV[a plain WAV] --> FL[lipsync.frame_levels\nRMS per video frame] --> LV
-    LV --> MT[lipsync.mouth_track\nmouth level 0..3]
-    MT --> PT[track.pose_track\n+ seeded blink_track]
-    PT --> RL[track.run_lengths]
-    CH[characters.py\nflat shapes per pose] --> RA[raster.py\nanti-aliased PNG per distinct pose]
-    PT --> RA
-    RL --> FC[render.write_concat\nffconcat: one entry per run]
-    RA --> FC
-    FC --> FF[ffmpeg overlay]
+    LV --> AC[acting.act\nphrases, stresses, glances,\nsprings, blinks]
+    AC --> PO[poses\nmouth, eyes, gaze, brows]
+    AC --> MO[motion\nhead roll, head/face/body offsets]
+    CH[characters.py\nbody, head, face layers] --> LA[render.render_layers\nstill layers, drawn once]
+    CH --> FI[render.render_pose_images\none face image per distinct pose]
+    PO --> FI
+    PO --> FC[render.write_concat\nffconcat: one entry per run]
+    FI --> FC
+    MO --> CM[render.write_commands\nsendcmd: per-frame moves]
+    LA --> FF[ffmpeg: rotate, overlay,\nround mask, scale down, slide in]
+    FC --> FF
+    CM --> FF
 ```
 
-- **The character** (`characters.py`) is Pip, a penguin from the demo
-  world whose beak does the talking. A character is data: a badge
-  background, a fixed body, open/closed eyes and four mouth shapes from
-  closed to wide open.
+- **The characters** (`characters.py`) are Pip, a penguin from the demo
+  world whose beak does the talking, and Theo, head and shoulders of a man
+  with side-swept hair, round glasses, light stubble and a mustard crewneck.
+  A character is data split into layers the renderer moves on their own: a
+  `body` that only breathes, a `head` that rolls about the neck `pivot`, and
+  the face on top — `features`, `brows`, open/closed eyes and four mouth
+  shapes — which rolls with the head and slides a little further when it
+  turns, reading as a three-quarter turn. A `Pose` picks mouth, eyes, a gaze
+  from `GAZES` and lifted brows. `CHARACTERS` names the characters.
+- **Which character** a video gets: the scenario's optional `avatar:` key
+  (`onboarding_first_run.yaml` says `theo`), else Pip. `build
+  --avatar-character` overrides the scenario for one run; `avatar-preview`
+  and `avatar-overlay` take `--character`.
 - **What it lip-syncs to** (`narration_track.py`): the narrator clips
   alone, each dropped at its step's warped start through the same
   `timewarp.plan_segments` as `compose.py` and `captions.py`. The narration
   mix beside the video also carries the dictation — the "user" speaking
-  into the app — so syncing to that file would make Pip mouth the user's
+  into the app — so syncing to that file would make the avatar mouth the user's
   words too; the manifest's clips are read instead, and the dictation clip
   is never opened.
 - **Lip-sync** (`lipsync.py`) is loudness-driven: each frame's RMS, relative
@@ -383,15 +400,32 @@ flowchart LR
   picks the mouth level, so it works on any WAV without word timings. The
   mouth only closes after two quiet frames, so it doesn't snap shut between
   syllables.
-- **Rendering** (`render.py`) draws only the distinct poses (at most eight)
-  and lets an ffconcat list hold each run of identical frames, so a
-  three-minute video costs a few seconds of drawing, and a rebuild is
-  reproducible (blinks are seeded).
+- **Acting** (`acting.py`) reads the same loudness for its structure:
+  phrases (speech with gaps under 0.3 s merged) and stresses (sharp rises).
+  Each phrase gets its own head tilt, alternating sides, and a slight turn;
+  each stress kicks a springy nod, the strongest also a brow lift. A silence
+  of a second or more is spent watching the app — eyes down-left, head
+  turned — with a look back at the viewer every few seconds and small nods,
+  and the avatar faces the viewer again just before it speaks. Blinks come
+  at random, at every phrase start and on every glance. Damped springs give
+  every move ease, overshoot and settle; all of it is seeded, so a rebuild
+  acts identically.
+- **Rendering** (`render.py`) never draws frames in Python. The still layers
+  are drawn once at twice the badge size, the head and face on a canvas half
+  as large again and centred on the neck pivot (so nothing clips when it
+  rolls); one face image per distinct pose (a few dozen) goes into an
+  ffconcat list. The motion becomes an ffmpeg `sendcmd` file that rotates
+  and shifts the layers every frame; ffmpeg composites them, clips the badge
+  round, scales it down (whole supersampled pixels become smooth sub-pixel
+  motion) and slides it in from its edge after a beat. A three-minute video
+  costs about a minute.
 
 ```sh
 # Pip saying a WAV, as a square preview -> build/tutorial_videos/avatar/avatar_pip.mp4
 python3 -m tutorial_videos avatar-preview --wav narration.wav
-# Pip in the corner of a built tutorial, lip-synced to the narrator clips its
+# The same for Theo -> avatar_theo.mp4
+python3 -m tutorial_videos avatar-preview --wav narration.wav --character theo
+# Pip (or --character theo) in the corner of a built tutorial, lip-synced to the narrator clips its
 # manifest and timeline name (found beside the video) -> <stem>_avatar.mp4
 python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4
 # Or as part of the build, under the video's own name (publish and the docs

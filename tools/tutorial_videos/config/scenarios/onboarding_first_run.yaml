@@ -9,6 +9,9 @@
 
 scenario: onboarding_first_run
 
+# Presented by Theo, the avatar in round glasses, rather than Pip the penguin.
+avatar: theo
+
 title:
   en: Your first minutes with Lotti
   de: Deine ersten Minuten mit Lotti

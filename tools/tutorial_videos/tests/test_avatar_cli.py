@@ -15,7 +15,7 @@ from unittest import mock
 from avatar_helpers import write_wav
 
 from tutorial_videos.avatar import AvatarError, cli
-from tutorial_videos.avatar.characters import PIP
+from tutorial_videos.avatar.characters import PIP, THEO
 
 
 def _run(argv: list[str]) -> tuple[int, str]:
@@ -85,6 +85,22 @@ class AvatarPreviewTest(unittest.TestCase):
     def test_a_wav_is_required(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             _run(["avatar-preview"])
+
+    def test_another_character_can_be_previewed_under_its_own_name(self):
+        with mock.patch.object(
+            cli, "render_preview", side_effect=lambda c, wav, out, **_: out
+        ) as render:
+            _, stdout = _run(
+                ["avatar-preview", "--wav", "n.wav", "--character", "theo"]
+            )
+
+        self.assertIs(render.call_args.args[0], THEO)
+        self.assertEqual(render.call_args.args[2], Path("/out/avatar/avatar_theo.mp4"))
+        self.assertIn("avatar_theo.mp4", stdout)
+
+    def test_an_unknown_character_is_refused(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            _run(["avatar-preview", "--wav", "n.wav", "--character", "walrus"])
 
 
 class SidecarPathsTest(unittest.TestCase):
@@ -232,6 +248,14 @@ class AvatarOverlayTest(unittest.TestCase):
             position="bottom_left",
         )
 
+    def test_another_character_can_be_overlaid(self):
+        with mock.patch.object(cli, "levels_for", return_value=[]), mock.patch.object(
+            cli, "render_overlay"
+        ) as render:
+            _run(["avatar-overlay", "--video", "/b/v.mp4", "--character", "theo"])
+
+        self.assertIs(render.call_args.args[0], THEO)
+
     def test_an_unknown_corner_is_refused(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             _run(["avatar-overlay", "--video", "v.mp4", "--position", "middle"])
@@ -287,6 +311,27 @@ class OverlayInPlaceTest(_TempDirTest):
                 work_dir=self.dir / "w",
             )
         self.assertEqual(video.read_bytes(), b"plain")
+
+    def test_lays_in_the_named_character(self):
+        video = self.dir / "scene_en.mp4"
+        video.write_bytes(b"plain")
+
+        def fake_render(character, source, levels, out, **kwargs):
+            out.write_bytes(character.name.encode())
+            return out
+
+        with mock.patch.object(cli, "narration_levels", return_value=[]), mock.patch.object(
+            cli, "render_overlay", side_effect=fake_render
+        ):
+            cli.overlay_in_place(
+                video,
+                manifest={"steps": []},
+                timeline={"total": 1},
+                position="top_right",
+                work_dir=self.dir / "w",
+                character="theo",
+            )
+        self.assertEqual(video.read_bytes(), b"theo")
 
 
 if __name__ == "__main__":

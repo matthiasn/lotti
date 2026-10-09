@@ -123,6 +123,24 @@ steps:
         with self.assertRaises(ScenarioError):
             self._load(bad)
 
+    def test_avatar_defaults_to_pip(self):
+        self.assertEqual(self._load(VALID).avatar, "pip")
+
+    def test_a_scenario_can_name_its_avatar(self):
+        named = VALID.replace("title:", "avatar: theo\ntitle:")
+        self.assertEqual(self._load(named).avatar, "theo")
+
+    def test_an_unknown_avatar_is_rejected_with_the_choices(self):
+        bad = VALID.replace("title:", "avatar: walrus\ntitle:")
+        with self.assertRaises(ScenarioError) as raised:
+            self._load(bad)
+        self.assertIn("'walrus'", str(raised.exception))
+        self.assertIn("pip, theo", str(raised.exception))
+
+    def test_the_onboarding_is_presented_by_theo(self):
+        path = TOOL_ROOT / "config" / "scenarios" / "onboarding_first_run.yaml"
+        self.assertEqual(load_scenario(path).avatar, "theo")
+
     def test_real_scenario_buildable_for_en_and_de(self):
         path = TOOL_ROOT / "config" / "scenarios" / "create_task_from_audio.yaml"
         scenario = load_scenario(path)

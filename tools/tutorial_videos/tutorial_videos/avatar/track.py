@@ -1,5 +1,6 @@
-"""Combines the mouth track with blinking into per-frame poses, and collapses
-them into runs — a clip only needs one image per run, not one per frame."""
+"""Frame-track helpers for the acting: the seeded blink schedule, padding a
+mouth track out to the video's length, and collapsing per-frame poses into
+runs — a clip only needs one face image per run, not one per frame."""
 
 from __future__ import annotations
 
@@ -35,14 +36,6 @@ def pad_track(mouths: list[int], frames: int) -> list[int]:
     """Extends ``mouths`` with a closed mouth up to ``frames`` long — the
     avatar keeps idling (and blinking) after the narration ends."""
     return mouths + [0] * (frames - len(mouths))
-
-
-def pose_track(mouths: list[int], blinks: list[bool]) -> list[Pose]:
-    if len(mouths) != len(blinks):
-        raise ValueError(
-            f"mouth track has {len(mouths)} frames, blink track {len(blinks)}"
-        )
-    return [Pose(mouth, closed) for mouth, closed in zip(mouths, blinks)]
 
 
 def run_lengths(poses: list[Pose]) -> list[tuple[Pose, int]]:

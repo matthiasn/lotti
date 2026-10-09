@@ -7,6 +7,8 @@
 # Schema (validated by tutorial_videos/scenario.py):
 #   scenario:  machine id, must match the file name
 #   title:     per-locale video title
+#   avatar:    optional talking-avatar character for `build --avatar`
+#              (pip or theo; default pip)
 #   dictionary: per-locale speech-dictionary terms (seeded on the category so
 #              Voxtral gets context bias for the quirky penguin vocabulary)
 #   steps:     ordered; unique ids; per-locale narration; min_duration is the

@@ -1,11 +1,11 @@
 """The ``avatar-preview`` and ``avatar-overlay`` commands, and the in-place
 overlay ``build --avatar`` runs.
 
-``avatar-preview`` renders Pip saying a WAV, for judging the art and the
-lip-sync on their own. ``avatar-overlay`` adds the badge to an already-built
-tutorial MP4, lip-synced to the narrator clips the build's manifest and
-timeline name (so the dictation never moves the beak), or — for a video
-without those — to a WAV.
+``avatar-preview`` renders a character (Pip unless ``--character`` names
+another) saying a WAV, for judging the art and the lip-sync on their own.
+``avatar-overlay`` adds the badge to an already-built tutorial MP4, lip-synced
+to the narrator clips the build's manifest and timeline name (so the dictation
+never moves the mouth), or — for a video without those — to a WAV.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 
 from . import AvatarError
-from .characters import PIP
+from .characters import CHARACTERS, DEFAULT_CHARACTER
 from .lipsync import frame_levels
 from .narration_track import narration_levels
 from .render import (
@@ -35,6 +35,9 @@ MOBILE_SUFFIX = "_mobile"
 def register(sub: argparse._SubParsersAction, *, default_out: Path) -> None:
     preview = sub.add_parser("avatar-preview")
     preview.add_argument("--wav", required=True, type=Path)
+    preview.add_argument(
+        "--character", choices=sorted(CHARACTERS), default=DEFAULT_CHARACTER
+    )
     preview.add_argument("--size", type=int, default=480)
     preview.add_argument("--fps", type=int, default=DEFAULT_FPS)
     preview.add_argument("--out-dir", type=Path, default=default_out / "avatar")
@@ -66,6 +69,9 @@ def register(sub: argparse._SubParsersAction, *, default_out: Path) -> None:
         "--position", choices=sorted(POSITIONS), default=DEFAULT_POSITION
     )
     overlay.add_argument("--fps", type=int, default=DEFAULT_FPS)
+    overlay.add_argument(
+        "--character", choices=sorted(CHARACTERS), default=DEFAULT_CHARACTER
+    )
     overlay.set_defaults(handler=cmd_avatar_overlay)
 
 
@@ -126,23 +132,31 @@ def overlay_in_place(
     position: str,
     work_dir: Path,
     fps: int = DEFAULT_FPS,
+    character: str = DEFAULT_CHARACTER,
 ) -> Path:
-    """Puts the badge onto a just-built ``video`` under its own name, so the
-    captions, ``publish`` and the docs site see one file."""
+    """Puts ``character``'s badge onto a just-built ``video`` under its own
+    name, so the captions, ``publish`` and the docs site see one file."""
     levels = narration_levels(manifest, timeline, fps)
     temp = video.with_name(f"{video.stem}.avatar_tmp.mp4")
     render_overlay(
-        PIP, video, levels, temp, work_dir=work_dir, fps=fps, position=position
+        CHARACTERS[character],
+        video,
+        levels,
+        temp,
+        work_dir=work_dir,
+        fps=fps,
+        position=position,
     )
     os.replace(temp, video)
     return video
 
 
 def cmd_avatar_preview(args: argparse.Namespace) -> int:
+    character = CHARACTERS[args.character]
     out = render_preview(
-        PIP,
+        character,
         args.wav,
-        args.out_dir / f"avatar_{PIP.name}.mp4",
+        args.out_dir / f"avatar_{character.name}.mp4",
         size=args.size,
         work_dir=args.out_dir / "work",
         fps=args.fps,
@@ -162,7 +176,7 @@ def cmd_avatar_overlay(args: argparse.Namespace) -> int:
         narration=args.narration,
     )
     render_overlay(
-        PIP,
+        CHARACTERS[args.character],
         video,
         levels,
         out,

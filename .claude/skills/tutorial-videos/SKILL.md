@@ -165,11 +165,18 @@ not exact strings.
 - **Speed/pacing knobs**: `timewarp.py` (`MAX_SPEED`, lead-in, narration
   gap); per-step floors in the scenario YAML.
 - **Talking avatar**: `make tutorial_video TUTORIAL_AVATAR=1` (or `build
-  --avatar`) lays Pip (the penguin, `PIP` in
-  `tutorial_videos/avatar/characters.py`) into the top-right corner of the
+  --avatar`) lays the scenario's avatar into the top-right corner of the
   finished video, lip-synced to the narrator clips only — never the
-  dictation. `--avatar-position` / `avatar-overlay --position` move it to
+  dictation. It acts, not just talks: nods on stresses, a head tilt per
+  phrase, brow lifts, breathing, and in pauses it watches the app
+  (`tutorial_videos/avatar/acting.py`; tune there, check with
+  `avatar-preview`). Characters live in `tutorial_videos/avatar/characters.py`
+  (`CHARACTERS`): Pip the penguin by default, Theo for any scenario whose
+  YAML says `avatar: theo` (the onboarding does); `--avatar-character`
+  overrides it for one build, `--character` picks it for the two avatar
+  commands. `--avatar-position` / `avatar-overlay --position` move it to
   another corner; `avatar-overlay --video <built mp4>` adds it to an
   already-built video as `<stem>_avatar.mp4`; `avatar-preview --wav <wav>`
-  renders Pip alone — check any art change at badge size with it first.
+  renders the character alone — check any art change at badge size with it
+  first.
   See the README's "Talking avatar".
