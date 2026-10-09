@@ -40,6 +40,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.50" date="2026-10-09">
+      <description>
+        <p>Added: a dictated check-in fills in when it happened, how long it ran and how you connected. Say "a video call at 3 pm, we talked for about 45 minutes", and the check-in's start, duration and type are set from it. The words are read on your device, in English or German, and anything unclear is left as it was. A detail you already picked yourself, or one from a call you placed from the person's page, is never changed, and everything filled in stays editable before you save.</p>
+        <p>Changed: your speech dictionary now reaches every voice input, not only recordings. Dictating into a chat with an agent, capturing your day in Daily OS and the first task in onboarding now send your dictionary's terms to the speech recognition and fix near-misses of them in the text right away. A Daily OS capture heard by a speech-to-text engine such as Whisper is also corrected by your planner profile's audio post-processing model before you review it.</p>
+      </description>
+    </release>
     <release version="1.1.49" date="2026-10-09">
       <description>
         <p>Changed: dictating a check-in now looks and works like recording anywhere else in Lotti. Recording a check-in - a new one, or more audio on one you already logged - used to show only a strip of level bars and its own row of buttons, unlike every other place you speak to Lotti. The recorder now has the Daily OS voice orb under a short level strip, breathing with your voice, and the orb is the one Stop, as it is in Capture: tap it to stop, or to resume after a pause - a line under the orb says so. Discard and Pause sit beneath it, and while you record the sheet's Cancel/Save bar steps aside entirely, so there is one set of controls on screen at a time.</p>
