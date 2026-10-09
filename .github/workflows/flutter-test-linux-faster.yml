@@ -107,10 +107,18 @@ jobs:
           files: coverage/lcov.info
 
   glados:
-    name: Glados Property Tests (Linux)
+    name: Glados Property Tests (Linux, shard ${{ matrix.shard_label }}/2)
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard_index: 0
+            shard_label: 1
+          - shard_index: 1
+            shard_label: 2
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
@@ -142,6 +150,8 @@ jobs:
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart --coverage --tags glados --no-pub \
             --exclude-tags 'eval-live' \
+            --total-shards=2 \
+            --shard-index=${{ matrix.shard_index }} \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
             --file-reporter=json:reports/tests.json
       - name: Summarize test results
@@ -150,7 +160,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: glados-results
+          name: glados-shard-${{ matrix.shard_label }}-results
           path: reports/
           retention-days: 14
       - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
@@ -160,6 +170,7 @@ jobs:
           version: v11.2.8
           fail_ci_if_error: true
           flags: glados
+          name: glados-shard-${{ matrix.shard_label }}
           files: coverage/lcov.info
 
   performance:
