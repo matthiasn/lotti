@@ -2157,11 +2157,12 @@ stateDiagram-v2
   Dictated --> Held: the user picks it
 ```
 
-A chip is held once the user picks it through its picker, and all three are
-held from the start when the composer opened on a call or message placed from
-the person's page (`showCheckInForInteraction` hands in its measured start and
-elapsed time). A type the composer merely started from — how the two of you
-last connected — is not held. While any chip holds a dictated value, a caption
+A chip is held once the user picks it through its picker. A composer opened
+on a call or message placed from the person's page starts with the values
+`showCheckInForInteraction` handed in held: the start, the elapsed time, and
+the channel that came with that start — each measured, so each held only when
+it was handed in. A type the composer merely started from — how the two of you
+last connected, handed in without a start — is not held. While any chip holds a dictated value, a caption
 under the chips says so (`checkInSourceDictation`), as the post-call strip
 does for a call. Words that land after the composer closed fill nothing: the
 check-in was saved with the values the user had when they pressed Save.

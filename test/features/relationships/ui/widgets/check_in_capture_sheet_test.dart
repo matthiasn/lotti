@@ -2122,6 +2122,47 @@ void main() {
       });
     });
 
+    testWidgets('only the values handed in are held: a start alone leaves '
+        'the length to the words', (tester) async {
+      final start = DateTime(2026, 8, 10, 17, 30);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          buildRankedForm(
+            prefilledInteractionType: CheckInInteractionType.message,
+            prefilledTime: start,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await dictate(tester, 'A video call at 3 pm, about 20 minutes.');
+
+        // The handed-in start and its channel stay; the length was never
+        // handed in, so the words give it.
+        expect(typeChip('Message'), findsOneWidget);
+        expect(find.text('20 min'), findsOneWidget);
+
+        await tapSave(tester);
+        final check = saved();
+        expect(check.data.interactionType, CheckInInteractionType.message);
+        expect(check.from, start);
+        expect(check.to, start.add(const Duration(minutes: 20)));
+      });
+    });
+
+    testWidgets("a type the composer only started from is the words' to "
+        'correct', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          buildRankedForm(
+            prefilledInteractionType: CheckInInteractionType.call,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await dictate(tester, 'We met up for coffee.');
+
+        expect(typeChip('In person'), findsOneWidget);
+      });
+    });
+
     testWidgets("picking a filled chip makes it the user's, for the "
         'caption and for the next take', (
       tester,

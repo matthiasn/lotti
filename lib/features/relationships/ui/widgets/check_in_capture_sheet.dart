@@ -267,9 +267,18 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _openingTime = _interactionTime;
     _openingDuration = _duration;
     // A start handed in comes from a call or message placed from this page
-    // (`showCheckInForInteraction`), with its channel and the time it ran.
+    // (`showCheckInForInteraction`): it, and the elapsed time and channel
+    // handed in with it, were measured, so dictation leaves each one alone.
+    // A type handed in without a start is only how the two last connected —
+    // a guess the words may correct.
     if (widget.prefilledTime != null) {
-      _heldFields.addAll(CheckInContextField.values);
+      _heldFields.add(CheckInContextField.start);
+      if (widget.prefilledInteractionType != null) {
+        _heldFields.add(CheckInContextField.type);
+      }
+    }
+    if (widget.prefilledDuration != null) {
+      _heldFields.add(CheckInContextField.duration);
     }
     _moreOpen =
         _sentiment != null ||
