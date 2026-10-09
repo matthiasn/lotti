@@ -1726,6 +1726,7 @@
   "checkInSentimentOptional": "Optioneel. Wordt nooit door de agent ingevuld.",
   "checkInSentimentStrained": "Gespannen",
   "checkInSourceCall": "Van het gesprek dat je vanaf deze pagina begon. Alles is aan te passen.",
+  "checkInSourceDictation": "Uit wat je in je opname zei. Alles is aan te passen.",
   "checkInSourceMessage": "Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuut} other{{count} minuten}}",
   "@checkInSpokenMinutes": {

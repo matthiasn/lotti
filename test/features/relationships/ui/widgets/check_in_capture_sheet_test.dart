@@ -1162,7 +1162,13 @@ void main() {
         'She got the job.',
       );
       expect(narrativeText(tester), 'Called on the way home.');
+      // Words that name no start, length or channel move no chip — and the
+      // note's own "Called" is never read.
       expect(find.text('Duration'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('check-in-dictation-strip')),
+        findsNothing,
+      );
 
       await tapSave(tester);
       expect(capturedSave().entryText?.plainText, 'Called on the way home.');
@@ -1972,6 +1978,185 @@ void main() {
         lessThan(1),
         reason: 'one row',
       );
+    });
+  });
+
+  group('dictation fills the context chips', () {
+    // Evening, so "at 3 pm" was this afternoon.
+    final now = DateTime(2026, 8, 10, 18);
+    final strip = find.byKey(const ValueKey('check-in-dictation-strip'));
+
+    Finder typeChip(String label) => find.descendant(
+      of: find.byKey(const ValueKey('check-in-type')),
+      matching: find.text(label),
+    );
+
+    Widget buildRankedForm({
+      CheckInInteractionType? prefilledInteractionType,
+      DateTime? prefilledTime,
+      Duration? prefilledDuration,
+    }) => buildForm(
+      prefilledInteractionType: prefilledInteractionType,
+      prefilledTime: prefilledTime,
+      prefilledDuration: prefilledDuration,
+      overrides: [
+        checkInDurationSuggestionsControllerProvider.overrideWith(
+          () => _FixedDurationSuggestions(const [
+            Duration(minutes: 45),
+            Duration(minutes: 30),
+          ]),
+        ),
+      ],
+    );
+
+    /// Records a take and lets [words] land on it.
+    Future<void> dictate(WidgetTester tester, String words) async {
+      stubTranscription.transcript = words;
+      await startDictation(tester);
+      await stopRecording(tester);
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> pickDuration(WidgetTester tester, int minutes) async {
+      await tester.tap(find.byKey(const ValueKey('check-in-duration')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(ValueKey('check-in-duration-pick-$minutes')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    ({CheckInData data, DateTime from, DateTime to}) saved() {
+      final captured = verify(
+        () => mockRepository.createCheckIn(
+          data: captureAny(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: captureAny(named: 'dateFrom'),
+          dateTo: captureAny(named: 'dateTo'),
+        ),
+      ).captured;
+      return (
+        data: captured[0] as CheckInData,
+        from: captured[1] as DateTime,
+        to: captured[2] as DateTime,
+      );
+    }
+
+    testWidgets('words naming the start, length and channel fill those '
+        'chips, say so, and are saved', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        expect(strip, findsNothing);
+
+        await dictate(
+          tester,
+          'We had a video call at 3 pm and talked for 45 minutes.',
+        );
+
+        expect(typeChip('Video call'), findsOneWidget);
+        expect(find.text('45 min'), findsOneWidget);
+        expect(
+          tester.widget<Text>(strip).data,
+          'From what you said in your recording. Everything is editable.',
+        );
+
+        await tapSave(tester);
+        final check = saved();
+        expect(check.data.interactionType, CheckInInteractionType.videoCall);
+        expect(check.from, DateTime(2026, 8, 10, 15));
+        expect(check.to, DateTime(2026, 8, 10, 15, 45));
+      });
+    });
+
+    testWidgets('a chip the user chose is never replaced by what was said', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('check-in-type')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
+        await tester.pumpAndSettle();
+        await pickDuration(tester, 45);
+
+        await dictate(tester, 'A video call at 3 pm, about 20 minutes.');
+
+        // The start was the user's to give and they had not: it fills.
+        expect(typeChip('Call'), findsOneWidget);
+        expect(find.text('45 min'), findsOneWidget);
+        expect(strip, findsOneWidget);
+
+        await tapSave(tester);
+        final check = saved();
+        expect(check.data.interactionType, CheckInInteractionType.call);
+        expect(check.from, DateTime(2026, 8, 10, 15));
+        expect(check.to, DateTime(2026, 8, 10, 15, 45));
+      });
+    });
+
+    testWidgets('a composer opened on a call placed from this page keeps '
+        "the call's channel, start and length", (tester) async {
+      final callStart = DateTime(2026, 8, 10, 17, 30);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          buildRankedForm(
+            prefilledInteractionType: CheckInInteractionType.call,
+            prefilledTime: callStart,
+            prefilledDuration: const Duration(minutes: 12),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await dictate(tester, 'We met in person at 9 am for an hour.');
+
+        expect(typeChip('Call'), findsOneWidget);
+        expect(strip, findsNothing);
+
+        await tapSave(tester);
+        final check = saved();
+        expect(check.data.interactionType, CheckInInteractionType.call);
+        expect(check.from, callStart);
+        expect(check.to, callStart.add(const Duration(minutes: 12)));
+      });
+    });
+
+    testWidgets("picking a filled chip makes it the user's, for the "
+        'caption and for the next take', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+
+        await dictate(tester, 'We talked for about 45 minutes.');
+        expect(strip, findsOneWidget);
+
+        await pickDuration(tester, 30);
+        expect(strip, findsNothing);
+
+        recorder.stopResult = 'audio-2';
+        await dictate(tester, 'No wait, it was an hour.');
+        expect(find.text('30 min'), findsOneWidget);
+        expect(strip, findsNothing);
+      });
+    });
+
+    testWidgets("a later take's words replace an earlier take's", (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+
+        await dictate(tester, 'We talked for about 45 minutes.');
+        recorder.stopResult = 'audio-2';
+        await dictate(tester, 'Actually it was an hour and a half.');
+
+        expect(find.text('1 h 30'), findsOneWidget);
+        expect(strip, findsOneWidget);
+      });
     });
   });
 

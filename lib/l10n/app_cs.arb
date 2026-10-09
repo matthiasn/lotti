@@ -1512,6 +1512,7 @@
   "checkInSentimentOptional": "Volitelné. Agent to nikdy nevyplňuje.",
   "checkInSentimentStrained": "Napjaté",
   "checkInSourceCall": "Z hovoru, který jsi zahájil/a z této stránky. Vše jde upravit.",
+  "checkInSourceDictation": "Z toho, co jsi řekl/a v nahrávce. Vše jde upravit.",
   "checkInSourceMessage": "Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuta} few{{count} minuty} other{{count} minut}}",
   "@checkInSpokenMinutes": {

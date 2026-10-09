@@ -2101,7 +2101,7 @@ error watch per take, keyed by the audio entry id. A thrown resolution error
 is also caught and ends the wait. No failure retries with another model or
 provider.
 
-Three invariants hold regardless of what comes back:
+Four invariants hold regardless of what comes back:
 
 * **Nothing auto-saves.** A take is shown under the note; the check-in
   exists only once the user presses save. This is the same rule that keeps
@@ -2113,6 +2113,55 @@ Three invariants hold regardless of what comes back:
   the recorder at work, an empty composer (no words and no take) or a save
   in flight. A transcript that is slow, or never comes, cannot cost the
   check-in.
+* **Words fill only the chips nobody chose.** See below.
+
+## Words that fill the chips
+
+When a take's words land while the composer is open, `_fillFromDictation`
+reads them for the check-in's start, length and channel and sets each one
+into its chip — type · started · duration — unless that chip is *held*.
+Nothing is read from the typed note, and sentiment is never filled (ADR
+0038).
+
+The reading is
+[`extractCheckInDictationFacts`](../../lib/features/relationships/model/check_in_dictation_facts.dart):
+rule-based and on the device — no model is asked, so nothing leaves the
+device for it. Each language is a lexicon
+([English](../../lib/features/relationships/model/check_in_dictation_lexicon_en.dart),
+[German](../../lib/features/relationships/model/check_in_dictation_lexicon_de.dart)).
+The transcript carries no usable language tag (`AudioTranscript.detectedLanguage`
+is always `-`), so every lexicon reads every take, and a field two lexicons
+answer differently is left alone. Dictation in another language fills
+nothing. What each field needs:
+
+| Field | Filled from | Left alone |
+|---|---|---|
+| Started | a clock time — "at 3 pm", "um 15 Uhr", "half past two", "from 2 to 3" — placed by a day word ("yesterday at noon"), otherwise on its most recent past occurrence | a part of the day or a day alone ("this morning", "yesterday"); a time still to come; two different times |
+| Duration | a number and a unit — "45 minutes", "an hour and a half", "eine halbe Stunde" — or, with none, a clock range | a when rather than a how long ("ten minutes ago", "in an hour", "20 minutes late"); anything under two minutes or over twelve hours; two different lengths |
+| Type | a past-tense channel phrase — "met up", "called", "on the phone", "video call", "over Zoom" | a plan ("I should call her"); in person and a call in one take. A call that was also on video is a video call |
+
+An unmarked hour reads as the hours people keep: 1–7 in the afternoon or
+evening, 8–12 as said, unless the part of the day or a 24-hour form ("08:30",
+"15 Uhr") says otherwise.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Free: composer opens
+  [*] --> Held: opened on a call placed from this page
+  Free --> Dictated: a take's words name the field
+  Dictated --> Dictated: a later take names it again
+  Free --> Held: the user picks it
+  Dictated --> Held: the user picks it
+```
+
+A chip is held once the user picks it through its picker, and all three are
+held from the start when the composer opened on a call or message placed from
+the person's page (`showCheckInForInteraction` hands in its measured start and
+elapsed time). A type the composer merely started from — how the two of you
+last connected — is not held. While any chip holds a dictated value, a caption
+under the chips says so (`checkInSourceDictation`), as the post-call strip
+does for a call. Words that land after the composer closed fill nothing: the
+check-in was saved with the values the user had when they pressed Save.
 
 Name accuracy comes from **correcting the transcript**, because the route
 most people use cannot be biased: Melious' Whisper endpoints accept a

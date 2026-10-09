@@ -3520,6 +3520,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aus dem Anruf, den du von dieser Seite aus gestartet hast. Alles lässt sich ändern.';
 
   @override
+  String get checkInSourceDictation =>
+      'Aus dem, was du in deiner Aufnahme gesagt hast. Alles lässt sich ändern.';
+
+  @override
   String get checkInSourceMessage =>
       'Aus der Nachricht, die du von dieser Seite aus geschickt hast. Alles lässt sich ändern.';
 

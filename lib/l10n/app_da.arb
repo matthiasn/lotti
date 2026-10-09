@@ -1727,6 +1727,7 @@
   "checkInSentimentOptional": "Valgfrit. Udfyldes aldrig af agenten.",
   "checkInSentimentStrained": "Anstrengt",
   "checkInSourceCall": "Fra det opkald, du startede fra denne side. Alt kan redigeres.",
+  "checkInSourceDictation": "Fra det, du sagde i din optagelse. Alt kan redigeres.",
   "checkInSourceMessage": "Fra den besked, du sendte fra denne side. Alt kan redigeres.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minut} other{{count} minutter}}",
   "@checkInSpokenMinutes": {

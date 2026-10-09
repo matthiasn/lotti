@@ -1727,6 +1727,7 @@
   "checkInSentimentOptional": "Valfritt. Fylls aldrig i av agenten.",
   "checkInSentimentStrained": "Ansträngt",
   "checkInSourceCall": "Från samtalet du ringde från den här sidan. Allt går att ändra.",
+  "checkInSourceDictation": "Från det du sa i din inspelning. Allt går att ändra.",
   "checkInSourceMessage": "Från meddelandet du skickade från den här sidan. Allt går att ändra.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minut} other{{count} minuter}}",
   "@checkInSpokenMinutes": {

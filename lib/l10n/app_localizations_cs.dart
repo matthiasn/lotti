@@ -3534,6 +3534,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Z hovoru, který jsi zahájil/a z této stránky. Vše jde upravit.';
 
   @override
+  String get checkInSourceDictation =>
+      'Z toho, co jsi řekl/a v nahrávce. Vše jde upravit.';
+
+  @override
   String get checkInSourceMessage =>
       'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
 

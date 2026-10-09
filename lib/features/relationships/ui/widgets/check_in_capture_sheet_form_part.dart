@@ -123,7 +123,8 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
   }
 
   /// Asks for the words of [audioEntryId] and shows them on its take when
-  /// they land. The recorder suppressed automatic inference for this
+  /// they land, filling the start, length and channel they name into the
+  /// chips the user has not chosen (`_fillFromDictation`). The recorder suppressed automatic inference for this
   /// capture; the transcription service owns the one explicit request, and
   /// runs on after the sheet closes — the words land on the recording, and
   /// the service tells the saved check-in (ADR 0062).
@@ -171,6 +172,8 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
             ? take.missing(failureDetail)
             : take.heard(transcript),
       );
+      // The words stay on their take; only the chips they speak about move.
+      if (transcript != null) _fillFromDictation(transcript);
     } finally {
       if (identical(_transcriptWaits[audioEntryId], wait)) {
         _forgetTranscriptWait(audioEntryId);

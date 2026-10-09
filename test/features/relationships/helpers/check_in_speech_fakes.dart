@@ -18,7 +18,10 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
 
   /// Mutable, so a test can take the route away between two takes.
   bool canTranscribeResult;
-  final String? transcript;
+
+  /// The words every take is heard as, unless [gate] is set. Mutable, so
+  /// each take can be given its own.
+  String? transcript;
 
   /// When set, the transcript wait resolves only when this completes.
   final Completer<String?>? gate;

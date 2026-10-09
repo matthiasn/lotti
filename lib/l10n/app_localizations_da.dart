@@ -3489,6 +3489,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Fra det opkald, du startede fra denne side. Alt kan redigeres.';
 
   @override
+  String get checkInSourceDictation =>
+      'Fra det, du sagde i din optagelse. Alt kan redigeres.';
+
+  @override
   String get checkInSourceMessage =>
       'Fra den besked, du sendte fra denne side. Alt kan redigeres.';
 

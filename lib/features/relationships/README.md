@@ -80,8 +80,11 @@ replaced. Voice capture records against the person and transcribes with the
 system default profile. Save does not wait for the words: a few words or a
 recording are enough, and words still on their way land on the recording
 after the check-in is saved. A recording whose words never came can be asked
-for again without recording again, or left out. A missing transcription
-model is explained before recording. Dictated words are corrected against
+for again without recording again, or left out. When the words say when it
+happened, for how long or how you connected — "a video call at 3, about 45
+minutes" — those chips fill in from them, read on the device, unless you
+already picked them yourself; a caption says so, and every chip stays
+editable. A missing transcription model is explained before recording. Dictated words are corrected against
 the person's name and nickname, the names that come up with them (set in the
 person editor), the other people in their category and the category's speech
 dictionary, so a misheard name arrives spelled the way the user writes it.
