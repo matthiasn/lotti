@@ -73,6 +73,7 @@ class CaptureController extends Notifier<CaptureState> {
     String Function()? sessionIdFactory,
     Future<String?> Function()? originHostId,
     Future<DailyOsTranscriptionTarget?> Function()? transcriptionTarget,
+    Future<DailyOsTranscriptionTarget?> Function()? correctionTarget,
     DateTime Function()? now,
   }) : _recorderOverride = recorder,
        _transcriberOverride = transcriber,
@@ -82,6 +83,7 @@ class CaptureController extends Notifier<CaptureState> {
        _sessionIdFactory = sessionIdFactory ?? _newSessionId,
        _originHostIdOverride = originHostId,
        _transcriptionTargetOverride = transcriptionTarget,
+       _correctionTargetOverride = correctionTarget,
        _now = now ?? DateTime.now;
 
   static String _newSessionId() => const Uuid().v4();
@@ -95,6 +97,8 @@ class CaptureController extends Notifier<CaptureState> {
   final Future<String?> Function()? _originHostIdOverride;
   final Future<DailyOsTranscriptionTarget?> Function()?
   _transcriptionTargetOverride;
+  final Future<DailyOsTranscriptionTarget?> Function()?
+  _correctionTargetOverride;
   final DateTime Function() _now;
 
   /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
@@ -137,6 +141,12 @@ class CaptureController extends Notifier<CaptureState> {
       return null;
     }
   }
+
+  /// The planner profile's post-processing model, or null when nothing can
+  /// correct the transcript.
+  Future<DailyOsTranscriptionTarget?> _correctionTarget() =>
+      _correctionTargetOverride?.call() ??
+      ref.read(dailyOsTranscriptCorrectionTargetProvider.future);
 
   Future<String> _runTranscription(
     String filePath,
@@ -407,6 +417,7 @@ class CaptureController extends Notifier<CaptureState> {
     //    the claimed job's state machine so a failure hands the retry to
     //    the background runtime instead of losing the recording.
     String transcript;
+    DailyOsTranscriptionTarget? transcriptionTarget;
     try {
       final coordinator = _attributionCoordinator;
       if (coordinator != null) {
@@ -418,7 +429,7 @@ class CaptureController extends Notifier<CaptureState> {
         );
       }
       final attributionSession = _transcriptAttribution;
-      final transcriptionTarget = await _transcriptionTarget();
+      transcriptionTarget = await _transcriptionTarget();
       transcript = (await _runTranscription(
         fullPath,
         attributionSession,
@@ -464,6 +475,15 @@ class CaptureController extends Notifier<CaptureState> {
       );
       return;
     }
+
+    // Before anything stores or shows the words, so the review starts from
+    // the corrected text.
+    transcript = await correctHeardTranscript(
+      transcriber: _transcriber,
+      transcript: transcript,
+      heardBy: transcriptionTarget,
+      correctionTarget: _correctionTarget,
+    );
 
     final attached = outbox != null && claim != null
         ? await _completeForegroundProcessing(

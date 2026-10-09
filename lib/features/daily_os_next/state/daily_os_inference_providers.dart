@@ -3,7 +3,10 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/util/speech_to_text_route.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 
@@ -102,17 +105,7 @@ typedef DailyOsTranscriptionTarget = ({
 final FutureProvider<DailyOsTranscriptionTarget?>
 dailyOsTranscriptionTargetProvider = FutureProvider(
   (ref) async {
-    final templateEntity = await ref.watch(
-      agentTemplateProvider(dayAgentTemplateId).future,
-    );
-    final template = templateEntity?.mapOrNull(
-      agentTemplate: (value) => value,
-    );
-    final profileId = template?.profileId;
-    if (profileId == null) return null;
-    final resolved = await ref
-        .read(profileResolverProvider)
-        .resolveByProfileId(profileId);
+    final resolved = await _dayAgentProfile(ref);
     final provider = resolved?.transcriptionProvider;
     final model = resolved?.transcriptionModel;
     if (provider == null || model == null) return null;
@@ -120,3 +113,68 @@ dailyOsTranscriptionTargetProvider = FutureProvider(
   },
   name: 'dailyOsTranscriptionTargetProvider',
 );
+
+/// The model that corrects a Daily OS capture's transcript against the
+/// speech dictionary: the planner profile's audio post-processing route —
+/// its own slot, or its thinking model — when that model can call the
+/// correction tool. Null otherwise, and when the profile names a
+/// post-processing model this device cannot resolve: the capture then keeps
+/// the engine's words, corrected by sound and spelling only.
+final FutureProvider<DailyOsTranscriptionTarget?>
+dailyOsTranscriptCorrectionTargetProvider = FutureProvider(
+  (ref) async {
+    final resolved = await _dayAgentProfile(ref);
+    if (resolved == null || resolved.audioPostProcessingModelUnavailable) {
+      return null;
+    }
+    final model = resolved.effectiveAudioPostProcessingModel;
+    if (model == null || !model.supportsFunctionCalling) return null;
+    return (
+      provider: resolved.effectiveAudioPostProcessingProvider,
+      model: model,
+    );
+  },
+  name: 'dailyOsTranscriptCorrectionTargetProvider',
+);
+
+/// [transcript] corrected against the speech dictionary when a speech-to-text
+/// engine heard it — such an engine cannot read the dictionary, while a
+/// multimodal model spelled its terms as given — and [correctionTarget]
+/// names a model to correct it with. [heardBy] is the explicit target the
+/// transcription ran on; without one, the route discovery chose is read
+/// back from [transcriber]. Otherwise, or when anything fails, the words as
+/// heard. Shared by the foreground capture and the outbox's retries, so a
+/// retried capture is corrected too.
+Future<String> correctHeardTranscript({
+  required AudioTranscriptionService transcriber,
+  required String transcript,
+  required DailyOsTranscriptionTarget? heardBy,
+  required Future<DailyOsTranscriptionTarget?> Function() correctionTarget,
+}) async {
+  final DailyOsTranscriptionTarget? target;
+  final DailyOsTranscriptionTarget route;
+  try {
+    target = await correctionTarget();
+    if (target == null) return transcript;
+    route = heardBy ?? await transcriber.discoverTarget();
+  } catch (_) {
+    return transcript;
+  }
+  if (!routesToSpeechToText(route.provider, route.model.providerModelId)) {
+    return transcript;
+  }
+  return transcriber.correctTranscript(transcript, target: target);
+}
+
+/// The planner (day agent template) profile, resolved; null without one.
+Future<ResolvedProfile?> _dayAgentProfile(Ref ref) async {
+  final templateEntity = await ref.watch(
+    agentTemplateProvider(dayAgentTemplateId).future,
+  );
+  final template = templateEntity?.mapOrNull(
+    agentTemplate: (value) => value,
+  );
+  final profileId = template?.profileId;
+  if (profileId == null) return null;
+  return ref.read(profileResolverProvider).resolveByProfileId(profileId);
+}

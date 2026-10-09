@@ -248,4 +248,243 @@ void main() {
       }
     });
   });
+
+  group('dailyOsTranscriptCorrectionTargetProvider', () {
+    AiConfigInferenceProvider provider(String id) =>
+        AiConfig.inferenceProvider(
+              id: id,
+              baseUrl: 'http://localhost',
+              apiKey: 'k',
+              name: 'Provider $id',
+              createdAt: DateTime(2026, 7, 21),
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            )
+            as AiConfigInferenceProvider;
+
+    AiConfigModel model(String id, {required bool tools}) =>
+        AiConfig.model(
+              id: id,
+              name: 'Model $id',
+              providerModelId: id,
+              inferenceProviderId: 'p-$id',
+              createdAt: DateTime(2026, 7, 21),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: tools,
+            )
+            as AiConfigModel;
+
+    Future<DailyOsTranscriptionTarget?> targetFor(
+      ResolvedProfile? profile,
+    ) async {
+      final resolver = MockProfileResolver();
+      when(
+        () => resolver.resolveByProfileId('profile-1'),
+      ).thenAnswer((_) async => profile);
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          agentTemplateProvider.overrideWith(
+            (ref, id) async => makeTestTemplate(
+              id: dayAgentTemplateId,
+              agentId: dayAgentTemplateId,
+              kind: AgentTemplateKind.dayAgent,
+              profileId: 'profile-1',
+            ),
+          ),
+          profileResolverProvider.overrideWithValue(resolver),
+        ]),
+      );
+      addTearDown(container.dispose);
+      return container.read(dailyOsTranscriptCorrectionTargetProvider.future);
+    }
+
+    test(
+      "is the planner profile's post-processing model, else its thinking "
+      'model, when it can call the correction tool',
+      () async {
+        final editor = model('editor', tools: true);
+        final viaSlot = await targetFor(
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider('p-thinking'),
+            thinkingModel: model('thinking', tools: true),
+            audioPostProcessingModelId: 'editor',
+            audioPostProcessingProvider: provider('p-editor'),
+            audioPostProcessingModel: editor,
+          ),
+        );
+        expect(viaSlot?.model, editor);
+        expect(viaSlot?.provider.id, 'p-editor');
+
+        final viaThinking = await targetFor(
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider('p-thinking'),
+            thinkingModel: model('thinking', tools: true),
+          ),
+        );
+        expect(viaThinking?.model.id, 'thinking');
+      },
+    );
+
+    test(
+      'is null without a profile, with a model that cannot call tools, or '
+      'with a post-processing model this device cannot resolve',
+      () async {
+        expect(await targetFor(null), isNull);
+        expect(
+          await targetFor(
+            ResolvedProfile(
+              thinkingModelId: 'thinking',
+              thinkingProvider: provider('p-thinking'),
+              thinkingModel: model('thinking', tools: false),
+            ),
+          ),
+          isNull,
+        );
+        expect(
+          await targetFor(
+            ResolvedProfile(
+              thinkingModelId: 'thinking',
+              thinkingProvider: provider('p-thinking'),
+              thinkingModel: model('thinking', tools: true),
+              audioPostProcessingModelUnavailable: true,
+            ),
+          ),
+          isNull,
+        );
+      },
+    );
+  });
+
+  group('correctHeardTranscript', () {
+    AiConfigInferenceProvider provider(InferenceProviderType type) =>
+        AiConfig.inferenceProvider(
+              id: 'p-${type.name}',
+              baseUrl: 'http://localhost',
+              apiKey: 'k',
+              name: type.name,
+              createdAt: DateTime(2026, 7, 21),
+              inferenceProviderType: type,
+            )
+            as AiConfigInferenceProvider;
+
+    AiConfigModel model(String providerModelId) =>
+        AiConfig.model(
+              id: 'm-$providerModelId',
+              name: providerModelId,
+              providerModelId: providerModelId,
+              inferenceProviderId: 'p',
+              createdAt: DateTime(2026, 7, 21),
+              inputModalities: const [Modality.audio],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    final whisper = (
+      provider: provider(InferenceProviderType.whisper),
+      model: model('whisper-large-v3'),
+    );
+    final gemini = (
+      provider: provider(InferenceProviderType.gemini),
+      model: model('gemini-2.5-flash'),
+    );
+    final editor = (
+      provider: provider(InferenceProviderType.genericOpenAi),
+      model: model('editor'),
+    );
+
+    test(
+      "corrects a speech-to-text engine's words on the correction model",
+      () async {
+        final transcriber = MockAudioTranscriptionService();
+        when(
+          () => transcriber.correctTranscript('heard', target: editor),
+        ).thenAnswer((_) async => 'corrected');
+
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: whisper,
+            correctionTarget: () async => editor,
+          ),
+          'corrected',
+        );
+      },
+    );
+
+    test(
+      'reads the route discovery chose when the capture ran without a '
+      'target, and corrects only a speech-to-text one',
+      () async {
+        final transcriber = MockAudioTranscriptionService();
+        when(
+          () => transcriber.correctTranscript('heard', target: editor),
+        ).thenAnswer((_) async => 'corrected');
+        when(transcriber.discoverTarget).thenAnswer((_) async => whisper);
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'corrected',
+        );
+
+        when(transcriber.discoverTarget).thenAnswer((_) async => gemini);
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'heard',
+        );
+
+        when(transcriber.discoverTarget).thenThrow(Exception('no models'));
+        expect(
+          await correctHeardTranscript(
+            transcriber: transcriber,
+            transcript: 'heard',
+            heardBy: null,
+            correctionTarget: () async => editor,
+          ),
+          'heard',
+        );
+        verify(
+          () => transcriber.correctTranscript('heard', target: editor),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps the words when a multimodal model heard them, no model can '
+      'correct them, or finding one fails — and never asks discovery then',
+      () async {
+        final transcriber = MockAudioTranscriptionService();
+        for (final (heardBy, correctionTarget) in [
+          (gemini, () async => editor),
+          (null, () async => null),
+          (whisper, () async => null),
+          (whisper, () => Future<DailyOsTranscriptionTarget?>.error('down')),
+        ]) {
+          expect(
+            await correctHeardTranscript(
+              transcriber: transcriber,
+              transcript: 'heard',
+              heardBy: heardBy,
+              correctionTarget: correctionTarget,
+            ),
+            'heard',
+          );
+        }
+        verifyZeroInteractions(transcriber);
+      },
+    );
+  });
 }

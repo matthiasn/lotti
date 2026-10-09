@@ -1422,7 +1422,8 @@ class _AudioHarness {
     when(
       () => transcriber.transcribe(
         any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        knownTerms: any(named: 'knownTerms'),
+        dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
       ),
     ).thenAnswer((_) async => transcript);
   }

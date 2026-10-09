@@ -134,7 +134,8 @@ class _Bench {
     when(
       () => transcriber.transcribe(
         any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        knownTerms: any(named: 'knownTerms'),
+        dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
       ),
     ).thenAnswer((_) async => transcript);
   }
@@ -143,7 +144,8 @@ class _Bench {
     when(
       () => transcriber.transcribe(
         any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        knownTerms: any(named: 'knownTerms'),
+        dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
       ),
     ).thenThrow(error);
   }
@@ -158,6 +160,8 @@ class _Bench {
   ProviderContainer aliveContainer({
     DayProcessingOutboxRepository? outbox,
     DailyOsTranscriptionTarget? transcriptionTarget,
+    DailyOsTranscriptionTarget? correctionTarget,
+    bool correctionTargetFromProvider = false,
   }) {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
@@ -171,9 +175,16 @@ class _Bench {
             sessionIdFactory: () => _sessionId,
             originHostId: () async => 'host-1',
             transcriptionTarget: () async => transcriptionTarget,
+            correctionTarget: correctionTargetFromProvider
+                ? null
+                : () async => correctionTarget,
             now: () => _now,
           ),
         ),
+        if (correctionTargetFromProvider)
+          dailyOsTranscriptCorrectionTargetProvider.overrideWith(
+            (ref) async => correctionTarget,
+          ),
       ]),
     )..listen(captureControllerProvider, (_, _) {});
     return container;
@@ -394,7 +405,8 @@ void main() {
       verifyNever(
         () => bench.transcriber.transcribe(
           any(),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          knownTerms: any(named: 'knownTerms'),
+          dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
         ),
       );
     });
@@ -521,7 +533,8 @@ void main() {
       when(
         () => bench.transcriber.transcribe(
           any(),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          knownTerms: any(named: 'knownTerms'),
+          dictionaryCategoryId: any(named: 'dictionaryCategoryId'),
         ),
       ).thenAnswer((_) => transcribeGate.future);
       final container = bench.aliveContainer(outbox: bench.outbox);
@@ -776,6 +789,74 @@ void main() {
               as DailyOsTranscriptionTarget?;
       expect(captured?.model.providerModelId, 'profile-model');
     });
+
+    for (final fromProvider in [false, true]) {
+      test(
+        "a speech-to-text engine's words are corrected against the speech "
+        'dictionary before the capture stores or shows them'
+        '${fromProvider ? ' — the model read from the planner profile' : ''}',
+        () async {
+          AiConfigInferenceProvider provider(InferenceProviderType type) =>
+              AiConfig.inferenceProvider(
+                    id: 'p-${type.name}',
+                    baseUrl: 'http://localhost',
+                    apiKey: 'k',
+                    name: type.name,
+                    createdAt: _now,
+                    inferenceProviderType: type,
+                  )
+                  as AiConfigInferenceProvider;
+          AiConfigModel model(String id, List<Modality> input) =>
+              AiConfig.model(
+                    id: 'm-$id',
+                    name: id,
+                    providerModelId: id,
+                    inferenceProviderId: 'p',
+                    createdAt: _now,
+                    inputModalities: input,
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                  )
+                  as AiConfigModel;
+          final whisper = (
+            provider: provider(InferenceProviderType.whisper),
+            model: model('whisper-large-v3', const [Modality.audio]),
+          );
+          final editor = (
+            provider: provider(InferenceProviderType.genericOpenAi),
+            model: model('editor', const [Modality.text]),
+          );
+          when(
+            () => bench.transcriber.transcribe(
+              any(),
+              target: any(named: 'target'),
+            ),
+          ).thenAnswer((_) async => 'Moved the build to Cuban Eddies.');
+          when(
+            () => bench.transcriber.correctTranscript(
+              'Moved the build to Cuban Eddies.',
+              target: editor,
+            ),
+          ).thenAnswer((_) async => 'Moved the build to Kubernetes.');
+          final container = bench.aliveContainer(
+            outbox: bench.outbox,
+            transcriptionTarget: whisper,
+            correctionTarget: editor,
+            correctionTargetFromProvider: fromProvider,
+          );
+          addTearDown(container.dispose);
+          final controller = container.read(captureControllerProvider.notifier);
+
+          await controller.toggle();
+          await controller.toggle();
+
+          expect(
+            container.read(captureControllerProvider).transcript,
+            'Moved the build to Kubernetes.',
+          );
+        },
+      );
+    }
 
     test('persistAudio throwing surfaces audioPersistFailed', () async {
       bench

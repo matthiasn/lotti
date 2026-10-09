@@ -1,5 +1,12 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-09
+* **Update**: [batch transcription](features/ai/batch-transcription.md),
+  [speech dictionary](features/speech/dictionary.md) — transcripts handed
+  straight back get the speech dictionary: an engine hint and a correction by
+  sound and spelling everywhere, and a model's correction for Daily OS
+  captures heard by a speech-to-text engine.
+
 ## 2026-10-08
 * **Update**: [AI execution paths](features/ai/execution-paths.md),
   [speech dictionary](features/speech/dictionary.md),
