@@ -2118,7 +2118,10 @@ Four invariants hold regardless of what comes back:
 ## Words that fill the chips
 
 When a take's words land while the composer is open, `_fillFromDictation`
-reads every take that has words, oldest first, for the check-in's start,
+hands the chips to
+[`fillCheckInContextFromTakes`](../../lib/features/relationships/model/check_in_dictation_fill.dart),
+a pure function that reads every take that has words, oldest first, for the
+check-in's start,
 length and channel — each field taking the newest take that names it, so a
 correction in a later take wins whichever transcript arrives first — and sets
 each one into its chip — type · started · duration — unless that chip is

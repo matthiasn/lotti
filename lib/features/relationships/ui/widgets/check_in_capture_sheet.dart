@@ -20,7 +20,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
-import 'package:lotti/features/relationships/model/check_in_dictation_facts.dart';
+import 'package:lotti/features/relationships/model/check_in_dictation_fill.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
@@ -84,9 +84,6 @@ final checkInSettingsOpenerProvider = Provider<CheckInSettingsOpener>(
   name: 'checkInSettingsOpenerProvider',
 );
 
-/// The context chips a dictation can fill.
-enum CheckInContextField { type, start, duration }
-
 /// The check-in composer (design 2026-09-13): the narrative field first,
 /// with *Dictate* inside it and every speech phase rendered in place of the
 /// text; then type · started · duration as one chip row; then sentiment,
@@ -96,7 +93,7 @@ enum CheckInContextField { type, start, duration }
 ///
 /// A take's words fill the chips they name — start, length, channel — that
 /// the user has not chosen, read on the device
-/// (`extractCheckInDictationFacts`); the words themselves stay on the take.
+/// (`fillCheckInContextFromTakes`); the words themselves stay on the take.
 class CheckInCaptureForm extends ConsumerStatefulWidget {
   const CheckInCaptureForm({
     required this.relationshipId,
@@ -408,41 +405,27 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _dictatedFields.remove(field);
   }
 
-  /// Fills the start, length and channel the takes' words name
-  /// ([extractCheckInDictationFacts], on-device) into every field the user
-  /// has not chosen.
-  ///
-  /// Read over every take that has words, oldest first, each field taking
-  /// the newest take that names it — so a correction in a later take wins
-  /// however the transcripts happen to arrive: two takes in flight can land
-  /// in either order. A value the user picked is never replaced.
+  /// Fills the start, length and channel the takes' words name into every
+  /// chip the user has not chosen ([fillCheckInContextFromTakes], read on
+  /// the device). Read over every take that has words, in take order, so a
+  /// correction in a later take wins however the transcripts arrive.
   void _fillFromDictation() {
-    final now = clock.now();
-    DateTime? start;
-    Duration? length;
-    CheckInInteractionType? type;
-    for (final take in _takes) {
-      final words = take.transcript;
-      if (words == null) continue;
-      final facts = extractCheckInDictationFacts(words, now: now);
-      start = facts.startedAt ?? start;
-      length = facts.duration ?? length;
-      type = facts.interactionType ?? type;
-    }
-    bool free(CheckInContextField field) => !_heldFields.contains(field);
+    final fill = fillCheckInContextFromTakes(
+      current: CheckInContext(
+        type: _interactionType,
+        start: _interactionTime,
+        duration: _duration,
+      ),
+      takeWords: [for (final take in _takes) take.transcript],
+      held: _heldFields,
+      now: clock.now(),
+    );
+    if (fill.filled.isEmpty) return;
     setState(() {
-      if (start != null && free(CheckInContextField.start)) {
-        _interactionTime = start;
-        _dictatedFields.add(CheckInContextField.start);
-      }
-      if (length != null && free(CheckInContextField.duration)) {
-        _duration = length;
-        _dictatedFields.add(CheckInContextField.duration);
-      }
-      if (type != null && free(CheckInContextField.type)) {
-        _interactionType = type;
-        _dictatedFields.add(CheckInContextField.type);
-      }
+      _interactionType = fill.context.type;
+      _interactionTime = fill.context.start;
+      _duration = fill.context.duration;
+      _dictatedFields.addAll(fill.filled);
     });
   }
 
