@@ -822,9 +822,9 @@ and the mutants it catches.
 
 ### Why the tag matters for CI
 
-CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados job — followed by a final Codecov status job gated on both:
+CI runs two parallel test lanes — a ten-shard standard matrix plus a two-shard Glados matrix — followed by a final Codecov status job gated on both:
 - **Unit & Widget Tests** — ten deterministic shards, excluding `glados`, `performance`, and opt-in `eval-live` suites.
-- **Glados Property Tests** — tagged property tests with separate coverage.
+- **Glados Property Tests** — two deterministic shards of tagged property tests, with separate coverage.
 - **Performance Budgets** — tagged stopwatch tests, scheduled weekly and available through workflow dispatch. Deterministic query-count gates stay in the standard lane.
 
 All lanes use `tool/ci/run_tests.dart`. Shard flags are consumed by this runner
@@ -833,6 +833,10 @@ first, with path tie-breaks, then generates imports only for that shard. The
 assignment is deterministic for a checkout and every eligible file belongs to
 exactly one shard. Flutter receives no shard flags, avoiding double filtering.
 Source size is a balancing heuristic, not a prediction of test duration.
+The Glados lane shards the same way over every eligible file, because
+property tests are tagged per test inside mixed suites; each shard compiles
+its half and Flutter's `--tags glados` keeps only the property tests, so the
+two shards' Glados work is balanced only as far as the source sizes are.
 
 The runner generates a sorted optimized bundle
 plus `test/.test_targets.json`. A suite with library metadata (`@Tags`,
@@ -852,8 +856,8 @@ can still contain tagged tests. Mixed suites keep running, including the label
 query-count checks and the celebration rendering assertions. CI excludes live
 model evaluations in every lane; run those explicitly using their env gates.
 
-Codecov merges all ten standard shards and the Glados report; the final status
-job runs after all eleven uploads succeed. The performance lane does not upload
+Codecov merges all ten standard shards and both Glados shards; the final status
+job runs after all twelve uploads succeed. The performance lane does not upload
 coverage. Every unit/property/performance job uploads its JSON event report and
 ordering seed even on failure, and summarizes failures, skips, incomplete tests,
 and durations measured from each test's start to completion. The timing tool is
