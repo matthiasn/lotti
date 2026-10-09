@@ -399,33 +399,38 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _dictatedFields.remove(field);
   }
 
-  /// Fills the start, length and channel [transcript] names
+  /// Fills the start, length and channel the takes' words name
   /// ([extractCheckInDictationFacts], on-device) into every field the user
-  /// has not chosen. A later take's words replace an earlier take's; a value
-  /// the user picked is never replaced.
-  void _fillFromDictation(String transcript) {
-    final facts = extractCheckInDictationFacts(transcript, now: clock.now());
-    if (facts.isEmpty) return;
+  /// has not chosen.
+  ///
+  /// Read over every take that has words, oldest first, each field taking
+  /// the newest take that names it — so a correction in a later take wins
+  /// however the transcripts happen to arrive: two takes in flight can land
+  /// in either order. A value the user picked is never replaced.
+  void _fillFromDictation() {
+    final now = clock.now();
+    DateTime? start;
+    Duration? length;
+    CheckInInteractionType? type;
+    for (final take in _takes) {
+      final words = take.transcript;
+      if (words == null) continue;
+      final facts = extractCheckInDictationFacts(words, now: now);
+      start = facts.startedAt ?? start;
+      length = facts.duration ?? length;
+      type = facts.interactionType ?? type;
+    }
     bool free(CheckInContextField field) => !_heldFields.contains(field);
     setState(() {
-      if (facts.startedAt case final start?
-          when free(
-            CheckInContextField.start,
-          )) {
+      if (start != null && free(CheckInContextField.start)) {
         _interactionTime = start;
         _dictatedFields.add(CheckInContextField.start);
       }
-      if (facts.duration case final length?
-          when free(
-            CheckInContextField.duration,
-          )) {
+      if (length != null && free(CheckInContextField.duration)) {
         _duration = length;
         _dictatedFields.add(CheckInContextField.duration);
       }
-      if (facts.interactionType case final type?
-          when free(
-            CheckInContextField.type,
-          )) {
+      if (type != null && free(CheckInContextField.type)) {
         _interactionType = type;
         _dictatedFields.add(CheckInContextField.type);
       }

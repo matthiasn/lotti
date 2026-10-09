@@ -65,6 +65,10 @@ void main() {
       'heute morgen um 9': DateTime(2026, 3, 15, 9),
       'von 14 bis 15 Uhr': DateTime(2026, 3, 15, 14),
       'from 2 to 3 pm': DateTime(2026, 3, 15, 14),
+      'at three pm': DateTime(2026, 3, 15, 15),
+      'around eleven a.m.': DateTime(2026, 3, 15, 11),
+      // Today's 11 pm is still to come.
+      'from 11 pm to 1 am': DateTime(2026, 3, 14, 23),
     };
     for (final MapEntry(key: words, value: expected) in cases.entries) {
       test('"$words" → $expected', () {
@@ -143,6 +147,11 @@ void main() {
       expect(
         _read('from 11 to 1').duration,
         const Duration(hours: 2),
+      );
+      expect(
+        _read('from 11 pm to 1 am').duration,
+        const Duration(hours: 2),
+        reason: 'a range that crosses midnight ends the next day',
       );
     });
 

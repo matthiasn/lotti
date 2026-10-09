@@ -159,8 +159,11 @@ final RegExp _rangeRule = _re(
   '‹(?:from|between)\\s+$_clockToken\\s*(?:to|until|till|and|-)\\s*'
   '$_clockToken(?![\\p{L}\\p{N}])',
 );
+
+/// A clock with its am/pm, the hour in digits or words ("3 pm", "three
+/// p.m.").
 final RegExp _meridiemRule = _re(
-  '‹(\\d{1,2})(?:[:.](\\d{2}))?\\s*$_meridiem(?![\\p{L}\\p{N}])',
+  '‹$_hourWord(?:[:.](\\d{2}))?\\s*$_meridiem(?![\\p{L}\\p{N}])',
 );
 final RegExp _colonRule = _re(
   r'‹(?:at|around|about|by|since|approximately)\s+(\d{1,2})[:.](\d{2})›'

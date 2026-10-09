@@ -276,8 +276,13 @@ _Outcome<Duration> _resolveLength(CheckInDictationReading reading) {
   final period = reading.periods.length == 1 ? reading.periods.single : null;
   final start = _minutesOfDay(range.start, period);
   var end = _minutesOfDay(range.end, period);
-  // "from 11 to 1" crosses noon; read the end as the next such hour.
-  if (end <= start && range.end.meridiem == null) end += 12 * 60;
+  // "from 11 to 1" crosses noon: read an unmarked end as the next such
+  // hour. "From 11 pm to 1 am" crosses midnight: roll the end into the next
+  // day.
+  if (end <= start && range.end.meridiem == null && range.end.hour < 12) {
+    end += 12 * 60;
+  }
+  if (end <= start) end += 24 * 60;
   final length = Duration(minutes: end - start);
   return _plausible(length) ? _Decided(length) : const _Conflict();
 }

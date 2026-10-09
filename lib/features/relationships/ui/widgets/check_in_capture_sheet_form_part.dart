@@ -173,7 +173,7 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
             : take.heard(transcript),
       );
       // The words stay on their take; only the chips they speak about move.
-      if (transcript != null) _fillFromDictation(transcript);
+      if (transcript != null) _fillFromDictation();
     } finally {
       if (identical(_transcriptWaits[audioEntryId], wait)) {
         _forgetTranscriptWait(audioEntryId);

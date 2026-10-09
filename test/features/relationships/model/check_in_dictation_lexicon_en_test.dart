@@ -18,6 +18,9 @@ void main() {
     expect(_read('at 08:30').clocks, [
       const CheckInClockMention(8, minute: 30, twentyFourHour: true),
     ]);
+    expect(_read('at three pm').clocks, [
+      const CheckInClockMention(3, meridiem: CheckInMeridiem.pm),
+    ]);
     expect(_read('at midnight').clocks, [
       const CheckInClockMention(0, twentyFourHour: true),
     ]);

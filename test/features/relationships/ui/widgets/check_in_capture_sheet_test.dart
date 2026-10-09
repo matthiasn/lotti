@@ -2143,6 +2143,41 @@ void main() {
       });
     });
 
+    testWidgets("a later take's words win even when they land first", (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        final older = Completer<String?>();
+        final newer = Completer<String?>();
+        stubTranscription.gatesByAudio
+          ..['audio-1'] = older
+          ..['audio-2'] = newer;
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await startDictation(tester);
+        await stopRecording(tester);
+        recorder.stopResult = 'audio-2';
+        await startDictation(tester);
+        await stopRecording(tester);
+
+        // By hand: a take still waiting for its words breathes.
+        Future<void> pumpABit() async {
+          for (var i = 0; i < 4; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+        }
+
+        newer.complete('Actually it was an hour and a half.');
+        await pumpABit();
+        expect(find.text('1 h 30'), findsOneWidget);
+
+        older.complete('We talked for about 45 minutes.');
+        await pumpABit();
+        expect(find.text('1 h 30'), findsOneWidget);
+        expect(find.text('45 min'), findsNothing);
+      });
+    });
+
     testWidgets("a later take's words replace an earlier take's", (
       tester,
     ) async {
