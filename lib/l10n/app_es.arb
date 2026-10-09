@@ -1505,6 +1505,7 @@
   "checkInSentimentOptional": "Opcional. El agente nunca lo rellena.",
   "checkInSentimentStrained": "Tenso",
   "checkInSourceCall": "De la llamada que hiciste desde esta página. Todo se puede editar.",
+  "checkInSourceDictation": "De lo que dijiste en tu grabación. Todo se puede editar.",
   "checkInSourceMessage": "Del mensaje que enviaste desde esta página. Todo se puede editar.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
   "@checkInSpokenMinutes": {

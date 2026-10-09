@@ -20,6 +20,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
+import 'package:lotti/features/relationships/model/check_in_dictation_fill.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
@@ -89,6 +90,10 @@ final checkInSettingsOpenerProvider = Provider<CheckInSettingsOpener>(
 /// topics and the "next time" guidance folded under *More*. Persists
 /// through [RelationshipRepository]. With [initial] set it edits that
 /// check-in instead, and offers deletion.
+///
+/// A take's words fill the chips they name — start, length, channel — that
+/// the user has not chosen, read on the device
+/// (`fillCheckInContextFromTakes`); the words themselves stay on the take.
 class CheckInCaptureForm extends ConsumerStatefulWidget {
   const CheckInCaptureForm({
     required this.relationshipId,
@@ -165,6 +170,15 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   late final CheckInInteractionType _openingType;
   late final DateTime _openingTime;
   late final Duration _openingDuration;
+
+  /// The context fields dictation must leave alone: the ones the user
+  /// picked, and — when the composer opened on a call placed from this page
+  /// — all three, since they were measured rather than guessed.
+  final Set<CheckInContextField> _heldFields = {};
+
+  /// The context fields whose value came from what was said, so the caption
+  /// under the chips can say so. A field the user picks again leaves it.
+  final Set<CheckInContextField> _dictatedFields = {};
 
   /// Optional sentiment, topics and next-time guidance, folded by default;
   /// open from the start when a check-in being edited already has any of it.
@@ -249,6 +263,20 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _openingType = _interactionType;
     _openingTime = _interactionTime;
     _openingDuration = _duration;
+    // A start handed in comes from a call or message placed from this page
+    // (`showCheckInForInteraction`): it, and the elapsed time and channel
+    // handed in with it, were measured, so dictation leaves each one alone.
+    // A type handed in without a start is only how the two last connected —
+    // a guess the words may correct.
+    if (widget.prefilledTime != null) {
+      _heldFields.add(CheckInContextField.start);
+      if (widget.prefilledInteractionType != null) {
+        _heldFields.add(CheckInContextField.type);
+      }
+    }
+    if (widget.prefilledDuration != null) {
+      _heldFields.add(CheckInContextField.duration);
+    }
     _moreOpen =
         _sentiment != null ||
         _topicsController.text.isNotEmpty ||
@@ -340,7 +368,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       initial: _interactionTime,
     );
     if (!mounted || picked == null) return;
-    setState(() => _interactionTime = picked);
+    setState(() {
+      _interactionTime = picked;
+      _hold(CheckInContextField.start);
+    });
   }
 
   /// *Duration*: the wheel behind the chip. Zero is "no duration".
@@ -350,7 +381,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       initialDuration: _duration,
     );
     if (!mounted || picked == null) return;
-    setState(() => _duration = picked);
+    setState(() {
+      _duration = picked;
+      _hold(CheckInContextField.duration);
+    });
   }
 
   Future<void> _pickType() async {
@@ -359,7 +393,40 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       current: _interactionType,
     );
     if (!mounted || picked == null) return;
-    setState(() => _interactionType = picked);
+    setState(() {
+      _interactionType = picked;
+      _hold(CheckInContextField.type);
+    });
+  }
+
+  /// The user chose [field]: dictation leaves it alone from now on.
+  void _hold(CheckInContextField field) {
+    _heldFields.add(field);
+    _dictatedFields.remove(field);
+  }
+
+  /// Fills the start, length and channel the takes' words name into every
+  /// chip the user has not chosen ([fillCheckInContextFromTakes], read on
+  /// the device). Read over every take that has words, in take order, so a
+  /// correction in a later take wins however the transcripts arrive.
+  void _fillFromDictation() {
+    final fill = fillCheckInContextFromTakes(
+      current: CheckInContext(
+        type: _interactionType,
+        start: _interactionTime,
+        duration: _duration,
+      ),
+      takeWords: [for (final take in _takes) take.transcript],
+      held: _heldFields,
+      now: clock.now(),
+    );
+    if (fill.filled.isEmpty) return;
+    setState(() {
+      _interactionType = fill.context.type;
+      _interactionTime = fill.context.start;
+      _duration = fill.context.duration;
+      _dictatedFields.addAll(fill.filled);
+    });
   }
 
   bool get _speechIdle => switch (_phase) {
@@ -770,6 +837,18 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         ),
         // Where the numbers came from (design §5): the offer's channel,
         // start and elapsed time, and that every one of them is editable.
+        // A composer opened on a call holds all three, so dictation never
+        // fills one beside this strip.
+        if (_dictatedFields.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            messages.checkInSourceDictation,
+            key: const ValueKey('check-in-dictation-strip'),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
         if (prefilledFrom != null) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(

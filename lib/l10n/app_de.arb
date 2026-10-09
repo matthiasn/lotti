@@ -1505,6 +1505,7 @@
   "checkInSentimentOptional": "Optional. Wird nie vom Agenten ausgefüllt.",
   "checkInSentimentStrained": "Angespannt",
   "checkInSourceCall": "Aus dem Anruf, den du von dieser Seite aus gestartet hast. Alles lässt sich ändern.",
+  "checkInSourceDictation": "Aus dem, was du in deiner Aufnahme gesagt hast. Alles lässt sich ändern.",
   "checkInSourceMessage": "Aus der Nachricht, die du von dieser Seite aus geschickt hast. Alles lässt sich ändern.",
   "checkInSpokenMinutes": "{count, plural, =1{1 Minute} other{{count} Minuten}}",
   "@checkInSpokenMinutes": {

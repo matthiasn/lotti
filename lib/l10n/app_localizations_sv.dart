@@ -3498,6 +3498,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Från samtalet du ringde från den här sidan. Allt går att ändra.';
 
   @override
+  String get checkInSourceDictation =>
+      'Från det du sa i din inspelning. Allt går att ändra.';
+
+  @override
   String get checkInSourceMessage =>
       'Från meddelandet du skickade från den här sidan. Allt går att ändra.';
 

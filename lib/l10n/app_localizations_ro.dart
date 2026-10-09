@@ -3550,6 +3550,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Din apelul pe care l-ați făcut de pe această pagină. Totul se poate edita.';
 
   @override
+  String get checkInSourceDictation =>
+      'Din ce ați spus în înregistrare. Totul se poate edita.';
+
+  @override
   String get checkInSourceMessage =>
       'Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.';
 

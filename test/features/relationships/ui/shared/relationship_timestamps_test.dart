@@ -14,7 +14,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
 

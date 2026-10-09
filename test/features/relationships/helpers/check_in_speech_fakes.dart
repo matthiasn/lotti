@@ -18,10 +18,17 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
 
   /// Mutable, so a test can take the route away between two takes.
   bool canTranscribeResult;
-  final String? transcript;
+
+  /// The words every take is heard as, unless [gate] is set. Mutable, so
+  /// each take can be given its own.
+  String? transcript;
 
   /// When set, the transcript wait resolves only when this completes.
   final Completer<String?>? gate;
+
+  /// Per-recording gates, ahead of [gate]: a test can let two takes'
+  /// words land in an order of its choosing.
+  final Map<String, Completer<String?>> gatesByAudio = {};
 
   /// When set, the preflight answers only when this completes.
   final Completer<void>? preflightGate;
@@ -56,7 +63,10 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   }) {
     transcribeCalls.add(audioEntryId);
     transcribePeople.add(relationshipId);
-    final completer = gate ?? (Completer<String?>()..complete(transcript));
+    final completer =
+        gatesByAudio[audioEntryId] ??
+        gate ??
+        (Completer<String?>()..complete(transcript));
     return CheckInTranscriptWait.forTesting(
       result: completer.future,
       onCancel: () {

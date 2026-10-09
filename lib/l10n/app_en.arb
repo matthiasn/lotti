@@ -2259,6 +2259,7 @@
   "checkInSentimentOptional": "Optional. Never filled in by the agent.",
   "checkInSentimentStrained": "Strained",
   "checkInSourceCall": "From the call you placed from this page. Everything is editable.",
+  "checkInSourceDictation": "From what you said in your recording. Everything is editable.",
   "checkInSourceMessage": "From the message you sent from this page. Everything is editable.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@checkInSpokenMinutes": {

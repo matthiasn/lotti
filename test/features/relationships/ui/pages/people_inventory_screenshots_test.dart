@@ -1976,6 +1976,61 @@ void main() {
       });
     });
 
+    // Words that say when, how long and how: the chips they name fill in,
+    // and the caption under them says where the values came from.
+    testWidgets('$viewport check-in dictation fills the chips — dark', (
+      tester,
+    ) async {
+      final recorder = FakeAudioRecorderController();
+      final transcription = StubCheckInTranscriptionService(
+        transcript:
+            'Video call with Pip at 1 pm, we talked for about 45 minutes '
+            'about the krill contract before the freeze.',
+      );
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) => showCheckInCaptureSheet(
+            context: context,
+            relationshipId: _pipId,
+          ),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(recorder: () => recorder),
+          checkInTranscriptionServiceProvider.overrideWithValue(transcription),
+        ],
+      );
+      await openModal(tester);
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+        // By hand: the orb breathes while the take is live.
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('check-in-take-transcript')),
+          findsOne,
+        );
+        expect(
+          find.byKey(const ValueKey('check-in-dictation-strip')),
+          findsOne,
+          reason: 'the chips the words name are filled, and say so',
+        );
+        await captureScreenshot(
+          tester,
+          'check_in_dictation_fills_chips_${viewport}_dark',
+          subdir: _subdir,
+        );
+      });
+    });
+
     testWidgets('$viewport check-in dictation failures — dark', (tester) async {
       final recorder = FakeAudioRecorderController(
         recordFailure: AudioRecordingFailure.permissionDenied,

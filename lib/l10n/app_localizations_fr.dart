@@ -3541,6 +3541,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'D’après l’appel que tu as passé depuis cette page. Tout est modifiable.';
 
   @override
+  String get checkInSourceDictation =>
+      'D’après ce que tu as dit dans ton enregistrement. Tout est modifiable.';
+
+  @override
   String get checkInSourceMessage =>
       'D’après le message que tu as envoyé depuis cette page. Tout est modifiable.';
 

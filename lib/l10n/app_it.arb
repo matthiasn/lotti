@@ -1727,6 +1727,7 @@
   "checkInSentimentOptional": "Facoltativo. L’agente non lo compila mai.",
   "checkInSentimentStrained": "Teso",
   "checkInSourceCall": "Dalla chiamata che hai fatto da questa pagina. Tutto è modificabile.",
+  "checkInSourceDictation": "Da quello che hai detto nella registrazione. Tutto è modificabile.",
   "checkInSourceMessage": "Dal messaggio che hai inviato da questa pagina. Tutto è modificabile.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minuto} other{{count} minuti}}",
   "@checkInSpokenMinutes": {

@@ -3506,6 +3506,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Van het gesprek dat je vanaf deze pagina begon. Alles is aan te passen.';
 
   @override
+  String get checkInSourceDictation =>
+      'Uit wat je in je opname zei. Alles is aan te passen.';
+
+  @override
   String get checkInSourceMessage =>
       'Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.';
 

@@ -1505,6 +1505,7 @@
   "checkInSentimentOptional": "Facultatif. Jamais rempli par l’agent.",
   "checkInSentimentStrained": "Tendu",
   "checkInSourceCall": "D’après l’appel que tu as passé depuis cette page. Tout est modifiable.",
+  "checkInSourceDictation": "D’après ce que tu as dit dans ton enregistrement. Tout est modifiable.",
   "checkInSourceMessage": "D’après le message que tu as envoyé depuis cette page. Tout est modifiable.",
   "checkInSpokenMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@checkInSpokenMinutes": {

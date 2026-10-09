@@ -3533,6 +3533,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'De la llamada que hiciste desde esta página. Todo se puede editar.';
 
   @override
+  String get checkInSourceDictation =>
+      'De lo que dijiste en tu grabación. Todo se puede editar.';
+
+  @override
   String get checkInSourceMessage =>
       'Del mensaje que enviaste desde esta página. Todo se puede editar.';
 

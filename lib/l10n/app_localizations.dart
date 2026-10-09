@@ -5880,6 +5880,12 @@ abstract class AppLocalizations {
   /// **'From the call you placed from this page. Everything is editable.'**
   String get checkInSourceCall;
 
+  /// No description provided for @checkInSourceDictation.
+  ///
+  /// In en, this message translates to:
+  /// **'From what you said in your recording. Everything is editable.'**
+  String get checkInSourceDictation;
+
   /// No description provided for @checkInSourceMessage.
   ///
   /// In en, this message translates to:
