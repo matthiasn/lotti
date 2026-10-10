@@ -17,6 +17,7 @@ class AgentMarkdownView extends StatelessWidget {
     this.overflow,
     this.onLinkTap,
     this.subordinateHeadings = false,
+    this.imageBuilder,
     super.key,
   });
 
@@ -42,6 +43,14 @@ class AgentMarkdownView extends StatelessWidget {
   /// description in its details — whose `## Why` would otherwise outrank the
   /// label it sits under.
   final bool subordinateHeadings;
+
+  /// How an image in the text is shown. Null — the default, and the right
+  /// one for anything a model wrote — never fetches it
+  /// ([buildBlockedMarkdownImage]): a prompt-injected URL would otherwise be
+  /// requested the moment the text is shown. A surface whose text comes
+  /// from somewhere it trusts to that extent, such as a pull request's own
+  /// description, passes a builder that loads the image.
+  final ImageBuilder? imageBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +120,7 @@ class AgentMarkdownView extends StatelessWidget {
             onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
             styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
             inlineLinkBuilder: buildFocusableMarkdownLink,
-            imageBuilder: buildBlockedMarkdownImage,
+            imageBuilder: imageBuilder ?? buildBlockedMarkdownImage,
           ),
         ),
       ),

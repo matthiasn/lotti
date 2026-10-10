@@ -77,36 +77,55 @@ Widget buildBlockedMarkdownImage(
   String imageUrl,
   double? width,
   double? height,
-) {
-  final tokens = context.designTokens;
+) => MarkdownImageNotice(
+  label: context.messages.markdownRemoteImageBlocked(
+    markdownImageHost(imageUrl),
+  ),
+);
+
+/// Where a markdown image at [imageUrl] would come from, as a notice names
+/// it: the host, or the URL itself when it has none (a relative path).
+String markdownImageHost(String imageUrl) {
   final host = Uri.tryParse(imageUrl)?.host ?? '';
-  final label = context.messages.markdownRemoteImageBlocked(
-    host.isEmpty ? imageUrl : host,
-  );
-  final color = tokens.colors.text.lowEmphasis;
-  return Semantics(
-    label: label,
-    excludeSemantics: true,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          LottiIcons.imageBroken,
-          size: tokens.spacing.step5,
-          color: color,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Flexible(
-          child: Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
+  return host.isEmpty ? imageUrl : host;
+}
+
+/// What stands in a markdown text where an image is not shown: the
+/// broken-image glyph and [label], in the low-emphasis ink, read by a screen
+/// reader as the label alone.
+class MarkdownImageNotice extends StatelessWidget {
+  const MarkdownImageNotice({required this.label, super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = tokens.colors.text.lowEmphasis;
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            LottiIcons.imageBroken,
+            size: tokens.spacing.step5,
+            color: color,
+          ),
+          SizedBox(width: tokens.spacing.step2),
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 /// Link styling for app markdown: [color] in the resting and hover states.

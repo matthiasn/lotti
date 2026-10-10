@@ -11405,6 +11405,48 @@ abstract class AppLocalizations {
   /// **'GitHub rejected the token. It may have expired or been revoked.'**
   String get githubFailureUnauthorized;
 
+  /// Semantics label of the menu a right-click or long press opens over an image in a pull request description.
+  ///
+  /// In en, this message translates to:
+  /// **'Image actions'**
+  String get githubImageActions;
+
+  /// Toast when an image of a pull request description was recorded on the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Image added to the task'**
+  String get githubImageAdded;
+
+  /// Toast when an image of a pull request description could not be recorded on the task.
+  ///
+  /// In en, this message translates to:
+  /// **'The image couldn\'t be added to the task.'**
+  String get githubImageAddFailed;
+
+  /// Menu action over an image in a pull request description: records it on the task as an image entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to task'**
+  String get githubImageAddToTask;
+
+  /// Read by a screen reader where an image of a pull request description is still loading. host is where it comes from.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading image from {host}'**
+  String githubImageLoading(String host);
+
+  /// Shown in place of an image of a pull request description that could not be loaded. host is where it would have come from.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load image from {host}'**
+  String githubImageUnavailable(String host);
+
+  /// Screen-reader hint on an image in a pull request description: a tap opens it full size.
+  ///
+  /// In en, this message translates to:
+  /// **'View full size'**
+  String get githubImageViewFullSize;
+
   /// No description provided for @githubLinkAlreadyLinked.
   ///
   /// In en, this message translates to:

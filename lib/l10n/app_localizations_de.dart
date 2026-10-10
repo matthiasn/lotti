@@ -6763,6 +6763,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'GitHub hat den Token abgelehnt. Er ist vielleicht abgelaufen oder wurde widerrufen.';
 
   @override
+  String get githubImageActions => 'Bildaktionen';
+
+  @override
+  String get githubImageAdded => 'Bild zur Aufgabe hinzugefügt';
+
+  @override
+  String get githubImageAddFailed =>
+      'Das Bild konnte nicht zur Aufgabe hinzugefügt werden.';
+
+  @override
+  String get githubImageAddToTask => 'Zur Aufgabe hinzufügen';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Bild von $host wird geladen';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Bild von $host konnte nicht geladen werden';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'In voller Größe ansehen';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Dieser Pull-Request ist schon mit dieser Aufgabe verknüpft.';
 

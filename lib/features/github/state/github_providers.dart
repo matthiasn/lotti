@@ -11,6 +11,7 @@ import 'package:lotti/classes/github/pull_request_order.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -22,6 +23,8 @@ import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
+import 'package:lotti/features/github/service/pull_request_image_attacher.dart';
+import 'package:lotti/features/github/service/pull_request_image_fetcher.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
@@ -139,6 +142,30 @@ final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
   ref.onDispose(summarizer.dispose);
   return summarizer;
 }, name: 'pullRequestSummarizerProvider');
+
+/// One fetcher for the process: the images it holds serve every opening of
+/// a pull request's details, the full-size viewer and attaching alike.
+final pullRequestImageFetcherProvider = Provider<PullRequestImageFetcher>((
+  ref,
+) {
+  final fetcher = PullRequestImageFetcher();
+  ref.onDispose(fetcher.close);
+  return fetcher;
+}, name: 'pullRequestImageFetcherProvider');
+
+/// Records a description's image on the task, with the analysis trigger
+/// every pasted picture gets.
+final pullRequestImageAttacherProvider = Provider<PullRequestImageAttacher>(
+  (ref) => PullRequestImageAttacher(
+    categoryOf: (taskId) async =>
+        (await ref.read(journalDbProvider).journalEntityById(taskId))
+            ?.meta
+            .categoryId,
+    analysisTrigger: ref.watch(automaticImageAnalysisTriggerProvider),
+    logger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'pullRequestImageAttacherProvider',
+);
 
 final pullRequestServiceProvider = Provider<PullRequestService>(
   (ref) => PullRequestService(

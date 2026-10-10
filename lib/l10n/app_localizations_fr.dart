@@ -6822,6 +6822,32 @@ class AppLocalizationsFr extends AppLocalizations {
       'GitHub a refusé le jeton. Il a peut-être expiré ou été révoqué.';
 
   @override
+  String get githubImageActions => 'Actions sur l\'image';
+
+  @override
+  String get githubImageAdded => 'Image ajoutée à la tâche';
+
+  @override
+  String get githubImageAddFailed =>
+      'L\'image n\'a pas pu être ajoutée à la tâche.';
+
+  @override
+  String get githubImageAddToTask => 'Ajouter à la tâche';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Chargement de l\'image depuis $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Impossible de charger l\'image depuis $host';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Voir en taille réelle';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Cette pull request est déjà liée à cette tâche.';
 

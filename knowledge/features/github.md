@@ -62,6 +62,15 @@ sources:
   - id: summarizer
     resource: ../../lib/features/github/service/pull_request_summarizer.dart
     title: PullRequestSummarizer — a pull request's one-liner and TL;DR, automatic or asked for
+  - id: image-fetcher
+    resource: ../../lib/features/github/service/pull_request_image_fetcher.dart
+    title: PullRequestImageFetcher — a description's images, https only, fetched once each
+  - id: image-attacher
+    resource: ../../lib/features/github/service/pull_request_image_attacher.dart
+    title: PullRequestImageAttacher — a description's image recorded on the task as a pasted picture
+  - id: image
+    resource: ../../lib/features/github/ui/pull_request_image.dart
+    title: PullRequestImage — one image of a description, with the viewer and Add to task
   - id: summary
     resource: ../../lib/features/github/domain/pull_request_summary.dart
     title: PullRequestSummary and pullRequestSummaryInput — a summary's tiers, and what it is written from and matched by
@@ -530,9 +539,45 @@ task's category the modal says how to assign one.
 Tapping a row opens its details (`showPullRequestDetailsModal`): the title,
 the same status line, the one-liner and the TL;DR, with the action to
 summarise it — or summarise it again — and the pull request's own
-description, rendered as Markdown in a panel of its own with remote images
-left unloaded. "Open on GitHub" stays in reach in the modal's action bar
-however long the description runs, and in the row's menu beside Unlink.
+description, rendered as Markdown in a panel of its own. "Open on GitHub"
+stays in reach in the modal's action bar however long the description runs,
+and in the row's menu beside Unlink.
+
+The description's images are loaded, where a model's never are
+(`AgentMarkdownView.imageBuilder`, which defaults to the blocking builder):
+the text is the pull request's own, shown because the user opened it. Each
+image (`PullRequestImage`, through `pullRequestImageBuilder`) is fetched by
+`PullRequestImageFetcher` from its own URL — `https` only, redirects
+followed by hand so none leads onto plain `http`, nothing of the user's
+sent, at most 20 MiB, and once per process: the fetcher keeps what it
+fetched, within a 64 MiB budget, so the details reopened, the full-size
+viewer and attaching share one read. A private repository's images need
+GitHub's own session and show the notice instead; nothing is retried on a
+schedule. While it loads, a quiet box; failed, the notice naming its host.
+Within a table row, an image takes at most the row's equal share of that
+width (`tableSharesOf`, computed from the markdown's own rows), so a
+"Before | After" row of screenshots sits side by side as written instead of
+the table scrolling sideways. On a desktop the details are a dialog of
+most of the window's width (`WideWoltDialogType`) for the same reason, with
+Open on GitHub at its own width. Bytes that fetched but do not decode are
+failed too: the notice replaces the image, and with it its actions. A shown image is decoded no larger
+than its place in the text (`cacheWidth` from the bound and the device
+pixel ratio, never upscaled), so twenty screenshots in one description do
+not hold twenty screenshots' worth of pixels. A tap opens the image in the
+journal's full-screen viewer (`showFullscreenImageViewer`, from a file the
+bytes are written to under the temp directory, named by the URL's hash and
+rewritten on every open, so it is always what was fetched last). A
+right-click, or a long press on a touch screen, opens the design-system
+menu at the pointer with one action, **Add to task** — which the viewer
+offers too, as a labelled pill beside Download (`ImageViewerAction`), so a
+picture can be looked at full size and then kept: `PullRequestImageAttacher`
+records the bytes on the task through `importPastedImages`, exactly as a
+pasted picture — the task's category, and the automatic image-analysis
+trigger every pasted or dropped picture gets, so the image is analysed when
+the category and the task's profile automate image analysis, and only that
+image: a description's other images are never analysed. Only bytes in a
+format the app stores (PNG, JPEG, GIF, WebP, by their magic bytes, whatever
+the URL's path says) are recorded. A toast tells whether it was.
 
 Opening a task refreshes every pull request whose snapshot is older than five
 minutes, once; each row's menu also offers Refresh, whose progress takes

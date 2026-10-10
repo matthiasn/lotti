@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync/sync_secret.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -1722,6 +1723,51 @@ void main() {
           {'task-1'},
           {'task-1', 'task-2'},
         ]);
+      },
+    );
+  });
+
+  group('description images', () {
+    test('the fetcher is one per container, closed with it', () async {
+      final c = ProviderContainer(overrides: withServiceOverrides([]));
+      final fetcher = c.read(pullRequestImageFetcherProvider);
+      expect(c.read(pullRequestImageFetcherProvider), same(fetcher));
+
+      c.dispose();
+      // Closed: a fetch through the closed client fails rather than hangs.
+      await expectLater(
+        fetcher.fetch('https://pub-example.r2.dev/shot.png'),
+        throwsA(isA<Object>()),
+      );
+    });
+
+    test(
+      "the attacher reads the task's category from the journal and carries "
+      'the automatic analysis trigger',
+      () async {
+        final db = MockJournalDb();
+        final trigger = MockAutomaticImageAnalysisTrigger();
+        final task = prEntry(clock: {'a': 1}, id: 'task-1');
+        when(() => db.journalEntityById('task-1')).thenAnswer(
+          (_) async =>
+              task.copyWith(meta: task.meta.copyWith(categoryId: 'cat-1')),
+        );
+        when(() => db.journalEntityById('gone')).thenAnswer((_) async => null);
+        final c = ProviderContainer(
+          overrides: withServiceOverrides([
+            journalDbProvider.overrideWithValue(db),
+            automaticImageAnalysisTriggerProvider.overrideWithValue(trigger),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          ]),
+        );
+        addTearDown(c.dispose);
+
+        final attacher = c.read(pullRequestImageAttacherProvider);
+
+        expect(await attacher.categoryOf('task-1'), 'cat-1');
+        expect(await attacher.categoryOf('gone'), isNull);
+        expect(attacher.analysisTrigger, same(trigger));
+        expect(attacher.logger, isA<MockDomainLogger>());
       },
     );
   });

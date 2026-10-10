@@ -126,6 +126,8 @@ import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
+import 'package:lotti/features/github/service/pull_request_image_attacher.dart';
+import 'package:lotti/features/github/service/pull_request_image_fetcher.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
@@ -1986,6 +1988,12 @@ class MockPullRequestRepository extends Mock implements PullRequestRepository {}
 class MockPullRequestService extends Mock implements PullRequestService {}
 
 class MockPullRequestSummarizer extends Mock implements PullRequestSummarizer {}
+
+class MockPullRequestImageFetcher extends Mock
+    implements PullRequestImageFetcher {}
+
+class MockPullRequestImageAttacher extends Mock
+    implements PullRequestImageAttacher {}
 
 class MockPullRequestContextService extends Mock
     implements PullRequestContextService {}

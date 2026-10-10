@@ -295,6 +295,7 @@ class FallbackDeepBackfillStore extends DeepBackfillStore {
 /// times — mocktail deduplicates internally.
 void registerAllFallbackValues() {
   registerFallbackValue(Future<void>.value());
+  registerFallbackValue(Uint8List(0));
   registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);

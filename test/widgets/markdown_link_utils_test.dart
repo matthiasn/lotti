@@ -260,6 +260,20 @@ void main() {
     });
   });
 
+  group('markdownImageHost', () {
+    test('is the host of a URL that has one', () {
+      expect(
+        markdownImageHost('https://pub-example.r2.dev/a/b.png?x=1'),
+        'pub-example.r2.dev',
+      );
+    });
+
+    test('is the URL itself when it has none', () {
+      expect(markdownImageHost('images/diagram.png'), 'images/diagram.png');
+      expect(markdownImageHost(''), '');
+    });
+  });
+
   group('markdownLinkStyleSheet', () {
     test('colours links the same at rest and on hover', () {
       final link = markdownLinkStyleSheet(Colors.green).link!;

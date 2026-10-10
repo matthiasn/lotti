@@ -12,13 +12,17 @@ import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/features/github/ui/pull_request_glyph.dart';
+import 'package:lotti/features/github/ui/pull_request_image.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/wide_wolt_dialog_type.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Keys the tests and screenshots reach the details by.
 abstract final class PullRequestDetailsKeys {
@@ -46,9 +50,17 @@ Future<void> showPullRequestDetailsModal(
         '${entry.data.owner}/${entry.data.repo}',
         quiet: true,
       ),
-      // Within reach however long the description runs.
+      // Most of a desktop window: a description lays its screenshots side
+      // by side, and in the standard column they stack, each clipped.
+      modalTypeBuilderOverride: (modalContext) =>
+          MediaQuery.sizeOf(modalContext).width < WoltModalConfig.pageBreakpoint
+          ? WoltModalType.bottomSheet()
+          : const WideWoltDialogType(),
+      // Within reach however long the description runs; at its own width,
+      // since a button the width of that dialog would be a band.
       stickyActionBar: DesignSystemModalActionBar(
         glass: true,
+        layout: DesignSystemModalActionBarLayout.compactPrimary,
         padding: EdgeInsets.all(context.designTokens.spacing.step5),
         primary: DesignSystemButton(
           key: PullRequestDetailsKeys.openOnGitHub,
@@ -252,7 +264,9 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
           child: Padding(
             padding: EdgeInsets.all(tokens.spacing.step4),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              // Stretched: the card is as wide as the summary's, whatever
+              // the description takes — a bounded table no longer fills it.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(messages.githubDescriptionHeading, style: label),
                 SizedBox(height: tokens.spacing.step2),
@@ -261,12 +275,28 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
                 else
                   // Medium ink, as the summary's prose is: the agent's
                   // reading leads, the raw description supports it.
-                  AgentMarkdownView(
-                    description,
-                    style: styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    subordinateHeadings: true,
+                  // Its images are loaded, unlike a model's: the text is
+                  // the pull request's own, shown because the user opened
+                  // it, and each image is what the "Add to task" action is
+                  // offered on. None is shown wider than the text, which
+                  // each image reads from here, as a table cell would not
+                  // tell it.
+                  LayoutBuilder(
+                    builder: (context, constraints) =>
+                        PullRequestDescriptionWidth(
+                          maxWidth: constraints.maxWidth,
+                          shares: tableSharesOf(description),
+                          child: AgentMarkdownView(
+                            description,
+                            style: styles.body.bodySmall.copyWith(
+                              color: tokens.colors.text.mediumEmphasis,
+                            ),
+                            subordinateHeadings: true,
+                            imageBuilder: pullRequestImageBuilder(
+                              widget.taskId,
+                            ),
+                          ),
+                        ),
                   ),
               ],
             ),

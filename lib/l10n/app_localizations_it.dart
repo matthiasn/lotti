@@ -6799,6 +6799,32 @@ class AppLocalizationsIt extends AppLocalizations {
       'GitHub ha rifiutato il token. Potrebbe essere scaduto o revocato.';
 
   @override
+  String get githubImageActions => 'Azioni immagine';
+
+  @override
+  String get githubImageAdded => 'Immagine aggiunta all\'attività';
+
+  @override
+  String get githubImageAddFailed =>
+      'Non è stato possibile aggiungere l\'immagine all\'attività.';
+
+  @override
+  String get githubImageAddToTask => 'Aggiungi all\'attività';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Caricamento dell\'immagine da $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Impossibile caricare l\'immagine da $host';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Vedi a dimensione intera';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Questa pull request è già collegata a questa attività.';
 
