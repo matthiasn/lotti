@@ -6329,6 +6329,227 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
   }
 }
 
+class EntryLinkLosses extends Table
+    with TableInfo<EntryLinkLosses, EntryLinkLossDbEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  EntryLinkLosses(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
+  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, serialized];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'entry_link_losses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EntryLinkLossDbEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('serialized')) {
+      context.handle(
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serializedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EntryLinkLossDbEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EntryLinkLossDbEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+    );
+  }
+
+  @override
+  EntryLinkLosses createAlias(String alias) {
+    return EntryLinkLosses(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class EntryLinkLossDbEntry extends DataClass
+    implements Insertable<EntryLinkLossDbEntry> {
+  final String id;
+  final String serialized;
+  const EntryLinkLossDbEntry({required this.id, required this.serialized});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['serialized'] = Variable<String>(serialized);
+    return map;
+  }
+
+  EntryLinkLossesCompanion toCompanion(bool nullToAbsent) {
+    return EntryLinkLossesCompanion(
+      id: Value(id),
+      serialized: Value(serialized),
+    );
+  }
+
+  factory EntryLinkLossDbEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EntryLinkLossDbEntry(
+      id: serializer.fromJson<String>(json['id']),
+      serialized: serializer.fromJson<String>(json['serialized']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'serialized': serializer.toJson<String>(serialized),
+    };
+  }
+
+  EntryLinkLossDbEntry copyWith({String? id, String? serialized}) =>
+      EntryLinkLossDbEntry(
+        id: id ?? this.id,
+        serialized: serialized ?? this.serialized,
+      );
+  EntryLinkLossDbEntry copyWithCompanion(EntryLinkLossesCompanion data) {
+    return EntryLinkLossDbEntry(
+      id: data.id.present ? data.id.value : this.id,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntryLinkLossDbEntry(')
+          ..write('id: $id, ')
+          ..write('serialized: $serialized')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, serialized);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EntryLinkLossDbEntry &&
+          other.id == this.id &&
+          other.serialized == this.serialized);
+}
+
+class EntryLinkLossesCompanion extends UpdateCompanion<EntryLinkLossDbEntry> {
+  final Value<String> id;
+  final Value<String> serialized;
+  final Value<int> rowid;
+  const EntryLinkLossesCompanion({
+    this.id = const Value.absent(),
+    this.serialized = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EntryLinkLossesCompanion.insert({
+    required String id,
+    required String serialized,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       serialized = Value(serialized);
+  static Insertable<EntryLinkLossDbEntry> custom({
+    Expression<String>? id,
+    Expression<String>? serialized,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serialized != null) 'serialized': serialized,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EntryLinkLossesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? serialized,
+    Value<int>? rowid,
+  }) {
+    return EntryLinkLossesCompanion(
+      id: id ?? this.id,
+      serialized: serialized ?? this.serialized,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (serialized.present) {
+      map['serialized'] = Variable<String>(serialized.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntryLinkLossesCompanion(')
+          ..write('id: $id, ')
+          ..write('serialized: $serialized, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$JournalDb extends GeneratedDatabase {
   _$JournalDb(QueryExecutor e) : super(e);
   _$JournalDb.connect(DatabaseConnection c) : super.connect(c);
@@ -6498,6 +6719,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_linked_entries_type',
     'CREATE INDEX idx_linked_entries_type ON linked_entries (type)',
   );
+  late final EntryLinkLosses entryLinkLosses = EntryLinkLosses(this);
   late final Index idxLinkedEntriesFromIdHidden = Index(
     'idx_linked_entries_from_id_hidden',
     'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)',
@@ -8266,6 +8488,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLabeledLabelId,
     linkedEntries,
     idxLinkedEntriesType,
+    entryLinkLosses,
     idxLinkedEntriesFromIdHidden,
     idxLinkedEntriesFromIdHiddenToId,
     idxLinkedEntriesToIdHidden,
@@ -11468,6 +11691,151 @@ typedef $LinkedEntriesProcessedTableManager =
       LinkedDbEntry,
       PrefetchHooks Function()
     >;
+typedef $EntryLinkLossesCreateCompanionBuilder =
+    EntryLinkLossesCompanion Function({
+      required String id,
+      required String serialized,
+      Value<int> rowid,
+    });
+typedef $EntryLinkLossesUpdateCompanionBuilder =
+    EntryLinkLossesCompanion Function({
+      Value<String> id,
+      Value<String> serialized,
+      Value<int> rowid,
+    });
+
+class $EntryLinkLossesFilterComposer
+    extends Composer<_$JournalDb, EntryLinkLosses> {
+  $EntryLinkLossesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $EntryLinkLossesOrderingComposer
+    extends Composer<_$JournalDb, EntryLinkLosses> {
+  $EntryLinkLossesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $EntryLinkLossesAnnotationComposer
+    extends Composer<_$JournalDb, EntryLinkLosses> {
+  $EntryLinkLossesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get serialized => $composableBuilder(
+    column: $table.serialized,
+    builder: (column) => column,
+  );
+}
+
+class $EntryLinkLossesTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          EntryLinkLosses,
+          EntryLinkLossDbEntry,
+          $EntryLinkLossesFilterComposer,
+          $EntryLinkLossesOrderingComposer,
+          $EntryLinkLossesAnnotationComposer,
+          $EntryLinkLossesCreateCompanionBuilder,
+          $EntryLinkLossesUpdateCompanionBuilder,
+          (
+            EntryLinkLossDbEntry,
+            BaseReferences<_$JournalDb, EntryLinkLosses, EntryLinkLossDbEntry>,
+          ),
+          EntryLinkLossDbEntry,
+          PrefetchHooks Function()
+        > {
+  $EntryLinkLossesTableManager(_$JournalDb db, EntryLinkLosses table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $EntryLinkLossesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $EntryLinkLossesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $EntryLinkLossesAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EntryLinkLossesCompanion(
+                id: id,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String serialized,
+                Value<int> rowid = const Value.absent(),
+              }) => EntryLinkLossesCompanion.insert(
+                id: id,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $EntryLinkLossesProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      EntryLinkLosses,
+      EntryLinkLossDbEntry,
+      $EntryLinkLossesFilterComposer,
+      $EntryLinkLossesOrderingComposer,
+      $EntryLinkLossesAnnotationComposer,
+      $EntryLinkLossesCreateCompanionBuilder,
+      $EntryLinkLossesUpdateCompanionBuilder,
+      (
+        EntryLinkLossDbEntry,
+        BaseReferences<_$JournalDb, EntryLinkLosses, EntryLinkLossDbEntry>,
+      ),
+      EntryLinkLossDbEntry,
+      PrefetchHooks Function()
+    >;
 
 class $JournalDbManager {
   final _$JournalDb _db;
@@ -11494,6 +11862,8 @@ class $JournalDbManager {
   $LabeledTableManager get labeled => $LabeledTableManager(_db, _db.labeled);
   $LinkedEntriesTableManager get linkedEntries =>
       $LinkedEntriesTableManager(_db, _db.linkedEntries);
+  $EntryLinkLossesTableManager get entryLinkLosses =>
+      $EntryLinkLossesTableManager(_db, _db.entryLinkLosses);
 }
 
 class CountTasksGroupedByCategoryResult {

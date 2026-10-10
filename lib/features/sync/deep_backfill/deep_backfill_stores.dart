@@ -34,12 +34,20 @@ class TableDeepBackfillStore extends DeepBackfillStore {
     required this.payloadType,
     required this.queries,
     required this.resend,
+    this.deletedAgents,
   });
 
   @override
   final SyncSequencePayloadType payloadType;
   final DeepBackfillTableQueries queries;
   final DeepBackfillResend resend;
+
+  /// The deleted-agent lookup of the agent stores; null elsewhere.
+  final Future<Set<String>> Function(Iterable<String> agentIds)? deletedAgents;
+
+  @override
+  Future<Set<String>> deletedAgentsAmong(Iterable<String> agentIds) =>
+      deletedAgents?.call(agentIds) ?? Future.value(const {});
 
   @override
   Future<int> count() => queries.count();
@@ -278,7 +286,21 @@ TableDeepBackfillStore entryLinkDeepBackfillStore({
   ),
 );
 
-/// Agent entities: a removal keeps its row with `deleted_at` (ADR 0081).
+/// Those of [agentIds] the agent database records a hard deletion of (ADR
+/// 0108): a record of theirs would be refused on receipt, so it is not asked
+/// for.
+Future<Set<String>> _deletedAgentsIn(
+  AgentDatabase agentDatabase,
+  Iterable<String> agentIds,
+) async {
+  final ids = agentIds.toSet();
+  if (ids.isEmpty) return const {};
+  return (await agentDatabase.deletedAgentIdsAmong(ids.toList()).get()).toSet();
+}
+
+/// Agent entities: a removal keeps its row with `deleted_at` (ADR 0081). The
+/// inventory names each row's agent, so a peer that deleted the agent does
+/// not request what it would refuse.
 TableDeepBackfillStore agentEntityDeepBackfillStore({
   required AgentDatabase agentDatabase,
   required OutboxService outboxService,
@@ -288,6 +310,7 @@ TableDeepBackfillStore agentEntityDeepBackfillStore({
     db: agentDatabase,
     table: 'agent_entities',
     clockSql: r"json_extract(serialized, '$.vectorClock')",
+    agentIdsSql: 'json_array(agent_id)',
   ),
   resend: (serialized) => outboxService.enqueueMessage(
     SyncMessage.agentEntity(
@@ -295,9 +318,11 @@ TableDeepBackfillStore agentEntityDeepBackfillStore({
       agentEntity: AgentDbConversions.fromSerialized(serialized),
     ),
   ),
+  deletedAgents: (ids) => _deletedAgentsIn(agentDatabase, ids),
 );
 
-/// Agent links: a removal keeps its row with `deleted_at` (ADR 0081).
+/// Agent links: a removal keeps its row with `deleted_at` (ADR 0081). The
+/// inventory names both ends, since either may be a deleted agent.
 TableDeepBackfillStore agentLinkDeepBackfillStore({
   required AgentDatabase agentDatabase,
   required OutboxService outboxService,
@@ -307,7 +332,9 @@ TableDeepBackfillStore agentLinkDeepBackfillStore({
     db: agentDatabase,
     table: 'agent_links',
     clockSql: r"json_extract(serialized, '$.vectorClock')",
+    agentIdsSql: 'json_array(from_id, to_id)',
   ),
+  deletedAgents: (ids) => _deletedAgentsIn(agentDatabase, ids),
   resend: (serialized) => outboxService.enqueueMessage(
     SyncMessage.agentLink(
       status: SyncEntryStatus.update,

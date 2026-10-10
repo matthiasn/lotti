@@ -24,6 +24,9 @@ _DeepBackfillRecord _$DeepBackfillRecordFromJson(Map<String, dynamic> json) =>
         json['vectorClock'] as Map<String, dynamic>,
       ),
       mediaSize: (json['mediaSize'] as num?)?.toInt(),
+      agentIds: (json['agentIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$DeepBackfillRecordToJson(_DeepBackfillRecord instance) =>
@@ -31,6 +34,7 @@ Map<String, dynamic> _$DeepBackfillRecordToJson(_DeepBackfillRecord instance) =>
       'id': instance.id,
       'vectorClock': instance.vectorClock,
       'mediaSize': ?instance.mediaSize,
+      'agentIds': ?instance.agentIds,
     };
 
 _DeepBackfillRequestRecord _$DeepBackfillRequestRecordFromJson(

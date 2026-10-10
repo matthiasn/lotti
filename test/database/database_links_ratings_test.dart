@@ -1621,6 +1621,102 @@ void main() {
       );
 
       test(
+        'a late copy of a retyped version that lost is refused, not put back '
+        'at the triple it left',
+        () async {
+          final before = version(
+            'moved',
+            clock: const VectorClock({'a': 1}),
+            updatedAt: early,
+            type: EntryLinkType.blocks,
+          );
+          final holder = version(
+            'holder',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+          );
+          final after = version(
+            'moved',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: early,
+          );
+          await db!.upsertEntryLink(before);
+          await db!.upsertEntryLink(holder);
+          await db!.upsertEntryLink(after);
+
+          // The pre-retype copy arrives late, from a peer still sending it.
+          expect(await db!.upsertEntryLink(before), 0);
+
+          expect(await db!.entryLinkById('moved'), isNull);
+          expect(await db!.linksBetween('ids-from', 'ids-to'), [holder]);
+        },
+      );
+
+      test(
+        'a newer version of an id that lost takes its row again',
+        () async {
+          final holder = version(
+            'holder',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+          );
+          final lost = version(
+            'moved',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: early,
+          );
+          final relinked = version(
+            'moved',
+            clock: const VectorClock({'a': 3}),
+            updatedAt: late,
+            type: EntryLinkType.blocks,
+          );
+          await db!.upsertEntryLink(holder);
+          expect(await db!.upsertEntryLink(lost), 0);
+
+          expect(await db!.upsertEntryLink(relinked), greaterThan(0));
+
+          expect(await db!.entryLinkById('moved'), relinked);
+          // The loss is cleared: the version it named is refused as stale by
+          // the row now, not by the loss.
+          expect(await db!.upsertEntryLink(lost), 0);
+          expect(await db!.entryLinkById('moved'), relinked);
+        },
+      );
+
+      test(
+        'a holder displaced from its triple is not written back by a late '
+        'copy once the winner has moved on',
+        () async {
+          final holder = version(
+            'holder',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: early,
+          );
+          final winner = version(
+            'moved',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: late,
+          );
+          final movedOn = version(
+            'moved',
+            clock: const VectorClock({'a': 3}),
+            updatedAt: late,
+            type: EntryLinkType.blocks,
+          );
+          await db!.upsertEntryLink(holder);
+          await db!.upsertEntryLink(winner);
+          expect(await db!.entryLinkById('holder'), isNull);
+          await db!.upsertEntryLink(movedOn);
+
+          expect(await db!.upsertEntryLink(holder), 0);
+
+          expect(await db!.entryLinkById('holder'), isNull);
+          expect(await stored(), isEmpty);
+        },
+      );
+
+      test(
         'a project link replaced under another id, or displaced from the '
         "triple it left, keeps the task's project id in step",
         () async {

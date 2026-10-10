@@ -28,6 +28,8 @@ class _FakeStore extends DeepBackfillStore {
     Map<String, VectorClock?> rows = const {},
     this.conflicts = const {},
     Map<String, int> media = const {},
+    this.agents = const {},
+    this.deletedAgents = const {},
   }) : rows = SplayTreeMap.of(rows),
        media = Map.of(media);
 
@@ -36,6 +38,12 @@ class _FakeStore extends DeepBackfillStore {
   final SplayTreeMap<String, VectorClock?> rows;
   final Map<String, List<VectorClock>> conflicts;
   final Map<String, int> media;
+
+  /// The agents each row belongs to, as an agent store lists them.
+  final Map<String, List<String>> agents;
+
+  /// The agents this device holds a deletion of.
+  final Set<String> deletedAgents;
   final resent = <({Set<String> ids, Set<String> withMedia})>[];
   final changed = StreamController<void>.broadcast();
 
@@ -55,7 +63,8 @@ class _FakeStore extends DeepBackfillStore {
     required int limit,
   }) async => [
     for (final MapEntry(key: id, value: clock) in rows.entries)
-      if (after == null || id.compareTo(after) > 0) (id: id, clock: clock),
+      if (after == null || id.compareTo(after) > 0)
+        (id: id, clock: clock, agentIds: agents[id]),
   ].take(limit).toList();
 
   @override
@@ -84,6 +93,10 @@ class _FakeStore extends DeepBackfillStore {
     for (final MapEntry(key: id, value: size) in media.entries)
       if (_inRange(id, start, end)) id: size,
   };
+
+  @override
+  Future<Set<String>> deletedAgentsAmong(Iterable<String> agentIds) async =>
+      agentIds.where(deletedAgents.contains).toSet();
 
   @override
   Future<int> enqueueCurrent(
@@ -139,6 +152,7 @@ void main() {
     Map<String, VectorClock> records = const {},
     Map<String, VectorClock> conflicts = const {},
     Map<String, int> mediaSizes = const {},
+    Map<String, List<String>> agentIds = const {},
     String? attachmentEventId,
   }) =>
       SyncMessage.deepBackfillInventory(
@@ -154,6 +168,7 @@ void main() {
                   id: id,
                   vectorClock: clock,
                   mediaSize: mediaSizes[id],
+                  agentIds: agentIds[id],
                 ),
             ],
             conflicts: [
@@ -247,6 +262,30 @@ void main() {
       expect(summary.batches, 3);
       expect(summary.records, 5);
       expect(summary.recordsByType, {_journal: 5});
+    });
+
+    test('names the agents an agent record belongs to, and no agents for '
+        'any other record', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {
+          'state-1': const VectorClock({'x': 1}),
+          'plain': const VectorClock({'x': 2}),
+        },
+        agents: {
+          'state-1': ['agent-1'],
+        },
+      );
+
+      await service(stores: [store]).runRound();
+
+      expect(
+        {for (final r in enqueued().single.records) r.id: r.agentIds},
+        {
+          'plain': null,
+          'state-1': ['agent-1'],
+        },
+      );
     });
 
     test("lists each live media record's file size next to its clock, and "
@@ -391,6 +430,55 @@ void main() {
       });
       expect(store.resent.single.ids, {'newer', 'alone'});
       expect(store.resent.single.withMedia, {'alone'});
+    });
+
+    test('does not ask for the records of an agent deleted here, which it '
+        'would refuse, and asks for the rest as before', () async {
+      final store = _FakeStore(
+        _journal,
+        deletedAgents: {'deleted-agent'},
+      );
+
+      await service(stores: [store]).handleInventory(
+        inventory(
+          records: {
+            'of-deleted': const VectorClock({'x': 1}),
+            'link-to-deleted': const VectorClock({'x': 1}),
+            'of-live': const VectorClock({'x': 1}),
+            'unnamed': const VectorClock({'x': 1}),
+          },
+          agentIds: {
+            'of-deleted': ['deleted-agent'],
+            'link-to-deleted': ['live-agent', 'deleted-agent'],
+            'of-live': ['live-agent'],
+          },
+        ),
+      );
+
+      expect(
+        requestsSent().single.records.map((r) => r.id).toSet(),
+        {'of-live', 'unnamed'},
+      );
+      expect((await outstandingRows()).keys.toSet(), {'of-live', 'unnamed'});
+    });
+
+    test('sends no request when every missing record belongs to a deleted '
+        'agent', () async {
+      final store = _FakeStore(_journal, deletedAgents: {'deleted-agent'});
+
+      await service(stores: [store]).handleInventory(
+        inventory(
+          records: {
+            'of-deleted': const VectorClock({'x': 1}),
+          },
+          agentIds: {
+            'of-deleted': ['deleted-agent'],
+          },
+        ),
+      );
+
+      verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+      expect(await outstandingRows(), isEmpty);
     });
 
     test('does not ask again while a request is outstanding, and settles it '

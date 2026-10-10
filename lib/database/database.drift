@@ -386,6 +386,16 @@ CREATE TABLE linked_entries (
 
 CREATE INDEX idx_linked_entries_type ON linked_entries (type);
 
+-- A link version that lost its triple to a version under another id (ADR
+-- 0096) leaves its row, but keeps the version it lost at here: a late copy
+-- of that id no newer than it is refused instead of inserted again at the
+-- triple it had before a retype.
+CREATE TABLE entry_link_losses (
+  id TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id)
+) as EntryLinkLossDbEntry;
+
 CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 -- Covering variant so `getBulkLinkedTimeSpans` can resolve `to_id`
 -- straight from the index without falling back to the heap. Plan

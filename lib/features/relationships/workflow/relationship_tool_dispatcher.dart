@@ -99,21 +99,18 @@ class RelationshipToolDispatcher {
     // One journal identity per evidence-backed commitment, independent of
     // device-local creation timestamps or status UUIDs. Retrying or syncing
     // concurrent confirmations cannot produce a second task row.
-    final taskId = const Uuid().v5(
-      Namespace.nil.value,
-      jsonEncode([
-        'relationship-task',
-        relationshipId,
-        args['sourceCheckInId'],
-        (args['title'] as String).trim(),
-        quote,
-      ]),
-    );
-    final existing = await journalDb.journalEntityById(taskId);
+    final identity = await _taskIdentity([
+      'relationship-task',
+      relationshipId,
+      args['sourceCheckInId'],
+      (args['title'] as String).trim(),
+      quote,
+    ]);
+    if (identity == null) {
+      return _failure('Task identity is unavailable', permanent: true);
+    }
+    final (id: taskId, :existing) = identity;
     if (existing != null && !existing.isDeleted) {
-      if (existing is! Task) {
-        return _failure('Task identity is unavailable', permanent: true);
-      }
       final linked = await _tryLinkTask(taskId, relationshipId);
       // Do not mint an undo receipt from a task a peer may already have edited.
       return (linked || await _hasRelationshipLink(taskId, relationshipId))
@@ -299,6 +296,39 @@ class RelationshipToolDispatcher {
     } catch (_) {
       return false;
     }
+  }
+
+  /// How many generations of a commitment's id are tried before giving up.
+  static const _maxIdGenerations = 16;
+
+  /// The journal identity of the commitment [seed] names, and the row this
+  /// device holds under it, deleted rows included.
+  ///
+  /// The first generation is the deterministic id, so a confirmation retried
+  /// or synced twice meets the same row: a live task is linked, not made
+  /// again, and a soft-deleted one, which undo leaves behind, is restored
+  /// under the same id on a clock descended from its tombstone. A row that
+  /// is no task any more, which a purge compacts a deleted task to (ADR
+  /// 0095), is passed over: a creation under its id would replace the
+  /// deletion with a clock that does not cover it, and every peer would
+  /// raise a conflict. The next generation of the id is tried instead, so
+  /// the task is a plain creation everywhere.
+  Future<({String id, JournalEntity? existing})?> _taskIdentity(
+    List<Object?> seed,
+  ) async {
+    for (var generation = 0; generation < _maxIdGenerations; generation++) {
+      final id = const Uuid().v5(
+        Namespace.nil.value,
+        jsonEncode(
+          generation == 0 ? seed : [...seed, 'generation', generation],
+        ),
+      );
+      final existing = await journalDb.journalEntityByIdIncludingDeleted(id);
+      if (existing == null || existing is Task) {
+        return (id: id, existing: existing);
+      }
+    }
+    return null;
   }
 
   ToolExecutionResult _failure(String reason, {bool permanent = false}) =>

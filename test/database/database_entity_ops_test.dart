@@ -521,7 +521,8 @@ void main() {
         expect(backupDir.existsSync(), isFalse);
       });
 
-      test('purges all deleted entity types', () async {
+      test('compacts deleted journal rows and keeps deleted dashboards and '
+          'measurable types as the rows their deletion wrote', () async {
         final deletionTime = DateTime(2024, 2, 1, 8);
         final docDir = getIt<Directory>();
         await createPlaceholderDbFile(docDir);
@@ -529,8 +530,10 @@ void main() {
 
         await db!.purgeDeleted(backup: false).toList();
 
-        expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
-        expect(await db!.select(db!.measurableTypes).get(), isEmpty);
+        final dashboards = await db!.select(db!.dashboardDefinitions).get();
+        final measurables = await db!.select(db!.measurableTypes).get();
+        expect(dashboards.single.deleted, isTrue);
+        expect(measurables.single.deleted, isTrue);
         // The journal row stays, compacted to the deletion's tombstone.
         final rows = await db!.select(db!.journal).get();
         expect(rows, hasLength(1));
@@ -539,12 +542,57 @@ void main() {
         expect(tombstone.entryText, isNull);
       });
 
-      test('reports progress accurately', () async {
+      test('reports completion once the journal is compacted', () async {
         final deletionTime = DateTime(2024, 2, 2, 9);
         await seedDeletedDatabaseContent(db!, deletionTime);
 
         final progress = await db!.purgeDeleted(backup: false).toList();
-        expect(progress, equals([0.33, 0.66, 1.0]));
+        expect(progress, equals([1.0]));
+      });
+
+      test('a late copy of a dashboard or measurable type from before its '
+          'deletion is refused after a purge, not written back', () async {
+        final deletedAt = DateTime(2024, 2, 4, 10);
+        final dashboard = testDashboardConfig.copyWith(
+          id: 'purged-dashboard',
+          updatedAt: deletedAt,
+          deletedAt: deletedAt,
+          vectorClock: const VectorClock({'a': 2}),
+        );
+        final measurable = measurableWater.copyWith(
+          id: 'purged-measurable',
+          updatedAt: deletedAt,
+          deletedAt: deletedAt,
+          vectorClock: const VectorClock({'a': 2}),
+        );
+        await db!.upsertDashboardDefinition(dashboard);
+        await db!.upsertMeasurableDataType(measurable);
+        await db!.purgeDeleted(backup: false).drain<void>();
+
+        final before = deletedAt.subtract(const Duration(days: 1));
+        expect(
+          await db!.upsertDashboardDefinition(
+            dashboard.copyWith(
+              updatedAt: before,
+              deletedAt: null,
+              vectorClock: const VectorClock({'a': 1}),
+            ),
+          ),
+          0,
+        );
+        expect(
+          await db!.upsertMeasurableDataType(
+            measurable.copyWith(
+              updatedAt: before,
+              deletedAt: null,
+              vectorClock: const VectorClock({'a': 1}),
+            ),
+          ),
+          0,
+        );
+        expect(await db!.getDashboardById('purged-dashboard'), isNull);
+        final rows = await db!.select(db!.measurableTypes).get();
+        expect(rows.single.deleted, isTrue);
       });
 
       test(
@@ -572,7 +620,7 @@ void main() {
 
           final progress = await db!.purgeDeleted(backup: false).toList();
 
-          expect(progress, equals([0.33, 0.66, 1.0]));
+          expect(progress, equals([1.0]));
           final rows = await db!.select(db!.journal).get();
           expect(rows, hasLength(total));
           expect(

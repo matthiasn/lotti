@@ -135,4 +135,27 @@ void main() {
       }
     });
   });
+
+  group('parseAgentIds', () {
+    test('reads a JSON array of ids, skipping anything that is not one', () {
+      expect(DeepBackfillTableQueries.parseAgentIds('["a","b"]'), [
+        'a',
+        'b',
+      ]);
+      expect(DeepBackfillTableQueries.parseAgentIds('["a",null,2]'), ['a']);
+    });
+
+    test(
+      'reads null, empty, non-array, id-less and malformed JSON as none',
+      () {
+        for (final json in [null, '', '{"a":1}', '[null]', '[not json']) {
+          expect(
+            DeepBackfillTableQueries.parseAgentIds(json),
+            isNull,
+            reason: json,
+          );
+        }
+      },
+    );
+  });
 }

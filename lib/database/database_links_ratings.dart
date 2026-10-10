@@ -385,7 +385,12 @@ mixin _JournalDbLinksRatings
   /// snapshot replaced the tombstone with its live row. When a version whose
   /// id moved to this triple (`JournalRepository.updateLinkType`) loses
   /// here, the row it superseded under its own id goes too, as it does on
-  /// the device where the winner displaced that version.
+  /// the device where the winner displaced that version — and the version
+  /// that lost is kept in `entry_link_losses` under its id, so a late copy
+  /// of that id no newer than it (the link as it was before the retype, say)
+  /// is refused rather than inserted again at the triple it had then. A
+  /// newer version of a lost id — the user linking it again — clears the
+  /// loss and takes its row.
   ///
   /// The equality pre-read, the recency checks, the tombstone or loser
   /// replacement and the upsert run in one transaction, so two concurrent
@@ -411,6 +416,9 @@ mixin _JournalDbLinksRatings
           _entryLinkIsStale(link, than: entryLinkFromLinkedDbEntry(existing))) {
         return 0; // the stored version already supersedes this one
       }
+      if (existing == null && !await _outranksLoss(link)) {
+        return 0; // a version of this id lost its triple; this one is no newer
+      }
 
       // The row holding this link's triple under another id. insertOnConflict-
       // Update only handles primary key conflicts, so it has to give way here
@@ -430,13 +438,16 @@ mixin _JournalDbLinksRatings
           than: entryLinkFromLinkedDbEntry(holder),
         )) {
           // The triple keeps the other id's version. A row this version
-          // superseded under its own id sat at another triple, which it left.
+          // superseded under its own id sat at another triple, which it
+          // left; the version that lost is remembered under its id.
           if (existing != null) {
             await _deleteLinkRow(existing);
           }
+          await _recordLoss(link.id, jsonEncode(link));
           return 0;
         }
         await _deleteLinkRow(holder);
+        await _recordLoss(holder.id, holder.serialized);
       }
 
       final res = await into(linkedEntries).insertOnConflictUpdate(dbLink);
@@ -468,6 +479,32 @@ mixin _JournalDbLinksRatings
     if (row.type == 'ProjectLink') {
       await _refreshProjectId(row.toId);
     }
+  }
+
+  /// Remembers that the version [serialized] of link [id] lost its triple to
+  /// a version under another id.
+  Future<void> _recordLoss(String id, String serialized) =>
+      into(
+        entryLinkLosses,
+      ).insertOnConflictUpdate(
+        EntryLinkLossDbEntry(id: id, serialized: serialized),
+      );
+
+  /// Whether [link], arriving for an id this device holds no row for, is
+  /// newer than the version that id lost its triple at, if any. A newer
+  /// version clears the loss and may take a row; an older or equal one is a
+  /// late copy of the loser and is refused.
+  Future<bool> _outranksLoss(EntryLink link) async {
+    final lost = await (select(
+      entryLinkLosses,
+    )..where((t) => t.id.equals(link.id))).getSingleOrNull();
+    if (lost == null) return true;
+    final lostLink = EntryLink.fromJson(
+      jsonDecode(lost.serialized) as Map<String, dynamic>,
+    );
+    if (!_entryLinkIsStale(lostLink, than: link)) return false;
+    await (delete(entryLinkLosses)..where((t) => t.id.equals(link.id))).go();
+    return true;
   }
 
   Future<void> _refreshProjectId(String taskId) => customStatement(

@@ -56,7 +56,7 @@ void main() {
     when(
       () => db.entityById(task.id),
     ).thenAnswer((_) async => toDbEntity(task));
-    when(() => db.journalEntityById(any())).thenAnswer(
+    when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer(
       (call) async => call.positionalArguments.single == task.id ? task : null,
     );
     when(
@@ -558,7 +558,7 @@ void main() {
     test(
       'an existing peer task is never overwritten or made undoable (linked: $linked)',
       () async {
-        when(() => db.journalEntityById(any())).thenAnswer(
+        when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer(
           (invocation) async => task.copyWith(
             meta: task.meta.copyWith(
               id: invocation.positionalArguments.first as String,
@@ -603,7 +603,9 @@ void main() {
       'confirmation after undo restores the tombstoned identity (saved: $saved)',
       () async {
         String? identity;
-        when(() => db.journalEntityById(any())).thenAnswer((invocation) async {
+        when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
           identity = invocation.positionalArguments.first as String;
           return task.copyWith(
             meta: task.meta.copyWith(id: identity!, deletedAt: now),
@@ -671,8 +673,52 @@ void main() {
     );
   }
 
-  test('a non-task identity collision refuses creation', () async {
-    when(() => db.journalEntityById(any())).thenAnswer((_) async => person);
+  test('a purged task is passed over for the next generation of its id, so '
+      'the task is a plain creation rather than a restore over a tombstone '
+      'every peer would raise a conflict for', () async {
+    final looked = <String>[];
+    when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer((
+      invocation,
+    ) async {
+      final id = invocation.positionalArguments.single as String;
+      looked.add(id);
+      return looked.length == 1
+          ? task
+                .copyWith(
+                  meta: task.meta.copyWith(id: id, deletedAt: now),
+                )
+                .toPurgedTombstone(now)
+          : null;
+    });
+
+    final result = await dispatcher.dispatch(
+      'create_and_link_task',
+      args,
+      person.id,
+    );
+
+    expect(result.success, isTrue);
+    expect(looked, hasLength(2));
+    expect(looked.toSet(), hasLength(2));
+    final created =
+        verify(
+              () => persistence.createTaskEntry(
+                id: captureAny(named: 'id'),
+                data: any(named: 'data'),
+                entryText: any(named: 'entryText'),
+                categoryId: any(named: 'categoryId'),
+                private: any(named: 'private'),
+              ),
+            ).captured.single
+            as String;
+    expect(created, looked.last);
+  });
+
+  test('every generation of the identity taken by a non-task refuses '
+      'creation', () async {
+    when(
+      () => db.journalEntityByIdIncludingDeleted(any()),
+    ).thenAnswer((_) async => person);
     final result = await dispatcher.dispatch(
       'create_and_link_task',
       args,

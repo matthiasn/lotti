@@ -182,6 +182,7 @@ class DeepBackfillService {
                     id: row.id,
                     vectorClock: clock,
                     mediaSize: media[row.id],
+                    agentIds: row.agentIds,
                   ),
             ],
             conflicts: [
@@ -284,21 +285,60 @@ class DeepBackfillService {
         withMedia: {...diff.advertiserLacks, ...diff.mediaPushes},
       );
     }
-    if (diff.requests.isNotEmpty) {
-      await _request(inventory: inventory, host: host, diff: diff);
+    final requests = await _withoutDeletedAgents(
+      store,
+      inventory,
+      diff.requests,
+    );
+    if (requests.isNotEmpty) {
+      await _request(
+        inventory: inventory,
+        host: host,
+        diff: diff,
+        requests: requests,
+      );
     }
     _logging.log(
       LogDomain.sync,
       'deepBackfill.diff from=${inventory.hostId} '
       'type=${inventory.payloadType.name} batch=${inventory.batch} '
       'advertised=${inventory.records.length} local=${local.length} '
-      'requested=${diff.requests.length} pushed=${diff.pushes.length} '
+      'requested=${requests.length} '
+      'refusedAgents=${diff.requests.length - requests.length} '
+      'pushed=${diff.pushes.length} '
       'mediaRequested=${diff.mediaRequests.length} '
       'mediaPushed=${diff.mediaPushes.length} '
       'outstanding=${outstanding.length} '
       'incomparable=${diff.incomparable.length}',
       subDomain: 'deepBackfill.diff',
     );
+  }
+
+  /// [requests] without the records of agents this device deleted: their
+  /// answer would be refused on receipt (ADR 0108), and without this they
+  /// were asked for again every round, each time expiring unsettled. A
+  /// record whose inventory entry names no agent — every other payload
+  /// type, and an advertiser that predates the field — is requested as
+  /// before.
+  Future<Map<String, List<VectorClock>>> _withoutDeletedAgents(
+    DeepBackfillStore store,
+    SyncDeepBackfillInventory inventory,
+    Map<String, List<VectorClock>> requests,
+  ) async {
+    if (requests.isEmpty) return requests;
+    final agentsOf = <String, List<String>>{
+      for (final record in inventory.records) record.id: ?record.agentIds,
+    };
+    final candidates = <String>{
+      for (final id in requests.keys) ...?agentsOf[id],
+    };
+    if (candidates.isEmpty) return requests;
+    final deleted = await store.deletedAgentsAmong(candidates);
+    if (deleted.isEmpty) return requests;
+    return {
+      for (final MapEntry(key: id, value: clocks) in requests.entries)
+        if (!(agentsOf[id]?.any(deleted.contains) ?? false)) id: clocks,
+    };
   }
 
   /// Answers a request addressed to this device with the current row of
@@ -380,10 +420,11 @@ class DeepBackfillService {
     required SyncDeepBackfillInventory inventory,
     required String host,
     required DeepBackfillDiff diff,
+    required Map<String, List<VectorClock>> requests,
   }) async {
     final requestedAt = _now();
     await _syncDb.recordDeepBackfillRequests([
-      for (final MapEntry(key: id, value: clocks) in diff.requests.entries)
+      for (final MapEntry(key: id, value: clocks) in requests.entries)
         DeepBackfillRequestsCompanion.insert(
           targetHostId: inventory.hostId,
           payloadType: inventory.payloadType.index,
@@ -400,7 +441,7 @@ class DeepBackfillService {
           targetHostId: inventory.hostId,
           payloadType: inventory.payloadType,
           records: [
-            for (final id in diff.requests.keys)
+            for (final id in requests.keys)
               DeepBackfillRequestRecord(
                 id: id,
                 absent: diff.absentLocally.contains(id),
@@ -414,7 +455,7 @@ class DeepBackfillService {
       await _syncDb.removeDeepBackfillRequests(
         targetHostId: inventory.hostId,
         payloadType: inventory.payloadType,
-        entryIds: diff.requests.keys.toSet(),
+        entryIds: requests.keys.toSet(),
       );
       rethrow;
     }

@@ -289,7 +289,12 @@ mixin _$DeepBackfillRecord {
 /// holds none), for a live image or audio entry. Null for records
 /// without media, and from peers on 1.1.33 or older, which never
 /// compare files.
-@JsonKey(includeIfNull: false) int? get mediaSize;
+@JsonKey(includeIfNull: false) int? get mediaSize;/// The agents this record belongs to — an agent entity's agent, an
+/// agent link's two ends — so a recipient that deleted one of them does
+/// not ask for a record it would refuse (ADR 0108). Null for other
+/// records, and from peers that predate it, whose records are requested
+/// as before.
+@JsonKey(includeIfNull: false) List<String>? get agentIds;
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -302,16 +307,16 @@ $DeepBackfillRecordCopyWith<DeepBackfillRecord> get copyWith => _$DeepBackfillRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize)&&const DeepCollectionEquality().equals(other.agentIds, agentIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize);
+int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize,const DeepCollectionEquality().hash(agentIds));
 
 @override
 String toString() {
-  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize)';
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize, agentIds: $agentIds)';
 }
 
 
@@ -322,7 +327,7 @@ abstract mixin class $DeepBackfillRecordCopyWith<$Res>  {
   factory $DeepBackfillRecordCopyWith(DeepBackfillRecord value, $Res Function(DeepBackfillRecord) _then) = _$DeepBackfillRecordCopyWithImpl;
 @useResult
 $Res call({
- String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize
+ String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize,@JsonKey(includeIfNull: false) List<String>? agentIds
 });
 
 
@@ -339,12 +344,13 @@ class _$DeepBackfillRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,Object? agentIds = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock,mediaSize: freezed == mediaSize ? _self.mediaSize : mediaSize // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,agentIds: freezed == agentIds ? _self.agentIds : agentIds // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 
@@ -429,10 +435,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize, @JsonKey(includeIfNull: false)  List<String>? agentIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord() when $default != null:
-return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize,_that.agentIds);case _:
   return orElse();
 
 }
@@ -450,10 +456,10 @@ return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize, @JsonKey(includeIfNull: false)  List<String>? agentIds)  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord():
-return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize,_that.agentIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -470,10 +476,10 @@ return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize, @JsonKey(includeIfNull: false)  List<String>? agentIds)?  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord() when $default != null:
-return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize,_that.agentIds);case _:
   return null;
 
 }
@@ -485,7 +491,7 @@ return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
 @JsonSerializable()
 
 class _DeepBackfillRecord implements DeepBackfillRecord {
-  const _DeepBackfillRecord({required this.id, required this.vectorClock, @JsonKey(includeIfNull: false) this.mediaSize});
+  const _DeepBackfillRecord({required this.id, required this.vectorClock, @JsonKey(includeIfNull: false) this.mediaSize, @JsonKey(includeIfNull: false) final  List<String>? agentIds}): _agentIds = agentIds;
   factory _DeepBackfillRecord.fromJson(Map<String, dynamic> json) => _$DeepBackfillRecordFromJson(json);
 
 @override final  String id;
@@ -495,6 +501,25 @@ class _DeepBackfillRecord implements DeepBackfillRecord {
 /// without media, and from peers on 1.1.33 or older, which never
 /// compare files.
 @override@JsonKey(includeIfNull: false) final  int? mediaSize;
+/// The agents this record belongs to — an agent entity's agent, an
+/// agent link's two ends — so a recipient that deleted one of them does
+/// not ask for a record it would refuse (ADR 0108). Null for other
+/// records, and from peers that predate it, whose records are requested
+/// as before.
+ final  List<String>? _agentIds;
+/// The agents this record belongs to — an agent entity's agent, an
+/// agent link's two ends — so a recipient that deleted one of them does
+/// not ask for a record it would refuse (ADR 0108). Null for other
+/// records, and from peers that predate it, whose records are requested
+/// as before.
+@override@JsonKey(includeIfNull: false) List<String>? get agentIds {
+  final value = _agentIds;
+  if (value == null) return null;
+  if (_agentIds is EqualUnmodifiableListView) return _agentIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
@@ -509,16 +534,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize)&&const DeepCollectionEquality().equals(other._agentIds, _agentIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize);
+int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize,const DeepCollectionEquality().hash(_agentIds));
 
 @override
 String toString() {
-  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize)';
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize, agentIds: $agentIds)';
 }
 
 
@@ -529,7 +554,7 @@ abstract mixin class _$DeepBackfillRecordCopyWith<$Res> implements $DeepBackfill
   factory _$DeepBackfillRecordCopyWith(_DeepBackfillRecord value, $Res Function(_DeepBackfillRecord) _then) = __$DeepBackfillRecordCopyWithImpl;
 @override @useResult
 $Res call({
- String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize
+ String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize,@JsonKey(includeIfNull: false) List<String>? agentIds
 });
 
 
@@ -546,12 +571,13 @@ class __$DeepBackfillRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,Object? agentIds = freezed,}) {
   return _then(_DeepBackfillRecord(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock,mediaSize: freezed == mediaSize ? _self.mediaSize : mediaSize // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,agentIds: freezed == agentIds ? _self._agentIds : agentIds // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 

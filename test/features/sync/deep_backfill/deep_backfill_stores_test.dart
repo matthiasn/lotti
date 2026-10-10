@@ -106,8 +106,8 @@ void main() {
       expect(store.payloadType, SyncSequencePayloadType.journalEntity);
       expect(await store.count(), 2);
       expect(await store.page(after: null, limit: 10), [
-        (id: 'a', clock: const VectorClock({'h': 1})),
-        (id: 'b', clock: const VectorClock({'h': 2})),
+        (id: 'a', clock: const VectorClock({'h': 1}), agentIds: null),
+        (id: 'b', clock: const VectorClock({'h': 2}), agentIds: null),
       ]);
       expect(await store.range(start: 'b', end: null), {
         'b': const VectorClock({'h': 2}),
@@ -346,9 +346,10 @@ void main() {
       );
 
       expect(store.payloadType, SyncSequencePayloadType.agentEntity);
-      expect(await store.page(after: null, limit: 5), [
-        (id: 'agent-1', clock: const VectorClock({'h': 5})),
-      ]);
+      final row = (await store.page(after: null, limit: 5)).single;
+      expect(row.id, 'agent-1');
+      expect(row.clock, const VectorClock({'h': 5}));
+      expect(row.agentIds, ['agent-1']);
       expect(await store.enqueueCurrent({'agent-1'}, withMedia: {}), 1);
       final message = enqueued().single as SyncAgentEntity;
       expect(message.agentEntity?.id, 'agent-1');
@@ -362,10 +363,46 @@ void main() {
 
       expect(store.payloadType, SyncSequencePayloadType.agentLink);
       expect(await store.count(), 1);
+      expect(
+        (await store.page(after: null, limit: 5)).single.agentIds,
+        ['agent-1', 'state-1'],
+      );
       expect(await store.enqueueCurrent({'alink-1'}, withMedia: {}), 1);
       final message = enqueued().single as SyncAgentLink;
       expect(message.agentLink?.id, 'alink-1');
       expect(message.agentLink?.vectorClock, const VectorClock({'h': 6}));
+    });
+  });
+
+  group('deleted agents', () {
+    late AgentDatabase db;
+
+    setUp(() => db = AgentDatabase(inMemoryDatabase: true, background: false));
+    tearDown(() => db.close());
+
+    test('both agent stores name the agents this device deleted, and only '
+        'those', () async {
+      await db.recordDeletedAgent('gone', _date);
+      final stores = [
+        agentEntityDeepBackfillStore(agentDatabase: db, outboxService: outbox),
+        agentLinkDeepBackfillStore(agentDatabase: db, outboxService: outbox),
+      ];
+
+      for (final store in stores) {
+        expect(await store.deletedAgentsAmong(['gone', 'live']), {'gone'});
+        expect(await store.deletedAgentsAmong(const []), isEmpty);
+      }
+    });
+
+    test('a store with no agents knows of no deleted ones', () async {
+      final journalDb = JournalDb(inMemoryDatabase: true);
+      addTearDown(journalDb.close);
+      final store = entryLinkDeepBackfillStore(
+        journalDb: journalDb,
+        outboxService: outbox,
+      );
+
+      expect(await store.deletedAgentsAmong(['gone']), isEmpty);
     });
   });
 
@@ -439,7 +476,7 @@ void main() {
 
       expect(store.payloadType, SyncSequencePayloadType.consumptionEvent);
       expect(await store.page(after: null, limit: 5), [
-        (id: 'c-1', clock: const VectorClock({'h': 8})),
+        (id: 'c-1', clock: const VectorClock({'h': 8}), agentIds: null),
       ]);
       expect(await store.enqueueCurrent({'c-1', 'none'}, withMedia: {}), 1);
       final message = enqueued().single as SyncConsumptionEvent;

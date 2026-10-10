@@ -547,52 +547,32 @@ mixin _JournalDbEntityOps
     return row.read<int>('c');
   }
 
-  /// Removes every soft-deleted dashboard and measurable row and compacts
-  /// every soft-deleted journal row to its tombstone, deleting the journal
+  /// Compacts every soft-deleted journal row to its tombstone, deleting the
   /// rows' files, reporting progress as it goes.
   ///
-  /// A journal row is not removed: a device that never received the deletion
-  /// would keep the entry for good, and a late copy of an older version would
-  /// bring it back here (ADR 0095). Its tombstone holds the id, dates, clock
-  /// and deletion and nothing else, and a later purge skips it.
+  /// No row is removed: a device that never received a deletion would keep
+  /// the entry for good, and a late copy of an older version would bring it
+  /// back here (ADR 0095). A journal tombstone holds the id, dates, clock
+  /// and deletion and nothing else, and a later purge skips it. Deleted
+  /// definitions — dashboards and measurable types among them — stay as the
+  /// rows their deletion wrote, like categories, labels and habits always
+  /// have: since definitions carry vector clocks (ADR 0125) the row is what
+  /// refuses an older copy, and a purge that removed it let any late copy
+  /// write the definition back.
   ///
-  /// Counts come from `COUNT(*)`, not from loading the rows, and the walks
-  /// stream in rowid chunks, so the purge costs the same memory on a
+  /// Counts come from `COUNT(*)`, not from loading the rows, and the walk
+  /// streams in rowid chunks, so the purge costs the same memory on a
   /// journal with a hundred deleted entries and one with a hundred thousand.
-  /// Progress is emitted after each table; nothing sleeps to make it
-  /// visible.
   Stream<double> purgeDeleted({bool backup = true}) async* {
     if (backup) {
       await createDbBackup(journalDbFileName);
     }
 
-    final dashboardCount = await _countDeleted(dashboardDefinitions);
-    final measurableCount = await _countDeleted(measurableTypes);
     final journalCount = await _countDeleted(journal, where: _unpurgedDeleted);
-
-    if (dashboardCount + measurableCount + journalCount == 0) {
-      yield 1.0; // Already empty
-      return;
-    }
-
-    if (dashboardCount > 0) {
-      await (delete(
-        dashboardDefinitions,
-      )..where((tbl) => tbl.deleted.equals(true))).go();
-    }
-    yield 0.33; // 33% complete after dashboards
-
-    if (measurableCount > 0) {
-      await (delete(
-        measurableTypes,
-      )..where((tbl) => tbl.deleted.equals(true))).go();
-    }
-    yield 0.66; // 66% complete after measurables
-
     if (journalCount > 0) {
       await _compactDeletedJournalRows(clock.now());
     }
-    yield 1.0; // 100% complete after journal entries
+    yield 1.0;
   }
 
   Stream<List<Conflict>> watchConflicts(
