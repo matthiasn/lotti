@@ -44,6 +44,11 @@ class AiConfigResend {
 /// as [resendOf] reports it, so a later write supersedes an older owed one.
 /// Without settings storage there is no ledger, and a failed send is only
 /// logged.
+///
+/// Sends and flushes run one at a time, in call order. The ledger's owe and
+/// settle are read-modify-writes of one settings row, so two interleaved
+/// would drop an owed id; and a flush that read an id's old version must not
+/// settle it after a newer write of that id failed to enqueue.
 class AiConfigSyncSender {
   AiConfigSyncSender({
     required SettingsDb? settingsDb,
@@ -72,9 +77,20 @@ class AiConfigSyncSender {
   Timer? _retryTimer;
   bool _disposed = false;
 
+  /// The tail of the queue every send and flush runs on.
+  Future<void> _tail = Future<void>.value();
+
+  /// Runs [operation] after every earlier send and flush has finished.
+  /// Neither throws, so the queue never stalls on a failure.
+  Future<void> _serially(Future<void> Function() operation) =>
+      _tail = _tail.then((_) => operation());
+
   /// Stages [message], the latest write of [id], owing it until the outbox
   /// accepts the row.
-  Future<void> send(String id, SyncMessage message) async {
+  Future<void> send(String id, SyncMessage message) =>
+      _serially(() => _send(id, message));
+
+  Future<void> _send(String id, SyncMessage message) async {
     final ledger = _ledger;
     try {
       await ledger?.owe(id);
@@ -89,7 +105,9 @@ class AiConfigSyncSender {
   /// Sends every write the ledger still owes, in id order. Called at
   /// startup, by the retry timer and by "Send settings". On the first
   /// failure the rest stay owed and a retry is scheduled.
-  Future<void> flush() async {
+  Future<void> flush() => _serially(_flush);
+
+  Future<void> _flush() async {
     final ledger = _ledger;
     if (ledger == null) return;
     try {

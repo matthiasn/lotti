@@ -123,6 +123,41 @@ void main() {
     });
   });
 
+  test('failed sends started together all stay owed', () async {
+    when(
+      () => outbox.enqueueMessageOrThrow(any()),
+    ).thenThrow(StateError('outbox down'));
+    final subject = sender(settings: settingsDb);
+
+    await Future.wait([
+      subject.send('a', edit('a')),
+      subject.send('b', edit('b')),
+      subject.send('c', edit('c')),
+    ]);
+
+    expect(await owed(), {'a', 'b', 'c'});
+    subject.dispose();
+  });
+
+  test('a flush overlapping a newer write of the same id does not settle '
+      'that write when its enqueue fails', () async {
+    await AiConfigSyncLedger(settingsDb).owe('a');
+    held['a'] = const AiConfigResend(id: 'a', stamp: 1);
+    const newer = SyncMessage.aiConfigDelete(id: 'a', versionStamp: 2);
+    when(() => outbox.enqueueMessageOrThrow(any())).thenAnswer((invocation) {
+      if (invocation.positionalArguments.single == newer) {
+        throw StateError('outbox down');
+      }
+      return Future<void>.value();
+    });
+    final subject = sender(settings: settingsDb);
+
+    await Future.wait([subject.flush(), subject.send('a', newer)]);
+
+    expect(await owed(), {'a'});
+    subject.dispose();
+  });
+
   test('a flush forgets an id the device holds nothing for', () async {
     final ledger = AiConfigSyncLedger(settingsDb);
     await ledger.owe('pruned');

@@ -1921,6 +1921,28 @@ void main() {
       await subscription.cancel();
     });
 
+    test('a model watcher drops a model once the hard deletion of a provider '
+        'this device never held arrives', () async {
+      await at(t1, () => deviceA.saveConfig(provider));
+      // B never hears of the provider, and creates a model under it later.
+      await at(t3, () => deviceB.saveConfig(model));
+      final watched = <List<AiConfig>>[];
+      final subscription = deviceB
+          .watchConfigsByType(AiConfigType.model)
+          .listen(watched.add);
+      await pumpEventQueue();
+      expect(watched.last.single.id, 'model');
+
+      final deletion = await at(t2, () => deviceA.hardDeleteConfig('provider'));
+      await deliver(deviceB, deletion);
+      await pumpEventQueue();
+
+      // No row changed on B, but the model's provider is now a deletion.
+      expect(await stored(deviceB, 'model'), isNotNull);
+      expect(watched.last, isEmpty);
+      await subscription.cancel();
+    });
+
     test('a key the user cleared is removed on the peers', () async {
       await seedBoth([provider]);
       final sent = await at(

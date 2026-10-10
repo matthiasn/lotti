@@ -449,9 +449,11 @@ class AiConfigRepository {
 
   /// Drops [id] from the caches and remembers its hard deletion, which the
   /// model lists need to hide the models of a deleted provider.
+  /// A provider deletion changes no row, so the model lists are told.
   void _noteHardDeleted(String id) {
-    _hardDeletedIds?.add(id);
+    final added = _hardDeletedIds?.add(id) ?? false;
     _invalidateConfig(id);
+    if (added && _allConfigsLoaded) _emitAllConfigs();
   }
 
   /// Clears a `deletedAt` stamp, so the seeding passes may recreate the row.
