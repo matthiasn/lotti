@@ -104,6 +104,50 @@ void main() {
     expect(calls, ['type', 'start', 'duration', 'sentiment', 'edit', 'edit']);
   });
 
+  testWidgets('every tag keeps the full touch target around its 28px face: '
+      'a tap above the pill still opens its picker', (tester) async {
+    await pump(tester, duration: Duration.zero);
+
+    for (final (key, call) in [
+      ('check-in-type', 'type'),
+      ('check-in-started', 'start'),
+      ('check-in-duration', 'duration'),
+      ('check-in-sentiment-chip', 'sentiment'),
+      ('check-in-topics', 'edit'),
+      ('check-in-detail-edit', 'edit'),
+    ]) {
+      final target = tester.getRect(find.byKey(ValueKey(key)));
+      final face = tester.getRect(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(DsPill),
+        ),
+      );
+      expect(
+        target.height,
+        greaterThanOrEqualTo(kMinInteractiveDimension),
+        reason: key,
+      );
+      expect(face.height, lessThan(target.height), reason: key);
+      calls.clear();
+      // Inside the target, above the pill's own face.
+      await tester.tapAt(Offset(face.center.dx, target.top + 2));
+      expect(calls, [call], reason: key);
+    }
+  });
+
+  testWidgets('a held tag takes no tap anywhere in its target', (
+    tester,
+  ) async {
+    await pump(tester, enabled: false);
+
+    final target = tester.getRect(
+      find.byKey(const ValueKey('check-in-type')),
+    );
+    await tester.tapAt(Offset(target.center.dx, target.top + 2));
+    expect(calls, isEmpty);
+  });
+
   testWidgets('more topics than the task labels tag names fold into "+N"', (
     tester,
   ) async {

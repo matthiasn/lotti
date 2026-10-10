@@ -73,12 +73,11 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     VoidCallback? live(VoidCallback onTap) => enabled ? onTap : null;
 
     // The task lane's own rhythm: tags step2 apart, tighter than their own
-    // step3 inset, so the lane reads as one cluster; a wrapped row one step
-    // looser so its break still shows.
+    // step3 inset, so the lane reads as one cluster. No run gap of its own:
+    // each tag's full touch target already sets wrapped rows apart.
     return Wrap(
       key: const ValueKey('check-in-meta-line'),
       spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step3,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _Fact(
@@ -299,7 +298,11 @@ class _Offer extends StatelessWidget {
   }
 }
 
-/// Announces a read-out as the one button it is, by what it holds.
+/// Announces a read-out as the one button it is, by what it holds, and
+/// gives its 28px pill the full touch target around it
+/// (`kMinInteractiveDimension`), as `DsChoicePills` does: the pill's own
+/// ink covers its face, this catches the rest of the target above and
+/// below it.
 class _Tappable extends StatelessWidget {
   const _Tappable({
     required this.semanticsLabel,
@@ -320,6 +323,15 @@ class _Tappable extends StatelessWidget {
     enabled: onTap != null,
     label: semanticsLabel,
     onTap: onTap,
-    child: child,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: kMinInteractiveDimension,
+        ),
+        child: Center(widthFactor: 1, child: child),
+      ),
+    ),
   );
 }
