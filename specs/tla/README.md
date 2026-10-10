@@ -2871,11 +2871,17 @@ provider cascade and its undo (the provider and each model restored as
 separate messages), backfill on a device that still holds the provider, "Send
 settings" replaying every row a device holds (tombstones included), and
 receivers applying any sent version in any order and again — including an
-application whose orphan cleanup throws part-way and is retried. A device
-holds, per id, `none`, a `live` row, a `tomb` (a row with `deletedAt`) or
-`gone` (a hard deletion's stamp alone), each with its stamp and content. The
-protocol is described in
-[seeding and lifecycle](../../knowledge/features/ai/seeding-and-lifecycle.md#replication-across-devices).
+application that dies before its orphan cleanup and is retried. The enqueue
+can fail: an edit, a cascade's hard deletes or an orphan cleanup's deletions
+whose message never reaches the outbox (`LostEdit`, `LostCascade`,
+`Interrupted`). With `OwedSends` the write stays durable and its message is
+owed in `AiConfigSyncLedger` until `Flush` (`flushPending`) sends it; before,
+`OutboxService.enqueueMessage` swallowed the failure and the message was
+lost. A device holds, per id, `none`, a `live` row, a `tomb` (a row with
+`deletedAt`) or `gone` (a hard deletion's stamp alone), each with its stamp
+and content. The protocol is described in
+[seeding and lifecycle](../../knowledge/features/ai/seeding-and-lifecycle.md#replication-across-devices)
+and the ledger in [ADR 0127](../../docs/adr/0127-ai-configuration-changes-are-owed-until-sent.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -2899,14 +2905,17 @@ never recreates an id the device holds a deletion of.
 | `AiConfigReplication` | 2 | 2 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | 1–2 | 36,721 |
 | `AiConfigReplicationCascade` | 2 | 0 | 0 | 0 | 1 | 0 | 2 | 1 | 0 | 1–3 | 14,161 |
 | `AiConfigReplicationUndo` | 2 | 1 | 0 | 0 | 1 | 1 | 1 | 0 | 0 | 1–2 | 61,837 |
-| `AiConfigReplicationInterrupted` | 2 | 0 | 0 | 0 | 1 | 0 | 1 | 1 | 2 | 1–2 | 23,351 |
+| `AiConfigReplicationInterrupted` | 2 | 0 | 0 | 0 | 1 | 0 | 1 | 1 | 2 | 1–2 | 62,387 |
+| `AiConfigReplicationOwed` | 2 | 1 | 0 | 0 | 1 | 0 | 1 | 1 | 2 | 1–2 | 2,104,365 |
 
 Each checks `TypeOK`, `Converged`, `LatestWins`, `NoDanglingModel` and
 `EventuallyConverged`, and `AiConfigReplicationUndo` also `UndoSticks`, with
 stamps chosen freely per write from the range given (device clocks are not
-synchronised). Each takes seconds. Each fix has a switch; the first four are
-`AiConfigDb`'s stamps from #4537, the rest this model's. Setting one to
-`FALSE` in a temporary copy of the configuration named gives (single worker):
+synchronised). "Failures" bounds the crashes, interrupted cleanups and lost
+enqueues together. Each takes seconds, `Owed` about a minute. Each fix has a
+switch; the first four are `AiConfigDb`'s stamps from #4537, `OwedSends` is
+ADR 0127's, the rest this model's. Setting one to `FALSE` in a temporary
+copy of the configuration named gives (single worker):
 
 | Mutation | Configuration | Counterexample |
 |----------|---------------|----------------|
@@ -2921,7 +2930,8 @@ synchronised). Each takes seconds. Each fix has a switch; the first four are
 | `KeepNewerModels = FALSE` | `AiConfigReplicationUndo` | `Converged` (8 states): the same trace; with the orphan's deletion at the provider deletion's stamp, device 2 writes it over the newer restore locally, and device 1 rejects it as older |
 | `OrphanAtProviderStamp = FALSE` | `AiConfigReplicationUndo` | `UndoSticks` (10 states): device 1 edits the model at stamp 2; device 2 deletes the provider (stamp 2) before hearing of it. Device 1 deletes its edit as an orphan by its clock, at 3; device 2's undo restores the model at 3, and loses to that deletion |
 | `UndoPastProvider = FALSE` | `AiConfigReplicationUndo` | `UndoSticks` (10 states): device 1 edits the provider at stamp 2, then deletes it with its clock at 1: the provider's deletion is at 3, the model's at 2. The undo restores the model at 3 — past its own deletion, not the provider's — so device 2, holding the provider's deletion when the model arrives, deletes it again |
-| `ResumeOnReplay = FALSE` | `AiConfigReplicationInterrupted` | `NoDanglingModel` (8 states): device 1 deletes the provider while device 2 backfills a model. Device 1 applies that model, and device 2 the provider's deletion, each cleanup throwing before the model's deletion is written; sync delivers both messages again, each changes no row and skips the cleanup, and the model stays live under the deleted provider on both. One interrupted device alone heals, since the other deletes the model and sends that |
+| `ResumeOnReplay = FALSE` | `AiConfigReplicationInterrupted` | `NoDanglingModel` (8 states): device 1 deletes the provider while device 2 backfills a model. Device 1 applies that model, and device 2 the provider's deletion, each dying before its cleanup runs (`Crashed`); sync delivers both messages again, each changes no row and skips the cleanup, and the model stays live under the deleted provider on both. One crashed device alone heals, since the other deletes the model and sends that |
+| `OwedSends = FALSE` | `AiConfigReplicationOwed` | `Converged` (2 states): device 1 edits the provider and the outbox refuses the message; the write is durable there and lost everywhere else, and nothing ever carries it. With `EditBudget = 0` the same in 2 states for the cascade: device 1 deletes the provider and its model, the hard deletes never reach the outbox, and "Send settings" has no row to re-send them from, so device 2 keeps both for good |
 
 What the model leaves out:
 
@@ -2935,21 +2945,26 @@ What the model leaves out:
 - **Legacy peers.** A sender before #4537 carries no stamp; the receiver
   orders it by the Matrix server timestamp. A receiver before it applies in
   arrival order; those are the first four `FALSE` switches.
-- **The enqueue.** A write and its enqueue are one step; a failed or lost
-  enqueue is `Outbox.tla`'s, and nothing records the owed row (no intent
-  ledger as in `SavedTaskFilterSync`). "Send settings" repairs a row, but not
-  a hard deletion, which has no row to re-send. The one failure modelled is
-  the orphan cleanup's (`Interrupted`): the repository sends each orphan's
-  deletion before storing it, so a send that throws leaves that model live
-  for the next delivery to pick up, which is what the step assumes.
+- **The enqueue after the ledger.** `Flush` sends the owed message itself;
+  the code sends what the device holds for the id by then, which is the same
+  version unless a later write of the id succeeded, and that write was owed
+  and logged in its own right, so the receivers' stamp order drops the older
+  one either way. The ledger's own storage failing is not modelled: an
+  unreadable ledger reads as empty, and the cost is a change not resent
+  until its next write, which "Send settings" repairs. "Send settings" now
+  re-sends hard deletions too (`hardDeletionStamps`); `Replay` sends rows
+  only, since the model has no message loss for it to repair.
 - **A model edited after its provider's deletion** by a device that had not
   heard of it outlives the provider (the weakening of `NoDanglingModel`
-  above). It is listed until the user deletes it; deleting it for them would
-  also delete an undo's restore, which the receiver cannot tell apart.
+  above): deleting it for the user would also delete an undo's restore,
+  which the receiver cannot tell apart. The repository hides it from the
+  model lists until the provider is live again; the model checks what is
+  stored, not what is listed.
 - **API keys.** A live provider synced without a key keeps the receiver's key
-  (so a key cleared on purpose on one device stays on its peers), and a
-  provider's deletion removes it everywhere; neither is modelled. Nor is the
-  repository's cache (its rebuild bug is a unit regression).
+  unless the version says the key was removed on purpose
+  (`apiKeyCleared`, set by the provider form), and a provider's deletion
+  removes it everywhere; neither is modelled. Nor is the repository's cache
+  (its rebuild bug is a unit regression).
 
 The repository suite (`ai_config_repository_test.dart`, "replication across
 devices") drives two real repositories over in-memory databases through the

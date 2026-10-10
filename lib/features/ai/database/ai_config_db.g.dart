@@ -654,6 +654,14 @@ abstract class _$AiConfigDb extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<int>('stamp'));
   }
 
+  Selectable<AiConfigVersionEntity> hardDeletions() {
+    return customSelect(
+      'SELECT * FROM ai_config_versions WHERE id NOT IN (SELECT id FROM ai_configs) ORDER BY id',
+      variables: [],
+      readsFrom: {aiConfigVersions, aiConfigs},
+    ).asyncMap(aiConfigVersions.mapFromRow);
+  }
+
   Selectable<AiConfigDbEntity> allConfigs() {
     return customSelect(
       'SELECT * FROM ai_configs ORDER BY created_at DESC',

@@ -317,6 +317,71 @@ void main() {
       verify(() => mockRepository.saveConfig(testConfig)).called(1);
     });
 
+    // An empty key on the wire is otherwise read as a keychain read that came
+    // back empty, and the peers keep theirs; emptying a key that was loaded
+    // marks the version as the user clearing it.
+    for (final (label, key, cleared) in <(String, String, bool)>[
+      ('emptying the loaded key marks it cleared', '', true),
+      ('keeping a key leaves it unmarked', 'test-api-key', false),
+      ('entering a new key leaves it unmarked', 'rotated-key', false),
+    ]) {
+      test('updateConfig: $label', () async {
+        when(
+          () => mockRepository.getConfigById(
+            'test-id',
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => testConfig);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getConfigsByType(
+            any(),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
+        ).thenAnswer((_) async => []);
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').future,
+        );
+
+        await controller.updateConfig(
+          (testConfig as AiConfigInferenceProvider).copyWith(apiKey: key),
+        );
+
+        final saved =
+            verify(
+                  () => mockRepository.saveConfig(captureAny()),
+                ).captured.single
+                as AiConfigInferenceProvider;
+        expect(saved.apiKey, key);
+        expect(saved.apiKeyCleared, cleared);
+      });
+    }
+
+    test('addConfig never marks a key cleared', () async {
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockRepository.getConfigsByType(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      await controller.addConfig(
+        (testConfig as AiConfigInferenceProvider).copyWith(apiKey: ''),
+      );
+
+      final saved =
+          verify(() => mockRepository.saveConfig(captureAny())).captured.single
+              as AiConfigInferenceProvider;
+      expect(saved.apiKeyCleared, isFalse);
+    });
+
     test('should update an existing configuration', () async {
       // Arrange
       when(

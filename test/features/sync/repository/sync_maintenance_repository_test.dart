@@ -80,6 +80,9 @@ void main() {
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
+    when(
+      () => mockAiConfigRepository.hardDeletionStamps(),
+    ).thenAnswer((_) async => const {});
     mockSavedTaskFiltersRepository = MockSavedTaskFiltersRepository();
     when(
       () => mockSavedTaskFiltersRepository.load(),
@@ -287,13 +290,29 @@ void main() {
       when(
         () => mockAiConfigRepository.versionStamp('prompt-1'),
       ).thenAnswer((_) async => null);
+      // A hard deletion has no row; it is resent from the stamp it left.
+      when(
+        () => mockAiConfigRepository.hardDeletionStamps(),
+      ).thenAnswer((_) async => {'skill-gone': 44});
 
       await syncMaintenanceRepository.syncAiSettings();
 
       final captured = verify(
         () => mockOutboxService.enqueueMessage(captureAny()),
       ).captured;
-      expect(captured.length, 3);
+      expect(captured.length, 4);
+      expect(
+        captured.whereType<SyncMessage>().where(
+          (message) => message.maybeMap(
+            aiConfigDelete: (deletion) =>
+                deletion.id == 'skill-gone' &&
+                deletion.hardDelete == true &&
+                deletion.versionStamp == 44,
+            orElse: () => false,
+          ),
+        ),
+        hasLength(1),
+      );
 
       expect(
         captured
