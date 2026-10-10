@@ -34,7 +34,17 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
   @override
   void dispose() {
     _autoDismiss?.cancel();
-    _runner?.stopTimer();
+    // A backdrop tap on a live ceremony used to leave it running: the peer's
+    // sheet kept waiting on a device that had walked away, with nothing left
+    // to free its lock. Cancelling tells the peer, whose sheet shows the
+    // notice and closes (`specs/tla/VerificationLaunch.tla`,
+    // `CancelOnDismiss`). A finished ceremony only needs its poll stopped.
+    final runner = _runner;
+    if (runner != null && runner.outcome == KeyVerificationOutcome.pending) {
+      unawaited(runner.cancelVerification());
+    } else {
+      runner?.stopTimer();
+    }
     super.dispose();
   }
 

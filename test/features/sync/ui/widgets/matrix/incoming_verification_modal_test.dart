@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -20,6 +22,10 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockKeyVerification mockKeyVerification;
   late StreamController<KeyVerificationRunner> controller;
+
+  setUpAll(() {
+    registerFallbackValue(MockKeyVerificationRunner());
+  });
 
   setUp(() {
     mockMatrixService = MockMatrixService();
@@ -56,6 +62,35 @@ void main() {
 
   tearDown(() async {
     await controller.close();
+  });
+
+  group('IncomingVerificationModal on dispose', () {
+    testWidgets('cancels a ceremony the user walked away from', (tester) async {
+      // A backdrop tap used to leave the ceremony live: the peer's sheet kept
+      // waiting on a device that was gone, with nothing to free its lock.
+      final runner = MockKeyVerificationRunner();
+      when(() => runner.lastStep).thenReturn('m.key.verification.request');
+      when(() => runner.emojis).thenReturn(null);
+      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+      when(runner.acceptVerification).thenAnswer((_) async {});
+
+      await pumpModalWithRunner(tester, runner);
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      verify(runner.cancelVerification).called(1);
+    });
+
+    testWidgets('leaves a finished ceremony alone', (tester) async {
+      final runner = MockKeyVerificationRunner();
+      when(() => runner.lastStep).thenReturn('m.key.verification.done');
+      when(() => runner.emojis).thenReturn(null);
+      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+
+      await pumpModalWithRunner(tester, runner);
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      verifyNever(runner.cancelVerification);
+    });
   });
 
   testWidgets('shows verify action before emoji step', (tester) async {
@@ -157,7 +192,11 @@ void main() {
       when(() => runner.lastStep).thenReturn('m.key.verification.key');
       when(() => runner.emojis).thenReturn(emojis);
       when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.cancelVerification).thenAnswer((_) async {});
+      // As the SDK does: a cancel marks the ceremony cancelled before the
+      // sheet pops, so disposing the sheet has nothing left to cancel.
+      when(runner.cancelVerification).thenAnswer((_) async {
+        when(() => mockKeyVerification.canceled).thenReturn(true);
+      });
 
       await pumpModalWithRunner(tester, runner);
 
@@ -531,6 +570,172 @@ void main() {
         expect(find.byType(IncomingVerificationModal), findsNothing);
       },
     );
+
+    group('while another sheet holds the lock', () {
+      late ProviderContainer container;
+      late MatrixVerificationModalLock lock;
+
+      Future<void> pumpWrapperBehindLock(WidgetTester tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const IncomingVerificationWrapper(),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+            ],
+          ),
+        );
+        when(
+          () => mockMatrixService.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        container = ProviderScope.containerOf(
+          tester.element(find.byType(IncomingVerificationWrapper)),
+        );
+        lock = container.read(matrixVerificationModalLockProvider.notifier);
+        expect(lock.tryAcquire(), isTrue);
+      }
+
+      testWidgets('holds the request and shows it once the lock frees', (
+        tester,
+      ) async {
+        // Dropped, the request could never be shown again: the launcher
+        // offers each device once and never asked (TLC's `AutoVerifies` with
+        // `DeferIncoming = FALSE`).
+        when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
+        await pumpWrapperBehindLock(tester);
+
+        incomingController.add(mockKeyVerification);
+        await tester.pump();
+        expect(find.byType(IncomingVerificationModal), findsNothing);
+
+        lock.release();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(IncomingVerificationModal), findsOneWidget);
+        expect(container.read(matrixVerificationModalLockProvider), isTrue);
+      });
+
+      testWidgets('drops a held request the peer has since cancelled', (
+        tester,
+      ) async {
+        when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
+        await pumpWrapperBehindLock(tester);
+
+        incomingController.add(mockKeyVerification);
+        await tester.pump();
+        when(() => mockKeyVerification.isDone).thenReturn(true);
+
+        lock.release();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(IncomingVerificationModal), findsNothing);
+        expect(
+          container.read(matrixVerificationModalLockProvider),
+          isFalse,
+          reason: 'nothing was shown, so nothing may hold the lock',
+        );
+      });
+
+      group('with an unanswered ceremony of its own', () {
+        late MockKeyVerification outgoingKeyVerification;
+        late MockKeyVerificationRunner outgoing;
+        late StreamController<KeyVerificationRunner> outgoingStream;
+
+        setUp(() {
+          outgoingKeyVerification = MockKeyVerification();
+          when(
+            () => outgoingKeyVerification.userId,
+          ).thenReturn('@alice:example.com');
+          when(() => outgoingKeyVerification.deviceId).thenReturn('PEER');
+          when(
+            () => outgoingKeyVerification.cancel(),
+          ).thenAnswer((_) async {});
+          outgoing = MockKeyVerificationRunner();
+          when(
+            () => outgoing.lastStep,
+          ).thenReturn('m.key.verification.request');
+          when(() => outgoing.keyVerification).thenReturn(
+            outgoingKeyVerification,
+          );
+          when(outgoing.stopTimer).thenReturn(null);
+          outgoingStream = StreamController<KeyVerificationRunner>.broadcast();
+          addTearDown(outgoingStream.close);
+          when(
+            () => mockMatrixService.keyVerificationRunner,
+          ).thenReturn(outgoing);
+          when(
+            () => mockMatrixService.keyVerificationController,
+          ).thenReturn(outgoingStream);
+          when(
+            () => mockMatrixService.ownUserId,
+          ).thenReturn('@alice:example.com');
+          when(
+            () => mockKeyVerification.userId,
+          ).thenReturn('@alice:example.com');
+          when(
+            () => mockKeyVerification.lastStep,
+          ).thenReturn('m.key.verification.request');
+          when(mockKeyVerification.acceptVerification).thenAnswer((_) async {});
+        });
+
+        testWidgets('yields it to a smaller identity inside the open sheet', (
+          tester,
+        ) async {
+          // Both devices started at each other. The larger identity withdraws
+          // its own request, answers the peer's on the stream the open sheet
+          // renders, and frees the withdrawn target for the launcher: it was
+          // never really offered a ceremony.
+          when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
+          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
+          await pumpWrapperBehindLock(tester);
+          container
+              .read(matrixVerificationHandledProvider.notifier)
+              .markShown('@alice:example.com/PEER');
+
+          incomingController.add(mockKeyVerification);
+          await tester.pump();
+
+          expect(find.byType(IncomingVerificationModal), findsNothing);
+          verifyInOrder([
+            outgoing.stopTimer,
+            () => outgoingKeyVerification.cancel(),
+          ]);
+          verify(mockKeyVerification.acceptVerification).called(1);
+          expect(
+            container.read(matrixVerificationHandledProvider),
+            isNot(contains('@alice:example.com/PEER')),
+          );
+          final handedOff =
+              verify(
+                    () =>
+                        mockMatrixService.keyVerificationRunner = captureAny(),
+                  ).captured.single
+                  as KeyVerificationRunner;
+          expect(handedOff.keyVerification, same(mockKeyVerification));
+          handedOff.stopTimer();
+        });
+
+        testWidgets('keeps it against a larger identity and holds theirs', (
+          tester,
+        ) async {
+          // Exactly one side yields; this one is the smaller, so the peer
+          // will. Its request waits for the lock like any other.
+          when(() => mockMatrixService.ownDeviceId).thenReturn('AAA');
+          when(() => mockKeyVerification.deviceId).thenReturn('ZZZ');
+          await pumpWrapperBehindLock(tester);
+
+          incomingController.add(mockKeyVerification);
+          await tester.pump();
+
+          verifyNever(() => outgoingKeyVerification.cancel());
+          verifyNever(mockKeyVerification.acceptVerification);
+          expect(find.byType(IncomingVerificationModal), findsNothing);
+
+          lock.release();
+          await tester.pumpAndSettle();
+          expect(find.byType(IncomingVerificationModal), findsOneWidget);
+        });
+      });
+    });
   });
 
   testWidgets('a remote cancel shows the notice, not the success shield', (

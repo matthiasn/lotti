@@ -8,11 +8,13 @@ import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 
@@ -32,9 +34,24 @@ class IncomingVerificationModal extends ConsumerStatefulWidget {
 class _IncomingVerificationModalState
     extends ConsumerState<IncomingVerificationModal> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
+  KeyVerificationRunner? _runner;
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
   bool _didAutoAcceptVerification = false;
+
+  @override
+  void dispose() {
+    // A backdrop tap on a live ceremony used to leave it running: the peer's
+    // sheet kept waiting on a device that had walked away, with nothing left
+    // to free its lock. Cancelling tells the peer, whose sheet shows the
+    // notice and closes (`specs/tla/VerificationLaunch.tla`,
+    // `CancelOnDismiss`).
+    final runner = _runner;
+    if (runner != null && runner.outcome == KeyVerificationOutcome.pending) {
+      unawaited(runner.cancelVerification());
+    }
+    super.dispose();
+  }
 
   Future<void> _autoAcceptIncoming(KeyVerificationRunner runner) async {
     try {
@@ -99,6 +116,7 @@ class _IncomingVerificationModalState
       stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
+        _runner = runner;
         final emojis = runner?.emojis;
         // Not the SDK's `isDone`: it is equally true for a cancelled ceremony,
         // so a remote cancel used to render the green success shield here —
@@ -186,6 +204,17 @@ class _IncomingVerificationModalState
   }
 }
 
+/// Listens for incoming verification requests and shows each one in the
+/// ceremony sheet — at once if the modal lock is free, otherwise as the
+/// model-checked rules in `specs/tla/VerificationLaunch.tla` require:
+///
+/// * **Yield.** If this device's own outgoing ceremony is still unanswered and
+///   the request comes from a smaller identity, the outgoing ceremony is
+///   withdrawn and the open sheet carries on with the peer's. Two devices
+///   starting at each other used to leave both sheets waiting forever.
+/// * **Defer.** Otherwise the request is kept until the lock frees and shown
+///   then, if the peer has not cancelled it. Dropped, it could never be shown
+///   again, and the launcher — which offers each device once — never asked.
 class IncomingVerificationWrapper extends ConsumerStatefulWidget {
   const IncomingVerificationWrapper({super.key});
 
@@ -197,6 +226,12 @@ class IncomingVerificationWrapper extends ConsumerStatefulWidget {
 class _IncomingVerificationWrapperState
     extends ConsumerState<IncomingVerificationWrapper> {
   StreamSubscription<KeyVerification>? _subscription;
+  ProviderSubscription<bool>? _lockSubscription;
+
+  /// The latest request that arrived while another sheet held the lock.
+  /// `MatrixService` keeps one incoming runner — the latest — so an older
+  /// deferred request would render the wrong ceremony anyway.
+  KeyVerification? _deferred;
 
   @override
   void initState() {
@@ -209,37 +244,98 @@ class _IncomingVerificationWrapperState
       return;
     }
 
+    _lockSubscription = ref.listenManual<bool>(
+      matrixVerificationModalLockProvider,
+      (_, held) {
+        if (!held) _showDeferred();
+      },
+    );
     _subscription = ref
         .read(matrixServiceProvider)
         .getIncomingKeyVerificationStream()
         .listen((keyVerification) {
-          if (mounted) {
-            final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-            if (!lock.tryAcquire()) return;
-            unawaited(() async {
-              try {
-                await showVerificationModalSheet(
-                  context: context,
-                  title: context.messages.syncVerifyModalTitle,
-                  child: IncomingVerificationModal(keyVerification),
-                );
-              } finally {
-                if (mounted) {
-                  ref
-                    ..invalidate(matrixUnverifiedControllerProvider)
-                    ..invalidate(syncDevicesControllerProvider);
-                }
-                lock.release();
-              }
-            }());
-          }
+          if (mounted) _offer(keyVerification);
         });
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _lockSubscription?.close();
     super.dispose();
+  }
+
+  void _offer(KeyVerification keyVerification) {
+    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+    if (lock.tryAcquire()) {
+      _show(keyVerification);
+      return;
+    }
+
+    final service = ref.read(matrixServiceProvider);
+    final outgoing = service.keyVerificationRunner;
+    if (outgoing != null &&
+        shouldYieldTo(
+          incoming: keyVerification,
+          outgoing: outgoing,
+          ownUserId: service.ownUserId,
+          ownDeviceId: service.ownDeviceId,
+        )) {
+      // The device whose ceremony is being withdrawn was never really offered
+      // one, so it must stay eligible for the launcher.
+      final withdrawn = outgoing.keyVerification;
+      final withdrawnDeviceId = withdrawn.deviceId;
+      if (withdrawnDeviceId != null) {
+        ref
+            .read(matrixVerificationHandledProvider.notifier)
+            .release(
+              MatrixVerificationHandled.identityOf(
+                userId: withdrawn.userId,
+                deviceId: withdrawnDeviceId,
+              ),
+            );
+      }
+      unawaited(
+        handOffOutgoingVerification(
+          service: service,
+          incoming: keyVerification,
+          domainLogger: ref.read(domainLoggerProvider),
+        ),
+      );
+      return;
+    }
+
+    _deferred = keyVerification;
+  }
+
+  void _showDeferred() {
+    final keyVerification = _deferred;
+    if (keyVerification == null || !mounted) return;
+    _deferred = null;
+    if (keyVerification.isDone) return;
+    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+    if (!lock.tryAcquire()) return;
+    _show(keyVerification);
+  }
+
+  void _show(KeyVerification keyVerification) {
+    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+    unawaited(() async {
+      try {
+        await showVerificationModalSheet(
+          context: context,
+          title: context.messages.syncVerifyModalTitle,
+          child: IncomingVerificationModal(keyVerification),
+        );
+      } finally {
+        if (mounted) {
+          ref
+            ..invalidate(matrixUnverifiedControllerProvider)
+            ..invalidate(syncDevicesControllerProvider);
+        }
+        lock.release();
+      }
+    }());
   }
 
   @override

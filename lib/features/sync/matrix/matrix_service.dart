@@ -235,6 +235,13 @@ class MatrixService {
 
   Client get client => _sessionManager.client;
 
+  /// The account this session is logged in as, or null when logged out.
+  String? get ownUserId => client.userID;
+
+  /// This session's device id, or null when logged out. With [ownUserId] it
+  /// is the identity the SDK orders a verification glare by.
+  String? get ownDeviceId => client.deviceID;
+
   String? get syncRoomId => _roomManager.currentRoomId;
 
   /// The sync room id on every change, null when cleared — for UI that gates
