@@ -15,7 +15,10 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
@@ -37,6 +40,106 @@ void main() {
   tearDown(() async {
     await getIt.resetScope();
     await getIt.popScope();
+  });
+
+  group('repairClocklessRowsOnceForTesting', () {
+    late MockDomainLogger logger;
+    late MockSettingsDb settingsDb;
+    late MockJournalDb journalDb;
+    late MockVectorClockService vectorClock;
+
+    setUp(() {
+      logger = MockDomainLogger();
+      settingsDb = MockSettingsDb();
+      journalDb = MockJournalDb();
+      vectorClock = MockVectorClockService();
+      when(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => vectorClock.initialized).thenAnswer((_) async {});
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      when(journalDb.clocklessDefinitions).thenAnswer((_) async => []);
+      when(journalDb.entryLinksWithNullVectorClock).thenAnswer((_) async => []);
+      getIt
+        ..registerSingleton<DomainLogger>(logger)
+        ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<VectorClockService>(vectorClock)
+        ..registerSingleton<OutboxService>(MockOutboxService())
+        ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
+        ..registerSingleton<SavedTaskFiltersRepository>(
+          MockSavedTaskFiltersRepository(),
+        )
+        ..registerSingleton<AgentDatabase>(MockAgentDatabase());
+    });
+
+    test('does nothing once a device has run it', () async {
+      when(
+        () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+      ).thenAnswer((_) async => 'true');
+
+      await repairClocklessRowsOnceForTesting();
+
+      verifyNever(journalDb.clocklessDefinitions);
+      verifyNever(journalDb.entryLinksWithNullVectorClock);
+    });
+
+    test(
+      'repairs definitions and entry links, then records that it ran',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => null);
+
+        await repairClocklessRowsOnceForTesting();
+
+        verify(journalDb.clocklessDefinitions).called(1);
+        verify(journalDb.entryLinksWithNullVectorClock).called(1);
+        verify(
+          () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, 'true'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failed repair is logged and left to run again at the next start',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => null);
+        when(
+          journalDb.entryLinksWithNullVectorClock,
+        ).thenThrow(StateError('database closed'));
+
+        await repairClocklessRowsOnceForTesting();
+
+        verifyNever(
+          () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
+        );
+        verify(
+          () => logger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'clocklessRepair',
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('checkAndPopulateSequenceLogForTesting', () {

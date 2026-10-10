@@ -111,6 +111,54 @@ Future<void> _checkAndPopulateSequenceLog() async {
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
 
+/// Settings key recording that [_repairClocklessRowsOnce] completed.
+const clocklessRepairSettingsKey = 'maintenance_clocklessRepairV1';
+
+/// Stamps, once per device, the entity definitions and entry links saved
+/// before they carried a vector clock, and sends them.
+///
+/// Until stamped, such a row stays outside clock comparison and backfill on
+/// every device; the stamp was a manual action ("Repair vector clocks"),
+/// so a device whose user never ran it kept them. Both repairs keep the
+/// row's `updatedAt`, so two devices stamping the same row settle it the
+/// same way and a stamp never outranks a genuine edit (ADR 0125). Agent
+/// rows are left to the manual action: their stamp does not keep that
+/// property. The flag is set only after both repairs succeed, so a failure
+/// retries at the next start.
+Future<void> _repairClocklessRowsOnce() async {
+  final settingsDb = getIt<SettingsDb>();
+  final domainLogger = getIt<DomainLogger>();
+  try {
+    if (await settingsDb.itemByKey(clocklessRepairSettingsKey) == 'true') {
+      return;
+    }
+    final vectorClockService = getIt<VectorClockService>();
+    await vectorClockService.initialized;
+    final repository = SyncMaintenanceRepository(
+      journalDb: getIt<JournalDb>(),
+      outboxService: getIt<OutboxService>(),
+      loggingService: domainLogger,
+      aiConfigRepository: getIt<AiConfigRepository>(),
+      savedTaskFiltersRepository: getIt<SavedTaskFiltersRepository>(),
+      agentRepository: AgentRepository(getIt<AgentDatabase>()),
+      vectorClockService: vectorClockService,
+    );
+    await repository.backfillDefinitionClocks();
+    await repository.backfillEntryLinkClocks();
+    await settingsDb.saveSettingsItem(clocklessRepairSettingsKey, 'true');
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'clocklessRepair',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> repairClocklessRowsOnceForTesting() => _repairClocklessRowsOnce();
+
 /// The categories' legacy speech dictionaries into dictionary entries. Runs
 /// at every start: it writes only terms this device holds no entry for, so
 /// after the first run it changes nothing.
