@@ -214,6 +214,13 @@ void main() {
       );
     });
 
+    test(
+      'knows of no deleted agents: journal entries belong to none',
+      () async {
+        expect(await store.deletedAgentsAmong(['agent-1']), isEmpty);
+      },
+    );
+
     test('resends nothing for no ids', () async {
       expect(await store.enqueueCurrent({}, withMedia: {}), 0);
       verifyNever(() => outbox.enqueueMessage(any()));
