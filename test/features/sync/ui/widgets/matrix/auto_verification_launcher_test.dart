@@ -343,6 +343,46 @@ void main() {
       expect(container.read(matrixVerificationModalLockProvider), isTrue);
     });
 
+    group('when its sheet closes', () {
+      late MockKeyVerificationRunner runner;
+
+      setUp(() {
+        final keyVerification = MockKeyVerification();
+        runner = MockKeyVerificationRunner();
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
+      });
+
+      Future<void> showThenDismiss(WidgetTester tester) async {
+        await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+        expect(find.byType(VerificationModal), findsOneWidget);
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+        expect(find.byType(VerificationModal), findsNothing);
+      }
+
+      testWidgets('cancels a ceremony the user walked away from', (
+        tester,
+      ) async {
+        // Dismissing used to leave the SDK ceremony live: the peer's sheet
+        // kept waiting on a device that was gone, with nothing to free its
+        // lock (TLC's `EventuallyOffered` with `CancelOnDismiss = FALSE`).
+        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+
+        await showThenDismiss(tester);
+
+        verify(runner.cancelVerification).called(1);
+      });
+
+      testWidgets('leaves a finished ceremony alone', (tester) async {
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+
+        await showThenDismiss(tester);
+
+        verifyNever(runner.cancelVerification);
+      });
+    });
+
     testWidgets('does not stack a second ceremony while one is open', (
       tester,
     ) async {

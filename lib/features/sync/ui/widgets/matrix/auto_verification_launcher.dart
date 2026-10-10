@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_moda
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -105,8 +106,10 @@ class _AutoVerificationLauncherState
 
     _launchInFlight = true;
     handled.markShown(targetId);
+    final service = ref.read(matrixServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
+    final waiting = _waitingRequestFrom(targetId);
     try {
-      final waiting = _waitingRequestFrom(targetId);
       await showVerificationModalSheet(
         context: context,
         title: context.messages.syncVerifyModalTitle,
@@ -115,6 +118,16 @@ class _AutoVerificationLauncherState
             : VerificationModal(target),
       );
     } finally {
+      // The ceremony this sheet showed: the peer's request if that is what
+      // was answered, else this device's own — or, after a handoff, the
+      // peer's ceremony the sheet carried on with, which lives on the same
+      // runner slot.
+      await cancelAbandonedVerification(
+        waiting != null
+            ? service.incomingKeyVerificationRunner
+            : service.keyVerificationRunner,
+        loggingService: logger,
+      );
       if (mounted) {
         ref
           ..invalidate(matrixUnverifiedControllerProvider)

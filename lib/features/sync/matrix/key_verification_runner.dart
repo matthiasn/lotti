@@ -241,3 +241,30 @@ Future<void> verifyMatrixDevice({
     onCompleted: (source) => service.onVerificationCompleted(source: source),
   );
 }
+
+/// Cancels the ceremony a dismissed sheet was showing, if it is still live.
+///
+/// A backdrop tap used to leave the SDK ceremony running: the peer's sheet
+/// kept waiting on a device that had walked away, with nothing left to free
+/// its lock. Cancelling tells the peer, whose sheet shows the notice and
+/// closes (`specs/tla/VerificationLaunch.tla`, `CancelOnDismiss`). A finished
+/// ceremony is left alone. A cancel that fails is logged, never thrown: the
+/// caller's lock release must still run.
+Future<void> cancelAbandonedVerification(
+  KeyVerificationRunner? runner, {
+  required DomainLogger loggingService,
+}) async {
+  if (runner == null || runner.outcome != KeyVerificationOutcome.pending) {
+    return;
+  }
+  try {
+    await runner.cancelVerification();
+  } catch (error, stackTrace) {
+    loggingService.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'verification.cancelAbandoned',
+    );
+  }
+}

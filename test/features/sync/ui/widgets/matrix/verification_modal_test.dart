@@ -61,56 +61,6 @@ void main() {
     await controller.close();
   });
 
-  group('VerificationModal on dispose', () {
-    Future<void> pumpThenUnmount(
-      WidgetTester tester,
-      KeyVerificationRunner runner,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          VerificationModal(mockDeviceKeys),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-      controller.add(runner);
-      await tester.pump();
-      await tester.pumpWidget(const SizedBox.shrink());
-    }
-
-    testWidgets('cancels a ceremony the user walked away from', (tester) async {
-      // A backdrop tap used to leave the ceremony live: the peer's sheet kept
-      // waiting on a device that was gone, with nothing to free its lock.
-      final runner = MockKeyVerificationRunner();
-      final keyVerification = MockKeyVerification();
-      when(() => runner.lastStep).thenReturn('m.key.verification.request');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(keyVerification);
-      when(() => keyVerification.isDone).thenReturn(false);
-
-      await pumpThenUnmount(tester, runner);
-
-      verify(runner.cancelVerification).called(1);
-      verifyNever(runner.stopTimer);
-    });
-
-    testWidgets('only stops polling a finished ceremony', (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final keyVerification = MockKeyVerification();
-      when(() => runner.lastStep).thenReturn('m.key.verification.done');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(keyVerification);
-      when(() => keyVerification.isDone).thenReturn(true);
-      when(runner.stopTimer).thenReturn(null);
-
-      await pumpThenUnmount(tester, runner);
-
-      verifyNever(runner.cancelVerification);
-      verify(runner.stopTimer).called(1);
-    });
-  });
-
   testWidgets('starts verification and shows start button when idle', (
     tester,
   ) async {

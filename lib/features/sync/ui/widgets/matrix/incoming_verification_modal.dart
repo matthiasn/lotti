@@ -34,24 +34,9 @@ class IncomingVerificationModal extends ConsumerStatefulWidget {
 class _IncomingVerificationModalState
     extends ConsumerState<IncomingVerificationModal> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
-  KeyVerificationRunner? _runner;
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
   bool _didAutoAcceptVerification = false;
-
-  @override
-  void dispose() {
-    // A backdrop tap on a live ceremony used to leave it running: the peer's
-    // sheet kept waiting on a device that had walked away, with nothing left
-    // to free its lock. Cancelling tells the peer, whose sheet shows the
-    // notice and closes (`specs/tla/VerificationLaunch.tla`,
-    // `CancelOnDismiss`).
-    final runner = _runner;
-    if (runner != null && runner.outcome == KeyVerificationOutcome.pending) {
-      unawaited(runner.cancelVerification());
-    }
-    super.dispose();
-  }
 
   Future<void> _autoAcceptIncoming(KeyVerificationRunner runner) async {
     try {
@@ -116,7 +101,6 @@ class _IncomingVerificationModalState
       stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
-        _runner = runner;
         final emojis = runner?.emojis;
         // Not the SDK's `isDone`: it is equally true for a cancelled ceremony,
         // so a remote cancel used to render the green success shield here —
@@ -247,14 +231,18 @@ class _IncomingVerificationWrapperState
     _lockSubscription = ref.listenManual<bool>(
       matrixVerificationModalLockProvider,
       (_, held) {
-        if (!held) _showDeferred();
+        if (held) return;
+        final deferred = _deferred;
+        if (deferred == null) return;
+        _deferred = null;
+        if (!deferred.isDone) _arrived(deferred);
       },
     );
     _subscription = ref
         .read(matrixServiceProvider)
         .getIncomingKeyVerificationStream()
         .listen((keyVerification) {
-          if (mounted) _offer(keyVerification);
+          if (mounted) _arrived(keyVerification);
         });
   }
 
@@ -265,10 +253,16 @@ class _IncomingVerificationWrapperState
     super.dispose();
   }
 
-  void _offer(KeyVerification keyVerification) {
+  /// Both arrivals — from the SDK, and back from the deferred slot — start
+  /// the one fire-and-forget future this widget owns.
+  void _arrived(KeyVerification keyVerification) =>
+      unawaited(_offer(keyVerification));
+
+  Future<void> _offer(KeyVerification keyVerification) async {
+    if (!mounted) return;
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (lock.tryAcquire()) {
-      _show(keyVerification);
+      await _show(keyVerification, lock);
       return;
     }
 
@@ -295,12 +289,10 @@ class _IncomingVerificationWrapperState
               ),
             );
       }
-      unawaited(
-        handOffOutgoingVerification(
-          service: service,
-          incoming: keyVerification,
-          domainLogger: ref.read(domainLoggerProvider),
-        ),
+      await handOffOutgoingVerification(
+        service: service,
+        incoming: keyVerification,
+        domainLogger: ref.read(domainLoggerProvider),
       );
       return;
     }
@@ -308,34 +300,31 @@ class _IncomingVerificationWrapperState
     _deferred = keyVerification;
   }
 
-  void _showDeferred() {
-    final keyVerification = _deferred;
-    if (keyVerification == null || !mounted) return;
-    _deferred = null;
-    if (keyVerification.isDone) return;
-    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-    if (!lock.tryAcquire()) return;
-    _show(keyVerification);
-  }
-
-  void _show(KeyVerification keyVerification) {
-    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
-    unawaited(() async {
-      try {
-        await showVerificationModalSheet(
-          context: context,
-          title: context.messages.syncVerifyModalTitle,
-          child: IncomingVerificationModal(keyVerification),
-        );
-      } finally {
-        if (mounted) {
-          ref
-            ..invalidate(matrixUnverifiedControllerProvider)
-            ..invalidate(syncDevicesControllerProvider);
-        }
-        lock.release();
+  Future<void> _show(
+    KeyVerification keyVerification,
+    MatrixVerificationModalLock lock,
+  ) async {
+    final service = ref.read(matrixServiceProvider);
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      await showVerificationModalSheet(
+        context: context,
+        title: context.messages.syncVerifyModalTitle,
+        child: IncomingVerificationModal(keyVerification),
+      );
+    } finally {
+      final runner = service.incomingKeyVerificationRunner;
+      if (runner != null &&
+          identical(runner.keyVerification, keyVerification)) {
+        await cancelAbandonedVerification(runner, loggingService: logger);
       }
-    }());
+      if (mounted) {
+        ref
+          ..invalidate(matrixUnverifiedControllerProvider)
+          ..invalidate(syncDevicesControllerProvider);
+      }
+      lock.release();
+    }
   }
 
   @override

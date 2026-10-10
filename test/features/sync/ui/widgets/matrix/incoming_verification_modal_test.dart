@@ -64,35 +64,6 @@ void main() {
     await controller.close();
   });
 
-  group('IncomingVerificationModal on dispose', () {
-    testWidgets('cancels a ceremony the user walked away from', (tester) async {
-      // A backdrop tap used to leave the ceremony live: the peer's sheet kept
-      // waiting on a device that was gone, with nothing to free its lock.
-      final runner = MockKeyVerificationRunner();
-      when(() => runner.lastStep).thenReturn('m.key.verification.request');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.acceptVerification).thenAnswer((_) async {});
-
-      await pumpModalWithRunner(tester, runner);
-      await tester.pumpWidget(const SizedBox.shrink());
-
-      verify(runner.cancelVerification).called(1);
-    });
-
-    testWidgets('leaves a finished ceremony alone', (tester) async {
-      final runner = MockKeyVerificationRunner();
-      when(() => runner.lastStep).thenReturn('m.key.verification.done');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-
-      await pumpModalWithRunner(tester, runner);
-      await tester.pumpWidget(const SizedBox.shrink());
-
-      verifyNever(runner.cancelVerification);
-    });
-  });
-
   testWidgets('shows verify action before emoji step', (tester) async {
     final runner = MockKeyVerificationRunner();
 
@@ -570,6 +541,74 @@ void main() {
         expect(find.byType(IncomingVerificationModal), findsNothing);
       },
     );
+
+    group('when its sheet closes', () {
+      late MockKeyVerificationRunner runner;
+
+      Future<void> showThenPop(WidgetTester tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const IncomingVerificationWrapper(),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+            ],
+          ),
+        );
+        when(
+          () => mockMatrixService.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        when(
+          () => mockMatrixService.incomingKeyVerificationRunner,
+        ).thenReturn(runner);
+
+        incomingController.add(mockKeyVerification);
+        await tester.pumpAndSettle();
+        expect(find.byType(IncomingVerificationModal), findsOneWidget);
+
+        Navigator.of(
+          tester.element(find.byType(IncomingVerificationModal)),
+        ).pop();
+        await tester.pumpAndSettle();
+      }
+
+      setUp(() {
+        runner = MockKeyVerificationRunner();
+        when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+      });
+
+      testWidgets('cancels a ceremony the user walked away from', (
+        tester,
+      ) async {
+        // A backdrop tap used to leave the ceremony live: the peer's sheet
+        // kept waiting on a device that was gone, with nothing to free its
+        // lock (TLC's `EventuallyOffered` with `CancelOnDismiss = FALSE`).
+        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+
+        await showThenPop(tester);
+
+        verify(runner.cancelVerification).called(1);
+      });
+
+      testWidgets('leaves a finished ceremony alone', (tester) async {
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+
+        await showThenPop(tester);
+
+        verifyNever(runner.cancelVerification);
+      });
+
+      testWidgets("leaves a newer request's ceremony alone", (tester) async {
+        // The service keeps the latest incoming runner; one for another
+        // request is not this sheet's to cancel.
+        final other = MockKeyVerification();
+        when(() => runner.keyVerification).thenReturn(other);
+        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+
+        await showThenPop(tester);
+
+        verifyNever(runner.cancelVerification);
+      });
+    });
 
     group('while another sheet holds the lock', () {
       late ProviderContainer container;
