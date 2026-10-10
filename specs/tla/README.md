@@ -1830,10 +1830,9 @@ What the model leaves out, deliberately or as a residual:
   millisecond, so it fetches at least that (ADR 0101). Before ADR 0101 it
   ordered a millisecond by event id, a divergence the model could not show;
   the regressions are in `catch_up_strategy_test.dart`.
-- **The bridge gives up after three incomplete passes in a row.** The model
-  retries until a walk completes. In the app the durable floor stays, and the
-  next trigger — to-device traffic, a limited sync, a restart, "Catch up now"
-  — walks from it.
+- **The bridge's back-off.** The model retries until a walk completes, and
+  so does the app since ADR 0129: three quick retries, then each wait twice
+  the last, up to five minutes. The waits are not modelled.
 - **Applying twice.** A crash between the journal write and the queue commit,
   or a transaction that rolls back, re-applies the row after its lease
   expires. The queue guarantees at-least-once apply and one row per event;
@@ -2613,8 +2612,7 @@ stamp/payload rank or shared ordered tail survives), and `EventuallyComplete` un
 processing. All three envelopes must arrive. Failure profiles permit one
 transient write failure, within the inbound worker's bounded retry budget; they
 do not claim recovery after that budget is exhausted.
-These are conditional guarantees, not a claim that the untracked settings have
-the journal's repair contract.
+These are conditional guarantees, not a claim that the untracked settings have the journal's repair contract. Their repair is manual: "Send settings" re-sends each with its stored stamp (ADR 0129).
 
 The mutation check runs guarded controls and changes one switch at a time:
 `AtomicGroups = FALSE` breaks `CompletedCoherent`; `RetryFailures = FALSE`
@@ -2680,10 +2678,12 @@ to `FALSE` in a temporary copy of `SavedTaskFilterSync.cfg` gives:
 
 What the model leaves out:
 
-- **A row the receiver cannot decode** is skipped for good (`Drop`, which no
-  checked configuration grants). The code narrows it — unknown enum values
-  decode to the default, and one bad stored entry no longer blanks the list —
-  but a truly malformed message is still lost.
+- **A row the receiver cannot decode** is skipped (`Drop`, which no checked
+  configuration grants). The code narrows it — unknown enum values decode to
+  the default, and one bad stored entry no longer blanks the list — and the
+  queue resurrects an undecodable event at each start (ADR 0129), so a build
+  that learns the message applies it. A message no build decodes is still
+  lost once the resurrection cap retires it.
 - **The transport after the outbox.** `log` is the outbox and the room as one
   durable set; the outbox's own retry and ordering are `Outbox.tla`'s.
 - **List order** is per-device and not modelled beyond the reorder's write.
@@ -2743,8 +2743,9 @@ What the model leaves out:
   a vector clock and a lost version is repaired through the sequence log;
   both are [`DefinitionClocks`](#definitionclocks--every-definition-version-under-a-vector-clock)'s,
   whose `updatedAt` and content order this model's rules feed.
-- **Old builds.** A peer that cannot decode the entry skips it for good; no
-  supported configuration mixes builds.
+- **Old builds.** A peer that cannot decode the entry skips it, and tries it
+  again at each queue start once updated (ADR 0129); no supported
+  configuration mixes builds.
 - **Respelling.** A case-only change writes the same entry; any other
   spelling is another term, so the editor deletes the old entry and writes
   the new one, two independent entries of the kind modelled.
@@ -2859,8 +2860,7 @@ This is not a mechanically checked refinement or a combined proof with
 `SyncSettings` or the sequenced pipeline. Atomic commits are abstract here and
 opened by the receive model and SQLite tests. It excludes source crashes,
 cancelled debounce, outbox failure, lost delivery, legacy writers, normalization
-and platform effects. Theme has no restart publication marker; untracked
-preferences still lack sequence-gap repair. The model's delivery obligations
+and platform effects. Theme has no restart publication marker; untracked preferences still lack sequence-gap repair, and are repaired by "Send settings" instead. The model's delivery obligations
 must not be mistaken for implementation recovery from these exclusions.
 ## `AiConfigReplication` — AI settings converge, and deletions stick
 

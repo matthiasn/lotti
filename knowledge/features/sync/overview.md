@@ -547,9 +547,7 @@ peer demonstrably exists; that is the state `_PairedView` serves, with its two
 outstanding steps. Collapsing them told a first device to wait on a device that
 did not exist.
 
-Pairing does **not** bring data across by itself. Config entities (categories,
-habits, dashboards, measurables, AI settings) only arrive when an existing
-device runs the entity push (`ui/sync_modal.dart`). Entries that predate the
+Pairing does **not** bring data across by itself. Config entities (categories, habits, dashboards, measurables, AI settings) and the synced preferences (theme, greeting name, config flags) only arrive when an existing device runs the entity push (`ui/sync_modal.dart`). Entries that predate the
 join are not gap-detected either — a counter from a never-seen host is recorded
 without becoming a gap (see
 [sequence and backfill](sequence-and-backfill.md)). After emoji verification,

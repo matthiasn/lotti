@@ -486,8 +486,7 @@ backfill, and can re-request entries previously requested but never resolved.
 
 A pass's batch is not necessarily one Matrix event. A request travels inline
 — base64 JSON in the event body, then Megolm-encrypted — and the Matrix SDK
-rejects a send body over 60 000 bytes with `EventTooLarge`, a deterministic
-failure the outbox would retry until its cap dropped the row. The outbox
+rejects a send body over 60 000 bytes with `EventTooLarge`, a deterministic failure. A request queued too large before the split goes out as a one-child bundle (see the send path). The outbox
 enqueue writer therefore splits a request whose JSON exceeds
 `SyncTuning.maxInlineBackfillRequestJsonBytes` (30 000, about 440 entries)
 into consecutive rows in one transaction (`splitBackfillRequestEntries`, exact

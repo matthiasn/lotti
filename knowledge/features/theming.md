@@ -39,7 +39,7 @@ and publish nothing. The screen still updates optimistically when the user picks
 
 There is no durable theme-publication marker: disposal can cancel a pending
 debounce, and a failed or unavailable outbox does not automatically republish it.
-These source-publication windows remain outside the convergence guarantee.
+These source-publication windows remain outside the convergence guarantee; "Send settings" re-sends the stored theme with its stamp to repair them.
 
 Inbound application normalizes an unknown mode to `system`, then uses the
 [versioned settings group contract](../architecture/persistence.md#settings-groups)

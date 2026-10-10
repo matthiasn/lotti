@@ -83,7 +83,7 @@ sequenceDiagram
     Proc->>Repo: markSent() every collapsed row
     Proc->>Repo: hasMorePending()
   else rejected as too large
-    Proc->>Repo: markFailed() (single) or releaseClaims() (bundle)
+    Proc->>Repo: one-child bundle (inline body), markFailed() (otherwise) or releaseClaims() (bundle)
   else send fails
     Proc->>Repo: markRetry(), error once retries reach the cap
   end
@@ -328,7 +328,8 @@ stateDiagram-v2
     sending --> sent: delivered (markSent)
     sending --> pending: failure below the cap (markRetry, retries++)
     sending --> error: failure at the cap (retries reach maxRetries)
-    sending --> error: single send rejected as too large (markFailed)
+    sending --> sending: inline body too large, resent as a one-child bundle
+    sending --> error: single send too large as a bundle or file (markFailed)
     sending --> pending: bundle rejected as too large, released uncounted
     sending --> pending: orphaned claim released before the next drain
     sending --> sending: expired lease reclaimed
@@ -351,11 +352,8 @@ returning `false`: the Matrix SDK refuses a request body over 60 000 bytes
 `SyncTuning.outboxBundleMaxBytes` is refused before upload. The processor
 treats that as final:
 
-- **A single send** has its rows flipped straight to `error`
-  (`OutboxRepository.markFailed`), logged as `sendDropped … reason=tooLarge`,
-  and the queue moves on at once. The row stays in the monitor; its Retry
-  fails the same way. Previously it burned all ten attempts and then dropped
-  anyway.
+- **A single send over the inline body limit** travels once more as the only child of an outbox bundle (`sendTooLargeInline … → resending as a one-child bundle`), whose gzipped manifest upload admits up to `SyncTuning.outboxBundleMaxBytes` ([ADR 0129](../../../docs/adr/0129-sync-repairs-instead-of-giving-up.md)). The exception's `inlineBody` says which limit was hit.
+- **A single send too large otherwise** — a bundle, a file, a manifest — has its rows flipped straight to `error` (`OutboxRepository.markFailed`), logged as `sendDropped … reason=tooLarge`, and the queue moves on at once. The row stays in the monitor; its Retry fails the same way.
 - **A bundle** says nothing about any one of its rows. They return to the queue
   without counting an attempt (`releaseClaims`, logged as `bundleTooLarge`), and
   the next claims take one row each until that many have gone out, so only a
