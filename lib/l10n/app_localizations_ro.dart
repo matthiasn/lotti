@@ -15834,6 +15834,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
 
   @override
+  String get syncStepPreferences => 'Temă, salut și opțiuni';
+
+  @override
   String get syncStepSpeechDictionary => 'Dicționar vocal';
 
   @override

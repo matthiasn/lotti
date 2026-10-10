@@ -125,6 +125,25 @@ mixin _JournalDbConfigFlags on _$JournalDb {
     return result.applied ? 1 : 0;
   }
 
+  /// Every flag with the stamp its version holds, for a resend. A flag no
+  /// version row stamps — one not changed since stamps were introduced — is
+  /// left out.
+  Future<List<({ConfigFlag flag, int updatedAt})>> stampedConfigFlags() async {
+    final rows = await select(configFlags).join([
+      innerJoin(
+        configFlagVersions,
+        configFlagVersions.name.equalsExp(configFlags.name),
+      ),
+    ]).get();
+    return [
+      for (final row in rows)
+        (
+          flag: row.readTable(configFlags),
+          updatedAt: row.readTable(configFlagVersions).updatedAt,
+        ),
+    ];
+  }
+
   /// Commits a local flag edit with a version beyond the persisted stamp.
   /// Identical edits do not bump the stamp or require publication. This owns
   /// its transaction; callers must not wrap it in an outer transaction.

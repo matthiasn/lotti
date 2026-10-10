@@ -261,6 +261,22 @@ void main() {
         expect(noOp.updatedAt, 302);
       });
 
+      test('stamped flags list each versioned flag with its stamp, and leave '
+          'out a flag no version stamps', () async {
+        await db!.applyConfigFlagVersion(before, updatedAt: 300);
+        await db!.insertFlagIfNotExists(
+          const ConfigFlag(
+            name: 'unversioned',
+            description: 'Never changed since stamps',
+            status: true,
+          ),
+        );
+
+        expect(await db!.stampedConfigFlags(), [
+          (flag: before, updatedAt: 300),
+        ]);
+      });
+
       test('stamp failure rolls back payload and cache before a retry', () async {
         await db!.applyConfigFlagVersion(before, updatedAt: 100);
         await db!.customStatement(

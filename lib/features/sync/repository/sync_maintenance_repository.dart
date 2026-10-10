@@ -8,9 +8,11 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
+import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
@@ -57,6 +59,7 @@ class SyncMaintenanceRepository {
     required this._savedTaskFiltersRepository,
     required this._agentRepository,
     required this._vectorClockService,
+    required this._settingsDb,
   });
 
   final JournalDb _journalDb;
@@ -66,6 +69,7 @@ class SyncMaintenanceRepository {
   final SavedTaskFiltersRepository _savedTaskFiltersRepository;
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
+  final SettingsDb _settingsDb;
 
   late final DefinitionClockStamper _definitionClockStamper =
       DefinitionClockStamper(
@@ -184,6 +188,20 @@ class SyncMaintenanceRepository {
         shouldSync: (_) => true,
       );
 
+  // Synced preferences — theme, greeting name, config flags — re-sent with
+  // their stored stamps, so a message that was lost is repaired; a peer with
+  // a newer value keeps it ([preferenceResendMessages]).
+  late final SyncOperation<SyncMessage> _preferencesSyncOperation =
+      _createOperation<SyncMessage>(
+        step: SyncStep.preferences,
+        fetchEntities: () => preferenceResendMessages(
+          journalDb: _journalDb,
+          settingsDb: _settingsDb,
+        ),
+        enqueueEntity: _outboxService.enqueueMessage,
+        shouldSync: (_) => true,
+      );
+
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
     SyncStep.measurables: _measurableSyncOperation,
     SyncStep.labels: _labelSyncOperation,
@@ -193,6 +211,7 @@ class SyncMaintenanceRepository {
     SyncStep.habits: _habitSyncOperation,
     SyncStep.aiSettings: _aiConfigSyncOperation,
     SyncStep.savedTaskFilters: _savedTaskFiltersSyncOperation,
+    SyncStep.preferences: _preferencesSyncOperation,
   };
 
   /// The manual migration of entity definitions saved before definitions
@@ -488,6 +507,17 @@ class SyncMaintenanceRepository {
     );
   }
 
+  Future<void> syncPreferences({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runOperation<SyncMessage>(
+      _preferencesSyncOperation,
+      onProgress: onProgress,
+      onDetailedProgress: onDetailedProgress,
+    );
+  }
+
   /// Computes the per-step entity totals for the given [steps] concurrently, so
   /// the re-sync UI can render "processed / total" before the run starts.
   /// Returns an empty map for an empty input.
@@ -691,6 +721,7 @@ class SyncMaintenanceRepository {
     SyncStep.habits: 'syncHabits',
     SyncStep.aiSettings: 'syncAiSettings',
     SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
+    SyncStep.preferences: 'syncPreferences',
     SyncStep.backfillDefinitionClocks: 'backfillDefinitionClocks',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
@@ -735,5 +766,6 @@ final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
     savedTaskFiltersRepository: ref.watch(savedTaskFiltersRepositoryProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
     vectorClockService: ref.read(vectorClockServiceProvider),
+    settingsDb: ref.watch(settingsDbProvider),
   );
 });

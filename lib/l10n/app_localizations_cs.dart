@@ -15725,6 +15725,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Uložené filtry úkolů';
 
   @override
+  String get syncStepPreferences => 'Motiv, oslovení a přepínače';
+
+  @override
   String get syncStepSpeechDictionary => 'Slovník pro přepis řeči';
 
   @override

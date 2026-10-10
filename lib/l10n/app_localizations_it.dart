@@ -15729,6 +15729,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Filtri di attività salvate';
 
   @override
+  String get syncStepPreferences => 'Tema, saluto e opzioni';
+
+  @override
   String get syncStepSpeechDictionary => 'Dizionario vocale';
 
   @override

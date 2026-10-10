@@ -33,6 +33,7 @@ abstract final class SyncModal {
       step: SyncStep.savedTaskFilters,
       label: (m) => m.syncStepSavedTaskFilters,
     ),
+    (step: SyncStep.preferences, label: (m) => m.syncStepPreferences),
   ];
 
   static Future<void> show(BuildContext context) async {

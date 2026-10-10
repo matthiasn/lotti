@@ -5932,6 +5932,7 @@
   "syncStepLabels": "Etiquetas de color",
   "syncStepMeasurables": "Valores medibles",
   "syncStepSavedTaskFilters": "Filtros de tareas guardados",
+  "syncStepPreferences": "Tema, saludo e interruptores",
   "syncStepSpeechDictionary": "Diccionario de voz",
   "syncVerifiedCelebrationBody": "A partir de ahora, todo lo que escribas se sincroniza: cifrado de extremo a extremo, de máquina a máquina.",
   "syncVerifiedCelebrationTitle": "Tus dispositivos confían entre sí",
