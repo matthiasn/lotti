@@ -403,6 +403,7 @@ void main() {
     _RecordingRunner? runner,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
     int maxIncompleteRetries = 3,
+    Duration maxIncompleteRetryDelay = const Duration(minutes: 5),
     CatchUpRangeClaim? claimGap,
   }) {
     final recording = runner ?? _RecordingRunner();
@@ -422,6 +423,7 @@ void main() {
       logging: logging,
       incompleteRetryDelay: incompleteRetryDelay,
       maxIncompleteRetries: maxIncompleteRetries,
+      maxIncompleteRetryDelay: maxIncompleteRetryDelay,
     );
   }
 
@@ -1028,43 +1030,78 @@ void main() {
     );
 
     test(
-      'giving up emits queue.bridge.incomplete.giveUp after '
-      'maxIncompleteRetries consecutive incomplete runs',
-      () async {
-        final gaveUp = Completer<void>();
-        final runner = _RecordingRunner(defaultCompleted: false);
-        final coordinator = buildCoordinator(
-          resolveRoom: () async => room,
-          runner: runner,
-          incompleteRetryDelay: const Duration(milliseconds: 5),
-          maxIncompleteRetries: 2,
-        );
-        when(
-          () => logging.log(
-            any<LogDomain>(),
-            any<String>(that: contains('queue.bridge.incomplete.giveUp')),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).thenAnswer((_) {
-          if (!gaveUp.isCompleted) gaveUp.complete();
+      'an incomplete walk is retried until one completes: quick retries '
+      'first, then twice the wait each time up to the cap, and never a '
+      'give-up',
+      () {
+        fakeAsync((async) {
+          const retryDelay = Duration(milliseconds: 50);
+          final runner = _RecordingRunner(defaultCompleted: false);
+          final coordinator = buildCoordinator(
+            resolveRoom: () async => room,
+            runner: runner,
+            incompleteRetryDelay: retryDelay,
+            maxIncompleteRetries: 2,
+            maxIncompleteRetryDelay: const Duration(milliseconds: 200),
+          );
+
+          void advance(Duration by) => async
+            ..elapse(by)
+            ..flushMicrotasks();
+
+          unawaited(coordinator.bridgeNow());
+          async.flushMicrotasks();
+          expect(runner.calls, hasLength(1));
+
+          // Two quick retries at the base delay.
+          advance(retryDelay);
+          expect(runner.calls, hasLength(2));
+          advance(retryDelay);
+          expect(runner.calls, hasLength(3));
+
+          // Then 100 ms, 200 ms, and 200 ms again at the cap.
+          advance(const Duration(milliseconds: 99));
+          expect(runner.calls, hasLength(3));
+          advance(const Duration(milliseconds: 1));
+          expect(runner.calls, hasLength(4));
+          advance(const Duration(milliseconds: 199));
+          expect(runner.calls, hasLength(4));
+          advance(const Duration(milliseconds: 1));
+          expect(runner.calls, hasLength(5));
+          advance(const Duration(milliseconds: 200));
+          expect(runner.calls, hasLength(6));
+          verify(
+            () => logging.log(
+              any<LogDomain>(),
+              any<String>(that: contains('queue.bridge.incomplete.backoff')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(4);
+
+          // A walk that completes ends the ladder: no further retries.
+          runner.override = (_, _) async => true;
+          advance(const Duration(milliseconds: 200));
+          expect(runner.calls, hasLength(7));
+          advance(const Duration(seconds: 10));
+          expect(runner.calls, hasLength(7));
+
+          // The counter was reset: a new failure starts at the base delay.
+          runner.override = (_, _) async => false;
+          unawaited(coordinator.bridgeNow());
+          async.flushMicrotasks();
+          expect(runner.calls, hasLength(8));
+          advance(retryDelay);
+          expect(runner.calls, hasLength(9));
+
+          unawaited(coordinator.stop());
+          async.flushMicrotasks();
         });
-        await coordinator.bridgeNow();
-        await gaveUp.future.timeout(const Duration(seconds: 2));
-        verify(
-          () => logging.log(
-            any<LogDomain>(),
-            any<String>(that: contains('queue.bridge.incomplete.giveUp')),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).called(greaterThanOrEqualTo(1));
-        await coordinator.stop();
       },
     );
 
     test(
-      'incomplete-retry counter state machine: a fully exhausted ladder '
-      'gives up exactly once, schedules no further timer, and resets the '
-      'counter so a later trigger starts a fresh ladder',
+      'the backfill completion hook waits out the quick retries, then runs '
+      'alongside the backed-off ones',
       () {
         fakeAsync((async) {
           const retryDelay = Duration(milliseconds: 50);
@@ -1075,56 +1112,29 @@ void main() {
             incompleteRetryDelay: retryDelay,
             maxIncompleteRetries: 2,
           );
+          var completions = 0;
+          coordinator.onBridgeCompleted = () => completions++;
 
-          var giveUps = 0;
-          when(
-            () => logging.log(
-              any<LogDomain>(),
-              any<String>(that: contains('queue.bridge.incomplete.giveUp')),
-              subDomain: any(named: 'subDomain'),
-            ),
-          ).thenAnswer((_) => giveUps++);
-
-          // Ladder 1: initial walk fails (counter=1, timer scheduled).
           unawaited(coordinator.bridgeNow());
-          async.flushMicrotasks();
-          expect(runner.calls, hasLength(1));
-
-          // Retry 1 fires and fails (counter=2 == max, timer scheduled).
           async
+            ..flushMicrotasks()
             ..elapse(retryDelay)
             ..flushMicrotasks();
           expect(runner.calls, hasLength(2));
+          expect(completions, 0);
 
-          // Retry 2 fires and fails (counter=3 > max): give up — counter
-          // reset, NO further timer.
           async
             ..elapse(retryDelay)
             ..flushMicrotasks();
           expect(runner.calls, hasLength(3));
-          expect(giveUps, 1, reason: 'giveUp must be logged exactly once');
+          expect(completions, 1);
 
-          // (a) No more timers: elapsing far past the delay schedules
-          // nothing new.
+          // The walk keeps retrying, and the hook runs after each pass.
           async
-            ..elapse(retryDelay * 20)
+            ..elapse(const Duration(milliseconds: 100))
             ..flushMicrotasks();
-          expect(runner.calls, hasLength(3));
-          expect(giveUps, 1, reason: 'no second giveUp after the reset');
-
-          // (c) The counter was reset: a fresh trigger starts a brand-new
-          // ladder (walk + scheduled retry), not an immediate give-up.
-          unawaited(coordinator.bridgeNow());
-          async.flushMicrotasks();
           expect(runner.calls, hasLength(4));
-          async
-            ..elapse(retryDelay)
-            ..flushMicrotasks();
-          expect(
-            runner.calls,
-            hasLength(5),
-            reason: 'post-giveUp ladder must schedule its own retry timer',
-          );
+          expect(completions, 2);
 
           unawaited(coordinator.stop());
           async.flushMicrotasks();
