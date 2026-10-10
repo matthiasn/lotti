@@ -6716,6 +6716,31 @@ class AppLocalizationsDa extends AppLocalizations {
       'GitHub afviste tokenet. Det er måske udløbet eller tilbagekaldt.';
 
   @override
+  String get githubImageActions => 'Billedhandlinger';
+
+  @override
+  String get githubImageAdded => 'Billede føjet til opgaven';
+
+  @override
+  String get githubImageAddFailed => 'Billedet kunne ikke føjes til opgaven.';
+
+  @override
+  String get githubImageAddToTask => 'Føj til opgave';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Indlæser billede fra $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Billedet fra $host kunne ikke indlæses';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Vis i fuld størrelse';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Denne pull request er allerede knyttet til denne opgave.';
 

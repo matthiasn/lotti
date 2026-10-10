@@ -201,6 +201,14 @@ ordinary outer row padding. The hover ink is painted by an inner Material and
 then clipped by the menu outline, so the final action reaches the rounded bottom
 edge instead of leaving an unhighlighted strip above the border.
 
+`DesignSystemContextMenuAnchor` opens that surface beneath a caller-built
+trigger, whose `toggle` is the ordinary way in. A trigger that must open the
+menu where the pointer is — a right-click, or a long press on a touch screen,
+over an image in a pull request description — passes its own `MenuController`
+as `controller` and calls `open(position:)` on it with the offset within the
+trigger; the toggle keeps working on the same controller, and the anchor owns
+one of its own when none is given.
+
 `DesignSystemPopoverAnchor` (`components/popovers/`) is the same anchored
 overlay — `MenuAnchor` beneath a caller-built trigger, dismissed by an outside
 tap or the trigger — but hosts a widget instead of menu rows, on

@@ -48,7 +48,10 @@ the device keystore and syncs to the user's other devices end-to-end
 encrypted, like an inference provider's key; a token that arrives is checked
 with GitHub before it is used as connected. It is sent only to
 `https://api.github.com`, and never logged or exported. Pull request web pages
-are never fetched.
+are never fetched. The images a pull request's description embeds are
+fetched from their own `https` URLs, with nothing of the user's sent along,
+and only while the user has that pull request's details open; an image is
+analysed by AI only once the user has added it to the task.
 
 ## Where the code sits
 
@@ -66,11 +69,14 @@ lib/features/github/
   domain/pull_request_summary.dart        a summary's tiers and limits, and what it is written from
   repository/github_token_storage.dart    the token in the keystore
   repository/pull_request_repository.dart link, unlink, track, persist an observation, summaries
+  service/pull_request_image_attacher.dart a description's image recorded on the task
+  service/pull_request_image_fetcher.dart  a description's images, fetched once each
   service/pull_request_service.dart       link a pasted pull request, refresh one
   service/pull_request_summarizer.dart    the one-liner and TL;DR of a pull request
   service/pull_request_summary_tool.dart  the tool a summary is published through
   state/github_providers.dart             providers, account, token status, refresh
   ui/                                     settings page, task card, row, link modal,
+                                          the details and a description's image,
                                           the Add sheet's tracking row
 ```
 

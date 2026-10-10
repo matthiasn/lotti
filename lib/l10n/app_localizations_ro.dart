@@ -6831,6 +6831,32 @@ class AppLocalizationsRo extends AppLocalizations {
       'GitHub a respins tokenul. Este posibil să fi expirat sau să fi fost revocat.';
 
   @override
+  String get githubImageActions => 'Acțiuni pentru imagine';
+
+  @override
+  String get githubImageAdded => 'Imaginea a fost adăugată la sarcină';
+
+  @override
+  String get githubImageAddFailed =>
+      'Imaginea nu a putut fi adăugată la sarcină.';
+
+  @override
+  String get githubImageAddToTask => 'Adăugați la sarcină';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Se încarcă imaginea de la $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Imaginea de la $host nu a putut fi încărcată';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Vizualizați la dimensiune completă';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Acest pull request este deja legat de această sarcină.';
 

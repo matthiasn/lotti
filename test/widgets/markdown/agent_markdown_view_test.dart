@@ -119,6 +119,28 @@ void main() {
       expect(find.text('Image from attacker.example not loaded'), findsOne);
     });
 
+    testWidgets('a surface that trusts its text renders images its own way', (
+      tester,
+    ) async {
+      final built = <(String, double?, double?)>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AgentMarkdownView(
+            'Shot ![640x480](https://pub-example.r2.dev/shot.png) here.',
+            imageBuilder: (context, url, width, height) {
+              built.add((url, width, height));
+              return const Text('rendered image');
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(built, [('https://pub-example.r2.dev/shot.png', 640, 480)]);
+      expect(find.text('rendered image'), findsOne);
+      expect(find.textContaining('not loaded'), findsNothing);
+    });
+
     testWidgets('renders GptMarkdown with provided text', (tester) async {
       const markdownText = '# Hello World\n\nThis is a test.';
 

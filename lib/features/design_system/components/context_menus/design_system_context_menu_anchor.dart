@@ -24,10 +24,16 @@ typedef DesignSystemContextMenuTriggerBuilder =
 ///
 /// Each enabled item's tap closes the menu before firing its callback; an
 /// item without a callback renders disabled and leaves the menu open.
+///
+/// The trigger's `toggle` opens the menu beneath the trigger. A surface that
+/// opens it where the pointer is — a right-click or a long press on an
+/// image — passes its own [controller] and calls `open(position:)` on it
+/// with the offset within the trigger.
 class DesignSystemContextMenuAnchor extends StatefulWidget {
   const DesignSystemContextMenuAnchor({
     required this.items,
     required this.builder,
+    this.controller,
     this.header,
     this.semanticsLabel,
     this.size = DesignSystemContextMenuSize.medium,
@@ -39,6 +45,11 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
 
   /// Builds the always-visible trigger.
   final DesignSystemContextMenuTriggerBuilder builder;
+
+  /// The menu's controller, for a caller that opens the menu itself — at a
+  /// pointer position — besides the trigger's toggle. The anchor owns one of
+  /// its own when none is given.
+  final MenuController? controller;
 
   /// Optional quiet heading rendered above the rows.
   final String? header;
@@ -56,7 +67,15 @@ class DesignSystemContextMenuAnchor extends StatefulWidget {
 
 class _DesignSystemContextMenuAnchorState
     extends State<DesignSystemContextMenuAnchor> {
-  final MenuController _controller = MenuController();
+  late MenuController _controller = widget.controller ?? MenuController();
+
+  @override
+  void didUpdateWidget(DesignSystemContextMenuAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      _controller = widget.controller ?? MenuController();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -6725,6 +6725,32 @@ class AppLocalizationsSv extends AppLocalizations {
       'GitHub avvisade din token. Den kan ha gått ut eller återkallats.';
 
   @override
+  String get githubImageActions => 'Bildåtgärder';
+
+  @override
+  String get githubImageAdded => 'Bilden har lagts till i uppgiften';
+
+  @override
+  String get githubImageAddFailed =>
+      'Bilden kunde inte läggas till i uppgiften.';
+
+  @override
+  String get githubImageAddToTask => 'Lägg till i uppgiften';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Laddar bild från $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Bilden från $host kunde inte laddas';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Visa i full storlek';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Den här pull requesten är redan kopplad till den här uppgiften.';
 

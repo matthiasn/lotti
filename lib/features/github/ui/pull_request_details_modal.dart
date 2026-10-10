@@ -12,6 +12,7 @@ import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/features/github/ui/pull_request_glyph.dart';
+import 'package:lotti/features/github/ui/pull_request_image.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -261,12 +262,27 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
                 else
                   // Medium ink, as the summary's prose is: the agent's
                   // reading leads, the raw description supports it.
-                  AgentMarkdownView(
-                    description,
-                    style: styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    subordinateHeadings: true,
+                  // Its images are loaded, unlike a model's: the text is
+                  // the pull request's own, shown because the user opened
+                  // it, and each image is what the "Add to task" action is
+                  // offered on. None is shown wider than the text, which
+                  // each image reads from here, as a table cell would not
+                  // tell it.
+                  LayoutBuilder(
+                    builder: (context, constraints) =>
+                        PullRequestDescriptionWidth(
+                          maxWidth: constraints.maxWidth,
+                          child: AgentMarkdownView(
+                            description,
+                            style: styles.body.bodySmall.copyWith(
+                              color: tokens.colors.text.mediumEmphasis,
+                            ),
+                            subordinateHeadings: true,
+                            imageBuilder: pullRequestImageBuilder(
+                              widget.taskId,
+                            ),
+                          ),
+                        ),
                   ),
               ],
             ),

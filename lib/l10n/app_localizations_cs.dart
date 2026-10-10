@@ -6790,6 +6790,31 @@ class AppLocalizationsCs extends AppLocalizations {
       'GitHub token odmítl. Možná vypršel nebo byl zrušen.';
 
   @override
+  String get githubImageActions => 'Akce s obrázkem';
+
+  @override
+  String get githubImageAdded => 'Obrázek přidán k úkolu';
+
+  @override
+  String get githubImageAddFailed => 'Obrázek se nepodařilo přidat k úkolu.';
+
+  @override
+  String get githubImageAddToTask => 'Přidat k úkolu';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Načítání obrázku z $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Obrázek z $host se nepodařilo načíst';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Zobrazit v plné velikosti';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Tento pull request už je s tímto úkolem propojený.';
 

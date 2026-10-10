@@ -6687,6 +6687,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'GitHub rejected the token. It may have expired or been revoked.';
 
   @override
+  String get githubImageActions => 'Image actions';
+
+  @override
+  String get githubImageAdded => 'Image added to the task';
+
+  @override
+  String get githubImageAddFailed =>
+      'The image couldn\'t be added to the task.';
+
+  @override
+  String get githubImageAddToTask => 'Add to task';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Loading image from $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Couldn\'t load image from $host';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'View full size';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'This pull request is already linked to this task.';
 

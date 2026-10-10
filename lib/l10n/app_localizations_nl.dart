@@ -6743,6 +6743,32 @@ class AppLocalizationsNl extends AppLocalizations {
       'GitHub heeft het token geweigerd. Het is misschien verlopen of ingetrokken.';
 
   @override
+  String get githubImageActions => 'Afbeeldingsacties';
+
+  @override
+  String get githubImageAdded => 'Afbeelding toegevoegd aan de taak';
+
+  @override
+  String get githubImageAddFailed =>
+      'De afbeelding kon niet aan de taak worden toegevoegd.';
+
+  @override
+  String get githubImageAddToTask => 'Toevoegen aan taak';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Afbeelding van $host wordt geladen';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'Afbeelding van $host kon niet worden geladen';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Op volledige grootte bekijken';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Deze pull request is al aan deze taak gekoppeld.';
 

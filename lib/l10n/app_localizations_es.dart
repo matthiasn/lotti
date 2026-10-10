@@ -6799,6 +6799,31 @@ class AppLocalizationsEs extends AppLocalizations {
       'GitHub rechazó el token. Puede que haya caducado o se haya revocado.';
 
   @override
+  String get githubImageActions => 'Acciones de imagen';
+
+  @override
+  String get githubImageAdded => 'Imagen añadida a la tarea';
+
+  @override
+  String get githubImageAddFailed => 'No se pudo añadir la imagen a la tarea.';
+
+  @override
+  String get githubImageAddToTask => 'Añadir a la tarea';
+
+  @override
+  String githubImageLoading(String host) {
+    return 'Cargando imagen de $host';
+  }
+
+  @override
+  String githubImageUnavailable(String host) {
+    return 'No se pudo cargar la imagen de $host';
+  }
+
+  @override
+  String get githubImageViewFullSize => 'Ver a tamaño completo';
+
+  @override
   String get githubLinkAlreadyLinked =>
       'Esta pull request ya está vinculada a esta tarea.';
 
