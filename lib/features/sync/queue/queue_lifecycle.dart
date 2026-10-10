@@ -93,6 +93,20 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       );
       _bridge.start();
       await _worker.start();
+      // An event this build could not decode before may decode now —
+      // the app was updated since it arrived — so each start gives the
+      // skipped ones another pass. The resurrection cap bounds an event
+      // that never decodes.
+      try {
+        await _queue.resurrectByReason(undecodableReason);
+      } catch (error, stackTrace) {
+        _logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: '$_logSub.resurrectUndecodable',
+        );
+      }
       // Signal-driven resurrection of abandoned ledger rows. These
       // subscriptions convert out-of-band events (attachment JSON
       // landed, journal-db entry updated) into `resurrect*` calls so

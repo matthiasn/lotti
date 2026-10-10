@@ -69,6 +69,7 @@ class GeneratedAdapterScenario {
       case GeneratedAdapterPrepareOutcome.ready:
         return _expectedApplyOutcome;
       case GeneratedAdapterPrepareOutcome.nullPrepared:
+        return ApplyOutcome.undecodable;
       case GeneratedAdapterPrepareOutcome.permanentThrow:
         return ApplyOutcome.permanentSkip;
       case GeneratedAdapterPrepareOutcome.pendingDescriptor:

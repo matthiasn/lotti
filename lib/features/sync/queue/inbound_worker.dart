@@ -34,7 +34,18 @@ enum ApplyOutcome {
   /// without an age/attempt cap: a past descriptor need not reappear live.
   pendingDescriptor,
   permanentSkip,
+
+  /// The event does not decode as a sync message this build knows — a
+  /// value or field from a newer sender, say. Skipped like
+  /// [permanentSkip], but under its own reason, so the queue can try it
+  /// again at its next start: a build that has since learned the message
+  /// applies it then, without the sender having to send it again.
+  undecodable,
 }
+
+/// The skip reason of an [ApplyOutcome.undecodable] event, which the queue
+/// resurrects at its start.
+const undecodableReason = 'undecodable';
 
 /// Apply callback contract. Phase-2 wiring plugs in
 /// `SyncEventProcessor.prepare` + `apply`; Phase-1 tests pass a mock.
@@ -311,6 +322,8 @@ class InboundWorker {
               await _maybeRetry(pair.entry, RetryReason.pendingAttachment);
             case ApplyOutcome.permanentSkip:
               await _queue.markSkipped(pair.entry, reason: 'permanentSkip');
+            case ApplyOutcome.undecodable:
+              await _queue.markSkipped(pair.entry, reason: undecodableReason);
           }
         }
       });
