@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas, cascade_invocations
 
 import 'package:lotti/database/outbox_status.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/services/outbox_service.dart';
 
 import 'outbox_service_test_harness.dart';
@@ -131,6 +132,19 @@ void main() {
 
     expect(result, isTrue);
     verify(() => matrixService.sendMatrixMsg(message)).called(1);
+  });
+
+  test('the single-claims store reads back what it writes, and an unreadable '
+      'value as none', () async {
+    final settingsDb = SettingsDb(inMemoryDatabase: true);
+    addTearDown(settingsDb.close);
+    final store = singleClaimsStore(settingsDb);
+
+    expect(await store.read(), isNull);
+    await store.write(4);
+    expect(await store.read(), 4);
+    await settingsDb.saveSettingsItem(singleClaimsSettingsKey, 'four');
+    expect(await store.read(), isNull);
   });
 
   group('dbNudge', () {

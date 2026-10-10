@@ -188,6 +188,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
         domainLogger: domainLogger,
+        settingsDb: settingsDb,
       ),
     );
 

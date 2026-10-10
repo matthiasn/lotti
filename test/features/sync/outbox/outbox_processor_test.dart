@@ -2063,6 +2063,99 @@ void main() {
       );
 
       test(
+        'the single-send fallback survives a restart: the count is stored '
+        'as it changes and a new processor reads it back',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [for (var i = 1; i <= 3; i++) textItem(id: i)];
+          stubBatchClaimFromQueue(repo, queue);
+          stubReleaseIntoQueue(repo, queue);
+          when(() => repo.markSent(any())).thenAnswer((_) async {});
+          when(() => sender.send(any())).thenAnswer((inv) async {
+            if (inv.positionalArguments[0] is SyncOutboxBundle) throw tooLarge;
+            return true;
+          });
+          _captureEvents(log);
+          int? stored;
+          final writes = <int>[];
+
+          OutboxProcessor processor() => OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+            readSingleClaims: () async => stored,
+            writeSingleClaims: (count) async {
+              stored = count;
+              writes.add(count);
+            },
+          );
+
+          await processor().processQueue();
+          expect(stored, 3);
+
+          // Restart: a new processor claims the released rows one by one.
+          final restarted = processor();
+          for (var pass = 0; pass < 3; pass++) {
+            await restarted.processQueue();
+          }
+
+          expect(captureClaimSizes(repo), [bundle, 1, 1, 1]);
+          expect(writes, [3, 2, 1, 0]);
+          verify(() => repo.markSent(any())).called(3);
+        },
+      );
+
+      test(
+        'a failed read or write of the stored count is logged and the outbox '
+        'still drains',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [for (var i = 1; i <= 2; i++) textItem(id: i)];
+          stubBatchClaimFromQueue(repo, queue);
+          stubReleaseIntoQueue(repo, queue);
+          when(() => repo.markSent(any())).thenAnswer((_) async {});
+          when(() => sender.send(any())).thenAnswer((inv) async {
+            if (inv.positionalArguments[0] is SyncOutboxBundle) throw tooLarge;
+            return true;
+          });
+          _captureEvents(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+            readSingleClaims: () async => throw StateError('settings closed'),
+            writeSingleClaims: (_) async => throw StateError('settings closed'),
+          );
+
+          await proc.processQueue();
+          await proc.processQueue();
+          await proc.processQueue();
+
+          expect(captureClaimSizes(repo), [bundle, 1, 1]);
+          for (final subDomain in [
+            'outbox.singleClaims.read',
+            'outbox.singleClaims.write',
+          ]) {
+            verify(
+              () => log.error(
+                any<LogDomain>(),
+                any<Object>(),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: subDomain,
+              ),
+            ).called(greaterThanOrEqualTo(1));
+          }
+        },
+      );
+
+      test(
         'an empty queue ends the single-send fallback early',
         () async {
           final repo = MockOutboxRepository();
