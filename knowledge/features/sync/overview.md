@@ -779,9 +779,14 @@ success:
   rebuild and each one fired at whatever route existed by then.
 
 `matrixVerificationRelaunchProvider` is what "show the emoji again" bumps.
-Every mounted launcher releases the identity **last shown on the device** —
-`MatrixVerificationHandled.lastShown`, app-wide like the set itself — and asks
-for that device by name, deliberately rather than clearing the set or taking
+Its `request` releases the identity **last shown on the device** —
+`MatrixVerificationHandled.lastShown`, app-wide like the set itself — once,
+before the bump, and every mounted launcher then asks for that device by name.
+The release cannot live in the listeners: the first one launches synchronously
+up to `markShown`, so a second listener releasing on its own undid that record
+and the device was offered again when the reopened sheet closed (TLC's
+`NoReoffer` under `ReleaseOnce = FALSE`). Naming the device is deliberate,
+rather than clearing the set or taking
 the first unhandled device after the release: a reset restarts selection at
 the head of the list, and a plain release let a peer whose keys landed during
 the ceremony take the slot (TLC's `RelaunchHonoured`). Either reopens a stale
