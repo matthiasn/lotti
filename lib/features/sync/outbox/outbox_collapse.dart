@@ -92,12 +92,18 @@ bool _isNewer(CollapseCandidate a, CollapseCandidate b) {
 }
 
 /// The same (stamp, status, description) order as JournalDb flag application.
-/// Legacy rows have no durable version, so mixed pairs must remain separate.
+///
+/// A row without a stamp was queued by a build before flag stamps (#4517),
+/// so any stamped row of the same flag was written after it and is newer:
+/// a mixed pair folds into the stamped send. Two unstamped rows have no
+/// version to compare, and keep their enqueue order.
 int? _compareFlags(SyncMessage a, SyncMessage b) {
   if (a is! SyncConfigFlag || b is! SyncConfigFlag) return null;
   final aStamp = a.updatedAt;
   final bStamp = b.updatedAt;
-  if (aStamp == null || bStamp == null) return null;
+  if (aStamp == null && bStamp == null) return null;
+  if (aStamp == null) return -1;
+  if (bStamp == null) return 1;
   var order = aStamp.compareTo(bStamp);
   if (order == 0) order = (a.status ? 1 : 0).compareTo(b.status ? 1 : 0);
   return order == 0 ? a.description.compareTo(b.description) : order;
@@ -119,7 +125,8 @@ CollapseCandidate newestOf(List<CollapseCandidate> candidates) =>
 /// the newest one or one the newest supersedes. A row whose clock is
 /// concurrent with the newest is not: covering it would tell peers they hold
 /// a version they do not. Missing or empty clocks cannot prove supersession;
-/// legacy flags use enqueue order when both rows lack a version stamp.
+/// legacy flags use enqueue order when both rows lack a version stamp, and
+/// fold into a stamped row of the same flag.
 bool supersededBy(CollapseCandidate older, CollapseCandidate newest) {
   if (identical(older, newest)) return true;
   final flagOrder = _compareFlags(newest.message, older.message);

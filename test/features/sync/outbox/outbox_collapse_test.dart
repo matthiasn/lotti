@@ -161,7 +161,8 @@ void main() {
       },
     );
 
-    test('legacy and stamped flag rows cannot acknowledge one another', () {
+    test('a legacy flag row folds into a stamped one, written after it, '
+        'whichever was enqueued first', () {
       final stamped = _candidate(
         const SyncMessage.configFlag(
           name: 'f',
@@ -177,8 +178,10 @@ void main() {
           status: false,
         ),
       );
+      expect(supersededBy(legacy, stamped), isTrue);
       expect(supersededBy(stamped, legacy), isFalse);
-      expect(supersededBy(legacy, stamped), isFalse);
+      expect(newestOf([stamped, legacy]), same(stamped));
+      expect(newestOf([legacy, stamped]), same(stamped));
     });
 
     test('legacy config flags collapse by enqueue order', () {
