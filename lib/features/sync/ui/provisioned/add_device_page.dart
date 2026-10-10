@@ -358,6 +358,12 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   /// still show up. Keyed on the device id alone, a new device whose id
   /// collided with any foreign user's would read as already known and the
   /// sheet would never latch.
+  ///
+  /// Taken by [_generate] **before** the code is shown, never by a later
+  /// build: a snapshot taken from the first roster that happened to resolve
+  /// after the code was up could already contain the device that scanned
+  /// it, and that device then read as old forever
+  /// (`specs/tla/DevicePairing.tla`, `SnapshotBeforeCode`).
   Set<String>? _knownDeviceIds;
   bool _joined = false;
   bool _ready = false;
@@ -412,11 +418,21 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
           homeServer: config.homeServer,
         );
       }
+      // The baseline the join is measured against, fixed before the code can
+      // be scanned. A roster that cannot be read fails the whole mint: a code
+      // shown without a baseline could never tell the new device from an old
+      // one, and the Retry below asks again.
+      final roster = await ref.read(syncDevicesControllerProvider.future);
+      _knownDeviceIds = roster.map(_rosterIdentity).whereType<String>().toSet();
     } catch (e, stackTrace) {
       // Launched with `unawaited`, so without this the exception escapes to
       // the zone — and the finally branch would meanwhile render "set up sync
       // on this device first", a misdiagnosis on a device that is set up.
+      // A code already minted is dropped with the rest: shown without its
+      // baseline it could not tell the new device from an old one.
       failed = true;
+      data = null;
+      check = null;
       _logger.error(
         LogDomain.sync,
         e,
@@ -484,8 +500,11 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
       deviceId: deviceId,
     );
     final identity = _targetIdentity(target);
+    // No baseline yet means the code is not on screen yet, so this ceremony
+    // cannot be with a device that scanned it; accepting it named whatever
+    // old session happened to verify first (`DevicePairing`, `RequireKnown`).
     final known = _knownDeviceIds;
-    if (known != null && known.contains(identity)) {
+    if (known == null || known.contains(identity)) {
       return;
     }
     widget.signal?.target = target;
@@ -580,11 +599,10 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
         .map(_rosterIdentity)
         .whereType<String>()
         .toList(growable: false);
+    // Reached only once the code is up, by which time _generate has fixed
+    // the baseline; nothing here may create one from a later roster.
     final known = _knownDeviceIds;
-    if (known == null) {
-      _knownDeviceIds = identities.toSet();
-      return;
-    }
+    if (known == null) return;
 
     if (!_joined && identities.any((identity) => !known.contains(identity))) {
       _joined = true;
