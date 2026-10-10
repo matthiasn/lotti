@@ -48,15 +48,13 @@ class PullRequestImageAttacher {
 
   final PastedImageImport _import;
 
-  /// Attaches [bytes], the image at [url], to [taskId]. True when the entry
-  /// was written; false when the bytes are not an image the app stores, or
-  /// the write failed.
+  /// Attaches [bytes] to [taskId]. True when the entry was written; false
+  /// when the bytes are not an image the app stores, or the write failed.
   Future<bool> attach({
     required Uint8List bytes,
-    required String url,
     required String taskId,
   }) async {
-    final extension = pullRequestImageExtension(bytes, url: url);
+    final extension = pullRequestImageExtension(bytes);
     if (extension == null) return false;
     try {
       final imported = await _import(
@@ -90,12 +88,11 @@ const _signatures = <String, List<int>>{
   'webp': [0x52, 0x49, 0x46, 0x46],
 };
 
-const _storedExtensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'};
-
-/// The file extension [bytes] should be stored under: by what the bytes
-/// are, else by the path of [url] when it ends in a stored format, else
-/// null — an SVG, say, which the app does not decode.
-String? pullRequestImageExtension(Uint8List bytes, {required String url}) {
+/// The file extension [bytes] should be stored under, by what the bytes
+/// are; null for anything else — an SVG, or a `.png` URL that answered
+/// with something that is no PNG — which the app neither decodes nor
+/// stores, whatever the URL's path promises.
+String? pullRequestImageExtension(Uint8List bytes) {
   for (final MapEntry(key: extension, value: signature)
       in _signatures.entries) {
     if (bytes.length < signature.length) continue;
@@ -118,14 +115,14 @@ String? pullRequestImageExtension(Uint8List bytes, {required String url}) {
     }
     return extension;
   }
-  final path = Uri.tryParse(url)?.path ?? '';
-  final fromPath = p.extension(path).replaceFirst('.', '').toLowerCase();
-  return _storedExtensions.contains(fromPath) ? fromPath : null;
+  return null;
 }
 
 /// [bytes], the image at [url], as a file the full-size viewer can show:
 /// under [root] (the system temp directory by default), named by the URL so
-/// the same image written again lands on the same file.
+/// the same image written again lands on the same file — and written every
+/// time, so the file is always what was last fetched, never a same-length
+/// predecessor.
 ///
 /// Written synchronously: it is a screenshot's worth of bytes on the way to
 /// a viewer the user just asked for, and a tap handler with nothing to
@@ -135,14 +132,11 @@ File pullRequestImageFile(
   required String url,
   Directory? root,
 }) {
-  final extension = pullRequestImageExtension(bytes, url: url) ?? 'img';
+  final extension = pullRequestImageExtension(bytes) ?? 'img';
   final name = '${sha1.convert(utf8.encode(url))}.$extension';
   final directory = Directory(
     p.join((root ?? Directory.systemTemp).path, 'lotti_pull_request_images'),
   )..createSync(recursive: true);
-  final file = File(p.join(directory.path, name));
-  if (!file.existsSync() || file.lengthSync() != bytes.length) {
-    file.writeAsBytesSync(bytes, flush: true);
-  }
-  return file;
+  return File(p.join(directory.path, name))
+    ..writeAsBytesSync(bytes, flush: true);
 }

@@ -433,6 +433,7 @@ void main() {
       DateTime? date,
       List<DateTime?>? galleryDates,
       int initialIndex = 0,
+      ImageViewerAction? action,
     }) {
       return ProviderScope(
         child: MaterialApp(
@@ -458,6 +459,7 @@ void main() {
             date: date,
             galleryDates: galleryDates,
             initialIndex: initialIndex,
+            action: action,
           ),
         ),
       );
@@ -1250,5 +1252,39 @@ void main() {
         },
       );
     });
+
+    testWidgets(
+      "an opening surface's action stands beside Download and fires; "
+      "without one the chrome is the viewer's own",
+      (tester) async {
+        var pressed = 0;
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+        expect(find.byType(ImageViewerLabelButton), findsNothing);
+
+        await tester.pumpWidget(
+          buildWrapper(
+            action: ImageViewerAction(
+              label: 'Add to task',
+              icon: LottiIcons.image,
+              onPressed: () => pressed++,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final action = find.widgetWithText(
+          ImageViewerLabelButton,
+          'Add to task',
+        );
+        expect(action, findsOneWidget);
+        expect(
+          tester.getTopLeft(action).dx,
+          lessThan(tester.getTopLeft(find.byIcon(LottiIcons.download)).dx),
+        );
+        await tester.tap(action);
+        expect(pressed, 1);
+      },
+    );
   });
 }

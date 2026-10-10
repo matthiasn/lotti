@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/service/pull_request_image_fetcher.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
@@ -154,7 +155,6 @@ void main() {
     when(
       () => attacher.attach(
         bytes: any(named: 'bytes'),
-        url: any(named: 'url'),
         taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) async => true);
@@ -170,7 +170,7 @@ void main() {
     await tester.pump();
 
     verify(
-      () => attacher.attach(bytes: onePixelPng, url: url, taskId: taskId),
+      () => attacher.attach(bytes: onePixelPng, taskId: taskId),
     ).called(1);
     expect(find.byType(DesignSystemContextMenu), findsNothing);
     expect(find.text('Image added to the task'), findsOneWidget);
@@ -195,7 +195,6 @@ void main() {
     when(
       () => attacher.attach(
         bytes: any(named: 'bytes'),
-        url: any(named: 'url'),
         taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) async => false);
@@ -221,7 +220,6 @@ void main() {
     when(
       () => attacher.attach(
         bytes: any(named: 'bytes'),
-        url: any(named: 'url'),
         taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) => gate.future);
@@ -319,6 +317,26 @@ void main() {
     expect(tester.getSize(find.byType(Image)).width, 100);
   });
 
+  testWidgets('an image given another URL fetches and shows that one', (
+    tester,
+  ) async {
+    const other = 'https://pub-example.r2.dev/shots/mobile-dark.png';
+    final otherPng = Uint8List.fromList([...onePixelPng, 0]);
+    when(() => fetcher.fetch(url)).thenAnswer((_) async => onePixelPng);
+    when(() => fetcher.fetch(other)).thenAnswer((_) async => otherPng);
+    await pump(tester);
+    await tester.pump();
+    expect(shownBytes(tester), onePixelPng);
+
+    await pump(
+      tester,
+      child: const PullRequestImage(url: other, taskId: taskId),
+    );
+
+    expect(shownBytes(tester), otherPng);
+    verify(() => fetcher.fetch(other)).called(1);
+  });
+
   testWidgets('a description that narrows takes its images with it', (
     tester,
   ) async {
@@ -336,5 +354,94 @@ void main() {
 
     await pump(tester, child: at(150));
     expect(tester.getSize(find.byType(Image)).width, 150);
+  });
+
+  testWidgets('bytes that do not decode leave the notice and nothing to add', (
+    tester,
+  ) async {
+    when(() => fetcher.fetch(url)).thenAnswer(
+      (_) async => Uint8List.fromList('<svg/>'.codeUnits),
+    );
+    await pump(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(Image), findsNothing);
+    expect(find.byType(DesignSystemContextMenuAnchor), findsNothing);
+    expect(
+      find.text("Couldn't load image from pub-example.r2.dev"),
+      findsOneWidget,
+    );
+    await tester.longPress(find.byType(MarkdownImageNotice));
+    await tester.pump();
+    expect(find.byKey(PullRequestImageKeys.addToTask), findsNothing);
+  });
+
+  testWidgets('the image is decoded no larger than it is shown', (
+    tester,
+  ) async {
+    when(() => fetcher.fetch(url)).thenAnswer((_) async => onePixelPng);
+    Widget at(double maxWidth, {String alt = 'shot'}) =>
+        PullRequestDescriptionWidth(
+          maxWidth: maxWidth,
+          child: AgentMarkdownView(
+            '![$alt]($url)',
+            imageBuilder: pullRequestImageBuilder(taskId),
+          ),
+        );
+    ResizeImage resized() =>
+        tester.widget<Image>(find.byType(Image)).image as ResizeImage;
+
+    // The test surface's device pixel ratio is 3.
+    await pump(tester, child: at(300));
+    await tester.pump();
+    expect(resized().width, 900);
+    expect(resized().allowUpscaling, isFalse);
+
+    // A size in the markdown below the bound wins.
+    await pump(tester, child: at(300, alt: '120x80'));
+    expect(resized().width, 360);
+
+    // Outside a description there is no bound, and no decode size.
+    await pump(
+      tester,
+      child: AgentMarkdownView(
+        '![shot]($url)',
+        imageBuilder: pullRequestImageBuilder(taskId),
+      ),
+    );
+    expect(tester.widget<Image>(find.byType(Image)).image, isA<MemoryImage>());
+  });
+
+  testWidgets('the full-size viewer offers Add to task, which records the '
+      'image', (tester) async {
+    when(() => fetcher.fetch(url)).thenAnswer((_) async => onePixelPng);
+    when(
+      () => attacher.attach(
+        bytes: any(named: 'bytes'),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => true);
+    await pump(tester);
+    await tester.pump();
+
+    await tester.tap(find.byType(Image));
+    await tester.pump();
+    await tester.pump();
+    final action = find.widgetWithText(ImageViewerLabelButton, 'Add to task');
+    expect(action, findsOneWidget);
+
+    await tester.tap(action);
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => attacher.attach(bytes: onePixelPng, taskId: taskId),
+    ).called(1);
+    // Told in every scaffold the messenger serves: the viewer's, on top,
+    // and the page's beneath it.
+    expect(find.text('Image added to the task'), findsWidgets);
+    // Still in the viewer: the user may want to look on.
+    expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
   });
 }

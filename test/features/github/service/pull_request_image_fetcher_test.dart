@@ -317,4 +317,26 @@ void main() {
     fetcher.close();
     verify(client.close).called(1);
   });
+
+  test('without a client it brings its own, and closes it', () async {
+    final own = PullRequestImageFetcher();
+    // A URL that is never requested, so the client it owns is never used:
+    // only that it exists and closes is of interest here.
+    expect(
+      await failureOf(own.fetch('ftp://x/y.png')),
+      PullRequestImageFailure.notHttps,
+    );
+    own.close();
+    await expectLater(own.fetch(url), throwsA(isA<Object>()));
+  });
+
+  test('the exception says why and for which URL', () {
+    expect(
+      const PullRequestImageException(
+        PullRequestImageFailure.tooLarge,
+        url,
+      ).toString(),
+      'PullRequestImageException(tooLarge, $url)',
+    );
+  });
 }

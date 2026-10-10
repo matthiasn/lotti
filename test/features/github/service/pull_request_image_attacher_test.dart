@@ -48,49 +48,33 @@ void main() {
     ]) {
       test('reads $name from its bytes, whatever the URL says', () {
         expect(
-          pullRequestImageExtension(bytes, url: 'https://x.example/asset'),
+          pullRequestImageExtension(bytes),
           extension,
         );
         expect(
-          pullRequestImageExtension(bytes, url: 'https://x.example/a.svg'),
+          pullRequestImageExtension(bytes),
           extension,
         );
       });
     }
 
-    test('falls back to the path when the bytes are not telling', () {
+    test('bytes that are no image format are not one, whatever a URL '
+        'promised', () {
       final plain = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-      expect(
-        pullRequestImageExtension(plain, url: 'https://x.example/a.JPG'),
-        'jpg',
-      );
-      expect(
-        pullRequestImageExtension(plain, url: 'https://x.example/a.webp?x=1'),
-        'webp',
-      );
-      expect(
-        pullRequestImageExtension(plain, url: 'https://x.example/a.svg'),
-        isNull,
-      );
-      expect(
-        pullRequestImageExtension(plain, url: 'https://x.example/a'),
-        isNull,
-      );
+      expect(pullRequestImageExtension(plain), isNull);
+      expect(pullRequestImageExtension(svg), isNull);
     });
 
     test('a RIFF that is not WEBP is not an image', () {
       expect(
-        pullRequestImageExtension(riff, url: 'https://x.example/a'),
+        pullRequestImageExtension(riff),
         isNull,
       );
     });
 
     test('bytes shorter than a signature are not an image', () {
       expect(
-        pullRequestImageExtension(
-          Uint8List.fromList([0x89, 0x50]),
-          url: 'https://x.example/a',
-        ),
+        pullRequestImageExtension(Uint8List.fromList([0x89, 0x50])),
         isNull,
       );
     });
@@ -139,7 +123,7 @@ void main() {
     test('imports the bytes as a pasted picture of the task, with the analysis '
         'trigger and the category', () async {
       expect(
-        await attacher().attach(bytes: png, url: url, taskId: taskId),
+        await attacher().attach(bytes: png, taskId: taskId),
         isTrue,
       );
 
@@ -157,7 +141,7 @@ void main() {
       expect(
         await attacher(
           categoryId: null,
-        ).attach(bytes: jpg, url: url, taskId: taskId),
+        ).attach(bytes: jpg, taskId: taskId),
         isTrue,
       );
 
@@ -167,11 +151,7 @@ void main() {
 
     test('bytes the app cannot store are not imported', () async {
       expect(
-        await attacher().attach(
-          bytes: svg,
-          url: 'https://x.example/a.svg',
-          taskId: taskId,
-        ),
+        await attacher().attach(bytes: svg, taskId: taskId),
         isFalse,
       );
 
@@ -190,7 +170,7 @@ void main() {
       expect(
         await attacher(
           result: () async => null,
-        ).attach(bytes: png, url: url, taskId: taskId),
+        ).attach(bytes: png, taskId: taskId),
         isFalse,
       );
     });
@@ -200,7 +180,7 @@ void main() {
       expect(
         await attacher(
           result: () => Future.error(error),
-        ).attach(bytes: png, url: url, taskId: taskId),
+        ).attach(bytes: png, taskId: taskId),
         isFalse,
       );
 
@@ -234,12 +214,19 @@ void main() {
       expect(file.path, isNot(contains('desktop-dark')));
     });
 
-    test('the same URL lands on the same file; another URL on another', () {
+    test('the same URL lands on the same file, rewritten with what was '
+        'fetched last; another URL on another', () {
       final first = pullRequestImageFile(png, url: url, root: root);
-      final again = pullRequestImageFile(png, url: url, root: root);
+      // The same length, other bytes: a URL whose image changed.
+      final changed = Uint8List.fromList([
+        ...png.sublist(0, png.length - 1),
+        9,
+      ]);
+      final again = pullRequestImageFile(changed, url: url, root: root);
       final other = pullRequestImageFile(png, url: '$url?v=2', root: root);
 
       expect(again.path, first.path);
+      expect(again.readAsBytesSync(), changed);
       expect(other.path, isNot(first.path));
     });
 

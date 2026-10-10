@@ -80,6 +80,21 @@ class EntryImageWidget extends ConsumerWidget {
   }
 }
 
+/// An action a caller puts into the viewer's chrome beside the download
+/// button, as a labelled pill: what the image is to the surface that opened
+/// the viewer — "Add to task" for a picture that is not yet an entry.
+class ImageViewerAction {
+  const ImageViewerAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+}
+
 /// Opens [file] in the shared full-screen, zoomable image viewer.
 ///
 /// [heroTag] identifies the source image for the transition. Callers outside
@@ -89,7 +104,7 @@ class EntryImageWidget extends ConsumerWidget {
 /// Passing [gallery] (which must contain [file] at [initialIndex]) turns the
 /// viewer into a navigable gallery: chevron buttons on both edges and the
 /// left/right arrow keys move between images, and a counter chip shows the
-/// position.
+/// position. [action] is offered in the chrome beside Download.
 void showFullscreenImageViewer(
   BuildContext context, {
   required File file,
@@ -98,6 +113,7 @@ void showFullscreenImageViewer(
   DateTime? date,
   List<DateTime?>? galleryDates,
   int initialIndex = 0,
+  ImageViewerAction? action,
 }) {
   Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
@@ -113,6 +129,7 @@ void showFullscreenImageViewer(
             date: date,
             galleryDates: galleryDates,
             initialIndex: initialIndex,
+            action: action,
           ),
     ),
   );
@@ -130,11 +147,16 @@ class HeroPhotoViewRouteWrapper extends StatefulWidget {
     this.date,
     this.galleryDates,
     this.initialIndex = 0,
+    this.action,
   });
 
   final File file;
   final BoxDecoration? backgroundDecoration;
   final Object heroTag;
+
+  /// An action of the opening surface, shown beside Download; null shows
+  /// the viewer's own chrome alone.
+  final ImageViewerAction? action;
 
   /// Saves the image to a platform-appropriate destination. Defaults to
   /// [defaultImageExporter]; injected in tests to avoid real platform channels.
@@ -379,6 +401,14 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (widget.action case final action?) ...[
+                          ImageViewerLabelButton(
+                            label: action.label,
+                            icon: action.icon,
+                            onPressed: action.onPressed,
+                          ),
+                          SizedBox(width: tokens.spacing.step2),
+                        ],
                         ImageViewerDownloadButton(
                           file: _currentFile,
                           imageExporter: widget.imageExporter,

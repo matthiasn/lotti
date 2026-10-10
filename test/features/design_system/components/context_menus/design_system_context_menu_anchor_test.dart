@@ -144,5 +144,38 @@ void main() {
       expect(menu, findsOneWidget);
       expect(tester.getTopLeft(menu).dy, greaterThan(origin.dy + 150));
     });
+
+    testWidgets('a controller handed in later, or taken away, is the one the '
+        'menu answers', (tester) async {
+      Widget anchored(MenuController? controller) =>
+          makeTestableWidgetWithScaffold(
+            DesignSystemContextMenuAnchor(
+              controller: controller,
+              items: const [DesignSystemContextMenuItem(label: 'Row')],
+              builder: (context, {required toggle, required isOpen}) =>
+                  TextButton(onPressed: toggle, child: const Text('Open')),
+            ),
+          );
+      final first = MenuController();
+      final second = MenuController();
+      final menu = find.byType(DesignSystemContextMenu);
+
+      await tester.pumpWidget(anchored(first));
+      await tester.pumpWidget(anchored(second));
+      second.open();
+      await tester.pumpAndSettle();
+      expect(menu, findsOneWidget);
+      second.close();
+      await tester.pumpAndSettle();
+      expect(menu, findsNothing);
+      expect(first.isOpen, isFalse);
+
+      // Taken away: the anchor owns one again, and the trigger still works.
+      await tester.pumpWidget(anchored(null));
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(menu, findsOneWidget);
+      expect(second.isOpen, isFalse);
+    });
   });
 }

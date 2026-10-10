@@ -170,8 +170,10 @@ void main() {
       bound,
       greaterThan(tester.getSize(find.byType(AgentMarkdownView)).width),
     );
+    // Decoded at its shown size, from the fetched bytes.
+    final provider = tester.widget<Image>(find.byType(Image)).image;
     expect(
-      (tester.widget<Image>(find.byType(Image)).image as MemoryImage).bytes,
+      ((provider as ResizeImage).imageProvider as MemoryImage).bytes,
       onePixelPng,
     );
     expect(find.textContaining('not loaded'), findsNothing);
@@ -331,7 +333,17 @@ void main() {
 
     // The bar names the repository; the number leads the title.
     expect(find.text('matthiasn/lotti'), findsOneWidget);
-    await tester.tap(find.byKey(PullRequestDetailsKeys.openOnGitHub));
+    // Most of the window on a desktop surface, so a description's
+    // screenshots sit side by side; the standard dialog is half of it.
+    final surface = tester.getSize(find.byType(Scaffold).first).width;
+    expect(
+      tester.getSize(find.byType(PullRequestDetails)).width,
+      greaterThan(surface * 0.7),
+    );
+    // The action at its own width, not the dialog's.
+    final open = find.byKey(PullRequestDetailsKeys.openOnGitHub);
+    expect(tester.getSize(open).width, lessThan(surface * 0.4));
+    await tester.tap(open);
     await tester.pump();
 
     verify(

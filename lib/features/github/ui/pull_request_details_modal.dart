@@ -18,8 +18,11 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/wide_wolt_dialog_type.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Keys the tests and screenshots reach the details by.
 abstract final class PullRequestDetailsKeys {
@@ -47,9 +50,17 @@ Future<void> showPullRequestDetailsModal(
         '${entry.data.owner}/${entry.data.repo}',
         quiet: true,
       ),
-      // Within reach however long the description runs.
+      // Most of a desktop window: a description lays its screenshots side
+      // by side, and in the standard column they stack, each clipped.
+      modalTypeBuilderOverride: (modalContext) =>
+          MediaQuery.sizeOf(modalContext).width < WoltModalConfig.pageBreakpoint
+          ? WoltModalType.bottomSheet()
+          : const WideWoltDialogType(),
+      // Within reach however long the description runs; at its own width,
+      // since a button the width of that dialog would be a band.
       stickyActionBar: DesignSystemModalActionBar(
         glass: true,
+        layout: DesignSystemModalActionBarLayout.compactPrimary,
         padding: EdgeInsets.all(context.designTokens.spacing.step5),
         primary: DesignSystemButton(
           key: PullRequestDetailsKeys.openOnGitHub,

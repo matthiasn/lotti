@@ -121,19 +121,38 @@ class _PullRequestImageState extends ConsumerState<PullRequestImage> {
       final bytes = await fetcher.fetch(url);
       if (!mounted || widget.url != url) return;
       setState(() => _bytes = bytes);
-    } on Exception {
+    } on Object {
+      // Whatever went wrong — the fetcher's own failure, or a client closed
+      // under it — the image is not coming; the notice must not wait.
       if (!mounted || widget.url != url) return;
       setState(() => _failed = true);
     }
   }
 
+  /// Bytes that fetched but do not decode are as good as none: the notice
+  /// replaces the image, and with it the actions, so what cannot be shown
+  /// cannot be added to the task either. Called from the image's error
+  /// builder, mid-build, so the state changes after the frame.
+  void _markUndecodable() {
+    if (_failed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_failed) setState(() => _failed = true);
+    });
+  }
+
   void _openFullSize() {
     final bytes = _bytes;
     if (bytes == null) return;
+    final messages = context.messages;
     showFullscreenImageViewer(
       context,
       file: pullRequestImageFile(bytes, url: widget.url),
       heroTag: widget.url,
+      action: ImageViewerAction(
+        label: messages.githubImageAddToTask,
+        icon: LottiIcons.image,
+        onPressed: _addToTask,
+      ),
     );
   }
 
@@ -145,7 +164,7 @@ class _PullRequestImageState extends ConsumerState<PullRequestImage> {
     setState(() => _attaching = true);
     final attached = await ref
         .read(pullRequestImageAttacherProvider)
-        .attach(bytes: bytes, url: widget.url, taskId: widget.taskId);
+        .attach(bytes: bytes, taskId: widget.taskId);
     if (!mounted) return;
     setState(() => _attaching = false);
     messenger?.showDesignSystemToast(
@@ -170,6 +189,14 @@ class _PullRequestImageState extends ConsumerState<PullRequestImage> {
     if (bytes == null) {
       return _LoadingImage(label: messages.githubImageLoading(host));
     }
+    final bound = PullRequestDescriptionWidth.of(context);
+    final shownWidth = switch (widget.width) {
+      final width? => width < bound ? width : bound,
+      null => bound,
+    };
+    final cacheWidth = shownWidth.isFinite
+        ? (shownWidth * MediaQuery.devicePixelRatioOf(context)).ceil()
+        : null;
     return DesignSystemContextMenuAnchor(
       controller: _menu,
       semanticsLabel: messages.githubImageActions,
@@ -200,19 +227,23 @@ class _PullRequestImageState extends ConsumerState<PullRequestImage> {
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: PullRequestDescriptionWidth.of(context),
-              ),
+              constraints: BoxConstraints(maxWidth: bound),
               child: Image.memory(
                 bytes,
                 width: widget.width,
                 height: widget.height,
+                // Decoded no larger than it is shown: a screenshot's pixels
+                // are many times its place in the text, and a description
+                // may hold twenty of them. Never upscaled by this.
+                cacheWidth: cacheWidth,
                 fit: BoxFit.contain,
                 excludeFromSemantics: true,
-                errorBuilder: (context, error, stackTrace) =>
-                    MarkdownImageNotice(
-                      label: messages.githubImageUnavailable(host),
-                    ),
+                errorBuilder: (context, error, stackTrace) {
+                  _markUndecodable();
+                  return MarkdownImageNotice(
+                    label: messages.githubImageUnavailable(host),
+                  );
+                },
               ),
             ),
           ),

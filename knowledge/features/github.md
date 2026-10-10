@@ -554,17 +554,25 @@ fetched, within a 64 MiB budget, so the details reopened, the full-size
 viewer and attaching share one read. A private repository's images need
 GitHub's own session and show the notice instead; nothing is retried on a
 schedule. While it loads, a quiet box; failed, the notice naming its host.
-A tap opens the image in the journal's full-screen viewer
-(`showFullscreenImageViewer`, from a file the bytes are written to under
-the temp directory, named by the URL's hash). A right-click, or a long
-press on a touch screen, opens the design-system menu at the pointer with
-one action, **Add to task**: `PullRequestImageAttacher` records the bytes
-on the task through `importPastedImages`, exactly as a pasted picture —
-the task's category, and the automatic image-analysis trigger every pasted
-or dropped picture gets, so the image is analysed when the category and
-the task's profile automate image analysis, and only that image: a
-description's other images are never analysed. A toast tells whether it
-was recorded.
+Bytes that fetched but do not decode are failed too: the notice replaces
+the image, and with it its actions. A shown image is decoded no larger
+than its place in the text (`cacheWidth` from the bound and the device
+pixel ratio, never upscaled), so twenty screenshots in one description do
+not hold twenty screenshots' worth of pixels. A tap opens the image in the
+journal's full-screen viewer (`showFullscreenImageViewer`, from a file the
+bytes are written to under the temp directory, named by the URL's hash and
+rewritten on every open, so it is always what was fetched last). A
+right-click, or a long press on a touch screen, opens the design-system
+menu at the pointer with one action, **Add to task** — which the viewer
+offers too, as a labelled pill beside Download (`ImageViewerAction`), so a
+picture can be looked at full size and then kept: `PullRequestImageAttacher`
+records the bytes on the task through `importPastedImages`, exactly as a
+pasted picture — the task's category, and the automatic image-analysis
+trigger every pasted or dropped picture gets, so the image is analysed when
+the category and the task's profile automate image analysis, and only that
+image: a description's other images are never analysed. Only bytes in a
+format the app stores (PNG, JPEG, GIF, WebP, by their magic bytes, whatever
+the URL's path says) are recorded. A toast tells whether it was.
 
 Opening a task refreshes every pull request whose snapshot is older than five
 minutes, once; each row's menu also offers Refresh, whose progress takes
