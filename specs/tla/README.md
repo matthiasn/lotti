@@ -4464,3 +4464,141 @@ What the model leaves out:
   `stopRecordingDelay`, then stops the timer — only if its own entry still
   runs, so a timer started in that moment is left to write its own end. The
   model takes the save and the stop as one step.
+
+## `VerificationLaunch` — opening the emoji ceremony after pairing
+
+How the SAS (emoji) ceremony is opened on a device after pairing, and what
+happens when two devices open it at each other. Each active device runs the
+UI: one or two `AutoVerificationLauncher`s (the sync status page and the
+setup sheet can be mounted at once), the `IncomingVerificationWrapper`, one
+modal lock, the app-wide set of identities already offered, and a cached
+view of the SDK's unverified device keys that only an invalidation re-reads.
+A passive device holds keys and never acts — a stale or legacy peer in the
+unverified list. The SDK's `KeyVerification` is a black box: a ceremony is
+requested, accepted, done or cancelled, and two devices starting at each
+other are two of them, as they are two transactions in the SDK. The runtime
+is described in
+[pairing a new device](../../knowledge/features/sync/overview.md#pairing-a-new-device).
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> Requested: Launch, or Relaunch
+  Requested --> Accepted: the peer's incoming sheet auto-accepts
+  Requested --> Cancelled: Cancel, Dismiss, or the peer yields
+  Accepted --> Done: both users confirm the emoji
+  Accepted --> Cancelled: either side cancels or abandons
+  Done --> [*]
+  Cancelled --> [*]
+```
+
+| Property | Kind | Says |
+|----------|------|------|
+| `LockMatchesSheet` | invariant | the lock is held exactly while a sheet is open |
+| `VerifiedByCeremony` | invariant | trust is mutual |
+| `HandledWasShown` | invariant | only a device whose ceremony was shown is recorded as handled |
+| `NoReoffer` | invariant | a dismissed ceremony is not offered again unless the user asks |
+| `RelaunchHonoured` | invariant | "Show the emoji" reopens the device the user was looking at |
+| `EventuallyOffered` | liveness | every unverified peer whose keys arrived is offered a ceremony, by this device's launcher or the peer's request |
+| `AutoVerifies` | liveness | two active devices holding each other's keys end up verified without anyone asking again |
+
+| Configuration | Devices | Active | Launchers | Relaunch | Users | Checks | Distinct states |
+|---------------|---------|--------|-----------|----------|-------|--------|-----------------|
+| `VerificationLaunch` | 3 | 2 | 1 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 118,461 |
+| `VerificationLaunchTwoLaunchers` | 2 | 2 | 2 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 75,195 |
+| `VerificationLaunchCrossStart` | 2 | 2 | 2 | 0 | patient | all | 2,201 |
+
+A three-active-device profile (`Launchers = {1}`, patient users) was checked
+once by hand — 3,240,481 distinct states in eleven minutes on twenty workers —
+and is kept out of the directory for its runtime; it is what showed the ring
+and the need to defer (below).
+
+Each fix has a switch; in a temporary copy of a configuration outside this
+directory, set it and run TLC against `VerificationLaunch.tla`:
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `GlareHandoff = FALSE` (the code before this model) | `VerificationLaunchCrossStart` | `AutoVerifies`, 9 steps: both launchers open a sheet at the other device, each wrapper finds the lock held and drops the other's request, and both sheets wait forever |
+| `DeferIncoming = FALSE` | three active devices, by hand | `AutoVerifies`, 21 steps: with the handoff alone, a request that arrives while a sheet for a third device is up is dropped, and the launcher — which offers each device once — never asks again |
+| yield to any third device (a spec copy with `Yield(r, i) == Unanswered(r)`) | three active devices, by hand | `AutoVerifies`, a 24-step cycle: three devices in a ring each yield their unanswered request to the next, cancelling a ceremony the previous one was answering, forever |
+| `CancelOnDismiss = FALSE` (the code before this model) | `VerificationLaunch` | `EventuallyOffered`, 11 steps: a user abandons the outgoing sheet with a backdrop tap; the peer's sheet waits at the emoji step for a confirmation that never comes, and its lock is never freed |
+| `PreferLastShown = FALSE` (the code before this model) | `VerificationLaunch` | `RelaunchHonoured`, 7 steps: a cancel refreshes the view, which now holds a peer whose keys landed during the ceremony; the relaunch releases the last identity and then opens the first unhandled device — the newcomer |
+| `RecordOnlyShown = FALSE` (fixed in #3634) | `VerificationLaunch` | `HandledWasShown`, 9 steps: a device is recorded while an incoming sheet holds the lock, and is never offered a ceremony |
+| `SharedHandled = FALSE` (fixed in #3634) | `VerificationLaunchTwoLaunchers` | `NoReoffer`, 6 steps: the launcher that lost the lock knew nothing about what the winner had shown and reopened the sheet the user had just dismissed |
+| `ReleaseOne = FALSE` (fixed in #3634) | `VerificationLaunch` | `RelaunchHonoured`, 7 steps: the relaunch clears the whole set and restarts at the head of the list |
+
+The yield rule is the SDK's own rule for a `start` glare, applied one step
+earlier, to crossing *requests*: while this device's own request is still
+unanswered, it yields to an incoming request from a **smaller** identity. The
+order is what makes it terminate — the smallest device in any tangle never
+yields, so its ceremony is the one that finishes. A yielding device cancels
+its own ceremony, answers the peer's inside the sheet it already holds (on the
+stream `VerificationModal` renders, so the emoji appear there), and releases
+the withdrawn target from the handled set: that device was never really
+offered a ceremony. A launcher that finds the target's own request already
+pending answers it instead of starting a second one.
+
+What the model leaves out:
+
+- **The SDK's own glare rule.** Two `start`s inside one transaction are
+  reconciled by the SDK; the model never reaches that step.
+- **Several deferred requests.** `MatrixService` keeps one incoming runner,
+  the latest, so the wrapper holds only the latest deferred request; the
+  model holds a set. An older peer's request is answered when the launcher
+  reaches that peer.
+- **A second ceremony toward the same peer** replaces the first in the model;
+  the SDK keeps both, and the peer's sheet stays on the first. Patient users
+  never reach this (they never abandon a sheet), and it does not add
+  behaviours to the cancel-or-abandon profiles.
+- **When the view refreshes.** `Refresh` is any invalidation of the
+  unverified-devices provider and is assumed to happen eventually; the
+  provider is not invalidated when keys land, which is what the paired
+  view's 20-second stall fallback and its *Check again* exist for.
+- **A dead peer at the head of the list.** Two patient users whose launchers
+  both pick a passive device first wait on it forever; one dismissal frees
+  the flow. The checked profiles with a passive peer let users dismiss.
+
+## `DevicePairing` — the inviting sheet names one exact device
+
+The inviting side of pairing: the Add Device sheet shows a handover code,
+watches the account's device roster for a session that was not there when it
+opened, and follows one exact device through the SAS ceremony before it
+unlocks the two transfers toward it. It has three ordered facts to establish
+— which sessions existed before the code was shown, that a new one joined,
+and which one a finished ceremony named — from three asynchronous sources it
+does not time: a roster fetch, a poll, and a verification stream it may have
+joined late. The runtime is described in
+[pairing a new device](../../knowledge/features/sync/overview.md#pairing-a-new-device).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `TargetConsumedCode` | invariant | the transfers only unlock toward a device that consumed a code from this device, never a session that was there all along |
+| `ReadyIsJoined` | invariant | readiness implies a join and a verified target |
+| `EventuallyReady` | liveness | a device that consumed the code on screen and finished its ceremony while the sheet was open is what the sheet becomes ready for, unless the sheet was closed first |
+
+| Configuration | Old sessions | Joiners | Checks | Distinct states |
+|---------------|--------------|---------|--------|-----------------|
+| `DevicePairing` | 1 | 2 | all | 875,040 |
+
+Ceremonies with any device may start before or after the open, the sheet may
+be closed and reopened, and the roster provider's value may be stale.
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `SnapshotBeforeCode = FALSE`, `RequireKnown = FALSE` (the code before this model) | `DevicePairing` | `TargetConsumedCode`, 6 steps: the sheet opens, a ceremony with the old session finishes before any roster has resolved, and it is taken as the new device |
+| `SnapshotBeforeCode = FALSE` | `DevicePairing` | `EventuallyReady`, 14 steps: the code is shown, a device scans it and joins, and only then does the first roster resolve — holding the newcomer — and become the baseline; its finished ceremony reads as an old session's and the sheet never becomes ready |
+
+With both switches, `_generate` awaits the roster and fixes the baseline
+before the code is shown — a roster that cannot be read fails the mint, with
+Retry — and `_observeVerification` ignores a finished ceremony while no
+baseline exists, which can only be one that finished before the code was up.
+
+What the model leaves out:
+
+- **The poll's failure count and its Retry**, which change what the bar says,
+  not what the sheet latches.
+- **Which of two joiners is the target.** Two devices can consume one code;
+  the ceremony names whichever finishes first, by design.
+- **The transfers themselves** (settings, history): `SyncSettings` covers the
+  settings push, and the history push's onboarding suppression is described in
+  [sequence and backfill](../../knowledge/features/sync/sequence-and-backfill.md#initial-onboarding-suppression).

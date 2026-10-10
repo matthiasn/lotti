@@ -678,6 +678,16 @@ Mocktail's own defaults already satisfy `any()` for every typed collection:
 `Map<K, V>` and `Set<T>`, so a parameter typed `List<(ChangeSetEntity, int)>`
 needs no `registerFallbackValue`. Register one only for a class of its own.
 
+Two shared mocks carry default stubs in their constructors, because the
+production code reads them on every path: `MockKeyVerification` answers
+`canceled` and `state` (what `keyVerificationOutcome` branches on), and
+`MockKeyVerificationRunner` answers `cancelVerification`, because the hosts of
+both verification sheets cancel a still-pending ceremony once the sheet
+closes. A test asserting on the cancel still `verify`s it — the default stub
+counts calls — and a test that taps Cancel models the SDK by flipping
+`canceled` to `true` as the stub's side effect, so the host finds nothing
+left to cancel.
+
 ## GetIt and view state leak across files in a bundle too
 
 `getIt` and the test view (`physicalSize`, `devicePixelRatio`) are shared by

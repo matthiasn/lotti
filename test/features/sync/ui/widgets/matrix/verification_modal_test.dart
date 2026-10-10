@@ -122,7 +122,11 @@ void main() {
     when(() => runner.emojis).thenReturn(emojis);
     when(() => runner.keyVerification).thenReturn(keyVerification);
     when(() => keyVerification.isDone).thenReturn(false);
-    when(runner.cancelVerification).thenAnswer((_) async {});
+    // As the SDK does: a cancel marks the ceremony cancelled before the sheet
+    // pops, so disposing the sheet has nothing left to cancel.
+    when(runner.cancelVerification).thenAnswer((_) async {
+      when(() => keyVerification.canceled).thenReturn(true);
+    });
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
