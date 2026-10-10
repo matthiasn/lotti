@@ -1619,8 +1619,7 @@ three inline payload types, both enqueue orders, real outbox claiming and
 bundling, and both receive orders through the durable domain receivers. Removing the send-time
 causality guard makes the concurrent-payload traces fail. Clockless-snapshot
 regressions also assert that the processor sends both payloads; they fail on
-the pre-fix collapse rule from #4489. Config flags collapse by their version
-stamp; two unstamped rows from an older sender keep enqueue order.
+the pre-fix collapse rule from #4489. Config flags collapse by their version stamp; two unstamped rows from an older sender keep enqueue order, and an unstamped row folds into a stamped one of the same flag (ADR 0130).
 
 This is a boundary composition, not a proof of the entire sync system.
 Transport loss, gap discovery/backfill, attachment generations, retry
@@ -1715,9 +1714,7 @@ What the model leaves out, deliberately or as a residual:
   that older version, with its attachment, after the newer one. Only journal
   entries carry attachments, and their receivers order the JSON by clock, so
   the older JSON is dropped and the attachment lands.
-- **Unstamped flags follow the callers' order.** The collapse orders config
-  flags by their version stamp; two rows without one (from before #4517)
-  keep enqueue order.
+- **Unstamped flags follow the callers' order.** The collapse orders config flags by their version stamp; two rows without one (from before #4517) keep enqueue order, and one without a stamp ranks below any stamped row of the same flag (ADR 0130).
 - The claim and the collapse are one step. Between the Dart claim and its
   collapse lookups only appends (rows the collapse did not read), the
   monitor (guarded by a compare-and-set on status) and pruning (sent rows
@@ -2764,8 +2761,7 @@ speech dictionary entries — replicate as whole documents. Every local write
 reserves the host's next counter on top of the stored clock; the receiving
 gate keeps a version whose clock dominates and settles two concurrent ones
 last-writer-wins (`updatedAt`, then content), storing the winner under the
-join of both clocks. Rows from builds before clocks carry none: a manual
-migration stamps them on whichever device the user runs it, a clockless copy
+join of both clocks. Rows from builds before clocks carry none: a migration stamps them, on every device once at startup since ADR 0130 and on demand from Sync health, a clockless copy
 never displaces a clocked row, and a clockless row that keeps its place
 against a clocked copy stamps itself on top of it. With `Backfill`, delivery
 is lossy and the sequence log repairs it: a receiver learns every counter in

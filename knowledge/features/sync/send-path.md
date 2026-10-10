@@ -220,9 +220,7 @@ status it read). The rules live in `outbox_collapse.dart`:
 
 - **Newest by clock.** Journal entities, entry links and agent entities and
   links are ordered by vector clock, so an enqueue that arrived out of order
-  never sends an older payload over a newer one. A config flag has no clock;
-  it is ordered by its version stamp, and two rows without one (from an older
-  build) by enqueue order.
+  never sends an older payload over a newer one. A config flag has no clock; it is ordered by its version stamp, two rows without one (from an older build) by enqueue order, and a row without one ranks below any stamped row of the same flag, into whose send it folds.
 - **Cover everything folded in.** The send carries the newest payload with
   every other collapsed row's clock as a covered clock, so each counter
   reaches peers exactly as if its row had been sent. A row whose clock is
@@ -357,9 +355,7 @@ treats that as final:
 - **A bundle** says nothing about any one of its rows. They return to the queue
   without counting an attempt (`releaseClaims`, logged as `bundleTooLarge`), and
   the next claims take one row each until that many have gone out, so only a
-  row too large on its own is dropped. The count lives in memory: after a
-  restart the rows bundle again, fail again by size and fall back again,
-  still uncounted.
+  row too large on its own is dropped. The count is stored in settings (`OUTBOX_SINGLE_CLAIMS_REMAINING`) as it changes and read back on the first pass, so a restart in the middle keeps sending the rows singly.
 
 Producers that know their size keep under the limits up front: backfill
 requests are split at `SyncTuning.maxInlineBackfillRequestJsonBytes` when they

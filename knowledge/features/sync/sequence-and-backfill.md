@@ -177,7 +177,7 @@ created handed out 0 first, and continue from wherever they are. Their counter
 one as the first of the prefix shifted every later row by one, so a contiguous
 run read as 0 and a run with a hole read past it), and gap detection never
 marks it missing. Sync database schema v30 dropped the watermarks the old
-rebuild had cached for such hosts, so each is rebuilt on its next read. A lost counter 0 of such a host is therefore not backfilled.
+rebuild had cached for such hosts, so each is rebuilt on its next read. Because gap detection never marks it missing, a lost counter 0 of such a host is not backfilled.
 It is usually superseded, being that host's first write, and the next version
 of the same payload carries its clock. A device that never handed out a
 counter moves its watermark from 0 to 1 at startup and skips 0 altogether.
@@ -807,9 +807,7 @@ peer read "in the range, not listed" as "the advertiser has no row" and
 pushed every such record back on every round, while the advertiser, already
 holding it, changed nothing. A named clockless record is never pushed back,
 and is asked for only where the peer holds no row at all; that request, for
-the empty clock `unclockedVersion`, is settled by holding any row. Giving
-those rows clocks is the real repair: the **Vector clocks** recovery action
-stamps clockless entry links (`backfillEntryLinkClocks`, keeping each link's
+the empty clock `unclockedVersion`, is settled by holding any row. Giving those rows clocks is the real repair: every device stamps its clockless entry links once at startup ([ADR 0130](../../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md)), and the **Vector clocks** recovery action stamps clockless entry links (`backfillEntryLinkClocks`, keeping each link's
 `updatedAt` so a stamp never outranks a genuine edit) alongside agent
 entities and links. The sequence log is not reconstructed — a
 deep-backfilled version is recorded like any received payload.

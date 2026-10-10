@@ -583,9 +583,7 @@ persisted before enqueue, and the failed-row retry retains that stamped value
 so an enqueue-only failure does not increment the clock again.
 `SyncMaintenanceRepository.backfillAgentEntityClocks` /
 `backfillAgentLinkClocks` remain the whole-database version of the same repair,
-reachable from *Sync health* as the **Vector clocks** recovery action, which
-also runs `backfillEntryLinkClocks` for entry links saved before links carried
-a clock. That step keeps each link's `updatedAt`: links order by `updatedAt`
+reachable from *Sync health* as the **Vector clocks** recovery action, which also runs `backfillEntryLinkClocks` for entry links saved before links carried a clock. The entry-link and definition stamps also run once at every device's startup ([ADR 0130](../../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md)); the agent stamps stay manual. That step keeps each link's `updatedAt`: links order by `updatedAt`
 before their clocks, so a stamp dated now would outrank a genuine edit.
 The historical sweep fetches undecoded journal and agent rows, then isolates
 every journal entity, entry link, agent entity and agent link: decode,

@@ -128,15 +128,13 @@ alone.
 stateDiagram-v2
     [*] --> Clockless: written by an older build
     Clockless --> Clocked: local edit (own counter)
-    Clockless --> Clocked: manual migration stamps it
+    Clockless --> Clocked: migration stamps it (once at startup, or by hand)
     Clockless --> Clocked: a later clocked copy arrives
     Clockless --> Clocked: kept against a clocked copy, stamped over it
     Clocked --> Clocked: edit, or a dominating or concurrent copy (join)
 ```
 
-**The manual migration.** *Settings → Sync → Sync health → Advanced
-recovery → Repair vector clocks* runs `SyncStep.backfillDefinitionClocks` beside the
-agent and entry-link clock steps. `SyncMaintenanceRepository.backfillDefinitionClocks`
+**The migration.** Every device runs it once at startup, with the entry-link stamp, and records that in the settings key `maintenance_clocklessRepairV1` only once both succeed ([ADR 0130](../../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md)). *Settings → Sync → Sync health → Advanced recovery → Repair vector clocks* still runs `SyncStep.backfillDefinitionClocks` by hand, beside the agent and entry-link clock steps. `SyncMaintenanceRepository.backfillDefinitionClocks`
 lists every clockless definition, deleted and private ones included
 (`JournalDb.clocklessDefinitions`), and `DefinitionClockStamper.stamp`s each:
 this host's next counter, content and `updatedAt` unchanged. Re-read,
