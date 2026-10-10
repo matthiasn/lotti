@@ -2717,6 +2717,66 @@ void main() {
     );
   });
 
+  group('resendOwnCounterZero', () {
+    test('a host an older build created resends its own counter 0 write, '
+        'which no peer would ever request', () async {
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 0),
+      ).thenAnswer(
+        (_) async => _createLogItem(aliceHostId, 0, entryId: entryId),
+      );
+      when(
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+      ).thenAnswer(
+        (_) async => _createJournalEntry(
+          entryId,
+          vectorClock: const VectorClock({aliceHostId: 0}),
+        ),
+      );
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+
+      expect(await handler.resendOwnCounterZero(), isTrue);
+
+      final sent =
+          verify(
+                () => mockOutboxService.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncJournalEntity;
+      expect(sent.id, entryId);
+    });
+
+    test('a host a later build created has no counter 0, and sends nothing '
+        '— in particular no burn of a counter it never issued', () async {
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 0),
+      ).thenAnswer((_) async => null);
+
+      expect(await handler.resendOwnCounterZero(), isFalse);
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
+      verifyNever(
+        () => mockSequenceService.markOwnCounterUnresolvable(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+
+    test('a device without a host id yet sends nothing', () async {
+      when(() => mockVcService.getHost()).thenAnswer((_) async => null);
+
+      expect(await handler.resendOwnCounterZero(), isFalse);
+
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
+    });
+  });
+
   group('handleBackfillResponse', () {
     test('delegates to sequenceLogService for deleted response', () async {
       const response = SyncBackfillResponse(

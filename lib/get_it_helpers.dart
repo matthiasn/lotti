@@ -148,7 +148,10 @@ Future<void> _registerLateAndOptionalServices({
   // ever enqueues.
   if (profile.capabilities.syncEnabled) {
     getIt<StartupTasks>()
-      ..track(_checkAndPopulateSequenceLog())
+      // The counter-0 resend reads the own row the population records.
+      ..track(
+        _checkAndPopulateSequenceLog().then((_) => _resendOwnCounterZeroOnce()),
+      )
       ..track(_repairClocklessRowsOnce());
   }
 }

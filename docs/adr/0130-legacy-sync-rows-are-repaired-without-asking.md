@@ -36,6 +36,8 @@ were left for the user or for luck to repair:
   keep their enqueue order.
 - **The fallback count is stored in settings** as it changes and read back
   on the first pass after a start.
+- **A host resends its own counter-0 write once**, if it made one, since no
+  peer would ever ask for it.
 
 ## Consequences
 
@@ -44,8 +46,12 @@ were left for the user or for luck to repair:
 - A legacy flag row superseded by a stamped one is never sent.
 - One settings write per claim while the fallback runs, which happens only
   after a bundle too large to send.
-- Still open: a host created by a build before #4470 issued counter 0
-  first, and if that write is lost no peer requests it. Requesting counter
-  0 of every host would put a phantom gap on every new one; telling the two
-  apart needs the host to say where its counters began, which an old build
-  cannot. The next version of the same payload usually supersedes it.
+- A host created by a build before #4470 issued counter 0 first, and if
+  that write was lost no peer requests it: gap detection starts at 1, and
+  requesting counter 0 of every host would put a phantom gap on every new
+  one. The host itself knows, though. Once updated, it resends its own
+  counter-0 payload once at startup, after the sequence log population
+  (`BackfillResponseHandler.resendOwnCounterZero`), through the ordinary
+  backfill answer; a host with no counter-0 row sends nothing, so no
+  counter is burned that was never issued. A host still on an old build
+  cannot, until it updates.

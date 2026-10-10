@@ -288,10 +288,7 @@ What the configurations deliberately leave out:
   `SyncSequenceCrashUnnamed` checks safety only.
 - **Counter 0.** Counters start at 1, as `VectorClockService` has since
   [ADR 0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md).
-  Hosts that older builds created handed out a counter 0 first. It lies
-  outside gap detection and the contiguous-prefix watermark, so if its
-  message is lost it is never requested; the next version of the same
-  payload carries its clock.
+  Hosts that older builds created handed out a counter 0 first. It lies outside gap detection and the contiguous-prefix watermark, so if its message is lost no peer requests it. Since ADR 0130 the host resends that write once at startup after it updates; a host still on an old build does not.
 
 ## `OwnCounterSettlement` — recovery interleavings
 

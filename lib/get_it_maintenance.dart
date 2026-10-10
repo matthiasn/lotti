@@ -158,6 +158,44 @@ Future<void> _repairClocklessRowsOnce() async {
 @visibleForTesting
 Future<void> repairClocklessRowsOnceForTesting() => _repairClocklessRowsOnce();
 
+/// Settings key recording that [_resendOwnCounterZeroOnce] ran.
+const counterZeroResentSettingsKey = 'maintenance_counterZeroResentV1';
+
+/// Resends, once per device, this host's own write at counter 0, which a
+/// host an older build created made first and no peer ever requests
+/// ([BackfillResponseHandler.resendOwnCounterZero], ADR 0130). The flag is
+/// set once the attempt returns, whether or not there was anything to send,
+/// and not when it throws, so a failure retries at the next start.
+Future<void> _resendOwnCounterZeroOnce() async {
+  final settingsDb = getIt<SettingsDb>();
+  final domainLogger = getIt<DomainLogger>();
+  try {
+    if (await settingsDb.itemByKey(counterZeroResentSettingsKey) == 'true') {
+      return;
+    }
+    final sent = await getIt<BackfillResponseHandler>().resendOwnCounterZero();
+    await settingsDb.saveSettingsItem(counterZeroResentSettingsKey, 'true');
+    if (sent) {
+      domainLogger.log(
+        LogDomain.sync,
+        "Resent this host's own counter 0 write",
+        subDomain: 'counterZeroResend',
+      );
+    }
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'counterZeroResend',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> resendOwnCounterZeroOnceForTesting() =>
+    _resendOwnCounterZeroOnce();
+
 /// The categories' legacy speech dictionaries into dictionary entries. Runs
 /// at every start: it writes only terms this device holds no entry for, so
 /// after the first run it changes nothing.
