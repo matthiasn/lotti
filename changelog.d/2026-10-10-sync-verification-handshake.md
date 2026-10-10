@@ -10,8 +10,7 @@
   nobody would finish. It now sees the cancellation and can start again.
 - **"Show the emoji" reopens the device you were looking at.** When another
   device's keys arrived while a ceremony was open, the button could reopen
-  that device instead of the one just dismissed. Closing the reopened sheet
-  no longer brings it straight back a second time.
+  that device instead of the one just dismissed.
 - **Add device waits for the device list before showing the pairing code.** A
   code shown while the list was still loading could mistake the device that
   scanned it for one that had been there all along, and never unlock the
