@@ -299,9 +299,10 @@ class AiConfigRepository {
 
   void _scheduleRetry() {
     if (_disposed) return;
-    _retryTimer ??= Timer(retryDelay, () {
+    // The flush never throws: a failure is logged and re-armed inside it.
+    _retryTimer ??= Timer(retryDelay, () async {
       _retryTimer = null;
-      unawaited(flushPending());
+      await flushPending();
     });
   }
 
