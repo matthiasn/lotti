@@ -44,12 +44,15 @@ every round:
   an id with no row is refused unless it is newer than the remembered
   loser; a newer one (the user linking again) clears the memory and takes
   a row.
-- **The dispatcher reads deleted rows when it derives a task id.** A
-  soft-deleted task under the id is restored on a clock descended from its
-  tombstone. A row under the id that is no task, which is what a purge
-  leaves, is passed over for the next generation of the id (the seed plus
-  a generation number), so the task is a plain creation everywhere. After
-  sixteen generations the proposal fails permanently.
+- **The dispatcher reads deleted rows when it derives a task id, and
+  passes over any deleted row** — the task undo removed, or the tombstone a
+  purge compacted it to — for the next generation of the id (the seed plus
+  a generation number), as it does a row that is no task. The choice rests
+  on whether the row is deleted, which replicates, never on its shape,
+  which a purge changes on one device only: a replica that restored the
+  deleted task while another, having purged it, moved on would keep two
+  live tasks for one proposal. The task is a plain creation everywhere.
+  After sixteen generations the proposal fails permanently.
 - **Inventories name the agents of agent records.** `DeepBackfillRecord`
   gains an optional `agentIds`: an agent entity lists its agent, an agent
   link both ends. The requester drops a missing or older record whose
@@ -63,8 +66,8 @@ every round:
   other definition already did. They are few and small.
 - `entry_link_losses` grows by one row per lost triple, and shrinks when a
   newer version of the id arrives.
-- A purged relationship task is never brought back under its old id; a
-  new confirmation creates a sibling id that every device derives the same
-  way.
+- A relationship task undo removed is never brought back under its old
+  id; a new confirmation creates a sibling id that every device derives
+  the same way.
 - Older builds still send records of deleted agents and request them;
   only the requester's side changed, which is the side that pays.

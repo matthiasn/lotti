@@ -110,7 +110,7 @@ class RelationshipToolDispatcher {
       return _failure('Task identity is unavailable', permanent: true);
     }
     final (id: taskId, :existing) = identity;
-    if (existing != null && !existing.isDeleted) {
+    if (existing != null) {
       final linked = await _tryLinkTask(taskId, relationshipId);
       // Do not mint an undo receipt from a task a peer may already have edited.
       return (linked || await _hasRelationshipLink(taskId, relationshipId))
@@ -149,35 +149,13 @@ class RelationshipToolDispatcher {
     );
     final private =
         person.meta.private == true || evidence.meta.private == true;
-    final Task? task;
-    if (existing is Task && existing.isDeleted) {
-      // Undo retains a tombstone. A new confirmation restores the same identity
-      // with a clock descended from that tombstone, so peers accept the restore.
-      final restored = Task(
-        meta: await persistenceLogic.updateMetadata(
-          existing.meta.copyWith(
-            deletedAt: null,
-            categoryId: categoryId,
-            private: private,
-          ),
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: data,
-        entryText: entryText,
-      );
-      task = await persistenceLogic.updateDbEntity(restored) == true
-          ? restored
-          : null;
-    } else {
-      task = await persistenceLogic.createTaskEntry(
-        id: taskId,
-        data: data,
-        entryText: entryText,
-        categoryId: categoryId,
-        private: private,
-      );
-    }
+    final task = await persistenceLogic.createTaskEntry(
+      id: taskId,
+      data: data,
+      entryText: entryText,
+      categoryId: categoryId,
+      private: private,
+    );
     if (task == null) return _failure('Task creation failed');
     var linked = false;
     var alreadyLinked = false;
@@ -301,19 +279,19 @@ class RelationshipToolDispatcher {
   /// How many generations of a commitment's id are tried before giving up.
   static const _maxIdGenerations = 16;
 
-  /// The journal identity of the commitment [seed] names, and the row this
-  /// device holds under it, deleted rows included.
+  /// The journal identity of the commitment [seed] names, and the live task
+  /// this device holds under it, if any.
   ///
   /// The first generation is the deterministic id, so a confirmation retried
-  /// or synced twice meets the same row: a live task is linked, not made
-  /// again, and a soft-deleted one, which undo leaves behind, is restored
-  /// under the same id on a clock descended from its tombstone. A row that
-  /// is no task any more, which a purge compacts a deleted task to (ADR
-  /// 0095), is passed over: a creation under its id would replace the
-  /// deletion with a clock that does not cover it, and every peer would
-  /// raise a conflict. The next generation of the id is tried instead, so
-  /// the task is a plain creation everywhere.
-  Future<({String id, JournalEntity? existing})?> _taskIdentity(
+  /// or synced twice meets the same row, and a live task there is linked, not
+  /// made again. A deleted row under an id — the task undo removed, or the
+  /// tombstone a purge compacted it to (ADR 0095) — is passed over for the
+  /// next generation of the id, and so is a row that is no task. The choice
+  /// rests on whether the row is deleted, which replicates, never on its
+  /// shape, which a purge changes on one device only: every replica that
+  /// holds the deletion moves to the same generation, and a creation never
+  /// replaces a deletion with a clock that does not cover it.
+  Future<({String id, Task? existing})?> _taskIdentity(
     List<Object?> seed,
   ) async {
     for (var generation = 0; generation < _maxIdGenerations; generation++) {
@@ -324,7 +302,8 @@ class RelationshipToolDispatcher {
         ),
       );
       final existing = await journalDb.journalEntityByIdIncludingDeleted(id);
-      if (existing == null || existing is Task) {
+      if (existing == null) return (id: id, existing: null);
+      if (existing is Task && !existing.isDeleted) {
         return (id: id, existing: existing);
       }
     }

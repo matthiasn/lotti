@@ -1942,9 +1942,7 @@ What the model leaves out, deliberately or as a residual:
   only sets the version's `purged` flag. The flag records the two rules a
   tombstone meets: one applied over a stored copy deletes that copy, which
   keeps its own fields (`Over`), and a deletion applied over a tombstone is
-  compacted in turn. A purged row is no longer the task the relationship
-  dispatcher restores, so `Restore` skips it; the dispatcher creates the
-  task under the next generation of the id instead (ADR 0128). Rows an older
+  compacted in turn. The model's `Restore` skips a purged row. Since ADR 0128 the relationship dispatcher restores no deleted task at all: it creates the task under the next generation of the id, whatever the deleted row's shape. Rows an older
   build purged are gone for good. Dashboards and measurable types are not
   journal entries; since ADR 0128 a purge keeps their deletion rows, as it
   always kept those of every other definition.

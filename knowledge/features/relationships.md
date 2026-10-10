@@ -1518,14 +1518,7 @@ one journal row despite different clocks. The task-creation facade accepts
 this explicit identity and refuses to overwrite a *live* row under it; a
 tombstoned row counts as absent and is overwritten. A live task found under
 that identity is linked without overwriting it or creating a fresh undo
-receipt from potentially edited data. **A re-confirmation after an Undo
-restores the tombstone the Undo left.** The dispatcher reads the identity
-through `journalEntityByIdIncludingDeleted`, so it finds the soft-deleted
-task and writes it live again on a clock descended from the tombstone,
-which every peer accepts. A row under the identity that is no task, which
-is what a purge compacts a deleted task to, is passed over: the dispatcher
-tries the next generation of the id (the seed plus a generation number, up
-to sixteen) and creates the task there, a plain creation on every device
+receipt from potentially edited data. **A re-confirmation after an Undo creates the task under the next generation of the id.** The dispatcher reads the identity through `journalEntityByIdIncludingDeleted` and passes over any deleted row — the task the Undo removed, or the tombstone a purge compacted it to — as it does a row that is no task, trying the seed plus a generation number, up to sixteen. It decides on whether the row is deleted, which replicates, not on its shape, which a purge changes on one device only, so every replica picks the same id and the task is a plain creation everywhere
 ([ADR 0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)). The Undo's
 reopen names no effect key either, so the generic guard against a later
 decision ([ADR 0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md))
