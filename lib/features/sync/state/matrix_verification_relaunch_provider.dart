@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
 
 /// A bump counter asking `AutoVerificationLauncher` to offer the SAS ceremony
 /// again for a device it has already auto-launched once.
@@ -20,6 +21,19 @@ class MatrixVerificationRelaunch extends Notifier<int> {
   @override
   int build() => 0;
 
-  /// Asks the launcher to drop its per-device guard and open the ceremony.
-  void request() => state = state + 1;
+  /// Makes the device shown last eligible again, then asks every mounted
+  /// launcher to open it.
+  ///
+  /// The release happens here, once, rather than in each launcher's listener.
+  /// Two launchers can be mounted at once, and the first listener runs its
+  /// launch synchronously up to `markShown`, so a second listener releasing
+  /// on its own undid that record while the sheet was open. After the sheet
+  /// closed, the device was offered again unasked
+  /// (`specs/tla/VerificationLaunch.tla`, `ReleaseOnce`).
+  void request() {
+    final handled = ref.read(matrixVerificationHandledProvider.notifier);
+    final last = handled.lastShown;
+    if (last != null) handled.release(last);
+    state = state + 1;
+  }
 }

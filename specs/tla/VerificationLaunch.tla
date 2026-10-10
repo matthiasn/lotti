@@ -34,8 +34,8 @@
 (*   EmptyBuild,    the launcher's empty-list branch and its post-frame    *)
 (*   ClearHandled   clear of matrixVerificationHandledProvider             *)
 (*   Relaunch       "Show the emoji": matrixVerificationRelaunchProvider,  *)
-(*                  every mounted launcher releases the identity it last   *)
-(*                  showed and tries to launch                             *)
+(*                  the identity last shown is released and every mounted *)
+(*                  launcher tries to launch                               *)
 (*   HandleIncoming IncomingVerificationWrapper on client                  *)
 (*                  .onKeyVerificationRequest: open the incoming sheet if  *)
 (*                  the lock is free, else drop the request                *)
@@ -47,8 +47,8 @@
 (*                                                                         *)
 (* Switches. RecordOnlyShown, SharedHandled and ReleaseOne are three fixes *)
 (* that shipped before this model; each FALSE is the bug it fixed.         *)
-(* GlareHandoff and PreferLastShown are the two fixes this model found;    *)
-(* FALSE is the code before them. DeferIncoming and CancelOnDismiss are    *)
+(* GlareHandoff, PreferLastShown and ReleaseOnce are the three fixes this *)
+(* model found; FALSE is the code before them. DeferIncoming and CancelOnDismiss are    *)
 (* alternatives TLC rejected, kept so the README's table can be re-run.    *)
 (* Cooperative users confirm, and never cancel or abandon a live ceremony: *)
 (* the automatic flow has to finish on its own.                            *)
@@ -70,7 +70,10 @@ CONSTANTS
                       \* the first unhandled device in list order
     RecordOnlyShown,  \* record an identity only when its sheet was shown
     SharedHandled,    \* the handled set is app-wide, not per launcher
-    ReleaseOne        \* a relaunch releases the identity last shown, not the whole set
+    ReleaseOne,       \* a relaunch releases the identity last shown, not the whole set
+    ReleaseOnce       \* the relaunch request releases once, before any listener
+                      \* runs; otherwise each listener releases on its own, and
+                      \* the ones after the winner undo the winner's record
 
 ASSUME Active \subseteq Devices /\ Launchers # {} /\ Devices \subseteq Nat
 
@@ -283,9 +286,17 @@ Targets(h, d, l) ==
     THEN {lastSeen[d]}
     ELSE view[d] \ HandledIn(h, d, l)
 
+\* Without ReleaseOnce, every listener releases on its own. The first runs
+\* _maybeLaunch synchronously up to markShown, so each listener after it
+\* releases the identity the winner just recorded, which lastShown already
+\* names. Its own launch then fails the lock.
+LateRelease(h, d, t) == [h EXCEPT ![d] = [m \in Launchers |-> @[m] \ {t}]]
+
 \* "Show the emoji": the button is enabled only while the view is non-empty,
-\* and only reachable while no sheet is open. Every listener releases, then
+\* and only reachable while no sheet is open. The identity is released, then
 \* the listeners try to launch in mount order; nondeterministic here.
+\* Under ReleaseOnce the release happens once, in the request; without it
+\* each listener releases in turn (see LateRelease).
 Relaunch(d) ==
     /\ d \in Active
     /\ relaunches < MaxRelaunch
@@ -305,7 +316,9 @@ Relaunch(d) ==
                               offered, seen, lastSeen, reoffer>>
           ELSE \E l \in candidates : \E t \in Targets(h, d, l) :
                /\ Show(d, l, t)
-               /\ handled' = MarkIn(h, d, l, t)
+               /\ handled' = IF ReleaseOnce \/ ~PreferLastShown \/ Launchers = {l}
+                             THEN MarkIn(h, d, l, t)
+                             ELSE LateRelease(MarkIn(h, d, l, t), d, t)
                /\ relaunchMiss' = (relaunchMiss \/ (wanted /\ t # lastSeen[d]))
                /\ relaunchSince' = [relaunchSince EXCEPT ![d] = [e \in Devices |-> e # t]]
                /\ UNCHANGED <<present, verified, view, clearPending, reoffer>>
