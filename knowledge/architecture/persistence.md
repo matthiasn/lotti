@@ -928,8 +928,10 @@ entity operations, which is where to look for it.
 
 The purge does not remove a deleted journal row. It compacts it to a
 tombstone that keeps the id, dates, vector clock and deletion, so the deletion
-still replicates ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md));
-dashboards and measurable types it removes outright. A tombstone carries
+still replicates ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)).
+Deleted definitions, dashboards and measurable types included, keep the rows
+their deletion wrote, whose clocks refuse an older copy
+([ADR 0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)). A tombstone carries
 `meta.purgedAt`, and the purge's walks select only deleted rows without one
 (`json_extract`, guarded by `json_valid` so one unreadable row cannot fail the
 statement), so a second purge neither rewrites nor counts them.
@@ -946,8 +948,9 @@ irrelevant to FTS) and takes no transaction: a row inserted or deleted
 concurrently is simply seen or not by the next chunk, and a new live entry
 gets indexed by the app's own write path. An `OFFSET` page re-scans every
 earlier row, which made a rebuild quadratic in the journal's size. Counts
-come from `COUNT(*)`, progress is reported after each table (purge) or each
-percent (rebuild), and nothing sleeps to make it visible.
+come from `COUNT(*)`, progress is reported once the journal is compacted
+(purge) or after each percent (rebuild), and nothing sleeps to make it
+visible.
 
 # Where to look
 

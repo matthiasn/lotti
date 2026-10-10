@@ -1514,10 +1514,12 @@ What the model leaves out:
 
 - **A retype.** `JournalRepository.updateLinkType` keeps the id and changes
   the triple. When the moved version loses at its new triple, the receive
-  deletes its old row, as the replica where it lost did. A late copy of its
-  version from before the retype can then be inserted again at the old
-  triple. That needs a retype racing a concurrent creation of the same
-  relationship, and a delivery older than both (ADR 0096, residual).
+  deletes its old row, as the replica where it lost did, and remembers the
+  version that lost in `entry_link_losses`. A late copy of the id no newer
+  than that version, such as one from before the retype, is refused; a
+  newer one clears the memory. A holder displaced from its triple is
+  remembered the same way (ADR 0128). The model has one triple per id, so
+  the memory is checked by the `upsertEntryLink` tests, not here.
 - Loss and backfill are `AgentLinks`' and `SyncPipeline`'s. A version that
   lost to another id is answered `deleted` by backfill, which settles the
   gap; the winner carries the link.
@@ -1927,7 +1929,10 @@ What the model leaves out, deliberately or as a residual:
 - **A creation under a reused id replaces a deleted row** (`overwrite:
   false`), as before, under a clock that does not cover the deletion. Peers
   then see an edit concurrent with the deletion, and the user decides. Whether
-  a re-creation should win, lose, or ask is a product decision.
+  a re-creation should win, lose, or ask is a product decision. The ids the
+  app derives no longer do it: the checklist repository and the
+  relationship dispatcher move past a deleted or purged row to the next
+  generation of the id (ADR 0128).
 - **A receive rolled back by a failed embedded link is not an action.** The
   decision and the links commit together or not at all, and the event is
   retried, which is the same state as a delivery not yet made. `Deliver`
@@ -1938,10 +1943,11 @@ What the model leaves out, deliberately or as a residual:
   tombstone meets: one applied over a stored copy deletes that copy, which
   keeps its own fields (`Over`), and a deletion applied over a tombstone is
   compacted in turn. A purged row is no longer the task the relationship
-  dispatcher restores, so `Restore` skips it; the dispatcher creates a task
-  under the id instead, which is the reused-id residual above. Rows an older
-  build purged are gone for good. Dashboards and measurable types a purge
-  still removes outright; they are not journal entries.
+  dispatcher restores, so `Restore` skips it; the dispatcher creates the
+  task under the next generation of the id instead (ADR 0128). Rows an older
+  build purged are gone for good. Dashboards and measurable types are not
+  journal entries; since ADR 0128 a purge keeps their deletion rows, as it
+  always kept those of every other definition.
 - **Clockless versions** come only from builds that predate vector clocks;
   `RefuseNullClock` assumes no build writes without one today.
 - Embedded entry links are ordered by `JournalDb.upsertEntryLink`, the entry
