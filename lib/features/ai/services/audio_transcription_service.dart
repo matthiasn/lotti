@@ -282,6 +282,8 @@ class AudioTranscriptionService {
             existingSession: attributionSession,
             terminalizeSuccess: attributionSession == null,
             terminalizeFailure: terminalizeAttributionFailure,
+            taskId: attributionSession?.taskId,
+            categoryId: attributionSession?.categoryId,
           );
 
     // A provider may split a word across chunks ("Van", "ja"), so the
@@ -334,10 +336,16 @@ class AudioTranscriptionService {
   /// text, and every applied edit is learned as a misheard spelling of its
   /// term. Returns [transcript] unchanged when no entry reaches it or the
   /// call fails: a correction improves the words, and must never cost them.
+  ///
+  /// With [attributionSession] — the transcription's own — the call is
+  /// recorded as part of that work, on its task and category, and left for
+  /// the caller to finalize with the transcript; its cost then sits beside
+  /// the transcription's instead of in a work item of its own.
   Future<String> correctTranscript(
     String transcript, {
     required ({AiConfigInferenceProvider provider, AiConfigModel model}) target,
     String? dictionaryCategoryId,
+    AiAttributionSession? attributionSession,
   }) async {
     if (transcript.trim().isEmpty) return transcript;
     final entries = await _dictionaryEntries(dictionaryCategoryId);
@@ -398,6 +406,11 @@ class AudioTranscriptionService {
                         null => null,
                       },
                       impact: () => impactCollector?.impact,
+                      existingSession: attributionSession,
+                      terminalizeSuccess: attributionSession == null,
+                      terminalizeFailure: attributionSession == null,
+                      taskId: attributionSession?.taskId,
+                      categoryId: attributionSession?.categoryId,
                     ))
               .toList();
       final corrected = applyRecordingCorrections(

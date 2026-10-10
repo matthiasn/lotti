@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-10
+* **Update**: [AI consumption](features/ai_consumption.md) — a Melious
+  speech-to-text transcription reports no cost, so it is ledgered without
+  credits and its pill is hidden; the post-processing that follows is costed
+  and task-attributed.
+* **Update**: [batch transcription](features/ai/batch-transcription.md) —
+  the Daily OS model correction is recorded into the transcription's own
+  work, and events recorded into a supplied session carry its task and
+  category.
+
 ## 2026-10-09
 * **Update**: [batch transcription](features/ai/batch-transcription.md),
   [speech dictionary](features/speech/dictionary.md) — transcripts handed

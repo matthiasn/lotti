@@ -557,11 +557,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// domain vocabulary — honored by context-aware models such as Voxtral and
   /// safely ignored by models without prompt biasing.
   ///
-  /// When [impactCollector] is provided, the cost and environmental impact
-  /// Melious reports alongside the transcript are written to it. Transcription
-  /// is a single buffered POST, so it always carries the impact fields a
-  /// streamed chat response would omit. Fields absent from the response leave
-  /// the collector untouched.
+  /// When [impactCollector] is provided, any cost and environmental impact
+  /// Melious reports alongside the transcript is written to it. As probed on
+  /// 2026-10-10 (`tool/melious_transcription_probe.py`) the Whisper models
+  /// report neither `billing_cost` nor `environment_impact` nor `usage` on
+  /// this endpoint, so the collector stays empty and the transcript's cost
+  /// reads as unknown. Fields absent from the response leave the collector
+  /// untouched.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,

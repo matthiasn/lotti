@@ -88,8 +88,13 @@ them; the speech dictionary reaches them here instead:
   `correctTranscript` asks a tool-capable model, in one pinned
   `report_transcript_corrections` call, for quoted corrections against the
   entries; code applies them (`applyRecordingCorrections`) and learns each as
-  a misheard spelling. Its spend is captured like the transcription's. No
-  entry, an empty text or any failure returns the words as heard. Only Daily
+  a misheard spelling. Its spend is captured like the transcription's and,
+  given the transcription's `attributionSession`, into the same work: the
+  same attribution, task and category, finalized with the transcript rather
+  than on its own, so the correction's cost sits beside the transcript. The
+  foreground capture passes its session; an outbox retry transcribes without
+  one, so both calls there stand alone. No entry, an empty text or any
+  failure returns the words as heard. Only Daily
   OS uses it: `correctHeardTranscript` runs it on the planner profile's audio
   post-processing route (`dailyOsTranscriptCorrectionTargetProvider` — its
   slot, else its thinking model, when it can call tools and resolves here),
@@ -104,7 +109,9 @@ them; the speech dictionary reaches them here instead:
 When `AiInteractionCapture` is registered, it records audio-transcription work
 with provider/model, text, usage, and available impact evidence. A caller may
 supply an existing attribution session and control failure terminalization;
-success is terminalized here only when the service owns the session.
+success is terminalized here only when the service owns the session. A
+supplied session's task and category are stamped on every event recorded into
+it, so the call counts toward the task the work belongs to.
 
 `AttributedTranscriptionException` distinguishes a recorded provider failure
 from an uncertain attribution-publication outcome. Callers can therefore avoid

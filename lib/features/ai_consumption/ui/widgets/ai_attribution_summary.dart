@@ -51,12 +51,19 @@ class AiAttributionSummary extends ConsumerWidget {
       }
       return const SizedBox.shrink();
     }
+    final isLoading = asyncDetails.isLoading && details == null;
+    // A pill is a cost read-out: once the calls are known and none of them
+    // reported a cost — a speech-to-text engine, a provider without billing —
+    // it has nothing to say, and the full details stay one row away.
+    if (asPill && !isLoading && !_hasKnownCost(details?.interactions)) {
+      return const SizedBox.shrink();
+    }
     final row = _AttributionRow(
       attribution: resolvedAttribution,
       details: details,
       compact: compact,
       asPill: asPill,
-      isLoading: asyncDetails.isLoading && details == null,
+      isLoading: isLoading,
     );
     if (!includeTopSpacing) return row;
     return Padding(
@@ -70,18 +77,22 @@ class AiAttributionSummary extends ConsumerWidget {
 ///
 /// Audio entries can contain more than one transcript, each with its own
 /// attribution. This keeps the card surface concise while retaining every
-/// individual attribution in the details sheet.
+/// individual attribution in the details sheet. Like a single pill it renders
+/// nothing once no call reported a cost — [topSpacing] included, so a caller
+/// hands the gap above it here rather than leaving it behind an empty pill.
 class AiAttributionSummaryGroup extends ConsumerWidget {
   const AiAttributionSummaryGroup({
     required this.label,
     required this.attributions,
-    this.includeTopSpacing = true,
+    this.topSpacing,
     super.key,
   });
 
   final String label;
   final List<AiWorkAttribution> attributions;
-  final bool includeTopSpacing;
+
+  /// Gap above the pill, rendered only with it.
+  final double? topSpacing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,6 +110,9 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
       (asyncDetail) => asyncDetail.isLoading && asyncDetail.value == null,
     );
     final interactions = details.expand((detail) => detail.interactions);
+    if (!isLoading && !_hasKnownCost(interactions)) {
+      return const SizedBox.shrink();
+    }
     final cost = isLoading
         ? '…'
         : _formatInteractionCosts(context, interactions);
@@ -126,13 +140,18 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
             : () => _showGroupDetails(context, label, details),
       ),
     );
-    if (!includeTopSpacing) return pill;
+    final gap = topSpacing;
+    if (gap == null) return pill;
     return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step3),
+      padding: EdgeInsets.only(top: gap),
       child: pill,
     );
   }
 }
+
+/// Whether any of [interactions] reported what it cost.
+bool _hasKnownCost(Iterable<AiConsumptionEvent>? interactions) =>
+    interactions?.any((event) => event.credits != null) ?? false;
 
 class _AttributionAvailability extends StatelessWidget {
   const _AttributionAvailability({

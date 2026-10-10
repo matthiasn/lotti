@@ -1499,8 +1499,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(DsPill), findsOneWidget);
-      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
+      // The projection reports no calls, so no cost is known and no pill
+      // is shown; the analysis itself still renders.
+      expect(find.byType(DsPill), findsNothing);
+      expect(find.text('Unknown model · Cost unknown'), findsNothing);
       expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
     });
 

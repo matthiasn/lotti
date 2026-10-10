@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -415,6 +416,40 @@ void main() {
         );
       },
     );
+
+    test("hands the transcription's attribution session to the correction, "
+        'so its cost joins the same work', () async {
+      final transcriber = MockAudioTranscriptionService();
+      final session = AiAttributionSession(
+        id: 'transcript-work',
+        workType: AiWorkType.audioTranscription,
+        initiator: const AiActorSnapshot(
+          type: AiActorType.human,
+          id: 'h',
+          displayName: 'Penguin',
+        ),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        startedAt: DateTime.utc(2026, 7, 21),
+      );
+      when(
+        () => transcriber.correctTranscript(
+          'heard',
+          target: editor,
+          attributionSession: session,
+        ),
+      ).thenAnswer((_) async => 'corrected');
+
+      expect(
+        await correctHeardTranscript(
+          transcriber: transcriber,
+          transcript: 'heard',
+          heardBy: whisper,
+          correctionTarget: () async => editor,
+          attributionSession: session,
+        ),
+        'corrected',
+      );
+    });
 
     test(
       'reads the route discovery chose when the capture ran without a '

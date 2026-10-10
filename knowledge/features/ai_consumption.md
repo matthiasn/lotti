@@ -38,6 +38,25 @@ the ledger and attribution detail, but is not repeated as a second user-facing
 lifetime pill. Providers without measured impact fall back to token display,
 and no pricing lookup fabricates cost.
 
+**A Melious speech-to-text transcription records no cost.** Chat, vision
+and image calls carry `billing_cost` and `environment_impact` in their
+non-streaming response, which `MeliousCallImpact.fromResponseJson` parses.
+`/audio/transcriptions` carries neither, nor `usage`, for any Whisper model
+(probed 2026-10-10 with
+[`melious_transcription_probe.py`](../../tool/melious_transcription_probe.py)).
+The transcription's event is still written with its duration, so it counts as
+a call, but its credits stay null. The post-processing that follows is a chat
+call, so its cost is reported, lands on the same task, and shows on the
+summary's own pill. Only the transcription itself is missing from a task's
+total.
+
+**A pill is a cost read-out, so it shows only a known cost.** An
+`AiAttributionSummary` pill and an `AiAttributionSummaryGroup` render nothing
+once every call they cover has null credits — a Whisper transcript, or a
+provider that never bills. The full attribution row and the details sheet,
+which do say "Cost unknown", are unchanged. The group takes its `topSpacing`
+along when it hides, so an audio card keeps an even rhythm without it.
+
 # Why the carrier is authoritative
 
 The attribution is embedded in the output it describes — the AI response, the

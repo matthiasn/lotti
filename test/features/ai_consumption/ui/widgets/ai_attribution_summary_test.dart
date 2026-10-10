@@ -165,6 +165,132 @@ void main() {
     expect(find.text('<€0.01'), findsWidgets);
   });
 
+  testWidgets('a pill whose calls reported no cost renders nothing', (
+    tester,
+  ) async {
+    final attribution = makeAiWorkAttribution();
+    await pumpSummary(
+      tester,
+      asPill: true,
+      details: AiAttributionDetails(
+        attribution: attribution,
+        interactions: [
+          makeConsumptionEvent(
+            attributionId: attribution.id,
+            providerModelId: 'whisper-large-v3',
+            credits: null,
+            costCreditsDecimal: null,
+            energyKwh: null,
+            carbonGCo2: null,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byType(DsPill), findsNothing);
+    expect(find.textContaining('whisper-large-v3'), findsNothing);
+    expect(find.text('Cost unknown'), findsNothing);
+  });
+
+  testWidgets(
+    'a group whose calls reported no cost renders nothing, its gap included',
+    (tester) async {
+      final transcription = makeAiWorkAttribution();
+      final correction = makeAiWorkAttribution(attributionId: 'attribution-2');
+      final detailsById = {
+        for (final attribution in [transcription, correction])
+          attribution.id: AiAttributionDetails(
+            attribution: attribution,
+            interactions: [
+              makeConsumptionEvent(
+                attributionId: attribution.id,
+                credits: null,
+                costCreditsDecimal: null,
+              ),
+            ],
+          ),
+      };
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiAttributionSummaryGroup(
+            label: 'Transcription',
+            attributions: [transcription, correction],
+            topSpacing: 12,
+          ),
+          overrides: [
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => detailsById[id],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(DsPill), findsNothing);
+      expect(
+        tester.getSize(find.byType(AiAttributionSummaryGroup)).height,
+        0,
+      );
+    },
+  );
+
+  testWidgets(
+    'a group sums the calls that reported a cost and keeps its gap above',
+    (tester) async {
+      final transcription = makeAiWorkAttribution();
+      final correction = makeAiWorkAttribution(attributionId: 'attribution-2');
+      final detailsById = {
+        transcription.id: AiAttributionDetails(
+          attribution: transcription,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: transcription.id,
+              credits: null,
+              costCreditsDecimal: null,
+              energyKwh: null,
+              carbonGCo2: null,
+            ),
+          ],
+        ),
+        correction.id: AiAttributionDetails(
+          attribution: correction,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: correction.id,
+              credits: 0.4,
+              energyKwh: null,
+              carbonGCo2: null,
+            ),
+          ],
+        ),
+      };
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiAttributionSummaryGroup(
+            label: 'Transcription',
+            attributions: [transcription, correction],
+            topSpacing: 12,
+          ),
+          overrides: [
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => detailsById[id],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Transcription · €0.40'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(DsPill)).dy -
+            tester.getTopLeft(find.byType(AiAttributionSummaryGroup)).dy,
+        12,
+      );
+    },
+  );
+
   for (final layout in [
     (name: 'desktop', size: const Size(1024, 768), bottomSheet: false),
     (name: 'phone', size: const Size(390, 844), bottomSheet: true),
