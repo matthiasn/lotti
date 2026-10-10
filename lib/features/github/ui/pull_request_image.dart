@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -42,21 +41,53 @@ class PullRequestDescriptionWidth extends InheritedWidget {
   const PullRequestDescriptionWidth({
     required this.maxWidth,
     required super.child,
+    this.shares = const {},
     super.key,
   });
 
   final double maxWidth;
 
-  /// The width in effect at [context], or no bound outside a description.
-  static double of(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<PullRequestDescriptionWidth>()
-          ?.maxWidth ??
-      double.infinity;
+  /// How many cells the widest table row holding each image URL has, from
+  /// [tableSharesOf]. An image in a row of three takes at most a third of
+  /// [maxWidth], so a "Before | After" row of screenshots sits side by
+  /// side, as written, instead of the table scrolling sideways.
+  final Map<String, int> shares;
+
+  /// The widest the image at [url] is shown at [context]: no bound outside
+  /// a description.
+  static double of(BuildContext context, String url) {
+    final bounds = context
+        .dependOnInheritedWidgetOfExactType<PullRequestDescriptionWidth>();
+    if (bounds == null) return double.infinity;
+    return bounds.maxWidth / (bounds.shares[url] ?? 1);
+  }
 
   @override
   bool updateShouldNotify(PullRequestDescriptionWidth oldWidget) =>
-      maxWidth != oldWidget.maxWidth;
+      maxWidth != oldWidget.maxWidth || !mapEquals(shares, oldWidget.shares);
+}
+
+final _tableImage = RegExp(r'!\[[^\]]*\]\(([^)\s]+)');
+
+/// For each image URL in a table row of [markdown], the number of cells of
+/// the widest such row: what [PullRequestDescriptionWidth.shares] takes.
+/// An image outside a table is absent, and keeps the whole width.
+Map<String, int> tableSharesOf(String markdown) {
+  final shares = <String, int>{};
+  for (final line in markdown.split('\n')) {
+    final row = line.trim();
+    if (!row.startsWith('|') || !row.contains('![')) continue;
+    final cells = row
+        .substring(1, row.endsWith('|') ? row.length - 1 : row.length)
+        .split('|')
+        .length;
+    for (final match in _tableImage.allMatches(row)) {
+      final url = match.group(1)!;
+      final share = shares[url] ?? 0;
+      if (cells > share) shares[url] = cells;
+    }
+  }
+  return shares;
 }
 
 /// One image of a pull request description, fetched from its own URL.
@@ -189,7 +220,7 @@ class _PullRequestImageState extends ConsumerState<PullRequestImage> {
     if (bytes == null) {
       return _LoadingImage(label: messages.githubImageLoading(host));
     }
-    final bound = PullRequestDescriptionWidth.of(context);
+    final bound = PullRequestDescriptionWidth.of(context, widget.url);
     final shownWidth = switch (widget.width) {
       final width? => width < bound ? width : bound,
       null => bound,

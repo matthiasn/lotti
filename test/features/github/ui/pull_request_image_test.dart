@@ -444,4 +444,58 @@ void main() {
     // Still in the viewer: the user may want to look on.
     expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
   });
+
+  testWidgets("an image in a table row takes the row's equal share of the "
+      'width, so the row fits', (tester) async {
+    const other = 'https://pub-example.r2.dev/shots/mobile-dark.png';
+    when(() => fetcher.fetch(any())).thenAnswer((_) async => onePixelPng);
+    const markdown =
+        '| Surface | Before | After |\n|---|---|---|\n'
+        '| Desktop | ![640x480]($url) | ![640x480]($other) |';
+    await pump(
+      tester,
+      child: PullRequestDescriptionWidth(
+        maxWidth: 600,
+        shares: tableSharesOf(markdown),
+        child: AgentMarkdownView(
+          markdown,
+          imageBuilder: pullRequestImageBuilder(taskId),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final widths = tester
+        .widgetList<Image>(find.byType(Image))
+        .map((image) => tester.getSize(find.byWidget(image)).width);
+    expect(widths, [200, 200]);
+  });
+
+  group('tableSharesOf', () {
+    test('counts the cells of the widest table row holding each image', () {
+      const a = 'https://x.example/a.png';
+      const b = 'https://x.example/b.png';
+      expect(
+        tableSharesOf(
+          '# Shots\n\n'
+          '![alone]($a)\n\n'
+          '| Surface | Before | After |\n|---|---|---|\n'
+          '| Desktop | ![before]($a) | ![after]($b) |\n'
+          '| Phone | ![phone]($b) |\n',
+        ),
+        {a: 3, b: 3},
+      );
+    });
+
+    test('a row without a closing pipe, and an image outside a table, '
+        'are read as they are', () {
+      const a = 'https://x.example/a.png';
+      const b = 'https://x.example/b.png';
+      expect(
+        tableSharesOf('| Shot | ![x]($a)\n\nText ![y]($b) here.'),
+        {a: 2},
+      );
+      expect(tableSharesOf('nothing'), isEmpty);
+    });
+  });
 }

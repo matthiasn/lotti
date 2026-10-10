@@ -554,8 +554,13 @@ fetched, within a 64 MiB budget, so the details reopened, the full-size
 viewer and attaching share one read. A private repository's images need
 GitHub's own session and show the notice instead; nothing is retried on a
 schedule. While it loads, a quiet box; failed, the notice naming its host.
-Bytes that fetched but do not decode are failed too: the notice replaces
-the image, and with it its actions. A shown image is decoded no larger
+Within a table row, an image takes at most the row's equal share of that
+width (`tableSharesOf`, computed from the markdown's own rows), so a
+"Before | After" row of screenshots sits side by side as written instead of
+the table scrolling sideways. On a desktop the details are a dialog of
+most of the window's width (`WideWoltDialogType`) for the same reason, with
+Open on GitHub at its own width. Bytes that fetched but do not decode are
+failed too: the notice replaces the image, and with it its actions. A shown image is decoded no larger
 than its place in the text (`cacheWidth` from the bound and the device
 pixel ratio, never upscaled), so twenty screenshots in one description do
 not hold twenty screenshots' worth of pixels. A tap opens the image in the

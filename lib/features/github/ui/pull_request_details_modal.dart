@@ -264,7 +264,9 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
           child: Padding(
             padding: EdgeInsets.all(tokens.spacing.step4),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              // Stretched: the card is as wide as the summary's, whatever
+              // the description takes — a bounded table no longer fills it.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(messages.githubDescriptionHeading, style: label),
                 SizedBox(height: tokens.spacing.step2),
@@ -283,6 +285,7 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
                     builder: (context, constraints) =>
                         PullRequestDescriptionWidth(
                           maxWidth: constraints.maxWidth,
+                          shares: tableSharesOf(description),
                           child: AgentMarkdownView(
                             description,
                             style: styles.body.bodySmall.copyWith(

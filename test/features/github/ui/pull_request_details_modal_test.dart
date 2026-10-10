@@ -12,6 +12,7 @@ import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -166,10 +167,18 @@ void main() {
         )
         .maxWidth;
     expect(bound, tester.getSize(details).width - 2 * tokens.spacing.step4);
+    // And within a table row, the row's equal share: this one has two cells.
     expect(
-      bound,
-      greaterThan(tester.getSize(find.byType(AgentMarkdownView)).width),
+      tester
+          .widget<PullRequestDescriptionWidth>(
+            find.byType(PullRequestDescriptionWidth),
+          )
+          .shares,
+      {url: 2},
     );
+    // The text is stretched to that width too, so the card stays as wide as
+    // the summary's whatever the description takes.
+    expect(bound, tester.getSize(find.byType(AgentMarkdownView)).width);
     // Decoded at its shown size, from the fetched bytes.
     final provider = tester.widget<Image>(find.byType(Image)).image;
     expect(
@@ -352,6 +361,43 @@ void main() {
         any(),
       ),
     ).called(1);
+  });
+
+  testWidgets('on a phone the details are a bottom sheet', (tester) async {
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showPullRequestDetailsModal(
+                context,
+                taskId: taskId,
+                entry: entry,
+              ),
+              child: const Text('open'),
+            ),
+          ),
+          mediaQueryData: phoneMediaQueryData,
+          overrides: [
+            pullRequestSummaryProvider.overrideWith(
+              (ref, id) => Stream.value(summary),
+            ),
+            pullRequestSummarizerProvider.overrideWithValue(summarizer),
+            pullRequestHoldersProvider.overrideWith(
+              (ref, pr) => Stream.value(const {taskId}),
+            ),
+          ],
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    });
+
+    final sheet = find.byWidgetPredicate((w) => w is WoltModalSheet);
+    final modalType = tester
+        .widget<WoltModalSheet<dynamic>>(sheet)
+        .modalTypeBuilder!(tester.element(sheet));
+    expect(modalType, isA<WoltBottomSheetType>());
   });
 
   test('a pull request never read is opened by its reference', () {
