@@ -7,40 +7,12 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
-import 'package:lotti/features/ai/repository/ai_config_sync_ledger.dart';
+import 'package:lotti/features/ai/repository/ai_config_rules.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
-
-/// What "Send settings" re-sends for one AI configuration id: the stored
-/// row (a tombstone included) with the stamp its version holds, or, with no
-/// [config], the hard deletion that [stamp] alone records.
-class AiConfigResend {
-  const AiConfigResend({required this.id, this.config, this.stamp});
-
-  final String id;
-  final AiConfig? config;
-  final int? stamp;
-
-  /// The message carrying this state, stamped so a peer holding a newer
-  /// version drops it (ADR 0094).
-  SyncMessage toSyncMessage() {
-    final config = this.config;
-    if (config != null) {
-      return SyncMessage.aiConfig(
-        aiConfig: config,
-        status: SyncEntryStatus.update,
-        versionStamp: stamp,
-      );
-    }
-    return SyncMessage.aiConfigDelete(
-      id: id,
-      hardDelete: true,
-      versionStamp: stamp,
-    );
-  }
-}
 
 /// Result object for cascade deletion operations
 class CascadeDeletionResult {
@@ -66,23 +38,23 @@ class AiConfigRepository {
   AiConfigRepository(
     this._db, {
     SettingsDb? settingsDb,
-    this.retryDelay = const Duration(minutes: 1),
-  }) : _settingsDb = settingsDb,
-       _ledger = settingsDb == null ? null : AiConfigSyncLedger(settingsDb);
+    Duration retryDelay = const Duration(minutes: 1),
+  }) : _settingsDb = settingsDb {
+    _sender = AiConfigSyncSender(
+      settingsDb: settingsDb,
+      enqueue: (message) =>
+          getIt<OutboxService>().enqueueMessageOrThrow(message),
+      resendOf: _resendOf,
+      onError: _logError,
+      retryDelay: retryDelay,
+    );
+  }
 
   final AiConfigDb _db;
   final SettingsDb? _settingsDb;
 
-  /// The ids whose latest write the outbox has not accepted yet; null only in
-  /// a repository built without settings storage, which then sends
-  /// best-effort as before.
-  final AiConfigSyncLedger? _ledger;
-
-  /// How long after a failed enqueue the owed ids are tried again.
-  final Duration retryDelay;
-
-  Timer? _retryTimer;
-  bool _disposed = false;
+  /// Owes every write to the peers until the outbox accepts it.
+  late final AiConfigSyncSender _sender;
 
   /// Device-local fallback; credentials and available providers vary by device.
   static const defaultProfileSettingsKey = 'AI_DEFAULT_INFERENCE_PROFILE';
@@ -150,9 +122,9 @@ class AiConfigRepository {
   /// its provider's deletion does not outlive it.
   ///
   /// A local write owes its message to the peers until the outbox accepts it
-  /// ([_send]): the write is durable before the message is staged, so a
+  /// ([AiConfigSyncSender.send]): the write is durable before the message is staged, so a
   /// failed enqueue, or a crash in between, leaves the id in the
-  /// [AiConfigSyncLedger] for [flushPending].
+  /// ledger for [flushPending].
   ///
   /// A model created on this device takes its provider's stamp rather than
   /// the clock: it belongs to the provider as it was, so a deletion of the
@@ -178,7 +150,7 @@ class AiConfigRepository {
     }
     final receivedStamp = versionStamp ?? fallbackStamp;
     if (fromSync && receivedStamp != null) {
-      final received = _withKeptApiKey(
+      final received = withKeptApiKey(
         config,
         await getConfigById(config.id, includeDeleted: true),
       );
@@ -226,7 +198,7 @@ class AiConfigRepository {
     return _db.saveConfig(config);
   }
 
-  Future<void> _enqueue(AiConfig config, int stamp) => _send(
+  Future<void> _enqueue(AiConfig config, int stamp) => _sender.send(
     config.id,
     SyncMessage.aiConfig(
       aiConfig: config,
@@ -235,89 +207,28 @@ class AiConfigRepository {
     ),
   );
 
-  /// Stages [message], the latest write of [id], owing it until the outbox
-  /// accepts the row.
-  ///
-  /// The write it follows has committed, so a failure is logged, never
-  /// thrown: the id stays owed and [flushPending] sends what this device
-  /// holds for it then. Without settings storage there is no ledger, and the
-  /// failure is only logged, as `enqueueMessage` did.
-  Future<void> _send(String id, SyncMessage message) async {
-    final ledger = _ledger;
-    try {
-      await ledger?.owe(id);
-      await getIt<OutboxService>().enqueueMessageOrThrow(message);
-      await ledger?.settle(id);
-    } catch (error, stackTrace) {
-      _logError(error, stackTrace, subDomain: 'aiConfig.send');
-      if (ledger != null) _scheduleRetry();
-    }
-  }
+  /// Sends every write still owed: the stored row of each owed id with its
+  /// stamp, or the hard deletion its stamp alone records. An id with neither
+  /// is forgotten. Called at startup and by "Send settings".
+  Future<void> flushPending() => _sender.flush();
 
-  /// Sends every write the ledger still owes: the stored row of each owed
-  /// id with its stamp, or the hard deletion its stamp alone records. An id
-  /// with neither is forgotten. Called at startup, by the retry timer and by
-  /// "Send settings". On the first failure the rest stay owed and a retry is
-  /// scheduled.
-  Future<void> flushPending() async {
-    final ledger = _ledger;
-    if (ledger == null) return;
-    try {
-      for (final id in (await ledger.load()).toList()..sort()) {
-        final message = await _owedMessage(id);
-        if (message != null) {
-          await getIt<OutboxService>().enqueueMessageOrThrow(message);
-        }
-        await ledger.settle(id);
-      }
-    } catch (error, stackTrace) {
-      _logError(error, stackTrace, subDomain: 'aiConfig.flush');
-      _scheduleRetry();
-    }
-  }
-
-  /// The message carrying what this device holds for [id]: its row with its
-  /// stamp, or the hard deletion the stamp alone records; null when the
-  /// device holds neither (the orphaned-seed prune forgets both).
-  Future<SyncMessage?> _owedMessage(String id) async {
+  /// What this device holds for [id]: its row with its stamp, or the hard
+  /// deletion the stamp alone records; null when it holds neither (the
+  /// orphaned-seed prune forgets both).
+  Future<AiConfigResend?> _resendOf(String id) async {
     final stamp = await _db.versionStamp(id);
     if (stamp == null) return null;
-    final config = await getConfigById(id, includeDeleted: true);
-    if (config != null) {
-      return SyncMessage.aiConfig(
-        aiConfig: config,
-        status: SyncEntryStatus.update,
-        versionStamp: stamp,
-      );
-    }
-    return SyncMessage.aiConfigDelete(
+    return AiConfigResend(
       id: id,
-      hardDelete: true,
-      versionStamp: stamp,
+      config: await getConfigById(id, includeDeleted: true),
+      stamp: stamp,
     );
   }
 
-  void _scheduleRetry() {
-    if (_disposed) return;
-    // The flush never throws: a failure is logged and re-armed inside it.
-    _retryTimer ??= Timer(retryDelay, () async {
-      _retryTimer = null;
-      await flushPending();
-    });
-  }
-
   /// Stops the retry timer.
-  void dispose() {
-    _disposed = true;
-    _retryTimer?.cancel();
-    _retryTimer = null;
-  }
+  void dispose() => _sender.dispose();
 
-  void _logError(
-    Object error,
-    StackTrace stackTrace, {
-    required String subDomain,
-  }) {
+  static void _logError(Object error, StackTrace stackTrace, String subDomain) {
     if (!getIt.isRegistered<DomainLogger>()) return;
     getIt<DomainLogger>().error(
       LogDomain.ai,
@@ -325,39 +236,6 @@ class AiConfigRepository {
       stackTrace: stackTrace,
       subDomain: subDomain,
     );
-  }
-
-  /// A received live provider without a key, holding the key stored here —
-  /// but only while it still points where that key was entered for, and
-  /// only when the sender did not say the key was removed on purpose.
-  ///
-  /// A version that changes the provider's endpoint or kind arrives without
-  /// this device's key, so a peer cannot redirect a stored key to a host of
-  /// its choosing; the user enters the key again for the new endpoint.
-  static AiConfig _withKeptApiKey(AiConfig incoming, AiConfig? existing) {
-    if (incoming is AiConfigInferenceProvider &&
-        incoming.deletedAt == null &&
-        incoming.apiKey.isEmpty &&
-        !incoming.apiKeyCleared &&
-        existing is AiConfigInferenceProvider &&
-        existing.apiKey.isNotEmpty &&
-        incoming.inferenceProviderType == existing.inferenceProviderType &&
-        _sameEndpoint(incoming.baseUrl, existing.baseUrl)) {
-      return incoming.copyWith(apiKey: existing.apiKey);
-    }
-    return incoming;
-  }
-
-  /// Whether two base URLs name the same endpoint, ignoring surrounding space,
-  /// trailing slashes and the case of the scheme and host.
-  static bool _sameEndpoint(String a, String b) {
-    String normalized(String url) {
-      final trimmed = url.trim().replaceFirst(RegExp(r'/+$'), '');
-      final uri = Uri.tryParse(trimmed);
-      return uri == null ? trimmed : uri.normalizePath().toString();
-    }
-
-    return normalized(a) == normalized(b);
   }
 
   /// Deletes, and sends the deletion of, every live model of [providerId]
@@ -372,7 +250,7 @@ class AiConfigRepository {
   /// The deletion carries the provider deletion's stamp, not this device's
   /// clock, so every device that derives it records the same version, and a
   /// restore stamped past the provider's deletion always outranks it. Each
-  /// deletion is stored, then sent owed ([_send]): a send that fails leaves
+  /// deletion is stored, then sent owed ([AiConfigSyncSender.send]): a send that fails leaves
   /// the deletion recorded here and its id in the ledger for the next flush.
   Future<void> _deleteOrphanedModels(String providerId) async {
     final provider = await getConfigById(providerId, includeDeleted: true);
@@ -385,7 +263,7 @@ class AiConfigRepository {
       if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
         _noteHardDeleted(model.id);
       }
-      await _send(
+      await _sender.send(
         model.id,
         SyncMessage.aiConfigDelete(
           id: model.id,
@@ -547,7 +425,7 @@ class AiConfigRepository {
     if (!fromSync) {
       final stamp = await _db.deleteConfig(id);
       _noteHardDeleted(id);
-      await _send(
+      await _sender.send(
         id,
         SyncMessage.aiConfigDelete(
           id: id,
@@ -682,14 +560,7 @@ class AiConfigRepository {
           deletedModels: associatedModels,
         );
       } catch (error, stackTrace) {
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt<DomainLogger>().error(
-            LogDomain.ai,
-            error,
-            stackTrace: stackTrace,
-            subDomain: 'deleteInferenceProviderWithModels',
-          );
-        }
+        _logError(error, stackTrace, 'deleteInferenceProviderWithModels');
         rethrow; // Re-throw to let the caller handle the error
       }
     });
@@ -704,7 +575,7 @@ class AiConfigRepository {
       // refuses stays owed in the ledger and is sent by the next flush; no
       // failure skips the rest.
       for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
-        await _send(
+        await _sender.send(
           id,
           SyncMessage.aiConfigDelete(
             id: id,
@@ -776,7 +647,7 @@ class AiConfigRepository {
   ///
   /// Soft-deleted rows are hidden unless [includeDeleted] is set — see
   /// [getConfigById] — and so is a model whose provider is deleted or
-  /// missing ([_isOrphanedModel]).
+  /// missing ([isOrphanedModel]).
   Future<List<AiConfig>> getConfigsByType(
     AiConfigType type, {
     bool includeDeleted = false,
@@ -792,32 +663,8 @@ class AiConfigRepository {
     );
     final hardDeleted = await _loadHardDeletedIds();
     return live
-        .where((model) => !_isOrphanedModel(model, providers, hardDeleted))
+        .where((model) => !isOrphanedModel(model, providers, hardDeleted))
         .toList(growable: false);
-  }
-
-  /// Whether [config] is a model whose provider this device holds a deletion
-  /// of: a tombstone among [providers], or a hard deletion in [hardDeleted].
-  /// A provider never seen here is not a deletion, and its models stay
-  /// listed as before.
-  ///
-  /// Such a model is a user's edit or restore stamped after the provider's
-  /// deletion on a device that had not heard of it, which the receive keeps
-  /// (`KeepNewerModels`) because an undo's restore looks the same. It is not
-  /// deleted for the user — that would also delete the undo's restore — but
-  /// it is not listed either: nothing can be inferred through it, and a
-  /// restore of the provider shows it again.
-  static bool _isOrphanedModel(
-    AiConfig config,
-    Iterable<AiConfig> providers,
-    Set<String> hardDeleted,
-  ) {
-    if (config is! AiConfigModel) return false;
-    final provider = providers
-        .where((p) => p.id == config.inferenceProviderId)
-        .firstOrNull;
-    if (provider != null) return provider.deletedAt != null;
-    return hardDeleted.contains(config.inferenceProviderId);
   }
 
   Future<List<AiConfig>> _getConfigsByTypeIncludingDeleted(
@@ -868,7 +715,7 @@ class AiConfigRepository {
         final providers = type == AiConfigType.model
             ? allConfigs.where(
                 (config) =>
-                    _typeForConfig(config) == AiConfigType.inferenceProvider,
+                    aiConfigTypeOf(config) == AiConfigType.inferenceProvider,
               )
             : const <AiConfig>[];
         final hardDeleted = _hardDeletedIds ?? const <String>{};
@@ -876,9 +723,9 @@ class AiConfigRepository {
           allConfigs
               .where(
                 (config) =>
-                    _typeForConfig(config) == type &&
+                    aiConfigTypeOf(config) == type &&
                     config.deletedAt == null &&
-                    !_isOrphanedModel(config, providers, hardDeleted),
+                    !isOrphanedModel(config, providers, hardDeleted),
               )
               .toList(growable: false),
         );
@@ -978,7 +825,7 @@ class AiConfigRepository {
   }
 
   void _storeConfig(AiConfig config) {
-    final type = _typeForConfig(config);
+    final type = aiConfigTypeOf(config);
     _hardDeletedIds?.remove(config.id);
     _configByIdCache[config.id] = config;
     _configByIdInFlight.remove(config.id);
@@ -1006,7 +853,7 @@ class AiConfigRepository {
     _configByIdInFlight.remove(id);
 
     if (cached != null) {
-      final type = _typeForConfig(cached);
+      final type = aiConfigTypeOf(cached);
       _configsByTypeCache.remove(type);
       _configsByTypeInFlight.remove(type);
       if (_allConfigsLoaded) {
@@ -1034,7 +881,7 @@ class AiConfigRepository {
   }
 
   void _cacheConfigInTypeList(AiConfig config) {
-    final type = _typeForConfig(config);
+    final type = aiConfigTypeOf(config);
     final cachedList = _configsByTypeCache[type];
     if (cachedList == null) {
       return;
@@ -1127,7 +974,7 @@ class AiConfigRepository {
             type,
             List<AiConfig>.unmodifiable(
               nextSnapshot
-                  .where((config) => _typeForConfig(config) == type)
+                  .where((config) => aiConfigTypeOf(config) == type)
                   .toList(growable: false),
             ),
           ),
@@ -1146,15 +993,5 @@ class AiConfigRepository {
     await _allConfigsSubscription?.cancel();
     await _allConfigsController.close();
     await _db.close();
-  }
-
-  AiConfigType _typeForConfig(AiConfig config) {
-    return config.map(
-      inferenceProvider: (_) => AiConfigType.inferenceProvider,
-      model: (_) => AiConfigType.model,
-      prompt: (_) => AiConfigType.prompt,
-      inferenceProfile: (_) => AiConfigType.inferenceProfile,
-      skill: (_) => AiConfigType.skill,
-    );
   }
 }

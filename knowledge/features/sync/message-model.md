@@ -245,8 +245,9 @@ the decision is
 [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
 
 Every write owes its message until the outbox accepts it, as saved filters
-do: `AiConfigRepository` records the id in `AiConfigSyncLedger` before
-staging and settles it after, and `flushPending` sends what the device holds
+do: `AiConfigRepository` sends through `AiConfigSyncSender`, which records
+the id in `AiConfigSyncLedger` before staging and settles it after, and
+`flushPending` sends what the device holds
 for an owed id — the row with its stamp, or the hard deletion the stamp alone
 records — at startup and a minute after a failed enqueue. The maintenance
 resend carries hard deletions too (`hardDeletionStamps`), since they have no

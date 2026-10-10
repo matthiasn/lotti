@@ -9,6 +9,7 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
