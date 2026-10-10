@@ -26,6 +26,7 @@ AiConfigInferenceProvider _$AiConfigInferenceProviderFromJson(
   deletedAt: json['deletedAt'] == null
       ? null
       : DateTime.parse(json['deletedAt'] as String),
+  apiKeyCleared: json['apiKeyCleared'] as bool? ?? false,
   $type: json['runtimeType'] as String?,
 );
 
@@ -43,6 +44,7 @@ Map<String, dynamic> _$AiConfigInferenceProviderToJson(
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
   'deletedAt': instance.deletedAt?.toIso8601String(),
+  'apiKeyCleared': instance.apiKeyCleared,
   'runtimeType': instance.$type,
 };
 

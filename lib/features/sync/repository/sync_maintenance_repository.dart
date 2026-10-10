@@ -155,19 +155,15 @@ class SyncMaintenanceRepository {
         shouldSync: (habit) => habit.deletedAt == null,
       );
 
-  late final SyncOperation<AiConfig> _aiConfigSyncOperation =
-      _createOperation<AiConfig>(
+  late final SyncOperation<AiConfigResend> _aiConfigSyncOperation =
+      _createOperation<AiConfigResend>(
         step: SyncStep.aiSettings,
         fetchEntities: _fetchAiConfigsSafely,
         // A resend carries the stamp the stored version holds, so a peer
-        // with a newer version drops it (ADR 0094).
-        enqueueEntity: (config) async => _outboxService.enqueueMessage(
-          SyncMessage.aiConfig(
-            aiConfig: config,
-            status: SyncEntryStatus.update,
-            versionStamp: await _aiConfigRepository.versionStamp(config.id),
-          ),
-        ),
+        // with a newer version drops it (ADR 0094); a hard deletion is
+        // resent as the deletion its stamp records.
+        enqueueEntity: (resend) =>
+            _outboxService.enqueueMessage(resend.toSyncMessage()),
         shouldSync: (_) => true,
       );
 
@@ -473,7 +469,7 @@ class SyncMaintenanceRepository {
     SyncProgressCallback? onProgress,
     SyncDetailedProgressCallback? onDetailedProgress,
   }) {
-    return _runOperation<AiConfig>(
+    return _runOperation<AiConfigResend>(
       _aiConfigSyncOperation,
       onProgress: onProgress,
       onDetailedProgress: onDetailedProgress,
@@ -611,13 +607,16 @@ class SyncMaintenanceRepository {
     }
   }
 
-  Future<List<AiConfig>> _fetchAiConfigsSafely() async {
-    return _runWithLogging<List<AiConfig>>(
+  Future<List<AiConfigResend>> _fetchAiConfigsSafely() async {
+    return _runWithLogging<List<AiConfigResend>>(
       () async {
         // Deleted rows are included deliberately. This pass exists to repair
         // a peer that missed events, and a soft-deleted config *is* the
         // deletion record — filtering it out would replay the config as alive
         // and leave the missed-delete gap the tombstone is meant to close.
+        // A hard deletion has no row, only the stamp it left behind, and is
+        // resent from that: without it a peer that missed the deletion kept
+        // the config for good, since nothing else carried it again.
         final configGroups = await Future.wait([
           _aiConfigRepository.getConfigsByType(
             AiConfigType.inferenceProvider,
@@ -644,7 +643,21 @@ class SyncMaintenanceRepository {
           ),
         ]);
 
-        return configGroups.expand((group) => group).toList();
+        final resends = <AiConfigResend>[];
+        for (final config in configGroups.expand((group) => group)) {
+          resends.add(
+            AiConfigResend(
+              id: config.id,
+              config: config,
+              stamp: await _aiConfigRepository.versionStamp(config.id),
+            ),
+          );
+        }
+        final deletions = await _aiConfigRepository.hardDeletionStamps();
+        for (final MapEntry(key: id, value: stamp) in deletions.entries) {
+          resends.add(AiConfigResend(id: id, stamp: stamp));
+        }
+        return resends;
       },
       'syncAiSettings_fetch',
     );

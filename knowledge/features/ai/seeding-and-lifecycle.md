@@ -236,20 +236,37 @@ checks this against is `specs/tla/AiConfigReplication.tla`.
   without that check a device that received a model's deletion before its
   provider's would recreate the model at the next backfill, stamped past the
   deletion, and it would outlive the provider.
-- **The residual.** A model a user edits or restores *after* the deletion, on a
-  device that has not heard of it yet, is newer than the deletion and stays
-  live under the deleted provider. The receiver cannot tell it from an undo's
-  restore, and deleting it would lose that write; the user deletes it.
-- **An interrupted cleanup resumes.** Each orphan's deletion is sent before it
-  is stored, so a send that throws leaves the model live and the message
-  unprocessed. When sync delivers the same message again, the cleanup runs
-  again, whether or not the message changes a row.
+- **A model kept under a deleted provider is hidden, not deleted.** A model a
+  user edits or restores *after* the deletion, on a device that has not heard
+  of it yet, is newer than the deletion and stays stored under the deleted
+  provider: the receiver cannot tell it from an undo's restore, and deleting
+  it would lose that write. `getConfigsByType` and `watchConfigsByType` leave
+  such a model out of the model lists until its provider is live again;
+  `includeDeleted` reads, which the seeding passes and the cleanup use, still
+  see it (ADR 0127).
+- **Every write is owed until the outbox takes it.** The write commits
+  before its message is staged, and the outbox's ordinary enqueue swallows
+  its own failure, so `AiConfigRepository` records the id in
+  `AiConfigSyncLedger` (one `SettingsDb` key of owed ids) before staging and
+  settles it once the row is staged. A failed enqueue leaves the id owed;
+  `flushPending` — at startup, a minute after a failure, and from the next
+  successful write of the same id — sends what the device holds for it then:
+  the stored row with its stamp, or the hard deletion its stamp alone
+  records. The orphan cleanup stores each deletion and then sends it the
+  same way, so a cleanup whose send fails leaves the deletion recorded and
+  owed rather than the model live. "Send settings" re-sends hard deletions
+  beside the rows (`hardDeletionStamps`), since a deletion has no row to
+  replay (ADR 0127).
 - **A received provider without a key keeps the receiver's key** — while it
-  still points at the same endpoint. An empty key on the wire means the
-  sender's keychain read came back empty, not that the user removed it. A
-  revision that changes the base URL (compared without surrounding space,
-  trailing slashes or scheme/host case) or the provider kind does not inherit
-  the key, and a provider's deletion removes it.
+  still points at the same endpoint, and unless the sender said the key was
+  removed on purpose. An empty key on the wire usually means the sender's
+  keychain read came back empty, so the receiver keeps its own; a version
+  whose `apiKeyCleared` is set is the user emptying a key that was there (the
+  provider form sets it, and any version written with a key clears it), and
+  the receiver removes its key too. A revision that changes the base URL
+  (compared without surrounding space, trailing slashes or scheme/host case)
+  or the provider kind does not inherit the key, and a provider's deletion
+  removes it.
 
 ```mermaid
 sequenceDiagram

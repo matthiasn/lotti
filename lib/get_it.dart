@@ -222,7 +222,10 @@ Future<void> registerSingletons({
     AiConfigDb(),
     settingsDb: getIt<SettingsDb>(),
   );
-  getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
+  getIt.registerSingleton<AiConfigRepository>(
+    aiConfigRepository,
+    dispose: (repository) => repository.dispose(),
+  );
 
   final documentsDirectory = getIt<Directory>();
   final dayProcessingDb = DayProcessingDb();
@@ -378,6 +381,14 @@ Future<void> registerSingletons({
   // enqueue, a crash after the write, or filters saved before they synced.
   // Failures are logged and retried by the repository itself.
   unawaited(savedTaskFiltersRepository.flushPending());
+
+  // Send whatever AI configuration write a previous run still owed — a
+  // failed enqueue, or a crash between the write and the outbox. A hard
+  // deletion has no row for "Send settings" to replay, so this is what
+  // carries it. Failures are logged and retried by the repository itself;
+  // the flush never throws, so tracking it only lets a profile switch wait
+  // for it.
+  getIt<StartupTasks>().track(aiConfigRepository.flushPending());
 
   // Send a GitHub account change a previous run still owed: the outbox
   // refused its row, or the app stopped before it was taken. A failure stays

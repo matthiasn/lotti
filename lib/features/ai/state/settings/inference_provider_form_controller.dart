@@ -276,12 +276,21 @@ class InferenceProviderFormController
   Future<void> updateConfig(AiConfig config) async {
     final repository = ref.read(aiConfigRepositoryProvider);
     final domainLogger = ref.read(domainLoggerProvider);
+    final stamped = config.copyWith(
+      id: _config?.id ?? config.id,
+      createdAt: _config?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    // Emptying a key that was there is the user removing it, which the peers
+    // must follow; an empty key on the wire otherwise reads as a keychain
+    // read that came back empty, and they keep theirs.
+    final loadedKey = _config?.apiKey ?? '';
     await repository.saveConfig(
-      config.copyWith(
-        id: _config?.id ?? config.id,
-        createdAt: _config?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
+      stamped is AiConfigInferenceProvider
+          ? stamped.copyWith(
+              apiKeyCleared: stamped.apiKey.isEmpty && loadedKey.isNotEmpty,
+            )
+          : stamped,
     );
 
     // Editing a provider can flip it usable (e.g. adding the API key to a
