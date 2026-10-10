@@ -111,9 +111,6 @@ Future<void> _checkAndPopulateSequenceLog() async {
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
 
-/// Settings key recording that [_repairClocklessRowsOnce] completed.
-const clocklessRepairSettingsKey = 'maintenance_clocklessRepairV1';
-
 /// Stamps, once per device, the entity definitions and entry links saved
 /// before they carried a vector clock, and sends them.
 ///
@@ -123,8 +120,10 @@ const clocklessRepairSettingsKey = 'maintenance_clocklessRepairV1';
 /// row's `updatedAt`, so two devices stamping the same row settle it the
 /// same way and a stamp never outranks a genuine edit (ADR 0125). Agent
 /// rows are left to the manual action: their stamp does not keep that
-/// property. The flag is set only after both repairs succeed, so a failure
-/// retries at the next start.
+/// property. The flag ([clocklessRepairSettingsKey]) is set only after both
+/// repairs succeed, so a failure retries at the next start, and the inbound
+/// sync path clears it when an older peer delivers a clockless row, so the
+/// next start sweeps again.
 Future<void> _repairClocklessRowsOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();

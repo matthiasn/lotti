@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -93,6 +94,63 @@ void main() {
       payloadType: any(named: 'payloadType'),
     ),
   );
+
+  group('the startup clock repair', () {
+    setUp(() {
+      when(
+        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+      ).thenAnswer((_) async {});
+    });
+
+    test('a stored clockless definition from an older peer asks the next '
+        'start to stamp it', () async {
+      journalAnswers(1);
+      receive(testLabelDefinition1.copyWith(vectorClock: null));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+      ).called(1);
+    });
+
+    test(
+      'a clocked definition, or a clockless one not stored, asks nothing',
+      () async {
+        journalAnswers(1);
+        receive(label);
+        await processor.process(event: event, journalDb: journalDb);
+
+        journalAnswers(0);
+        receive(testLabelDefinition1.copyWith(vectorClock: null));
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(
+          () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+        );
+      },
+    );
+
+    test('a failure to clear the flag is logged, and the definition is still '
+        'applied', () async {
+      journalAnswers(1);
+      when(
+        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+      ).thenThrow(StateError('settings closed'));
+      receive(testLabelDefinition1.copyWith(vectorClock: null));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'processor.apply.clocklessRepair',
+        ),
+      ).called(1);
+    });
+  });
 
   test(
     'a written definition is announced and its counters recorded',

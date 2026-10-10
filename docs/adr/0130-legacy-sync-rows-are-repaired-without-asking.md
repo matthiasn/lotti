@@ -26,7 +26,7 @@ were left for the user or for luck to repair:
 - **Each device stamps its clockless definitions and entry links once, at
   startup**, after the sequence log population, under the sync capability.
   A settings flag records completion and is set only when both repairs
-  succeed, so a failure retries at the next start. Both repairs keep the
+  succeed, so a failure retries at the next start, and the inbound sync path clears it when it stores a clockless definition or link from an older peer, so the next start sweeps again. Both repairs keep the
   row's `updatedAt`, so two devices that stamp the same row settle it the
   same way and a stamp never outranks a genuine edit. Agent rows are not
   included: their stamp is dated now, and stays a manual repair.

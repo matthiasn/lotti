@@ -36,6 +36,7 @@ extension _JournalHandlers on SyncEventProcessor {
         final linkRows = await journalDb.upsertEntryLink(link);
         if (linkRows > 0) {
           processedLinksCount++;
+          if (link.vectorClock == null) await _requestClocklessRepair();
           _trace(
             'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
             subDomain: 'processor.apply.entryLink.embedded',
@@ -523,6 +524,9 @@ extension _JournalHandlers on SyncEventProcessor {
     final coveredVectorClocks = syncMessage.coveredVectorClocks;
 
     final rows = await journalDb.upsertEntryLink(entryLink);
+    if (rows > 0 && entryLink.vectorClock == null) {
+      await _requestClocklessRepair();
+    }
     try {
       if (rows > 0) {
         _trace(
