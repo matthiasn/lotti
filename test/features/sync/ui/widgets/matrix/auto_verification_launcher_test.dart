@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provide
 import 'package:lotti/features/sync/state/matrix_verification_relaunch_provider.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -179,6 +180,109 @@ void main() {
       expect(find.byType(VerificationModal), findsOneWidget);
       expect(shownDevice(), same(fresh));
     });
+
+    testWidgets(
+      'show-again reopens the device last shown even when a device never '
+      'shown sorts ahead of it',
+      (tester) async {
+        // TLC's `RelaunchHonoured` trace: releasing the last identity is not
+        // enough when the list has since grown at the head — the first
+        // *unhandled* device is then the newcomer, not the one dismissed.
+        final stale = deviceNamed('Stale', 'STALE');
+        final fresh = deviceNamed('New phone', 'NEWPHONE');
+        var devices = <DeviceKeys>[fresh];
+        final container = await pumpLauncher(
+          tester,
+          const [],
+          unverifiedController: () =>
+              _MutableUnverifiedController(() => devices),
+        );
+
+        DeviceKeys shownDevice() => tester
+            .widget<VerificationModal>(find.byType(VerificationModal))
+            .deviceKeys;
+
+        expect(shownDevice(), same(fresh));
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+
+        // A legacy peer's keys land, and another surface holds the lock when
+        // the launcher sees them, so its automatic launch defers.
+        final lock = container.read(
+          matrixVerificationModalLockProvider.notifier,
+        );
+        expect(lock.tryAcquire(), isTrue);
+        devices = [stale, fresh];
+        container.invalidate(matrixUnverifiedControllerProvider);
+        await tester.pumpAndSettle();
+        expect(find.byType(VerificationModal), findsNothing);
+        lock.release();
+
+        container.read(matrixVerificationRelaunchProvider.notifier).request();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VerificationModal), findsOneWidget);
+        expect(shownDevice(), same(fresh));
+      },
+    );
+  });
+
+  group('AutoVerificationLauncher and a request the target already sent', () {
+    late MockKeyVerification request;
+    late MockKeyVerificationRunner waiting;
+
+    setUp(() {
+      request = MockKeyVerification();
+      when(() => request.userId).thenReturn('@alice:example.com');
+      when(() => request.isDone).thenReturn(false);
+      waiting = MockKeyVerificationRunner();
+      when(() => waiting.lastStep).thenReturn('m.key.verification.request');
+      when(() => waiting.keyVerification).thenReturn(request);
+      when(
+        () => mockMatrixService.incomingKeyVerificationRunner,
+      ).thenReturn(waiting);
+      when(
+        () => mockMatrixService.incomingKeyVerificationRunnerStream,
+      ).thenAnswer((_) => const Stream.empty());
+    });
+
+    testWidgets('answers it instead of starting a second ceremony', (
+      tester,
+    ) async {
+      // Two devices starting at each other are two SDK transactions, each
+      // sheet waiting on the other's request. The peer's pending one is the
+      // ceremony to show; the emoji are the same either way.
+      when(() => request.deviceId).thenReturn('NEWPHONE');
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+
+      expect(find.byType(IncomingVerificationModal), findsOneWidget);
+      expect(find.byType(VerificationModal), findsNothing);
+      verifyNever(() => mockMatrixService.verifyDevice(any()));
+    });
+
+    testWidgets("starts its own when the pending request is another device's", (
+      tester,
+    ) async {
+      when(() => request.deviceId).thenReturn('SOMEONE_ELSE');
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+
+      expect(find.byType(VerificationModal), findsOneWidget);
+      expect(find.byType(IncomingVerificationModal), findsNothing);
+    });
+
+    testWidgets("starts its own when the target's request was cancelled", (
+      tester,
+    ) async {
+      when(() => request.deviceId).thenReturn('NEWPHONE');
+      when(() => request.canceled).thenReturn(true);
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+
+      expect(find.byType(VerificationModal), findsOneWidget);
+      expect(find.byType(IncomingVerificationModal), findsNothing);
+    });
   });
 
   group('AutoVerificationLauncher handled-set lifecycle', () {
@@ -237,6 +341,46 @@ void main() {
       );
       expect(modal.deviceKeys.deviceId, 'NEWPHONE');
       expect(container.read(matrixVerificationModalLockProvider), isTrue);
+    });
+
+    group('when its sheet closes', () {
+      late MockKeyVerificationRunner runner;
+
+      setUp(() {
+        final keyVerification = MockKeyVerification();
+        runner = MockKeyVerificationRunner();
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
+      });
+
+      Future<void> showThenDismiss(WidgetTester tester) async {
+        await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+        expect(find.byType(VerificationModal), findsOneWidget);
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+        expect(find.byType(VerificationModal), findsNothing);
+      }
+
+      testWidgets('cancels a ceremony the user walked away from', (
+        tester,
+      ) async {
+        // Dismissing used to leave the SDK ceremony live: the peer's sheet
+        // kept waiting on a device that was gone, with nothing to free its
+        // lock (TLC's `EventuallyOffered` with `CancelOnDismiss = FALSE`).
+        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+
+        await showThenDismiss(tester);
+
+        verify(runner.cancelVerification).called(1);
+      });
+
+      testWidgets('leaves a finished ceremony alone', (tester) async {
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+
+        await showThenDismiss(tester);
+
+        verifyNever(runner.cancelVerification);
+      });
     });
 
     testWidgets('does not stack a second ceremony while one is open', (

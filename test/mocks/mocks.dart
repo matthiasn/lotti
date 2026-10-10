@@ -483,6 +483,14 @@ class MockKeyVerification extends Mock implements KeyVerification {
 }
 
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {
+  // Both verification sheets cancel a still-pending ceremony when they are
+  // disposed, so every test that unmounts one mid-ceremony would otherwise
+  // have to stub the cancel. A test asserting on the cancel still can:
+  // `verify(runner.cancelVerification)` counts calls to this stub.
+  MockKeyVerificationRunner() {
+    when(cancelVerification).thenAnswer((_) async {});
+  }
+
   // Derived from the production rule rather than stubbed per test: `outcome`
   // is what the verification UI branches on, and a hand-stubbed value could
   // disagree with the `lastStep`/`keyVerification` the same test sets up —

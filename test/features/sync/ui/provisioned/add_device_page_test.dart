@@ -64,6 +64,24 @@ class _FakeSyncDevicesController extends SyncDevicesController {
   }
 }
 
+/// A roster that resolves only when the test says so — a slow homeserver on
+/// the first fetch after the sheet opened.
+class _PendingSyncDevicesController extends SyncDevicesController {
+  _PendingSyncDevicesController(this.roster);
+
+  final Completer<List<SyncDeviceInfo>> roster;
+
+  @override
+  Future<List<SyncDeviceInfo>> build() => roster.future;
+}
+
+/// A roster that cannot be read at all.
+class _FailingSyncDevicesController extends SyncDevicesController {
+  @override
+  Future<List<SyncDeviceInfo>> build() async =>
+      throw Exception('homeserver unreachable');
+}
+
 /// Stands in for the real controller's `regenerateHandover()`, which reads the
 /// persisted Matrix config. [handover] is what that call resolves to; a
 /// [completer] holds the call open so the loading state can be observed.
@@ -492,6 +510,111 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('AddDeviceView baseline before the code', () {
+    // TLC's `DevicePairing` traces: a baseline taken from whatever roster
+    // happened to resolve after the code was up could already hold the device
+    // that scanned it, and a ceremony finishing before any baseline existed
+    // named whichever old session verified first.
+    Future<void> pumpWithRoster(
+      WidgetTester tester, {
+      required SyncDevicesController Function() roster,
+      AddDeviceJoinSignal? signal,
+    }) async {
+      useTallSurface(tester);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: AddDeviceView(
+              pollInterval: const Duration(days: 1),
+              signal: signal,
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(
+                calls: _Calls(),
+                handover: handover,
+              ),
+            ),
+            syncDevicesControllerProvider.overrideWith(roster),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('keeps the code off screen until the roster has resolved', (
+      tester,
+    ) async {
+      final roster = Completer<List<SyncDeviceInfo>>();
+      await pumpWithRoster(
+        tester,
+        roster: () => _PendingSyncDevicesController(roster),
+      );
+
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
+      expect(find.byKey(const Key('addDeviceQrImage')), findsNothing);
+
+      roster.complete(existing);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('addDeviceQrImage')), findsOneWidget);
+    });
+
+    testWidgets('says the code could not be made when the roster cannot be '
+        'read', (tester) async {
+      await pumpWithRoster(tester, roster: _FailingSyncDevicesController.new);
+      final context = tester.element(find.byType(AddDeviceView));
+
+      expect(find.byKey(const Key('addDeviceQrImage')), findsNothing);
+      expect(
+        find.text(context.messages.syncAddDeviceGenerateFailed),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('add_device_regenerate')), findsOneWidget);
+    });
+
+    testWidgets(
+      'ignores a ceremony that finished before the baseline existed',
+      (
+        tester,
+      ) async {
+        final roster = Completer<List<SyncDeviceInfo>>();
+        final signal = newSignal(tester);
+        await pumpWithRoster(
+          tester,
+          roster: () => _PendingSyncDevicesController(roster),
+          signal: signal,
+        );
+
+        // The streams are bound as soon as the code is minted, before the
+        // roster resolves; a success now cannot be with a device that scanned a
+        // code nobody has seen yet.
+        outgoingVerifications.add(
+          verificationRunner(
+            userId: '@alice:example.com',
+            deviceId: newPhone.deviceId,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(signal.value, AddDeviceJoinState.waiting);
+        expect(signal.target, isNull);
+
+        roster.complete(existing);
+        await tester.pump();
+        await tester.pump();
+
+        expect(signal.value, AddDeviceJoinState.waiting);
+        expect(signal.target, isNull);
+      },
+    );
   });
 
   group('AddDeviceView join signal', () {

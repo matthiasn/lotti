@@ -36,6 +36,14 @@ sources:
     resource: ../../../services/matrix-provisioning-service/src/services
     title: Google Play subscription verification and Matrix provisioning services
     last_modified: 2026-08-30
+  - id: verification-launch-model
+    resource: ../../../specs/tla/VerificationLaunch.tla
+    title: VerificationLaunch — TLA+ model of opening the emoji ceremony, and crossing requests
+    last_modified: 2026-10-10
+  - id: device-pairing-model
+    resource: ../../../specs/tla/DevicePairing.tla
+    title: DevicePairing — TLA+ model of the inviting sheet's baseline, join and target
+    last_modified: 2026-10-10
 ---
 
 Sync replicates **one user's data across that user's own devices** over Matrix.
@@ -486,6 +494,18 @@ Five properties are deliberate:
   retained by `MatrixService` when the sheet opens are ignored too, including
   the incoming stream's on-listen replay. An older peer, stale success or a
   different concurrent join cannot unlock the new target's transfer actions.
+
+  "Already present" is a baseline `_generate` fixes **before the code is
+  shown**, by awaiting the roster provider; a roster that cannot be read fails
+  the mint, with Retry, rather than showing a code without one. The order is
+  what the guarantee rests on: a baseline taken by the first build after the
+  code was up — from whatever roster happened to resolve by then — could
+  already hold the device that scanned it, which then read as old forever, and
+  a ceremony finishing before any baseline existed used to be taken as the new
+  device, whichever old session it was with. Both are TLC counterexamples in
+  [`DevicePairing.tla`](../../../specs/tla/DevicePairing.tla); the sheet now
+  ignores a finished ceremony while it has no baseline, which can only be one
+  that finished before the code was up.
   *Send settings* and *Send message history* remain disabled
   until the state reaches `ready`, because
   `ShareKeysWith.directlyVerifiedOnly` means an unverified target receives the
@@ -651,14 +671,54 @@ has one.
 screen and the status page. It reacts to `matrixUnverifiedControllerProvider`
 rather than waiting a fixed delay for device keys to arrive, and takes the
 app-wide modal lock so two surfaces watching the same provider cannot both
-open a ceremony.
+open a ceremony. The launcher, the lock, the `IncomingVerificationWrapper`
+and two devices doing all of this at each other are model-checked in
+[`VerificationLaunch.tla`](../../../specs/tla/VerificationLaunch.tla).
 
-Three details there are load-bearing, each fixing a way the ceremony could
+```mermaid
+sequenceDiagram
+  participant A as Device A (smaller identity)
+  participant B as Device B (larger identity)
+  A->>B: request (A's launcher opened a sheet at B)
+  B->>A: request (B's launcher opened a sheet at A)
+  Note over A: lock held by own sheet, B > A: hold B's request
+  Note over B: lock held by own sheet, A < B: yield
+  B->>A: cancel B's request
+  B->>A: ready for A's request, inside B's open sheet
+  A-->>B: emoji on both sheets
+```
+
+Six details there are load-bearing, each fixing a way the ceremony could
 reach the wrong device or none at all:
 
 - It offers the first device **not already shown**, keyed on
   `(userId, deviceId)` — not simply `devices.first`. A stale or legacy
   unverified peer can sort ahead of the device actually being paired.
+- **Two devices starting at each other are two SDK transactions**, and the
+  SDK's glare rule only reconciles a `start` inside one of them. Left alone,
+  each device's own sheet held the modal lock, the wrapper dropped the other
+  device's request, and both sheets waited forever (TLC's `AutoVerifies`).
+  Three rules close it, in `matrix/verification_glare.dart` and the wrapper:
+  a launcher that finds the target's own request already pending answers it
+  instead of starting a second ceremony; while this device's own request is
+  still unanswered, the wrapper **yields** to an incoming request from a
+  smaller identity — the SDK's `start` glare rule, one step earlier — by
+  cancelling its own ceremony, wrapping the peer's in a runner published on
+  the outgoing stream the open `VerificationModal` renders, accepting it, and
+  releasing the withdrawn target from the handled set; and a request that
+  arrives while the lock is held for any other reason is **held, not
+  dropped**, and shown when the lock frees if the peer has not cancelled it.
+  The order is what makes the yield terminate: the smallest device in any
+  tangle never yields, so its ceremony is the one that finishes. Yielding to
+  any third device instead let three devices withdraw ceremonies from under
+  each other forever, and dropping instead of holding left a three-device
+  ring stuck with the handoff alone — both TLC traces.
+- **Dismissing a live sheet cancels its ceremony.** A backdrop tap used to
+  leave the SDK ceremony running: the peer's sheet waited at the emoji step
+  for a confirmation that would never come, holding its lock (TLC's
+  `EventuallyOffered`). The sheet's host — the launcher or the wrapper, which
+  await the sheet — cancels a still-pending runner once it closes
+  (`cancelAbandonedVerification`); a finished one is left alone.
 - That record lives in `matrixVerificationHandledProvider`, not in the widget's
   `State`, because two launchers can be mounted at once — the settings pane
   embeds the roster while the setup modal is open. Per-widget, the one that
@@ -718,10 +778,14 @@ success:
   a terminal state holds, so the old code armed a fresh 30-second pop per
   rebuild and each one fired at whatever route existed by then.
 
-`matrixVerificationRelaunchProvider` is what "show the emoji again" bumps. It
-releases only the identity that launcher last showed, deliberately rather than
-clearing the set: a reset restarts selection at the head of the list and
-reopens the stale peer instead of the ceremony just dismissed.
+`matrixVerificationRelaunchProvider` is what "show the emoji again" bumps.
+Every mounted launcher releases the identity **last shown on the device** —
+`MatrixVerificationHandled.lastShown`, app-wide like the set itself — and asks
+for that device by name, deliberately rather than clearing the set or taking
+the first unhandled device after the release: a reset restarts selection at
+the head of the list, and a plain release let a peer whose keys landed during
+the ceremony take the slot (TLC's `RelaunchHonoured`). Either reopens a stale
+peer instead of the ceremony just dismissed.
 
 # Device management
 

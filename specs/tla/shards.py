@@ -236,6 +236,12 @@ SECONDS = {
     # Local runs on ten workers (base 100 s, 10.2M states); refresh from CI.
     "RelationshipCadence": 100,
     "RelationshipCadenceEnroll": 2,
+    # Six times a local run with twenty workers (11 s, 5 s, 2 s and 25 s),
+    # since a CI runner has fewer cores; refresh from CI.
+    "VerificationLaunch": 66,
+    "VerificationLaunchTwoLaunchers": 30,
+    "VerificationLaunchCrossStart": 12,
+    "DevicePairing": 150,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.

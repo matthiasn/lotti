@@ -141,6 +141,15 @@ void main() {
       expect(service.client, client);
     });
 
+    test("own identity is the client session's user and device", () {
+      when(() => client.userID).thenReturn('@alice:example.com');
+      when(() => client.deviceID).thenReturn('DEVICE1');
+      final service = createService();
+
+      expect(service.ownUserId, '@alice:example.com');
+      expect(service.ownDeviceId, 'DEVICE1');
+    });
+
     test('syncRoomId returns room manager currentRoomId', () {
       when(() => roomManager.currentRoomId).thenReturn('!room:s');
 
