@@ -50,6 +50,16 @@ TextStyle calmEyebrowStyle(DsTokens tokens, {Color? color}) {
   );
 }
 
+/// The title of an entry's detail page — a task's, a check-in's: heading2,
+/// a clear step above the card and section headers (subtitle2) so the page
+/// cascades title → section → body, with a slightly looser line height so a
+/// title that wraps still reads as one block.
+TextStyle detailPageTitleStyle(DsTokens tokens, {Color? color}) =>
+    tokens.typography.styles.heading.heading2.copyWith(
+      color: color ?? tokens.colors.text.highEmphasis,
+      height: 1.15,
+    );
+
 /// Calm page header — 23px / 600 / −0.015em. Replaces the louder 25–35px /
 /// 700 headers; hierarchy is carried by contrast, not size.
 TextStyle calmPageTitleStyle(DsTokens tokens, {Color? color}) {

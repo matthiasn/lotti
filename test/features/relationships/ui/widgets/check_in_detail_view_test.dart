@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -9,7 +10,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -23,10 +25,12 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -38,6 +42,7 @@ import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 
 class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
@@ -59,6 +64,17 @@ void main() {
 
   /// What the timeline's list renders; empty unless a test needs a card.
   var links = <EntryLink>[];
+
+  /// A test's own provider overrides, on top of the page's.
+  var overrides = <Override>[];
+
+  /// The header read-out under [key] — the task lane's [DsPill].
+  DsPill headerTag(WidgetTester tester, String key) => tester.widget<DsPill>(
+    find.descendant(
+      of: find.byKey(ValueKey(key)),
+      matching: find.byType(DsPill),
+    ),
+  );
 
   final person = testRelationship.copyWith(
     meta: testRelationship.meta.copyWith(id: 'rel-001', categoryId: 'crew'),
@@ -114,6 +130,7 @@ void main() {
     recorder = FakeAudioRecorderController(stopResult: 'take-1');
     photoImports = [];
     links = [];
+    overrides = [];
     when(() => repository.touchCheckIn(any())).thenAnswer((_) async => true);
     when(
       () => repository.discardCommentIfBlank(any()),
@@ -148,6 +165,7 @@ void main() {
               (context, {required checkInId, categoryId}) async =>
                   photoImports.add('$checkInId in $categoryId'),
             ),
+            ...overrides,
           ],
         ),
       );
@@ -178,22 +196,36 @@ void main() {
     expect(find.text('Budget talk.'), findsOneWidget);
   });
 
-  testWidgets('the text a check-in was logged with is the first card of its '
-      'timeline, stamped at its start', (tester) async {
+  testWidgets('the text a check-in was logged with sits on the page under '
+      'the rule, where a task keeps its description, before the cards', (
+    tester,
+  ) async {
     stubDetail(checkIn(note: 'Called about the launch.'));
     await pump(tester);
 
+    final note = find.byKey(const ValueKey('check-in-detail-note'));
     expect(
-      tester
-          .widget<Text>(
-            find.byKey(const ValueKey('check-in-detail-note-stamp')),
-          )
-          .data,
-      // No date of its own: the header's chips say when, and a second stamp
-      // under them was the one date on the page that could disagree.
-      'Noted when it was logged',
+      tester.widget<SelectableText>(note).data,
+      'Called about the launch.',
     );
-    expect(find.text('Called about the launch.'), findsOneWidget);
+    // On the page itself — not boxed, and under no caption of its own.
+    expect(
+      find.ancestor(of: note, matching: find.byType(DesignSystemSectionCard)),
+      findsNothing,
+    );
+    expect(find.text('Noted when it was logged'), findsNothing);
+    // Header, rule, words, then the notes for next time.
+    final rule = tester.getTopLeft(
+      find.byKey(const ValueKey('check-in-detail-rule')),
+    );
+    final words = tester.getTopLeft(note);
+    final nextTime = tester.getTopLeft(
+      find.byKey(const ValueKey('check-in-detail-next-time')),
+    );
+    expect(rule.dy, lessThan(words.dy));
+    expect(words.dy, lessThan(nextTime.dy));
+    // One left rail from the rule down, as a task's page has.
+    expect(words.dx, rule.dx);
     expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);
   });
 
@@ -502,16 +534,12 @@ void main() {
       expect(scope.canPop, isFalse, reason: 'a live take holds the route');
       // Edit is held too: an edit sheet over a running recorder, with the
       // floating indicator hidden, was the one door left to the same leak.
-      final edit = find.byKey(const ValueKey('check-in-detail-edit'));
-      expect(tester.widget<DesignSystemIconAction>(edit).onPressed, isNull);
+      expect(headerTag(tester, 'check-in-detail-edit').onTap, isNull);
+      expect(headerTag(tester, 'check-in-topics').onTap, isNull);
       // And the header chips: a picker sheet over a running recorder was
       // the same leak through a different door.
       expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .onPressed,
+        headerTag(tester, 'check-in-type').onTap,
         isNull,
       );
 
@@ -547,16 +575,12 @@ void main() {
       expect(recorder.cancelCalls, 1, reason: 'Discard discards');
       expect(backs, hasLength(1), reason: 'and then leaves');
       expect(
-        tester.widget<DesignSystemIconAction>(edit).onPressed,
+        headerTag(tester, 'check-in-detail-edit').onTap,
         isNotNull,
         reason: 'Edit is back once the take is gone',
       );
       expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .onPressed,
+        headerTag(tester, 'check-in-type').onTap,
         isNotNull,
       );
       expect(
@@ -795,21 +819,39 @@ void main() {
     verifyNever(() => repository.touchCheckIn(any()));
   });
 
-  testWidgets('the pencil in the top bar opens the composer for the fields '
-      'no chip carries — one tap, no menu to open first', (tester) async {
+  testWidgets('Edit closes the header lane, where a task keeps Details, and '
+      'opens the composer for the fields no read-out edits', (tester) async {
     stubDetail(checkIn());
     await pump(tester);
 
-    // The page's one action is in the open, the person hero's own glyph;
-    // a ⋮ menu that held nothing but Edit cost a tap to learn that.
+    // The lever sits with the facts it edits, not in the top bar across
+    // the window from them; the top bar keeps back alone.
     expect(find.byKey(const ValueKey('check-in-detail-more')), findsNothing);
-    final edit = tester.widget<DesignSystemIconAction>(
-      find.byKey(const ValueKey('check-in-detail-edit')),
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('check-in-meta-line')),
+        matching: find.byKey(const ValueKey('check-in-detail-edit')),
+      ),
+      findsOneWidget,
     );
-    expect(edit.icon, LottiIcons.edit);
-    expect(edit.tooltip, 'Edit check-in');
+    expect(find.byType(DesignSystemIconAction), findsOneWidget);
+    final edit = headerTag(tester, 'check-in-detail-edit');
+    expect(edit.label, 'Edit check-in');
+    expect(edit.variant, DsPillVariant.muted);
 
     await tester.tap(find.byKey(const ValueKey('check-in-detail-edit')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CheckInCaptureForm), findsOneWidget);
+  });
+
+  testWidgets('the topics tag opens the same sheet — the topics change there '
+      'and nowhere else', (tester) async {
+    stubDetail(checkIn());
+    await pump(tester);
+
+    expect(headerTag(tester, 'check-in-topics').label, 'krill contract');
+    await tester.tap(find.byKey(const ValueKey('check-in-topics')));
     await tester.pumpAndSettle();
 
     expect(find.byType(CheckInCaptureForm), findsOneWidget);
@@ -832,9 +874,7 @@ void main() {
     );
   });
 
-  testWidgets('the title is the calm page title every other page carries', (
-    tester,
-  ) async {
+  testWidgets('the title wears the task page title tier', (tester) async {
     stubDetail(checkIn());
     await pump(tester);
 
@@ -844,7 +884,51 @@ void main() {
     final tokens = tester
         .element(find.byKey(const ValueKey('check-in-detail-title')))
         .designTokens;
-    expect(title.style, calmPageTitleStyle(tokens));
+    expect(title.style, detailPageTitleStyle(tokens));
+  });
+
+  group('the crumb', () {
+    testWidgets('names the category and the person in full, as a task names '
+        'its category and project, and leads back to the person', (
+      tester,
+    ) async {
+      final cache = MockEntitiesCacheService();
+      when(() => cache.getCategoryById('crew')).thenReturn(
+        CategoryTestUtils.createTestCategory(
+          id: 'crew',
+          name: 'Penguin Operations',
+          color: '#22AA66',
+        ),
+      );
+      overrides = [entitiesCacheServiceProvider.overrideWithValue(cache)];
+      stubDetail(checkIn());
+      final backs = await pump(tester);
+
+      final crumb = tester.widget<TaskHierarchyCrumb>(
+        find.byKey(const ValueKey('check-in-detail-crumb')),
+      );
+      expect(crumb.category?.label, 'Penguin Operations');
+      expect(crumb.category?.color, const Color(0xFF22AA66));
+      expect(crumb.project?.label, 'Commander Pip Frostbeak');
+      expect(find.text('Penguin Operations'), findsOneWidget);
+
+      await tester.tap(find.text('Commander Pip Frostbeak'));
+      await tester.pump();
+      expect(backs, hasLength(1));
+    });
+
+    testWidgets('without a cached category names the person alone', (
+      tester,
+    ) async {
+      stubDetail(checkIn());
+      await pump(tester);
+
+      final crumb = tester.widget<TaskHierarchyCrumb>(
+        find.byKey(const ValueKey('check-in-detail-crumb')),
+      );
+      expect(crumb.category, isNull);
+      expect(find.text('Commander Pip Frostbeak'), findsOneWidget);
+    });
   });
 
   // An empty comment is no evidence; only its words are.

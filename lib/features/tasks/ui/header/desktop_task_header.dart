@@ -2,6 +2,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -308,16 +309,9 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   }
 
   Widget _buildTitleLine(BuildContext context) {
-    final tokens = context.designTokens;
-    // The task title is the page's primary focal point, so it sits a clear
-    // step above the card/section headers (subtitle2) rather than one notch
-    // up — heading2 gives an unambiguous title → section → body cascade.
-    // A slightly looser line-height keeps a multi-line wrapping title reading
-    // as one cohesive block rather than two stacked lines.
-    final style = tokens.typography.styles.heading.heading2.copyWith(
-      color: TaskShowcasePalette.highText(context),
-      height: 1.15,
-    );
+    // The task title is the page's primary focal point: the detail-page
+    // title tier, a clear step above the card/section headers.
+    final style = detailPageTitleStyle(context.designTokens);
     // The title spans the full content width and wraps freely; the status
     // control no longer rides this line, so a long title never leaves a void
     // beside a marooned pill (it leads the metadata block below instead).

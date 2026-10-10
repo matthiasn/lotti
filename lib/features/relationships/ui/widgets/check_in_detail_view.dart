@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
@@ -25,12 +24,16 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -219,6 +222,22 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   CheckInEntry? _checkInOf(RelationshipDetail? detail) =>
       detail?.checkIns.where((c) => c.meta.id == widget.checkInId).firstOrNull;
 
+  /// The person's category as the task crumb draws it — its name beside its
+  /// colour — or null where the person has none, or it is not cached.
+  DesktopTaskHeaderCategory? _categoryOf(RelationshipEntry relationship) {
+    final definition = ref
+        .watch(entitiesCacheServiceProvider)
+        ?.getCategoryById(relationship.meta.categoryId);
+    if (definition == null) return null;
+    return DesktopTaskHeaderCategory(
+      label: definition.name,
+      color: colorFromCssHex(
+        definition.color,
+        substitute: context.designTokens.colors.text.mediumEmphasis,
+      ),
+    );
+  }
+
   /// *Comment*: an empty comment card in the timeline, its editor focused,
   /// the way a task's text entry starts.
   Future<void> _startComment(CheckInEntry checkIn) async {
@@ -401,18 +420,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
       onPopInvokedWithResult: _onPopInvoked,
       child: Column(
         children: [
-          _TopBar(
-            onBack: widget.onBack == null ? null : _back,
-            // Held — disabled, not hidden — while a take is live: an edit
-            // sheet over a running recorder, with the floating indicator
-            // hidden, was the one door left to a recording nothing on
-            // screen could stop.
-            editHeld: _recording,
-            onEdit: checkIn == null
-                ? null
-                : () =>
-                      showCheckInEditSheet(context: context, checkIn: checkIn),
-          ),
+          _TopBar(onBack: widget.onBack == null ? null : _back),
           Expanded(
             child: checkIn == null
                 ? Center(
@@ -438,14 +446,25 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                     personName:
                         detail!.relationship.data.nickname ??
                         detail.relationship.data.title,
+                    // The crumb names the person in full, as their own page
+                    // does, under the category they are filed in.
+                    personFullName: detail.relationship.data.title,
+                    category: _categoryOf(detail.relationship),
+                    onPersonTap: widget.onBack == null ? null : _back,
                     entries: detail.checkInEntries[checkIn.id] ?? const [],
                     entryKeyBuilder: _keyFor,
                     onPickType: () => _pickType(checkIn),
                     onPickStart: () => _pickStart(checkIn),
                     onPickDuration: () => _pickDuration(checkIn),
                     onPickSentiment: () => _pickSentiment(checkIn),
-                    // Held with Edit: a picker sheet over a running recorder
-                    // was the same leak through a different door.
+                    onEdit: () => showCheckInEditSheet(
+                      context: context,
+                      checkIn: checkIn,
+                    ),
+                    // Held — shown, not hidden — while a take is live: an
+                    // edit sheet or a picker over a running recorder, with
+                    // the floating indicator hidden, was a door to a
+                    // recording nothing on screen could stop.
                     chipsEnabled: !_recording,
                   ),
           ),
@@ -499,17 +518,14 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   ),
 };
 
-/// The bar above the page: back to the person, and — behind *More* — the
-/// sheet that edits everything at once, for the fields no chip carries
-/// (topics, the notes for next time, the logged note).
+/// The bar above the page: back to the person, the one control a task's
+/// compact bar carries on its leading edge. Edit lives at the end of the
+/// header's lane, where a task keeps its *Details*, beside the facts it
+/// edits rather than across the window from them.
 class _TopBar extends StatelessWidget {
-  const _TopBar({this.onBack, this.onEdit, this.editHeld = false});
+  const _TopBar({this.onBack});
 
   final VoidCallback? onBack;
-  final VoidCallback? onEdit;
-
-  /// Whether Edit is shown but takes no tap — while a take is live.
-  final bool editHeld;
 
   @override
   Widget build(BuildContext context) {
@@ -519,52 +535,67 @@ class _TopBar extends StatelessWidget {
         horizontal: tokens.spacing.step3,
         vertical: tokens.spacing.step2,
       ),
-      child: Row(
-        children: [
-          // The design system's icon action on both ends, as the person
-          // hero's header: a raw `IconButton` was the one Material-default
-          // control on the feature.
-          if (onBack != null)
-            DesignSystemIconAction(
-              key: const ValueKey('check-in-detail-back'),
-              icon: LottiIcons.back,
-              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: onBack,
-            ),
-          const Spacer(),
-          // Edit is the page's one action, so it is a pencil in the open —
-          // the person hero's own — not the sole item of a ⋮ menu that cost
-          // a tap to find out it held one thing.
-          if (onEdit != null)
-            DesignSystemIconAction(
-              key: const ValueKey('check-in-detail-edit'),
-              icon: LottiIcons.edit,
-              tooltip: context.messages.checkInEditTitle,
-              onPressed: editHeld ? null : onEdit,
-            ),
-        ],
+      child: ConstrainedBox(
+        // The bar keeps its height without a back, so the crumb sits at the
+        // same place on the phone page and in the desktop pane.
+        constraints: const BoxConstraints(
+          minHeight: kMinInteractiveDimension,
+        ),
+        child: Row(
+          children: [
+            // The design system's icon action, as the person hero's header:
+            // a raw `IconButton` was the one Material-default control on
+            // the feature.
+            if (onBack != null)
+              DesignSystemIconAction(
+                key: const ValueKey('check-in-detail-back'),
+                // The chevron a task's page and the person hero lead back
+                // with, not a third back glyph.
+                icon: LottiIcons.chevronLeft,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: onBack,
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// The scrolling page: the header, the notes for next time and the
-/// timeline, centred at the reading width a task's page uses.
+/// The scrolling page, tiered as a task's page is (`DesktopTaskHeader` and
+/// `TaskForm`): the crumb — the person's category and the person — the
+/// title, the facts as one lane of read-outs, then a faint rule before the
+/// words the check-in was logged with, sitting on the page the way a task's
+/// description does; after them the notes for next time and the timeline,
+/// centred at the reading width a task's page uses.
 class _Body extends StatelessWidget {
   const _Body({
     required this.checkIn,
     required this.personName,
+    required this.personFullName,
     required this.entries,
     required this.entryKeyBuilder,
     required this.onPickType,
     required this.onPickStart,
     required this.onPickDuration,
     required this.onPickSentiment,
+    required this.onEdit,
+    this.category,
+    this.onPersonTap,
     this.chipsEnabled = true,
   });
 
   final CheckInEntry checkIn;
+
+  /// How the title calls the person — the nickname where there is one.
   final String personName;
+
+  /// How the crumb calls the person — their name in full.
+  final String personFullName;
+  final DesktopTaskHeaderCategory? category;
+
+  /// The crumb's person segment leads back to their page.
+  final VoidCallback? onPersonTap;
 
   /// What the check-in holds, oldest first.
   final List<JournalEntity> entries;
@@ -573,8 +604,9 @@ class _Body extends StatelessWidget {
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
   final VoidCallback onPickSentiment;
+  final VoidCallback onEdit;
 
-  /// Whether the header chips take a tap — not while a take is live.
+  /// Whether the header's read-outs take a tap — not while a take is live.
   final bool chipsEnabled;
 
   @override
@@ -582,7 +614,6 @@ class _Body extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final data = checkIn.data;
-    final length = checkIn.meta.dateTo.difference(checkIn.meta.dateFrom);
     final note = checkIn.entryText?.plainText.trim() ?? '';
     final guidance = [
       if (data.payAttentionTo?.trim() case final text? when text.isNotEmpty)
@@ -612,62 +643,82 @@ class _Body extends StatelessWidget {
           ),
           children: [
             // The header block sits on the cards' edge — their `step2`
-            // margin — so the page has one left rail from the title down,
-            // as the person page already has.
+            // margin — so the page has one left rail from the crumb down.
             Padding(
               padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // The calm page title every other page carries, not the raw
-                  // heading2: the feature's three pages share one title tier.
+                  // The task header's own crumb and spacing: ancestry a full
+                  // step4 above the title, the title bonded a tighter step3
+                  // down to its facts.
+                  TaskHierarchyCrumb(
+                    key: const ValueKey('check-in-detail-crumb'),
+                    category: category,
+                    project: DesktopTaskHeaderProject(label: personFullName),
+                    onCategoryTap: null,
+                    onProjectTap: onPersonTap,
+                  ),
+                  SizedBox(height: tokens.spacing.step4),
                   Text(
                     messages.relationshipCheckInTitle(personName),
                     key: const ValueKey('check-in-detail-title'),
-                    style: calmPageTitleStyle(tokens),
+                    style: detailPageTitleStyle(tokens),
                   ),
-                  SizedBox(height: tokens.spacing.step4),
-                  CheckInContextChips(
+                  SizedBox(height: tokens.spacing.step3),
+                  CheckInMetaSummaryLine(
                     type: data.interactionType,
                     startedLabel: checkInStartedLabelOf(
                       context,
                       checkIn.meta.dateFrom,
                     ),
-                    durationLabel: length <= Duration.zero
-                        ? messages.checkInDurationChip
-                        : checkInDurationLabel(context, length),
+                    duration: checkIn.meta.dateTo.difference(
+                      checkIn.meta.dateFrom,
+                    ),
                     sentiment: data.sentiment,
+                    topics: data.topics,
                     onPickType: onPickType,
                     onPickStart: onPickStart,
                     onPickDuration: onPickDuration,
                     onPickSentiment: onPickSentiment,
+                    onEdit: onEdit,
                     enabled: chipsEnabled,
                   ),
-                  if (data.topics.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.step4),
-                    Wrap(
-                      key: const ValueKey('check-in-detail-topics'),
-                      spacing: tokens.spacing.step2,
-                      runSpacing: tokens.spacing.step2,
-                      children: [
-                        for (final topic in data.topics)
-                          DsPill(
-                            variant: DsPillVariant.filled,
-                            shape: DsPillShape.tag,
-                            bordered: true,
-                            label: topic,
-                            labelColor: tokens.colors.text.mediumEmphasis,
-                          ),
-                      ],
+                  SizedBox(height: tokens.spacing.sectionGap),
+                  // The faint rule a task draws between its identity and its
+                  // body, so the two read as anchored bands.
+                  Divider(
+                    key: const ValueKey('check-in-detail-rule'),
+                    height: 1,
+                    thickness: 1,
+                    color: tokens.colors.decorative.level01,
+                  ),
+                  SizedBox(height: tokens.spacing.step4),
+                  // The user's own words first, on the page itself where a
+                  // task keeps its description — not boxed under a caption,
+                  // which put the one thing the page is opened for a tier
+                  // below the cards around it.
+                  if (note.isNotEmpty)
+                    SelectableText(
+                      note,
+                      key: const ValueKey('check-in-detail-note'),
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    )
+                  else if (entries.isEmpty)
+                    Text(
+                      messages.relationshipCheckInEmpty,
+                      key: const ValueKey('check-in-detail-empty'),
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
-                  ],
                 ],
               ),
             ),
-            SizedBox(height: tokens.spacing.sectionGap),
-            // The user's own words first, the notes derived from them
-            // after: a reader opens a check-in for what was said.
-            if (note.isNotEmpty) _NoteCard(checkIn: checkIn, note: note),
+            if (note.isNotEmpty || entries.isEmpty)
+              SizedBox(height: tokens.spacing.step5),
             if (guidance.isNotEmpty) _NextTimeCard(guidance: guidance),
             if (entries.isNotEmpty)
               LinkedEntriesWidget(
@@ -675,14 +726,6 @@ class _Body extends StatelessWidget {
                 entryKeyBuilder: entryKeyBuilder,
                 showActivityFilters:
                     entries.length >= CheckInDetailView.filtersFrom,
-              )
-            else if (note.isEmpty)
-              Text(
-                messages.relationshipCheckInEmpty,
-                key: const ValueKey('check-in-detail-empty'),
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
               ),
           ],
         );
@@ -723,56 +766,6 @@ class _NextTimeCard extends StatelessWidget {
               for (final (label, text) in guidance)
                 (caption: label, text: text, key: null),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The text a check-in was logged with, as the first card of its timeline:
-/// the journal entry card's shell and its date language, stamped at the
-/// check-in's start.
-class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.checkIn, required this.note});
-
-  final CheckInEntry checkIn;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DesignSystemSectionCard(
-      key: const ValueKey('check-in-detail-note'),
-      // The linked entry cards' own margin, so the note lines up with the
-      // cards that follow it.
-      margin: EdgeInsets.only(
-        left: tokens.spacing.step2,
-        right: tokens.spacing.step2,
-        bottom: tokens.spacing.step4,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // No date: the header's chips already say when, and a second
-          // stamp a few lines under them was the one date on the page that
-          // could disagree with them.
-          Text(
-            context.messages.relationshipCheckInNoteLabel,
-            key: const ValueKey('check-in-detail-note-stamp'),
-            // The medium ink: a low-emphasis caption over the user's own
-            // words said "de-emphasised" about the one thing the page is
-            // opened for.
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          SelectableText(
-            note,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
           ),
         ],
       ),

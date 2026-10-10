@@ -117,6 +117,22 @@ void main() {
       expect(style.color, tokens.colors.text.highEmphasis);
     });
 
+    test('detail page title is heading2 at 1.15 line height, high ink by '
+        'default, any colour on request', () {
+      const tokens = dsTokensDark;
+      final heading2 = tokens.typography.styles.heading.heading2;
+      final style = detailPageTitleStyle(tokens);
+
+      expect(style.fontSize, heading2.fontSize);
+      expect(style.fontWeight, heading2.fontWeight);
+      expect(style.height, 1.15);
+      expect(style.color, tokens.colors.text.highEmphasis);
+      expect(
+        detailPageTitleStyle(tokens, color: Colors.red).color,
+        Colors.red,
+      );
+    });
+
     test('display moment is 26/600 with -0.02em tracking', () {
       const tokens = dsTokensDark;
       final style = calmDisplayStyle(tokens);

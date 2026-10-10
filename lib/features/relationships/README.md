@@ -125,8 +125,11 @@ independent tasks linked to them.
 
 A check-in holds its comments, recordings and photos as entries of its own;
 the text older check-ins were saved with reads as their first entry. Tapping
-a check-in opens it the way a task opens: its when, how, how long and how it
-felt as chips that edit in place, then its timeline, with a floating bar
+a check-in opens it the way a task opens, in the task page's own header: the
+person's category and name above the title, its when, how, how long and how
+it felt as the task's read-out tags that edit in place, its topics as one
+tag, and *Edit check-in* where a task keeps *Details*; the words it was
+logged with under a faint rule, then its timeline, with a floating bar
 that adds a dictation, a comment or photos; its row in the log says what it
 holds. Adding
 to a check-in, or a recording's transcript arriving later, brings the

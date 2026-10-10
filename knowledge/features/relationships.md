@@ -102,8 +102,12 @@ sources:
     last_modified: 2026-09-13
   - id: context-chips
     resource: ../../lib/features/relationships/ui/widgets/check_in_context_chips.dart
-    title: CheckInContextChips — type · started · duration as one row
-    last_modified: 2026-09-13
+    title: CheckInContextChips — the composer's type · started · duration row
+    last_modified: 2026-10-10
+  - id: meta-summary-line
+    resource: ../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart
+    title: CheckInMetaSummaryLine — a saved check-in's facts in the task header's grammar
+    last_modified: 2026-10-10
   - id: duration-picker
     resource: ../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart
     title: The check-in duration picker — ranked chips over the shared wheel
@@ -294,28 +298,44 @@ recording carries a link from the person as well.
 ## Opening a check-in
 
 A check-in row opens the check-in itself, not its edit sheet, laid out like
-a task's detail page (design panel 2026-09-19).
+a task's detail page (design panel 2026-09-19; aligned tier for tier with
+the task header on 2026-10-10).
 [`CheckInDetailView`](../../lib/features/relationships/ui/widgets/check_in_detail_view.dart)
 centres its content at `kDetailContentMaxWidth`, the task page's reading
 width, and reads top to bottom:
 
-* **The header** names the check-in (*Check-in with Commander Pip
-  Frostbeak*) and carries type · start · length · feeling as the composer's
-  own chip row (`CheckInContextChips`, with its optional feeling chip), each
-  chip editing only its field in place through the composer's pickers
+* **The header** is the task header's tiers. The task's own
+  `TaskHierarchyCrumb` names the person's category (its colour square and
+  name, from `entitiesCacheServiceProvider`) and the person in full; the
+  person segment leads back to their page. The title (*Check-in with Pip*)
+  wears `detailPageTitleStyle`, the task title's tier. Under it,
+  [`CheckInMetaSummaryLine`](../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart)
+  draws type · start · length · feeling as one wrapping lane of the task
+  lane's square `DsPillShape.tag` read-outs — the feeling tinted in its
+  `sentimentColor`, as the person page's check-in row paints it, and led
+  by a mood glyph in that colour as a task's tinted status is by its own —
+  and an unset length or feeling as the task's muted round offer pill. Each
+  fact edits only its field in place through the composer's pickers
   (`showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
-  `showCheckInSentimentPicker`) and saving the check-in at once. The topics
-  follow as tag pills. Everything no chip carries — topics, the notes for
-  next time, the logged note — stays in the composer, behind the top bar's
-  pencil (*Edit check-in*): one `DesignSystemIconAction` in the open, the
-  person hero's own glyph, where a ⋮ menu holding that single item cost a
-  tap to learn it held one thing. The back control is the same component.
+  `showCheckInSentimentPicker`) and saves the check-in at once. The topics
+  follow as one tag, folded the way a task folds its labels (two named,
+  the rest as "+N"). The lane ends where a task's ends on *Details*: the
+  dashed muted pill *Edit check-in*, opening the composer for everything no
+  read-out edits — topics, the notes for next time, the logged note — and
+  the topics tag opens the same sheet, so nothing in the lane is a tag that
+  looks tappable and is not. The composer keeps `CheckInContextChips` —
+  round pills with a chevron, the lever grammar of a form. The top bar
+  holds back alone, a `DesignSystemIconAction` with the chevron a task's
+  page and the person hero lead back with.
+* **A faint rule, then the logged note** on the page itself, where a task
+  keeps its description (`TaskForm`'s `decorative.level01` divider): the
+  user's own words, not boxed under a caption.
 * **Next time** on a card of its own, its facts drawn by
   [`NextTimeFacts`](../../lib/features/relationships/ui/shared/next_time_facts.dart)
   — the same flat caption/body pairs the person page draws. It follows the
   logged note rather than preceding it (a reader opens a check-in for what
-  was said; the derived notes come after) and wears the note card's
-  horizontal `step2` margin, so the page has one card edge.
+  was said; the derived notes come after) and wears the linked entry
+  cards' horizontal `step2` margin, so the page has one card edge.
 * **Leaving while a take is live asks first.** The view sits in a
   `PopScope` that holds the route while `_recording`; the system back and
   the bar's back both run `_confirmLeaveRecording` — the recorder's own
@@ -324,23 +344,25 @@ width, and reads top to bottom:
   the desktop pane swapping people) restores the floating recording
   indicator in `dispose` — through the recorder held in `_recorder` since
   Dictate was pressed, because `ref` may not be touched in `dispose` — so
-  an escaped take can still be stopped; and the top bar's Edit and the
-  header's chips are held while `_recording`, since an edit sheet or a
+  an escaped take can still be stopped; and the header's read-outs and its
+  Edit are held while `_recording` — shown at the low ink, taking no tap —
+  since an edit sheet or a
   picker over a running recorder was the same leak through another door. Before this, going back mid-take left a
   recording running with nothing on screen to stop it.
 * **One rail, one tier.** The list's gutter is the person page's `step5`
-  rail less the `step2` every card adds as its margin, and the title, chips
-  and topics sit on that same `step2` edge, so the three People pages put
-  their text on one left edge; both cards take the design system's own
-  card inset, as every card on the person page does, and the Next time
-  card the person page's `PersonCardHeader`; the title names
+  rail less the `step2` every card adds as its margin, and the crumb, the
+  title, the read-outs, the rule and the note sit on that same `step2`
+  edge, so the three People pages put their text on one left edge; the
+  Next time card takes the design system's own card inset, as every card
+  on the person page does, and the person page's `PersonCardHeader`; the
+  title names
   the nickname where there is one (`Check-in with Pip`, as the composer
   says — and the person hero's one-liner says `Pip`, bare, not `"Pip"` in
   ASCII quotes); and the bar's Add comment is a speech bubble
   (`LottiIcons.chat`), so the page's one pencil is Edit.
-* **The timeline**: the text the check-in was logged with as its first card,
-  in the entry cards' shell and stamped at the check-in's start, then its
-  entries through the journal's own `LinkedEntriesWidget`. The Timer / Audio
+* **The timeline**: what the check-in holds, through the journal's own
+  `LinkedEntriesWidget`; the text it was logged with sits above, under the
+  rule. The Timer / Audio
   / Images filters appear only from the fifth entry
   (`CheckInDetailView.filtersFrom`, via `showActivityFilters`): a short
   timeline has nothing to filter, and without the bar the list applies no
