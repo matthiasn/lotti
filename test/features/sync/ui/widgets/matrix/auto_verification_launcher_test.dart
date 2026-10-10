@@ -70,6 +70,7 @@ void main() {
     List<MockDeviceKeys> unverified, {
     List<Override> extraOverrides = const [],
     MatrixUnverifiedController Function()? unverifiedController,
+    int launchers = 1,
   }) async {
     late ProviderContainer container;
     await tester.pumpWidget(
@@ -96,7 +97,14 @@ void main() {
           home: Consumer(
             builder: (ctx, ref, _) {
               container = ProviderScope.containerOf(ctx);
-              return const Scaffold(body: AutoVerificationLauncher());
+              return Scaffold(
+                body: Column(
+                  children: [
+                    for (var i = 0; i < launchers; i++)
+                      const AutoVerificationLauncher(),
+                  ],
+                ),
+              );
             },
           ),
         ),
@@ -223,6 +231,47 @@ void main() {
 
         expect(find.byType(VerificationModal), findsOneWidget);
         expect(shownDevice(), same(fresh));
+      },
+    );
+  });
+
+  group('AutoVerificationLauncher with two launchers mounted', () {
+    testWidgets(
+      'show-again reopens the device once and does not offer it again after '
+      'the relaunched sheet closes',
+      (tester) async {
+        // TLC's `ReleaseOnce` trace: the settings pane and the setup sheet
+        // each mount a launcher. When each listener released on its own, the
+        // second one undid the record the first had just made, and closing
+        // the relaunched sheet reopened it.
+        final device = deviceNamed('New phone', 'NEWPHONE');
+        final container = await pumpLauncher(tester, [device], launchers: 2);
+        final identity = MatrixVerificationHandled.identityOf(
+          userId: '@alice:example.com',
+          deviceId: 'NEWPHONE',
+        );
+
+        expect(find.byType(VerificationModal), findsOneWidget);
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+        expect(find.byType(VerificationModal), findsNothing);
+
+        container.read(matrixVerificationRelaunchProvider.notifier).request();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VerificationModal), findsOneWidget);
+        expect(
+          container
+              .read(matrixVerificationHandledProvider.notifier)
+              .contains(identity),
+          isTrue,
+        );
+
+        await tester.tap(find.byIcon(LottiIcons.close));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VerificationModal), findsNothing);
+        verify(() => mockMatrixService.verifyDevice(device)).called(2);
       },
     );
   });

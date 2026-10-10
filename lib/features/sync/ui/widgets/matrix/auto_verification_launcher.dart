@@ -147,11 +147,13 @@ class _AutoVerificationLauncherState
     // ceremony take the slot — either way a stale peer opens instead of the
     // ceremony just dismissed. Re-querying the providers cannot help either —
     // the device is still unverified, which is precisely the state that keeps
-    // it marked.
+    // it marked. The request has already released it, once for every
+    // launcher; releasing here as well let a second launcher undo the
+    // record the first one had just made.
     ref.listen<int>(matrixVerificationRelaunchProvider, (_, _) {
-      final handled = ref.read(matrixVerificationHandledProvider.notifier);
-      final last = handled.lastShown;
-      if (last != null) handled.release(last);
+      final last = ref
+          .read(matrixVerificationHandledProvider.notifier)
+          .lastShown;
       final devices = ref.read(matrixUnverifiedControllerProvider).value ?? [];
       unawaited(_maybeLaunch(devices, preferred: last));
     });
