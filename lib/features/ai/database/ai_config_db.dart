@@ -75,6 +75,14 @@ class AiConfigDb extends _$AiConfigDb {
   Future<int?> versionStamp(String id) =>
       versionStampById(id).getSingleOrNull();
 
+  /// The hard deletions this device holds, by id: every stamp in
+  /// `ai_config_versions` with no config row. "Send settings" re-sends them,
+  /// since a deletion has no row of its own to replay.
+  Future<Map<String, int>> hardDeletionStamps() async {
+    final rows = await hardDeletions().get();
+    return {for (final row in rows) row.id: row.stamp};
+  }
+
   /// Saves a local edit of [config] and returns the stamp its version took.
   ///
   /// The stamp is the current time in milliseconds, or one past the stamp

@@ -83,6 +83,13 @@ sealed class AiConfig with _$AiConfig {
     /// — and so the seeding passes can tell "deleted" apart from "missing".
     /// Reads hide these rows unless a caller explicitly asks for them.
     DateTime? deletedAt,
+
+    /// The user removed the key in this very version. A received provider
+    /// without a key otherwise keeps the key the receiving device holds,
+    /// because an empty key on the wire usually means the sender's keychain
+    /// read came back empty; with this set, the receiver removes its key too.
+    /// A version written with a key clears it again.
+    @Default(false) bool apiKeyCleared,
   }) = AiConfigInferenceProvider;
 
   const factory AiConfig.model({

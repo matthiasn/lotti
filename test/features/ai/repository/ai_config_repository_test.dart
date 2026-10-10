@@ -3,12 +3,15 @@ import 'dart:convert';
 
 import 'package:async/async.dart';
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_ledger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
@@ -38,7 +41,7 @@ void main() {
 
     // Set up default behavior
     when(
-      () => mockOutboxService.enqueueMessage(any()),
+      () => mockOutboxService.enqueueMessageOrThrow(any()),
     ).thenAnswer((_) async {});
   });
 
@@ -68,7 +71,7 @@ void main() {
     verify(() => settings.saveSettingsItem(key, 'profile-1')).called(1);
     await repository.setDefaultProfileId(null);
     verify(() => settings.removeSettingsItem(key)).called(1);
-    verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
   });
 
   test(
@@ -101,6 +104,12 @@ void main() {
 
     setUp(() {
       mockDb = MockAiConfigDb();
+      when(
+        () => mockDb.hardDeletionStamps(),
+      ).thenAnswer((_) async => const <String, int>{});
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
       repository = AiConfigRepository(mockDb);
 
       // Set up default behavior for mockDb
@@ -134,7 +143,7 @@ void main() {
 
         // Assert
         verify(() => mockDb.saveConfig(any())).called(1);
-        verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(1);
       },
     );
 
@@ -631,7 +640,7 @@ void main() {
       );
 
       List<SyncMessage> sent() => verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
+        () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
       ).captured.cast<SyncMessage>();
 
       test('a local save sends the stamp its version took', () async {
@@ -664,7 +673,7 @@ void main() {
           (await repository.getConfigById('profile-stamped'))!.name,
           'newer',
         );
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
       });
 
       test('a copy sent before a hard delete does not bring the config '
@@ -853,7 +862,7 @@ void main() {
       );
 
       // Verify OutboxService was called
-      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(1);
     });
 
     test('deleteConfig removes the config', () async {
@@ -1304,6 +1313,7 @@ void main() {
   group('replication across devices', () {
     late List<AiConfigDb> dbs;
     late List<AiApiKeyStorage> keychains;
+    late List<SettingsDb> settingsDbs;
     late AiConfigRepository deviceA;
     late AiConfigRepository deviceB;
     final sent = <SyncMessage>[];
@@ -1314,9 +1324,31 @@ void main() {
     AiConfigRepository device() {
       final keychain = AiApiKeyStorage.inMemory();
       final db = AiConfigDb(inMemoryDatabase: true, apiKeyStorage: keychain);
+      final settings = SettingsDb(inMemoryDatabase: true);
       keychains.add(keychain);
       dbs.add(db);
-      return AiConfigRepository(db);
+      settingsDbs.add(settings);
+      return AiConfigRepository(db, settingsDb: settings);
+    }
+
+    /// The ids device [index] still owes its peers.
+    Future<Set<String>> owedOn(int index) =>
+        AiConfigSyncLedger(settingsDbs[index]).load();
+
+    /// Makes the outbox refuse every send from now on.
+    void outboxDown() {
+      when(
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
+      ).thenThrow(Exception('outbox unavailable'));
+    }
+
+    /// Makes the outbox accept, and record, every send from now on.
+    void outboxUp() {
+      when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
+        invocation,
+      ) async {
+        sent.add(invocation.positionalArguments.first as SyncMessage);
+      });
     }
 
     /// Runs [write] on a device at [at], and returns the messages it sent.
@@ -1409,18 +1441,20 @@ void main() {
     setUp(() {
       dbs = [];
       keychains = [];
+      settingsDbs = [];
       deviceA = device();
       deviceB = device();
-      when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
-        invocation,
-      ) async {
-        sent.add(invocation.positionalArguments.first as SyncMessage);
-      });
+      outboxUp();
     });
 
     tearDown(() async {
+      deviceA.dispose();
+      deviceB.dispose();
       await deviceA.close();
       await deviceB.close();
+      for (final settings in settingsDbs) {
+        await settings.close();
+      }
     });
 
     test('concurrent edits settle on the newer one on both devices', () async {
@@ -1654,8 +1688,7 @@ void main() {
     );
 
     test(
-      'a provider deletion delivered again after an interrupted cleanup '
-      'finishes it',
+      'an orphan deletion the outbox refuses is stored, owed and flushed',
       () async {
         final model2 = model.copyWith(id: 'model2');
         await seedBoth([provider]);
@@ -1671,32 +1704,47 @@ void main() {
 
         // B's outbox takes the first orphan's deletion and fails the second.
         var sends = 0;
-        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+        when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
           invocation,
         ) async {
           if (++sends == 2) throw Exception('outbox unavailable');
           sent.add(invocation.positionalArguments.first as SyncMessage);
         });
-        await expectLater(
-          at(t3, () => deliver(deviceB, cascade)),
-          throwsException,
-        );
-        final live = await deviceB.getConfigsByType(AiConfigType.model);
-        expect(live, hasLength(1));
+        final first = await at(t3, () => deliver(deviceB, cascade));
 
-        // Sync delivers the same message again.
-        final retry = await at(t3, () => deliver(deviceB, cascade));
+        // Both orphans are deleted here; the one not sent is owed.
+        expect(
+          await deviceB.getConfigsByType(
+            AiConfigType.model,
+            includeDeleted: true,
+          ),
+          isEmpty,
+        );
+        final sentNow = first.whereType<SyncAiConfigDelete>().map((m) => m.id);
+        expect(sentNow, hasLength(1));
+        final owedId = {'model', 'model2'}.difference(sentNow.toSet()).single;
+        expect(await owedOn(1), {owedId});
+
+        // The outbox comes back and the flush sends the owed deletion, with
+        // the provider deletion's stamp.
+        outboxUp();
+        final flushed = await at(t3, deviceB.flushPending);
 
         expect(
-          (retry.single as SyncAiConfigDelete).id,
-          live.single.id,
+          flushed.single,
+          isA<SyncAiConfigDelete>()
+              .having((m) => m.id, 'id', owedId)
+              .having((m) => m.hardDelete, 'hardDelete', isTrue)
+              .having((m) => m.versionStamp, 'stamp', ms(t2)),
         );
-        expect(await deviceB.getConfigsByType(AiConfigType.model), isEmpty);
+        expect(await owedOn(1), isEmpty);
+        await deliver(deviceA, flushed);
+        expect(await stored(deviceA, owedId), isNull);
       },
     );
 
     test(
-      'a model delivered again after an interrupted cleanup is deleted then',
+      'a model whose orphan deletion cannot be sent is deleted and owed',
       () async {
         await seedBoth([provider]);
         final backfill = await at(t1, () => deviceB.saveConfig(model));
@@ -1705,25 +1753,223 @@ void main() {
           () => deviceA.deleteInferenceProviderWithModels('provider'),
         );
 
-        // A applies B's model, but its outbox refuses the orphan's deletion.
-        when(
-          () => mockOutboxService.enqueueMessage(any()),
-        ).thenThrow(Exception('outbox unavailable'));
-        await expectLater(deliver(deviceA, backfill), throwsException);
-        expect(await deviceA.getConfigById('model'), isNotNull);
+        // A applies B's model, but its outbox refuses the orphan's deletion:
+        // the deletion is recorded here all the same, and owed.
+        outboxDown();
+        await deliver(deviceA, backfill);
+        expect(await stored(deviceA, 'model'), isNull);
+        expect(await deviceA.versionStamp('model'), ms(t2));
+        expect(await owedOn(0), {'model'});
 
-        // Sync delivers the same message again, which changes no row.
-        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
-          invocation,
-        ) async {
-          sent.add(invocation.positionalArguments.first as SyncMessage);
-        });
-        final retry = await at(t3, () => deliver(deviceA, backfill));
+        // Sync delivers the same message again, which changes no row and
+        // owes nothing new.
+        await deliver(deviceA, backfill);
+        expect(await owedOn(0), {'model'});
 
-        expect((retry.single as SyncAiConfigDelete).id, 'model');
-        expect(await deviceA.getConfigById('model'), isNull);
+        outboxUp();
+        final flushed = await at(t3, deviceA.flushPending);
+        expect((flushed.single as SyncAiConfigDelete).id, 'model');
+        expect(await owedOn(0), isEmpty);
       },
     );
+
+    test('a hard delete the outbox refuses is owed and flushed with its '
+        'stamp', () async {
+      final prompt = AiConfig.prompt(
+        id: 'prompt',
+        name: 'Prompt',
+        systemMessage: 'system',
+        userMessage: 'user',
+        defaultModelId: 'model',
+        modelIds: const ['model'],
+        createdAt: fixedDate,
+        useReasoning: false,
+        requiredInputData: const [],
+        aiResponseType: AiResponseType.imageAnalysis,
+      );
+      await seedBoth([prompt]);
+
+      outboxDown();
+      await at(t2, () => deviceA.deleteConfig('prompt'));
+      expect(await stored(deviceA, 'prompt'), isNull);
+      expect(await owedOn(0), {'prompt'});
+      expect(await stored(deviceB, 'prompt'), isNotNull);
+
+      // The owed deletion is derived from what A holds now: the stamp the
+      // deletion left behind, with no row.
+      outboxUp();
+      final flushed = await at(t3, deviceA.flushPending);
+      expect(
+        flushed.single,
+        isA<SyncAiConfigDelete>()
+            .having((m) => m.id, 'id', 'prompt')
+            .having((m) => m.versionStamp, 'stamp', ms(t2)),
+      );
+      await deliver(deviceB, flushed);
+      expect(await stored(deviceB, 'prompt'), isNull);
+      expect(await owedOn(0), isEmpty);
+    });
+
+    test(
+      'an edit the outbox refuses is flushed as the row stored by then',
+      () async {
+        await seedBoth([model]);
+
+        outboxDown();
+        await at(t2, () => deviceA.saveConfig(model.copyWith(name: 'Lost')));
+        expect(await owedOn(0), {'model'});
+
+        // A later edit of the same row goes out on its own; the flush then
+        // sends the stored row, which is that newer version, once.
+        outboxUp();
+        final later = await at(
+          t3,
+          () => deviceA.saveConfig(model.copyWith(name: 'Newer')),
+        );
+        expect(await owedOn(0), isEmpty);
+        expect((later.single as SyncAiConfig).aiConfig.name, 'Newer');
+
+        await deviceA.flushPending();
+        expect(sent.length, 1);
+      },
+    );
+
+    test(
+      'the flush forgets an owed id this device holds nothing for',
+      () async {
+        await seedBoth([provider]);
+        await AiConfigSyncLedger(settingsDbs[0]).owe('vanished');
+
+        final flushed = await at(t3, deviceA.flushPending);
+
+        expect(flushed, isEmpty);
+        expect(await owedOn(0), isEmpty);
+      },
+    );
+
+    test('a refused send is retried after the retry delay', () {
+      fakeAsync((async) {
+        final settings = SettingsDb(inMemoryDatabase: true);
+        settingsDbs.add(settings);
+        final db = AiConfigDb(inMemoryDatabase: true);
+        dbs.add(db);
+        final repository = AiConfigRepository(
+          db,
+          settingsDb: settings,
+          retryDelay: const Duration(seconds: 30),
+        );
+        addTearDown(repository.dispose);
+        addTearDown(repository.close);
+
+        outboxDown();
+        repository.saveConfig(model);
+        async.flushMicrotasks();
+        expect(sent, isEmpty);
+
+        outboxUp();
+        async.elapse(const Duration(seconds: 29));
+        expect(sent, isEmpty);
+        async
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        expect(sent.single, isA<SyncAiConfig>());
+      });
+    });
+
+    test('a model the receive keeps under a deleted provider is hidden until '
+        'the provider is back', () async {
+      await seedBoth([provider, model]);
+      // B edits the model after A's cascade, before hearing of it: the edit
+      // is newer than the deletion, so the receive keeps it.
+      final cascade = await at(
+        t2,
+        () => deviceA.deleteInferenceProviderWithModels('provider'),
+      );
+      await at(t3, () => deviceB.saveConfig(model.copyWith(name: 'Edited')));
+      final watched = <List<AiConfig>>[];
+      final subscription = deviceB
+          .watchConfigsByType(AiConfigType.model)
+          .listen(watched.add);
+      await deliver(deviceB, cascade);
+      await pumpEventQueue();
+
+      // Kept, but listed nowhere a user or an inference would see it.
+      expect(await stored(deviceB, 'model'), isNotNull);
+      expect(await deviceB.getConfigsByType(AiConfigType.model), isEmpty);
+      expect(
+        await deviceB.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: true,
+        ),
+        hasLength(1),
+      );
+      expect(watched.last, isEmpty);
+
+      // The provider's restore brings the model back into the lists.
+      final restore = await at(
+        t3,
+        () => deviceA.restoreProviderWithModels(provider, const []),
+      );
+      await deliver(deviceB, restore);
+      await pumpEventQueue();
+      expect(
+        (await deviceB.getConfigsByType(AiConfigType.model)).single.name,
+        'Edited',
+      );
+      expect(watched.last.single.name, 'Edited');
+      await subscription.cancel();
+    });
+
+    test('a key the user cleared is removed on the peers', () async {
+      await seedBoth([provider]);
+      final sent = await at(
+        t2,
+        () => deviceA.saveConfig(
+          provider.copyWith(apiKey: '', apiKeyCleared: true),
+        ),
+      );
+      await deliver(deviceB, sent);
+
+      final onB =
+          await stored(deviceB, 'provider') as AiConfigInferenceProvider?;
+      expect(onB?.apiKey, isEmpty);
+      expect(onB?.apiKeyCleared, isTrue);
+      expect(
+        await keychains[1].read(apiKeyStorageKeyFor('provider')),
+        isNot('secret-key'),
+      );
+    });
+
+    test('a key entered again clears the marker on every device', () async {
+      await seedBoth([provider]);
+      await deliver(
+        deviceB,
+        await at(
+          t2,
+          () => deviceA.saveConfig(
+            provider.copyWith(apiKey: '', apiKeyCleared: true),
+          ),
+        ),
+      );
+      final sent = await at(
+        t3,
+        () => deviceB.saveConfig(
+          provider.copyWith(apiKey: 'new-key', apiKeyCleared: true),
+        ),
+      );
+      expect(
+        ((sent.single as SyncAiConfig).aiConfig as AiConfigInferenceProvider)
+            .apiKeyCleared,
+        isFalse,
+      );
+      await deliver(deviceA, sent);
+
+      final onA =
+          await stored(deviceA, 'provider') as AiConfigInferenceProvider?;
+      expect(onA?.apiKey, 'new-key');
+      expect(onA?.apiKeyCleared, isFalse);
+    });
 
     test('a received provider without a key keeps the key held here', () async {
       await seedBoth([provider]);
@@ -1801,6 +2047,12 @@ void main() {
 
     setUp(() {
       mockDb = MockAiConfigDb();
+      when(
+        () => mockDb.hardDeletionStamps(),
+      ).thenAnswer((_) async => const <String, int>{});
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
       mockDomainLogger = MockDomainLogger();
       repository = AiConfigRepository(mockDb);
 
@@ -1938,7 +2190,7 @@ void main() {
           return callback();
         });
         when(
-          () => mockOutboxService.enqueueMessage(any()),
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
         ).thenThrow(Exception('outbox down'));
 
         final result = await repository.deleteInferenceProviderWithModels(
@@ -1948,7 +2200,7 @@ void main() {
         // Reported as the success it locally is…
         expect(result.deletedModels, hasLength(1));
         // …and every id was still attempted, not abandoned at the first throw.
-        verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+        verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(2);
       },
     );
 
@@ -2015,7 +2267,7 @@ void main() {
         );
 
         // Nothing propagated: peers must not delete rows this device still has.
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
       },
     );
 
@@ -2168,6 +2420,12 @@ void main() {
 
     setUp(() {
       mockDb = MockAiConfigDb();
+      when(
+        () => mockDb.hardDeletionStamps(),
+      ).thenAnswer((_) async => const <String, int>{});
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
       repository = AiConfigRepository(mockDb);
 
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
@@ -2515,6 +2773,12 @@ void main() {
 
     setUp(() {
       mockDb = MockAiConfigDb();
+      when(
+        () => mockDb.hardDeletionStamps(),
+      ).thenAnswer((_) async => const <String, int>{});
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
       mockOutboxService = MockOutboxService();
       repository = AiConfigRepository(mockDb);
 
@@ -2525,7 +2789,7 @@ void main() {
 
       // Setup default mocks
       when(
-        () => mockOutboxService.enqueueMessage(any()),
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async => {});
 
       // Setup default transaction mock to execute the callback
@@ -2646,7 +2910,7 @@ void main() {
       verifyNever(() => mockDb.deleteConfig('model-3'));
 
       // Verify sync messages were sent
-      verify(() => mockOutboxService.enqueueMessage(any())).called(3);
+      verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(3);
     });
 
     test('should handle provider with no models', () async {
@@ -2671,7 +2935,7 @@ void main() {
       verify(() => mockDb.deleteConfig(providerId)).called(1);
 
       // Verify sync message was sent for provider deletion
-      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(1);
     });
 
     test('should not send sync messages when fromSync is true', () async {
@@ -2720,7 +2984,7 @@ void main() {
       verify(() => mockDb.deleteConfig(providerId)).called(1);
 
       // Verify no sync messages were sent
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
     });
 
     test('should handle database errors gracefully', () async {
@@ -2983,7 +3247,7 @@ void main() {
 
       // Set up default behavior
       when(
-        () => mockOutboxServiceInteg.enqueueMessage(any()),
+        () => mockOutboxServiceInteg.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async {});
 
       db = AiConfigDb(inMemoryDatabase: true);
@@ -3030,7 +3294,9 @@ void main() {
       await repository.saveConfig(promptConfig);
 
       // Verify OutboxService was called twice (once for each config)
-      verify(() => mockOutboxServiceInteg.enqueueMessage(any())).called(2);
+      verify(
+        () => mockOutboxServiceInteg.enqueueMessageOrThrow(any()),
+      ).called(2);
 
       // Retrieve and check API key config
       final retrievedApiConfig = await repository.getConfigById('openai-key');

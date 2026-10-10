@@ -244,6 +244,15 @@ event's server timestamp, as a config flag's is. The storage contract is in
 the decision is
 [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
 
+Every write owes its message until the outbox accepts it, as saved filters
+do: `AiConfigRepository` records the id in `AiConfigSyncLedger` before
+staging and settles it after, and `flushPending` sends what the device holds
+for an owed id — the row with its stamp, or the hard deletion the stamp alone
+records — at startup and a minute after a failed enqueue. The maintenance
+resend carries hard deletions too (`hardDeletionStamps`), since they have no
+row to replay. The decision is
+[ADR 0127](../../../docs/adr/0127-ai-configuration-changes-are-owed-until-sent.md).
+
 # File-backed payloads
 
 Journal entities and agent payloads can travel by reference: the envelope

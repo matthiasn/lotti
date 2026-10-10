@@ -40,7 +40,7 @@
     "lib/features/ai/functions/lotti_batch_checklist_handler.dart": {"lookups": 1},
     "lib/features/ai/functions/lotti_checklist_update_handler.dart": {"lookups": 1},
     "lib/features/ai/helpers/prompt_builder_helper.dart": {"lookups": 2, "isRegistered": 2},
-    "lib/features/ai/repository/ai_config_repository.dart": {"lookups": 7, "isRegistered": 2},
+    "lib/features/ai/repository/ai_config_repository.dart": {"lookups": 5, "isRegistered": 2},
     "lib/features/ai/repository/ai_input_repository.dart": {"lookups": 2, "isRegistered": 1},
     "lib/features/ai/repository/one_shot_text_generation.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/ai/repository/task_summary_resolver.dart": {"lookups": 1, "isRegistered": 1},
