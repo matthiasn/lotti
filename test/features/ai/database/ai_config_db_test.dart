@@ -195,6 +195,23 @@ void main() {
       expect(await db.versionStamp('profile-1'), isNull);
       expect(await db.applyConfigVersion(profile('v1'), stamp: 10), isTrue);
     });
+
+    test('hardDeletionStamps lists every stamp without a row', () async {
+      await db.applyConfigVersion(profile('kept'), stamp: 10);
+      await db.applyConfigVersion(provider('key'), stamp: 11);
+      final local = await atNow(() => db.deleteConfig('provider-1'));
+      await db.applyConfigDeletion('never-held', stamp: 7);
+
+      expect(await db.hardDeletionStamps(), {
+        'provider-1': local,
+        'never-held': 7,
+      });
+
+      // A forgotten deletion is no longer one, and a re-created row is not.
+      await db.forgetConfig('never-held');
+      await db.applyConfigVersion(provider('again'), stamp: local + 1);
+      expect(await db.hardDeletionStamps(), isEmpty);
+    });
   });
 
   test(

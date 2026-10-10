@@ -29,6 +29,12 @@ versionStampById:
 SELECT stamp FROM ai_config_versions
   WHERE id = :id;
 
+-- The hard deletions this device holds: every version with no config row.
+hardDeletions:
+SELECT * FROM ai_config_versions
+  WHERE id NOT IN (SELECT id FROM ai_configs)
+  ORDER BY id;
+
 allConfigs:
 SELECT * FROM ai_configs
   ORDER BY created_at DESC; 

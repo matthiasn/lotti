@@ -164,7 +164,12 @@ created before it heard of its provider's deletion outlived the provider, and
 a replayed row blanked its type from the repository cache. Four were found by
 auditing the code; TLC found a fifth once the cascade's deletions became hard
 deletes with stamps (a deleted model recreated by the backfill). Not included
-in the historical totals above.
+in the historical totals above. The owed-ledger follow-up (ADR 0127) adds
+the failing enqueue to the model — `LostEdit`, `LostCascade`, an owing
+`Interrupted`, `Crashed` and `Flush` behind an `OwedSends` switch — and one
+configuration, `AiConfigReplicationOwed`, with 2,104,365 distinct states;
+`AiConfigReplicationInterrupted` moves to 62,387. It fixed three bugs (P1,
+P2×2), one of them TLC's counterexample with the switch off.
 
 The `TranscriptionRun` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, eleven
 named properties and 225,823 distinct states. It came with fixes for skill
@@ -342,6 +347,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4589](https://github.com/matthiasn/lotti/pull/4589) | 10-03 | relationships, agents | `AgentWakeOutcome` | 2 | 2 (2) | P2×2 | [0115](../../docs/adr/0115-the-last-wake-outcome-is-two-watermarks.md) | The card's failed face read a wake outcome stamped with the wake's start and decided with the row: a short failure that began after a long success began outranked it, so both devices said *failed* beside the briefing the success wrote (`StampAtEnd = FALSE`: `FailedFaceAgreed`, 7 states), and a later unrelated write of the row carried one device's stale count over the other's good briefing (`OutcomeWatermarks`: 5 states). The outcome is now two watermarks, stamped at the end and joined by latest instant. 85,668 distinct states |
 | [#4725](https://github.com/matthiasn/lotti/pull/4725) | pending | relationships | — | 0 | 2 (0) | P2×2 | — | The sweep's code audit, not a model: neither is an interleaving. A confirmed suggestion was applied through the display-gated reads, so with private entries hidden a private check-in looked gone, and since that failure is permanent the proposal was retracted on every device; *Confirm all* ran inside the suggestions band, which the chat host builds lazily, so scrolling away mid-batch left the remaining proposals pending. The dispatcher now reads what the agent read, the batch runs in the proposal service, and the relationships concept was checked against the code: six card faces, not seven; the out-of-date face unreachable while nothing writes its watermark; a re-confirmation after an Undo that never finds the tombstone |
 | [#4732](https://github.com/matthiasn/lotti/pull/4732) | pending | speech, ai | `SpeechDictionarySync` | 2 | 0 (–) | — | [0124](../../docs/adr/0124-speech-dictionary-entity-and-composite-correction.md) | A design model, and `TranscriptionRunHeld` for the composite step. TLC rejected one dictionary document per term with a merging migration (a late migration undid a user's narrowing of a term), a migration stamped at its run time or reasserting deleted terms (a user's edit undone), equal stamps applied on arrival (devices swapped copies for good), and a held transcript written without its edit check or version guard (an edit made while the summary ran was lost) |
+| AI config ledger (pending) | pending | ai, sync | — | 1 | 3 (1) | P1 P2×2 | [0127](../../docs/adr/0127-ai-configuration-changes-are-owed-until-sent.md) | The enqueue the AiConfigReplication model left out: `OutboxService.enqueueMessage` swallows its failure, so a deletion the outbox refused was gone here and unknown everywhere else, and "Send settings" had no row to re-send it from (`OwedSends = FALSE`: `Converged` in 2 states). Every write now owes its id in `AiConfigSyncLedger` until the outbox accepts the row, `flushPending` sends what the device holds for an owed id at startup and a minute after a failure, the orphan cleanup stores before it sends, and "Send settings" re-sends hard deletions. A model kept under a deleted provider is hidden from the lists instead of shown, and a key the user removed carries `apiKeyCleared` so the peers remove theirs too |
 | [#4734](https://github.com/matthiasn/lotti/pull/4734) | pending | sync, definitions | `DefinitionClocks` | 3 | 0 (–) | — | [0125](../../docs/adr/0125-definitions-carry-vector-clocks.md) | A design model, and `SyncPipelineDefinition` for the transport. TLC showed the join is what keeps every counter answerable for backfill (without it a resolved write's counter left every stored clock and its gap never healed), that a write must stamp `updatedAt` past the stored version (the join pits a host's older version against its newer one), that equal stamps need the content order, and that a clockless row must yield to no clock and stamp itself when it wins, or one migrated device reverts or strands the newer legacy row |
 | [#4753](https://github.com/matthiasn/lotti/pull/4753) | 10-10 | sync | `VerificationLaunch`, `DevicePairing` | 4 | 5 (5) | P2×2 P3×3 | — | The sync setup flow around the emoji ceremony. Two devices starting the ceremony at each other left both sheets waiting forever, because each side's own sheet held the modal lock and the other's request was dropped; three devices could do the same in a ring, and even yielding to the peer's request let them withdraw ceremonies from under each other until a total order on identities settled it. Also: an abandoned sheet left the peer waiting on a ceremony nobody would finish, "Show the emoji" could reopen a device whose keys landed mid-ceremony, and the inviting sheet took its roster baseline from whatever resolved after the code was up, or named an old session before any baseline existed |
 | [#4755](https://github.com/matthiasn/lotti/pull/4755) | pending | sync | — | 0 | 1 (1) | P3 | — | Review of #4753 found what the model had taken as one step: "Show the emoji" bumps a counter every mounted launcher listens to, and each listener released the device last shown on its own. The first launches synchronously up to `markShown`, so with two launchers mounted the second undid that record and the device was offered again once the reopened sheet closed. The request now releases once, before the bump; `ReleaseOnce = FALSE` breaks `NoReoffer` in six states. State counts unchanged |
@@ -574,7 +580,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 95 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 139 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -715,6 +721,9 @@ The P0 and P1 bugs:
 | [#4755](https://github.com/matthiasn/lotti/pull/4755) | P3 | yes | With two launchers mounted, each relaunch listener released the device last shown on its own, so the second undid the record the first had just made and the device was offered again once the reopened sheet closed (the model first took the listeners as one step; a reviewer's trace, then reproduced by TLC) |
 | [#4753](https://github.com/matthiasn/lotti/pull/4753) | P3 | yes | The inviting sheet's roster baseline came from the first roster resolved after the code was up, which could already hold the device that scanned it, so that device never read as new |
 | [#4753](https://github.com/matthiasn/lotti/pull/4753) | P3 | yes | A ceremony finishing before the inviting sheet had any baseline was taken as the new device, whichever old session it was with |
+| AI config ledger | P1 | yes | An AI configuration deletion the outbox refused to queue was gone here and stayed on every other device; "Send settings" had no row to re-send it from |
+| AI config ledger | P2 | no | A model kept under a deleted provider, edited on a device that had not heard of the deletion, was listed under the provider that no longer existed |
+| AI config ledger | P2 | no | A provider API key removed on one device stayed on the others, taken for a keychain read that came back empty |
 
 </details>
 
