@@ -51,11 +51,12 @@ class AiAttributionSummary extends ConsumerWidget {
       }
       return const SizedBox.shrink();
     }
-    final isLoading = asyncDetails.isLoading && details == null;
     // A pill is a cost read-out: once the calls are known and none of them
     // reported a cost — a speech-to-text engine, a provider without billing —
-    // it has nothing to say, and the full details stay one row away.
-    if (asPill && !isLoading && !_hasKnownCost(details?.interactions)) {
+    // it has nothing to say, and the full details stay one row away. Details
+    // still loading, not yet synced or failing are an unknown, not a known
+    // absence, so the pill stays until a resolved projection says otherwise.
+    if (asPill && details != null && !_hasKnownCost(details.interactions)) {
       return const SizedBox.shrink();
     }
     final row = _AttributionRow(
@@ -63,7 +64,7 @@ class AiAttributionSummary extends ConsumerWidget {
       details: details,
       compact: compact,
       asPill: asPill,
-      isLoading: isLoading,
+      isLoading: asyncDetails.isLoading && details == null,
     );
     if (!includeTopSpacing) return row;
     return Padding(
@@ -78,8 +79,9 @@ class AiAttributionSummary extends ConsumerWidget {
 /// Audio entries can contain more than one transcript, each with its own
 /// attribution. This keeps the card surface concise while retaining every
 /// individual attribution in the details sheet. Like a single pill it renders
-/// nothing once no call reported a cost — [topSpacing] included, so a caller
-/// hands the gap above it here rather than leaving it behind an empty pill.
+/// nothing once every attribution resolved and no call reported a cost —
+/// [topSpacing] included, so a caller hands the gap above it here rather than
+/// leaving it behind an empty pill.
 class AiAttributionSummaryGroup extends ConsumerWidget {
   const AiAttributionSummaryGroup({
     required this.label,
@@ -110,7 +112,10 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
       (asyncDetail) => asyncDetail.isLoading && asyncDetail.value == null,
     );
     final interactions = details.expand((detail) => detail.interactions);
-    if (!isLoading && !_hasKnownCost(interactions)) {
+    // Hidden only once every attribution resolved and none reported a cost;
+    // one still loading, unsynced or failing keeps the pill.
+    final allResolved = details.length == asyncDetails.length;
+    if (allResolved && !_hasKnownCost(interactions)) {
       return const SizedBox.shrink();
     }
     final cost = isLoading
@@ -150,8 +155,8 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
 }
 
 /// Whether any of [interactions] reported what it cost.
-bool _hasKnownCost(Iterable<AiConsumptionEvent>? interactions) =>
-    interactions?.any((event) => event.credits != null) ?? false;
+bool _hasKnownCost(Iterable<AiConsumptionEvent> interactions) =>
+    interactions.any((event) => event.credits != null);
 
 class _AttributionAvailability extends StatelessWidget {
   const _AttributionAvailability({

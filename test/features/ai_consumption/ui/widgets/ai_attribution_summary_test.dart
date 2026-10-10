@@ -192,6 +192,65 @@ void main() {
     expect(find.text('Cost unknown'), findsNothing);
   });
 
+  for (final (label, load) in [
+    ('not synced yet', Future<AiAttributionDetails?>.value),
+    (
+      'failing',
+      () => Future<AiAttributionDetails?>.error(StateError('unavailable')),
+    ),
+  ]) {
+    testWidgets('a pill whose details are $label stays', (tester) async {
+      await pumpSummary(
+        tester,
+        asPill: true,
+        details: null,
+        loadDetails: load,
+      );
+      await tester.pump();
+
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
+    });
+  }
+
+  testWidgets(
+    'a group with an attribution not yet synced keeps its pill',
+    (tester) async {
+      final transcription = makeAiWorkAttribution();
+      final unsynced = makeAiWorkAttribution(attributionId: 'attribution-2');
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiAttributionSummaryGroup(
+            label: 'Transcription',
+            attributions: [transcription, unsynced],
+          ),
+          overrides: [
+            aiAttributionDetailsProvider.overrideWith(
+              (ref, id) async => id == transcription.id
+                  ? AiAttributionDetails(
+                      attribution: transcription,
+                      interactions: [
+                        makeConsumptionEvent(
+                          attributionId: transcription.id,
+                          credits: null,
+                          costCreditsDecimal: null,
+                          energyKwh: null,
+                          carbonGCo2: null,
+                        ),
+                      ],
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Transcription · Cost unknown'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'a group whose calls reported no cost renders nothing, its gap included',
     (tester) async {

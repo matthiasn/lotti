@@ -52,8 +52,10 @@ total.
 
 **A pill is a cost read-out, so it shows only a known cost.** An
 `AiAttributionSummary` pill and an `AiAttributionSummaryGroup` render nothing
-once every call they cover has null credits — a Whisper transcript, or a
-provider that never bills. The full attribution row and the details sheet,
+once every attribution they cover has resolved and every call in it has null
+credits — a Whisper transcript, or a provider that never bills. Details still
+loading, not yet synced or failing are an unknown rather than a known absence,
+so the pill stays until a resolved projection says otherwise. The full attribution row and the details sheet,
 which do say "Cost unknown", are unchanged. The group takes its `topSpacing`
 along when it hides, so an audio card keeps an even rhythm without it.
 
