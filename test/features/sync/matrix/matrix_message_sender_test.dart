@@ -1581,14 +1581,16 @@ void main() {
           onSent: (_, _) => calls++,
         ),
         throwsA(
-          isA<SyncMessageTooLargeException>().having(
-            (e) => e.detail,
-            'detail',
-            allOf(
-              contains('SyncAiConfigDelete'),
-              contains('61234 bytes exceeds 60000'),
-            ),
-          ),
+          isA<SyncMessageTooLargeException>()
+              .having(
+                (e) => e.detail,
+                'detail',
+                allOf(
+                  contains('SyncAiConfigDelete'),
+                  contains('61234 bytes exceeds 60000'),
+                ),
+              )
+              .having((e) => e.inlineBody, 'inlineBody', isTrue),
         ),
       );
       expect(calls, 0);

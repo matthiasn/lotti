@@ -7,10 +7,15 @@
 /// `SyncTuning.outboxBundleMaxBytes`. `OutboxProcessor` drops a single send
 /// that raises it and splits a bundle into single sends.
 class SyncMessageTooLargeException implements Exception {
-  const SyncMessageTooLargeException(this.detail);
+  const SyncMessageTooLargeException(this.detail, {this.inlineBody = false});
 
   /// Which payload was too large and by how much, for the log line.
   final String detail;
+
+  /// Whether the limit hit was the inline event body's, not a file's or a
+  /// manifest's. Such a message still fits the far larger manifest upload,
+  /// so it can travel as a one-child bundle.
+  final bool inlineBody;
 
   @override
   String toString() => 'SyncMessageTooLargeException: $detail';

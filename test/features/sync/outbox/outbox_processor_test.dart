@@ -1859,6 +1859,89 @@ void main() {
       const bundle = SyncTuning.outboxBundleMaxSize;
 
       test(
+        'a single message over the inline event limit travels again as a '
+        "one-child bundle, which the manifest upload's larger limit admits",
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [textItem(id: 1)];
+          stubBatchClaimFromQueue(repo, queue);
+          when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+          when(repo.hasMorePending).thenAnswer((_) async => false);
+          const inline = SyncMessageTooLargeException(
+            'inline event body 61234 bytes exceeds 60000',
+            inlineBody: true,
+          );
+          when(() => sender.send(any())).thenAnswer((invocation) {
+            final message = invocation.positionalArguments.single;
+            return message is SyncOutboxBundle
+                ? Future<bool>.value(true)
+                : Future<bool>.error(inline);
+          });
+          final events = _captureEvents(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          final result = await proc.processQueue();
+
+          expect(result, OutboxProcessingResult.none);
+          final sent = verify(
+            () => sender.send(captureAny()),
+          ).captured.cast<SyncMessage>();
+          expect(sent, hasLength(2));
+          expect(
+            (sent.last as SyncOutboxBundle).children,
+            [const SyncMessage.aiConfigDelete(id: 'cfg-1')],
+          );
+          verify(() => repo.markSent(any<OutboxItem>())).called(1);
+          verifyNever(() => repo.markFailed(any()));
+          expect(
+            events.any((e) => e.startsWith('sendTooLargeInline')),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'a one-child bundle that is still too large goes to error, and is '
+        'not wrapped again',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [textItem(id: 1)];
+          stubBatchClaimFromQueue(repo, queue);
+          when(() => repo.markFailed(any())).thenAnswer((_) async {});
+          const inline = SyncMessageTooLargeException(
+            'inline event body 61234 bytes exceeds 60000',
+            inlineBody: true,
+          );
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(inline));
+          _captureEvents(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          await proc.processQueue();
+
+          verify(() => sender.send(any())).called(2);
+          verify(() => repo.markFailed(any())).called(1);
+        },
+      );
+
+      test(
         'a single send rejected as too large goes straight to error, is '
         'never retried, and the queue moves on at once',
         () async {

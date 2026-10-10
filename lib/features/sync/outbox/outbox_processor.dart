@@ -440,6 +440,20 @@ class OutboxProcessor {
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
     } on SyncMessageTooLargeException catch (error) {
+      // An inline body over the event limit fits the manifest upload a
+      // bundle travels as, so the message goes once more as the bundle's
+      // only child. A bundle, a file or a manifest too large stays dropped.
+      if (error.inlineBody && send.message is! SyncOutboxBundle) {
+        _loggingService.log(
+          LogDomain.sync,
+          'sendTooLargeInline subject=${head.subject} ${error.detail} '
+          '→ resending as a one-child bundle',
+          subDomain: 'outbox.wrap',
+        );
+        return _processSingle(
+          _OutboxSend(SyncMessage.outboxBundle(children: [send.message]), rows),
+        );
+      }
       return _dropTooLarge(rows, subject: head.subject, error: error);
     } catch (error, stackTrace) {
       _loggingService.error(
