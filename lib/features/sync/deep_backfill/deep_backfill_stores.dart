@@ -15,7 +15,9 @@ import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/sync/deep_backfill/ai_config_deep_backfill_store.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/deep_backfill/definition_deep_backfill_store.dart';
 import 'package:lotti/features/sync/media/entry_media.dart';
@@ -458,7 +460,7 @@ TableDeepBackfillStore consumptionDeepBackfillStore({
 
 /// The store of every synced type, the scope of a deep backfill: journal
 /// entries, entry links, agent entities and links, notifications, AI
-/// consumption events and entity definitions. One list, so the round and the record counts cannot
+/// consumption events, entity definitions and AI configurations. One list, so the round and the record counts cannot
 /// leave a type out — each store reads its own database, and none depends on
 /// another feature's runtime having started.
 List<DeepBackfillStore> allDeepBackfillStores({
@@ -466,6 +468,7 @@ List<DeepBackfillStore> allDeepBackfillStores({
   required AgentDatabase agentDatabase,
   required NotificationsDb notificationsDb,
   required ConsumptionDatabase consumptionDatabase,
+  required AiConfigRepository aiConfigRepository,
   required OutboxService outboxService,
   required Directory documentsDirectory,
 }) => [
@@ -496,6 +499,10 @@ List<DeepBackfillStore> allDeepBackfillStores({
   ),
   DefinitionDeepBackfillStore(
     journalDb: journalDb,
+    outboxService: outboxService,
+  ),
+  AiConfigDeepBackfillStore(
+    aiConfigRepository: aiConfigRepository,
     outboxService: outboxService,
   ),
 ];

@@ -20,6 +20,7 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
     SyncSequencePayloadType.notification ||
     SyncSequencePayloadType.notificationStateUpdate => _notificationsDb != null,
     SyncSequencePayloadType.consumptionEvent => _consumptionRepository != null,
+    SyncSequencePayloadType.aiConfig => _aiConfigRepository != null,
   };
 
   void _retrySettlementAwaitingStore() {
@@ -373,6 +374,32 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
             originatingHostId: originatingHostId,
           ),
           typeName: 'entityDefinition',
+        );
+      case SyncSequencePayloadType.aiConfig:
+        if (_aiConfigRepository == null) {
+          _trace(
+            '_aiConfigRepository not wired, skipping aiConfig $payloadId',
+            subDomain: 'backfill.processEntry',
+          );
+          return false;
+        }
+        // Answered with the version or hard deletion held now, under the join
+        // of every clock it has met: it supersedes every version whose
+        // counter that clock holds (ADR 0136). A provider is sent with its
+        // key, read from this device's keychain.
+        return _processAgentBackfillEntry<AiConfigResend>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          durable: durable,
+          loadPayload: () => _aiConfigRepository!.heldVersion(payloadId),
+          getVectorClock: (held) => held.vectorClock,
+          buildSyncMessage: (held) =>
+              held.toSyncMessage(originatingHostId: originatingHostId),
+          typeName: 'aiConfig',
         );
     }
   }

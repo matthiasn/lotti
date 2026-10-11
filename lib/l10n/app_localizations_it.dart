@@ -2927,6 +2927,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'Eventi di utilizzo dell\'IA';
 
   @override
+  String get backfillRecordsAiConfigs => 'Impostazioni IA';
+
+  @override
   String get backfillRecordsDefinitions => 'Definizioni delle impostazioni';
 
   @override

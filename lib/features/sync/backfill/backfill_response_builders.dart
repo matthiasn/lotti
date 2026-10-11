@@ -127,6 +127,10 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
           exists: definition != null,
           vectorClock: definition?.vectorClock,
         );
+      case SyncSequencePayloadType.aiConfig:
+        // A hard deletion is a version too: it exists while its stamp does.
+        final held = await _aiConfigRepository?.heldVersion(payloadId);
+        return (exists: held != null, vectorClock: held?.vectorClock);
     }
   }
 

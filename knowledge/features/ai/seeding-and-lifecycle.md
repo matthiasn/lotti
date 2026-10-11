@@ -208,12 +208,21 @@ before FTUE setup seeds.
 
 # Replication across devices
 
-Configs are not sequence-tracked: each change travels as the whole row
-(`SyncMessage.aiConfig`), and "Send settings" re-sends every row a device holds,
-tombstones included. So a receiver sees versions late, twice and out of order.
-`AiConfigDb` orders them by the version stamp each carries (ADR 0094); the
-repository adds the rules about providers and their models. The model TLC
-checks this against is `specs/tla/AiConfigReplication.tla`.
+Each change travels as the whole row (`SyncMessage.aiConfig`), and "Send
+settings" re-sends every row a device holds, tombstones included. So a
+receiver sees versions late, twice and out of order. `AiConfigDb` orders them
+by the version stamp each carries (ADR 0094); the repository adds the rules
+about providers and their models. The model TLC checks this against is
+`specs/tla/AiConfigReplication.tla`.
+
+Configs are also sequence-tracked (ADR 0136): every write a device sends
+spends its next vector clock counter, so a receiver that misses one sees the
+gap and asks for it, and any device holding the id answers with the version it
+holds now. The clock never decides which version wins; the stamp does. A
+derived write — a model created at its provider's stamp, an orphan's deletion
+at the provider deletion's stamp — is sent only as the version it leaves held,
+so a clock never vouches for a version older than the one sent. That rule and
+the clock joins are checked in `specs/tla/AiConfigClocks.tla`.
 
 - **One total order.** A greater stamp wins; on a tie a held deletion wins,
   then the payload without its credential. A local write takes the next local

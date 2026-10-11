@@ -4866,6 +4866,12 @@ abstract class AppLocalizations {
   /// **'AI usage events'**
   String get backfillRecordsConsumptionEvents;
 
+  /// No description provided for @backfillRecordsAiConfigs.
+  ///
+  /// In en, this message translates to:
+  /// **'AI settings'**
+  String get backfillRecordsAiConfigs;
+
   /// No description provided for @backfillRecordsDefinitions.
   ///
   /// In en, this message translates to:

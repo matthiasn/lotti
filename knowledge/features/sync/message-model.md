@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Sync message model
-description: The twenty-five SyncMessage families, which seven are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
+description: The twenty-five SyncMessage families, which eight are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
 resource: ../../../lib/classes/sync/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
@@ -86,15 +86,16 @@ Their persistence, ordering and suppression semantics live in
 
 ## Sequence-tracked payloads
 
-Only a subset participates in `(hostId, counter)` accounting — the eight
+Only a subset participates in `(hostId, counter)` accounting — the nine
 members of `SyncSequencePayloadType`:
 
 `journalEntity`, `entryLink`, `agentEntity`, `agentLink`, `notification`,
-`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`.
+`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`, `aiConfig`.
 
 The enum's ordinal is **persisted** in the sequence log, so existing values
 must never be reordered. New values are appended at the end only —
-`consumptionEvent` and then `entityDefinition` were added that way.
+`consumptionEvent`, `entityDefinition` and then `aiConfig` were added that
+way.
 
 Sequence-tracked payloads may carry:
 
@@ -239,6 +240,17 @@ back. A message from an older sender has no stamp and is ordered by the Matrix e
 [AI config versions](../../architecture/persistence.md#ai-config-versions);
 the decision is
 [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
+
+Both messages are also sequence-tracked, under `aiConfig`
+([ADR 0136](../../../docs/adr/0136-ai-configurations-carry-vector-clocks.md)).
+Every sent write spends the sender's next counter on top of the clock held for
+the id, and carries that `vectorClock` with the `originatingHostId`; the outbox
+binds the counter at enqueue. The clock does not order versions — the stamp
+does — but a receiver records it, kept or not, so a lost version shows up as a
+gap and is asked for. A backfill answer, "Send settings", the owed flush and
+the ADR 0131 answer all send the version held now under the clock held: the
+join of every copy that device has met, which a hard deletion keeps too. A
+copy from a build before ADR 0136 carries no clock and is not tracked.
 
 Every write owes its message until the outbox accepts it, as saved filters
 do: `AiConfigRepository` records the id in `AiConfigSyncLedger` through `AiConfigSyncSender.owing` before the write commits (a flush meanwhile leaves the id owed rather than settle it with the version before the write), sends through `AiConfigSyncSender`, and settles the id once the row is staged, and

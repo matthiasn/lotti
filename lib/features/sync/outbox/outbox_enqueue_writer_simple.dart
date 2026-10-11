@@ -49,24 +49,40 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
   Future<void> enqueueAiConfig({
     required SyncAiConfig msg,
     required OutboxCompanion commonFields,
-  }) => enqueueSimple(
-    commonFields: commonFields,
-    subject: 'aiConfig',
-    logMessage:
-        'enqueue type=SyncAiConfig subject=aiConfig '
-        'id=${msg.aiConfig.id}',
-  );
+  }) async {
+    await enqueueSimple(
+      commonFields: commonFields,
+      subject: 'aiConfig',
+      logMessage:
+          'enqueue type=SyncAiConfig subject=aiConfig '
+          'id=${msg.aiConfig.id}',
+    );
+    // Binds this host's counter in the version's clock, so a peer that
+    // missed it can ask for it (ADR 0136).
+    await recordAgentSent(
+      entryId: msg.aiConfig.id,
+      vectorClock: msg.vectorClock,
+      payloadType: SyncSequencePayloadType.aiConfig,
+    );
+  }
 
   Future<void> enqueueAiConfigDelete({
     required SyncAiConfigDelete msg,
     required OutboxCompanion commonFields,
-  }) => enqueueSimple(
-    commonFields: commonFields,
-    subject: 'aiConfigDelete',
-    logMessage:
-        'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
-        'id=${msg.id}',
-  );
+  }) async {
+    await enqueueSimple(
+      commonFields: commonFields,
+      subject: 'aiConfigDelete',
+      logMessage:
+          'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
+          'id=${msg.id}',
+    );
+    await recordAgentSent(
+      entryId: msg.id,
+      vectorClock: msg.vectorClock,
+      payloadType: SyncSequencePayloadType.aiConfig,
+    );
+  }
 
   Future<void> enqueueSavedTaskFilter({
     required SyncSavedTaskFilter msg,

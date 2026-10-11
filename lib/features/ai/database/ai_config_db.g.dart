@@ -439,8 +439,19 @@ class AiConfigVersions extends Table
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  static const VerificationMeta _vectorClockMeta = const VerificationMeta(
+    'vectorClock',
+  );
+  late final GeneratedColumn<String> vectorClock = GeneratedColumn<String>(
+    'vector_clock',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, stamp];
+  List<GeneratedColumn> get $columns => [id, stamp, vectorClock];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -466,6 +477,15 @@ class AiConfigVersions extends Table
     } else if (isInserting) {
       context.missing(_stampMeta);
     }
+    if (data.containsKey('vector_clock')) {
+      context.handle(
+        _vectorClockMeta,
+        vectorClock.isAcceptableOrUnknown(
+          data['vector_clock']!,
+          _vectorClockMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -483,6 +503,10 @@ class AiConfigVersions extends Table
         DriftSqlType.int,
         data['${effectivePrefix}stamp'],
       )!,
+      vectorClock: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vector_clock'],
+      ),
     );
   }
 
@@ -499,17 +523,31 @@ class AiConfigVersionEntity extends DataClass
     implements Insertable<AiConfigVersionEntity> {
   final String id;
   final int stamp;
-  const AiConfigVersionEntity({required this.id, required this.stamp});
+  final String? vectorClock;
+  const AiConfigVersionEntity({
+    required this.id,
+    required this.stamp,
+    this.vectorClock,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['stamp'] = Variable<int>(stamp);
+    if (!nullToAbsent || vectorClock != null) {
+      map['vector_clock'] = Variable<String>(vectorClock);
+    }
     return map;
   }
 
   AiConfigVersionsCompanion toCompanion(bool nullToAbsent) {
-    return AiConfigVersionsCompanion(id: Value(id), stamp: Value(stamp));
+    return AiConfigVersionsCompanion(
+      id: Value(id),
+      stamp: Value(stamp),
+      vectorClock: vectorClock == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vectorClock),
+    );
   }
 
   factory AiConfigVersionEntity.fromJson(
@@ -520,6 +558,7 @@ class AiConfigVersionEntity extends DataClass
     return AiConfigVersionEntity(
       id: serializer.fromJson<String>(json['id']),
       stamp: serializer.fromJson<int>(json['stamp']),
+      vectorClock: serializer.fromJson<String?>(json['vector_clock']),
     );
   }
   @override
@@ -528,15 +567,26 @@ class AiConfigVersionEntity extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'stamp': serializer.toJson<int>(stamp),
+      'vector_clock': serializer.toJson<String?>(vectorClock),
     };
   }
 
-  AiConfigVersionEntity copyWith({String? id, int? stamp}) =>
-      AiConfigVersionEntity(id: id ?? this.id, stamp: stamp ?? this.stamp);
+  AiConfigVersionEntity copyWith({
+    String? id,
+    int? stamp,
+    Value<String?> vectorClock = const Value.absent(),
+  }) => AiConfigVersionEntity(
+    id: id ?? this.id,
+    stamp: stamp ?? this.stamp,
+    vectorClock: vectorClock.present ? vectorClock.value : this.vectorClock,
+  );
   AiConfigVersionEntity copyWithCompanion(AiConfigVersionsCompanion data) {
     return AiConfigVersionEntity(
       id: data.id.present ? data.id.value : this.id,
       stamp: data.stamp.present ? data.stamp.value : this.stamp,
+      vectorClock: data.vectorClock.present
+          ? data.vectorClock.value
+          : this.vectorClock,
     );
   }
 
@@ -544,44 +594,51 @@ class AiConfigVersionEntity extends DataClass
   String toString() {
     return (StringBuffer('AiConfigVersionEntity(')
           ..write('id: $id, ')
-          ..write('stamp: $stamp')
+          ..write('stamp: $stamp, ')
+          ..write('vectorClock: $vectorClock')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, stamp);
+  int get hashCode => Object.hash(id, stamp, vectorClock);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AiConfigVersionEntity &&
           other.id == this.id &&
-          other.stamp == this.stamp);
+          other.stamp == this.stamp &&
+          other.vectorClock == this.vectorClock);
 }
 
 class AiConfigVersionsCompanion extends UpdateCompanion<AiConfigVersionEntity> {
   final Value<String> id;
   final Value<int> stamp;
+  final Value<String?> vectorClock;
   final Value<int> rowid;
   const AiConfigVersionsCompanion({
     this.id = const Value.absent(),
     this.stamp = const Value.absent(),
+    this.vectorClock = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AiConfigVersionsCompanion.insert({
     required String id,
     required int stamp,
+    this.vectorClock = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        stamp = Value(stamp);
   static Insertable<AiConfigVersionEntity> custom({
     Expression<String>? id,
     Expression<int>? stamp,
+    Expression<String>? vectorClock,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (stamp != null) 'stamp': stamp,
+      if (vectorClock != null) 'vector_clock': vectorClock,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -589,11 +646,13 @@ class AiConfigVersionsCompanion extends UpdateCompanion<AiConfigVersionEntity> {
   AiConfigVersionsCompanion copyWith({
     Value<String>? id,
     Value<int>? stamp,
+    Value<String?>? vectorClock,
     Value<int>? rowid,
   }) {
     return AiConfigVersionsCompanion(
       id: id ?? this.id,
       stamp: stamp ?? this.stamp,
+      vectorClock: vectorClock ?? this.vectorClock,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -607,6 +666,9 @@ class AiConfigVersionsCompanion extends UpdateCompanion<AiConfigVersionEntity> {
     if (stamp.present) {
       map['stamp'] = Variable<int>(stamp.value);
     }
+    if (vectorClock.present) {
+      map['vector_clock'] = Variable<String>(vectorClock.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -618,6 +680,7 @@ class AiConfigVersionsCompanion extends UpdateCompanion<AiConfigVersionEntity> {
     return (StringBuffer('AiConfigVersionsCompanion(')
           ..write('id: $id, ')
           ..write('stamp: $stamp, ')
+          ..write('vectorClock: $vectorClock, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -652,6 +715,14 @@ abstract class _$AiConfigDb extends GeneratedDatabase {
       variables: [Variable<String>(id)],
       readsFrom: {aiConfigVersions},
     ).map((QueryRow row) => row.read<int>('stamp'));
+  }
+
+  Selectable<AiConfigVersionEntity> versionById(String id) {
+    return customSelect(
+      'SELECT * FROM ai_config_versions WHERE id = ?1',
+      variables: [Variable<String>(id)],
+      readsFrom: {aiConfigVersions},
+    ).asyncMap(aiConfigVersions.mapFromRow);
   }
 
   Selectable<AiConfigVersionEntity> hardDeletions() {
@@ -902,12 +973,14 @@ typedef $AiConfigVersionsCreateCompanionBuilder =
     AiConfigVersionsCompanion Function({
       required String id,
       required int stamp,
+      Value<String?> vectorClock,
       Value<int> rowid,
     });
 typedef $AiConfigVersionsUpdateCompanionBuilder =
     AiConfigVersionsCompanion Function({
       Value<String> id,
       Value<int> stamp,
+      Value<String?> vectorClock,
       Value<int> rowid,
     });
 
@@ -927,6 +1000,11 @@ class $AiConfigVersionsFilterComposer
 
   ColumnFilters<int> get stamp => $composableBuilder(
     column: $table.stamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vectorClock => $composableBuilder(
+    column: $table.vectorClock,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -949,6 +1027,11 @@ class $AiConfigVersionsOrderingComposer
     column: $table.stamp,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get vectorClock => $composableBuilder(
+    column: $table.vectorClock,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $AiConfigVersionsAnnotationComposer
@@ -965,6 +1048,11 @@ class $AiConfigVersionsAnnotationComposer
 
   GeneratedColumn<int> get stamp =>
       $composableBuilder(column: $table.stamp, builder: (column) => column);
+
+  GeneratedColumn<String> get vectorClock => $composableBuilder(
+    column: $table.vectorClock,
+    builder: (column) => column,
+  );
 }
 
 class $AiConfigVersionsTableManager
@@ -1004,17 +1092,24 @@ class $AiConfigVersionsTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<int> stamp = const Value.absent(),
+                Value<String?> vectorClock = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) =>
-                  AiConfigVersionsCompanion(id: id, stamp: stamp, rowid: rowid),
+              }) => AiConfigVersionsCompanion(
+                id: id,
+                stamp: stamp,
+                vectorClock: vectorClock,
+                rowid: rowid,
+              ),
           createCompanionCallback:
               ({
                 required String id,
                 required int stamp,
+                Value<String?> vectorClock = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AiConfigVersionsCompanion.insert(
                 id: id,
                 stamp: stamp,
+                vectorClock: vectorClock,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

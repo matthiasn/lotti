@@ -137,6 +137,7 @@ void setUpProcessorMocks() {
       fromSync: any<bool>(named: 'fromSync'),
       versionStamp: any<int?>(named: 'versionStamp'),
       fallbackStamp: any<int?>(named: 'fallbackStamp'),
+      vectorClock: any<VectorClock?>(named: 'vectorClock'),
     ),
   ).thenAnswer((_) async {});
   when(
@@ -151,6 +152,7 @@ void setUpProcessorMocks() {
       any<String>(),
       fromSync: any<bool>(named: 'fromSync'),
       versionStamp: any<int?>(named: 'versionStamp'),
+      vectorClock: any<VectorClock?>(named: 'vectorClock'),
     ),
   ).thenAnswer((_) async {});
   when(

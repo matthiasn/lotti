@@ -44,6 +44,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
     final agentDb = getIt<AgentDatabase>();
     final notificationsDb = getIt<NotificationsDb>();
     final consumptionDb = getIt<ConsumptionDatabase>();
+    final aiConfigDb = getIt<AiConfigRepository>().configDb;
 
     // The payloads every other sequence-tracked family stores. A restore
     // loses their rows as much as the journal's.
@@ -62,6 +63,11 @@ Future<void> _checkAndPopulateSequenceLog() async {
         payloadType: SyncSequencePayloadType.entityDefinition,
         records: journalDb.streamDefinitionsWithVectorClock,
         count: journalDb.countAllDefinitions,
+      ),
+      (
+        payloadType: SyncSequencePayloadType.aiConfig,
+        records: aiConfigDb.streamVersionsWithVectorClock,
+        count: aiConfigDb.countAllVersions,
       ),
     ];
 

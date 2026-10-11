@@ -17,6 +17,8 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_stores.dart';
@@ -646,11 +648,13 @@ void main() {
       background: false,
     );
     final consumptionDb = ConsumptionDatabase(inMemoryDatabase: true);
+    final aiConfigDb = AiConfigDb(inMemoryDatabase: true);
     addTearDown(() async {
       await journalDb.close();
       await agentDb.close();
       await notificationsDb.close();
       await consumptionDb.close();
+      await aiConfigDb.close();
     });
 
     final stores = allDeepBackfillStores(
@@ -658,6 +662,7 @@ void main() {
       agentDatabase: agentDb,
       notificationsDb: notificationsDb,
       consumptionDatabase: consumptionDb,
+      aiConfigRepository: AiConfigRepository(aiConfigDb),
       outboxService: outbox,
       documentsDirectory: Directory.systemTemp,
     );
@@ -673,6 +678,7 @@ void main() {
       SyncSequencePayloadType.notification,
       SyncSequencePayloadType.consumptionEvent,
       SyncSequencePayloadType.entityDefinition,
+      SyncSequencePayloadType.aiConfig,
     ]);
     for (final store in stores) {
       expect(await store.count(), 0, reason: '${store.payloadType} reads');

@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart' show AgentLinkSoftDelete;
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -585,6 +587,7 @@ class _GeneratedBackfillResponseBench {
     required this.outboxService,
     required this.agentRepository,
     required this.consumptionRepository,
+    required this.aiConfigRepository,
     required this.notificationsDb,
     required this.handler,
   });
@@ -601,6 +604,7 @@ class _GeneratedBackfillResponseBench {
     final vcService = MockVectorClockService();
     final agentRepository = MockAgentRepository();
     final consumptionRepository = MockConsumptionRepository();
+    final aiConfigRepository = MockAiConfigRepository();
     final notificationsDb = MockNotificationsDb();
     final handler =
         BackfillResponseHandler(
@@ -612,9 +616,13 @@ class _GeneratedBackfillResponseBench {
             notificationsDb: notificationsDb,
           )
           ..agentRepository = agentRepository
-          ..consumptionRepository = consumptionRepository;
+          ..consumptionRepository = consumptionRepository
+          ..aiConfigRepository = aiConfigRepository;
     when(
       () => consumptionRepository.getEvent(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => aiConfigRepository.heldVersion(any()),
     ).thenAnswer((_) async => null);
     // No reservation is live unless a test says so: own counters without a
     // bound row are then settled from the sequence log alone.
@@ -643,6 +651,7 @@ class _GeneratedBackfillResponseBench {
       outboxService: outboxService,
       agentRepository: agentRepository,
       consumptionRepository: consumptionRepository,
+      aiConfigRepository: aiConfigRepository,
       notificationsDb: notificationsDb,
       handler: handler,
     );
@@ -786,6 +795,7 @@ class _GeneratedBackfillResponseBench {
   final MockOutboxService outboxService;
   final MockAgentRepository agentRepository;
   final MockConsumptionRepository consumptionRepository;
+  final MockAiConfigRepository aiConfigRepository;
   final MockNotificationsDb notificationsDb;
   final BackfillResponseHandler handler;
   final sentMessages = <SyncMessage>[];
@@ -4666,6 +4676,198 @@ void main() {
     });
   });
 
+  group('AI configurations (ADR 0136)', () {
+    const configId = 'profile-id';
+    late MockAiConfigRepository mockAiConfigRepository;
+
+    setUp(() {
+      mockAiConfigRepository = MockAiConfigRepository();
+      handler.aiConfigRepository = mockAiConfigRepository;
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    SyncSequenceLogItem logItem() => _createLogItem(
+      aliceHostId,
+      30,
+      entryId: configId,
+      originatingHostId: bobHostId,
+      payloadType: SyncSequencePayloadType.aiConfig,
+    );
+
+    const request = SyncBackfillRequest(
+      entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 30)],
+      requesterId: requesterId,
+    );
+
+    test(
+      'a request is answered with the version held now, naming the '
+      'original host, and a hint when its clock moved past the counter',
+      () async {
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+        ).thenAnswer((_) async => logItem());
+        // Counter 30 was superseded by 35, and the held clock joined another
+        // host's version.
+        final held = _heldAiConfig(
+          configId,
+          vectorClock: const VectorClock({
+            'alice-host-uuid': 35,
+            'bob-host-uuid': 2,
+          }),
+        );
+        when(
+          () => mockAiConfigRepository.heldVersion(configId),
+        ).thenAnswer((_) async => held);
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured, hasLength(2));
+        expect(
+          captured[0],
+          isA<SyncAiConfig>()
+              .having((m) => m.aiConfig, 'aiConfig', held.config)
+              .having((m) => m.versionStamp, 'versionStamp', 1)
+              .having((m) => m.vectorClock, 'vectorClock', held.vectorClock)
+              .having(
+                (m) => m.originatingHostId,
+                'originatingHostId',
+                bobHostId,
+              ),
+        );
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.payloadId, 'payloadId', configId)
+              .having(
+                (r) => r.payloadType,
+                'payloadType',
+                SyncSequencePayloadType.aiConfig,
+              ),
+        );
+      },
+    );
+
+    test('a hard deletion held is sent as the answer', () async {
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+      ).thenAnswer((_) async => logItem());
+      when(() => mockAiConfigRepository.heldVersion(configId)).thenAnswer(
+        (_) async => const AiConfigResend(
+          id: configId,
+          stamp: 9,
+          vectorClock: VectorClock({'alice-host-uuid': 30}),
+        ),
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncAiConfigDelete>()
+                .having((m) => m.id, 'id', configId)
+                .having((m) => m.hardDelete, 'hardDelete', true)
+                .having((m) => m.versionStamp, 'versionStamp', 9),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('nothing held is answered deleted', () async {
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 30,
+        logItem: logItem(),
+      );
+      when(
+        () => mockAiConfigRepository.heldVersion(configId),
+      ).thenAnswer((_) async => null);
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any<SyncMessage>(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', true)
+                .having(
+                  (r) => r.payloadType,
+                  'payloadType',
+                  SyncSequencePayloadType.aiConfig,
+                ),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('without the repository nothing is answered', () async {
+      handler.aiConfigRepository = null;
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+      ).thenAnswer((_) async => logItem());
+
+      await handler.handleBackfillRequest(request);
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
+    test('a response is verified against the clock held and marked '
+        'backfilled', () async {
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+      const heldClock = VectorClock({'alice-host-uuid': 31});
+      when(
+        () => mockAiConfigRepository.heldVersion(configId),
+      ).thenAnswer(
+        (_) async => _heldAiConfig(configId, vectorClock: heldClock),
+      );
+
+      await handler.handleBackfillResponse(
+        const SyncBackfillResponse(
+          hostId: aliceHostId,
+          counter: 30,
+          deleted: false,
+          payloadType: SyncSequencePayloadType.aiConfig,
+          payloadId: configId,
+        ),
+      );
+
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 30,
+          entryId: configId,
+          entryVectorClock: heldClock,
+          payloadType: SyncSequencePayloadType.aiConfig,
+        ),
+      ).called(1);
+    });
+  });
+
   group('handleBackfillResponse - ConsumptionEvent', () {
     const eventId = 'consumption-event-id';
     const response = SyncBackfillResponse(
@@ -6166,6 +6368,14 @@ void _stubPayloadByType(
             ? null
             : _definition(payloadId, vectorClock: vectorClock),
       );
+    case SyncSequencePayloadType.aiConfig:
+      when(
+        () => bench.aiConfigRepository.heldVersion(payloadId),
+      ).thenAnswer(
+        (_) async => vectorClock == null
+            ? null
+            : _heldAiConfig(payloadId, vectorClock: vectorClock),
+      );
   }
 }
 
@@ -6237,6 +6447,14 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? _definition(payloadId, vectorClock: vectorClock)
+            : null,
+      );
+    case SyncSequencePayloadType.aiConfig:
+      when(
+        () => bench.aiConfigRepository.heldVersion(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? _heldAiConfig(payloadId, vectorClock: vectorClock)
             : null,
       );
   }
@@ -6381,8 +6599,28 @@ void _expectPayloadMessage(
       final definition = message as SyncEntityDefinition;
       expect(definition.entityDefinition.id, payloadId);
       expect(definition.status, SyncEntryStatus.update);
+    case SyncSequencePayloadType.aiConfig:
+      expect(message, isA<SyncAiConfig>());
+      final config = message as SyncAiConfig;
+      expect(config.aiConfig.id, payloadId);
+      expect(config.status, SyncEntryStatus.update);
   }
 }
+
+/// An inference profile held under [id] at stamp 1 and [vectorClock],
+/// standing in for any AI configuration version.
+AiConfigResend _heldAiConfig(String id, {VectorClock? vectorClock}) =>
+    AiConfigResend(
+      id: id,
+      config: AiConfig.inferenceProfile(
+        id: id,
+        name: 'Profile',
+        createdAt: DateTime(2026, 10, 11),
+        thinkingModelId: 'model-1',
+      ),
+      stamp: 1,
+      vectorClock: vectorClock,
+    );
 
 /// A category under [id] and [vectorClock], standing in for any definition.
 EntityDefinition _definition(String id, {VectorClock? vectorClock}) =>

@@ -173,6 +173,8 @@ SECONDS = {
     "DefinitionClocks": 2,
     "DefinitionClocksThree": 20,
     "DefinitionClocksLossy": 300,
+    # Measured locally (4 workers, ~11 min, 11.2M states with liveness).
+    "AiConfigClocks": 700,
     "SyncPipelineDefinition": 2,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,

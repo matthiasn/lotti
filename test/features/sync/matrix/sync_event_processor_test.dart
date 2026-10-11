@@ -937,6 +937,161 @@ void main() {
     );
   });
 
+  group('AI configuration clocks (ADR 0136)', () {
+    late MockSyncSequenceLogService sequenceLog;
+    late SyncEventProcessor clockedProcessor;
+    const clock = VectorClock({'peer-host': 3});
+
+    setUp(() {
+      sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordReceivedEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
+        ),
+      ).thenAnswer((_) async => [(hostId: 'peer-host', counter: 2)]);
+      clockedProcessor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: sequenceLog,
+      );
+    });
+
+    test('a version is applied with its clock, and its counters are recorded '
+        'as an AI configuration, gaps included', () async {
+      final message = SyncMessage.aiConfig(
+        aiConfig: fallbackAiConfig,
+        status: SyncEntryStatus.update,
+        versionStamp: 42,
+        vectorClock: clock,
+        originatingHostId: 'peer-host',
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await clockedProcessor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => aiConfigRepository.saveConfig(
+          fallbackAiConfig,
+          fromSync: true,
+          versionStamp: 42,
+          fallbackStamp: DateTime(2024).millisecondsSinceEpoch,
+          vectorClock: clock,
+        ),
+      ).called(1);
+      verify(
+        () => sequenceLog.recordReceivedEntry(
+          entryId: fallbackAiConfig.id,
+          vectorClock: clock,
+          originatingHostId: 'peer-host',
+          payloadType: SyncSequencePayloadType.aiConfig,
+        ),
+      ).called(1);
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('apply.aiConfig.gapsDetected count=1')),
+          subDomain: 'processor.gapDetection',
+        ),
+      ).called(1);
+    });
+
+    test('a hard deletion is applied with its clock and recorded', () async {
+      const message = SyncMessage.aiConfigDelete(
+        id: 'config-id',
+        hardDelete: true,
+        versionStamp: 7,
+        vectorClock: clock,
+        originatingHostId: 'peer-host',
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await clockedProcessor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => aiConfigRepository.hardDeleteConfig(
+          'config-id',
+          fromSync: true,
+          versionStamp: 7,
+          vectorClock: clock,
+        ),
+      ).called(1);
+      verify(
+        () => sequenceLog.recordReceivedEntry(
+          entryId: 'config-id',
+          vectorClock: clock,
+          originatingHostId: 'peer-host',
+          payloadType: SyncSequencePayloadType.aiConfig,
+        ),
+      ).called(1);
+    });
+
+    test('a copy from a build before clocks is not tracked', () async {
+      final message = SyncMessage.aiConfig(
+        aiConfig: fallbackAiConfig,
+        status: SyncEntryStatus.update,
+        versionStamp: 42,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await clockedProcessor.process(event: event, journalDb: journalDb);
+
+      verifyNever(
+        () => sequenceLog.recordReceivedEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
+        ),
+      );
+    });
+
+    test('a failure to record is logged and fails the receive, so it is '
+        'retried', () async {
+      when(
+        () => sequenceLog.recordReceivedEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
+        ),
+      ).thenThrow(StateError('sequence log closed'));
+      final message = SyncMessage.aiConfig(
+        aiConfig: fallbackAiConfig,
+        status: SyncEntryStatus.update,
+        versionStamp: 42,
+        vectorClock: clock,
+        originatingHostId: 'peer-host',
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await expectLater(
+        clockedProcessor.process(event: event, journalDb: journalDb),
+        throwsStateError,
+      );
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'processor.recordReceivedAiConfig',
+        ),
+      ).called(1);
+    });
+  });
+
   test('processes saved task filter messages', () async {
     const filter = SavedTaskFilter(
       id: 'stf-1',

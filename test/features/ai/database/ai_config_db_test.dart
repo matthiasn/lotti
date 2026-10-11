@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -244,7 +245,178 @@ void main() {
 
       expect(await migrated.versionStamp('edited'), 250000);
       expect(await migrated.versionStamp('fresh'), 300000);
-      expect(migrated.schemaVersion, 2);
+      expect(migrated.schemaVersion, 3);
+      expect(await migrated.versionClock('edited'), isNull);
     },
   );
+
+  test('migrating from schema 2 keeps every stamp and adds no clock', () async {
+    final directory = Directory.systemTemp.createTempSync('ai_config_v2_');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    sqlite3.open('${directory.path}/$aiConfigDbFileName')
+      ..execute('''
+        CREATE TABLE ai_configs (
+          id TEXT NOT NULL PRIMARY KEY,
+          type TEXT NOT NULL,
+          name TEXT NOT NULL,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        );
+        CREATE TABLE ai_config_versions (
+          id TEXT NOT NULL PRIMARY KEY,
+          stamp INTEGER NOT NULL
+        );
+        INSERT INTO ai_config_versions VALUES ('deleted', 42);
+        PRAGMA user_version = 2;
+      ''')
+      ..close();
+
+    final migrated = AiConfigDb(
+      apiKeyStorage: AiApiKeyStorage.inMemory(),
+      documentsDirectoryProvider: () async => directory,
+      tempDirectoryProvider: () async => directory,
+    );
+    addTearDown(migrated.close);
+
+    expect(await migrated.versionStamp('deleted'), 42);
+    expect(await migrated.versionClock('deleted'), isNull);
+  });
+
+  group('vector clocks (ADR 0136)', () {
+    const first = VectorClock({'host-a': 1});
+    const second = VectorClock({'host-a': 2});
+    const peer = VectorClock({'host-b': 1});
+
+    test('every version, deletions included, streams with its clock for the '
+        'sequence log population', () async {
+      await db.saveConfig(profile('a'), vectorClock: first);
+      await db.applyConfigDeletion('gone', stamp: 5, vectorClock: peer);
+
+      final records = (await db.streamVersionsWithVectorClock().toList())
+          .expand((page) => page);
+
+      expect(
+        [
+          for (final r in records) [r.id, r.vectorClock],
+        ],
+        [
+          ['gone', peer.vclock],
+          ['profile-1', first.vclock],
+        ],
+      );
+      expect(await db.countAllVersions(), 2);
+    });
+
+    test('a write without a clock holds none', () async {
+      await db.saveConfig(profile('a'));
+      expect(await db.versionClock('profile-1'), isNull);
+      expect(await db.versionClock('never-held'), isNull);
+    });
+
+    test('each write joins its clock into the one held', () async {
+      await db.saveConfig(profile('a'), vectorClock: first);
+      await db.applyConfigVersion(
+        profile('b'),
+        stamp: nowMs * 2,
+        vectorClock: peer,
+      );
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'host-a': 1, 'host-b': 1}),
+      );
+    });
+
+    test('a copy that loses on its stamp still joins its clock, so the held '
+        'version answers for its counters', () async {
+      await db.applyConfigVersion(
+        profile('newer'),
+        stamp: 20,
+        vectorClock: second,
+      );
+
+      expect(
+        await db.applyConfigVersion(
+          profile('older'),
+          stamp: 10,
+          vectorClock: peer,
+        ),
+        isFalse,
+      );
+      expect(await db.versionStamp('profile-1'), 20);
+      expect((await db.getConfigById('profile-1'))!.name, 'newer');
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'host-a': 2, 'host-b': 1}),
+      );
+    });
+
+    test('a copy tying a held deletion, or losing the content order, still '
+        'joins its clock', () async {
+      await db.applyConfigDeletion('profile-1', stamp: 10, vectorClock: first);
+      expect(
+        await db.applyConfigVersion(
+          profile('late'),
+          stamp: 10,
+          vectorClock: peer,
+        ),
+        isFalse,
+      );
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'host-a': 1, 'host-b': 1}),
+      );
+
+      await db.applyConfigVersion(profile('z'), stamp: 30);
+      expect(
+        await db.applyConfigVersion(
+          profile('a'),
+          stamp: 30,
+          vectorClock: const VectorClock({'host-c': 1}),
+        ),
+        isFalse,
+      );
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'host-a': 1, 'host-b': 1, 'host-c': 1}),
+      );
+    });
+
+    test('a deletion carries and joins clocks like a version', () async {
+      await db.saveConfig(profile('a'), vectorClock: first);
+      await atNow(() => db.deleteConfig('profile-1', vectorClock: second));
+      expect(await db.versionClock('profile-1'), second);
+      expect(await db.hardDeletionStamps(), contains('profile-1'));
+
+      // A late deletion copy that loses still joins.
+      expect(
+        await db.applyConfigDeletion('profile-1', stamp: 1, vectorClock: peer),
+        isFalse,
+      );
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'host-a': 2, 'host-b': 1}),
+      );
+    });
+
+    test('a clock with nothing held to join changes nothing, and an '
+        'unreadable stored clock reads as none', () async {
+      expect(
+        await db.applyConfigDeletion('gone', stamp: 5, vectorClock: peer),
+        isTrue,
+      );
+      await db.customStatement(
+        "UPDATE ai_config_versions SET vector_clock = 'not json' "
+        "WHERE id = 'gone'",
+      );
+      expect(await db.versionClock('gone'), isNull);
+      // Forgetting drops the clock with the version.
+      await db.forgetConfig('gone');
+      expect(
+        await db.applyConfigDeletion('gone', stamp: 1, vectorClock: first),
+        isTrue,
+      );
+      expect(await db.versionClock('gone'), first);
+    });
+  });
 }

@@ -2934,6 +2934,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'Evenimente de utilizare AI';
 
   @override
+  String get backfillRecordsAiConfigs => 'Setări AI';
+
+  @override
   String get backfillRecordsDefinitions => 'Definiții de setări';
 
   @override

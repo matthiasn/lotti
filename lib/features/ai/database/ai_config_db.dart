@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/vector_clock_rows.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -44,7 +46,7 @@ class AiConfigDb extends _$AiConfigDb {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -66,6 +68,11 @@ class AiConfigDb extends _$AiConfigDb {
             'FROM ai_configs',
           );
         }
+        if (from >= 2 && from < 3) {
+          // Versions written before clocks hold none; the next write of each
+          // id gives it one (ADR 0136).
+          await m.addColumn(aiConfigVersions, aiConfigVersions.vectorClock);
+        }
       },
     );
   }
@@ -74,6 +81,25 @@ class AiConfigDb extends _$AiConfigDb {
   /// its deletion's once the config is gone. Null when no version is known.
   Future<int?> versionStamp(String id) =>
       versionStampById(id).getSingleOrNull();
+
+  /// Every version this device holds — live rows and hard deletions — with
+  /// its clock, a page at a time, for populating the sync sequence log.
+  Stream<List<VectorClockRecord>> streamVersionsWithVectorClock({
+    int batchSize = 1000,
+  }) => streamTableVectorClocks(
+    this,
+    table: 'ai_config_versions',
+    clockSql: 'vector_clock',
+    batchSize: batchSize,
+  );
+
+  Future<int> countAllVersions() => countTableRows(this, 'ai_config_versions');
+
+  /// The vector clock this device holds for [id]: the join of every version
+  /// of it written or received here, kept or not (ADR 0136). Null when no
+  /// version is known, or none carried a clock.
+  Future<VectorClock?> versionClock(String id) async =>
+      _decodeClock((await versionById(id).getSingleOrNull())?.vectorClock);
 
   /// The hard deletions this device holds, by id: every stamp in
   /// `ai_config_versions` with no config row. "Send settings" re-sends them,
@@ -97,11 +123,15 @@ class AiConfigDb extends _$AiConfigDb {
   ///
   /// [persistApiKey] can be disabled only for callers that intentionally have
   /// no credential (for example, a metadata-only sync update).
+  ///
+  /// [vectorClock] is the clock the version's message carries, joined into
+  /// the one held (ADR 0136); a write that is never sent passes none.
   Future<int> saveConfig(
     AiConfig config, {
     int? notBefore,
     bool persistApiKey = true,
     bool preserveExistingApiKeyOnEmpty = false,
+    VectorClock? vectorClock,
   }) => transaction(() async {
     final stamp = _nextLocalStamp(
       await versionStamp(config.id),
@@ -110,6 +140,7 @@ class AiConfigDb extends _$AiConfigDb {
     await _writeConfig(
       config,
       stamp: stamp,
+      vectorClock: vectorClock,
       existing: await configById(config.id).getSingleOrNull(),
       persistApiKey: persistApiKey,
       preserveExistingApiKeyOnEmpty: preserveExistingApiKeyOnEmpty,
@@ -126,17 +157,28 @@ class AiConfigDb extends _$AiConfigDb {
   /// send that lands after a newer version, or a replay of an older one, is
   /// dropped instead of overwriting the newer value. Nothing — not even the
   /// provider credential — is written for a dropped version.
+  ///
+  /// The copy's [vectorClock] is joined into the held one whether or not the
+  /// version is written: the held version answers for the counters of every
+  /// copy it superseded (ADR 0136).
   Future<bool> applyConfigVersion(
     AiConfig config, {
     required int stamp,
+    VectorClock? vectorClock,
   }) => transaction(() async {
     final held = await versionStamp(config.id);
     final existing = await configById(config.id).getSingleOrNull();
     if (held != null) {
-      if (stamp < held) return false;
+      if (stamp < held) {
+        await _joinClock(config.id, vectorClock);
+        return false;
+      }
       if (stamp == held) {
         // A version row with no config is a deletion, which wins a tie.
-        if (existing == null) return false;
+        if (existing == null) {
+          await _joinClock(config.id, vectorClock);
+          return false;
+        }
         // A stored provider keeps its credential in the keychain, not the
         // row; the ordering key ignores it anyway.
         final heldConfig = _configFromMap({
@@ -144,6 +186,7 @@ class AiConfigDb extends _$AiConfigDb {
           ...jsonDecode(existing.serialized) as Map<String, dynamic>,
         });
         if (_orderingKey(config).compareTo(_orderingKey(heldConfig)) <= 0) {
+          await _joinClock(config.id, vectorClock);
           return false;
         }
       }
@@ -151,6 +194,7 @@ class AiConfigDb extends _$AiConfigDb {
     await _writeConfig(
       config,
       stamp: stamp,
+      vectorClock: vectorClock,
       existing: existing,
       persistApiKey: true,
       preserveExistingApiKeyOnEmpty: false,
@@ -162,25 +206,32 @@ class AiConfigDb extends _$AiConfigDb {
   ///
   /// The stamp stays behind in `ai_config_versions`, so a copy of the config
   /// sent before the deletion cannot bring it back when it lands late. A
-  /// sync message of this deletion must carry the returned stamp.
-  Future<int> deleteConfig(String id) => transaction(() async {
-    final stamp = _nextLocalStamp(await versionStamp(id));
-    await _removeConfig(id);
-    await _writeStamp(id, stamp);
-    return stamp;
-  });
+  /// sync message of this deletion must carry the returned stamp, and the
+  /// [vectorClock] given here, which is joined into the one held.
+  Future<int> deleteConfig(String id, {VectorClock? vectorClock}) =>
+      transaction(() async {
+        final stamp = _nextLocalStamp(await versionStamp(id));
+        await _removeConfig(id);
+        await _writeStamp(id, stamp, vectorClock: vectorClock);
+        return stamp;
+      });
 
   /// Applies a received deletion of [id] stamped [stamp], unless this device
   /// holds a newer version of it. A deletion wins a tie with a config.
-  /// Returns whether a deletion was recorded.
+  /// Returns whether a deletion was recorded. The deletion's [vectorClock]
+  /// is joined into the held one either way, as for a version.
   Future<bool> applyConfigDeletion(
     String id, {
     required int stamp,
+    VectorClock? vectorClock,
   }) => transaction(() async {
     final held = await versionStamp(id);
-    if (held != null && stamp < held) return false;
+    if (held != null && stamp < held) {
+      await _joinClock(id, vectorClock);
+      return false;
+    }
     await _removeConfig(id);
-    await _writeStamp(id, stamp);
+    await _writeStamp(id, stamp, vectorClock: vectorClock);
     return true;
   });
 
@@ -215,6 +266,7 @@ class AiConfigDb extends _$AiConfigDb {
   Future<void> _writeConfig(
     AiConfig config, {
     required int stamp,
+    required VectorClock? vectorClock,
     required AiConfigDbEntity? existing,
     required bool persistApiKey,
     required bool preserveExistingApiKeyOnEmpty,
@@ -241,12 +293,59 @@ class AiConfigDb extends _$AiConfigDb {
         updatedAt: now,
       ),
     );
-    await _writeStamp(config.id, stamp);
+    await _writeStamp(config.id, stamp, vectorClock: vectorClock);
   }
 
-  Future<void> _writeStamp(String id, int stamp) => into(
-    aiConfigVersions,
-  ).insertOnConflictUpdate(AiConfigVersionEntity(id: id, stamp: stamp));
+  /// Records [stamp] as the version held for [id], its clock the join of the
+  /// one held and [vectorClock].
+  Future<void> _writeStamp(
+    String id,
+    int stamp, {
+    required VectorClock? vectorClock,
+  }) async {
+    final held = await versionById(id).getSingleOrNull();
+    await into(aiConfigVersions).insertOnConflictUpdate(
+      AiConfigVersionEntity(
+        id: id,
+        stamp: stamp,
+        vectorClock: _encodeClock(
+          _join(_decodeClock(held?.vectorClock), vectorClock),
+        ),
+      ),
+    );
+  }
+
+  /// Joins [vectorClock] into the clock held for [id], whose version stays
+  /// as it is. Nothing to join, or no version held, changes nothing.
+  Future<void> _joinClock(String id, VectorClock? vectorClock) async {
+    if (vectorClock == null) return;
+    final held = await versionById(id).getSingleOrNull();
+    if (held == null) return;
+    final joined = _join(_decodeClock(held.vectorClock), vectorClock);
+    if (joined == _decodeClock(held.vectorClock)) return;
+    await (update(aiConfigVersions)..where((row) => row.id.equals(id))).write(
+      AiConfigVersionsCompanion(vectorClock: Value(_encodeClock(joined))),
+    );
+  }
+
+  static VectorClock? _join(VectorClock? held, VectorClock? incoming) =>
+      held == null && incoming == null
+      ? null
+      : VectorClock.merge(held, incoming);
+
+  static String? _encodeClock(VectorClock? clock) =>
+      clock == null ? null : jsonEncode(clock.toJson());
+
+  static VectorClock? _decodeClock(String? encoded) {
+    if (encoded == null) return null;
+    try {
+      return VectorClock.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+    } on Object {
+      // A clock that does not parse answers for nothing; the next write
+      // replaces it.
+      return null;
+    }
+  }
 
   Future<void> _removeConfig(String id) async {
     final existing = await configById(id).getSingleOrNull();

@@ -16,6 +16,7 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -85,6 +86,9 @@ void main() {
     when(
       () => mockAiConfigRepository.hardDeletionStamps(),
     ).thenAnswer((_) async => const {});
+    when(
+      () => mockAiConfigRepository.heldVersion(any()),
+    ).thenAnswer((_) async => null);
     mockSavedTaskFiltersRepository = MockSavedTaskFiltersRepository();
     when(
       () => mockSavedTaskFiltersRepository.load(),
@@ -396,21 +400,42 @@ void main() {
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
-      // ADR 0094: a resend carries the stamp of the version it replays, so a
-      // peer with a newer version drops it. A row without one sends none.
+      // ADR 0094 and ADR 0136: a resend carries the stamp and the clock of
+      // the version it replays, so a peer with a newer version drops it and
+      // records the counters it supersedes. A row without a stamp held is
+      // resent without one.
+      const providerClock = VectorClock({'host-a': 3});
       when(
-        () => mockAiConfigRepository.versionStamp('provider-1'),
-      ).thenAnswer((_) async => 11);
+        () => mockAiConfigRepository.heldVersion('provider-1'),
+      ).thenAnswer(
+        (_) async => AiConfigResend(
+          id: 'provider-1',
+          config: provider,
+          stamp: 11,
+          vectorClock: providerClock,
+        ),
+      );
       when(
-        () => mockAiConfigRepository.versionStamp('model-1'),
-      ).thenAnswer((_) async => 22);
+        () => mockAiConfigRepository.heldVersion('model-1'),
+      ).thenAnswer(
+        (_) async => AiConfigResend(id: 'model-1', config: model, stamp: 22),
+      );
       when(
-        () => mockAiConfigRepository.versionStamp('prompt-1'),
+        () => mockAiConfigRepository.heldVersion('prompt-1'),
       ).thenAnswer((_) async => null);
-      // A hard deletion has no row; it is resent from the stamp it left.
+      // A hard deletion has no row; it is resent from the version it left.
       when(
         () => mockAiConfigRepository.hardDeletionStamps(),
       ).thenAnswer((_) async => {'skill-gone': 44});
+      when(
+        () => mockAiConfigRepository.heldVersion('skill-gone'),
+      ).thenAnswer(
+        (_) async => const AiConfigResend(
+          id: 'skill-gone',
+          stamp: 44,
+          vectorClock: VectorClock({'host-b': 7}),
+        ),
+      );
 
       await syncMaintenanceRepository.syncAiSettings();
 
@@ -424,7 +449,8 @@ void main() {
             aiConfigDelete: (deletion) =>
                 deletion.id == 'skill-gone' &&
                 deletion.hardDelete == true &&
-                deletion.versionStamp == 44,
+                deletion.versionStamp == 44 &&
+                deletion.vectorClock == const VectorClock({'host-b': 7}),
             orElse: () => false,
           ),
         ),
@@ -437,7 +463,9 @@ void main() {
             .where(
               (message) => message.maybeMap(
                 aiConfig: (config) =>
-                    config.aiConfig == provider && config.versionStamp == 11,
+                    config.aiConfig == provider &&
+                    config.versionStamp == 11 &&
+                    config.vectorClock == providerClock,
                 orElse: () => false,
               ),
             )
