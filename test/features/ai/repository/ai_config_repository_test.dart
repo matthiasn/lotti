@@ -1467,6 +1467,7 @@ void main() {
     }
 
     setUp(() {
+      sent.clear();
       dbs = [];
       keychains = [];
       settingsDbs = [];
@@ -1873,6 +1874,51 @@ void main() {
         expect(flushed, isEmpty);
         expect(await owedOn(0), isEmpty);
       },
+    );
+
+    test(
+      'deleting a provider while a flush is sending neither waits on the '
+      'other (no deadlock between the sender and the transaction)',
+      () async {
+        await seedBoth([provider, model]);
+        final ledger = AiConfigSyncLedger(settingsDbs[0]);
+        await ledger.owe('model');
+        await ledger.owe('provider');
+
+        // The flush blocks in its first send, holding the sender, and its
+        // next step reads the AI database.
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
+          invocation,
+        ) async {
+          sent.add(invocation.positionalArguments.first as SyncMessage);
+          if (!entered.isCompleted) {
+            entered.complete();
+            await release.future;
+          }
+        });
+
+        sent.clear();
+        final flush = deviceA.flushPending();
+        await entered.future;
+        final deletion = deviceA.deleteInferenceProviderWithModels(
+          provider.id,
+        );
+        await pumpEventQueue();
+        release.complete();
+        await flush;
+        await deletion;
+
+        expect(await stored(deviceA, 'provider'), isNull);
+        expect(await stored(deviceA, 'model'), isNull);
+        expect(
+          sent.whereType<SyncAiConfigDelete>().map((m) => m.id),
+          containsAll(['provider', 'model']),
+        );
+        expect(await owedOn(0), isEmpty);
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
     );
 
     test('a refused send is retried after the retry delay', () {
@@ -2325,12 +2371,13 @@ void main() {
       'deleteInferenceProviderWithModels logs error via DomainLogger and '
       'rethrows when transaction fails',
       () async {
-        // Arrange: make the transactional model lookup fail.
+        // Arrange: make the delete inside the transaction fail.
         when(
           () => mockDb.getConfigsByType(AiConfigType.model.name),
-        ).thenThrow(
-          Exception('DB connection lost'),
-        );
+        ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
+        when(
+          () => mockDb.deleteConfig('provider-1'),
+        ).thenThrow(Exception('DB connection lost'));
         when(
           () => mockDb.transaction<CascadeDeletionResult>(any()),
         ).thenAnswer((invocation) async {
@@ -3046,7 +3093,7 @@ void main() {
       ).thenThrow(Exception('Database error'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(
@@ -3165,7 +3212,7 @@ void main() {
       ).thenThrow(Exception('Model deletion failed'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(
@@ -3215,7 +3262,7 @@ void main() {
       ).thenThrow(Exception('Provider deletion failed'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(

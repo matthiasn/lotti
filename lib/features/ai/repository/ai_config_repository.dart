@@ -524,24 +524,25 @@ class AiConfigRepository {
   /// stamp behind (ADR 0094), so no older copy brings a row back, and the
   /// undo is [restoreProviderWithModels].
   ///
-  /// The transaction performs database writes only. Cache invalidation and the
-  /// outbox messages that propagate the deletion to peers run *after* it
-  /// commits: enqueuing from inside means a later failure rolls the local rows
-  /// back while the peer deletes stay queued, hard-deleting rows on other
-  /// devices that still exist here.
+  /// The transaction performs database writes only. Caches and the outbox
+  /// follow the commit, so a rollback never leaves peer deletes queued.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
     String providerId, {
     bool fromSync = false,
   }) async {
     final deletedIds = <String, int>{};
 
+    // Owed before the deletes commit, outside the transaction: a running
+    // flush holds the sender and reads this database, so would deadlock.
+    // A model added after this read is owed by its send below.
+    if (!fromSync) {
+      final models = await _liveModelsOf(providerId);
+      await _sender.owe([providerId, ...models.map((m) => m.id)]);
+    }
+
     final result = await _db.transaction(() async {
       try {
         final associatedModels = await _liveModelsOf(providerId);
-        // Owed before the deletes commit; a rollback only resends live rows.
-        if (!fromSync) {
-          await _sender.owe([providerId, ...associatedModels.map((m) => m.id)]);
-        }
 
         // Hard deletes: re-adding this provider must bring its models back, so
         // the cascade must not leave tombstones behind.
@@ -570,11 +571,8 @@ class AiConfigRepository {
     // drop them and the peers hear about it.
     deletedIds.keys.forEach(_noteHardDeleted);
     if (!fromSync) {
-      // Deliberately non-fatal. The rows are already gone locally, so
-      // throwing here would tell the user the deletion failed and withdraw
-      // the undo affordance for work that did happen. A deletion the outbox
-      // refuses stays owed in the ledger and is sent by the next flush; no
-      // failure skips the rest.
+      // Non-fatal: the rows are gone locally, and a refused deletion stays
+      // owed for the next flush.
       for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
         await _sender.send(
           id,
