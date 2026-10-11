@@ -206,6 +206,49 @@ Future<void> _resendOwnCounterZeroOnce() async {
   }
 }
 
+/// Settings key recording that [_resendBurnedOwnCountersOnce] ran.
+const burnedOwnCountersResentSettingsKey = 'maintenance_burnedOwnCountersV1';
+
+/// Resends and rebinds, once per device, the own counters an older build
+/// burned under the wrong id while a payload carried them
+/// ([BackfillResponseHandler.resendBurnedOwnCountersCarried], ADR 0131). The
+/// flag is set once the sweep returns and not when it throws, so a failure
+/// retries at the next start.
+Future<void> _resendBurnedOwnCountersOnce() async {
+  final settingsDb = getIt<SettingsDb>();
+  final domainLogger = getIt<DomainLogger>();
+  try {
+    if (await settingsDb.itemByKey(burnedOwnCountersResentSettingsKey) ==
+        'true') {
+      return;
+    }
+    final resent = await getIt<BackfillResponseHandler>()
+        .resendBurnedOwnCountersCarried();
+    await settingsDb.saveSettingsItem(
+      burnedOwnCountersResentSettingsKey,
+      'true',
+    );
+    if (resent > 0) {
+      domainLogger.log(
+        LogDomain.sync,
+        'Resent $resent own counters burned under the wrong id',
+        subDomain: 'burnedOwnCounters',
+      );
+    }
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'burnedOwnCounters',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> resendBurnedOwnCountersOnceForTesting() =>
+    _resendBurnedOwnCountersOnce();
+
 @visibleForTesting
 Future<void> resendOwnCounterZeroOnceForTesting() =>
     _resendOwnCounterZeroOnce();

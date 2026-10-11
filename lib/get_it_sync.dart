@@ -213,6 +213,11 @@ Future<String? Function()> _registerMatrixSyncStack({
       journalDb: journalDb,
       vectorClockService: vectorClockService,
       outboxService: outboxService,
+    )
+    ..answerWithHeld = outboxService.enqueueMessageOrThrow
+    ..purgedEntryGuard = PurgedEntryGuard(
+      syncDatabase: syncDatabase,
+      documentsDirectory: documentsDirectory,
     );
   matrixService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
 

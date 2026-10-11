@@ -9,19 +9,13 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_rules.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
+import 'package:lotti/features/ai/repository/cascade_deletion_result.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
 
-/// Result object for cascade deletion operations
-class CascadeDeletionResult {
-  const CascadeDeletionResult({
-    required this.deletedModels,
-  });
-
-  final List<AiConfigModel> deletedModels;
-}
+export 'package:lotti/features/ai/repository/cascade_deletion_result.dart';
 
 /// The shared [AiConfigRepository]. The app overrides it per service
 /// generation in `buildProviderOverrides`; the getIt fallback below only
@@ -121,10 +115,9 @@ class AiConfigRepository {
   /// ([_deleteOrphanedModels]), so a model a peer created before it heard of
   /// its provider's deletion does not outlive it.
   ///
-  /// A local write owes its message to the peers until the outbox accepts it
-  /// ([AiConfigSyncSender.send]): the write is durable before the message is staged, so a
-  /// failed enqueue, or a crash in between, leaves the id in the
-  /// ledger for [flushPending].
+  /// A local write owes its message to the peers from before it commits
+  /// until the outbox accepts it ([AiConfigSyncSender.owing]): a failed enqueue,
+  /// or a crash in between, leaves the id in the ledger for [flushPending].
   ///
   /// A model created on this device takes its provider's stamp rather than
   /// the clock: it belongs to the provider as it was, so a deletion of the
@@ -176,9 +169,13 @@ class AiConfigRepository {
             config.apiKey.isNotEmpty
         ? config.copyWith(apiKeyCleared: false)
         : config;
-    final stamp = await _saveLocal(written);
-    _storeConfig(written);
-    if (!fromSync) await _enqueue(written, stamp);
+    Future<void> write() async {
+      final stamp = await _saveLocal(written);
+      _storeConfig(written);
+      if (!fromSync) await _enqueue(written, stamp);
+    }
+
+    await (fromSync ? write() : _sender.owing([written.id], write));
   }
 
   /// Writes a local version of [config] and returns its stamp: a model this
@@ -207,14 +204,14 @@ class AiConfigRepository {
     ),
   );
 
-  /// Sends every write still owed: the stored row of each owed id with its
-  /// stamp, or the hard deletion its stamp alone records. An id with neither
-  /// is forgotten. Called at startup and by "Send settings".
+  /// Sends every owed write ([_resendOf]); at startup and by Send settings.
   Future<void> flushPending() => _sender.flush();
 
+  /// Sends what this device holds for [id] again ([AiConfigSyncSender]).
+  Future<void> resendHeld(String id) => _sender.resendHeld(id);
+
   /// What this device holds for [id]: its row with its stamp, or the hard
-  /// deletion the stamp alone records; null when it holds neither (the
-  /// orphaned-seed prune forgets both).
+  /// deletion the stamp alone records; null when it holds neither.
   Future<AiConfigResend?> _resendOf(String id) async {
     final stamp = await _db.versionStamp(id);
     if (stamp == null) return null;
@@ -260,17 +257,19 @@ class AiConfigRepository {
     for (final model in await _liveModelsOf(providerId)) {
       final held = await _db.versionStamp(model.id);
       if (held != null && held > deletion) continue;
-      if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
-        _noteHardDeleted(model.id);
-      }
-      await _sender.send(
-        model.id,
-        SyncMessage.aiConfigDelete(
-          id: model.id,
-          hardDelete: true,
-          versionStamp: deletion,
-        ),
-      );
+      await _sender.owing([model.id], () async {
+        if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
+          _noteHardDeleted(model.id);
+        }
+        await _sender.send(
+          model.id,
+          SyncMessage.aiConfigDelete(
+            id: model.id,
+            hardDelete: true,
+            versionStamp: deletion,
+          ),
+        );
+      });
     }
   }
 
@@ -423,17 +422,18 @@ class AiConfigRepository {
     int? versionStamp,
   }) async {
     if (!fromSync) {
-      final stamp = await _db.deleteConfig(id);
-      _noteHardDeleted(id);
-      await _sender.send(
-        id,
-        SyncMessage.aiConfigDelete(
-          id: id,
-          hardDelete: true,
-          versionStamp: stamp,
-        ),
-      );
-      return;
+      return _sender.owing([id], () async {
+        final stamp = await _db.deleteConfig(id);
+        _noteHardDeleted(id);
+        await _sender.send(
+          id,
+          SyncMessage.aiConfigDelete(
+            id: id,
+            hardDelete: true,
+            versionStamp: stamp,
+          ),
+        );
+      });
     }
     if (versionStamp == null) {
       await _db.forgetConfig(id);
@@ -485,14 +485,17 @@ class AiConfigRepository {
     AiConfigInferenceProvider provider,
     List<AiConfigModel> models,
   ) async {
-    final providerStamp = await _db.saveConfig(provider);
-    _storeConfig(provider);
-    await _enqueue(provider, providerStamp);
-    for (final model in models) {
-      final stamp = await _db.saveConfig(model, notBefore: providerStamp);
-      _storeConfig(model);
-      await _enqueue(model, stamp);
-    }
+    final ids = [provider.id, for (final model in models) model.id];
+    await _sender.owing(ids, () async {
+      final providerStamp = await _db.saveConfig(provider);
+      _storeConfig(provider);
+      await _enqueue(provider, providerStamp);
+      for (final model in models) {
+        final stamp = await _db.saveConfig(model, notBefore: providerStamp);
+        _storeConfig(model);
+        await _enqueue(model, stamp);
+      }
+    });
   }
 
   /// Whether an incoming synced [incoming] row would resurrect a local
@@ -514,32 +517,28 @@ class AiConfigRepository {
     return !incomingUpdatedAt.isAfter(localUpdatedAt);
   }
 
-  /// Delete an inference provider and all its associated models.
-  ///
-  /// This method performs cascade deletion within a transaction to ensure
-  /// atomicity:
-  /// 1. Fetches all models associated with the provider
-  /// 2. Deletes each model
-  /// 3. Deletes the provider itself
+  /// Deletes an inference provider and its models in one transaction.
   ///
   /// If any deletion fails, the entire transaction is rolled back to maintain
   /// data integrity and prevent partial deletions. Each deletion leaves its
   /// stamp behind (ADR 0094), so no older copy brings a row back, and the
   /// undo is [restoreProviderWithModels].
   ///
-  /// The transaction performs database writes only. Cache invalidation and the
-  /// outbox messages that propagate the deletion to peers run *after* it
-  /// commits: enqueuing from inside means a later failure rolls the local rows
-  /// back while the peer deletes stay queued, hard-deleting rows on other
-  /// devices that still exist here.
-  ///
-  /// Returns detailed information about the deletion operation.
+  /// The transaction performs database writes only. Caches and the outbox
+  /// follow the commit, so a rollback never leaves peer deletes queued.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
-    String providerId, {
-    bool fromSync = false,
-  }) async {
-    final deletedIds = <String, int>{};
+    String providerId,
+  ) async {
+    // Owed outside the transaction, which a flush would deadlock on.
+    final models = await _liveModelsOf(providerId);
+    return _sender.owing(
+      [providerId, ...models.map((m) => m.id)],
+      () => _deleteCascade(providerId),
+    );
+  }
 
+  Future<CascadeDeletionResult> _deleteCascade(String providerId) async {
+    final deletedIds = <String, int>{};
     final result = await _db.transaction(() async {
       try {
         final associatedModels = await _liveModelsOf(providerId);
@@ -570,22 +569,17 @@ class AiConfigRepository {
     // Committed: only now are the rows really gone, so only now may the caches
     // drop them and the peers hear about it.
     deletedIds.keys.forEach(_noteHardDeleted);
-    if (!fromSync) {
-      // Deliberately non-fatal. The rows are already gone locally, so
-      // throwing here would tell the user the deletion failed and withdraw
-      // the undo affordance for work that did happen. A deletion the outbox
-      // refuses stays owed in the ledger and is sent by the next flush; no
-      // failure skips the rest.
-      for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
-        await _sender.send(
-          id,
-          SyncMessage.aiConfigDelete(
-            id: id,
-            hardDelete: true,
-            versionStamp: stamp,
-          ),
-        );
-      }
+    // Non-fatal: the rows are gone locally, and a refused deletion stays
+    // owed for the next flush.
+    for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
+      await _sender.send(
+        id,
+        SyncMessage.aiConfigDelete(
+          id: id,
+          hardDelete: true,
+          versionStamp: stamp,
+        ),
+      );
     }
 
     return result;

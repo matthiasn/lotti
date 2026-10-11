@@ -130,6 +130,55 @@ void main() {
       );
     });
 
+    test('an image tombstone stays an image and keeps only what names its '
+        'file, so an older build can find the file to delete', () {
+      final image = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(deletedAt: deletedAt),
+        data: testImageEntry.data.copyWith(
+          imageId: 'img-1',
+          imageFile: 'photo.jpg',
+          imageDirectory: '/images/2024-03-15/',
+          thumbHash: 'hash',
+        ),
+      );
+
+      final tombstone = image.toPurgedTombstone(purgedAt);
+
+      expect(tombstone, isA<JournalImage>());
+      expect(tombstone.isPurgedTombstone, isTrue);
+      expect(tombstone.entryText, isNull);
+      expect(tombstone.meta.starred, isNull);
+      expect(
+        (tombstone as JournalImage).data,
+        ImageData(
+          capturedAt: image.data.capturedAt,
+          imageId: 'img-1',
+          imageFile: 'photo.jpg',
+          imageDirectory: '/images/2024-03-15/',
+        ),
+      );
+    });
+
+    test('an audio tombstone keeps its file and duration, not its '
+        'transcripts', () {
+      final audio = testAudioEntryWithTranscripts.copyWith(
+        meta: testAudioEntryWithTranscripts.meta.copyWith(deletedAt: deletedAt),
+        data: testAudioEntryWithTranscripts.data.copyWith(
+          audioFile: 'memo.m4a',
+          audioDirectory: '/audio/2024-03-15/',
+        ),
+      );
+
+      final tombstone = audio.toPurgedTombstone(purgedAt) as JournalAudio;
+
+      expect(tombstone.isPurgedTombstone, isTrue);
+      expect(tombstone.entryText, isNull);
+      expect(tombstone.data.transcripts, isNull);
+      expect(tombstone.data.audioFile, 'memo.m4a');
+      expect(tombstone.data.audioDirectory, '/audio/2024-03-15/');
+      expect(tombstone.data.duration, audio.data.duration);
+    });
+
     test('purgedAt round-trips through JSON and is left out while null', () {
       final tombstone = testTask
           .copyWith(meta: testTask.meta.copyWith(deletedAt: deletedAt))

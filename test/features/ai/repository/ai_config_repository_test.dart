@@ -47,6 +47,34 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  test('a local save is owed before its write commits, so a crash before '
+      'the send still leaves the debt (ADR 0127)', () async {
+    final settings = SettingsDb(inMemoryDatabase: true);
+    addTearDown(settings.close);
+    final db = MockAiConfigDb();
+    when(db.close).thenAnswer((_) async {});
+    Set<String>? owedAtWrite;
+    when(() => db.saveConfig(any())).thenAnswer((_) async {
+      owedAtWrite = await AiConfigSyncLedger(settings).load();
+      return 1;
+    });
+    final repository = AiConfigRepository(db, settingsDb: settings);
+    addTearDown(repository.close);
+    final provider = AiConfig.inferenceProvider(
+      id: 'owed-first',
+      baseUrl: 'https://api.example.com',
+      apiKey: 'key',
+      name: 'Provider',
+      createdAt: fixedDate,
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+    );
+
+    await repository.saveConfig(provider);
+
+    expect(owedAtWrite, {'owed-first'});
+    expect(await AiConfigSyncLedger(settings).load(), isEmpty);
+  });
+
   test('default profile persists and clears in device settings', () async {
     final settings = MockSettingsDb();
     final db = MockAiConfigDb();
@@ -1439,6 +1467,7 @@ void main() {
     }
 
     setUp(() {
+      sent.clear();
       dbs = [];
       keychains = [];
       settingsDbs = [];
@@ -1845,6 +1874,51 @@ void main() {
         expect(flushed, isEmpty);
         expect(await owedOn(0), isEmpty);
       },
+    );
+
+    test(
+      'deleting a provider while a flush is sending neither waits on the '
+      'other (no deadlock between the sender and the transaction)',
+      () async {
+        await seedBoth([provider, model]);
+        final ledger = AiConfigSyncLedger(settingsDbs[0]);
+        await ledger.owe('model');
+        await ledger.owe('provider');
+
+        // The flush blocks in its first send, holding the sender, and its
+        // next step reads the AI database.
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        when(() => mockOutboxService.enqueueMessageOrThrow(any())).thenAnswer((
+          invocation,
+        ) async {
+          sent.add(invocation.positionalArguments.first as SyncMessage);
+          if (!entered.isCompleted) {
+            entered.complete();
+            await release.future;
+          }
+        });
+
+        sent.clear();
+        final flush = deviceA.flushPending();
+        await entered.future;
+        final deletion = deviceA.deleteInferenceProviderWithModels(
+          provider.id,
+        );
+        await pumpEventQueue();
+        release.complete();
+        await flush;
+        await deletion;
+
+        expect(await stored(deviceA, 'provider'), isNull);
+        expect(await stored(deviceA, 'model'), isNull);
+        expect(
+          sent.whereType<SyncAiConfigDelete>().map((m) => m.id),
+          containsAll(['provider', 'model']),
+        );
+        expect(await owedOn(0), isEmpty);
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
     );
 
     test('a refused send is retried after the retry delay', () {
@@ -2297,12 +2371,13 @@ void main() {
       'deleteInferenceProviderWithModels logs error via DomainLogger and '
       'rethrows when transaction fails',
       () async {
-        // Arrange: make the transactional model lookup fail.
+        // Arrange: make the delete inside the transaction fail.
         when(
           () => mockDb.getConfigsByType(AiConfigType.model.name),
-        ).thenThrow(
-          Exception('DB connection lost'),
-        );
+        ).thenAnswer((_) async => const <AiConfigDbEntity>[]);
+        when(
+          () => mockDb.deleteConfig('provider-1'),
+        ).thenThrow(Exception('DB connection lost'));
         when(
           () => mockDb.transaction<CascadeDeletionResult>(any()),
         ).thenAnswer((invocation) async {
@@ -2960,55 +3035,6 @@ void main() {
       verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(1);
     });
 
-    test('should not send sync messages when fromSync is true', () async {
-      // Arrange
-      const providerId = 'provider-sync';
-      final model = AiConfigModel(
-        id: 'model-sync',
-        name: 'Model Sync',
-        providerModelId: 'provider-model-sync',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model.id,
-            type: 'AiConfigModel',
-            name: model.name,
-            serialized: jsonEncode(model.toJson()),
-            createdAt: model.createdAt,
-          ),
-        ],
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-        fromSync: true,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(1));
-      expect(
-        result.deletedModels.map((m) => m.id),
-        containsAll(['model-sync']),
-      );
-
-      // Verify deletions happened
-      verify(() => mockDb.deleteConfig('model-sync')).called(1);
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-
-      // Verify no sync messages were sent
-      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
-    });
-
     test('should handle database errors gracefully', () async {
       // Arrange
       const providerId = 'provider-error';
@@ -3018,7 +3044,7 @@ void main() {
       ).thenThrow(Exception('Database error'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(
@@ -3137,7 +3163,7 @@ void main() {
       ).thenThrow(Exception('Model deletion failed'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(
@@ -3187,7 +3213,7 @@ void main() {
       ).thenThrow(Exception('Provider deletion failed'));
 
       // Act & Assert
-      expect(
+      await expectLater(
         () => repository.deleteInferenceProviderWithModels(providerId),
         throwsA(
           isA<Exception>().having(

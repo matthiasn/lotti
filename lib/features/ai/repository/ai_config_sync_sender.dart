@@ -80,6 +80,10 @@ class AiConfigSyncSender {
   /// The tail of the queue every send and flush runs on.
   Future<void> _tail = Future<void>.value();
 
+  /// Ids an [owing] write holds, counted per concurrent write: a flush
+  /// leaves them owed rather than send the version before the write.
+  final Map<String, int> _writing = {};
+
   /// Runs [operation] after every earlier send and flush has finished.
   /// Neither throws, so the queue never stalls on a failure.
   Future<void> _serially(Future<void> Function() operation) =>
@@ -112,6 +116,7 @@ class AiConfigSyncSender {
     if (ledger == null) return;
     try {
       for (final id in (await ledger.load()).toList()..sort()) {
+        if (_writing.containsKey(id)) continue;
         final resend = await resendOf(id);
         if (resend != null) {
           await enqueue(resend.toSyncMessage());
@@ -122,6 +127,50 @@ class AiConfigSyncSender {
       onError(error, stackTrace, 'aiConfig.flush');
       _scheduleRetry();
     }
+  }
+
+  /// Records [ids] as owed, then runs [write] — the local write and its
+  /// sends — and returns its result. Owed before the write commits, a crash
+  /// between the write and its send still leaves the debt for [flush] (ADR
+  /// 0127); and while [write] runs a flush leaves [ids] owed, since it would
+  /// send the version before the write and settle the debt the write still
+  /// has. A failure to record is reported and the write goes ahead without
+  /// the record, as before the ledger. Never call from inside a database
+  /// transaction a flush reads: a running flush holds the sender.
+  Future<T> owing<T>(Iterable<String> ids, Future<T> Function() write) async {
+    final held = ids.toList(growable: false);
+    await _serially(() => _owe(held));
+    try {
+      return await write();
+    } finally {
+      for (final id in held) {
+        final count = _writing[id]! - 1;
+        count == 0 ? _writing.remove(id) : _writing[id] = count;
+      }
+    }
+  }
+
+  Future<void> _owe(List<String> ids) async {
+    for (final id in ids) {
+      _writing.update(id, (count) => count + 1, ifAbsent: () => 1);
+    }
+    final ledger = _ledger;
+    if (ledger == null) return;
+    try {
+      for (final id in ids) {
+        await ledger.owe(id);
+      }
+    } catch (error, stackTrace) {
+      onError(error, stackTrace, 'aiConfig.owe');
+    }
+  }
+
+  /// Sends what the device holds for [id] now, owed like any write: to a
+  /// peer on a build that applies AI configurations in arrival order, so
+  /// the newest version is the last to reach it.
+  Future<void> resendHeld(String id) async {
+    final held = await resendOf(id);
+    if (held != null) await send(id, held.toSyncMessage());
   }
 
   void _scheduleRetry() {

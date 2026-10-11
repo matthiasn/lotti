@@ -150,7 +150,9 @@ Future<void> _registerLateAndOptionalServices({
     getIt<StartupTasks>()
       // The counter-0 resend reads the own row the population records.
       ..track(
-        _checkAndPopulateSequenceLog().then((_) => _resendOwnCounterZeroOnce()),
+        _checkAndPopulateSequenceLog()
+            .then((_) => _resendOwnCounterZeroOnce())
+            .then((_) => _resendBurnedOwnCountersOnce()),
       )
       ..track(_repairClocklessRowsOnce());
   }

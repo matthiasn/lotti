@@ -44,6 +44,99 @@ void main() {
     await getIt.popScope();
   });
 
+  group('resendBurnedOwnCountersOnceForTesting', () {
+    late MockDomainLogger logger;
+    late MockSettingsDb settingsDb;
+    late MockBackfillResponseHandler handler;
+
+    setUp(() {
+      logger = MockDomainLogger();
+      settingsDb = MockSettingsDb();
+      handler = MockBackfillResponseHandler();
+      when(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      getIt
+        ..registerSingleton<DomainLogger>(logger)
+        ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<BackfillResponseHandler>(handler);
+    });
+
+    test('runs once, records it, and logs how many it resent', () async {
+      when(
+        () => settingsDb.itemByKey(burnedOwnCountersResentSettingsKey),
+      ).thenAnswer((_) async => null);
+      when(handler.resendBurnedOwnCountersCarried).thenAnswer((_) async => 2);
+
+      await resendBurnedOwnCountersOnceForTesting();
+
+      verify(
+        () => settingsDb.saveSettingsItem(
+          burnedOwnCountersResentSettingsKey,
+          'true',
+        ),
+      ).called(1);
+      verify(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(that: contains('Resent 2')),
+          subDomain: 'burnedOwnCounters',
+        ),
+      ).called(1);
+    });
+
+    test('is skipped once recorded', () async {
+      when(
+        () => settingsDb.itemByKey(burnedOwnCountersResentSettingsKey),
+      ).thenAnswer((_) async => 'true');
+
+      await resendBurnedOwnCountersOnceForTesting();
+
+      verifyNever(handler.resendBurnedOwnCountersCarried);
+    });
+
+    test('a failure is logged and retried at the next start', () async {
+      when(
+        () => settingsDb.itemByKey(burnedOwnCountersResentSettingsKey),
+      ).thenAnswer((_) async => null);
+      when(
+        handler.resendBurnedOwnCountersCarried,
+      ).thenThrow(StateError('closed'));
+
+      await resendBurnedOwnCountersOnceForTesting();
+
+      verifyNever(
+        () => settingsDb.saveSettingsItem(
+          burnedOwnCountersResentSettingsKey,
+          any(),
+        ),
+      );
+      verify(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'burnedOwnCounters',
+        ),
+      ).called(1);
+    });
+  });
+
   group('resendOwnCounterZeroOnceForTesting', () {
     late MockDomainLogger logger;
     late MockSettingsDb settingsDb;

@@ -52,6 +52,7 @@ import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
+import 'package:lotti/features/sync/sequence/purged_entry_guard.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -285,6 +286,17 @@ class SyncEventProcessor {
   /// exists (same rationale as [backfillResponseHandler]); without it such a
   /// row waits for the manual clock migration.
   DefinitionClockStamper? definitionClockStamper;
+
+  /// Sends a message this device composes in answer to one it received —
+  /// the stamped version it holds, for a peer whose build applies config
+  /// flags in arrival order. Injected after construction, once the outbox
+  /// exists; without it nothing is answered. Throws when the outbox refuses
+  /// the message, so the refusal is logged rather than lost silently.
+  Future<void> Function(SyncMessage message)? answerWithHeld;
+
+  /// Refuses a late copy of an entry an older build purged without a
+  /// tombstone. Injected after construction; without it every copy applies.
+  PurgedEntryGuard? purgedEntryGuard;
 
   /// Run after a received journal entity is applied, for what storing it
   /// leaves to do on other rows — the items of a deleted checklist

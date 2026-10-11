@@ -94,6 +94,81 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     });
   }
 
+  /// The highest counter per host among the versions of journal entry
+  /// [entryId] this device received or backfilled, or authored: a clock no
+  /// newer than any version it held. Empty when it holds no record of one.
+  Future<Map<String, int>> heldJournalClockFloor(String entryId) async {
+    final rows = await customSelect(
+      'SELECT host_id, MAX(counter) AS c FROM sync_sequence_log '
+      'WHERE entry_id = ? AND payload_type = ? AND status IN (?, ?) '
+      'GROUP BY host_id',
+      variables: [
+        Variable.withString(entryId),
+        Variable.withInt(SyncSequencePayloadType.journalEntity.index),
+        Variable.withInt(SyncSequenceStatus.received.index),
+        Variable.withInt(SyncSequenceStatus.backfilled.index),
+      ],
+      readsFrom: {syncSequenceLog},
+    ).get();
+    return {
+      for (final row in rows) row.read<String>('host_id'): row.read<int>('c'),
+    };
+  }
+
+  /// This host's own counters recorded as non-events — `burned`, or
+  /// `unresolvable` from builds before burns had their own status — that name
+  /// no payload. Before ADR 0077 a create could burn the counter it then
+  /// wrote under another id, so some of these are carried by a payload.
+  Future<Set<int>> burnedOwnCountersWithoutPayload(String hostId) async {
+    final rows =
+        await (select(syncSequenceLog)..where(
+              (t) =>
+                  t.hostId.equals(hostId) &
+                  t.status.isIn([
+                    SyncSequenceStatus.unresolvable.index,
+                    SyncSequenceStatus.burned.index,
+                  ]) &
+                  t.entryId.isNull(),
+            ))
+            .get();
+    return {for (final row in rows) row.counter};
+  }
+
+  /// Binds an own counter recorded as a non-event (see
+  /// [burnedOwnCountersWithoutPayload]) to the payload that proves it was not
+  /// one: a payload whose clock carries exactly this counter. Only a row
+  /// still burned or unresolvable with no payload is rebound, so a racing
+  /// settlement keeps whatever it wrote. Returns whether the row was rebound.
+  Future<bool> rebindBurnedOwnSequenceCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+    DateTime? now,
+  }) async {
+    final written =
+        await (update(syncSequenceLog)..where(
+              (t) =>
+                  t.hostId.equals(hostId) &
+                  t.counter.equals(counter) &
+                  t.status.isIn([
+                    SyncSequenceStatus.unresolvable.index,
+                    SyncSequenceStatus.burned.index,
+                  ]) &
+                  t.entryId.isNull(),
+            ))
+            .write(
+              SyncSequenceLogCompanion(
+                entryId: Value(entryId),
+                payloadType: Value(payloadType.index),
+                originatingHostId: Value(hostId),
+                status: Value(SyncSequenceStatus.received.index),
+                updatedAt: Value(now ?? clock.now()),
+              ),
+            );
+    return written > 0;
+  }
+
   /// Bind an own-host counter nothing has settled yet (no row, `reserved` or
   /// `burnPending`) to the payload that covers it. A row that is already
   /// bound or burned is left untouched, so a burn can never be reopened by a

@@ -1705,9 +1705,7 @@ What the model leaves out, deliberately or as a residual:
   `OutboxGhost` — but no receiver depends on it any more: payloads with a
   vector clock are ordered by it, config flags by their durable stamp (#4517)
   and AI configurations by theirs (ADR 0094), so the late copy is dropped
-  (`PeerHoldsNewest`). What stays outside: a sender from before those stamps
-  is ordered by the Matrix server timestamp, which is its landing time, and a
-  receiver from before them still applies in arrival order.
+  (`PeerHoldsNewest`). What stays outside: a sender from before those stamps is ordered by the Matrix server timestamp, which is its landing time, and a receiver from before them still applies in arrival order; since ADR 0131 a current device answers an unstamped or stale copy with the version it holds, so the newest arrives last there.
 - **Remove of the newer row, then Retry of an older one**, sends the older
   value last (sixteen steps, with `UserRemoves` in `OutboxOperator`). That is
   the user's own reversal, not a stale retry: Remove is guarded by a
@@ -1943,8 +1941,7 @@ What the model leaves out, deliberately or as a residual:
   only sets the version's `purged` flag. The flag records the two rules a
   tombstone meets: one applied over a stored copy deletes that copy, which
   keeps its own fields (`Over`), and a deletion applied over a tombstone is
-  compacted in turn. The model's `Restore` skips a purged row. Since ADR 0128 the relationship dispatcher restores no deleted task at all: it creates the task under the next generation of the id, whatever the deleted row's shape. Rows an older
-  build purged are gone for good. Dashboards and measurable types are not
+  compacted in turn. The model's `Restore` skips a purged row. Since ADR 0128 the relationship dispatcher restores no deleted task at all: it creates the task under the next generation of the id, whatever the deleted row's shape. Rows an older build purged are gone for good; since ADR 0131 a device refuses a late copy of one it held at least as new, unless its journal was ever restored. Dashboards and measurable types are not
   journal entries; since ADR 0128 a purge keeps their deletion rows, as it
   always kept those of every other definition.
 - **Clockless versions** come only from builds that predate vector clocks;

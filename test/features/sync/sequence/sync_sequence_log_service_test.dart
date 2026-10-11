@@ -630,6 +630,42 @@ void main() {
     });
   });
 
+  group('burned own counters a payload carries', () {
+    test('are listed and rebound through the sender to the database, '
+        'answering what the database answers', () async {
+      when(
+        () => mockDb.burnedOwnCountersWithoutPayload(myHostId),
+      ).thenAnswer((_) async => {3, 5});
+      when(
+        () => mockDb.rebindBurnedOwnSequenceCounter(
+          hostId: myHostId,
+          counter: 3,
+          entryId: 'entry-3',
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+      ).thenAnswer((_) async => true);
+
+      expect(await service.burnedOwnCountersWithoutPayload(myHostId), {3, 5});
+      expect(
+        await service.rebindBurnedOwnCounter(
+          hostId: myHostId,
+          counter: 3,
+          entryId: 'entry-3',
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+        isTrue,
+      );
+      verify(
+        () => mockDb.rebindBurnedOwnSequenceCounter(
+          hostId: myHostId,
+          counter: 3,
+          entryId: 'entry-3',
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+      ).called(1);
+    });
+  });
+
   group('recordSentEntryLink', () {
     test(
       'delegates to recordSentEntry with the entryLink payload type and linkId',

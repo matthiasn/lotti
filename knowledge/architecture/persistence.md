@@ -925,9 +925,7 @@ either service** — `purgeDeleted` lives in
 `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
 entity operations, which is where to look for it.
 
-The purge does not remove a deleted journal row. It compacts it to a
-tombstone that keeps the id, dates, vector clock and deletion, so the deletion
-still replicates ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)).
+The purge does not remove a deleted journal row. It compacts it to a tombstone that keeps the id, dates, vector clock and deletion — and for an image or audio recording the path of its file (ADR 0131) — so the deletion still replicates ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)).
 Deleted definitions, dashboards and measurable types included, keep the rows
 their deletion wrote, whose clocks refuse an older copy
 ([ADR 0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)). A tombstone carries

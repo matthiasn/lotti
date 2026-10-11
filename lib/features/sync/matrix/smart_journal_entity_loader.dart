@@ -305,6 +305,10 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   String _buildIndexKey(String rawPath) => normalizeAttachmentIndexKey(rawPath);
 
   Future<void> _ensureMediaOnMissing(JournalEntity e) async {
+    // A deleted entry makes no claim on its file: a purge's tombstone keeps
+    // the path of a file it deleted on purpose (ADR 0131), and asking peers
+    // for it would bring the file back.
+    if (e.meta.deletedAt != null) return;
     switch (e) {
       case JournalImage():
         await _ensureMediaFile(

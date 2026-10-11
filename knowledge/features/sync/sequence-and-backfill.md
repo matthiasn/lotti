@@ -156,11 +156,11 @@ events" into "we can prove nothing was lost".
 | `missing` | Gap detected — expected but not yet received |
 | `requested` | A backfill request has been sent |
 | `backfilled` | Arrived via backfill after being marked missing |
-| `deleted` | The responder has no row for the payload. For a journal entry that means one purged by a build before ADR 0095; a purge now keeps a tombstone, which is served like any version. Only a device that held the payload says so: a relay whose own row for the counter is still `missing` or `requested` stays silent, since `deleted` is terminal at the requester |
+| `deleted` | The responder has no row for the payload. For a journal entry that means one purged by a build before ADR 0095; a purge now keeps a tombstone, which is served like any version. Only a device that held the payload says so: a relay whose own row for the counter is still `missing` or `requested` stays silent, since `deleted` is terminal at the requester. A device that purged such an entry refuses a late copy it held at least as new ([ADR 0131](../../../docs/adr/0131-current-builds-repair-what-old-builds-left.md)) |
 | `unresolvable` | Receiver gave up — **reopenable** |
 | `reserved` | A local vector-clock counter is reserved, not yet written |
 | `burnPending` | A reservation was released without a payload; the broadcast is not out yet |
-| `burned` | Authoritatively confirmed to carry no payload — **terminal** |
+| `burned` | Authoritatively confirmed to carry no payload — **terminal**, except an own counter an older build burned under the wrong id while a payload carries it, which a one-time startup sweep rebinds (ADR 0131) |
 
 ## Counters start at 1
 
@@ -852,8 +852,7 @@ the file's size, as model-checked in
   only a larger file. JSON payloads keep the old rule: they are uploaded
   gzipped, so their declared size is not the local file's.
 
-A peer on 1.1.33 or older lists no sizes and ignores the `media` flag: files
-are compared only between devices that both carry them.
+A peer on 1.1.33 or older lists no sizes and ignores the `media` flag: files are compared only between devices that both carry them. Nothing a current device sends heals such a peer's truncated file, since an old receiver keeps a file it already holds (ADR 0131).
 
 ```mermaid
 flowchart LR

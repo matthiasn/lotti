@@ -87,6 +87,23 @@ class SyncSequenceSender {
     }
   }
 
+  /// See [SyncDatabase.burnedOwnCountersWithoutPayload].
+  Future<Set<int>> burnedOwnCountersWithoutPayload(String hostId) =>
+      _syncDatabase.burnedOwnCountersWithoutPayload(hostId);
+
+  /// See [SyncDatabase.rebindBurnedOwnSequenceCounter].
+  Future<bool> rebindBurnedOwnCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+  }) => _syncDatabase.rebindBurnedOwnSequenceCounter(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType,
+  );
+
   /// Bind the own-host counter `(hostId, counter)` to [entryId] after
   /// settlement proved the payload covers it. Unlike [recordSentEntry] it
   /// never overwrites a bound or burned row. Returns whether it bound.

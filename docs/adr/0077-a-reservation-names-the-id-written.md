@@ -73,8 +73,7 @@ a few steps:
   `createMetadata`. Direct reservations elsewhere (links, agent entities,
   notifications, consumption events) already name the id they write; the audit
   is recorded in the pull request.
-- Counters already burned under the wrong name stay burned: `burned` is
-  terminal. The affected entries reach other devices on their next edit.
+- Counters already burned under the wrong name stay burned: `burned` is terminal. The affected entries reach other devices on their next edit. (ADR 0131 later resends them once at startup and rebinds the counter to the payload that carries it.)
 
 ## Related
 
