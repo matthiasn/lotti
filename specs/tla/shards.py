@@ -173,6 +173,8 @@ SECONDS = {
     "DefinitionClocks": 2,
     "DefinitionClocksThree": 20,
     "DefinitionClocksLossy": 300,
+    # CI run 38165560771: 1,610 s (27 min; 11 min locally on 4 workers).
+    "AiConfigClocks": 1650,
     "SyncPipelineDefinition": 2,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,

@@ -2916,6 +2916,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
 
   @override
+  String get backfillRecordsAiConfigs => 'KI-Einstellungen';
+
+  @override
   String get backfillRecordsDefinitions => 'Einstellungsdefinitionen';
 
   @override

@@ -12,6 +12,8 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -99,6 +101,17 @@ class BackfillResponseHandler {
   }
 
   ConsumptionRepository? _consumptionRepository;
+
+  /// AI configuration repository, injected after construction (same
+  /// rationale as [agentRepository]). When set, backfill answers a counter of
+  /// an AI configuration with the version or deletion held now (ADR 0136).
+  AiConfigRepository? get aiConfigRepository => _aiConfigRepository;
+  set aiConfigRepository(AiConfigRepository? repository) {
+    _aiConfigRepository = repository;
+    _retrySettlementAwaitingStore();
+  }
+
+  AiConfigRepository? _aiConfigRepository;
 
   /// Set when an orphaned own counter could not be settled because its
   /// payload store was not wired yet.
@@ -707,6 +720,18 @@ class BackfillResponseHandler {
               getVectorClock: (definition) => definition.vectorClock,
               payloadTypeName: 'entityDefinition',
             );
+          case SyncSequencePayloadType.aiConfig:
+            if (aiConfigRepository != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => aiConfigRepository!.heldVersion(payloadId),
+                getVectorClock: (held) => held.vectorClock,
+                payloadTypeName: 'aiConfig',
+              );
+            }
         }
       }
     } catch (e, st) {

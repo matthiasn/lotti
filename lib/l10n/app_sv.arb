@@ -1486,6 +1486,7 @@
   "backfillManualTrigger": "Begär saknade poster",
   "backfillRecordsAgentEntities": "Agententiteter",
   "backfillRecordsAgentLinks": "Agentlänkar",
+  "backfillRecordsAiConfigs": "AI-inställningar",
   "backfillRecordsConsumptionEvents": "AI-användningshändelser",
   "backfillRecordsDefinitions": "Inställningsdefinitioner",
   "backfillRecordsEntryLinks": "Länkar mellan poster",

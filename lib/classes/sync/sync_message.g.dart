@@ -145,6 +145,10 @@ SyncAiConfig _$SyncAiConfigFromJson(Map<String, dynamic> json) => SyncAiConfig(
   aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
   status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
   versionStamp: (json['versionStamp'] as num?)?.toInt(),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  originatingHostId: json['originatingHostId'] as String?,
   $type: json['runtimeType'] as String?,
 );
 
@@ -153,6 +157,8 @@ Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
       'aiConfig': instance.aiConfig,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'versionStamp': instance.versionStamp,
+      'vectorClock': instance.vectorClock,
+      'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
 
@@ -176,6 +182,10 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       hardDelete: json['hardDelete'] as bool?,
       versionStamp: (json['versionStamp'] as num?)?.toInt(),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -184,6 +194,8 @@ Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
       'id': instance.id,
       'hardDelete': instance.hardDelete,
       'versionStamp': instance.versionStamp,
+      'vectorClock': instance.vectorClock,
+      'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
 
@@ -551,6 +563,7 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
   SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
   SyncSequencePayloadType.entityDefinition: 'entityDefinition',
+  SyncSequencePayloadType.aiConfig: 'aiConfig',
 };
 
 SyncDeepBackfillRequest _$SyncDeepBackfillRequestFromJson(

@@ -225,6 +225,7 @@ Future<void> registerSingletons({
   final aiConfigRepository = AiConfigRepository(
     AiConfigDb(),
     settingsDb: getIt<SettingsDb>(),
+    vectorClockService: getIt<VectorClockService>(),
   );
   getIt.registerSingleton<AiConfigRepository>(
     aiConfigRepository,

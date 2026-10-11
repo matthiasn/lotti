@@ -2933,6 +2933,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Événements d\'utilisation de l\'IA';
 
   @override
+  String get backfillRecordsAiConfigs => 'Réglages de l’IA';
+
+  @override
   String get backfillRecordsDefinitions => 'Définitions de réglages';
 
   @override

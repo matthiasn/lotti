@@ -2920,6 +2920,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'Eventos de utilização de IA';
 
   @override
+  String get backfillRecordsAiConfigs => 'Configurações de IA';
+
+  @override
   String get backfillRecordsDefinitions => 'Definições das configurações';
 
   @override

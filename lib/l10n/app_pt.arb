@@ -1485,6 +1485,7 @@
   "backfillManualTrigger": "Solicitar entradas ausentes",
   "backfillRecordsAgentEntities": "Entidades de agentes",
   "backfillRecordsAgentLinks": "Ligações de agentes",
+  "backfillRecordsAiConfigs": "Configurações de IA",
   "backfillRecordsConsumptionEvents": "Eventos de utilização de IA",
   "backfillRecordsDefinitions": "Definições das configurações",
   "backfillRecordsEntryLinks": "Ligações entre entradas",

@@ -642,6 +642,118 @@ void main() {
     });
   });
 
+  group('AI configuration sequence tracking (ADR 0136)', () {
+    const clock = VectorClock({'hostA': 4, 'peer': 1});
+    final provider = AiConfig.inferenceProvider(
+      id: 'cfg-clocked',
+      baseUrl: 'https://example.org',
+      apiKey: 'k',
+      name: 'p',
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      inferenceProviderType: InferenceProviderType.openAi,
+    );
+
+    late MockSyncSequenceLogService sequenceLog;
+
+    setUp(() {
+      sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    SyncMessage queued() {
+      final companion =
+          verify(
+                () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+              ).captured.single
+              as OutboxCompanion;
+      return SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+    }
+
+    test(
+      'a version is sent as this host and its counter is bound to it',
+      () async {
+        await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+          SyncMessage.aiConfig(
+            aiConfig: provider,
+            status: SyncEntryStatus.update,
+            versionStamp: 3,
+            vectorClock: clock,
+          ),
+        );
+
+        expect((queued() as SyncAiConfig).originatingHostId, 'hostA');
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: 'cfg-clocked',
+            vectorClock: clock,
+            payloadType: SyncSequencePayloadType.aiConfig,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a hard deletion is sent as this host and its counter is bound',
+      () async {
+        await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+          const SyncMessage.aiConfigDelete(
+            id: 'cfg-gone',
+            hardDelete: true,
+            versionStamp: 3,
+            vectorClock: clock,
+          ),
+        );
+
+        expect((queued() as SyncAiConfigDelete).originatingHostId, 'hostA');
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: 'cfg-gone',
+            vectorClock: clock,
+            payloadType: SyncSequencePayloadType.aiConfig,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a backfill answer keeps the host it names', () async {
+      await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+        const SyncMessage.aiConfigDelete(
+          id: 'cfg-gone',
+          hardDelete: true,
+          vectorClock: clock,
+          originatingHostId: 'peer',
+        ),
+      );
+
+      expect((queued() as SyncAiConfigDelete).originatingHostId, 'peer');
+    });
+
+    test('a message without a clock records nothing', () async {
+      await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+        SyncMessage.aiConfig(
+          aiConfig: provider,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      verifyNever(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+  });
+
   test('enqueueMessage logs SyncAiConfig', () async {
     final cfg = SyncMessage.aiConfig(
       aiConfig: AiConfig.inferenceProvider(

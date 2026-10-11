@@ -646,19 +646,18 @@ class SyncMaintenanceRepository {
           ),
         ]);
 
-        final resends = <AiConfigResend>[];
-        for (final config in configGroups.expand((group) => group)) {
-          resends.add(
-            AiConfigResend(
-              id: config.id,
-              config: config,
-              stamp: await _aiConfigRepository.versionStamp(config.id),
-            ),
-          );
-        }
-        final deletions = await _aiConfigRepository.hardDeletionStamps();
-        for (final MapEntry(key: id, value: stamp) in deletions.entries) {
-          resends.add(AiConfigResend(id: id, stamp: stamp));
+        // Each as this device holds it, with the stamp and the clock its
+        // version carries (ADR 0094, ADR 0136); a row with no stamp held is
+        // resent without one.
+        final resends = <AiConfigResend>[
+          for (final config in configGroups.expand((group) => group))
+            await _aiConfigRepository.heldVersion(config.id) ??
+                AiConfigResend(id: config.id, config: config),
+        ];
+        for (final id
+            in (await _aiConfigRepository.hardDeletionStamps()).keys) {
+          final held = await _aiConfigRepository.heldVersion(id);
+          if (held != null) resends.add(held);
         }
         return resends;
       },

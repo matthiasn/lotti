@@ -2924,6 +2924,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'Události využití AI';
 
   @override
+  String get backfillRecordsAiConfigs => 'Nastavení AI';
+
+  @override
   String get backfillRecordsDefinitions => 'Definice nastavení';
 
   @override

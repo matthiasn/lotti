@@ -17,4 +17,8 @@ enum SyncSequencePayloadType {
   /// measurable or speech dictionary entry. The id names the definition in
   /// whichever of their tables holds it.
   entityDefinition,
+
+  /// A version or hard deletion of an AI configuration — inference provider,
+  /// model, prompt, inference profile or skill (ADR 0136).
+  aiConfig,
 }

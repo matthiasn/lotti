@@ -1957,6 +1957,7 @@
   "backfillManualTrigger": "Request Missing Entries",
   "backfillRecordsAgentEntities": "Agent entities",
   "backfillRecordsAgentLinks": "Agent links",
+  "backfillRecordsAiConfigs": "AI settings",
   "backfillRecordsConsumptionEvents": "AI usage events",
   "backfillRecordsDefinitions": "Settings definitions",
   "backfillRecordsEntryLinks": "Entry links",

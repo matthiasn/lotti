@@ -1264,6 +1264,7 @@
   "backfillManualTrigger": "Solicitați intrările lipsă",
   "backfillRecordsAgentEntities": "Entități ale agenților",
   "backfillRecordsAgentLinks": "Legături ale agenților",
+  "backfillRecordsAiConfigs": "Setări AI",
   "backfillRecordsConsumptionEvents": "Evenimente de utilizare AI",
   "backfillRecordsDefinitions": "Definiții de setări",
   "backfillRecordsEntryLinks": "Legături între intrări",

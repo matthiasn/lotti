@@ -2904,6 +2904,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
 
   @override
+  String get backfillRecordsAiConfigs => 'AI-instellingen';
+
+  @override
   String get backfillRecordsDefinitions => 'Instellingsdefinities';
 
   @override

@@ -2901,6 +2901,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
 
   @override
+  String get backfillRecordsAiConfigs => 'AI-inställningar';
+
+  @override
   String get backfillRecordsDefinitions => 'Inställningsdefinitioner';
 
   @override

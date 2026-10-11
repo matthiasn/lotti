@@ -276,6 +276,14 @@ class OutboxEnqueueWriter {
         msg.originatingHostId == null && host != null
             ? msg.copyWith(originatingHostId: host)
             : msg,
+      final SyncAiConfig msg =>
+        msg.originatingHostId == null && host != null
+            ? msg.copyWith(originatingHostId: host)
+            : msg,
+      final SyncAiConfigDelete msg =>
+        msg.originatingHostId == null && host != null
+            ? msg.copyWith(originatingHostId: host)
+            : msg,
       _ => message,
     };
   }

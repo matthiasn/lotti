@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -3407,4 +3409,265 @@ void main() {
       );
     });
   });
+
+  group('vector clocks (ADR 0136)', () {
+    late SettingsDb settings;
+    late VectorClockService clocks;
+    late AiConfigDb db;
+    late AiConfigRepository repository;
+    late String host;
+
+    setUp(() async {
+      settings = SettingsDb(inMemoryDatabase: true);
+      clocks = VectorClockService(settingsDb: settings);
+      await clocks.initialized;
+      host = (await clocks.getHost())!;
+      db = AiConfigDb(
+        inMemoryDatabase: true,
+        apiKeyStorage: AiApiKeyStorage.inMemory(),
+      );
+      repository = AiConfigRepository(
+        db,
+        settingsDb: settings,
+        vectorClockService: clocks,
+      );
+    });
+
+    tearDown(() async {
+      await repository.close();
+      await settings.close();
+    });
+
+    AiConfig profile(String name) => AiConfig.inferenceProfile(
+      id: 'profile-1',
+      name: name,
+      createdAt: fixedDate,
+      thinkingModelId: 'model-1',
+    );
+
+    final provider = AiConfig.inferenceProvider(
+      id: 'provider-1',
+      baseUrl: 'https://api.example.com',
+      apiKey: 'key',
+      name: 'Provider',
+      createdAt: fixedDate,
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+    );
+
+    final model = AiConfig.model(
+      id: 'model-1',
+      name: 'Model',
+      providerModelId: 'provider-model',
+      inferenceProviderId: 'provider-1',
+      createdAt: fixedDate,
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+
+    List<SyncMessage> sent() => verify(
+      () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+    ).captured.cast<SyncMessage>();
+
+    VectorClock? clockOf(SyncMessage message) => message.maybeMap(
+      aiConfig: (m) => m.vectorClock,
+      aiConfigDelete: (m) => m.vectorClock,
+      orElse: () => null,
+    );
+
+    test('every sent write spends the next counter on top of the clock held, '
+        'and the held clock is the one sent', () async {
+      await repository.saveConfig(profile('a'));
+      await repository.saveConfig(profile('b'));
+
+      expect(sent().map(clockOf), [
+        VectorClock({host: 1}),
+        VectorClock({host: 2}),
+      ]);
+      expect(await db.versionClock('profile-1'), VectorClock({host: 2}));
+      final held = await repository.heldVersion('profile-1');
+      expect(held!.vectorClock, VectorClock({host: 2}));
+      expect(held.toSyncMessage(originatingHostId: host), isA<SyncAiConfig>());
+    });
+
+    test('a received version joins its clock, kept or not, and the next local '
+        'write extends the join', () async {
+      await repository.saveConfig(
+        profile('peer'),
+        fromSync: true,
+        versionStamp: 5,
+        vectorClock: const VectorClock({'peer': 3}),
+      );
+      // An older copy loses on its stamp, but its counter is now answered for.
+      await repository.saveConfig(
+        profile('late'),
+        fromSync: true,
+        versionStamp: 4,
+        vectorClock: const VectorClock({'peer': 2, 'other': 1}),
+      );
+      expect((await repository.getConfigById('profile-1'))!.name, 'peer');
+      expect(
+        await db.versionClock('profile-1'),
+        const VectorClock({'peer': 3, 'other': 1}),
+      );
+
+      await repository.saveConfig(profile('mine'));
+
+      expect(
+        sent().map(clockOf).single,
+        VectorClock({'peer': 3, 'other': 1, host: 1}),
+      );
+    });
+
+    test('a local write that is not sent spends no counter', () async {
+      await repository.saveConfig(profile('seed'), fromSync: true);
+
+      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
+      expect(await db.versionClock('profile-1'), isNull);
+    });
+
+    test('a provider cascade, its undo and a hard delete each spend a counter '
+        'per id they send', () async {
+      await repository.saveConfig(provider);
+      await repository.saveConfig(model);
+      clearInteractions(mockOutboxService);
+
+      final result = await repository.deleteInferenceProviderWithModels(
+        'provider-1',
+      );
+      final deletions = sent();
+      expect(
+        {
+          for (final message in deletions)
+            (message as SyncAiConfigDelete).id: message.vectorClock,
+        },
+        {
+          'model-1': VectorClock({host: 3}),
+          'provider-1': VectorClock({host: 4}),
+        },
+      );
+      clearInteractions(mockOutboxService);
+
+      await repository.restoreProviderWithModels(
+        provider as AiConfigInferenceProvider,
+        result.deletedModels,
+      );
+      expect(sent().map(clockOf), [
+        VectorClock({host: 5}),
+        VectorClock({host: 6}),
+      ]);
+      clearInteractions(mockOutboxService);
+
+      await repository.saveConfig(profile('p'));
+      clearInteractions(mockOutboxService);
+      await repository.hardDeleteConfig('profile-1');
+      expect(sent().map(clockOf), [
+        VectorClock({host: 8}),
+      ]);
+    });
+
+    test('an orphan deletion that loses to a model edit landing meanwhile '
+        'is not sent; the version held is, with the counter it took', () async {
+      final racing = _RacingAiConfigDb()
+        ..landBeforeDeletion = model.copyWith(name: 'Edited meanwhile');
+      final racingRepository = AiConfigRepository(
+        racing,
+        settingsDb: settings,
+        vectorClockService: clocks,
+      );
+      addTearDown(racingRepository.close);
+      await racingRepository.saveConfig(provider);
+      await racingRepository.saveConfig(model);
+      clearInteractions(mockOutboxService);
+
+      await racingRepository.hardDeleteConfig(
+        'provider-1',
+        fromSync: true,
+        versionStamp: DateTime(2030).millisecondsSinceEpoch,
+        vectorClock: const VectorClock({'peer': 1}),
+      );
+
+      final sent = verify(
+        () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+      ).captured.cast<SyncMessage>().single;
+      expect(
+        sent,
+        isA<SyncAiConfig>()
+            .having(
+              (m) => m.versionStamp,
+              'versionStamp',
+              _RacingAiConfigDb.racerStamp,
+            )
+            .having(
+              (m) => m.vectorClock,
+              'vectorClock',
+              VectorClock({host: 3, 'racer': 1}),
+            ),
+      );
+      expect(
+        await racing.versionStamp('model-1'),
+        _RacingAiConfigDb.racerStamp,
+      );
+    });
+
+    test("a received provider deletion sends its orphan model's deletion "
+        'under a counter of its own, the version held', () async {
+      await repository.saveConfig(provider);
+      await repository.saveConfig(model);
+      clearInteractions(mockOutboxService);
+
+      await repository.hardDeleteConfig(
+        'provider-1',
+        fromSync: true,
+        versionStamp: DateTime(2030).millisecondsSinceEpoch,
+        vectorClock: const VectorClock({'peer': 1}),
+      );
+
+      final orphan = sent().single as SyncAiConfigDelete;
+      expect(orphan.id, 'model-1');
+      expect(orphan.vectorClock, VectorClock({host: 3}));
+      expect(await db.versionClock('model-1'), VectorClock({host: 3}));
+      expect(
+        await db.versionClock('provider-1'),
+        VectorClock({host: 1, 'peer': 1}),
+      );
+    });
+  });
+}
+
+/// An [AiConfigDb] where a newer version of a model lands — as a sync apply
+/// would — just before a deletion of it is applied: the race between the
+/// orphan cleanup's check and its write.
+class _RacingAiConfigDb extends AiConfigDb {
+  _RacingAiConfigDb()
+    : super(
+        inMemoryDatabase: true,
+        apiKeyStorage: AiApiKeyStorage.inMemory(),
+      );
+
+  static final int racerStamp = DateTime(2031).millisecondsSinceEpoch;
+
+  AiConfig? landBeforeDeletion;
+
+  @override
+  Future<bool> applyConfigDeletion(
+    String id, {
+    required int stamp,
+    VectorClock? vectorClock,
+  }) async {
+    final newer = landBeforeDeletion;
+    if (newer != null && newer.id == id) {
+      landBeforeDeletion = null;
+      await applyConfigVersion(
+        newer,
+        stamp: racerStamp,
+        vectorClock: const VectorClock({'racer': 1}),
+      );
+    }
+    return super.applyConfigDeletion(
+      id,
+      stamp: stamp,
+      vectorClock: vectorClock,
+    );
+  }
 }

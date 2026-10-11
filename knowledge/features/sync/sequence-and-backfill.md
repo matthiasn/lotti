@@ -192,7 +192,7 @@ with no row is answered as burned: the sequence log population runs once more
 after such a restore (the `sync.sqlite.restored` marker
 `restoreDatabaseFromBackup` writes), recording every counter the stored
 payloads carry again — journal entries, links, agent rows, notifications,
-consumption events and entity definitions. Reservations wait for that pass
+consumption events, entity definitions and AI configurations. Reservations wait for that pass
 (`VectorClockService.holdReservationsWhile`), and the catch-up runs once more
 after it, so a counter only a stored payload records is not handed out before
 the log knows it ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
@@ -811,8 +811,10 @@ in this range" and push the whole range back.
 
 The stores (`deep_backfill_stores.dart`, `allDeepBackfillStores`) cover
 journal entries, entry links, agent entities and links, notifications, AI
-consumption events and entity definitions — the last one store over their six
-tables (`DefinitionDeepBackfillStore`) — all registered with the sync stack. Each reads its own
+consumption events, entity definitions — one store over their six tables
+(`DefinitionDeepBackfillStore`) — and AI configurations, read from
+`ai_config_versions` so hard deletions are listed and resent too
+(`AiConfigDeepBackfillStore`, ADR 0136) — all registered with the sync stack. Each reads its own
 database, so none waits on another feature's runtime. Agent stores used to
 join only once the agent runtime had wired itself into the processor; a
 device whose agent start-up failed first advertised and counted no agent

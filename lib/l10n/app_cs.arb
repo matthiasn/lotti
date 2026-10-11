@@ -1271,6 +1271,7 @@
   "backfillManualTrigger": "Požádat o chybějící záznamy",
   "backfillRecordsAgentEntities": "Entity agentů",
   "backfillRecordsAgentLinks": "Odkazy agentů",
+  "backfillRecordsAiConfigs": "Nastavení AI",
   "backfillRecordsConsumptionEvents": "Události využití AI",
   "backfillRecordsDefinitions": "Definice nastavení",
   "backfillRecordsEntryLinks": "Odkazy mezi záznamy",

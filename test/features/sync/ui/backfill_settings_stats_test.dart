@@ -402,6 +402,29 @@ void main() {
       );
     });
 
+    testWidgets('counts AI settings on a row of their own, after the '
+        'definitions', (tester) async {
+      await pumpCounts(tester, const {
+        SyncSequencePayloadType.aiConfig: 9,
+        SyncSequencePayloadType.entityDefinition: 42,
+      });
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      final aiSettings = find.text(context.messages.backfillRecordsAiConfigs);
+      expect(aiSettings, findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(
+        tester.getTopLeft(aiSettings).dy,
+        greaterThan(
+          tester
+              .getTopLeft(
+                find.text(context.messages.backfillRecordsDefinitions),
+              )
+              .dy,
+        ),
+      );
+    });
+
     testWidgets('says so while there is nothing to show, and offers no '
         'refresh — the counts update on their own', (tester) async {
       await pumpCounts(tester, null);

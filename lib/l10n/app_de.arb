@@ -1264,6 +1264,7 @@
   "backfillManualTrigger": "Fehlende Einträge anfordern",
   "backfillRecordsAgentEntities": "Agenten-Entitäten",
   "backfillRecordsAgentLinks": "Agenten-Verknüpfungen",
+  "backfillRecordsAiConfigs": "KI-Einstellungen",
   "backfillRecordsConsumptionEvents": "KI-Nutzungsereignisse",
   "backfillRecordsDefinitions": "Einstellungsdefinitionen",
   "backfillRecordsEntryLinks": "Eintragsverknüpfungen",

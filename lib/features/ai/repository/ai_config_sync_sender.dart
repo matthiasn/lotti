@@ -2,34 +2,48 @@ import 'dart:async';
 
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_ledger.dart';
 
 /// What this device holds for one AI configuration id, as a resend carries
 /// it: the stored row (a tombstone included) with the stamp its version
 /// holds, or, with no [config], the hard deletion that [stamp] alone records.
+/// [vectorClock] is the clock held for the id (ADR 0136).
 class AiConfigResend {
-  const AiConfigResend({required this.id, this.config, this.stamp});
+  const AiConfigResend({
+    required this.id,
+    this.config,
+    this.stamp,
+    this.vectorClock,
+  });
 
   final String id;
   final AiConfig? config;
   final int? stamp;
+  final VectorClock? vectorClock;
 
   /// The message carrying this state, stamped so a peer holding a newer
-  /// version drops it (ADR 0094).
-  SyncMessage toSyncMessage() {
+  /// version drops it (ADR 0094), with the held clock, so the peer records
+  /// every counter this version supersedes (ADR 0136). [originatingHostId]
+  /// names the sender when it answers a backfill request.
+  SyncMessage toSyncMessage({String? originatingHostId}) {
     final config = this.config;
     if (config != null) {
       return SyncMessage.aiConfig(
         aiConfig: config,
         status: SyncEntryStatus.update,
         versionStamp: stamp,
+        vectorClock: vectorClock,
+        originatingHostId: originatingHostId,
       );
     }
     return SyncMessage.aiConfigDelete(
       id: id,
       hardDelete: true,
       versionStamp: stamp,
+      vectorClock: vectorClock,
+      originatingHostId: originatingHostId,
     );
   }
 }

@@ -46,7 +46,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
       case final SyncEntityDefinition msg:
         await _applyEntityDefinition(msg: msg, journalDb: journalDb);
         return null;
-      case SyncAiConfig(:final aiConfig, :final versionStamp):
+      case SyncAiConfig(
+        :final aiConfig,
+        :final versionStamp,
+        :final vectorClock,
+        :final originatingHostId,
+      ):
         // Ordered by stamp, not by arrival: a send that timed out and lands
         // after a newer version is dropped (ADR 0094). Older senders carry no
         // stamp; the server's timestamp stands in, as for config flags.
@@ -55,6 +60,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           fromSync: true,
           versionStamp: versionStamp,
           fallbackStamp: event.originServerTs.millisecondsSinceEpoch,
+          vectorClock: vectorClock,
+        );
+        await _recordReceivedAiConfig(
+          aiConfig.id,
+          vectorClock: vectorClock,
+          originatingHostId: originatingHostId,
         );
         await _answerLegacyAiConfig(aiConfig.id, versionStamp);
         return null;
@@ -62,6 +73,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         :final id,
         :final hardDelete,
         :final versionStamp,
+        :final vectorClock,
+        :final originatingHostId,
       ):
         final stamp =
             versionStamp ?? event.originServerTs.millisecondsSinceEpoch;
@@ -79,6 +92,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             id,
             fromSync: true,
             versionStamp: stamp,
+            vectorClock: vectorClock,
           );
         } else {
           await _aiConfigRepository.deleteConfig(
@@ -87,6 +101,11 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             versionStamp: stamp,
           );
         }
+        await _recordReceivedAiConfig(
+          id,
+          vectorClock: vectorClock,
+          originatingHostId: originatingHostId,
+        );
         await _answerLegacyAiConfig(id, versionStamp);
         return null;
       case SyncSavedTaskFilter(:final filter):
@@ -404,6 +423,46 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         stackTrace: stackTrace,
         subDomain: 'processor.apply.answerWithHeld',
       );
+    }
+  }
+
+  /// Records the counters of a received AI configuration version in the
+  /// sequence log, kept or not: the held version joined its clock, so it
+  /// answers for them, and the ones below are gaps to ask for (ADR 0136).
+  /// Copies from builds before clocks carry none and are not tracked. A
+  /// failure is rethrown, so the receive retries.
+  Future<void> _recordReceivedAiConfig(
+    String id, {
+    required VectorClock? vectorClock,
+    required String? originatingHostId,
+  }) async {
+    final sequenceLog = _sequenceLogService;
+    if (sequenceLog == null ||
+        vectorClock == null ||
+        originatingHostId == null) {
+      return;
+    }
+    try {
+      final gaps = await sequenceLog.recordReceivedEntry(
+        entryId: id,
+        vectorClock: vectorClock,
+        originatingHostId: originatingHostId,
+        payloadType: SyncSequencePayloadType.aiConfig,
+      );
+      if (gaps.isNotEmpty) {
+        _trace(
+          'apply.aiConfig.gapsDetected count=${gaps.length} for config=$id',
+          subDomain: 'processor.gapDetection',
+        );
+      }
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'processor.recordReceivedAiConfig',
+      );
+      rethrow;
     }
   }
 

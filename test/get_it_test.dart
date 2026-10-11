@@ -381,6 +381,7 @@ void main() {
     late MockAgentDatabase agentDb;
     late MockNotificationsDb notificationsDb;
     late MockConsumptionDatabase consumptionDb;
+    late MockAiConfigDb aiConfigDb;
     late MockSyncSequenceLogService sequenceLogService;
 
     const settingsKey = 'maintenance_sequenceLogPopulatedV2';
@@ -395,6 +396,9 @@ void main() {
       agentDb = MockAgentDatabase();
       notificationsDb = MockNotificationsDb();
       consumptionDb = MockConsumptionDatabase();
+      aiConfigDb = MockAiConfigDb();
+      final aiConfigRepository = MockAiConfigRepository();
+      when(() => aiConfigRepository.configDb).thenReturn(aiConfigDb);
       sequenceLogService = MockSyncSequenceLogService();
 
       // The other sequence-tracked stores hold nothing unless a test says so.
@@ -410,6 +414,11 @@ void main() {
       when(
         journalDb.streamDefinitionsWithVectorClock,
       ).thenAnswer((_) => noRecords);
+      when(aiConfigDb.countAllVersions).thenAnswer((_) async => 0);
+      when(
+        aiConfigDb.streamVersionsWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
       when(
         () => sequenceLogService.populateFromRecords(
           payloadType: any(named: 'payloadType'),
@@ -592,6 +601,7 @@ void main() {
         SyncSequencePayloadType.notification,
         SyncSequencePayloadType.consumptionEvent,
         SyncSequencePayloadType.entityDefinition,
+        SyncSequencePayloadType.aiConfig,
       ]);
       verify(() => settingsDb.saveSettingsItem(settingsKey, 'true')).called(1);
     });

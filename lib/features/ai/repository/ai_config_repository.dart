@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_rules.dart';
@@ -14,8 +16,11 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 export 'package:lotti/features/ai/repository/cascade_deletion_result.dart';
+
+part 'ai_config_repository_sync.dart';
 
 /// The shared [AiConfigRepository]. The app overrides it per service
 /// generation in `buildProviderOverrides`; the getIt fallback below only
@@ -32,13 +37,14 @@ class AiConfigRepository {
   AiConfigRepository(
     this._db, {
     SettingsDb? settingsDb,
+    this._vectorClockService,
     Duration retryDelay = const Duration(minutes: 1),
   }) : _settingsDb = settingsDb {
     _sender = AiConfigSyncSender(
       settingsDb: settingsDb,
       enqueue: (message) =>
           getIt<OutboxService>().enqueueMessageOrThrow(message),
-      resendOf: _resendOf,
+      resendOf: heldVersion,
       onError: _logError,
       retryDelay: retryDelay,
     );
@@ -46,6 +52,14 @@ class AiConfigRepository {
 
   final AiConfigDb _db;
   final SettingsDb? _settingsDb;
+
+  /// The database the configurations live in, for a reader that lists them
+  /// by id and clock (deep backfill, ADR 0136).
+  AiConfigDb get configDb => _db;
+
+  /// Gives every sent write this host's next counter (ADR 0136). Without it
+  /// — a world that does not sync — writes carry no clock, as before.
+  final VectorClockService? _vectorClockService;
 
   /// Owes every write to the peers until the outbox accepts it.
   late final AiConfigSyncSender _sender;
@@ -124,11 +138,15 @@ class AiConfigRepository {
   /// provider that outranks that version outranks the model too, whatever
   /// the clocks say. The model TLC checks all this against is
   /// `specs/tla/AiConfigReplication.tla`.
+  ///
+  /// A received version passes its [vectorClock], which the held clock joins
+  /// whether or not the version is kept (ADR 0136).
   Future<void> saveConfig(
     AiConfig config, {
     bool fromSync = false,
     int? versionStamp,
     int? fallbackStamp,
+    VectorClock? vectorClock,
   }) async {
     // Only unstamped inbound writes are screened: a local edit of a deleted
     // row is the user acting on this device, and `restoreConfig` is the
@@ -150,6 +168,7 @@ class AiConfigRepository {
       final applied = await _db.applyConfigVersion(
         received,
         stamp: receivedStamp,
+        vectorClock: vectorClock,
       );
       if (applied) _storeConfig(received);
       switch (received) {
@@ -169,56 +188,40 @@ class AiConfigRepository {
             config.apiKey.isNotEmpty
         ? config.copyWith(apiKeyCleared: false)
         : config;
-    Future<void> write() async {
-      final stamp = await _saveLocal(written);
+    if (fromSync) {
+      // A local write that is not sent spends no counter.
+      await _saveLocal(written, null);
       _storeConfig(written);
-      if (!fromSync) await _enqueue(written, stamp);
+      return;
     }
-
-    await (fromSync ? write() : _sender.owing([written.id], write));
+    await _sender.owing(
+      [written.id],
+      () => _counted(() async {
+        final clock = await _nextClock(written.id);
+        final stamp = await _saveLocal(written, clock);
+        _storeConfig(written);
+        await _enqueue(written, stamp, clock);
+      }),
+    );
   }
 
-  /// Writes a local version of [config] and returns its stamp: a model this
-  /// device has never held a version of takes its live provider's stamp,
-  /// anything else the next local stamp.
-  Future<int> _saveLocal(AiConfig config) async {
-    if (config is AiConfigModel && await _db.versionStamp(config.id) == null) {
-      final provider = await getConfigById(config.inferenceProviderId);
-      final providerStamp = provider == null
-          ? null
-          : await _db.versionStamp(provider.id);
-      if (providerStamp != null &&
-          await _db.applyConfigVersion(config, stamp: providerStamp)) {
-        return providerStamp;
-      }
-    }
-    return _db.saveConfig(config);
-  }
-
-  Future<void> _enqueue(AiConfig config, int stamp) => _sender.send(
-    config.id,
-    SyncMessage.aiConfig(
-      aiConfig: config,
-      status: SyncEntryStatus.initial,
-      versionStamp: stamp,
-    ),
-  );
-
-  /// Sends every owed write ([_resendOf]); at startup and by Send settings.
+  /// Sends every owed write ([heldVersion]); at startup and by Send settings.
   Future<void> flushPending() => _sender.flush();
 
   /// Sends what this device holds for [id] again ([AiConfigSyncSender]).
   Future<void> resendHeld(String id) => _sender.resendHeld(id);
 
   /// What this device holds for [id]: its row with its stamp, or the hard
-  /// deletion the stamp alone records; null when it holds neither.
-  Future<AiConfigResend?> _resendOf(String id) async {
+  /// deletion the stamp alone records, with the clock held for it; null when
+  /// it holds neither. A resend, and a backfill answer (ADR 0136), carry it.
+  Future<AiConfigResend?> heldVersion(String id) async {
     final stamp = await _db.versionStamp(id);
     if (stamp == null) return null;
     return AiConfigResend(
       id: id,
       config: await getConfigById(id, includeDeleted: true),
       stamp: stamp,
+      vectorClock: await _db.versionClock(id),
     );
   }
 
@@ -233,62 +236,6 @@ class AiConfigRepository {
       stackTrace: stackTrace,
       subDomain: subDomain,
     );
-  }
-
-  /// Deletes, and sends the deletion of, every live model of [providerId]
-  /// once this device holds that provider's deletion.
-  ///
-  /// Only a model not newer than the deletion is an orphan. One stamped after
-  /// it was written after the deletion — the provider undo restores the
-  /// models and the provider as separate messages, and a peer may receive a
-  /// model before its provider — so deleting it would defeat that write on
-  /// every device.
-  ///
-  /// The deletion carries the provider deletion's stamp, not this device's
-  /// clock, so every device that derives it records the same version, and a
-  /// restore stamped past the provider's deletion always outranks it. Each
-  /// deletion is stored, then sent owed ([AiConfigSyncSender.send]): a send that fails leaves
-  /// the deletion recorded here and its id in the ledger for the next flush.
-  Future<void> _deleteOrphanedModels(String providerId) async {
-    final provider = await getConfigById(providerId, includeDeleted: true);
-    if (provider != null && provider.deletedAt == null) return;
-    final deletion = await _db.versionStamp(providerId);
-    if (deletion == null) return;
-    for (final model in await _liveModelsOf(providerId)) {
-      final held = await _db.versionStamp(model.id);
-      if (held != null && held > deletion) continue;
-      await _sender.owing([model.id], () async {
-        if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
-          _noteHardDeleted(model.id);
-        }
-        await _sender.send(
-          model.id,
-          SyncMessage.aiConfigDelete(
-            id: model.id,
-            hardDelete: true,
-            versionStamp: deletion,
-          ),
-        );
-      });
-    }
-  }
-
-  /// The live models of [providerId], whether or not the provider is: the
-  /// cleanup and the cascade read models under a deleted provider, which the
-  /// user-facing reads hide.
-  Future<List<AiConfigModel>> _liveModelsOf(String providerId) async {
-    final models = await getConfigsByType(
-      AiConfigType.model,
-      includeDeleted: true,
-    );
-    return models
-        .whereType<AiConfigModel>()
-        .where(
-          (model) =>
-              model.inferenceProviderId == providerId &&
-              model.deletedAt == null,
-        )
-        .toList(growable: false);
   }
 
   /// The stamp of the version held for [id], which a resend of the stored
@@ -416,24 +363,32 @@ class AiConfigRepository {
   /// ([_deleteOrphanedModels]). [fromSync] without a stamp is that prune: it
   /// stays on this device, so the device also forgets the version it held
   /// and a peer's next copy of the config applies again.
+  ///
+  /// A received deletion passes its [vectorClock], joined like a version's.
   Future<void> hardDeleteConfig(
     String id, {
     bool fromSync = false,
     int? versionStamp,
+    VectorClock? vectorClock,
   }) async {
     if (!fromSync) {
-      return _sender.owing([id], () async {
-        final stamp = await _db.deleteConfig(id);
-        _noteHardDeleted(id);
-        await _sender.send(
-          id,
-          SyncMessage.aiConfigDelete(
-            id: id,
-            hardDelete: true,
-            versionStamp: stamp,
-          ),
-        );
-      });
+      return _sender.owing(
+        [id],
+        () => _counted(() async {
+          final clock = await _nextClock(id);
+          final stamp = await _db.deleteConfig(id, vectorClock: clock);
+          _noteHardDeleted(id);
+          await _sender.send(
+            id,
+            SyncMessage.aiConfigDelete(
+              id: id,
+              hardDelete: true,
+              versionStamp: stamp,
+              vectorClock: clock,
+            ),
+          );
+        }),
+      );
     }
     if (versionStamp == null) {
       await _db.forgetConfig(id);
@@ -441,7 +396,11 @@ class AiConfigRepository {
       _invalidateConfig(id);
       return;
     }
-    if (await _db.applyConfigDeletion(id, stamp: versionStamp)) {
+    if (await _db.applyConfigDeletion(
+      id,
+      stamp: versionStamp,
+      vectorClock: vectorClock,
+    )) {
       _noteHardDeleted(id);
     }
     await _deleteOrphanedModels(id);
@@ -486,16 +445,28 @@ class AiConfigRepository {
     List<AiConfigModel> models,
   ) async {
     final ids = [provider.id, for (final model in models) model.id];
-    await _sender.owing(ids, () async {
-      final providerStamp = await _db.saveConfig(provider);
-      _storeConfig(provider);
-      await _enqueue(provider, providerStamp);
-      for (final model in models) {
-        final stamp = await _db.saveConfig(model, notBefore: providerStamp);
-        _storeConfig(model);
-        await _enqueue(model, stamp);
-      }
-    });
+    await _sender.owing(
+      ids,
+      () => _counted(() async {
+        final providerClock = await _nextClock(provider.id);
+        final providerStamp = await _db.saveConfig(
+          provider,
+          vectorClock: providerClock,
+        );
+        _storeConfig(provider);
+        await _enqueue(provider, providerStamp, providerClock);
+        for (final model in models) {
+          final clock = await _nextClock(model.id);
+          final stamp = await _db.saveConfig(
+            model,
+            notBefore: providerStamp,
+            vectorClock: clock,
+          );
+          _storeConfig(model);
+          await _enqueue(model, stamp, clock);
+        }
+      }),
+    );
   }
 
   /// Whether an incoming synced [incoming] row would resurrect a local
@@ -533,56 +504,8 @@ class AiConfigRepository {
     final models = await _liveModelsOf(providerId);
     return _sender.owing(
       [providerId, ...models.map((m) => m.id)],
-      () => _deleteCascade(providerId),
+      () => _counted(() => _deleteCascade(providerId)),
     );
-  }
-
-  Future<CascadeDeletionResult> _deleteCascade(String providerId) async {
-    final deletedIds = <String, int>{};
-    final result = await _db.transaction(() async {
-      try {
-        final associatedModels = await _liveModelsOf(providerId);
-
-        // Hard deletes: re-adding this provider must bring its models back, so
-        // the cascade must not leave tombstones behind.
-        for (final model in associatedModels) {
-          deletedIds[model.id] = await _db.deleteConfig(model.id);
-        }
-
-        // Delete the provider itself. Nothing seeds providers, so there is
-        // no tombstone to keep.
-        try {
-          deletedIds[providerId] = await _db.deleteConfig(providerId);
-        } catch (e) {
-          throw Exception('Failed to delete provider $providerId: $e');
-        }
-
-        return CascadeDeletionResult(
-          deletedModels: associatedModels,
-        );
-      } catch (error, stackTrace) {
-        _logError(error, stackTrace, 'deleteInferenceProviderWithModels');
-        rethrow; // Re-throw to let the caller handle the error
-      }
-    });
-
-    // Committed: only now are the rows really gone, so only now may the caches
-    // drop them and the peers hear about it.
-    deletedIds.keys.forEach(_noteHardDeleted);
-    // Non-fatal: the rows are gone locally, and a refused deletion stays
-    // owed for the next flush.
-    for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
-      await _sender.send(
-        id,
-        SyncMessage.aiConfigDelete(
-          id: id,
-          hardDelete: true,
-          versionStamp: stamp,
-        ),
-      );
-    }
-
-    return result;
   }
 
   /// Get an AI configuration by its ID.

@@ -1485,6 +1485,7 @@
   "backfillManualTrigger": "Verzoek ontbrekende items",
   "backfillRecordsAgentEntities": "Agententiteiten",
   "backfillRecordsAgentLinks": "Agentkoppelingen",
+  "backfillRecordsAiConfigs": "AI-instellingen",
   "backfillRecordsConsumptionEvents": "AI-gebruiksgebeurtenissen",
   "backfillRecordsDefinitions": "Instellingsdefinities",
   "backfillRecordsEntryLinks": "Koppelingen tussen items",

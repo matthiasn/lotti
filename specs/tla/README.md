@@ -2872,8 +2872,11 @@ must not be mistaken for implementation recovery from these exclusions.
 ## `AiConfigReplication` — AI settings converge, and deletions stick
 
 AI configurations — inference providers with their API keys, models, prompts,
-profiles and skills — replicate as whole rows (`SyncMessage.aiConfig`), are
-not sequence-tracked, and are re-sent wholesale by "Send settings". Every
+profiles and skills — replicate as whole rows (`SyncMessage.aiConfig`) and are
+re-sent wholesale by "Send settings". Since ADR 0136 they are also
+sequence-tracked; how a lost version is found and fetched again is
+[`AiConfigClocks`](#aiconfigclocks--a-lost-ai-configuration-version-is-found-and-fetched-again)'s
+subject, and this model keeps to the order versions are kept in. Every
 version carries `AiConfigDb`'s durable stamp (ADR 0094, #4537), and a hard
 delete leaves its stamp behind with no content. The model covers one provider
 and two models (one that exists everywhere, one that model backfill creates
@@ -2981,6 +2984,52 @@ The repository suite (`ai_config_repository_test.dart`, "replication across
 devices") drives two real repositories over in-memory databases through the
 traces above, delivering each message with its stamp as `SyncEventProcessor`
 does; reverting any one of the Dart fixes fails at least one of them.
+
+## `AiConfigClocks` — a lost AI configuration version is found and fetched again
+
+Since ADR 0136 every AI configuration write that is sent spends the sender's
+next vector clock counter on top of the clock it holds for the id, and the
+receiver records it in the sequence log. The clock does not decide which
+version wins: `AiConfigDb`'s stamp does, as
+[`AiConfigReplication`](#aiconfigreplication--ai-settings-converge-and-deletions-stick)
+checks. This model takes that order as given — stamp, then a deletion over a
+row, then content — and checks the counters on top of it, for one id between
+two devices, under lossy delivery. A host learns the counters in every clock
+it processes and sees the ones below as gaps; a head announcement exposes a
+lost latest counter; any host whose held clock covers a missing counter
+answers with the version it holds now and a hint naming the counter. Writes
+are a user's edit (stamped past the held version) or a derived write — an
+orphan's deletion at the provider deletion's stamp, a model at its provider's
+stamp — whose stamp may tie or trail the held one.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `CountersAreWrites` | invariant | every counter in a held clock was spent on a write |
+| `CoverageSound` | invariant | a held clock covers only versions the held one supersedes, so a backfill answer never sets a receiver back |
+| `NeverRegresses` | action | no host goes back to an older version |
+| `EventuallyConverged` | liveness | every host ends on the newest version sent |
+| `GapsHeal` | liveness | every counter a host learns of is eventually received |
+
+| Configuration | Hosts | Counters | Stamps | Lost messages | Derived writes | Distinct states |
+|---------------|-------|----------|--------|---------------|----------------|-----------------|
+| `AiConfigClocks` | 2 | 2 | 1–2 | 1 | 1 per host | 11,195,384 |
+
+It takes about 27 minutes in CI (eleven locally on four workers). Each design rule has a switch, `TRUE` in the
+code. Setting one to `FALSE` in a temporary copy gives (four workers):
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `JoinOnApply = FALSE` | `GapsHeal` (7 states): device 1 edits under counter 1; device 2 derives a version at the same stamp under its counter 1, which ranks higher on content, so device 1 takes it and keeps only its clock. Device 1's own message to device 2 is lost, and an announcement shows device 2 the gap at device 1's counter 1, but no host's clock covers it any more: nobody can answer |
+| `ClockOnDeletion = FALSE` | `GapsHeal` (8 states): device 1's edit is lost on its way to device 2; device 1 then derives a deletion, which keeps no clock. Device 2 learns device 1's second counter from it and sees the first as a gap, which no host's clock covers |
+| `DerivedCounts = FALSE` | `EventuallyConverged` (6 states): device 1 derives a deletion without spending a counter and the message is lost. Device 2 never learns it existed — there is no gap to ask about — and the two hold different versions for good |
+| `SendHeld = FALSE` | `CoverageSound` (4 states): device 1 deletes the config under counter 1, then sends a derived row at the same stamp under counter 2, which loses to the deletion locally. Device 2 takes the row with clock {1: 2}, which covers the deletion it does not hold; answering a third device's request for counter 1 from it would close that gap with the older row |
+
+A copy that loses on its stamp still joins its clock into the held one, as the
+code does, but no property here needs it: the writer of a counter always
+holds it, and every host answers. It matters once the writer's device is gone
+for good, which the model leaves out, as it leaves out "Send settings" (a
+resend of what is held, which adds no counter) and the provider/model rules
+`AiConfigReplication` checks.
 
 ## `TranscriptionRun` — a recording's transcript, saved once and for real
 

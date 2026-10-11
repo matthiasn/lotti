@@ -1486,6 +1486,7 @@
   "backfillManualTrigger": "Anmod om manglende poster",
   "backfillRecordsAgentEntities": "Agententiteter",
   "backfillRecordsAgentLinks": "Agentlinks",
+  "backfillRecordsAiConfigs": "AI-indstillinger",
   "backfillRecordsConsumptionEvents": "AI-forbrugshændelser",
   "backfillRecordsDefinitions": "Indstillingsdefinitioner",
   "backfillRecordsEntryLinks": "Links mellem poster",

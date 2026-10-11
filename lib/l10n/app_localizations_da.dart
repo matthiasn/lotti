@@ -2891,6 +2891,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
 
   @override
+  String get backfillRecordsAiConfigs => 'AI-indstillinger';
+
+  @override
   String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';
 
   @override

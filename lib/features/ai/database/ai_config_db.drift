@@ -10,9 +10,14 @@ CREATE TABLE ai_configs (
 -- The stamp of the version each config last took (ADR 0094). A row here
 -- without its config is a deletion: it outlives a hard delete, so a copy of
 -- the deleted config that lands late cannot bring it back.
+--
+-- vector_clock (ADR 0136) is the join of every version's clock this device
+-- has written or received for the id, kept or not: the counters the held
+-- version answers for in backfill. JSON; null until the first clocked write.
 CREATE TABLE ai_config_versions (
   id TEXT NOT NULL PRIMARY KEY,
-  stamp INTEGER NOT NULL
+  stamp INTEGER NOT NULL,
+  vector_clock TEXT
 ) as AiConfigVersionEntity;
 
 /* Queries ----------------------------------------------------- */
@@ -27,6 +32,10 @@ SELECT * FROM ai_configs
 
 versionStampById:
 SELECT stamp FROM ai_config_versions
+  WHERE id = :id;
+
+versionById:
+SELECT * FROM ai_config_versions
   WHERE id = :id;
 
 -- The hard deletions this device holds: every version with no config row.

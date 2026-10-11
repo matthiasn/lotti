@@ -110,7 +110,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 | `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |
 | `OnboardingMetricsDb` | `onboarding_metrics.sqlite` | 1 | First-run and activation measurement |
-| `AiConfigDb` | `ai_config.sqlite` | 2 | Providers, models, prompts, inference profiles, skills and their version stamps |
+| `AiConfigDb` | `ai_config.sqlite` | 3 | Providers, models, prompts, inference profiles, skills and their version stamps and clocks |
 | `DayProcessingDb` | `day_processing.sqlite` | 1 | Daily OS day-processing outbox |
 
 Splitting by concern is what makes a heavy background writer — sync ingestion,
@@ -244,6 +244,16 @@ payload JSON without the credential. `applyConfigDeletion` applies unless a
 newer stamp is held. Nothing is written for a dropped version, the provider
 credential included. `forgetConfig` removes the row and its stamp together,
 for a removal that is never sent.
+
+Schema 3 adds `ai_config_versions.vector_clock`
+([ADR 0136](../../docs/adr/0136-ai-configurations-carry-vector-clocks.md)):
+the join of the clocks of every version of the id this device has written or
+received, as JSON. Every write passes the clock its message carries and the
+row stores the join; `applyConfigVersion` and `applyConfigDeletion` join a
+received clock even when they drop the version, so the version held answers
+for the counters of every copy it superseded. A version written before schema
+3, or never sent, holds none. `streamVersionsWithVectorClock` pages through
+the table for the sequence log population after a restore.
 # Opening a connection
 
 Every database goes through `openDbConnection()`, so they share one set of

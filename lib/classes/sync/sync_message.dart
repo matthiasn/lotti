@@ -201,10 +201,19 @@ sealed class SyncMessage with _$SyncMessage {
   /// it holds, so a copy that lands late cannot overwrite a newer one
   /// (ADR 0094). Senders from before that omit it; receivers use the Matrix
   /// event's server timestamp instead.
+  ///
+  /// [vectorClock] is the clock the sender holds for the id: the counter of
+  /// this write on top of every version it saw. It does not order versions —
+  /// the stamp does — but lets a receiver detect a missed version and ask for
+  /// it (ADR 0136). [originatingHostId] is the host that sent it: the writer,
+  /// or the device answering a backfill request. Both are absent from
+  /// builds before ADR 0136.
   const factory SyncMessage.aiConfig({
     required AiConfig aiConfig,
     required SyncEntryStatus status,
     int? versionStamp,
+    VectorClock? vectorClock,
+    String? originatingHostId,
   }) = SyncAiConfig;
 
   /// A node's self-description (name, platform, capabilities).
@@ -235,10 +244,13 @@ sealed class SyncMessage with _$SyncMessage {
   ///
   /// [versionStamp] is the stamp the deletion took, ordered against config
   /// versions like [SyncAiConfig.versionStamp]; absent from older senders.
+  /// [vectorClock] and [originatingHostId] are as on [SyncAiConfig].
   const factory SyncMessage.aiConfigDelete({
     required String id,
     bool? hardDelete,
     int? versionStamp,
+    VectorClock? vectorClock,
+    String? originatingHostId,
   }) = SyncAiConfigDelete;
 
   /// A saved task-filter *definition* (id, name, filter shape) synced per

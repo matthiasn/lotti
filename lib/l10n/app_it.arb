@@ -1486,6 +1486,7 @@
   "backfillManualTrigger": "Richiesta Voci mancanti",
   "backfillRecordsAgentEntities": "Entità degli agenti",
   "backfillRecordsAgentLinks": "Collegamenti degli agenti",
+  "backfillRecordsAiConfigs": "Impostazioni IA",
   "backfillRecordsConsumptionEvents": "Eventi di utilizzo dell'IA",
   "backfillRecordsDefinitions": "Definizioni delle impostazioni",
   "backfillRecordsEntryLinks": "Collegamenti tra voci",

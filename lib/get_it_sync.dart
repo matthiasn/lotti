@@ -259,16 +259,19 @@ Future<String? Function()> _registerMatrixSyncStack({
     }
   }());
 
-  final backfillResponseHandler = BackfillResponseHandler(
-    journalDb: journalDb,
-    sequenceLogService: syncSequenceLogService,
-    outboxService: outboxService,
-    loggingService: domainLogger,
-    vectorClockService: vectorClockService,
-    domainLogger: domainLogger,
-    notificationsDb: notificationsDb,
-    onboardingSyncService: onboardingSyncService,
-  )..consumptionRepository = consumptionRepository;
+  final backfillResponseHandler =
+      BackfillResponseHandler(
+          journalDb: journalDb,
+          sequenceLogService: syncSequenceLogService,
+          outboxService: outboxService,
+          loggingService: domainLogger,
+          vectorClockService: vectorClockService,
+          domainLogger: domainLogger,
+          notificationsDb: notificationsDb,
+          onboardingSyncService: onboardingSyncService,
+        )
+        ..consumptionRepository = consumptionRepository
+        ..aiConfigRepository = aiConfigRepository;
 
   // Released VC reservations: when a write is rejected, its scope throws, or
   // commitWhen is false, the row is already `burnPending` and names its
@@ -407,6 +410,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       agentDatabase: getIt<AgentDatabase>(),
       notificationsDb: notificationsDb,
       consumptionDatabase: getIt<ConsumptionDatabase>(),
+      aiConfigRepository: aiConfigRepository,
       outboxService: outboxService,
       documentsDirectory: documentsDirectory,
     ),
