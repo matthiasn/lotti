@@ -141,6 +141,7 @@ Future<void> _repairClocklessRowsOnce() async {
       savedTaskFiltersRepository: getIt<SavedTaskFiltersRepository>(),
       agentRepository: AgentRepository(getIt<AgentDatabase>()),
       vectorClockService: vectorClockService,
+      settingsDb: settingsDb,
     );
     await repository.backfillDefinitionClocks();
     await repository.backfillEntryLinkClocks();
