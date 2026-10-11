@@ -290,14 +290,30 @@ void main() {
           );
           expect(await syncDb.highestRecordedCounterForHost('other'), isNull);
 
+          final domainLogger = MockDomainLogger();
+          when(
+            () => domainLogger.log(
+              any<LogDomain>(),
+              any<String>(),
+              subDomain: any<String?>(named: 'subDomain'),
+            ),
+          ).thenAnswer((_) {});
           final restarted = VectorClockService(
             settingsDb: settingsDb,
             syncDatabase: () => syncDb,
+            domainLogger: () => domainLogger,
           );
           await restarted.initialized;
           final vc = await restarted.getNextVectorClock();
 
           expect(vc.vclock, {'penguin-host': 10});
+          verify(
+            () => domainLogger.log(
+              LogDomain.sync,
+              any<String>(that: contains('continuing at 10')),
+              subDomain: 'vectorClock.catchUp',
+            ),
+          ).called(1);
           expect(await settingsDb.itemByKey(nextAvailableCounterKey), '11');
 
           // A counter already above what the log records stands.
