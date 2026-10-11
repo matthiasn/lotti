@@ -56,6 +56,13 @@ abstract class DeepBackfillRecord with _$DeepBackfillRecord {
     /// without media, and from peers on 1.1.33 or older, which never
     /// compare files.
     @JsonKey(includeIfNull: false) int? mediaSize,
+
+    /// The agents this record belongs to — an agent entity's agent, an
+    /// agent link's two ends — so a recipient that deleted one of them does
+    /// not ask for a record it would refuse (ADR 0108). Null for other
+    /// records, and from peers that predate it, whose records are requested
+    /// as before.
+    @JsonKey(includeIfNull: false) List<String>? agentIds,
   }) = _DeepBackfillRecord;
 
   factory DeepBackfillRecord.fromJson(Map<String, dynamic> json) =>

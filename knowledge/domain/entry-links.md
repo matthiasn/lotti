@@ -180,9 +180,13 @@ snapshot brought the link back
 
 Because the triple is the identity, `updateLinkType` refuses to move a link
 onto a relationship another live link already is: the receive would replace
-that link rather than keep both. One residual remains. When a version moved
-by a retype loses at its new triple, its old row is deleted, and a late copy
-of its version from before the retype can be inserted again there.
+that link rather than keep both. When a version moved by a retype loses at
+its new triple, its old row is deleted, and the version that lost is kept
+in `entry_link_losses` under its id. A late copy of the id no newer than it,
+such as its version from before the retype, is refused instead of inserted
+again at the old triple; a newer version clears the entry and takes a row.
+A holder displaced by a newer version is remembered the same way
+([ADR 0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)).
 
 ```mermaid
 stateDiagram-v2

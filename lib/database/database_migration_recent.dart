@@ -354,6 +354,11 @@ CREATE TABLE config_flags_v48 (
       // step: SpeechDictionaryMigration does it, on every device, at start.
       await m.createTable(speechDictionaryEntries);
     }
+    if (from < 53) {
+      // The versions entry links lost their triple at (ADR 0096), so a late
+      // older copy of a retyped link cannot come back at its old triple.
+      await m.createTable(entryLinkLosses);
+    }
   }
 
   /// v50: one conflict row per concurrent version of an entry (ADR 0092).

@@ -743,8 +743,10 @@ receive paths refuse any write about a recorded agent
 and drop the JSON the refused message brought
 ([ADR 0108](../../../docs/adr/0108-a-deleted-agent-stays-deleted.md);
 `specs/tla/TaskAgentAssignment.tla`, DeletedStaysDeleted). A deep backfill
-round still requests a peer's records of the agent — an inventory names
-records, not agents — and they are refused again.
+inventory names the agents of each agent record (`DeepBackfillRecord.agentIds`:
+an entity's agent, both ends of a link), and the requester does not ask for a
+record of an agent it holds a deletion of
+([ADR 0128](../../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)).
 
 Reclamation is best-effort. A file that is already absent is the normal case —
 the entity may never have synced — and neither a missing documents directory

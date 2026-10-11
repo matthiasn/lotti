@@ -5,8 +5,14 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 
 /// One record as an inventory lists it: its id and its vector clock. A null
-/// clock is a row written before clocks existed.
-typedef DeepBackfillRow = ({String id, VectorClock? clock});
+/// clock is a row written before clocks existed. `agentIds` names the agents
+/// an agent record belongs to, for the recipient's deleted-agent check; null
+/// for every other record.
+typedef DeepBackfillRow = ({
+  String id,
+  VectorClock? clock,
+  List<String>? agentIds,
+});
 
 /// The records of one payload type, as deep backfill reads and resends them.
 ///
@@ -62,21 +68,29 @@ abstract class DeepBackfillStore {
   /// Records in [withMedia] carry their media: the peer holds nothing of
   /// them yet, or a smaller copy of the file. Returns how many were enqueued; an id with no row is skipped.
   Future<int> enqueueCurrent(Set<String> ids, {required Set<String> withMedia});
+
+  /// Those of [agentIds] this device holds a deletion of (ADR 0108), whose
+  /// records it would refuse if asked for. Only the agent stores know any.
+  Future<Set<String>> deletedAgentsAmong(Iterable<String> agentIds) async =>
+      const {};
 }
 
 /// The SQL every store shares: a table with a TEXT primary key `id` and a
-/// clock at [clockSql]. [table] and [clockSql] are constants of the store,
-/// never input.
+/// clock at [clockSql]. [agentIdsSql], set for the agent tables, is a JSON
+/// array of the agent ids a row belongs to. [table], [clockSql] and
+/// [agentIdsSql] are constants of the store, never input.
 class DeepBackfillTableQueries {
   const DeepBackfillTableQueries({
     required this.db,
     required this.table,
     required this.clockSql,
+    this.agentIdsSql,
   });
 
   final GeneratedDatabase db;
   final String table;
   final String clockSql;
+  final String? agentIdsSql;
 
   /// Chunk size for `IN (...)` lists, well under SQLite's variable limit.
   static const int inListChunk = 500;
@@ -96,9 +110,10 @@ class DeepBackfillTableQueries {
     required String? after,
     required int limit,
   }) async {
+    final agents = agentIdsSql == null ? '' : ', $agentIdsSql AS agents';
     final rows = await db
         .customSelect(
-          'SELECT id, $clockSql AS vc FROM $table '
+          'SELECT id, $clockSql AS vc$agents FROM $table '
           '${after == null ? '' : 'WHERE id > ? '}'
           'ORDER BY id LIMIT ?',
           variables: [
@@ -112,8 +127,25 @@ class DeepBackfillTableQueries {
         (
           id: row.read<String>('id'),
           clock: parseClock(row.readNullable<String>('vc')),
+          agentIds: agentIdsSql == null
+              ? null
+              : parseAgentIds(row.readNullable<String>('agents')),
         ),
     ];
+  }
+
+  /// A JSON array of ids as [agentIdsSql] yields it; anything else reads as
+  /// none.
+  static List<String>? parseAgentIds(String? json) {
+    if (json == null || json.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is! List) return null;
+      final ids = decoded.whereType<String>().toList(growable: false);
+      return ids.isEmpty ? null : ids;
+    } on Object {
+      return null;
+    }
   }
 
   Future<Map<String, VectorClock?>> range({

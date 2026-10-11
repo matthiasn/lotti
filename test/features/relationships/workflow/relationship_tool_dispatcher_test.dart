@@ -56,7 +56,7 @@ void main() {
     when(
       () => db.entityById(task.id),
     ).thenAnswer((_) async => toDbEntity(task));
-    when(() => db.journalEntityById(any())).thenAnswer(
+    when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer(
       (call) async => call.positionalArguments.single == task.id ? task : null,
     );
     when(
@@ -558,7 +558,7 @@ void main() {
     test(
       'an existing peer task is never overwritten or made undoable (linked: $linked)',
       () async {
-        when(() => db.journalEntityById(any())).thenAnswer(
+        when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer(
           (invocation) async => task.copyWith(
             meta: task.meta.copyWith(
               id: invocation.positionalArguments.first as String,
@@ -598,81 +598,101 @@ void main() {
     );
   }
 
-  for (final saved in [true, false]) {
+  // Undo leaves a deleted task under the id; a purge later compacts it to a
+  // plain tombstone, on that device only. Either way the re-confirmation
+  // must choose the same id, or two replicas would each keep a live task.
+  for (final purged in [false, true]) {
     test(
-      'confirmation after undo restores the tombstoned identity (saved: $saved)',
+      'a re-confirmation after undo creates the task under the next '
+      'generation of the id, whatever shape the deleted row has here '
+      '(purged: $purged)',
       () async {
-        String? identity;
-        when(() => db.journalEntityById(any())).thenAnswer((invocation) async {
-          identity = invocation.positionalArguments.first as String;
-          return task.copyWith(
-            meta: task.meta.copyWith(id: identity!, deletedAt: now),
+        final looked = <String>[];
+        when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
+          final id = invocation.positionalArguments.single as String;
+          looked.add(id);
+          if (looked.length > 1) return null;
+          final deleted = task.copyWith(
+            meta: task.meta.copyWith(id: id, deletedAt: now),
           );
+          return purged ? deleted.toPurgedTombstone(now) : deleted;
         });
-        when(
-          () => persistence.updateMetadata(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-          ),
-        ).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments.first as Metadata,
-        );
-        when(
-          () => persistence.updateDbEntity(
-            any(),
-            precondition: any(named: 'precondition'),
-          ),
-        ).thenAnswer((_) async => saved);
         when(
           () => relationships.linkTask(
             relationshipId: person.id,
             taskId: any(named: 'taskId'),
           ),
         ).thenAnswer((_) async => true);
+
         final result = await dispatcher.dispatch(
           'create_and_link_task',
           args,
           person.id,
         );
-        expect(result.success, saved);
-        final restored =
+
+        expect(result.success, isTrue);
+        expect(looked, hasLength(2));
+        expect(looked.toSet(), hasLength(2));
+        final created =
             verify(
-                  () => persistence.updateDbEntity(
-                    captureAny(),
-                    precondition: any(named: 'precondition'),
+                  () => persistence.createTaskEntry(
+                    id: captureAny(named: 'id'),
+                    data: any(named: 'data'),
+                    entryText: any(named: 'entryText'),
+                    categoryId: any(named: 'categoryId'),
+                    private: any(named: 'private'),
                   ),
                 ).captured.single
-                as Task;
-        expect(restored.id, identity);
-        expect(restored.meta.deletedAt, isNull);
-        expect(restored.data.title, args['title']);
-        if (saved) {
-          expect((result as RelationshipTaskCreationResult).task, restored);
-        } else {
-          verifyNever(
-            () => relationships.linkTask(
-              relationshipId: person.id,
-              taskId: any(named: 'taskId'),
-            ),
-          );
-        }
+                as String;
+        expect(created, looked.last);
         verifyNever(
-          () => persistence.createTaskEntry(
-            id: any(named: 'id'),
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-            private: any(named: 'private'),
+          () => persistence.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
           ),
         );
       },
     );
   }
 
-  test('a non-task identity collision refuses creation', () async {
-    when(() => db.journalEntityById(any())).thenAnswer((_) async => person);
+  test(
+    'both shapes of a deleted row lead every replica to the same id',
+    () async {
+      Future<String> chosenId({required bool purged}) async {
+        final looked = <String>[];
+        when(() => db.journalEntityByIdIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
+          final id = invocation.positionalArguments.single as String;
+          looked.add(id);
+          if (looked.length > 1) return null;
+          final deleted = task.copyWith(
+            meta: task.meta.copyWith(id: id, deletedAt: now),
+          );
+          return purged ? deleted.toPurgedTombstone(now) : deleted;
+        });
+        when(
+          () => relationships.linkTask(
+            relationshipId: person.id,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+        await dispatcher.dispatch('create_and_link_task', args, person.id);
+        return looked.last;
+      }
+
+      expect(await chosenId(purged: false), await chosenId(purged: true));
+    },
+  );
+
+  test('every generation of the identity taken by a non-task refuses '
+      'creation', () async {
+    when(
+      () => db.journalEntityByIdIncludingDeleted(any()),
+    ).thenAnswer((_) async => person);
     final result = await dispatcher.dispatch(
       'create_and_link_task',
       args,

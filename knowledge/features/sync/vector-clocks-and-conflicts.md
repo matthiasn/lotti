@@ -347,7 +347,9 @@ deleted entry back, and an edit made concurrently with a deletion is a
 delete-versus-edit conflict on both devices. Only a creation
 (`overwrite: false`) under a reused id replaces a deleted row outright, as it
 always has — under a clock that does not cover the deletion, so peers ask the
-user. Label writes (`LabelsRepository.updateLabels`, `assignLabels`,
+user. Deterministic ids avoid it: the checklist repository and the
+relationship dispatcher move past a deleted or purged row to the next
+generation of the id ([ADR 0128](../../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)). Label writes (`LabelsRepository.updateLabels`, `assignLabels`,
 `suppressLabelOnTask`) build
 on the stored entry under a new clock, conditional on it still being stored,
 and build again on a version that synced in meanwhile; nothing forces a write

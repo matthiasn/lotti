@@ -208,6 +208,34 @@ void main() {
       );
     });
 
+    test("a record's agents travel only when it has some, and a record from "
+        'a peer that predates them names none', () {
+      const ofAgent = DeepBackfillRecord(
+        id: 'state-1',
+        vectorClock: VectorClock({'a': 1}),
+        agentIds: ['agent-1'],
+      );
+      const plain = DeepBackfillRecord(
+        id: 'entry',
+        vectorClock: VectorClock({'a': 1}),
+      );
+
+      expect(
+        DeepBackfillRecord.fromJson(
+          jsonDecode(jsonEncode(ofAgent.toJson())) as Map<String, dynamic>,
+        ).agentIds,
+        ['agent-1'],
+      );
+      expect(plain.toJson().containsKey('agentIds'), isFalse);
+      expect(
+        DeepBackfillRecord.fromJson(const {
+          'id': 'state-1',
+          'vectorClock': {'a': 1},
+        }).agentIds,
+        isNull,
+      );
+    });
+
     test('a request for a file round-trips, and one from a peer that '
         'predates it asks for none', () {
       const record = DeepBackfillRequestRecord(id: 'img', media: true);

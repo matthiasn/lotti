@@ -722,7 +722,10 @@ counterexample each prevents.
 `DeepBackfillService.runRound` pages every registered store by id and
 enqueues `SyncMessage.deepBackfillInventory` batches of
 `SyncTuning.deepBackfillBatchSize` records, each record an id and its clock —
-tombstones included, since a deletion is a clocked version. A batch also
+tombstones included, since a deletion is a clocked version. An agent record
+also names its agents (`agentIds`), and the requester leaves out the records
+of an agent it deleted, which it would refuse
+([ADR 0128](../../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)). A batch also
 names its id range `[rangeStart, rangeEnd)` and the open conflict versions in
 it. **The ranges of a round tile the whole keyspace**: the first is unbounded
 below, the last above, each starts where the previous ended (a one-row
