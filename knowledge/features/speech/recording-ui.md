@@ -25,38 +25,48 @@ identical either way** — the choice is purely presentational, so neither varia
 can report a different level than the other.
 
 Every recorder is one studio layout, `RecordingStage` in
-[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
-top to bottom:
+[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
+one centred column no wider than the level line (`RecordingLevelLine.maxWidth`),
+with two sizes of type — the running time, and one caption voice
+(`recordingCaptionStyle`) for every other word. Top to bottom:
 
-- **Status** — `RecordingStatus`, a red dot and *Recording*, or a quiet dot
-  and *Paused*. Only where the host has no status line of its own
-  (`showStatus`): the recording sheet and the check-in page's dock show it,
-  the check-in composer does not, because its header already says so.
 - **The look the user chose** — `RecordingLevelVisualizer`, the orb or the
-  meter. On a light surface the orb sits on a *lit pool*: a radial gradient
-  from the brightest surface at the centre through the orb's glint at the
-  ring to nothing, so its light has something to glow against.
-- **The running time** — `RecordingClock`, a regular heading in the UI face
-  with tabular figures, so the digits never shift, in the neutral ink.
+  meter, left out when the host asks for `compact` (the check-in page's
+  dock, so dictating never covers the check-in). On a light surface the orb
+  sits on a *lit pool*: a radial gradient from the brightest surface at the
+  centre through the orb's glint at the ring to nothing, so its light has
+  something to glow against.
+- **The running time** — `RecordingClock`: `m:ss`, `h:mm:ss` past the hour,
+  a regular heading1 in the UI face with tabular figures, so the digits
+  never shift, in the neutral ink. Before it, where the host has no status
+  of its own (`showStatus`), the live dot `RecordingStatus`: red while
+  recording, at rest while paused, and *Recording* / *Paused* to a screen
+  reader. The dot's run is mirrored after the time, so the digits sit on
+  the axis. The recording sheet and the check-in page's dock show the dot;
+  the check-in composer does not, because its header already says so.
 - **The level line** — `RecordingLevelLine`, the level bars from
   [`live_waveform.dart`](../../../lib/features/speech/ui/widgets/recording/live_waveform.dart)
-  across the sheet, fading out at both ends: accent under the orb, neutral
-  under the meter, the pair the user chose the look from in onboarding. It
-  keeps a short window of normalised levels (`normaliseDbfs`, in
-  [`recording_levels.dart`](../../../lib/features/speech/state/recording_levels.dart))
-  while the take runs and holds it still while paused, so it reads as speech
-  over time where the orb and meter read the level now. Daily OS Capture and
-  the onboarding previews draw the same bars from the same helpers.
+  across the column, fading out at both ends: accent under the orb, neutral
+  under the meter, the pair the user chose the look from in onboarding.
+  Silence is a hairline baseline (`baselineColor`), not a row of idle dots.
+  It keeps a window of normalised levels (`normaliseDbfs`, in
+  [`recording_levels.dart`](../../../lib/features/speech/state/recording_levels.dart)),
+  one per recorder tick — a steady level too, so silence ages loud bars
+  out — draws each bar as the louder of a pair of samples, holds still
+  while paused and empties when a take stops. Daily OS Capture and the
+  onboarding previews draw the same bars from the same helpers.
 - **The transport row** — `RecordingTransportControls`: discard ✕ and
-  pause ⏸ / resume ▶ as quiet rings either side of one filled red Stop disc,
-  the only colour in the row. Before a take starts the sheet puts its record
-  button in this slot.
-- **A footer** — the sheet's speech-recognition option, or the check-in's
-  *audio saved as you go*.
+  pause ⏸ / resume ▶ as border-only rings either side of one filled red
+  Stop disc, the only colour in the row, its square white in both themes.
+  Before a take starts the sheet puts its record button in this slot.
+- **A footer** — the sheet's *Transcribe* toggle (`RecordingOption`: the
+  caption, then a small design-system toggle), or the check-in's *audio
+  saved as you go*.
 
 The pictures (orb or meter, and the level line) are one semantics label the
-host names; the sheet makes it a live region, the check-in hosts do not,
-because their status line already announces each transition.
+host names — on the level line when `compact` leaves it the only picture;
+the sheet makes it a live region, the check-in hosts do not, because their
+status line already announces each transition.
 
 The orb takes its colours by role from one palette,
 [`AiVoiceOrbPalette`](../../../lib/features/ai/ui/animation/ai_voice_orb_palette.dart),
@@ -80,9 +90,9 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 
 | Surface | Shows |
 |---------|-------|
-| Recording modal | The whole `RecordingStage`: status, VU meter or orb, elapsed time, level line, record / discard–Stop–pause, speech recognition |
-| Check-in page dock | The same stage, embedded in place by `CheckInInlineRecorder` with its own status line |
-| Check-in composer | The same stage without the status line, which the composer's header carries |
+| Recording modal | The whole `RecordingStage`: VU meter or orb, live dot and elapsed time, level line, record / discard–Stop–pause, *Transcribe* |
+| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder`, with its own live dot |
+| Check-in composer | The whole stage without the live dot, which the composer's header carries as its status line |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
 | Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused — **no level, no time** |

@@ -88,8 +88,9 @@ accent card, a pulsing record dot and elapsed time only.
 
 The modal renders either the skeuomorphic VU meter or the energy orb depending on
 `recordingStyleProvider`, from the same dBFS feed, with the level line beneath
-either. The whole recorder — status, that choice, the running clock, the level
-line and the transport row (discard ✕, the red Stop, pause ⏸ / resume ▶) —
+either. The whole recorder — that choice, the running clock with its live dot,
+the level line and the transport row (discard ✕, the red Stop, pause ⏸ /
+resume ▶) —
 is `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
 laid out in [Recording UI](recording-ui.md), so every surface that records in place — the check-in composer and page
