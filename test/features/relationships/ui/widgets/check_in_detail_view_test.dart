@@ -478,14 +478,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
-      // The page has no status line of its own, so the dock says it.
-      expect(
-        find.descendant(
-          of: find.byType(RecordingStatus),
-          matching: find.text('Recording'),
-        ),
-        findsOneWidget,
-      );
+      // The page has no status line of its own, so the dock's live dot says
+      // it; and the dock is compact — the level line, no orb over the
+      // check-in it adds to.
+      expect(find.byType(RecordingStatus), findsOneWidget);
+      expect(find.byType(RecordingLevelVisualizer), findsNothing);
+      expect(find.byType(RecordingLevelLine), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
       for (var i = 0; i < 4; i++) {

@@ -479,8 +479,10 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                           _onRecorded(checkIn, audioEntryId),
                       onDiscarded: () => setState(() => _recording = false),
                       onFailed: _onRecordingFailed,
-                      // The dock has no status line of its own.
+                      // The dock has no status line of its own, and no
+                      // room for the orb over the check-in.
                       showStatus: true,
+                      compact: true,
                     )
                   : null,
               onDictate: () => setState(() {

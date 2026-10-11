@@ -296,25 +296,29 @@ void main() {
   });
 
   group('RecordingClock', () {
-    test('formats as h:mm:ss without the fraction', () {
+    test('m:ss under an hour, h:mm:ss from then on, without the fraction', () {
       expect(
         RecordingClock.format(const Duration(seconds: 42, milliseconds: 730)),
-        '0:00:42',
+        '0:42',
+      );
+      expect(
+        RecordingClock.format(const Duration(minutes: 59, seconds: 59)),
+        '59:59',
       );
       expect(
         RecordingClock.format(const Duration(hours: 1, minutes: 2, seconds: 3)),
         '1:02:03',
       );
+      expect(RecordingClock.format(const Duration(hours: 12)), '12:00:00');
     });
 
     for (final (name, theme) in [
       ('dark', DesignSystemTheme.dark),
       ('light', DesignSystemTheme.light),
     ]) {
-      testWidgets('is a regular heading3 in the UI face, with digits that do '
-          "not shift, in the neutral ink, read in the host's words ($name)", (
-        tester,
-      ) async {
+      testWidgets('is the one large type — a regular heading1 in the UI face, '
+          'with digits that do not shift, in the neutral ink, read in the '
+          "host's words ($name)", (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const RecordingClock(
@@ -324,11 +328,11 @@ void main() {
             theme: theme(),
           ),
         );
-        final text = tester.widget<Text>(find.text('0:00:23'));
-        final tokens = tester.element(find.text('0:00:23')).designTokens;
-        final heading3 = tokens.typography.styles.heading.heading3;
-        expect(text.style?.fontFamily, heading3.fontFamily);
-        expect(text.style?.fontSize, heading3.fontSize);
+        final text = tester.widget<Text>(find.text('0:23'));
+        final tokens = tester.element(find.text('0:23')).designTokens;
+        final heading1 = tokens.typography.styles.heading.heading1;
+        expect(text.style?.fontFamily, heading1.fontFamily);
+        expect(text.style?.fontSize, heading1.fontSize);
         expect(text.style?.fontWeight, tokens.typography.weight.regular);
         expect(text.style?.fontFeatures, const [
           FontFeature.tabularFigures(),
@@ -344,12 +348,18 @@ void main() {
       (false, 'Recording', (DsTokens t) => t.colors.alert.error.defaultColor),
       (true, 'Paused', (DsTokens t) => t.colors.text.lowEmphasis),
     ]) {
-      testWidgets('says $word, the dot red only while live', (tester) async {
+      testWidgets('a dot, red only while live, that a reader hears as $word', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(RecordingStatus(paused: paused)),
         );
-        expect(find.text(word), findsOneWidget);
-        final tokens = tester.element(find.text(word)).designTokens;
+        expect(find.text(word), findsNothing, reason: 'no word on screen');
+        expect(tester.getSemantics(find.byType(RecordingStatus)).label, word);
+        final tokens = tester
+            .element(find.byType(RecordingStatus))
+            .designTokens;
         final dot = tester.widget<Container>(
           find.descendant(
             of: find.byType(RecordingStatus),
@@ -357,6 +367,7 @@ void main() {
           ),
         );
         expect((dot.decoration! as BoxDecoration).color, dotOf(tokens));
+        semantics.dispose();
       });
     }
   });
@@ -366,17 +377,17 @@ void main() {
       WidgetTester tester, {
       AudioRecorderStatus status = AudioRecorderStatus.recording,
       bool showStatus = true,
+      bool compact = false,
       Widget? notice,
       Widget? footer,
       bool announceLevel = false,
-      Widget? option,
     }) => pumpWith(
       tester,
       SingleChildScrollView(
         child: RecordingStage(
           state: _state(status: status),
           showStatus: showStatus,
-          option: option,
+          compact: compact,
           levelSemanticsLabel: 'Recording live',
           announceLevel: announceLevel,
           notice: notice,
@@ -386,15 +397,14 @@ void main() {
       ),
     );
 
-    testWidgets('stacks status, display, time, notice, level line, controls '
-        'and footer, top to bottom', (tester) async {
+    testWidgets('stacks display, time, notice, level line, controls and '
+        'footer, top to bottom', (tester) async {
       await pump(
         tester,
         notice: const Text('notice'),
         footer: const Text('footer'),
       );
       final order = [
-        find.byType(RecordingStatus),
         find.byType(RecordingLevelVisualizer),
         find.byType(RecordingClock),
         find.text('notice'),
@@ -411,57 +421,59 @@ void main() {
       }
     });
 
-    testWidgets('the status and an option share one header line, status at '
-        'its start and the option at its end, in one caption voice', (
-      tester,
-    ) async {
-      await pump(tester, option: const Text('option'));
-      final header = tester.getRect(
-        find.byKey(const ValueKey('recording-stage-header')),
-      );
-      final status = tester.getRect(find.byType(RecordingStatus));
-      final option = tester.getRect(find.text('option'));
-      expect(status.left, closeTo(header.left, 0.5));
-      expect(option.right, closeTo(header.right, 0.5));
-      expect(status.center.dy, closeTo(option.center.dy, 0.5));
-      expect(
-        header.bottom,
-        lessThanOrEqualTo(
-          tester.getRect(find.byType(RecordingLevelVisualizer)).top + 0.5,
-        ),
-      );
-      final tokens = tester.element(find.text('Recording')).designTokens;
-      expect(
-        tester.widget<Text>(find.text('Recording')).style,
-        recordingCaptionStyle(tokens),
-      );
+    testWidgets('the live dot leads the time on its line, and the digits — '
+        'not dot and digits — sit on the axis', (tester) async {
+      await pump(tester);
+      final dot = tester.getRect(find.byType(RecordingStatus));
+      final clock = tester.getRect(find.byType(RecordingClock));
+      final line = tester.getRect(find.byType(RecordingLevelLine));
+      expect(dot.right, lessThan(clock.left));
+      expect(dot.center.dy, closeTo(clock.center.dy, 1));
+      expect(clock.center.dx, closeTo(line.center.dx, 0.5));
     });
 
-    testWidgets('before a take the option keeps the header to itself; with '
-        'neither there is no header', (tester) async {
-      await pump(
-        tester,
-        status: AudioRecorderStatus.stopped,
-        option: const Text('option'),
+    testWidgets('one column no wider than the level line, centred in a wide '
+        'host', (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(tester, footer: const SizedBox(width: 2000, height: 4));
+      final column = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(RecordingStage),
+              matching: find.byType(ConstrainedBox),
+            )
+            .first,
       );
-      expect(find.byType(RecordingStatus), findsNothing);
-      expect(find.text('option'), findsOneWidget);
-
-      await pump(tester, status: AudioRecorderStatus.stopped);
-      expect(
-        find.byKey(const ValueKey('recording-stage-header')),
-        findsNothing,
-      );
+      expect(column.width, RecordingLevelLine.maxWidth);
+      expect(column.center.dx, closeTo(600, 0.5));
     });
 
-    testWidgets('says nothing of the take where the host says it, or before '
-        'one runs', (tester) async {
+    testWidgets('compact leaves the pictures out and lets the level line '
+        'speak for them', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, compact: true);
+      expect(find.byType(RecordingLevelVisualizer), findsNothing);
+      expect(find.byType(RecordingClock), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(RecordingLevelLine)).label,
+        'Recording live',
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('no dot where the host says the take is live, or before one '
+        'runs; paused, the dot rests', (tester) async {
       await pump(tester, showStatus: false);
       expect(find.byType(RecordingStatus), findsNothing);
       await pump(tester, status: AudioRecorderStatus.stopped);
       expect(find.byType(RecordingStatus), findsNothing);
       await pump(tester, status: AudioRecorderStatus.paused);
-      expect(find.text('Paused'), findsOneWidget);
+      expect(
+        tester.widget<RecordingStatus>(find.byType(RecordingStatus)).paused,
+        isTrue,
+      );
     });
 
     for (final announce in [true, false]) {
@@ -480,8 +492,8 @@ void main() {
   });
 
   group('RecordingOption', () {
-    testWidgets('a small toggle and its name in the caption voice; the whole '
-        'row flips it, and a reader hears one switch by its name', (
+    testWidgets('its name in the caption voice, then a small toggle; the '
+        'whole row flips it, and a reader hears one switch by its name', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -489,7 +501,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           RecordingOption(
-            label: 'Speech recognition',
+            label: 'Transcribe',
             value: true,
             onChanged: changes.add,
           ),
@@ -500,20 +512,21 @@ void main() {
       );
       expect(toggle.size, DesignSystemToggleSize.small);
       expect(toggle.value, isTrue);
+      expect(
+        tester.getRect(find.text('Transcribe')).right,
+        lessThan(tester.getRect(find.byType(DesignSystemToggle)).left),
+      );
       final tokens = tester.element(find.byType(RecordingOption)).designTokens;
       expect(
-        tester.widget<Text>(find.text('Speech recognition')).style,
+        tester.widget<Text>(find.text('Transcribe')).style,
         recordingCaptionStyle(tokens),
       );
 
-      await tester.tap(find.text('Speech recognition'));
+      await tester.tap(find.text('Transcribe'));
       await tester.tap(find.byType(DesignSystemToggle));
       expect(changes, [false, false]);
 
-      expect(
-        find.bySemanticsLabel('Speech recognition'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Transcribe'), findsOneWidget);
       semantics.dispose();
     });
   });

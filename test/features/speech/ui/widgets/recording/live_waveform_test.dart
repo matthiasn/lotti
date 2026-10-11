@@ -4,7 +4,84 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 
+/// Counts what the painter draws.
+class _CountingCanvas implements Canvas {
+  final lines = <(Offset, Offset, Paint)>[];
+  final bars = <RRect>[];
+
+  @override
+  void drawLine(Offset p1, Offset p2, Paint paint) =>
+      lines.add((p1, p2, paint));
+
+  @override
+  void drawRRect(RRect rrect, Paint paint) => bars.add(rrect);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 void main() {
+  group('LiveWaveformPainter baseline', () {
+    const size = Size(200, 24);
+    const ink = Color(0xFF00FF00);
+    const hairline = Color(0xFF888888);
+
+    _CountingCanvas paint(List<double> amplitudes, {Color? baseline}) {
+      final canvas = _CountingCanvas();
+      LiveWaveformPainter(
+        barCount: 10,
+        color: ink,
+        amplitudes: amplitudes,
+        baselineColor: baseline,
+        baselineWidth: 2,
+      ).paint(canvas, size);
+      return canvas;
+    }
+
+    test('without one, silence is a row of idle bars and no line', () {
+      final canvas = paint(const [0, 0, 0]);
+      expect(canvas.lines, isEmpty);
+      expect(canvas.bars, hasLength(10));
+    });
+
+    test('with one, silence is a single hairline across the strip at its '
+        'middle, in its colour and weight, and only sound draws a bar', () {
+      final canvas = paint(const [0, 0, 0.8, 0], baseline: hairline);
+      final (start, end, linePaint) = canvas.lines.single;
+      expect(start, const Offset(0, 12));
+      expect(end, const Offset(200, 12));
+      expect(linePaint.color.toARGB32(), hairline.toARGB32());
+      expect(linePaint.strokeWidth, 2);
+      expect(canvas.bars, hasLength(1));
+      expect(canvas.bars.single.height, closeTo(24 * 0.8, 0.01));
+    });
+
+    test('a change of baseline repaints', () {
+      final plain = LiveWaveformPainter(
+        barCount: 10,
+        color: ink,
+        amplitudes: const [],
+      );
+      final lined = LiveWaveformPainter(
+        barCount: 10,
+        color: ink,
+        amplitudes: plain.amplitudes,
+        baselineColor: hairline,
+      );
+      expect(lined.shouldRepaint(plain), isTrue);
+      expect(
+        LiveWaveformPainter(
+          barCount: 10,
+          color: ink,
+          amplitudes: plain.amplitudes,
+          baselineColor: hairline,
+          baselineWidth: 3,
+        ).shouldRepaint(lined),
+        isTrue,
+      );
+    });
+  });
+
   Future<CustomPaint> pumpWaveform(
     WidgetTester tester, {
     List<double> amplitudes = const [],

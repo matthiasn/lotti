@@ -2802,6 +2802,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
+  String get audioRecordingTranscribeOption => 'Přepsat';
+
+  @override
   String get avatarCropHint => 'Tažením posuneš · stažením přiblížíš';
 
   @override

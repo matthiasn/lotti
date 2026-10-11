@@ -1211,6 +1211,7 @@
   "audioRecordings": "Enregistrements audio",
   "audioRecordingStatusPaused": "En pause",
   "audioRecordingStop": "Arrêter",
+  "audioRecordingTranscribeOption": "Transcrire",
   "avatarCropHint": "Glisser pour déplacer · pincer pour zoomer",
   "avatarCropPreviewLabel": "Aperçu dans la liste",
   "avatarCropTitle": "Choisir le visage",

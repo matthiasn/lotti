@@ -1433,6 +1433,7 @@
   "audioRecordings": "Ljudinspelningar",
   "audioRecordingStatusPaused": "Pausad",
   "audioRecordingStop": "Stoppa",
+  "audioRecordingTranscribeOption": "Transkribera",
   "avatarCropHint": "Dra för att flytta · nyp för att zooma",
   "avatarCropPreviewLabel": "Så här ser det ut i listan",
   "avatarCropTitle": "Välj ansiktet",

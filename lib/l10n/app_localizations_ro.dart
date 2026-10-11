@@ -2815,6 +2815,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingStop => 'Opriți';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transcriere';
+
+  @override
   String get avatarCropHint =>
       'Trageți pentru a muta · apropiați degetele pentru zoom';
 

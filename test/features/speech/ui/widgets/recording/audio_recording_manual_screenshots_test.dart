@@ -75,12 +75,12 @@ void main() {
         final messages = _messages(tester);
 
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
-        expect(find.text('0:00:42'), findsOneWidget);
+        expect(find.text('0:42'), findsOneWidget);
         expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         expect(
           find.widgetWithText(
             RecordingOption,
-            messages.speechModalTitle,
+            messages.audioRecordingTranscribeOption,
           ),
           findsOneWidget,
         );

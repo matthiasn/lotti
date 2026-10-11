@@ -18,31 +18,33 @@ import 'package:material_ui/material_ui.dart';
 /// page that record in place. A recorder that drew its own parts read as
 /// another app's recorder however carefully it was spaced.
 ///
-/// Composed as a studio recorder ([RecordingStage]): the status, the level
-/// display the user chose on its lit pool, the running time, the level line
-/// under it, and one red Stop between the two quiet controls.
+/// Composed as a studio recorder ([RecordingStage]) on one centred axis:
+/// the level display the user chose, the running time with the live dot
+/// before it, the level line under it, one red Stop between the two quiet
+/// controls, and a footer in the recorder's small voice.
 
-/// The one small voice every line of words on the recorder speaks in —
-/// its status, an option, a reassurance — so the running time is the only
-/// type that stands out.
+/// The one small voice every line of words on the recorder speaks in — an
+/// option, a reassurance, a failure — so the running time is the only type
+/// that stands out.
 TextStyle recordingCaptionStyle(DsTokens tokens) =>
     tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
 
-/// The whole recorder, top to bottom: the status line (where the host has
-/// none of its own), the level display, the time, the level line, the
-/// [controls], and an optional [footer] — every gap a design-system step,
+/// The whole recorder, top to bottom: the level display (left out when
+/// [compact]), the time with the live dot (where the host has no status of
+/// its own), the level line, the [controls] and an optional [footer] — in
+/// one column no wider than the level line, every gap a design-system step,
 /// so each host reads the same.
 class RecordingStage extends StatelessWidget {
   const RecordingStage({
     required this.state,
     required this.controls,
     this.showStatus = true,
+    this.compact = false,
     this.levelSemanticsLabel,
     this.announceLevel = false,
     this.clockSemanticsLabel,
-    this.option,
     this.notice,
     this.footer,
     super.key,
@@ -54,9 +56,13 @@ class RecordingStage extends StatelessWidget {
   /// before one starts.
   final Widget controls;
 
-  /// Whether to say *Recording* / *Paused* above the display — not where
-  /// the host's own header already says so.
+  /// Whether the live dot leads the time — not where the host's own header
+  /// already says the take is recording.
   final bool showStatus;
+
+  /// Whether to leave the orb or meter out, for a host with no room for it:
+  /// the level line is then the recorder's only meter.
+  final bool compact;
 
   /// What a screen reader hears for the level display and line, which are
   /// pictures; nothing when null.
@@ -67,14 +73,10 @@ class RecordingStage extends StatelessWidget {
   final bool announceLevel;
   final String? clockSemanticsLabel;
 
-  /// A setting for the take, such as speech recognition: on the header
-  /// line, across from the status, in the same small voice.
-  final Widget? option;
-
   /// A line under the time, such as a failure the host reports.
   final Widget? notice;
 
-  /// What sits under the controls, such as a reassurance.
+  /// What sits under the controls: an option, or a reassurance.
   final Widget? footer;
 
   @override
@@ -82,55 +84,73 @@ class RecordingStage extends StatelessWidget {
     final tokens = context.designTokens;
     final live = state.status == AudioRecorderStatus.recording;
     final paused = state.status == AudioRecorderStatus.paused;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if ((showStatus && (live || paused)) || option != null)
-          // One header line: the status at its start, the option at its
-          // end, clear of a sheet's drag handle above; the orb's own margin
-          // is the gap below.
-          Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step4),
-            child: Row(
-              key: const ValueKey('recording-stage-header'),
+    final dot = showStatus && (live || paused);
+    // The dot and its gap, mirrored after the time, so the digits — not
+    // the dot and digits — sit on the axis.
+    final dotRun = tokens.spacing.step3 * 2;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: RecordingLevelLine.maxWidth,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!compact) ...[
+              Semantics(
+                liveRegion: announceLevel,
+                label: levelSemanticsLabel,
+                child: ExcludeSemantics(
+                  child: RecordingLevelVisualizer(state: state),
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step3),
+            ],
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (showStatus && (live || paused))
+                if (dot) ...[
                   RecordingStatus(paused: paused),
-                const Spacer(),
-                ?option,
+                  SizedBox(width: tokens.spacing.step3),
+                ],
+                RecordingClock(
+                  progress: state.progress,
+                  semanticsLabel: clockSemanticsLabel,
+                ),
+                if (dot) SizedBox(width: dotRun),
               ],
             ),
-          ),
-        Semantics(
-          liveRegion: announceLevel,
-          label: levelSemanticsLabel,
-          child: ExcludeSemantics(
-            child: RecordingLevelVisualizer(state: state),
-          ),
+            if (notice case final notice?) ...[
+              SizedBox(height: tokens.spacing.step2),
+              notice,
+            ],
+            SizedBox(height: tokens.spacing.step3),
+            if (compact)
+              // The line stands in for the pictures it would sit under.
+              Semantics(
+                liveRegion: announceLevel,
+                label: levelSemanticsLabel,
+                child: ExcludeSemantics(
+                  child: RecordingLevelLine(state: state),
+                ),
+              )
+            else
+              ExcludeSemantics(child: RecordingLevelLine(state: state)),
+            SizedBox(height: tokens.spacing.step6),
+            controls,
+            if (footer case final footer?) ...[
+              SizedBox(height: tokens.spacing.step6),
+              footer,
+            ],
+          ],
         ),
-        RecordingClock(
-          progress: state.progress,
-          semanticsLabel: clockSemanticsLabel,
-        ),
-        if (notice case final notice?) ...[
-          SizedBox(height: tokens.spacing.step2),
-          notice,
-        ],
-        SizedBox(height: tokens.spacing.step3),
-        ExcludeSemantics(child: RecordingLevelLine(state: state)),
-        SizedBox(height: tokens.spacing.step6),
-        controls,
-        if (footer case final footer?) ...[
-          SizedBox(height: tokens.spacing.step6),
-          footer,
-        ],
-      ],
+      ),
     );
   }
 }
 
-/// *● Recording*, or *Paused* with the dot at rest: what the take is doing,
-/// in words, for the host that has no status line of its own.
+/// The live dot before the time: red while the take runs, at rest while it
+/// is paused — and to a reader, *Recording* or *Paused* in words.
 class RecordingStatus extends StatelessWidget {
   const RecordingStatus({required this.paused, super.key});
 
@@ -140,27 +160,20 @@ class RecordingStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: tokens.spacing.step3,
-          height: tokens.spacing.step3,
-          decoration: BoxDecoration(
-            color: paused
-                ? tokens.colors.text.lowEmphasis
-                : tokens.colors.alert.error.defaultColor,
-            shape: BoxShape.circle,
-          ),
+    return Semantics(
+      label: paused
+          ? messages.audioRecordingStatusPaused
+          : messages.sidebarAudioRecordingStatusLabel,
+      child: Container(
+        width: tokens.spacing.step3,
+        height: tokens.spacing.step3,
+        decoration: BoxDecoration(
+          color: paused
+              ? tokens.colors.text.lowEmphasis
+              : tokens.colors.alert.error.defaultColor,
+          shape: BoxShape.circle,
         ),
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          paused
-              ? messages.audioRecordingStatusPaused
-              : messages.sidebarAudioRecordingStatusLabel,
-          style: recordingCaptionStyle(tokens),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -324,15 +337,19 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
           color: modern
               ? tokens.colors.interactive.enabled
               : tokens.colors.text.highEmphasis,
+          baselineColor: tokens.colors.decorative.level02,
+          // The rings' border weight: one hairline across the recorder.
+          baselineWidth: tokens.spacing.step1 / 2,
         ),
       ),
     );
   }
 }
 
-/// The running time, `0:00:42`, in the UI face with tabular figures — the
-/// digits never shift as they tick — in the neutral ink, so colour is left
-/// to the live parts.
+/// The running time, `0:42` — `1:02:03` once past the hour — as the
+/// recorder's one large type: a regular heading1 in the UI face with
+/// tabular figures, so the digits never shift as they tick, in the neutral
+/// ink, leaving colour to the live parts.
 class RecordingClock extends StatelessWidget {
   const RecordingClock({
     required this.progress,
@@ -346,10 +363,14 @@ class RecordingClock extends StatelessWidget {
   /// the words for it.
   final String? semanticsLabel;
 
-  /// `h:mm:ss` — the duration's own rendering without its fraction.
+  /// `m:ss` under an hour, `h:mm:ss` from then on.
   static String format(Duration progress) {
-    final text = progress.toString();
-    return text.substring(0, text.length - 7);
+    final seconds = progress.inSeconds;
+    final ss = (seconds % 60).toString().padLeft(2, '0');
+    final minutes = seconds ~/ 60;
+    if (minutes < 60) return '$minutes:$ss';
+    final mm = (minutes % 60).toString().padLeft(2, '0');
+    return '${minutes ~/ 60}:$mm:$ss';
   }
 
   @override
@@ -359,7 +380,7 @@ class RecordingClock extends StatelessWidget {
       format(progress),
       textAlign: TextAlign.center,
       semanticsLabel: semanticsLabel,
-      style: tokens.typography.styles.heading.heading3.copyWith(
+      style: tokens.typography.styles.heading.heading1.copyWith(
         fontWeight: tokens.typography.weight.regular,
         fontFeatures: const [FontFeature.tabularFigures()],
         color: tokens.colors.text.highEmphasis,
@@ -368,8 +389,8 @@ class RecordingClock extends StatelessWidget {
   }
 }
 
-/// An option under the recorder — a small toggle and its name in the
-/// recorder's caption voice, the whole row one tap — quiet enough that it
+/// An option under the recorder — its name in the recorder's caption
+/// voice, then a small toggle, the whole row one tap — quiet enough that it
 /// never competes with the take.
 class RecordingOption extends StatelessWidget {
   const RecordingOption({
@@ -392,16 +413,16 @@ class RecordingOption extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          DesignSystemToggle(
-            value: value,
-            onChanged: onChanged,
-            semanticsLabel: label,
-          ),
-          SizedBox(width: tokens.spacing.step3),
           Flexible(
             child: ExcludeSemantics(
               child: Text(label, style: recordingCaptionStyle(tokens)),
             ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          DesignSystemToggle(
+            value: value,
+            onChanged: onChanged,
+            semanticsLabel: label,
           ),
         ],
       ),
@@ -513,7 +534,7 @@ class _Control extends StatelessWidget {
   }
 }
 
-/// A quiet 48px ring, the whole of it tappable.
+/// A quiet 48px ring — a border, no fill — the whole of it tappable.
 class _RoundControl extends StatelessWidget {
   const _RoundControl({
     required this.label,
@@ -536,7 +557,6 @@ class _RoundControl extends StatelessWidget {
         width: tokens.spacing.step9,
         height: tokens.spacing.step9,
         decoration: BoxDecoration(
-          color: tokens.colors.surface.enabled,
           shape: BoxShape.circle,
           border: Border.all(color: tokens.colors.decorative.level02),
         ),

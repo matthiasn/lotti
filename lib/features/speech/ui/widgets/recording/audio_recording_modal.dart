@@ -54,9 +54,7 @@ class AudioRecordingModal {
         useRootNavigator: useRootNavigator,
         hasTopBarLayer: false,
         showCloseButton: false,
-        padding: ModalUtils.defaultPadding(
-          context,
-        ).copyWith(bottom: context.designTokens.spacing.step5),
+        padding: ModalUtils.defaultPadding(context),
         builder: (BuildContext _) {
           return AudioRecordingModalContent(
             linkedId: linkedId,
@@ -204,7 +202,7 @@ class _AudioRecordingModalContentState
           : _buildRecordButton(context, controller, theme),
       // Automatic prompt options (shown when category or linked task may
       // provide automatic prompts, including profile-driven skills).
-      option:
+      footer:
           widget.showTranscriptionOptions &&
               (widget.categoryId != null || widget.linkedId != null)
           ? _speechRecognitionOption(context, controller, state)
@@ -299,8 +297,8 @@ class _AudioRecordingModalContentState
     onPressed: _starting || _terminalActionInProgress ? null : _record,
   );
 
-  /// The speech-recognition toggle for the recorder's header, or nothing
-  /// where no transcription would run.
+  /// The *Transcribe* toggle for the recorder's footer, or nothing where
+  /// no transcription would run.
   Widget? _speechRecognitionOption(
     BuildContext context,
     AudioRecorderController controller,
@@ -318,7 +316,7 @@ class _AudioRecordingModalContentState
     if (visibility.none) return null;
     return RecordingOption(
       key: const Key('speech_recognition_checkbox'),
-      label: context.messages.speechModalTitle,
+      label: context.messages.audioRecordingTranscribeOption,
       value: state.enableSpeechRecognition ?? true,
       onChanged: (value) =>
           controller.setEnableSpeechRecognition(enable: value),

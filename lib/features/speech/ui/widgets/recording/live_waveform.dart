@@ -13,7 +13,9 @@ import 'package:material_ui/material_ui.dart';
 /// When [amplitudes] is empty (or shorter than [barCount]), the
 /// missing trailing slots render as a small idle baseline so the
 /// strip never collapses to nothing while we wait for the first
-/// amplitude sample to land.
+/// amplitude sample to land. With a [baselineColor] that idle baseline
+/// is one hairline across the strip instead, and only sound draws a bar —
+/// silence reads as flat, not as a row of dots.
 class LiveWaveform extends StatelessWidget {
   const LiveWaveform({
     required this.amplitudes,
@@ -21,6 +23,8 @@ class LiveWaveform extends StatelessWidget {
     this.width = 240,
     this.height = 28,
     this.color,
+    this.baselineColor,
+    this.baselineWidth = 1,
     super.key,
   });
 
@@ -37,6 +41,12 @@ class LiveWaveform extends StatelessWidget {
   /// per-style tint.
   final Color? color;
 
+  /// The hairline silence draws as, when set.
+  final Color? baselineColor;
+
+  /// That hairline's thickness.
+  final double baselineWidth;
+
   @override
   Widget build(BuildContext context) {
     final teal = color ?? context.designTokens.colors.interactive.enabled;
@@ -52,6 +62,8 @@ class LiveWaveform extends StatelessWidget {
           color: teal,
           amplitudes: amplitudes,
           reducedMotion: reducedMotion,
+          baselineColor: baselineColor,
+          baselineWidth: baselineWidth,
         ),
       ),
     );
@@ -67,6 +79,8 @@ class LiveWaveformPainter extends CustomPainter {
     required this.color,
     required this.amplitudes,
     this.reducedMotion = false,
+    this.baselineColor,
+    this.baselineWidth = 1,
   });
 
   /// Minimum bar height fraction. Keeps every slot visibly present
@@ -78,11 +92,29 @@ class LiveWaveformPainter extends CustomPainter {
   final List<double> amplitudes;
   final bool reducedMotion;
 
+  /// When set, silence is this hairline rather than idle bars.
+  final Color? baselineColor;
+  final double baselineWidth;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
+
+    final baseline = baselineColor;
+    if (baseline != null) {
+      final y = size.height / 2;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        Paint()
+          ..color = baseline
+          ..strokeWidth = baselineWidth,
+      );
+    }
+    // Over a baseline, silence draws nothing of its own.
+    final idle = baseline == null ? _idleFraction : 0.0;
 
     final spacing = size.width / barCount;
     final barWidth = math.max(spacing * 0.45, 1.5);
@@ -95,7 +127,7 @@ class LiveWaveformPainter extends CustomPainter {
       final double fraction;
       if (reducedMotion) {
         // Static resting baseline — every bar at the idle minimum.
-        fraction = _idleFraction;
+        fraction = idle;
       } else {
         // Right-align the live samples so newer values stay on the right
         // (matches how voice waveforms read in iOS / standard recorders).
@@ -104,9 +136,10 @@ class LiveWaveformPainter extends CustomPainter {
         final value = (sampleIndex >= 0 && sampleIndex < slice.length)
             ? slice[sampleIndex].clamp(0.0, 1.0)
             : 0.0;
-        fraction = math.max(_idleFraction, value);
+        fraction = math.max(idle, value);
       }
       final h = size.height * fraction;
+      if (h <= baselineWidth && baseline != null) continue;
       final x = i * spacing + (spacing - barWidth) / 2;
       final y = (size.height - h) / 2;
       final rect = RRect.fromRectAndRadius(
@@ -119,7 +152,11 @@ class LiveWaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant LiveWaveformPainter old) {
-    if (old.reducedMotion != reducedMotion) return true;
+    if (old.reducedMotion != reducedMotion ||
+        old.baselineColor != baselineColor ||
+        old.baselineWidth != baselineWidth) {
+      return true;
+    }
     // The static baseline ignores the live signal, so amplitude churn must not
     // force a repaint for a reduced-motion user.
     if (reducedMotion) {

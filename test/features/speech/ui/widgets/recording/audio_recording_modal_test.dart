@@ -161,7 +161,7 @@ Finder _speechRecognitionCheckbox(WidgetTester tester) => find.widgetWithText(
   RecordingOption,
   AppLocalizations.of(
     tester.element(find.byType(Scaffold).first),
-  )!.speechModalTitle,
+  )!.audioRecordingTranscribeOption,
 );
 
 void main() {

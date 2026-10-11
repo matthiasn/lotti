@@ -1904,6 +1904,10 @@
     "description": "Status line above the recorder while a recording is paused."
   },
   "audioRecordingStop": "Stop",
+  "audioRecordingTranscribeOption": "Transcribe",
+  "@audioRecordingTranscribeOption": {
+    "description": "Toggle under the recorder: transcribe this recording once it stops."
+  },
   "avatarCropHint": "Drag to move · pinch to zoom",
   "avatarCropPreviewLabel": "How it will look on the list",
   "avatarCropTitle": "Choose the face",

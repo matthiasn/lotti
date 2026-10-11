@@ -4716,6 +4716,12 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get audioRecordingStop;
 
+  /// Toggle under the recorder: transcribe this recording once it stops.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe'**
+  String get audioRecordingTranscribeOption;
+
   /// No description provided for @avatarCropHint.
   ///
   /// In en, this message translates to:

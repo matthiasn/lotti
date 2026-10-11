@@ -51,6 +51,7 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     this.categoryId,
     this.adoptRunning = false,
     this.showStatus = false,
+    this.compact = false,
     super.key,
   });
 
@@ -67,10 +68,14 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
   /// Attach to the recording already running rather than starting one.
   final bool adoptRunning;
 
-  /// Whether the recorder says *Recording* / *Paused* itself — where the
-  /// host has no status line of its own, as the check-in page's dock has
-  /// none and the composer's header does.
+  /// Whether the live dot leads the time — where the host has no status
+  /// line of its own, as the check-in page's dock has none and the
+  /// composer's header does.
   final bool showStatus;
+
+  /// Whether to leave the orb or meter out, as the check-in page's dock
+  /// does, so dictating never covers the check-in it adds to.
+  final bool compact;
 
   @override
   ConsumerState<CheckInInlineRecorder> createState() =>
@@ -165,6 +170,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
       key: const ValueKey('check-in-inline-recorder'),
       state: state,
       showStatus: widget.showStatus,
+      compact: widget.compact,
       // Named, not live: the header's status line announces recording and
       // paused, so a reader hears each transition once.
       levelSemanticsLabel: live

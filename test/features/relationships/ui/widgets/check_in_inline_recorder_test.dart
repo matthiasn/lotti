@@ -161,7 +161,7 @@ void main() {
       final clock = tester.widget<RecordingClock>(find.byType(RecordingClock));
       expect(clock.progress, const Duration(seconds: 83));
       expect(clock.semanticsLabel, '1 minute 23 seconds');
-      expect(find.text('0:01:23'), findsOneWidget);
+      expect(find.text('1:23'), findsOneWidget);
     });
   });
 
@@ -201,7 +201,7 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 23), dBFS: -20);
     await tester.pump();
-    expect(find.text('0:00:23'), findsOneWidget);
+    expect(find.text('0:23'), findsOneWidget);
 
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
@@ -307,7 +307,13 @@ void main() {
 
     recorder.tick(progress: const Duration(minutes: 59, seconds: 59));
     await tester.pump();
-    expect(find.text('0:59:59'), findsOneWidget);
+    expect(find.text('59:59'), findsOneWidget);
+    expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
+
+    // Past the hour the time grows its hour digit, and still nothing moves.
+    recorder.tick(progress: const Duration(hours: 1));
+    await tester.pump();
+    expect(find.text('1:00:00'), findsOneWidget);
     expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
   });
 
