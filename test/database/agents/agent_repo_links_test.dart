@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart' as model;
 import 'package:lotti/classes/agents/agent_link.dart' show AgentLinkSoftDelete;
 import 'package:lotti/classes/agents/agent_link_slot.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:lotti/database/agents/agent_repo_core.dart';
 import 'package:lotti/database/agents/agent_repo_links.dart';
+import 'package:lotti/database/agents/agent_repo_retention.dart';
 import 'package:lotti/database/agents/agent_repository_exception.dart';
 
 import '../../features/agents/test_data/entity_factories.dart';
@@ -695,6 +697,36 @@ void main() {
           .get();
       expect(rows.map((r) => r.read<String>('agent_id')), ['agent-del']);
       expect(rows.single.read<DateTime>('deleted_at'), testDate);
+    });
+
+    test('keeps the destroyed identity, so a peer that missed the destroy '
+        'can still be sent it', () async {
+      final identity = makeTestIdentity(
+        id: 'agent-del',
+        agentId: 'agent-del',
+        lifecycle: AgentLifecycle.destroyed,
+        vectorClock: const VectorClock({'node-1': 4}),
+      );
+      await core.upsertEntity(identity);
+      expect(await links.deletedAgentIdentity('agent-del'), isNull);
+
+      await links.hardDeleteAgent('agent-del');
+
+      expect(await core.getEntityIncludingDeleted('agent-del'), isNull);
+      expect(await links.deletedAgentIdentity('agent-del'), identity);
+      // An agent deleted without an identity row keeps none.
+      await links.hardDeleteAgent('agent-bare');
+      expect(await links.deletedAgentIdentity('agent-bare'), isNull);
+    });
+
+    test('lists the entities retention pruned', () async {
+      await recordPrunedAgentEntities(db, ['pruned-1', 'pruned-2']);
+
+      expect(
+        await links.prunedAgentEntityIdsAmong(['pruned-1', 'live']),
+        {'pruned-1'},
+      );
+      expect(await links.prunedAgentEntityIdsAmong(const []), isEmpty);
     });
 
     test('reports links between two of the agent-owned entities', () async {

@@ -2472,6 +2472,51 @@ void main() {
       },
     );
     test(
+      'v24 to v25 keeps each deleted agent, gives the record room for its '
+      'destroyed identity, and adds the pruned-entity record',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        sqlite3.open(dbFile)
+          ..execute(_wakeRunLogV23Sql)
+          ..execute(
+            'CREATE TABLE deleted_agents (agent_id TEXT NOT NULL PRIMARY KEY, '
+            'deleted_at INTEGER NOT NULL)',
+          )
+          ..execute(
+            "INSERT INTO deleted_agents VALUES ('agent-old', 1)",
+          )
+          ..execute('PRAGMA user_version = 24')
+          ..close();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        expect(
+          await db.deletedAgentIdsAmong(['agent-old']).get(),
+          ['agent-old'],
+        );
+        // Deleted before identities were kept: none to send.
+        expect(
+          await db.deletedAgentIdentity('agent-old').getSingleOrNull(),
+          isNull,
+        );
+        await db.recordDeletedAgent('agent-new', DateTime(2026, 10, 11), '{}');
+        expect(
+          await db.deletedAgentIdentity('agent-new').getSingleOrNull(),
+          '{}',
+        );
+        await db.recordPrunedAgentEntity('event-1', DateTime(2026, 10, 11));
+        expect(
+          await db.prunedAgentEntityIdsAmong(['event-1', 'event-2']).get(),
+          ['event-1'],
+        );
+      },
+    );
+    test(
       'v22 to v23 adds deleted_agents, which remembers a deleted agent '
       '(ADR 0108)',
       () async {
@@ -2493,8 +2538,8 @@ void main() {
             .customSelect('PRAGMA user_version')
             .getSingle();
         expect(version.read<int>('user_version'), db.schemaVersion);
-        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 27));
-        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 28));
+        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 27), null);
+        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 28), null);
         expect(
           await db.deletedAgentIdsAmong(['agent-1', 'agent-2']).get(),
           ['agent-1'],

@@ -198,8 +198,12 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
           durable: durable,
-          loadPayload: () =>
-              agentRepository!.getEntityIncludingDeleted(payloadId),
+          // An agent this device deleted has no row, but its destroyed
+          // identity is kept: a peer that missed the destroy is sent it,
+          // rather than told the payload is gone while it keeps the agent.
+          loadPayload: () async =>
+              await agentRepository!.getEntityIncludingDeleted(payloadId) ??
+              await agentRepository!.deletedAgentIdentity(payloadId),
           getVectorClock: (entity) => entity.vectorClock,
           buildSyncMessage: (entity) => SyncMessage.agentEntity(
             status: SyncEntryStatus.update,

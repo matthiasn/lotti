@@ -1,8 +1,19 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/utils/daily_os_preferences_keys.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
+
+/// Further stamped records "Send settings" re-sends, owned by features above
+/// sync — the GitHub account. The composition root binds them; by default
+/// there are none.
+final preferenceResendExtrasProvider =
+    Provider<Future<List<SyncMessage>> Function()>(
+      (ref) =>
+          () async => const <SyncMessage>[],
+      name: 'preferenceResendExtrasProvider',
+    );
 
 /// The messages that re-send this device's synced preferences — the theme,
 /// the Daily OS greeting name and every config flag — each with the stamp

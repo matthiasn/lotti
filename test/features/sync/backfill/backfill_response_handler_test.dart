@@ -5,6 +5,9 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/agent_link.dart' show AgentLinkSoftDelete;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -3791,6 +3794,77 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'an agent this device deleted is answered with its kept destroyed '
+      'identity, not as deleted, so a peer that missed the destroy stops it',
+      () async {
+        final logItem = _createLogItem(
+          aliceHostId,
+          10,
+          entryId: 'deleted-agent',
+          originatingHostId: aliceHostId,
+          payloadType: SyncSequencePayloadType.agentEntity,
+        );
+        _stubRequestLookup(
+          mockSequenceService,
+          mockOutboxService,
+          hostId: aliceHostId,
+          counter: 10,
+          logItem: logItem,
+        );
+        when(
+          () => mockAgentRepository.getEntityIncludingDeleted('deleted-agent'),
+        ).thenAnswer((_) async => null);
+        final destroyed = AgentDomainEntity.agent(
+          id: 'deleted-agent',
+          agentId: 'deleted-agent',
+          kind: 'task_agent',
+          displayName: 'Gone',
+          lifecycle: AgentLifecycle.destroyed,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({aliceHostId: 10}),
+        );
+        when(
+          () => mockAgentRepository.deletedAgentIdentity('deleted-agent'),
+        ).thenAnswer((_) async => destroyed);
+
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 10)],
+            requesterId: requesterId,
+          ),
+        );
+
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any<SyncMessage>(
+              that: isA<SyncAgentEntity>().having(
+                (m) => m.agentEntity,
+                'agentEntity',
+                destroyed,
+              ),
+            ),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any<SyncMessage>(
+              that: isA<SyncBackfillResponse>().having(
+                (r) => r.deleted,
+                'deleted',
+                true,
+              ),
+            ),
+          ),
+        );
+      },
+    );
 
     test('skips backfill when agentRepository is null', () async {
       handler.agentRepository = null;

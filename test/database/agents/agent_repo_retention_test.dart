@@ -83,6 +83,15 @@ void main() {
 
       expect(pruned, hasLength(2), reason: 'The ids removed, for sidecars.');
       expect(await idsOfType('day_status_event'), ['recent']);
+      // Remembered, so a peer that has not swept yet cannot hand them back.
+      expect(
+        (await db.prunedAgentEntityIdsAmong([
+          'old',
+          'edge',
+          'recent',
+        ]).get()).toSet(),
+        {'old', 'edge'},
+      );
     });
 
     test('keeps the newest event per agent, not per day alone', () async {

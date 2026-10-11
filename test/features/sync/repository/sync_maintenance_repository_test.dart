@@ -90,6 +90,20 @@ void main() {
       () => mockSavedTaskFiltersRepository.load(),
     ).thenAnswer((_) async => []);
     mockAgentRepository = MockAgentRepository();
+    // The clock stamper reads each row again before stamping it: answer with
+    // the row the clockless listing returned, as the database would.
+    when(() => mockAgentRepository.getEntity(any())).thenAnswer((inv) async {
+      final id = inv.positionalArguments.single as String;
+      final rows = await mockAgentRepository.getEntitiesWithNullVectorClock();
+      return rows.where((row) => row.id == id).firstOrNull;
+    });
+    when(
+      () => mockAgentRepository.getLinkByIdIncludingDeleted(any()),
+    ).thenAnswer((inv) async {
+      final id = inv.positionalArguments.single as String;
+      final rows = await mockAgentRepository.getLinksWithNullVectorClock();
+      return rows.where((row) => row.id == id).firstOrNull;
+    });
     mockVectorClockService = MockVectorClockService();
     mockSettingsDb = MockSettingsDb();
     when(
@@ -118,6 +132,38 @@ void main() {
       vectorClockService: mockVectorClockService,
       settingsDb: mockSettingsDb,
     );
+  });
+
+  test('the preferences step also re-sends the records features above sync '
+      'add, such as the GitHub account', () async {
+    when(
+      () => mockSettingsDb.itemsByKeys(any<Iterable<String>>()),
+    ).thenAnswer((_) async => const <String, String>{});
+    when(() => mockJournalDb.stampedConfigFlags()).thenAnswer(
+      (_) async => const [],
+    );
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async {});
+    const account = SyncMessage.gitHubAccount(
+      updatedAt: 42,
+      status: SyncEntryStatus.update,
+    );
+    final repository = SyncMaintenanceRepository(
+      journalDb: mockJournalDb,
+      outboxService: mockOutboxService,
+      loggingService: mockLoggingService,
+      aiConfigRepository: mockAiConfigRepository,
+      savedTaskFiltersRepository: mockSavedTaskFiltersRepository,
+      agentRepository: mockAgentRepository,
+      vectorClockService: mockVectorClockService,
+      settingsDb: mockSettingsDb,
+      preferenceExtras: () async => const [account],
+    );
+
+    await repository.syncPreferences();
+
+    verify(() => mockOutboxService.enqueueMessage(account)).called(1);
   });
 
   test('the preferences step re-sends the theme, the greeting name and every '
@@ -1510,6 +1556,10 @@ void main() {
 
   group('a clock repair whose outbox write fails', () {
     final failure = Exception('outbox write failed');
+    // An agent row's stamp is written inside the agent database transaction
+    // the failed enqueue aborts, which rolls the write back.
+    var abortedTransaction = false;
+    void verifyRolledBack() => expect(abortedTransaction, isTrue);
     final repairs =
         <
           ({
@@ -1543,8 +1593,7 @@ void main() {
                   ],
                 ),
             run: () => syncMaintenanceRepository.backfillAgentEntityClocks(),
-            verifyNotStored: () =>
-                verifyNever(() => mockAgentRepository.upsertEntity(any())),
+            verifyNotStored: verifyRolledBack,
           ),
           (
             name: 'backfillAgentLinkClocks',
@@ -1564,8 +1613,7 @@ void main() {
                   ],
                 ),
             run: () => syncMaintenanceRepository.backfillAgentLinkClocks(),
-            verifyNotStored: () =>
-                verifyNever(() => mockAgentRepository.upsertLink(any())),
+            verifyNotStored: verifyRolledBack,
           ),
           (
             name: 'backfillEntryLinkClocks',
@@ -1594,6 +1642,21 @@ void main() {
       test('${repair.name} fails and stores no stamp, so the record stays '
           'clockless and the next run retries it', () async {
         repair.stubClockless();
+        abortedTransaction = false;
+        mockAgentRepository.transactionDelegate = <T>(action) async {
+          try {
+            return await action();
+          } catch (_) {
+            abortedTransaction = true;
+            rethrow;
+          }
+        };
+        when(() => mockAgentRepository.upsertEntity(any())).thenAnswer(
+          (_) async {},
+        );
+        when(() => mockAgentRepository.upsertLink(any())).thenAnswer(
+          (_) async {},
+        );
         when(
           () => mockVectorClockService.getNextVectorClock(
             previous: any(named: 'previous'),

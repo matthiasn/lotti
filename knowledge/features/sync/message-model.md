@@ -205,7 +205,7 @@ comparison in the [settings group contract](../../architecture/persistence.md#se
 `configFlag` uses the [flag version contract](../../architecture/persistence.md#config-flag-versions).
 Its optional wire stamp falls back to the Matrix event timestamp for old senders.
 Older receivers still overwrite on arrival, so a current receiver answers an unstamped flag, or a stamped one older than the version it holds, by sending that version: the newest is then the last to arrive at the old build ([ADR 0131](../../../docs/adr/0131-current-builds-repair-what-old-builds-left.md)). Two current builds never answer each other, since a copy as new as the one held is no cause.
-They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). Theme/name apply persists the values,
+They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). It also re-sends the GitHub account, connected or disconnected, through `preferenceResendExtrasProvider`, which the composition root binds (ADR 0133). Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
 are emitted only after successful persistence. Cache publication follows the

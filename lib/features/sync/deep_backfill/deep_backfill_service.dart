@@ -285,11 +285,23 @@ class DeepBackfillService {
         withMedia: {...diff.advertiserLacks, ...diff.mediaPushes},
       );
     }
-    final requests = await _withoutDeletedAgents(
-      store,
-      inventory,
-      diff.requests,
-    );
+    // The advertiser still holds an agent this device deleted: if its
+    // identity is older than the destroy, the destroy never reached it.
+    // A clockless identity is listed only by id, without its agent: an id
+    // the store holds a deletion of is that agent's identity.
+    final destroyedSent = await store.resendDestroyedAgents({
+      for (final id in inventory.unclocked) id: null,
+      for (final record in inventory.records)
+        if (record.agentIds?.contains(record.id) ?? false)
+          record.id: record.vectorClock,
+    });
+    // Rows this device removed on purpose are not asked for again: an
+    // agent it deleted (ADR 0108), and entities its retention pruned.
+    final pruned = await store.prunedAmong(diff.requests.keys);
+    final requests = await _withoutDeletedAgents(store, inventory, {
+      for (final MapEntry(key: id, value: clocks) in diff.requests.entries)
+        if (!pruned.contains(id)) id: clocks,
+    });
     if (requests.isNotEmpty) {
       await _request(
         inventory: inventory,
@@ -304,8 +316,10 @@ class DeepBackfillService {
       'type=${inventory.payloadType.name} batch=${inventory.batch} '
       'advertised=${inventory.records.length} local=${local.length} '
       'requested=${requests.length} '
-      'refusedAgents=${diff.requests.length - requests.length} '
+      'refusedAgents=${diff.requests.length - pruned.length - requests.length} '
+      'pruned=${pruned.length} '
       'pushed=${diff.pushes.length} '
+      'destroyedSent=$destroyedSent '
       'mediaRequested=${diff.mediaRequests.length} '
       'mediaPushed=${diff.mediaPushes.length} '
       'outstanding=${outstanding.length} '

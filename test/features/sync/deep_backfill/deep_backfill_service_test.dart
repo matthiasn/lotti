@@ -30,6 +30,7 @@ class _FakeStore extends DeepBackfillStore {
     Map<String, int> media = const {},
     this.agents = const {},
     this.deletedAgents = const {},
+    this.pruned = const {},
   }) : rows = SplayTreeMap.of(rows),
        media = Map.of(media);
 
@@ -44,7 +45,26 @@ class _FakeStore extends DeepBackfillStore {
 
   /// The agents this device holds a deletion of.
   final Set<String> deletedAgents;
+
+  /// The records this device's retention pruned.
+  final Set<String> pruned;
+
+  /// What each [resendDestroyedAgents] call was handed.
+  final destroyedAsked = <Map<String, VectorClock?>>[];
   final resent = <({Set<String> ids, Set<String> withMedia})>[];
+
+  @override
+  Future<Set<String>> prunedAmong(Iterable<String> ids) async =>
+      ids.where(pruned.contains).toSet();
+
+  @override
+  Future<int> resendDestroyedAgents(
+    Map<String, VectorClock?> advertised,
+  ) async {
+    destroyedAsked.add(advertised);
+    return advertised.length;
+  }
+
   final changed = StreamController<void>.broadcast();
 
   @override
@@ -153,6 +173,7 @@ void main() {
     Map<String, VectorClock> conflicts = const {},
     Map<String, int> mediaSizes = const {},
     Map<String, List<String>> agentIds = const {},
+    List<String> unclocked = const [],
     String? attachmentEventId,
   }) =>
       SyncMessage.deepBackfillInventory(
@@ -175,6 +196,7 @@ void main() {
               for (final MapEntry(key: id, value: clock) in conflicts.entries)
                 DeepBackfillRecord(id: id, vectorClock: clock),
             ],
+            unclocked: unclocked,
             attachmentEventId: attachmentEventId,
           )
           as SyncDeepBackfillInventory;
@@ -460,6 +482,46 @@ void main() {
         {'of-live', 'unnamed'},
       );
       expect((await outstandingRows()).keys.toSet(), {'of-live', 'unnamed'});
+    });
+
+    test('does not ask for records its retention pruned, and offers the '
+        'agent identities the advertiser lists for a destroy resend', () async {
+      final store = _FakeStore(_journal, pruned: {'pruned-event'});
+
+      await service(stores: [store]).handleInventory(
+        inventory(
+          records: {
+            'pruned-event': const VectorClock({'x': 1}),
+            'agent-1': const VectorClock({'x': 2}),
+            'state-1': const VectorClock({'x': 1}),
+          },
+          agentIds: {
+            'pruned-event': ['agent-1'],
+            'agent-1': ['agent-1'],
+            'state-1': ['agent-1'],
+          },
+        ),
+      );
+
+      expect(
+        requestsSent().single.records.map((r) => r.id).toSet(),
+        {'agent-1', 'state-1'},
+      );
+      // Only a record that names itself as its agent is an identity.
+      expect(store.destroyedAsked.single, {
+        'agent-1': const VectorClock({'x': 2}),
+      });
+    });
+
+    test('offers a clockless record for the destroy resend too, since a '
+        'legacy identity is listed by id alone', () async {
+      final store = _FakeStore(_journal);
+
+      await service(stores: [store]).handleInventory(
+        inventory(unclocked: ['legacy-agent']),
+      );
+
+      expect(store.destroyedAsked.single, {'legacy-agent': null});
     });
 
     test('sends no request when every missing record belongs to a deleted '

@@ -662,6 +662,15 @@ class AgentRepository {
   Future<DateTime?> deletedAgentAt(String agentId) =>
       _links.deletedAgentAt(agentId);
 
+  /// The ids among [ids] of agent entities this device's retention pruned.
+  Future<Set<String>> prunedAgentEntityIdsAmong(Iterable<String> ids) =>
+      _links.prunedAgentEntityIdsAmong(ids);
+
+  /// The destroyed identity this device kept when it deleted [agentId]
+  /// ([hardDeleteAgent]), or null.
+  Future<AgentDomainEntity?> deletedAgentIdentity(String agentId) =>
+      _links.deletedAgentIdentity(agentId);
+
   /// Forgets that this device deleted [agentId], so sync accepts writes
   /// about it again. Only an agent the user asked for again after the
   /// deletion is brought back this way (ADR 0111).

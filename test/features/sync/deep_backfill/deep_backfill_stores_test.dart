@@ -267,6 +267,48 @@ void main() {
       expect(message.status, SyncEntryStatus.update);
     });
 
+    test(
+      'a version that lost its triple is advertised by its own clock and '
+      'resent, so a peer is not asked for it every round (ADR 0128)',
+      () async {
+        final store = entryLinkDeepBackfillStore(
+          journalDb: db,
+          outboxService: outbox,
+        );
+        await db.upsertEntryLink(
+          EntryLink.basic(
+            id: 'loser',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: _date,
+            updatedAt: _date,
+            vectorClock: const VectorClock({'h': 1}),
+          ),
+        );
+        await db.upsertEntryLink(
+          EntryLink.basic(
+            id: 'winner',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: _date,
+            updatedAt: _date.add(const Duration(minutes: 1)),
+            vectorClock: const VectorClock({'h': 2}),
+          ),
+        );
+
+        expect(await store.range(start: null, end: null), {
+          'link-1': const VectorClock({'h': 4}),
+          'loser': const VectorClock({'h': 1}),
+          'winner': const VectorClock({'h': 2}),
+        });
+        expect(await store.count(), 3);
+        expect(await store.enqueueCurrent({'loser'}, withMedia: {}), 1);
+        final message = enqueued().single as SyncEntryLink;
+        expect(message.entryLink.id, 'loser');
+        expect(message.entryLink.vectorClock, const VectorClock({'h': 1}));
+      },
+    );
+
     test('each store reports writes to its own table only, though both '
         'share the journal database', () async {
       final links = entryLinkDeepBackfillStore(
@@ -389,7 +431,7 @@ void main() {
 
     test('both agent stores name the agents this device deleted, and only '
         'those', () async {
-      await db.recordDeletedAgent('gone', _date);
+      await db.recordDeletedAgent('gone', _date, null);
       final stores = [
         agentEntityDeepBackfillStore(agentDatabase: db, outboxService: outbox),
         agentLinkDeepBackfillStore(agentDatabase: db, outboxService: outbox),
@@ -401,6 +443,95 @@ void main() {
       }
     });
 
+    test(
+      "the agent entity store sends a deleted agent's kept destroyed "
+      'identity to an advertiser whose copy is older, and to no other',
+      () async {
+        final identity = AgentDomainEntity.agent(
+          id: 'gone',
+          agentId: 'gone',
+          kind: 'task_agent',
+          displayName: 'Gone',
+          lifecycle: AgentLifecycle.destroyed,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: _date,
+          updatedAt: _date,
+          vectorClock: const VectorClock({'h': 5}),
+        );
+        await db.recordDeletedAgent('gone', _date, jsonEncode(identity));
+        await db.recordDeletedAgent('bare', _date, null);
+        final store = agentEntityDeepBackfillStore(
+          agentDatabase: db,
+          outboxService: outbox,
+        );
+
+        expect(
+          await store.resendDestroyedAgents({
+            'gone': const VectorClock({'h': 3}),
+            'bare': const VectorClock({'h': 1}),
+            'live': const VectorClock({'h': 1}),
+          }),
+          1,
+        );
+        final sent = enqueued().single as SyncAgentEntity;
+        expect(sent.agentEntity, identity);
+
+        // An advertiser that holds the destroy, or a newer version, is sent
+        // nothing; a clockless copy is older than any destroy, so it is.
+        expect(
+          await store.resendDestroyedAgents({
+            'gone': const VectorClock({'h': 5}),
+          }),
+          0,
+        );
+        expect(
+          await store.resendDestroyedAgents({
+            'gone': const VectorClock({'h': 6}),
+          }),
+          0,
+        );
+        expect(await store.resendDestroyedAgents({'gone': null}), 1);
+        expect(
+          await agentLinkDeepBackfillStore(
+            agentDatabase: db,
+            outboxService: outbox,
+          ).resendDestroyedAgents({
+            'gone': const VectorClock({'h': 3}),
+          }),
+          0,
+        );
+      },
+    );
+
+    test('only the agent entity store knows what retention pruned', () async {
+      await db.recordPrunedAgentEntity('pruned', _date);
+
+      expect(
+        await agentEntityDeepBackfillStore(
+          agentDatabase: db,
+          outboxService: outbox,
+        ).prunedAmong(['pruned', 'live']),
+        {'pruned'},
+      );
+      expect(
+        await agentEntityDeepBackfillStore(
+          agentDatabase: db,
+          outboxService: outbox,
+        ).prunedAmong(const []),
+        isEmpty,
+      );
+      expect(
+        await agentLinkDeepBackfillStore(
+          agentDatabase: db,
+          outboxService: outbox,
+        ).prunedAmong(['pruned']),
+        isEmpty,
+      );
+    });
+
     test('a store with no agents knows of no deleted ones', () async {
       final journalDb = JournalDb(inMemoryDatabase: true);
       addTearDown(journalDb.close);
@@ -410,6 +541,21 @@ void main() {
       );
 
       expect(await store.deletedAgentsAmong(['gone']), isEmpty);
+
+      // A store over records that belong to no agent prunes and destroys
+      // nothing either.
+      final entries = JournalDeepBackfillStore(
+        journalDb: journalDb,
+        outboxService: outbox,
+        documentsDirectory: Directory.systemTemp,
+      );
+      expect(await entries.prunedAmong(['pruned']), isEmpty);
+      expect(
+        await entries.resendDestroyedAgents({
+          'gone': const VectorClock({'h': 1}),
+        }),
+        0,
+      );
     });
   });
 

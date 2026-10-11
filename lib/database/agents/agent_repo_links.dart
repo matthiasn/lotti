@@ -663,6 +663,8 @@ class AgentRepoLinks {
   /// and wake-run log entries — and record the agent as deleted, in the same
   /// transaction, so a write about it that sync delivers afterwards is
   /// refused rather than inserted again ([deletedAgentIdsAmong], ADR 0108).
+  /// The record keeps the destroyed identity ([deletedAgentIdentity]), so a
+  /// peer that missed the destroy can still be sent it.
   ///
   /// This is irreversible. Only call for agents whose lifecycle is
   /// [AgentLifecycle.destroyed].
@@ -706,12 +708,23 @@ class AgentRepoLinks {
                 .get())
           row.read<String>('id'),
       ];
+      final identity = await _db
+          .customSelect(
+            "SELECT serialized FROM agent_entities WHERE id = ?1 AND type = 'agent'",
+            variables: [Variable<String>(agentId)],
+            readsFrom: {_db.agentEntities},
+          )
+          .getSingleOrNull();
       // Saga ops reference wake_run_log via run_key, so delete them first.
       await _db.deleteAgentSagaOps(agentId);
       await _db.deleteAgentWakeRuns(agentId);
       await _db.deleteAgentLinks(agentId);
       await _db.deleteAgentEntities(agentId);
-      await _db.recordDeletedAgent(agentId, clock.now());
+      await _db.recordDeletedAgent(
+        agentId,
+        clock.now(),
+        identity?.read<String>('serialized'),
+      );
       return (entityIds: entityIds, linkIds: linkIds);
     });
   }
@@ -727,6 +740,26 @@ class AgentRepoLinks {
   /// When this device deleted [agentId], or null when it did not.
   Future<DateTime?> deletedAgentAt(String agentId) =>
       _db.deletedAgentAt(agentId).getSingleOrNull();
+
+  /// The ids among [ids] of agent entities this device's retention pruned
+  /// (`recordPrunedAgentEntities`).
+  Future<Set<String>> prunedAgentEntityIdsAmong(Iterable<String> ids) async {
+    final list = ids.toSet().toList();
+    if (list.isEmpty) return const {};
+    return (await _db.prunedAgentEntityIdsAmong(list).get()).toSet();
+  }
+
+  /// The identity [agentId] had when this device deleted it — destroyed,
+  /// with its clock — or null when it was not deleted here, or was deleted
+  /// before deletions kept it.
+  Future<AgentDomainEntity?> deletedAgentIdentity(String agentId) async {
+    final serialized = await _db
+        .deletedAgentIdentity(agentId)
+        .getSingleOrNull();
+    return serialized == null
+        ? null
+        : AgentDbConversions.fromSerialized(serialized);
+  }
 
   /// Drops this device's record that it deleted [agentId], so sync accepts
   /// writes about it again.

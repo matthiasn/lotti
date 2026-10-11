@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
@@ -61,6 +62,14 @@ void main() {
         updatedAt: 1900,
       ),
     ]);
+  });
+
+  test('features above sync add no records unless the composition root '
+      'binds them', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(await container.read(preferenceResendExtrasProvider)(), isEmpty);
   });
 
   test('leaves out a value with no stamp, or with part of it missing, so a '

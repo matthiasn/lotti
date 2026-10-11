@@ -24,6 +24,14 @@ Future<bool> refusesWriteAboutDeletedAgent(
   Set<String> agentIds,
 ) async => (await repository.deletedAgentIdsAmong(agentIds)).isNotEmpty;
 
+/// Whether a received copy of agent entity [id] is refused because this
+/// device's retention pruned that entity: a peer that has not swept yet
+/// answering deep backfill would otherwise store it again.
+Future<bool> refusesPrunedAgentEntity(
+  AgentRepository repository,
+  String id,
+) async => (await repository.prunedAgentEntityIdsAmong([id])).isNotEmpty;
+
 /// Resolves a received agent entity against the stored version of its id.
 ///
 /// The stored version is read with its tombstone
