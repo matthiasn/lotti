@@ -121,10 +121,9 @@ class DesignSystemTimerPill extends StatelessWidget {
     // it never shrinks when it starts nor grows as the time ticks.
     final minWidth = heldWidth(context, widthLabel ?? label);
 
-    // Running: the circle's concentric inset before it, the pill's own
-    // inset after the time.
+    // The circle's inset from the round end: the same as from the top and
+    // bottom.
     final circleInset = (spacing.step9 - spacing.step7) / 2;
-    final runningInsets = circleInset + spacing.step7 + spacing.step5;
 
     return Semantics(
       button: true,
@@ -139,55 +138,57 @@ class DesignSystemTimerPill extends StatelessWidget {
           onTap: onTap,
           child: Container(
             height: spacing.step9,
-            constraints: BoxConstraints(minWidth: minWidth),
-            // Running, the stop circle sits concentric in the pill's round
-            // end — as far from the edge as from the top and bottom — and
-            // the time takes the rest, the pill's own inset after it.
-            padding: running
-                ? EdgeInsets.only(left: circleInset, right: spacing.step5)
-                : EdgeInsets.symmetric(horizontal: spacing.step5),
+            // Running spends the idle layout's room differently — the
+            // circle's concentric inset and the circle where the idle inset
+            // and glyph sit, then step3 to the time and the pill's own
+            // step5 after it — so
+            // a time as wide as the held label fills the pill exactly with
+            // the circle concentric in the round end, and more room keeps
+            // circle and time together, centred.
+            padding: EdgeInsets.only(
+              left: running ? circleInset : spacing.step5,
+              right: spacing.step5,
+            ),
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: pillRadius,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (running) ...[
-                  _StopCircle(
-                    key: stopKey,
-                    onStop: onStop,
-                    semanticLabel: stopSemanticLabel,
-                  ),
-                  SizedBox(width: spacing.step3),
-                  // The time takes the rest of the held width, centred in
-                  // it, and grows past it only when it must.
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: math.max(
-                        0,
-                        minWidth - runningInsets - spacing.step3,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: math.max(
+                  0,
+                  minWidth -
+                      (running ? circleInset : spacing.step5) -
+                      spacing.step5,
+                ),
+              ),
+              child: Center(
+                widthFactor: 1,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (running)
+                      _StopCircle(
+                        key: stopKey,
+                        onStop: onStop,
+                        semanticLabel: stopSemanticLabel,
+                      )
+                    else
+                      Icon(idleIcon, size: iconSize, color: foreground),
+                    SizedBox(
+                      width: running ? spacing.step3 : spacing.step2,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        right: running ? 0 : spacing.step3,
+                      ),
+                      child: ExcludeSemantics(
+                        child: Text(label, style: textStyle),
                       ),
                     ),
-                    child: ExcludeSemantics(
-                      child: Text(
-                        label,
-                        style: textStyle,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  Icon(idleIcon, size: iconSize, color: foreground),
-                  SizedBox(width: spacing.step2),
-                  Padding(
-                    padding: EdgeInsets.only(right: spacing.step3),
-                    child: ExcludeSemantics(
-                      child: Text(label, style: textStyle),
-                    ),
-                  ),
-                ],
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
