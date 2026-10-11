@@ -3014,7 +3014,7 @@ stamp — whose stamp may tie or trail the held one.
 |---------------|-------|----------|--------|---------------|----------------|-----------------|
 | `AiConfigClocks` | 2 | 2 | 1–2 | 1 | 1 per host | 11,195,384 |
 
-It takes about eleven minutes. Each design rule has a switch, `TRUE` in the
+It takes about 27 minutes in CI (eleven locally on four workers). Each design rule has a switch, `TRUE` in the
 code. Setting one to `FALSE` in a temporary copy gives (four workers):
 
 | Mutation | Counterexample |
