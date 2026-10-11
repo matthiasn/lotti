@@ -8,3 +8,7 @@
   offered again without being asked.
 - **A photo or recording that arrived cut short is downloaded again** when
   its entry is opened, instead of staying cut off until a manual repair.
+- **A missing photo or recording is usually sent by one device, not by every
+  device that has it.** The device that last sent the entry answers; the
+  others step in after a short wait if it doesn't, or if its copy is
+  shorter than theirs.

@@ -854,15 +854,18 @@ void main() {
       required SyncSequenceStatus status,
       String? entryId,
       SyncSequencePayloadType type = SyncSequencePayloadType.journalEntity,
+      String? sender,
+      DateTime? at,
     }) => database.recordSequenceEntry(
       SyncSequenceLogCompanion(
         hostId: Value(host),
         counter: Value(counter),
         entryId: Value(entryId),
         payloadType: Value(type.index),
+        originatingHostId: Value(sender),
         status: Value(status.index),
         createdAt: Value(now),
-        updatedAt: Value(now),
+        updatedAt: Value(at ?? now),
       ),
     );
 
@@ -927,6 +930,67 @@ void main() {
 
       expect(await database.heldJournalClockFloor('e'), {'a': 4, 'b': 2});
       expect(await database.heldJournalClockFloor('none'), isEmpty);
+    });
+
+    test('the latest sender of an entry is the other host that most recently '
+        'delivered a version of it', () async {
+      DateTime minute(int m) => now.add(Duration(minutes: m));
+      await row(
+        'a',
+        1,
+        entryId: 'e',
+        sender: 'a',
+        status: SyncSequenceStatus.received,
+        at: minute(1),
+      );
+      await row(
+        'b',
+        2,
+        entryId: 'e',
+        sender: 'b',
+        status: SyncSequenceStatus.backfilled,
+        at: minute(2),
+      );
+      // Later, but none of them a delivered version from another host: a
+      // gap still missing, this device's own write, a link sharing the id.
+      await row(
+        'c',
+        3,
+        entryId: 'e',
+        sender: 'c',
+        status: SyncSequenceStatus.missing,
+        at: minute(3),
+      );
+      await row(
+        'me',
+        4,
+        entryId: 'e',
+        sender: 'me',
+        status: SyncSequenceStatus.received,
+        at: minute(4),
+      );
+      await row(
+        'd',
+        5,
+        entryId: 'e',
+        sender: 'd',
+        status: SyncSequenceStatus.received,
+        type: SyncSequencePayloadType.entryLink,
+        at: minute(5),
+      );
+
+      expect(
+        await database.latestSenderOfEntry('e', excludingHost: 'me'),
+        'b',
+      );
+      expect(
+        await database.latestSenderOfEntry('e', excludingHost: 'b'),
+        'me',
+      );
+      expect(
+        await database.latestSenderOfEntry('none', excludingHost: 'me'),
+        isNull,
+      );
     });
   });
 

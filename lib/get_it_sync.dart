@@ -385,6 +385,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     vectorClockService: vectorClockService,
     loggingService: domainLogger,
     settingsDb: settingsDb,
+    likelyHolder: (entryId, ownHost) =>
+        syncDatabase.latestSenderOfEntry(entryId, excludingHost: ownHost),
   );
   syncEventProcessor
     ..missingMediaListener = mediaRepairService.reportMissing
@@ -394,6 +396,10 @@ Future<String? Function()> _registerMatrixSyncStack({
       vectorClockService: vectorClockService,
       documentsDirectory: documentsDirectory,
       loggingService: domainLogger,
+      // Every attachment the room delivers, with the size it declares: a
+      // holder's answer that makes this device's own unnecessary. The stream
+      // ends with the index at shutdown, which drops held-back answers.
+      observedAttachments: attachmentIndex.attachmentsObserved,
     );
 
   // Deep backfill: a manual round that repairs history the sequence log
