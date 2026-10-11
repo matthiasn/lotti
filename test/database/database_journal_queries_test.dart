@@ -362,7 +362,8 @@ void main() {
         expect(stored?.meta.vectorClock, existingClock);
       });
 
-      test('returns skipReason when detectConflict throws', () async {
+      test('fails the write, logged, when detectConflict throws, so a '
+          'received version is retried rather than recorded as held', () async {
         final throwingDb = _DetectConflictThrowsJournalDb();
         await initConfigFlags(throwingDb, inMemoryDatabase: true);
 
@@ -379,10 +380,12 @@ void main() {
           );
 
           clearInteractions(mockLoggingService);
-          final result = await throwingDb.updateJournalEntity(incoming);
-
-          expect(result.applied, isFalse);
-          expect(result.skipReason, JournalUpdateSkipReason.conflict);
+          await expectLater(
+            throwingDb.updateJournalEntity(incoming),
+            throwsStateError,
+          );
+          final stored = await throwingDb.journalEntityById(existing.meta.id);
+          expect(stored?.meta.vectorClock, existingClock);
           verify(
             () => mockLoggingService.error(
               LogDomain.database,
