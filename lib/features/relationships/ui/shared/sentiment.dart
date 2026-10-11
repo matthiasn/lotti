@@ -28,3 +28,11 @@ Color sentimentColor(DsTokens tokens, CheckInSentiment sentiment) {
 /// its own because the unset/null sentiment bead reuses it.
 Color sentimentNeutralColor(DsTokens tokens) =>
     tokens.colors.text.highEmphasis.withValues(alpha: 0.38);
+
+/// The face a feeling wears beside its word: a smile for the good ones, the
+/// level mouth otherwise — the icon set holds no frown, and a smile on
+/// *Difficult* would say the opposite of the word.
+IconData sentimentGlyph(CheckInSentiment sentiment) => switch (sentiment) {
+  CheckInSentiment.delightful || CheckInSentiment.good => LottiIcons.moodGood,
+  _ => LottiIcons.moodNeutral,
+};

@@ -33,6 +33,10 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     this.sentiment,
     this.topics = const [],
     this.enabled = true,
+    this.leverLabel,
+    this.leverIcon = LottiIcons.edit,
+    this.leverKey = const ValueKey('check-in-detail-edit'),
+    this.leverExpanded,
     super.key,
   });
 
@@ -56,6 +60,17 @@ class CheckInMetaSummaryLine extends StatelessWidget {
   /// False while a take is live: the facts stay readable, fade as one lane
   /// — the recorder's own inert treatment — and take no tap.
   final bool enabled;
+
+  /// The closing lever's words — *Edit check-in* on the saved page, where it
+  /// opens the edit sheet; the form names its details fold instead.
+  final String? leverLabel;
+  final IconData leverIcon;
+  final Key leverKey;
+
+  /// Whether what the lever folds is open, where it is a disclosure (the
+  /// form's details) — told to a screen reader, which cannot see the
+  /// chevron turn; null where the lever opens a sheet.
+  final bool? leverExpanded;
 
   /// How many topics spell out before the rest fold into "+N" — the task
   /// labels tag's own count.
@@ -136,7 +151,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // tappable and are not.
         if (topics.isNotEmpty)
           _Fact(
-            key: const ValueKey('check-in-topics'),
+            key: const ValueKey('check-in-topics-tag'),
             semanticsLabel:
                 '${messages.checkInTopicsLabel}: ${topics.join(', ')}',
             icon: LottiIcons.label,
@@ -146,11 +161,12 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // The lane's one lever, where a task's *Details* sits: the dashed,
         // fully-rounded pill, so a fact and a control never look alike.
         _Offer(
-          key: const ValueKey('check-in-detail-edit'),
-          semanticsLabel: messages.checkInEditTitle,
-          icon: LottiIcons.edit,
-          label: messages.checkInEditTitle,
+          key: leverKey,
+          semanticsLabel: leverLabel ?? messages.checkInEditTitle,
+          icon: leverIcon,
+          label: leverLabel ?? messages.checkInEditTitle,
           onTap: live(onEdit),
+          expanded: leverExpanded,
         ),
       ],
     );
@@ -235,11 +251,7 @@ class _SentimentFact extends StatelessWidget {
     final tokens = context.designTokens;
     final label = checkInSentimentLabel(context, sentiment);
     final accent = sentimentColor(tokens, sentiment);
-    final glyph = switch (sentiment) {
-      CheckInSentiment.delightful ||
-      CheckInSentiment.good => LottiIcons.moodGood,
-      _ => LottiIcons.moodNeutral,
-    };
+    final glyph = sentimentGlyph(sentiment);
     return _Tappable(
       key: const ValueKey('check-in-sentiment-chip'),
       semanticsLabel: '${context.messages.checkInMoreCaptionFeeling}: $label',
@@ -267,6 +279,7 @@ class _Offer extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.expanded,
     super.key,
   });
 
@@ -275,12 +288,17 @@ class _Offer extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
+  /// Whether what this offer folds is open; null where it is no
+  /// disclosure.
+  final bool? expanded;
+
   @override
   Widget build(BuildContext context) {
     final ink = context.designTokens.colors.text.mediumEmphasis;
     return _Tappable(
       semanticsLabel: semanticsLabel,
       onTap: onTap,
+      expanded: expanded,
       child: DsPill(
         variant: DsPillVariant.muted,
         label: label,
@@ -302,18 +320,21 @@ class _Tappable extends StatelessWidget {
     required this.semanticsLabel,
     required this.onTap,
     required this.child,
+    this.expanded,
     super.key,
   });
 
   final String semanticsLabel;
   final VoidCallback? onTap;
   final Widget child;
+  final bool? expanded;
 
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
     excludeSemantics: true,
     button: true,
+    expanded: expanded,
     enabled: onTap != null,
     label: semanticsLabel,
     onTap: onTap,

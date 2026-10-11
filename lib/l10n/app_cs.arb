@@ -1499,6 +1499,7 @@
   "checkInRecordingNotSavedBody": "Nahrávku se nepodařilo uložit. Zkus to znovu, nebo check-in napiš.",
   "checkInRecordingNotSavedTitle": "Nahrávku se nepodařilo uložit",
   "checkInRemoveTake": "Odebrat nahrávku",
+  "checkInRowDetails": "Témata a příště",
   "checkInSaveBlockedEmpty": "Napiš pár slov, aby šlo uložit",
   "checkInSaveButton": "Uložit check-in",
   "checkInSaveShortButton": "Uložit",

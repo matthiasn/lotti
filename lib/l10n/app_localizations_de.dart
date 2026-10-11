@@ -2913,10 +2913,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agenten-Verknüpfungen';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
+  String get backfillRecordsAiConfigs => 'KI-Einstellungen';
 
   @override
-  String get backfillRecordsAiConfigs => 'KI-Einstellungen';
+  String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
 
   @override
   String get backfillRecordsDefinitions => 'Einstellungsdefinitionen';
@@ -3474,6 +3474,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInRemoveTake => 'Aufnahme entfernen';
+
+  @override
+  String get checkInRowDetails => 'Themen und nächstes Mal';
 
   @override
   String get checkInSaveBlockedEmpty => 'Ein paar Worte genügen zum Speichern';

@@ -100,9 +100,9 @@ sources:
     resource: ../../lib/features/relationships/ui/widgets/check_in_composer_header.dart
     title: CheckInComposerHeader — the pinned heading with its status line
     last_modified: 2026-09-13
-  - id: context-chips
-    resource: ../../lib/features/relationships/ui/widgets/check_in_context_chips.dart
-    title: CheckInContextChips — the composer's type · started · duration row
+  - id: context-pickers
+    resource: ../../lib/features/relationships/ui/widgets/check_in_pickers.dart
+    title: The check-in pickers — how, when and how it felt, for the form and the page
     last_modified: 2026-10-10
   - id: meta-summary-line
     resource: ../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart
@@ -323,8 +323,8 @@ width, and reads top to bottom:
   dashed muted pill *Edit check-in*, opening the composer for everything no
   read-out edits — topics, the notes for next time, the logged note — and
   the topics tag opens the same sheet, so nothing in the lane is a tag that
-  looks tappable and is not. The composer keeps `CheckInContextChips` —
-  round pills with a chevron, the lever grammar of a form. The top bar
+  looks tappable and is not. The form wears this same lane, its last
+  lever folding out the details instead. The top bar
   holds back alone, a `DesignSystemIconAction` with the chevron a task's
   page and the person hero lead back with.
 * **A faint rule, then the logged note** on the page itself, where a task
@@ -624,7 +624,7 @@ every date in Inconsolata; a monospace face spliced into Inter sentences was
 the single most foreign thing on the feature, where the journal and the task
 timer keep the UI face and stabilise digits with `numericBadgeFontFeatures`.
 The dates now do the same, the recorder's running clock included. Time-only
-labels (`relationshipTimeLabel`: the started chip, the post-call offer)
+labels (`relationshipTimeLabel`: the *Started* value, the post-call offer)
 are the same 24h `HH:mm` every other People timestamp ends in — they used
 to follow the device's clock like the time wheel does, and on a twelve-hour
 device the check-in page read `Sat 1 Aug · 12:44 PM` on the chip over
@@ -1649,7 +1649,7 @@ The composer's parts, top to bottom:
   resting subtitle, which would otherwise be re-read before a landing
   transcript, and never for a failure, which the callout beneath announces
   (its title is the next step), so one region speaks per event. Editing an existing check-in, the ladder starts at `with Pip`:
-  the chip row is the one source of its date. The close control
+  the *Started* row is the one source of its date. The close control
   is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
   tone). The
   status line is **tiered**, not truncated: a `DsTieredText` shows the
@@ -1700,13 +1700,8 @@ The composer's parts, top to bottom:
   line at the trailing edge (`_CaptionAndActions`), always so above
   `TextScales.large`. The keyboard-shortcut hint joins the caption only once
   there is something to save — beside a held Save it would be a promise the
-  footer contradicts. The *More* row's caption says what is set — a field's
-  name until it has a value, then the value (`Good · 2 topics · next time
-  noted`, from the form's `_moreCaption`) — and is a ladder too, shedding a
-  segment at a time so large text never slices a word; unfolded, *More* is
-  `subtitle1` and every section — the feeling, and the three inputs —
-  carries the same `subtitle2` heading one level under it, one `sectionGap`
-  apart. The empty field rests two lines tall in the desktop dialog and
+  footer contradicts. The empty field rests two lines tall in the desktop
+  dialog and
   three on the phone (`restMinLines`). The field paints no well of its own —
   the sheet's surface shows through, as in the app's other form sheets —
   and its frame is the shared `designSystemFieldBorderColor` hairline, the
@@ -1722,20 +1717,33 @@ The composer's parts, top to bottom:
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
   pass.
-* [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
-  type · started · duration as one wrapping chip row, each chip opening its
-  picker (the type through a `DsActionModal`), quiet while the recorder
-  owns the field. Opened from the post-call offer the chips
-  are prefilled and a caption beneath says where the numbers came from.
-* *More*: in the composer, optional sentiment, topics and next-time
-  guidance, folded unless the draft already carries any of them. Its header
-  is `subtitle2` in the medium ink — a disclosure, not the sheet's loudest
-  text — and it goes quiet and inert with the chips while the recorder
-  owns the sheet (`_MoreHeader.enabled`). Editing a saved check-in has no
-  fold: every section is laid out at once under `subtitle2` labels in the
-  high ink, the app's form-sheet field labels, since a disclosure that had
-  opened already over the fields the sheet was opened for disclosed
-  nothing. The three inputs are `DesignSystemTextInput(filled: false)`.
+* **The facts as the check-in page's own lane** —
+  [`CheckInMetaSummaryLine`](../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart),
+  the very widget the saved check-in shows, so what is set here is what the
+  page will show: set facts as square tags (the interaction's icon and kind,
+  the start from `checkInStartedLabelOf`, the duration, the feeling's
+  `sentimentGlyph` in its `sentimentColor`), unset ones offered as dashed
+  round pills in their own words (*Duration*, *How did it feel?*), and the
+  topics as the page's topics tag (`check-in-topics-tag`). That the feeling
+  is optional and never the agent's is said in its picker, under the
+  options, where it is chosen. Each fact opens the picker the check-in page
+  uses
+  ([`check_in_pickers.dart`](../../lib/features/relationships/ui/widgets/check_in_pickers.dart):
+  `showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
+  `showCheckInSentimentPicker`), and each is held — no tap — while the
+  recorder or a save owns the sheet. Opened from the post-call offer the
+  facts are prefilled, and a caption over them says where the numbers came
+  from.
+* **Topics and next time**: the lane's last lever (`leverLabel` /
+  `leverIcon` / `leverKey`, here *Topics and next time* with a chevron,
+  key `check-in-more`) where the page's lever reads *Edit check-in*. It
+  folds out the three text details, and starts open when editing, or when
+  the draft already holds any. Each detail is the design system's own
+  labelled field (`DesignSystemTextInput(label:, filled: false)`), one
+  `step5` apart under a `sectionGap`.
+* **While a take runs the recorder is the sheet**: the lane and the
+  details wait under it until it stops, as the recording sheet shows
+  nothing but its take, rather than standing greyed out beneath it.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* visible whenever saving is the
   next thing the user could do, and when it is held, why — on two lines
@@ -1784,7 +1792,7 @@ The composer's parts, top to bottom:
 
 **Leaving asks only when it would lose something.** Cancel, the header's
 close and the back gesture all go through the form's `_dismiss`: when the
-draft is clean — the narrative, the type · started · duration chips and
+draft is clean — the narrative, the *Type* · *Started* · *Duration* rows and
 every detail match what the composer opened with, and no take is in flight
 — it simply pops; when it is dirty it
 asks first, with a wording that says what happens to the audio: a running
@@ -1820,9 +1828,9 @@ sequenceDiagram
   H->>F: the published callback runs
 ```
 
-The *started* chip reads its time through `relationshipTimeLabel`, a pure
+The *Started* row reads its time through `relationshipTimeLabel`, a pure
 function of the time that always emits the feature's 24h `HH:mm` — the
-same clock every other People timestamp ends in, so the chip and the note
+same clock every other People timestamp ends in, so the row and the note
 stamp under it agree. It used to follow the device's twelve- or
 twenty-four-hour preference as `DesignSystemTimeWheel` does; the wheel is a
 transient editor, and on a twelve-hour device the page read two dialects a
@@ -1842,7 +1850,7 @@ saves, in create or edit mode.
 used by the journal date/time editor. It inherits the device's 12/24-hour
 preference and labels its semantics with the localized Started label. The
 chosen time preserves the selected day and is clamped to the current minute
-on today's date. The chip reads
+on today's date. The row reads
 `Now · HH:mm` while the value is the current minute and the relative day plus
 the time otherwise. *Duration* opens `showCheckInDurationPicker`
 ([check_in_duration_picker.dart](../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart)):
@@ -2130,18 +2138,18 @@ Four invariants hold regardless of what comes back:
   the recorder at work, an empty composer (no words and no take) or a save
   in flight. A transcript that is slow, or never comes, cannot cost the
   check-in.
-* **Words fill only the chips nobody chose.** See below.
+* **Words fill only the facts nobody chose.** See below.
 
-## Words that fill the chips
+## Words that fill the facts
 
 When a take's words land while the composer is open, `_fillFromDictation`
-hands the chips to
+hands the facts to
 [`fillCheckInContextFromTakes`](../../lib/features/relationships/model/check_in_dictation_fill.dart),
 a pure function that reads every take that has words, oldest first, for the
 check-in's start,
 length and channel — each field taking the newest take that names it, so a
 correction in a later take wins whichever transcript arrives first — and sets
-each one into its chip — type · started · duration — unless that chip is
+each one into its row — *Type* · *Started* · *Duration* — unless that fact is
 *held*.
 Nothing is read from the typed note, and sentiment is never filled (ADR
 0038).
@@ -2177,13 +2185,13 @@ stateDiagram-v2
   Dictated --> Held: the user picks it
 ```
 
-A chip is held once the user picks it through its picker. A composer opened
+A fact is held once the user picks it through its picker. A composer opened
 on a call or message placed from the person's page starts with the values
 `showCheckInForInteraction` handed in held: the start, the elapsed time, and
 the channel that came with that start — each measured, so each held only when
 it was handed in. A type the composer merely started from — how the two of you
-last connected, handed in without a start — is not held. While any chip holds a dictated value, a caption
-under the chips says so (`checkInSourceDictation`), as the post-call strip
+last connected, handed in without a start — is not held. While any row holds a dictated value, a caption
+over the facts says so (`checkInSourceDictation`), as the post-call strip
 does for a call. Words that land after the composer closed fill nothing: the
 check-in was saved with the values the user had when they pressed Save.
 

@@ -2888,10 +2888,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentlinks';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
+  String get backfillRecordsAiConfigs => 'AI-indstillinger';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-indstillinger';
+  String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
 
   @override
   String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';
@@ -3444,6 +3444,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInRemoveTake => 'Fjern optagelsen';
+
+  @override
+  String get checkInRowDetails => 'Emner og næste gang';
 
   @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';

@@ -1713,6 +1713,7 @@
   "checkInRecordingNotSavedBody": "A gravação não pôde ser guardada. Tenta de novo ou escreve o check-in.",
   "checkInRecordingNotSavedTitle": "Não foi possível guardar a gravação",
   "checkInRemoveTake": "Remover gravação",
+  "checkInRowDetails": "Temas e a próxima vez",
   "checkInSaveBlockedEmpty": "Acrescenta algumas palavras para guardar",
   "checkInSaveButton": "Guardar check-in",
   "checkInSaveShortButton": "Guardar",

@@ -1492,6 +1492,7 @@
   "checkInRecordingNotSavedBody": "Die Aufnahme konnte nicht gespeichert werden. Versuch es erneut oder tippe den Check-in ein.",
   "checkInRecordingNotSavedTitle": "Aufnahme konnte nicht gespeichert werden",
   "checkInRemoveTake": "Aufnahme entfernen",
+  "checkInRowDetails": "Themen und nächstes Mal",
   "checkInSaveBlockedEmpty": "Ein paar Worte genügen zum Speichern",
   "checkInSaveButton": "Check-in speichern",
   "checkInSaveShortButton": "Speichern",

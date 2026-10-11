@@ -7,7 +7,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
@@ -59,6 +59,16 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 }
 
 void main() {
+  /// A fact's label in the check-in form's lane.
+  String? tagLabel(WidgetTester tester, String key) => tester
+      .widget<DsPill>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(DsPill),
+        ),
+      )
+      .label;
+
   final startedAt = DateTime(2026, 8, 17, 11, 30);
   // The user comes back eleven minutes after leaving for the call.
   final now = DateTime(2026, 8, 17, 11, 41);
@@ -445,13 +455,9 @@ void main() {
       await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
-      // The type chip reads the interaction; no chip is "selected" — that
-      // grammar belongs to the sentiment row.
-      final typeChip = tester.widget<DesignSystemChip>(
-        find.byKey(const ValueKey('check-in-type')),
-      );
+      // The *How* row reads the interaction.
       expect(
-        typeChip.label,
+        tagLabel(tester, 'check-in-type'),
         'Call',
         reason:
             'the sheet must open on what actually happened, not on the '
@@ -525,10 +531,7 @@ void main() {
       await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
-      final typeChip = tester.widget<DesignSystemChip>(
-        find.byKey(const ValueKey('check-in-type')),
-      );
-      expect(typeChip.label, 'Message');
+      expect(tagLabel(tester, 'check-in-type'), 'Message');
     });
 
     testWidgets('leaves sentiment unset — the user judges how it felt, '
@@ -539,37 +542,8 @@ void main() {
       await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
-      await tester.tap(find.byKey(const ValueKey('check-in-more')));
-      await tester.pumpAndSettle();
-
-      // Interaction and sentiment both render as DesignSystemChips, so the
-      // sentiment row is identified by its labels rather than its type.
-      const sentimentLabels = {
-        'Delightful',
-        'Good',
-        'Neutral',
-        'Strained',
-        'Difficult',
-      };
-      List<DesignSystemChip> chips() => tester
-          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
-          .toList();
-
-      expect(
-        chips().map((chip) => chip.label).toSet(),
-        containsAll(sentimentLabels),
-        reason:
-            'guards the assertion below: the sentiment chips must '
-            'actually be on screen for "none selected" to mean anything',
-      );
-
-      final selectedLabels = chips()
-          .where((chip) => chip.selected)
-          .map((chip) => chip.label)
-          .toSet();
-
-      expect(selectedLabels.intersection(sentimentLabels), isEmpty);
+      // The *Feeling* row stays unset — never a feeling the app chose.
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'How did it feel?');
     });
   });
 

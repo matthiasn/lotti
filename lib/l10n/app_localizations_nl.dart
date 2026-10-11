@@ -2901,10 +2901,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentkoppelingen';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
+  String get backfillRecordsAiConfigs => 'AI-instellingen';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-instellingen';
+  String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
 
   @override
   String get backfillRecordsDefinitions => 'Instellingsdefinities';
@@ -3459,6 +3459,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInRemoveTake => 'Opname verwijderen';
+
+  @override
+  String get checkInRowDetails => 'Onderwerpen en volgende keer';
 
   @override
   String get checkInSaveBlockedEmpty =>

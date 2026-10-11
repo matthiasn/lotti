@@ -540,7 +540,7 @@ void main() {
       // Edit is held too: an edit sheet over a running recorder, with the
       // floating indicator hidden, was the one door left to the same leak.
       expect(headerTag(tester, 'check-in-detail-edit').onTap, isNull);
-      expect(headerTag(tester, 'check-in-topics').onTap, isNull);
+      expect(headerTag(tester, 'check-in-topics-tag').onTap, isNull);
       // And the header chips: a picker sheet over a running recorder was
       // the same leak through a different door.
       expect(
@@ -855,8 +855,8 @@ void main() {
     stubDetail(checkIn());
     await pump(tester);
 
-    expect(headerTag(tester, 'check-in-topics').label, 'krill contract');
-    await tester.tap(find.byKey(const ValueKey('check-in-topics')));
+    expect(headerTag(tester, 'check-in-topics-tag').label, 'krill contract');
+    await tester.tap(find.byKey(const ValueKey('check-in-topics-tag')));
     await tester.pumpAndSettle();
 
     expect(find.byType(CheckInCaptureForm), findsOneWidget);

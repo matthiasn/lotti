@@ -2898,10 +2898,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentlänkar';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
+  String get backfillRecordsAiConfigs => 'AI-inställningar';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-inställningar';
+  String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
 
   @override
   String get backfillRecordsDefinitions => 'Inställningsdefinitioner';
@@ -3453,6 +3453,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInRemoveTake => 'Ta bort inspelningen';
+
+  @override
+  String get checkInRowDetails => 'Ämnen och nästa gång';
 
   @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';

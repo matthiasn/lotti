@@ -1,9 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -11,77 +9,6 @@ import '../../../../widget_test_utils.dart';
 void main() {
   final calls = <String>[];
   setUp(calls.clear);
-
-  Future<void> pump(
-    WidgetTester tester, {
-    CheckInInteractionType type = CheckInInteractionType.call,
-    bool enabled = true,
-    bool hasDuration = false,
-  }) async {
-    // [hasDuration] only picks the label a real form would pass.
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        CheckInContextChips(
-          type: type,
-          startedLabel: 'Now · 14:55',
-          durationLabel: hasDuration ? '11 min' : 'Duration',
-          enabled: enabled,
-          onPickType: () => calls.add('type'),
-          onPickStart: () => calls.add('start'),
-          onPickDuration: () => calls.add('duration'),
-        ),
-      ),
-    );
-    await tester.pump();
-  }
-
-  DesignSystemChip chip(WidgetTester tester, String key) =>
-      tester.widget<DesignSystemChip>(find.byKey(ValueKey(key)));
-
-  testWidgets('reads the type, the start and the duration, and each chip '
-      'opens its own picker', (tester) async {
-    await pump(tester);
-
-    expect(chip(tester, 'check-in-type').label, 'Call');
-    expect(chip(tester, 'check-in-type').leadingIcon, LottiIcons.call);
-    // No chip is "selected": each holds a value, and the glyph says which.
-    expect(chip(tester, 'check-in-type').selected, isFalse);
-    expect(chip(tester, 'check-in-started').label, 'Now · 14:55');
-    expect(chip(tester, 'check-in-duration').label, 'Duration');
-
-    await tester.tap(find.byKey(const ValueKey('check-in-type')));
-    await tester.tap(find.byKey(const ValueKey('check-in-started')));
-    await tester.tap(find.byKey(const ValueKey('check-in-duration')));
-    expect(calls, ['type', 'start', 'duration']);
-  });
-
-  testWidgets('the semantics name what each chip changes', (tester) async {
-    await pump(tester, hasDuration: true);
-    expect(
-      chip(tester, 'check-in-type').semanticsLabel,
-      'Interaction: Call. Change',
-    );
-    expect(
-      chip(tester, 'check-in-started').semanticsLabel,
-      'Started: Now · 14:55. Change',
-    );
-    expect(
-      chip(tester, 'check-in-duration').semanticsLabel,
-      'Duration: 11 min. Change',
-    );
-  });
-
-  testWidgets('disabled chips stay visible and take no taps', (tester) async {
-    await pump(tester, enabled: false);
-    expect(find.byType(DesignSystemChip), findsNWidgets(3));
-    for (final key in [
-      'check-in-type',
-      'check-in-started',
-      'check-in-duration',
-    ]) {
-      expect(chip(tester, key).onPressed, isNull, reason: key);
-    }
-  });
 
   group('showCheckInTypePicker', () {
     /// Opens the picker and hands back a reader for what it resolved to,
@@ -143,13 +70,6 @@ void main() {
     });
   });
 
-  testWidgets('the composer row carries no feeling chip — the feeling sits '
-      'under More there', (tester) async {
-    await pump(tester);
-    expect(find.byKey(const ValueKey('check-in-sentiment-chip')), findsNothing);
-    expect(find.byType(DesignSystemChip), findsNWidgets(3));
-  });
-
   group('showCheckInSentimentPicker', () {
     Future<({CheckInSentiment? sentiment})? Function()> open(
       WidgetTester tester, {
@@ -193,6 +113,51 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(result(), (sentiment: CheckInSentiment.strained));
+    });
+
+    testWidgets('says, under the feelings, that the choice is optional and '
+        "never the agent's — where it is made, not as a row's value", (
+      tester,
+    ) async {
+      await open(tester, current: null);
+      final note = find.byKey(const ValueKey('check-in-sentiment-note'));
+      expect(
+        find.descendant(
+          of: note,
+          matching: find.text('Optional. Never filled in by the agent.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(note).dy,
+        greaterThanOrEqualTo(
+          tester
+              .getBottomLeft(
+                find.byKey(
+                  const ValueKey('check-in-sentiment-option-difficult'),
+                ),
+              )
+              .dy,
+        ),
+      );
+    });
+
+    testWidgets('the current feeling is the selected one to a screen reader', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await open(tester, current: CheckInSentiment.good);
+      Finder option(CheckInSentiment s) =>
+          find.byKey(ValueKey('check-in-sentiment-option-${s.name}'));
+      expect(
+        tester.getSemantics(option(CheckInSentiment.good)),
+        isSemantics(isSelected: true, isInMutuallyExclusiveGroup: true),
+      );
+      expect(
+        tester.getSemantics(option(CheckInSentiment.strained)),
+        isSemantics(isSelected: false, isInMutuallyExclusiveGroup: true),
+      );
+      semantics.dispose();
     });
 
     // A cleared feeling and a dismissed sheet must not look alike.

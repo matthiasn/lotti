@@ -4866,17 +4866,17 @@ abstract class AppLocalizations {
   /// **'Agent links'**
   String get backfillRecordsAgentLinks;
 
-  /// No description provided for @backfillRecordsConsumptionEvents.
-  ///
-  /// In en, this message translates to:
-  /// **'AI usage events'**
-  String get backfillRecordsConsumptionEvents;
-
   /// No description provided for @backfillRecordsAiConfigs.
   ///
   /// In en, this message translates to:
   /// **'AI settings'**
   String get backfillRecordsAiConfigs;
+
+  /// No description provided for @backfillRecordsConsumptionEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'AI usage events'**
+  String get backfillRecordsConsumptionEvents;
 
   /// No description provided for @backfillRecordsDefinitions.
   ///
@@ -5801,6 +5801,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove recording'**
   String get checkInRemoveTake;
+
+  /// Check-in form row that folds out the topics and the notes for next time.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics and next time'**
+  String get checkInRowDetails;
 
   /// No description provided for @checkInSaveBlockedEmpty.
   ///
