@@ -384,6 +384,35 @@ void main() {
   });
 
   test(
+    "a transcription recorded into the caller's work carries its task and "
+    'category',
+    () async {
+      final bench = registerInteractionCapture();
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(mockCloud, ['heard']);
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await svc.transcribe(
+        file.path,
+        attributionSession: AiAttributionSession(
+          id: 'transcript-work',
+          workType: AiWorkType.audioTranscription,
+          initiator: makeAiActor(),
+          trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+          startedAt: DateTime.utc(2026, 7, 19, 10),
+          taskId: 'task-1',
+          categoryId: 'category-1',
+        ),
+      );
+
+      final event = capturedEvents(bench).single;
+      expect(event.taskId, 'task-1');
+      expect(event.categoryId, 'category-1');
+    },
+  );
+
+  test(
     'attributed cloud provider failure reports recorded evidence',
     () async {
       final attribution = registerInteractionCapture();
@@ -1366,6 +1395,61 @@ void main() {
               impactCollector: any(named: 'impactCollector', that: isNotNull),
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        "joins the transcription's work: its attribution, task and "
+        'category, left open for the caller to finalize',
+        () async {
+          final bench = registerInteractionCapture();
+          final mockCloud = MockCloudInferenceRepository();
+          stubCorrection(mockCloud, [kubernetesCorrection]);
+          final dictionary = MockSpeechDictionaryRepository();
+          when(
+            () => dictionary.learnMisheardForms(any()),
+          ).thenAnswer((_) async => 1);
+          final svc = buildService(
+            repo: sharedRepo,
+            cloud: mockCloud,
+            journalDb: dictionaryOf([entry('Kubernetes')]),
+            dictionary: dictionary,
+          );
+
+          await svc.correctTranscript(
+            heard,
+            target: (provider: provider, model: editor),
+            attributionSession: AiAttributionSession(
+              id: 'transcript-work',
+              workType: AiWorkType.audioTranscription,
+              initiator: makeAiActor(),
+              trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+              startedAt: DateTime.utc(2026, 7, 19, 10),
+              taskId: 'task-1',
+              categoryId: 'category-1',
+            ),
+          );
+
+          final recorded = verify(
+            () => bench.service.recordInteraction(
+              attributionId: captureAny(named: 'attributionId'),
+              event: captureAny(named: 'event'),
+            ),
+          ).captured;
+          expect(recorded[0], 'transcript-work');
+          final event = recorded[1] as AiConsumptionEvent;
+          expect(event.taskId, 'task-1');
+          expect(event.categoryId, 'category-1');
+          verifyNever(() => bench.service.begin(any()));
+          verifyNever(
+            () => bench.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: any(named: 'outputs'),
+              status: any(named: 'status'),
+              errorCode: any(named: 'errorCode'),
+              errorSummary: any(named: 'errorSummary'),
+            ),
+          );
         },
       );
 

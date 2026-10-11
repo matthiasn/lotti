@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -144,12 +145,14 @@ dailyOsTranscriptCorrectionTargetProvider = FutureProvider(
 /// transcription ran on; without one, the route discovery chose is read
 /// back from [transcriber]. Otherwise, or when anything fails, the words as
 /// heard. Shared by the foreground capture and the outbox's retries, so a
-/// retried capture is corrected too.
+/// retried capture is corrected too. [attributionSession] is the
+/// transcription's, which the correction's cost joins.
 Future<String> correctHeardTranscript({
   required AudioTranscriptionService transcriber,
   required String transcript,
   required DailyOsTranscriptionTarget? heardBy,
   required Future<DailyOsTranscriptionTarget?> Function() correctionTarget,
+  AiAttributionSession? attributionSession,
 }) async {
   final DailyOsTranscriptionTarget? target;
   final DailyOsTranscriptionTarget route;
@@ -163,7 +166,11 @@ Future<String> correctHeardTranscript({
   if (!routesToSpeechToText(route.provider, route.model.providerModelId)) {
     return transcript;
   }
-  return transcriber.correctTranscript(transcript, target: target);
+  return transcriber.correctTranscript(
+    transcript,
+    target: target,
+    attributionSession: attributionSession,
+  );
 }
 
 /// The planner (day agent template) profile, resolved; null without one.

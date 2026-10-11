@@ -483,6 +483,7 @@ class CaptureController extends Notifier<CaptureState> {
       transcript: transcript,
       heardBy: transcriptionTarget,
       correctionTarget: _correctionTarget,
+      attributionSession: _transcriptAttribution?.pending,
     );
 
     final attached = outbox != null && claim != null

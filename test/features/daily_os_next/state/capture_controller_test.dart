@@ -1301,6 +1301,90 @@ void main() {
       verify(() => attribution.service.finalize(any())).called(1);
     });
 
+    test("the transcript's correction is recorded into the same work as "
+        'its transcription', () async {
+      _registerTranscriptAttribution();
+      AiConfigInferenceProvider provider(InferenceProviderType type) =>
+          AiConfig.inferenceProvider(
+                id: 'p-${type.name}',
+                baseUrl: 'http://localhost',
+                apiKey: 'k',
+                name: type.name,
+                createdAt: _now,
+                inferenceProviderType: type,
+              )
+              as AiConfigInferenceProvider;
+      AiConfigModel model(String id, List<Modality> input) =>
+          AiConfig.model(
+                id: 'm-$id',
+                name: id,
+                providerModelId: id,
+                inferenceProviderId: 'p',
+                createdAt: _now,
+                inputModalities: input,
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
+      final whisper = (
+        provider: provider(InferenceProviderType.whisper),
+        model: model('whisper-large-v3', const [Modality.audio]),
+      );
+      final editor = (
+        provider: provider(InferenceProviderType.genericOpenAi),
+        model: model('editor', const [Modality.text]),
+      );
+      when(
+        () => bench.transcriber.transcribe(
+          any(),
+          attributionSession: any(named: 'attributionSession'),
+          terminalizeAttributionFailure: false,
+          target: any(named: 'target'),
+        ),
+      ).thenAnswer((_) async => 'Moved the build to Cuban Eddies.');
+      when(
+        () => bench.transcriber.correctTranscript(
+          any(),
+          target: editor,
+          attributionSession: any(named: 'attributionSession'),
+        ),
+      ).thenAnswer((_) async => 'Moved the build to Kubernetes.');
+      bench.captureAttachedEntity();
+      final container = bench.aliveContainer(
+        outbox: bench.outbox,
+        transcriptionTarget: whisper,
+        correctionTarget: editor,
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(captureControllerProvider.notifier);
+
+      await controller.toggle();
+      await controller.toggle();
+
+      final transcribedInto =
+          verify(
+                () => bench.transcriber.transcribe(
+                  any(),
+                  attributionSession: captureAny(named: 'attributionSession'),
+                  terminalizeAttributionFailure: false,
+                  target: any(named: 'target'),
+                ),
+              ).captured.single
+              as AiAttributionSession;
+      final correctedInto = verify(
+        () => bench.transcriber.correctTranscript(
+          'Moved the build to Cuban Eddies.',
+          target: editor,
+          attributionSession: captureAny(named: 'attributionSession'),
+        ),
+      ).captured.single;
+      expect(correctedInto, same(transcribedInto));
+      expect(
+        container.read(captureControllerProvider).transcript,
+        'Moved the build to Kubernetes.',
+      );
+    });
+
     test('a journal update that throws terminalizes the carrier as a '
         'persistence failure', () async {
       final attribution = _registerTranscriptAttribution();

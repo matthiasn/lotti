@@ -1499,6 +1499,8 @@ void main() {
       );
       await tester.pump();
 
+      // No projection has arrived yet: an unknown, not a known absence of
+      // cost, so the pill stays.
       expect(find.byType(DsPill), findsOneWidget);
       expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
       expect(find.byType(NestedAiResponsesWidget), findsOneWidget);

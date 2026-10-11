@@ -390,6 +390,24 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       _ => null,
     };
 
+    // A recording's player carries its transcription cost pill beneath it.
+    // The pill hides itself when no cost was reported, gap included, so it
+    // rides with the player instead of taking a rhythm step of its own.
+    final audioSection = item is JournalAudio
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ?detailSection,
+              AiAttributionSummaryGroup(
+                label: context.messages.aiConsumptionTypeAudioTranscription,
+                attributions: _transcriptAttributions(item),
+                topSpacing: context.designTokens.spacing.cardItemSpacing,
+              ),
+            ],
+          )
+        : null;
+
     // Show labels for non-event, non-task entries (chips only, no header/edit button)
     final showLabels = item is! JournalEvent && item is! Task;
 
@@ -476,13 +494,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         // note (the editor) sits beneath it — the eye should land on the card's
         // defining value before any prose. For audio this also puts the player
         // above its transcript, matching the collapsible layout.
-        ?detailSection,
-        if (item is JournalAudio)
-          AiAttributionSummaryGroup(
-            label: context.messages.aiConsumptionTypeAudioTranscription,
-            attributions: _transcriptAttributions(item),
-            includeTopSpacing: false,
-          ),
+        ?(audioSection ?? detailSection),
         if (!shouldHideEditor)
           _bodyEditor(
             itemId,
@@ -526,13 +538,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     // Date is shown in the header, not duplicated here.
     final collapsibleBody = <Widget>[
       if (item is JournalImage) EntryImageWidget(item),
-      if (item is JournalAudio && detailSection != null) detailSection,
-      if (item is JournalAudio)
-        AiAttributionSummaryGroup(
-          label: context.messages.aiConsumptionTypeAudioTranscription,
-          attributions: _transcriptAttributions(item),
-          includeTopSpacing: false,
-        ),
+      ?audioSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
       if (!shouldHideEditor)
         _bodyEditor(
