@@ -868,6 +868,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 ? LottiIcons.chevronUp
                 : LottiIcons.chevronDown,
             leverKey: const ValueKey('check-in-more'),
+            leverExpanded: _moreOpen,
           ),
           // Open from the start when editing, or when the draft already
           // holds any: the design system's own labelled fields, unfilled on
@@ -903,6 +904,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 hintText: hint,
                 textCapitalization: TextCapitalization.sentences,
                 filled: false,
+                // Held while a save is on its way: the save already took
+                // these words, and a late edit would be lost.
+                enabled: !_isSaving,
               ),
             ],
           ],

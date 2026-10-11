@@ -605,6 +605,68 @@ void main() {
       expect(capturedSave().dateFrom, fixedNow);
     });
 
+    testWidgets('the details lever tells a reader whether it is open', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      final lever = find.byKey(const ValueKey('check-in-more'));
+      expect(
+        tester.getSemantics(lever),
+        isSemantics(label: 'Topics and next time', isExpanded: false),
+      );
+
+      await openMore(tester);
+      expect(
+        tester.getSemantics(lever),
+        isSemantics(label: 'Topics and next time', isExpanded: true),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('while a save is on its way the details take no edits, and '
+        'take them again when it fails', (tester) async {
+      final pending = Completer<CheckInEntry?>();
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenAnswer((_) => pending.future);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await openMore(tester);
+      await type(tester, 'Words.');
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pump();
+
+      bool editable(String key) => tester
+          .widget<DesignSystemTextInput>(find.byKey(ValueKey(key)))
+          .enabled;
+      for (final key in [
+        'check-in-topics',
+        'check-in-pay-attention',
+        'check-in-avoid',
+      ]) {
+        expect(editable(key), isFalse, reason: key);
+      }
+
+      pending.complete(null);
+      await tester.pumpAndSettle();
+      for (final key in [
+        'check-in-topics',
+        'check-in-pay-attention',
+        'check-in-avoid',
+      ]) {
+        expect(editable(key), isTrue, reason: key);
+      }
+    });
+
     testWidgets('a refused save keeps the sheet open and reports it', (
       tester,
     ) async {

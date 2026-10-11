@@ -54,13 +54,22 @@ Future<({CheckInSentiment? sentiment})?> showCheckInSentimentPicker({
     mainAxisSize: MainAxisSize.min,
     children: [
       for (final sentiment in CheckInSentiment.values)
-        DsActionRow(
-          key: ValueKey('check-in-sentiment-option-${sentiment.name}'),
-          title: checkInSentimentLabel(sheetContext, sentiment),
-          icon: sentiment == current
-              ? LottiIcons.radioSelected
-              : LottiIcons.radioUnselected,
-          onTap: () => Navigator.of(sheetContext).pop((sentiment: sentiment)),
+        // The radio glyph says which is chosen to the eye; the selected
+        // flag says it to a screen reader.
+        MergeSemantics(
+          child: Semantics(
+            selected: sentiment == current,
+            inMutuallyExclusiveGroup: true,
+            child: DsActionRow(
+              key: ValueKey('check-in-sentiment-option-${sentiment.name}'),
+              title: checkInSentimentLabel(sheetContext, sentiment),
+              icon: sentiment == current
+                  ? LottiIcons.radioSelected
+                  : LottiIcons.radioUnselected,
+              onTap: () =>
+                  Navigator.of(sheetContext).pop((sentiment: sentiment)),
+            ),
+          ),
         ),
       if (current != null)
         DsActionRow(

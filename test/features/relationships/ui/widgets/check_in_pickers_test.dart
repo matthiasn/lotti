@@ -142,6 +142,24 @@ void main() {
       );
     });
 
+    testWidgets('the current feeling is the selected one to a screen reader', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await open(tester, current: CheckInSentiment.good);
+      Finder option(CheckInSentiment s) =>
+          find.byKey(ValueKey('check-in-sentiment-option-${s.name}'));
+      expect(
+        tester.getSemantics(option(CheckInSentiment.good)),
+        isSemantics(isSelected: true, isInMutuallyExclusiveGroup: true),
+      );
+      expect(
+        tester.getSemantics(option(CheckInSentiment.strained)),
+        isSemantics(isSelected: false, isInMutuallyExclusiveGroup: true),
+      );
+      semantics.dispose();
+    });
+
     // A cleared feeling and a dismissed sheet must not look alike.
     testWidgets('Clear resolves to no feeling; dismissing to nothing', (
       tester,

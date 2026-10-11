@@ -36,6 +36,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     this.leverLabel,
     this.leverIcon = LottiIcons.edit,
     this.leverKey = const ValueKey('check-in-detail-edit'),
+    this.leverExpanded,
     super.key,
   });
 
@@ -65,6 +66,11 @@ class CheckInMetaSummaryLine extends StatelessWidget {
   final String? leverLabel;
   final IconData leverIcon;
   final Key leverKey;
+
+  /// Whether what the lever folds is open, where it is a disclosure (the
+  /// form's details) — told to a screen reader, which cannot see the
+  /// chevron turn; null where the lever opens a sheet.
+  final bool? leverExpanded;
 
   /// How many topics spell out before the rest fold into "+N" — the task
   /// labels tag's own count.
@@ -160,6 +166,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
           icon: leverIcon,
           label: leverLabel ?? messages.checkInEditTitle,
           onTap: live(onEdit),
+          expanded: leverExpanded,
         ),
       ],
     );
@@ -272,6 +279,7 @@ class _Offer extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.expanded,
     super.key,
   });
 
@@ -280,12 +288,17 @@ class _Offer extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
+  /// Whether what this offer folds is open; null where it is no
+  /// disclosure.
+  final bool? expanded;
+
   @override
   Widget build(BuildContext context) {
     final ink = context.designTokens.colors.text.mediumEmphasis;
     return _Tappable(
       semanticsLabel: semanticsLabel,
       onTap: onTap,
+      expanded: expanded,
       child: DsPill(
         variant: DsPillVariant.muted,
         label: label,
@@ -307,18 +320,21 @@ class _Tappable extends StatelessWidget {
     required this.semanticsLabel,
     required this.onTap,
     required this.child,
+    this.expanded,
     super.key,
   });
 
   final String semanticsLabel;
   final VoidCallback? onTap;
   final Widget child;
+  final bool? expanded;
 
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
     excludeSemantics: true,
     button: true,
+    expanded: expanded,
     enabled: onTap != null,
     label: semanticsLabel,
     onTap: onTap,
