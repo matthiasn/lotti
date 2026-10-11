@@ -158,8 +158,14 @@ The same rule applies to structural and operational surfaces:
 `DesignSystemProgressBar` owns determinate progress and its visible value,
 `DesignSystemSectionCard` owns grouped page content, and
 `DesignSystemTextInput` owns editable settings fields. Its default rounded
-shell uses `background.level01`; `shape: pill` uses `surface.enabled` and
-`radii.badgesPills` for conversation composers. `emphasizeTrailingIcon` gives
+shell uses `background.level01`; inside a modal sheet a field passes
+`filled: false`, so the sheet's raised `background.level02` shows through
+and the hairline alone frames it rather than punching a darker well into
+the sheet. `shape: pill` uses `surface.enabled` and
+`radii.badgesPills` for conversation composers. The hairline itself is
+`designSystemFieldBorderColor` — error, then focus (the accent, 2 px), then
+hover, then a faint high-emphasis ink at rest — which multi-line fields that
+draw their own frame (the check-in narrative field) share. `emphasizeTrailingIcon` gives
 the actionable suffix the interactive fill, preserving its tooltip, enabled
 state, and button semantics. Placeholder hints remain a single ellipsized line
 inside the field, including at enlarged text scales; their full accessible label

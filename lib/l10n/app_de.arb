@@ -1481,8 +1481,6 @@
   "checkInNarrativeHint": "Worüber habt ihr gesprochen? Eine Zeile reicht.",
   "checkInNoDuration": "Keine Dauer",
   "checkInOpenSettingsButton": "Einstellungen öffnen",
-  "checkInOrbResumeHint": "Tippen zum Fortsetzen",
-  "checkInOrbStopHint": "Tippen zum Stoppen",
   "checkInOrTypeHint": "Oder tipp es hier ein…",
   "checkInPayAttentionLabel": "Nächstes Mal achten auf",
   "checkInPreparingLabel": "Audio wird vorbereitet…",

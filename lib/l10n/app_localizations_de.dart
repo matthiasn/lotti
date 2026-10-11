@@ -3440,12 +3440,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Einstellungen öffnen';
 
   @override
-  String get checkInOrbResumeHint => 'Tippen zum Fortsetzen';
-
-  @override
-  String get checkInOrbStopHint => 'Tippen zum Stoppen';
-
-  @override
   String get checkInOrTypeHint => 'Oder tipp es hier ein…';
 
   @override

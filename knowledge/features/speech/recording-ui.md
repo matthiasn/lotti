@@ -33,6 +33,7 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 | Surface | Shows |
 |---------|-------|
 | Recording modal | The full visualizer (VU meter or orb), elapsed time, record/stop/discard |
+| Check-in composer and page | The same visualizer, clock and transport row as the modal ([`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart)), embedded in place by `CheckInInlineRecorder` |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
 | Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused — **no level, no time** |

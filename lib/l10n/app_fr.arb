@@ -1481,8 +1481,6 @@
   "checkInNarrativeHint": "De quoi avez-vous parlé ? Une ligne suffit.",
   "checkInNoDuration": "Sans durée",
   "checkInOpenSettingsButton": "Ouvrir les réglages",
-  "checkInOrbResumeHint": "Tape pour reprendre",
-  "checkInOrbStopHint": "Tape pour arrêter",
   "checkInOrTypeHint": "Ou écris-le ici…",
   "checkInPayAttentionLabel": "La prochaine fois, fais attention à",
   "checkInPreparingLabel": "Préparation de l’audio…",

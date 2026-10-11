@@ -5,6 +5,25 @@ import 'package:material_ui/material_ui.dart';
 
 const _kDefaultBorderAlpha = 0.12;
 
+/// The hairline every design-system field frame draws: the error ink on an
+/// error, the accent while focused, the medium ink under a pointer, and a
+/// faint high-emphasis ink at rest. Shared by [DesignSystemTextInput] and
+/// the multi-line fields that draw their own frame, so a sheet's fields
+/// can never disagree about what focus looks like.
+Color designSystemFieldBorderColor(
+  DsTokens tokens, {
+  bool focused = false,
+  bool hovered = false,
+  bool error = false,
+}) {
+  if (error) return tokens.colors.alert.error.defaultColor;
+  if (focused) return tokens.colors.interactive.enabled;
+  if (hovered) return tokens.colors.text.mediumEmphasis;
+  return tokens.colors.text.highEmphasis.withValues(
+    alpha: _kDefaultBorderAlpha,
+  );
+}
+
 enum DesignSystemTextInputSize {
   small,
   medium,
@@ -42,6 +61,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.trailingIconKey,
     this.enabled = true,
     this.readOnly = false,
+    this.filled = true,
     this.obscureText = false,
     this.autofocus = false,
     this.keyboardType,
@@ -109,6 +129,13 @@ class DesignSystemTextInput extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final String? semanticsLabel;
+
+  /// Whether a rounded field paints its own `background.level01` well. A
+  /// field inside a modal sheet passes false: the sheet's raised surface
+  /// shows through and the hairline alone carries the frame, so the sheet
+  /// is not punched with darker wells. Pill composers always keep their
+  /// conversation surface.
+  final bool filled;
 
   @override
   State<DesignSystemTextInput> createState() => _DesignSystemTextInputState();
@@ -213,7 +240,9 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
               // conversation surface. Both keep the typing area visible.
               color: widget.shape == DesignSystemTextInputShape.pill
                   ? tokens.colors.surface.enabled
-                  : tokens.colors.background.level01,
+                  : widget.filled
+                  ? tokens.colors.background.level01
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(
                 widget.shape == DesignSystemTextInputShape.pill
                     ? tokens.radii.badgesPills
@@ -416,18 +445,13 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     );
   }
 
-  Color _resolveBorderColor(DsTokens tokens, bool hasError) {
-    if (hasError) return tokens.colors.alert.error.defaultColor;
-    if (_focused && !widget.readOnly) {
-      return tokens.colors.interactive.enabled;
-    }
-    if (_hovered && !widget.readOnly) {
-      return tokens.colors.text.mediumEmphasis;
-    }
-    return tokens.colors.text.highEmphasis.withValues(
-      alpha: _kDefaultBorderAlpha,
-    );
-  }
+  Color _resolveBorderColor(DsTokens tokens, bool hasError) =>
+      designSystemFieldBorderColor(
+        tokens,
+        error: hasError,
+        focused: _focused && !widget.readOnly,
+        hovered: _hovered && !widget.readOnly,
+      );
 }
 
 class _TextInputSpec {

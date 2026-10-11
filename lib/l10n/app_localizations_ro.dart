@@ -3469,12 +3469,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Deschideți setările';
 
   @override
-  String get checkInOrbResumeHint => 'Apăsați pentru a relua';
-
-  @override
-  String get checkInOrbStopHint => 'Apăsați pentru a opri';
-
-  @override
   String get checkInOrTypeHint => 'Sau scrieți aici…';
 
   @override

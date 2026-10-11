@@ -3410,12 +3410,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Åbn indstillinger';
 
   @override
-  String get checkInOrbResumeHint => 'Tryk for at fortsætte';
-
-  @override
-  String get checkInOrbStopHint => 'Tryk for at stoppe';
-
-  @override
   String get checkInOrTypeHint => 'Eller skriv det her…';
 
   @override

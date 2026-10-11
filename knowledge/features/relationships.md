@@ -94,7 +94,7 @@ sources:
     last_modified: 2026-09-13
   - id: inline-recorder
     resource: ../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart
-    title: CheckInInlineRecorder — the recorder embedded in the field
+    title: CheckInInlineRecorder — the app's recorder, in the field and the page's bar
     last_modified: 2026-09-13
   - id: composer-header
     resource: ../../lib/features/relationships/ui/widgets/check_in_composer_header.dart
@@ -1707,12 +1707,17 @@ The composer's parts, top to bottom:
   `subtitle1` and every section — the feeling, and the three inputs —
   carries the same `subtitle2` heading one level under it, one `sectionGap`
   apart. The empty field rests two lines tall in the desktop dialog and
-  three on the phone (`restMinLines`). The field's accent hairline means
-  keyboard focus and nothing else, and it is the field's only frame: the
+  three on the phone (`restMinLines`). The field paints no well of its own —
+  the sheet's surface shows through, as in the app's other form sheets —
+  and its frame is the shared `designSystemFieldBorderColor` hairline, the
+  accent (at 2 px) meaning keyboard focus and nothing else; while the
+  recorder owns the box the frame steps back entirely, so the recorder sits
+  on the sheet like the recording sheet's. A take under the note is a
+  `surface.enabled` lift, not a darker well. The
   `TextField` inside silences every border the app's
   `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
-  ring the text inside the hairline): the red dot, the level strip, the
-  listening orb and the filled Stop say "live". The phases swap in place
+  ring the text inside the hairline): the red dot, the visualizer and the
+  red Stop say "live". The phases swap in place
   rather than through an
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
@@ -1722,11 +1727,15 @@ The composer's parts, top to bottom:
   picker (the type through a `DsActionModal`), quiet while the recorder
   owns the field. Opened from the post-call offer the chips
   are prefilled and a caption beneath says where the numbers came from.
-* *More*: optional sentiment, topics and next-time guidance, folded unless
-  the edited check-in already carries any of them. Its header is
-  `subtitle2` in the medium ink — a disclosure, not the sheet's loudest
+* *More*: in the composer, optional sentiment, topics and next-time
+  guidance, folded unless the draft already carries any of them. Its header
+  is `subtitle2` in the medium ink — a disclosure, not the sheet's loudest
   text — and it goes quiet and inert with the chips while the recorder
-  owns the sheet (`_MoreHeader.enabled`).
+  owns the sheet (`_MoreHeader.enabled`). Editing a saved check-in has no
+  fold: every section is laid out at once under `subtitle2` labels in the
+  high ink, the app's form-sheet field labels, since a disclosure that had
+  opened already over the fields the sheet was opened for disclosed
+  nothing. The three inputs are `DesignSystemTextInput(filled: false)`.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* visible whenever saving is the
   next thing the user could do, and when it is held, why — on two lines
@@ -1734,7 +1743,7 @@ The composer's parts, top to bottom:
   `CheckInStickyActions.height`. While the recorder is up
   (`CheckInSaveBlock.recording`) the bar keeps only that reason line
   (`check-in-actions-recording`, a zero-size box): the recorder carries
-  Discard · Pause and the orb, whose caption says what stops the take, and
+  its own discard ✕ · pause · Stop, and
   a second row of Cancel and a held Save beneath it was two action bars on
   one screen, Cancel and Discard a finger apart with different fates. Not
   even the reason line survives — a strip holding only "Stop recording to
@@ -1746,13 +1755,9 @@ The composer's parts, top to bottom:
   leads and Cancel sits centred beneath it, the design system's rule for
   every stacked bar; on the phone Cancel's label sits on the content column
   (`alignsLabelToLeadingEdge`), like the card's quiet actions. The
-  recorder's Discard · Pause sit centred under the orb — the orb is the one
-  Stop, as on Capture — and Discard is quiet: red on this surface is the
-  live dot alone, and neither secondary wears the accent because the orb,
-  the way forward, does. The level strip is Capture's: `220 × 24`
-  (`VoiceOrbZone.waveformWidth` / `waveformSlotHeight`) in its default teal,
-  centred over the orb, where a field-wide strip in the prose ink read as a
-  rule across the box. The clock
+  recorder's transport row is the recording sheet's own
+  (`RecordingTransportControls`): a grey ✕ that discards, an accent-tinted
+  pause, and the red Stop pill. The clock
   reads to assistive technology in words (`checkInSpokenClockLabel`: "23
   seconds"), as do the saved-audio captions. A held Save carries its reason
   as a semantics hint, so a reader landing on the control hears the next
@@ -2017,27 +2022,22 @@ and once the words are read back it touches the check-in holding them
 (`touchCheckInsHolding`), so the briefing catches up.
 
 The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
-embedded in the field rather than pushed as a sheet, and it wears the app's
-one voice anatomy rather than a meter of its own — Capture's: the short teal
-level strip (`VoiceOrbZone.waveformWidth` × `waveformSlotHeight`) over Daily
-OS's [`VoiceButton`](../../lib/features/daily_os_next/ui/widgets/voice_button.dart)
-— the orb `listening` on the recorder's dBFS while the take is live,
-`idle` while it is paused, `transcribing` (dimmed) while a stop is in
-flight, `step11` wide with the voice zone's `step5` air on both sides — the
-orb's verb in words beneath it (`checkInOrbStopHint` / `checkInOrbResumeHint`,
-Capture's caption slot: a glowing picture does not say "stop" to someone who
-has not learned it), then the running time in `relationshipTimestampStyle`
-over `heading3` — tabular figures in the UI face, the last monospace string
-on People gone — on a fixed `h:mm:ss` shape (so the tick never moves the
-controls beneath it), the line saying audio is on disk as it goes, and
-Discard · Pause centred beneath. The orb is the one Stop, as on Capture:
-tapped live it stops, tapped paused it resumes, and it is inert — no tap —
-before `record` has landed, after a refused start, and while a stop is in
-flight. A filled Stop pill beside it gave the surface two
-primaries for one act, which every reviewer read as a second app's recorder.
-Because the orb's shader and breath repeat for as long as the take is live,
-a test with a mounted recorder pumps by hand; `pumpAndSettle` never returns
-(the Capture surface's rule too). It drives the app-wide
+embedded in the field (and in the check-in page's action bar) rather than
+pushed as a sheet, and it wears the recording sheet's anatomy — the one a
+task's microphone opens — from
+[`recording_controls.dart`](../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
+the level visualizer the user chose (`RecordingLevelVisualizer`: the orb, or
+the VU meter), the running clock in the accent's monospace
+(`RecordingClock`, read to assistive technology in words), the transport row
+(`RecordingTransportControls`: discard ✕ asking in this surface's words,
+pause ⏸ / resume ▶, the red Stop), and the line saying audio is on disk as it
+goes, where the sheet keeps its one option. Every control is inert — no
+tap — before `record` has landed, after a refused start, and while a stop
+or a discard is in flight. A Capture-shaped recorder — the Daily OS orb
+doubling as Stop over Discard · Pause in words — read as a second app's
+recorder beside the sheet. Because the visualizer keeps moving while the
+take is live or paused, a test with a mounted recorder pumps by hand;
+`pumpAndSettle` never returns. It drives the app-wide
 `AudioRecorderController` the way the recording sheet does — `record` on
 mount with the person as `linkedId` and `transcriptionHandledByCaller`,
 `stop` handing back the entry id and the length the clock stood at — and

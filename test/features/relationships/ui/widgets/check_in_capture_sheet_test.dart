@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -133,7 +134,7 @@ void main() {
   final save = find.byKey(const ValueKey('check-in-save'));
   final dictate = find.byKey(const ValueKey('check-in-dictate'));
   final inlineRecorder = find.byKey(const ValueKey('check-in-inline-recorder'));
-  final stop = find.byKey(const ValueKey('check-in-recorder-orb'));
+  final stop = find.byKey(const ValueKey('check-in-recorder-stop'));
 
   String narrativeText(WidgetTester tester) =>
       tester.widget<TextField>(narrative).controller!.text;
@@ -733,6 +734,41 @@ void main() {
       expect(updated.meta.dateFrom, interactionTime);
       expect(updated.meta.dateTo, interactionTime);
       expect(updated.entryText?.plainText, 'Planned the trip.');
+    });
+
+    testWidgets('lays every section out at once, with no fold, under the '
+        "sheet's own field labels, and no field is a darker well", (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      // No disclosure over sections that are the reason to open the sheet.
+      expect(find.byKey(const ValueKey('check-in-more')), findsNothing);
+      expect(find.byKey(const ValueKey('check-in-sentiment-good')), findsOne);
+      final tokens = tester
+          .element(find.byType(CheckInCaptureForm))
+          .designTokens;
+      for (final label in ['How did it feel?', 'Topics']) {
+        expect(
+          tester.widget<Text>(find.text(label)).style?.color,
+          tokens.colors.text.highEmphasis,
+          reason: label,
+        );
+      }
+      for (final key in [
+        'check-in-topics',
+        'check-in-pay-attention',
+        'check-in-avoid',
+      ]) {
+        expect(
+          tester
+              .widget<DesignSystemTextInput>(find.byKey(ValueKey(key)))
+              .filled,
+          isFalse,
+          reason: key,
+        );
+      }
     });
 
     testWidgets('clearing the narrative holds Save again', (tester) async {
@@ -1646,7 +1682,11 @@ void main() {
       await startDictation(tester);
       expect(find.text('Recording'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-pause')));
-      await tester.pumpAndSettle();
+      // By hand: the shared visualizer keeps moving while paused, as the
+      // recording sheet's does, so the tree never settles.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(find.text('Paused'), findsOneWidget);
     });
 

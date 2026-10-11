@@ -761,13 +761,17 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
     _publish(context, recorderPaused: recorderPaused);
 
-    // One level under the fold trigger: the same size, the quieter ink.
+    // Under the composer's fold, one level below its trigger: the same size,
+    // the quieter ink. Editing has no fold, so the labels are the sheet's
+    // field labels — the high ink the app's other form sheets give theirs.
     Widget sectionLabel(String text) => Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
       child: Text(
         text,
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+          color: _isEditing
+              ? tokens.colors.text.highEmphasis
+              : tokens.colors.text.mediumEmphasis,
         ),
       ),
     );
@@ -861,15 +865,25 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ),
           ),
         ],
-        SizedBox(height: tokens.spacing.step3),
-        _MoreHeader(
-          open: _moreOpen,
-          caption: _moreCaption(messages),
-          enabled: speechIdle,
-          onToggle: () => setState(() => _moreOpen = !_moreOpen),
-        ),
-        if (_moreOpen) ...[
-          SizedBox(height: tokens.spacing.step4),
+        // Editing a saved check-in lays every section out at once: a
+        // disclosure that opened already, over fields that were the reason
+        // to open the sheet, was a header with nothing to disclose. The
+        // composer keeps the fold, since a new check-in needs none of them.
+        if (!_isEditing) ...[
+          SizedBox(height: tokens.spacing.step3),
+          _MoreHeader(
+            open: _moreOpen,
+            caption: _moreCaption(messages),
+            enabled: speechIdle,
+            onToggle: () => setState(() => _moreOpen = !_moreOpen),
+          ),
+        ],
+        if (_isEditing || _moreOpen) ...[
+          SizedBox(
+            height: _isEditing
+                ? tokens.spacing.sectionGap
+                : tokens.spacing.step4,
+          ),
           sectionLabel(messages.checkInSentimentLabel),
           Wrap(
             spacing: tokens.spacing.step3,
@@ -903,16 +917,17 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           // holds: the edit sheet opens on all of them at once.
           SizedBox(height: tokens.spacing.sectionGap),
 
-          // The design system's own input, so the folded details wear the
-          // same chrome as the rest of the sheet.
-          // Every section under More wears the same heading, one level
-          // under the fold trigger, so the inputs read as its children.
+          // The design system's own input, unfilled like the note above it,
+          // so no field is a darker well punched into the sheet. Every
+          // section wears the same heading, one level under the fold
+          // trigger, so the inputs read as its children.
           sectionLabel(messages.checkInTopicsLabel),
           DesignSystemTextInput(
             key: const ValueKey('check-in-topics'),
             controller: _topicsController,
             semanticsLabel: messages.checkInTopicsLabel,
             hintText: messages.checkInTopicsHint,
+            filled: false,
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           sectionLabel(messages.checkInPayAttentionLabel),
@@ -921,6 +936,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             controller: _payAttentionController,
             semanticsLabel: messages.checkInPayAttentionLabel,
             textCapitalization: TextCapitalization.sentences,
+            filled: false,
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           sectionLabel(messages.checkInAvoidLabel),
@@ -929,6 +945,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             controller: _avoidController,
             semanticsLabel: messages.checkInAvoidLabel,
             textCapitalization: TextCapitalization.sentences,
+            filled: false,
           ),
         ],
         _BarSlack(handle: widget.handle),

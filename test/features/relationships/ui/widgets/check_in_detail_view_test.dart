@@ -478,7 +478,7 @@ void main() {
       }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
 
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -638,7 +638,7 @@ void main() {
       final backs = await startRecording(tester);
       final gate = Completer<void>();
       recorder.stopGate = gate;
-      await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
       await tester.pump();
       expect(recorder.stopCalls, 1);
 
