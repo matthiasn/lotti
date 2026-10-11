@@ -5808,18 +5808,6 @@ abstract class AppLocalizations {
   /// **'Topics and next time'**
   String get checkInRowDetails;
 
-  /// Check-in form row value when no length has been picked yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Not set'**
-  String get checkInRowNotSet;
-
-  /// Check-in form row label: the kind of interaction (call, message, in person).
-  ///
-  /// In en, this message translates to:
-  /// **'Type'**
-  String get checkInRowType;
-
   /// No description provided for @checkInSaveBlockedEmpty.
   ///
   /// In en, this message translates to:

@@ -1493,8 +1493,6 @@
   "checkInRecordingNotSavedTitle": "Aufnahme konnte nicht gespeichert werden",
   "checkInRemoveTake": "Aufnahme entfernen",
   "checkInRowDetails": "Themen und nächstes Mal",
-  "checkInRowNotSet": "Nicht festgelegt",
-  "checkInRowType": "Art",
   "checkInSaveBlockedEmpty": "Ein paar Worte genügen zum Speichern",
   "checkInSaveButton": "Check-in speichern",
   "checkInSaveShortButton": "Speichern",

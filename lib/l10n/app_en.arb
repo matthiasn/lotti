@@ -2246,14 +2246,6 @@
   "@checkInRowDetails": {
     "description": "Check-in form row that folds out the topics and the notes for next time."
   },
-  "checkInRowNotSet": "Not set",
-  "@checkInRowNotSet": {
-    "description": "Check-in form row value when no length has been picked yet."
-  },
-  "checkInRowType": "Type",
-  "@checkInRowType": {
-    "description": "Check-in form row label: the kind of interaction (call, message, in person)."
-  },
   "checkInSaveBlockedEmpty": "Add a few words to save",
   "checkInSaveButton": "Save check-in",
   "checkInSaveShortButton": "Save",

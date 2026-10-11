@@ -12,9 +12,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -23,6 +23,7 @@ import 'package:lotti/features/relationships/state/check_in_duration_suggestions
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -121,10 +122,15 @@ void main() {
         meta: testRelationship.meta.copyWith(categoryId: categoryId),
       );
 
-  /// A settings row's value — the subtitle under its name.
-  String? rowValue(WidgetTester tester, String key) => tester
-      .widget<DesignSystemSelectionRow>(find.byKey(ValueKey(key)))
-      .subtitle;
+  /// A fact's label in the form's lane — the check-in page's own.
+  String? tagLabel(WidgetTester tester, String key) => tester
+      .widget<DsPill>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(DsPill),
+        ),
+      )
+      .label;
 
   /// *How it felt*: opens the row's picker and chooses [sentiment], or
   /// *Clear* when null.
@@ -132,7 +138,7 @@ void main() {
     WidgetTester tester,
     CheckInSentiment? sentiment,
   ) async {
-    final row = find.byKey(const ValueKey('check-in-sentiment'));
+    final row = find.byKey(const ValueKey('check-in-sentiment-chip'));
     await tester.ensureVisible(row);
     await tester.tap(row);
     await tester.pumpAndSettle();
@@ -427,11 +433,11 @@ void main() {
   });
 
   group('the composer at rest', () {
-    testWidgets('the details row says what is set, never the field names '
-        'its title already says', (tester) async {
+    testWidgets('topics typed into the details show in the lane as the '
+        "page's topics tag, folded or not", (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      expect(rowValue(tester, 'check-in-more'), 'Not set');
+      expect(find.byKey(const ValueKey('check-in-topics-tag')), findsNothing);
 
       await openMore(tester);
       await tester.enterText(
@@ -439,56 +445,49 @@ void main() {
         'launch window, krill',
       );
       await tester.pump();
-      expect(rowValue(tester, 'check-in-more'), '2 topics');
-
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-pay-attention')),
-        'the freeze',
-      );
-      await tester.pump();
-      expect(rowValue(tester, 'check-in-more'), '2 topics · next time noted');
+      expect(tagLabel(tester, 'check-in-topics-tag'), 'launch window, krill');
     });
 
-    testWidgets('the note leads, the four facts follow as ruled settings '
-        'rows, the details start folded, and Save waits for words and says '
-        'so', (tester) async {
+    testWidgets("the note leads, then the check-in page's own fact lane — "
+        'set facts as square tags, unset ones offered, the details fold its '
+        'last lever — and Save waits for words and says so', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      // The note, then How · When · How long · How it felt · the details,
-      // top to bottom — the app's create-form order.
-      final rows = [
+      // The page's lane, not a form's look-alike: what is set here is what
+      // the saved check-in shows.
+      final lane = find.byType(CheckInMetaSummaryLine);
+      expect(lane, findsOneWidget);
+      expect(
+        tester.getTopLeft(lane).dy,
+        greaterThan(tester.getBottomLeft(narrative).dy),
+      );
+      for (final key in [
         'check-in-type',
         'check-in-started',
         'check-in-duration',
-        'check-in-sentiment',
+        'check-in-sentiment-chip',
         'check-in-more',
-      ];
-      var above = tester.getBottomLeft(narrative).dy;
-      for (final key in rows) {
-        final top = tester.getTopLeft(find.byKey(ValueKey(key))).dy;
-        expect(top, greaterThan(above), reason: key);
-        above = top;
-      }
-      expect(rowValue(tester, 'check-in-type'), 'In person');
-      // Every fact a noun, as the app's create-form rows are named.
-      for (final (key, title) in [
-        ('check-in-type', 'Type'),
-        ('check-in-started', 'Started'),
-        ('check-in-duration', 'Duration'),
-        ('check-in-sentiment', 'Feeling'),
       ]) {
         expect(
-          tester
-              .widget<DesignSystemSelectionRow>(find.byKey(ValueKey(key)))
-              .title,
-          title,
+          find.descendant(of: lane, matching: find.byKey(ValueKey(key))),
+          findsOneWidget,
           reason: key,
         );
       }
-      // Unset reads alike on every fact.
-      expect(rowValue(tester, 'check-in-duration'), 'Not set');
-      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
+      DsPill pill(String key) => tester.widget<DsPill>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(DsPill),
+        ),
+      );
+      expect(tagLabel(tester, 'check-in-type'), 'In person');
+      expect(pill('check-in-type').shape, DsPillShape.tag);
+      // Unset facts are offers on the dashed round pill, in their own words.
+      expect(tagLabel(tester, 'check-in-duration'), 'Duration');
+      expect(pill('check-in-duration').variant, DsPillVariant.muted);
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'How did it feel?');
+      expect(tagLabel(tester, 'check-in-more'), 'Topics and next time');
       expect(find.byKey(const ValueKey('check-in-topics')), findsNothing);
       expect(saveEnabled(tester), isFalse);
       expect(saveReason(tester), 'Add a few words to save');
@@ -520,10 +519,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
       await tester.pumpAndSettle();
-      expect(rowValue(tester, 'check-in-type'), 'Call');
+      expect(tagLabel(tester, 'check-in-type'), 'Call');
 
       await pickFeeling(tester, CheckInSentiment.good);
-      expect(rowValue(tester, 'check-in-sentiment'), 'Good');
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'Good');
 
       await type(tester, 'Talked about the interview.');
       await openMore(tester);
@@ -558,7 +557,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
-      expect(rowValue(tester, 'check-in-type'), 'In person');
+      expect(tagLabel(tester, 'check-in-type'), 'In person');
     });
 
     testWidgets('sentiment stays unset unless the user picks one, and Clear '
@@ -575,14 +574,14 @@ void main() {
       // feeling tag does.
       final glyph = tester.widget<Icon>(
         find.descendant(
-          of: find.byKey(const ValueKey('check-in-sentiment')),
+          of: find.byKey(const ValueKey('check-in-sentiment-chip')),
           matching: find.byIcon(LottiIcons.moodGood),
         ),
       );
       expect(glyph.color, sentimentColor(tokens, CheckInSentiment.good));
 
       await pickFeeling(tester, null);
-      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'How did it feel?');
       await tapSave(tester);
 
       final saved = capturedSave();
@@ -771,9 +770,10 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // The same structure as a new check-in, already open: the group keeps
-      // its heading and says what it holds.
-      expect(rowValue(tester, 'check-in-more'), '2 topics · next time noted');
+      // The same lane as a new check-in, the details already open: the
+      // lever says so, and the topics show as the page's tag.
+      expect(tagLabel(tester, 'check-in-more'), 'Topics and next time');
+      expect(tagLabel(tester, 'check-in-topics-tag'), 'travel, work');
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('check-in-more')),
@@ -781,7 +781,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(rowValue(tester, 'check-in-sentiment'), 'Good');
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'Good');
       for (final (key, label) in [
         ('check-in-topics', 'Topics'),
         ('check-in-pay-attention', 'Next time, pay attention to'),
@@ -894,17 +894,16 @@ void main() {
       expect(capturedSave().dateFrom, fixedNow);
     });
 
-    testWidgets('tapping the Started row opens the date picker', (
+    testWidgets('tapping the start tag opens the date picker', (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // The row's own name, then the picker's title over it.
-      expect(find.text('Started'), findsOneWidget);
+      expect(find.text('Started'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-started')));
       await tester.pumpAndSettle();
-      expect(find.text('Started'), findsNWidgets(2));
+      expect(find.text('Started'), findsOneWidget);
     });
 
     testWidgets('delete asks for confirmation, then deletes and closes', (
@@ -1245,7 +1244,7 @@ void main() {
       expect(narrativeText(tester), 'Called on the way home.');
       // Words that name no start, length or channel move no fact — and the
       // note's own "Called" is never read.
-      expect(rowValue(tester, 'check-in-duration'), 'Not set');
+      expect(tagLabel(tester, 'check-in-duration'), 'Duration');
       expect(
         find.byKey(const ValueKey('check-in-dictation-strip')),
         findsNothing,
@@ -1878,7 +1877,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
       await tester.pumpAndSettle();
-      expect(rowValue(tester, 'check-in-type'), 'Call');
+      expect(tagLabel(tester, 'check-in-type'), 'Call');
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
@@ -2342,7 +2341,7 @@ void main() {
         'length that is then persisted as the end time', (tester) async {
       await tester.pumpWidget(buildFormWithRanking());
       await tester.pumpAndSettle();
-      expect(rowValue(tester, 'check-in-duration'), 'Not set');
+      expect(tagLabel(tester, 'check-in-duration'), 'Duration');
 
       await tester.tap(find.byKey(const ValueKey('check-in-duration')));
       await tester.pumpAndSettle();
@@ -2351,7 +2350,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(rowValue(tester, 'check-in-duration'), '45 min');
+      expect(tagLabel(tester, 'check-in-duration'), '45 min');
 
       await type(tester, 'Words.');
       await tapSave(tester);
@@ -2380,7 +2379,7 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      expect(rowValue(tester, 'check-in-duration'), 'Not set');
+      expect(tagLabel(tester, 'check-in-duration'), 'Duration');
     });
 
     testWidgets('a prefilled duration is persisted as the end time, so the '

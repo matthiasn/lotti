@@ -3479,12 +3479,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInRowDetails => 'Themen und nächstes Mal';
 
   @override
-  String get checkInRowNotSet => 'Nicht festgelegt';
-
-  @override
-  String get checkInRowType => 'Art';
-
-  @override
   String get checkInSaveBlockedEmpty => 'Ein paar Worte genügen zum Speichern';
 
   @override

@@ -33,6 +33,9 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     this.sentiment,
     this.topics = const [],
     this.enabled = true,
+    this.leverLabel,
+    this.leverIcon = LottiIcons.edit,
+    this.leverKey = const ValueKey('check-in-detail-edit'),
     super.key,
   });
 
@@ -56,6 +59,12 @@ class CheckInMetaSummaryLine extends StatelessWidget {
   /// False while a take is live: the facts stay readable, fade as one lane
   /// — the recorder's own inert treatment — and take no tap.
   final bool enabled;
+
+  /// The closing lever's words — *Edit check-in* on the saved page, where it
+  /// opens the edit sheet; the form names its details fold instead.
+  final String? leverLabel;
+  final IconData leverIcon;
+  final Key leverKey;
 
   /// How many topics spell out before the rest fold into "+N" — the task
   /// labels tag's own count.
@@ -136,7 +145,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // tappable and are not.
         if (topics.isNotEmpty)
           _Fact(
-            key: const ValueKey('check-in-topics'),
+            key: const ValueKey('check-in-topics-tag'),
             semanticsLabel:
                 '${messages.checkInTopicsLabel}: ${topics.join(', ')}',
             icon: LottiIcons.label,
@@ -146,10 +155,10 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // The lane's one lever, where a task's *Details* sits: the dashed,
         // fully-rounded pill, so a fact and a control never look alike.
         _Offer(
-          key: const ValueKey('check-in-detail-edit'),
-          semanticsLabel: messages.checkInEditTitle,
-          icon: LottiIcons.edit,
-          label: messages.checkInEditTitle,
+          key: leverKey,
+          semanticsLabel: leverLabel ?? messages.checkInEditTitle,
+          icon: leverIcon,
+          label: leverLabel ?? messages.checkInEditTitle,
           onTap: live(onEdit),
         ),
       ],

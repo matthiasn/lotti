@@ -7,7 +7,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
@@ -59,10 +59,15 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 }
 
 void main() {
-  /// A settings row's value in the check-in form.
-  String? rowValue(WidgetTester tester, String key) => tester
-      .widget<DesignSystemSelectionRow>(find.byKey(ValueKey(key)))
-      .subtitle;
+  /// A fact's label in the check-in form's lane.
+  String? tagLabel(WidgetTester tester, String key) => tester
+      .widget<DsPill>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(DsPill),
+        ),
+      )
+      .label;
 
   final startedAt = DateTime(2026, 8, 17, 11, 30);
   // The user comes back eleven minutes after leaving for the call.
@@ -452,7 +457,7 @@ void main() {
 
       // The *How* row reads the interaction.
       expect(
-        rowValue(tester, 'check-in-type'),
+        tagLabel(tester, 'check-in-type'),
         'Call',
         reason:
             'the sheet must open on what actually happened, not on the '
@@ -526,7 +531,7 @@ void main() {
       await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
-      expect(rowValue(tester, 'check-in-type'), 'Message');
+      expect(tagLabel(tester, 'check-in-type'), 'Message');
     });
 
     testWidgets('leaves sentiment unset — the user judges how it felt, '
@@ -538,7 +543,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The *Feeling* row stays unset — never a feeling the app chose.
-      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
+      expect(tagLabel(tester, 'check-in-sentiment-chip'), 'How did it feel?');
     });
   });
 

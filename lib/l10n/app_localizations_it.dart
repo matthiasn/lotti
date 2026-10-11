@@ -3493,12 +3493,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInRowDetails => 'Argomenti e la prossima volta';
 
   @override
-  String get checkInRowNotSet => 'Non impostato';
-
-  @override
-  String get checkInRowType => 'Tipo';
-
-  @override
   String get checkInSaveBlockedEmpty => 'Aggiungi qualche parola per salvare';
 
   @override

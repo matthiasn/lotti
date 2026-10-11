@@ -1500,8 +1500,6 @@
   "checkInRecordingNotSavedTitle": "Nahrávku se nepodařilo uložit",
   "checkInRemoveTake": "Odebrat nahrávku",
   "checkInRowDetails": "Témata a příště",
-  "checkInRowNotSet": "Nenastaveno",
-  "checkInRowType": "Typ",
   "checkInSaveBlockedEmpty": "Napiš pár slov, aby šlo uložit",
   "checkInSaveButton": "Uložit check-in",
   "checkInSaveShortButton": "Uložit",

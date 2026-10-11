@@ -1,25 +1,7 @@
 part of 'check_in_capture_sheet.dart';
 
-/// Check-in form helpers that write no state themselves: the details row's value, dirtiness, dismissal, publishing, transcription and label routing. State writes stay in the State (the repo's extension-split rule).
+/// Check-in form helpers that write no state themselves: dirtiness, dismissal, publishing, transcription and label routing. State writes stay in the State (the repo's extension-split rule).
 extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
-  /// The details row's value: what is set — `2 topics · next time noted` —
-  /// or *Not set*. Never the field names again: the row's title says those.
-  String _moreCaption(AppLocalizations messages) {
-    final topics = _topicsController.text
-        .split(',')
-        .map((topic) => topic.trim())
-        .where((topic) => topic.isNotEmpty)
-        .length;
-    final nextTime =
-        _payAttentionController.text.trim().isNotEmpty ||
-        _avoidController.text.trim().isNotEmpty;
-    final set = [
-      if (topics > 0) messages.checkInMoreCaptionTopicsCount(topics),
-      if (nextTime) messages.checkInMoreCaptionNextTimeSet,
-    ];
-    return set.isEmpty ? messages.checkInRowNotSet : set.join(' · ');
-  }
-
   /// Whether leaving now would lose something: text, details or context
   /// that differ from what the composer opened with, or a recording.
   bool get _isDirty {

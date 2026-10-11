@@ -3449,12 +3449,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInRowDetails => 'Emner og næste gang';
 
   @override
-  String get checkInRowNotSet => 'Ikke angivet';
-
-  @override
-  String get checkInRowType => 'Type';
-
-  @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
 
   @override

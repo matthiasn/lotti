@@ -3458,12 +3458,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInRowDetails => 'Ämnen och nästa gång';
 
   @override
-  String get checkInRowNotSet => 'Inte angivet';
-
-  @override
-  String get checkInRowType => 'Typ';
-
-  @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
 
   @override

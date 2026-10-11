@@ -3464,12 +3464,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInRowDetails => 'Onderwerpen en volgende keer';
 
   @override
-  String get checkInRowNotSet => 'Niet ingesteld';
-
-  @override
-  String get checkInRowType => 'Soort';
-
-  @override
   String get checkInSaveBlockedEmpty =>
       'Voeg een paar woorden toe om op te slaan';
 

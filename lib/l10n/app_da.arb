@@ -1715,8 +1715,6 @@
   "checkInRecordingNotSavedTitle": "Optagelsen kunne ikke gemmes",
   "checkInRemoveTake": "Fjern optagelsen",
   "checkInRowDetails": "Emner og næste gang",
-  "checkInRowNotSet": "Ikke angivet",
-  "checkInRowType": "Type",
   "checkInSaveBlockedEmpty": "Tilføj et par ord for at gemme",
   "checkInSaveButton": "Gem check-in",
   "checkInSaveShortButton": "Gem",

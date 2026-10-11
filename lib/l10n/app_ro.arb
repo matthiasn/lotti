@@ -1493,8 +1493,6 @@
   "checkInRecordingNotSavedTitle": "Înregistrarea nu a putut fi salvată",
   "checkInRemoveTake": "Eliminați înregistrarea",
   "checkInRowDetails": "Subiecte și data viitoare",
-  "checkInRowNotSet": "Nesetat",
-  "checkInRowType": "Tip",
   "checkInSaveBlockedEmpty": "Adăugați câteva cuvinte pentru a salva",
   "checkInSaveButton": "Salvați check-in-ul",
   "checkInSaveShortButton": "Salvați",

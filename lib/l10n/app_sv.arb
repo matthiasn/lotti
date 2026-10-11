@@ -1715,8 +1715,6 @@
   "checkInRecordingNotSavedTitle": "Inspelningen kunde inte sparas",
   "checkInRemoveTake": "Ta bort inspelningen",
   "checkInRowDetails": "Ämnen och nästa gång",
-  "checkInRowNotSet": "Inte angivet",
-  "checkInRowType": "Typ",
   "checkInSaveBlockedEmpty": "Lägg till några ord för att spara",
   "checkInSaveButton": "Spara avstämning",
   "checkInSaveShortButton": "Spara",

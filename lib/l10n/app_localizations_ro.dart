@@ -3508,12 +3508,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInRowDetails => 'Subiecte și data viitoare';
 
   @override
-  String get checkInRowNotSet => 'Nesetat';
-
-  @override
-  String get checkInRowType => 'Tip';
-
-  @override
   String get checkInSaveBlockedEmpty =>
       'Adăugați câteva cuvinte pentru a salva';
 

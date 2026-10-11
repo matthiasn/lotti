@@ -1493,8 +1493,6 @@
   "checkInRecordingNotSavedTitle": "L’enregistrement n’a pas pu être sauvegardé",
   "checkInRemoveTake": "Retirer l'enregistrement",
   "checkInRowDetails": "Sujets et la prochaine fois",
-  "checkInRowNotSet": "Non défini",
-  "checkInRowType": "Type",
   "checkInSaveBlockedEmpty": "Ajoute quelques mots pour enregistrer",
   "checkInSaveButton": "Enregistrer le check-in",
   "checkInSaveShortButton": "Enregistrer",

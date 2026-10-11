@@ -58,7 +58,7 @@ void main() {
     'check-in-started',
     'check-in-duration',
     'check-in-sentiment-chip',
-    'check-in-topics',
+    'check-in-topics-tag',
   ];
 
   testWidgets('every set fact is a square-cornered task read-out that opens '
@@ -72,7 +72,7 @@ void main() {
       ('check-in-started', 'Sat 1 Aug · 12:44'),
       ('check-in-duration', '11 min'),
       ('check-in-sentiment-chip', 'Good'),
-      ('check-in-topics', 'krill contract, launch'),
+      ('check-in-topics-tag', 'krill contract, launch'),
     ]) {
       final pill = tag(tester, key);
       expect(pill.label, label);
@@ -85,7 +85,7 @@ void main() {
     // The neutral facts wear the task lane's filled, bordered shell.
     expect(tag(tester, 'check-in-type').variant, DsPillVariant.filled);
     expect(tag(tester, 'check-in-type').bordered, isTrue);
-    expect(glyph(tester, 'check-in-topics').icon, LottiIcons.label);
+    expect(glyph(tester, 'check-in-topics-tag').icon, LottiIcons.label);
     // The lane ends on its one lever, the task's dashed round Details pill.
     final edit = tag(tester, 'check-in-detail-edit');
     expect(edit.variant, DsPillVariant.muted);
@@ -94,7 +94,7 @@ void main() {
     expect(
       tester.getTopLeft(find.byKey(const ValueKey('check-in-detail-edit'))).dx,
       greaterThan(
-        tester.getTopLeft(find.byKey(const ValueKey('check-in-topics'))).dx,
+        tester.getTopLeft(find.byKey(const ValueKey('check-in-topics-tag'))).dx,
       ),
     );
 
@@ -113,7 +113,7 @@ void main() {
       ('check-in-started', 'start'),
       ('check-in-duration', 'duration'),
       ('check-in-sentiment-chip', 'sentiment'),
-      ('check-in-topics', 'edit'),
+      ('check-in-topics-tag', 'edit'),
       ('check-in-detail-edit', 'edit'),
     ]) {
       final target = tester.getRect(find.byKey(ValueKey(key)));
@@ -152,12 +152,12 @@ void main() {
     tester,
   ) async {
     await pump(tester, topics: const ['krill', 'launch', 'pad 3', 'freeze']);
-    expect(tag(tester, 'check-in-topics').label, 'krill, launch +2');
+    expect(tag(tester, 'check-in-topics-tag').label, 'krill, launch +2');
   });
 
   testWidgets('without topics there is no topics tag', (tester) async {
     await pump(tester, topics: const []);
-    expect(find.byKey(const ValueKey('check-in-topics')), findsNothing);
+    expect(find.byKey(const ValueKey('check-in-topics-tag')), findsNothing);
     expect(find.byKey(const ValueKey('check-in-detail-edit')), findsOneWidget);
   });
 
@@ -235,7 +235,7 @@ void main() {
     ]) {
       expect(tag(tester, key).labelColor, text.highEmphasis, reason: key);
     }
-    expect(tag(tester, 'check-in-topics').labelColor, text.mediumEmphasis);
+    expect(tag(tester, 'check-in-topics-tag').labelColor, text.mediumEmphasis);
     expect(tag(tester, 'check-in-detail-edit').labelColor, text.mediumEmphasis);
   });
 
@@ -247,7 +247,7 @@ void main() {
     for (final (key, label) in [
       ('check-in-type', 'Interaction: Call. Change'),
       ('check-in-sentiment-chip', 'Feeling: Good'),
-      ('check-in-topics', 'Topics: krill contract, launch'),
+      ('check-in-topics-tag', 'Topics: krill contract, launch'),
       ('check-in-detail-edit', 'Edit check-in'),
     ]) {
       expect(

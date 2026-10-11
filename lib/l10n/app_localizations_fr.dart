@@ -3500,12 +3500,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInRowDetails => 'Sujets et la prochaine fois';
 
   @override
-  String get checkInRowNotSet => 'Non défini';
-
-  @override
-  String get checkInRowType => 'Type';
-
-  @override
   String get checkInSaveBlockedEmpty => 'Ajoute quelques mots pour enregistrer';
 
   @override

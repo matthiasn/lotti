@@ -3484,12 +3484,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInRowDetails => 'Temas e a próxima vez';
 
   @override
-  String get checkInRowNotSet => 'Não definido';
-
-  @override
-  String get checkInRowType => 'Tipo';
-
-  @override
   String get checkInSaveBlockedEmpty =>
       'Acrescenta algumas palavras para guardar';
 

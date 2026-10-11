@@ -13,11 +13,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -25,10 +22,10 @@ import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
 import 'package:lotti/features/relationships/model/check_in_dictation_fill.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
-import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
@@ -39,7 +36,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -49,7 +45,6 @@ import 'package:permission_handler/permission_handler.dart' as permissions;
 part 'check_in_capture_sheet_actions_part.dart';
 part 'check_in_capture_sheet_form_part.dart';
 part 'check_in_capture_sheet_launch_part.dart';
-part 'check_in_capture_sheet_rows_part.dart';
 
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
@@ -851,23 +846,66 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ),
           ],
           SizedBox(height: tokens.spacing.step4),
-          _CheckInFactRows(
-            interactionType: _interactionType,
+          // The saved check-in page's own fact lane, the task header's
+          // grammar: what the form sets is what the page will show, in the
+          // same square tags, each opening the same picker. Its closing
+          // lever folds out the text details here, where the page's opens
+          // the edit sheet.
+          CheckInMetaSummaryLine(
+            type: _interactionType,
             startedLabel: _startedLabel(context),
             duration: _duration,
             sentiment: _sentiment,
-            detailsCaption: _moreCaption(messages),
-            detailsOpen: _moreOpen,
+            topics: _topics,
             enabled: speechIdle,
             onPickType: _pickType,
             onPickStart: _pickStart,
             onPickDuration: _pickDuration,
             onPickSentiment: _pickSentiment,
-            onToggleDetails: () => setState(() => _moreOpen = !_moreOpen),
-            topicsController: _topicsController,
-            payAttentionController: _payAttentionController,
-            avoidController: _avoidController,
+            onEdit: () => setState(() => _moreOpen = !_moreOpen),
+            leverLabel: messages.checkInRowDetails,
+            leverIcon: _moreOpen
+                ? LottiIcons.chevronUp
+                : LottiIcons.chevronDown,
+            leverKey: const ValueKey('check-in-more'),
           ),
+          // Open from the start when editing, or when the draft already
+          // holds any: the design system's own labelled fields, unfilled on
+          // the sheet like the note, one `step5` apart.
+          if (_moreOpen) ...[
+            SizedBox(height: tokens.spacing.sectionGap),
+            for (final (index, (key, controller, label, hint)) in [
+              (
+                'check-in-topics',
+                _topicsController,
+                messages.checkInTopicsLabel,
+                messages.checkInTopicsHint,
+              ),
+              (
+                'check-in-pay-attention',
+                _payAttentionController,
+                messages.checkInPayAttentionLabel,
+                null,
+              ),
+              (
+                'check-in-avoid',
+                _avoidController,
+                messages.checkInAvoidLabel,
+                null,
+              ),
+            ].indexed) ...[
+              if (index > 0) SizedBox(height: tokens.spacing.step5),
+              DesignSystemTextInput(
+                key: ValueKey(key),
+                controller: controller,
+                label: label,
+                semanticsLabel: label,
+                hintText: hint,
+                textCapitalization: TextCapitalization.sentences,
+                filled: false,
+              ),
+            ],
+          ],
         ],
         _BarSlack(handle: widget.handle),
       ],

@@ -1715,8 +1715,6 @@
   "checkInRecordingNotSavedTitle": "Impossibile salvare la registrazione",
   "checkInRemoveTake": "Rimuovi la registrazione",
   "checkInRowDetails": "Argomenti e la prossima volta",
-  "checkInRowNotSet": "Non impostato",
-  "checkInRowType": "Tipo",
   "checkInSaveBlockedEmpty": "Aggiungi qualche parola per salvare",
   "checkInSaveButton": "Salva il check-in",
   "checkInSaveShortButton": "Salva",
