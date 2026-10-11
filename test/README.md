@@ -692,9 +692,13 @@ left to cancel.
 
 `getIt` and the test view (`physicalSize`, `devicePixelRatio`) are shared by
 every file the optimizer bundles into a shard, so a `setUp` that registers a
-service — including through `ensureThemingServicesRegistered()`, which adds
-`UpdateNotifications` and `SettingsDb` — must clear it again in `tearDown`
-(`await getIt.reset()` or the matching `unregister`), and a view resized in
+service must clear it again in `tearDown` (`await getIt.reset()` or the
+matching `unregister`). `ensureThemingServicesRegistered()` clears its own:
+each fallback it adds (`UpdateNotifications`, `SettingsDb`, the loggers) is
+unregistered when the calling test, or from `setUpAll` its group, ends —
+before that, a fallback left behind by `config_flag_labels_test.dart` broke
+`speech_dictionary_repository_test.dart` whenever the two shared a shard. A
+view resized in
 `setUp` goes back with `view.reset()`, never by writing a size you believe
 is the default. The symptom of a leak is a file that passes alone and fails
 in CI with `Type X is already registered inside GetIt` or a pixel-shifted
