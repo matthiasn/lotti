@@ -204,8 +204,7 @@ exercise statement failure and a deferred constraint failing at the outer commit
 `PersistenceDefinitionOps` publishes the returned committed flag and stamp,
 including description-only changes. Platform effects require a status change.
 Outbox coalescing uses the same version tuple even when enqueue order is
-reversed. Legacy and stamped rows remain separate because a legacy row has no
-comparable durable version.
+reversed. A legacy row has no stamp, but every stamped row was written after it, so it ranks older and folds into the stamped send ([ADR 0130](../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md)).
 
 Maintenance callers of `upsertConfigFlag` (rollouts and demo seeding) advance the
 stored version without broadcasting; those deliberate local writes are outside

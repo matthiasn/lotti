@@ -53,6 +53,56 @@ void main() {
     await db.close();
   });
 
+  group('saveSettingsItemIfUnchanged', () {
+    late SettingsDb db;
+    setUp(() => db = SettingsDb(inMemoryDatabase: true));
+    tearDown(() => db.close());
+
+    test('saves over an absent key or the expected value, and refuses '
+        'once the key has changed', () async {
+      expect(
+        await db.saveSettingsItemIfUnchanged('k', expected: null, value: 'a'),
+        isTrue,
+      );
+      expect(await db.itemByKey('k'), 'a');
+
+      expect(
+        await db.saveSettingsItemIfUnchanged('k', expected: 'a', value: 'b'),
+        isTrue,
+      );
+      expect(await db.itemByKey('k'), 'b');
+
+      expect(
+        await db.saveSettingsItemIfUnchanged('k', expected: 'a', value: 'c'),
+        isFalse,
+      );
+      expect(await db.itemByKey('k'), 'b');
+      expect(
+        await db.saveSettingsItemIfUnchanged(
+          'other',
+          expected: 'x',
+          value: 'y',
+        ),
+        isFalse,
+      );
+      expect(await db.itemByKey('other'), isNull);
+    });
+
+    test('a write queued before the check is seen by it', () async {
+      await db.saveSettingsItem('k', 'pending:1');
+      final changed = db.saveSettingsItem('k', 'pending:2');
+      final recorded = db.saveSettingsItemIfUnchanged(
+        'k',
+        expected: 'pending:1',
+        value: 'true',
+      );
+      await changed;
+
+      expect(await recorded, isFalse);
+      expect(await db.itemByKey('k'), 'pending:2');
+    });
+  });
+
   group('cached writes own their transaction', () {
     test('another database retains its own commit boundary', () async {
       final other = SettingsDb(inMemoryDatabase: true);

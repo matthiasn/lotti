@@ -10,6 +10,7 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/outbox_status.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -57,6 +58,20 @@ abstract class _OutboxServiceBase {
 
 /// Matrix-backed [OutboxService] for real profiles.
 ///
+/// Settings key of the outbox's count of rows still to claim one at a time
+/// after a bundle was too large to send.
+const singleClaimsSettingsKey = 'OUTBOX_SINGLE_CLAIMS_REMAINING';
+
+/// The read and the write of the outbox's single-claims count in
+/// [settingsDb]; an unreadable value reads as none.
+({Future<int?> Function() read, Future<void> Function(int count) write})
+singleClaimsStore(SettingsDb settingsDb) => (
+  read: () async =>
+      int.tryParse(await settingsDb.itemByKey(singleClaimsSettingsKey) ?? ''),
+  write: (count) =>
+      settingsDb.saveSettingsItem(singleClaimsSettingsKey, '$count'),
+);
+
 /// Features enqueue `SyncMessage`s here; the service persists them to the outbox
 /// table in `sync_db` — one immutable row per version, enriched with sequence
 /// metadata — then nudges the send runner. It waits for the
@@ -85,6 +100,7 @@ class MatrixOutboxService extends _OutboxServiceBase
     this._sequenceLogService,
     this._postDrainSettle = SyncTuning.outboxPostDrainSettle,
     this._domainLogger,
+    SettingsDb? settingsDb,
   }) : _syncDatabase = syncDatabase,
        _saveJson = saveJsonHandler ?? saveJson,
        _activityGate =
@@ -106,6 +122,9 @@ class MatrixOutboxService extends _OutboxServiceBase
         repository ??
         DatabaseOutboxRepository(syncDatabase, maxRetries: maxRetries);
     _messageSender = messageSender ?? MatrixOutboxMessageSender(matrixService!);
+    final singleClaims = settingsDb == null
+        ? null
+        : singleClaimsStore(settingsDb);
     _processor =
         processor ??
         OutboxProcessor(
@@ -114,6 +133,8 @@ class MatrixOutboxService extends _OutboxServiceBase
           loggingService: _loggingService,
           maxRetriesOverride: maxRetries,
           domainLogger: _domainLogger,
+          readSingleClaims: singleClaims?.read,
+          writeSingleClaims: singleClaims?.write,
         );
 
     _startRunner();

@@ -56,5 +56,4 @@ near-identical settings rows.
   clock running behind the edit it replaced.
 - The speech dictionary's content tie-break (ADR 0124) is now every
   definition's.
-- Until a device's rows are stamped they are ordered by `updatedAt` as before;
-  nothing is migrated automatically.
+- Until a device's rows are stamped they are ordered by `updatedAt` as before; nothing is migrated automatically. (ADR 0130 later made every device run the stamp once at startup.)

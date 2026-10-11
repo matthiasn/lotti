@@ -90,6 +90,10 @@ void setUpProcessorMocks() {
   savedTaskFiltersRepository = MockSavedTaskFiltersRepository();
   journalEntityLoader = MockJournalEntityLoader();
   settingsDb = MockSettingsDb();
+  when(() => settingsDb.removeSettingsItem(any())).thenAnswer((_) async {});
+  when(
+    () => settingsDb.saveSettingsItem(any(), any()),
+  ).thenAnswer((_) async => 1);
 
   when(
     () => journalDb.updateJournalEntity(any<JournalEntity>()),

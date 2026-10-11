@@ -41,6 +41,7 @@ import 'package:lotti/features/notifications/preferences/notification_preference
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -63,6 +64,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
+import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
 export 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';

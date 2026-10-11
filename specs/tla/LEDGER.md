@@ -353,6 +353,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4756](https://github.com/matthiasn/lotti/pull/4756) | pending | sync, relationships, agents | — | 0 | 4 (0) | P1×2 P2×2 | [0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md) | Four residuals the JournalReplication, EntryLinkIdentity and TaskAgentAssignment sections recorded as open. A purge no longer hard-deletes dashboards and measurable types, whose deletion rows now refuse an older copy; a link version that loses its triple is remembered in `entry_link_losses` (schema 53), so a late pre-retype copy or a displaced holder is not written back; the relationship dispatcher reads deleted rows and passes over any deleted one, the undone task or its purged tombstone, to the next generation of the id, the same on every replica; deep backfill inventories name the agents of agent records and a device no longer requests records of an agent it deleted. No spec changed: each is checked by unit tests that fail with the fix reverted |
 | [#4755](https://github.com/matthiasn/lotti/pull/4755) | pending | sync | — | 0 | 1 (1) | P3 | — | Review of #4753 found what the model had taken as one step: "Show the emoji" bumps a counter every mounted launcher listens to, and each listener released the device last shown on its own. The first launches synchronously up to `markShown`, so with two launchers mounted the second undid that record and the device was offered again once the reopened sheet closed. The request now releases once, before the bump; `ReleaseOnce = FALSE` breaks `NoReoffer` in six states. State counts unchanged |
 | [#4759](https://github.com/matthiasn/lotti/pull/4759) | pending | sync | — | 0 | 5 (0) | P2×3 P3×2 | [0129](../../docs/adr/0129-sync-repairs-instead-of-giving-up.md) | Four paths that ended in a state nothing left on its own, recorded as residuals by InboundQueue, SyncSettings and SavedTaskFilterSync. Catch-up now backs off up to five minutes instead of giving up after three passes, as the InboundQueue model already assumed; "Send settings" re-sends the theme, greeting name and config flags with their stamps; an undecodable event is skipped as `undecodable` and resurrected at each queue start; and a message over the inline event limit, including a backfill request queued before #4593 split them, travels as a one-child bundle. No spec changed; each fix has unit tests that fail without it |
+| [#4760](https://github.com/matthiasn/lotti/pull/4760) | pending | sync | — | 0 | 4 (0) | P3×4 | [0130](../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md) | Rows older builds left behind. Every device now stamps its clockless definitions and entry links once at startup instead of waiting for the manual Repair vector clocks action; an unstamped config-flag outbox row from before #4517 ranks below a stamped one and folds into its send; and the too-large bundle fallback count is stored in settings so a restart keeps sending the rows singly. A host an older build created resends its own counter-0 write once at startup, since no peer would ask for it. No spec changed |
 | pending | pending | speech, ai | `TranscriptionRun` | 0 | 0 (–) | — | [0126](../../docs/adr/0126-post-processing-follows-every-speech-to-text-transcription.md) | No model change: post-processing now follows every speech-to-text transcription, so a check-in's transcript is held like any other. `TranscriptionRunHeld` already pairs `Held` with the check-in `Waiter`, and re-checked: `WaiterResolves` and `HeldTextLands` hold through the fill. 90,328 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -582,7 +583,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 149 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 153 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -735,6 +736,10 @@ The P0 and P1 bugs:
 | [#4759](https://github.com/matthiasn/lotti/pull/4759) | P2 | no | A single change over the 60 KB inline event limit went to error and never reached the other devices |
 | [#4759](https://github.com/matthiasn/lotti/pull/4759) | P3 | no | A sync message this build could not decode, such as a saved filter from a newer build, was skipped for good, even after the update that could read it |
 | [#4759](https://github.com/matthiasn/lotti/pull/4759) | P3 | no | A backfill request queued too large before #4593 split them failed for good, and was asked again split only an hour later |
+| [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | Definitions and entry links saved before they carried a clock stayed outside clock comparison and backfill until a user ran Repair vector clocks |
+| [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | A config-flag outbox row queued before #4517 was sent alongside a newer stamped one, so the older value could arrive last |
+| [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | After a restart, rows a too-large bundle had released were bundled again, failed by size again and fell back again |
+| [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | A lost counter-0 write of a host an older build created was never requested, so peers missed it until the payload changed again |
 
 </details>
 

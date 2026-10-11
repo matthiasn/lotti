@@ -12,10 +12,15 @@ import 'package:lotti/features/notifications/preferences/notification_preference
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
@@ -37,6 +42,238 @@ void main() {
   tearDown(() async {
     await getIt.resetScope();
     await getIt.popScope();
+  });
+
+  group('resendOwnCounterZeroOnceForTesting', () {
+    late MockDomainLogger logger;
+    late MockSettingsDb settingsDb;
+    late MockBackfillResponseHandler handler;
+
+    setUp(() {
+      logger = MockDomainLogger();
+      settingsDb = MockSettingsDb();
+      handler = MockBackfillResponseHandler();
+      when(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      getIt
+        ..registerSingleton<DomainLogger>(logger)
+        ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<BackfillResponseHandler>(handler);
+    });
+
+    test(
+      'runs once: resends, records it, and logs only when it sent',
+      () async {
+        when(
+          () => settingsDb.itemByKey(counterZeroResentSettingsKey),
+        ).thenAnswer((_) async => null);
+        when(handler.resendOwnCounterZero).thenAnswer((_) async => true);
+
+        await resendOwnCounterZeroOnceForTesting();
+
+        verify(
+          () =>
+              settingsDb.saveSettingsItem(counterZeroResentSettingsKey, 'true'),
+        ).called(1);
+        verify(
+          () => logger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: 'counterZeroResend',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('is skipped once recorded', () async {
+      when(
+        () => settingsDb.itemByKey(counterZeroResentSettingsKey),
+      ).thenAnswer((_) async => 'true');
+
+      await resendOwnCounterZeroOnceForTesting();
+
+      verifyNever(handler.resendOwnCounterZero);
+    });
+
+    test('a failure is logged and retried at the next start', () async {
+      when(
+        () => settingsDb.itemByKey(counterZeroResentSettingsKey),
+      ).thenAnswer((_) async => null);
+      when(handler.resendOwnCounterZero).thenThrow(StateError('closed'));
+
+      await resendOwnCounterZeroOnceForTesting();
+
+      verifyNever(
+        () => settingsDb.saveSettingsItem(counterZeroResentSettingsKey, any()),
+      );
+      verify(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'counterZeroResend',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('repairClocklessRowsOnceForTesting', () {
+    late MockDomainLogger logger;
+    late MockSettingsDb settingsDb;
+    late MockJournalDb journalDb;
+    late MockVectorClockService vectorClock;
+
+    setUp(() {
+      logger = MockDomainLogger();
+      settingsDb = MockSettingsDb();
+      journalDb = MockJournalDb();
+      vectorClock = MockVectorClockService();
+      when(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => vectorClock.initialized).thenAnswer((_) async {});
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      when(journalDb.clocklessDefinitions).thenAnswer((_) async => []);
+      when(journalDb.entryLinksWithNullVectorClock).thenAnswer((_) async => []);
+      getIt
+        ..registerSingleton<DomainLogger>(logger)
+        ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<VectorClockService>(vectorClock)
+        ..registerSingleton<OutboxService>(MockOutboxService())
+        ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
+        ..registerSingleton<SavedTaskFiltersRepository>(
+          MockSavedTaskFiltersRepository(),
+        )
+        ..registerSingleton<AgentDatabase>(MockAgentDatabase());
+      when(
+        () => settingsDb.saveSettingsItemIfUnchanged(
+          any(),
+          expected: any(named: 'expected'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    test('does nothing once a device has run it', () async {
+      when(
+        () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+      ).thenAnswer((_) async => clocklessRepairDone);
+
+      await repairClocklessRowsOnceForTesting();
+
+      verifyNever(journalDb.clocklessDefinitions);
+      verifyNever(journalDb.entryLinksWithNullVectorClock);
+    });
+
+    test(
+      'repairs definitions and entry links, then records that it ran',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => null);
+
+        await repairClocklessRowsOnceForTesting();
+
+        verify(journalDb.clocklessDefinitions).called(1);
+        verify(journalDb.entryLinksWithNullVectorClock).called(1);
+        verify(
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: null,
+            value: clocklessRepairDone,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a clockless row stored during the sweep keeps the repair pending: '
+      'completion is recorded only over the token read before sweeping',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => 'pending:first');
+        when(
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: 'pending:first',
+            value: clocklessRepairDone,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await repairClocklessRowsOnceForTesting();
+
+        verify(journalDb.entryLinksWithNullVectorClock).called(1);
+        verify(
+          () => logger.log(
+            any<LogDomain>(),
+            any<String>(that: contains('next start sweeps again')),
+            subDomain: 'clocklessRepair',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failed repair is logged and left to run again at the next start',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => null);
+        when(
+          journalDb.entryLinksWithNullVectorClock,
+        ).thenThrow(StateError('database closed'));
+
+        await repairClocklessRowsOnceForTesting();
+
+        verifyNever(
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: any(named: 'expected'),
+            value: any(named: 'value'),
+          ),
+        );
+        verify(
+          () => logger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'clocklessRepair',
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('checkAndPopulateSequenceLogForTesting', () {

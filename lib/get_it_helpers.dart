@@ -147,7 +147,12 @@ Future<void> _registerLateAndOptionalServices({
   // Skipped in guest worlds: their sequence log stays empty because nothing
   // ever enqueues.
   if (profile.capabilities.syncEnabled) {
-    getIt<StartupTasks>().track(_checkAndPopulateSequenceLog());
+    getIt<StartupTasks>()
+      // The counter-0 resend reads the own row the population records.
+      ..track(
+        _checkAndPopulateSequenceLog().then((_) => _resendOwnCounterZeroOnce()),
+      )
+      ..track(_repairClocklessRowsOnce());
   }
 }
 

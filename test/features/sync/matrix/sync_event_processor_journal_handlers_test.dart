@@ -12,6 +12,7 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -449,6 +450,47 @@ void main() {
         ).called(1);
       },
     );
+
+    test('a clockless link, direct or embedded, asks the next start to '
+        'stamp it; a clocked one does not', () async {
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+      final clocked = EntryLink.basic(
+        id: 'clocked',
+        fromId: 'a',
+        toId: 'b',
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
+        vectorClock: const VectorClock({'host': 1}),
+      );
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.entryLink(
+            entryLink: clocked,
+            status: SyncEntryStatus.initial,
+          ),
+        ),
+      );
+      await processor.process(event: event, journalDb: journalDb);
+      verifyNever(
+        () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
+      );
+
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.entryLink(
+            entryLink: clocked.copyWith(id: 'legacy', vectorClock: null),
+            status: SyncEntryStatus.initial,
+          ),
+        ),
+      );
+      await processor.process(event: event, journalDb: journalDb);
+      verify(
+        () => settingsDb.saveSettingsItem(
+          clocklessRepairSettingsKey,
+          any(that: startsWith('pending:')),
+        ),
+      ).called(1);
+    });
 
     test('processes embedded links even when entity update is skipped', () async {
       final link = EntryLink.basic(

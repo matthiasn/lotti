@@ -111,6 +111,105 @@ Future<void> _checkAndPopulateSequenceLog() async {
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
 
+/// Stamps, once per device, the entity definitions and entry links saved
+/// before they carried a vector clock, and sends them.
+///
+/// Until stamped, such a row stays outside clock comparison and backfill on
+/// every device; the stamp was a manual action ("Repair vector clocks"),
+/// so a device whose user never ran it kept them. Both repairs keep the
+/// row's `updatedAt`, so two devices stamping the same row settle it the
+/// same way and a stamp never outranks a genuine edit (ADR 0125). Agent
+/// rows are left to the manual action: their stamp does not keep that
+/// property. The flag ([clocklessRepairSettingsKey]) is set only after both
+/// repairs succeed, so a failure retries at the next start. The inbound sync
+/// path writes a fresh token under it whenever it stores a clockless row from
+/// an older peer, and completion is recorded only if the token read before
+/// the sweep is unchanged, so a row stored even mid-sweep leaves the next
+/// start to sweep again.
+Future<void> _repairClocklessRowsOnce() async {
+  final settingsDb = getIt<SettingsDb>();
+  final domainLogger = getIt<DomainLogger>();
+  try {
+    final token = await settingsDb.itemByKey(clocklessRepairSettingsKey);
+    if (token == clocklessRepairDone) return;
+    final vectorClockService = getIt<VectorClockService>();
+    await vectorClockService.initialized;
+    final repository = SyncMaintenanceRepository(
+      journalDb: getIt<JournalDb>(),
+      outboxService: getIt<OutboxService>(),
+      loggingService: domainLogger,
+      aiConfigRepository: getIt<AiConfigRepository>(),
+      savedTaskFiltersRepository: getIt<SavedTaskFiltersRepository>(),
+      agentRepository: AgentRepository(getIt<AgentDatabase>()),
+      vectorClockService: vectorClockService,
+      settingsDb: settingsDb,
+    );
+    await repository.backfillDefinitionClocks();
+    await repository.backfillEntryLinkClocks();
+    final recorded = await settingsDb.saveSettingsItemIfUnchanged(
+      clocklessRepairSettingsKey,
+      expected: token,
+      value: clocklessRepairDone,
+    );
+    if (!recorded) {
+      domainLogger.log(
+        LogDomain.sync,
+        'A clockless row arrived during the clock repair; '
+        'the next start sweeps again',
+        subDomain: 'clocklessRepair',
+      );
+    }
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'clocklessRepair',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> repairClocklessRowsOnceForTesting() => _repairClocklessRowsOnce();
+
+/// Settings key recording that [_resendOwnCounterZeroOnce] ran.
+const counterZeroResentSettingsKey = 'maintenance_counterZeroResentV1';
+
+/// Resends, once per device, this host's own write at counter 0, which a
+/// host an older build created made first and no peer ever requests
+/// ([BackfillResponseHandler.resendOwnCounterZero], ADR 0130). The flag is
+/// set once the attempt returns, whether or not there was anything to send,
+/// and not when it throws, so a failure retries at the next start.
+Future<void> _resendOwnCounterZeroOnce() async {
+  final settingsDb = getIt<SettingsDb>();
+  final domainLogger = getIt<DomainLogger>();
+  try {
+    if (await settingsDb.itemByKey(counterZeroResentSettingsKey) == 'true') {
+      return;
+    }
+    final sent = await getIt<BackfillResponseHandler>().resendOwnCounterZero();
+    await settingsDb.saveSettingsItem(counterZeroResentSettingsKey, 'true');
+    if (sent) {
+      domainLogger.log(
+        LogDomain.sync,
+        "Resent this host's own counter 0 write",
+        subDomain: 'counterZeroResend',
+      );
+    }
+  } catch (error, stackTrace) {
+    domainLogger.error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'counterZeroResend',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> resendOwnCounterZeroOnceForTesting() =>
+    _resendOwnCounterZeroOnce();
+
 /// The categories' legacy speech dictionaries into dictionary entries. Runs
 /// at every start: it writes only terms this device holds no entry for, so
 /// after the first run it changes nothing.

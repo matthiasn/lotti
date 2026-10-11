@@ -67,6 +67,8 @@ class OutboxProcessor {
     Duration? claimLeaseOverride,
     this._domainLogger,
     int? bundleMaxSizeOverride,
+    this._readSingleClaims,
+    this._writeSingleClaims,
   }) : bundleMaxSize = bundleMaxSizeOverride ?? SyncTuning.outboxBundleMaxSize,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
@@ -80,6 +82,12 @@ class OutboxProcessor {
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final int bundleMaxSize;
+
+  /// Durable storage for [_singleClaimsRemaining], so a restart does not
+  /// bundle released rows again; absent, the count lives in memory only.
+  final Future<int?> Function()? _readSingleClaims;
+  final Future<void> Function(int count)? _writeSingleClaims;
+  bool _singleClaimsLoaded = false;
 
   /// The ids of the rows this pass claimed from the queue, as opposed to the
   /// rows a collapse folded in. Retry scheduling and diagnostics follow the
@@ -101,9 +109,46 @@ class OutboxProcessor {
 
   /// Claims still to make one row at a time after a bundle was too large.
   /// The released rows sit at the head of the queue, so this many single
-  /// claims send them individually. Kept in memory only: after a restart the
-  /// rows bundle again, fail again by size and fall back again, uncounted.
+  /// claims send them individually. Stored through [_writeSingleClaims] as it
+  /// changes and read back on the first pass, so a restart in the middle
+  /// does not bundle the rows again only to fail by size once more.
   int _singleClaimsRemaining = 0;
+
+  Future<void> _loadSingleClaims() async {
+    if (_singleClaimsLoaded) return;
+    _singleClaimsLoaded = true;
+    final read = _readSingleClaims;
+    if (read == null) return;
+    try {
+      _singleClaimsRemaining = await read() ?? 0;
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'outbox.singleClaims.read',
+      );
+    }
+  }
+
+  /// Sets [_singleClaimsRemaining] and stores it when it changed. A failed
+  /// write is logged: the cost is one more size failure after a restart.
+  Future<void> _setSingleClaims(int count) async {
+    if (count == _singleClaimsRemaining) return;
+    _singleClaimsRemaining = count;
+    final write = _writeSingleClaims;
+    if (write == null) return;
+    try {
+      await write(count);
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'outbox.singleClaims.write',
+      );
+    }
+  }
 
   /// Claims and processes the next batch (single send or bundle), returning
   /// [OutboxProcessingResult.none] when the queue is empty or fully drained, or
@@ -112,6 +157,7 @@ class OutboxProcessor {
   /// off after a failure). Never throws: send failures and post-send exceptions
   /// are caught and converted into retry scheduling.
   Future<OutboxProcessingResult> processQueue() async {
+    await _loadSingleClaims();
     // Atomic claim (pending → sending) of the next contiguous batch. Media
     // attachments always travel alone; text rows pack up to [bundleMaxSize]
     // consecutive rows stopping before the next attachment.
@@ -120,10 +166,12 @@ class OutboxProcessor {
       leaseDuration: claimLease,
     );
     if (batch.isEmpty) {
-      _singleClaimsRemaining = 0;
+      await _setSingleClaims(0);
       return OutboxProcessingResult.none;
     }
-    if (_singleClaimsRemaining > 0) _singleClaimsRemaining--;
+    if (_singleClaimsRemaining > 0) {
+      await _setSingleClaims(_singleClaimsRemaining - 1);
+    }
     _claimedIds = {for (final row in batch) row.id};
 
     final List<_OutboxSend> sends;
@@ -356,7 +404,7 @@ class OutboxProcessor {
     required int bundleSize,
     required SyncMessageTooLargeException error,
   }) async {
-    _singleClaimsRemaining = rows.length;
+    await _setSingleClaims(rows.length);
     try {
       await _repository.releaseClaims(rows);
       _loggingService.log(

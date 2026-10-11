@@ -297,6 +297,31 @@ class BackfillResponseHandler {
   /// reservations still `burnPending`, and `reserved` rows naming a payload.
   /// Live pending writes stay deferred; finished scopes and crashed writers
   /// can be settled on any pass.
+  /// Resends this device's own write at counter 0, if it made one.
+  ///
+  /// Builds before ADR 0080 gave a new host counter 0 first. Gap detection
+  /// starts at counter 1, so if that write's message was lost no peer ever
+  /// asks for it. The host still holds it, so it sends the payload's
+  /// current version once, through the ordinary backfill answer, and the
+  /// peers receive a version that covers the lost write. A host without a
+  /// row at counter 0 — every host a later build created — sends nothing:
+  /// settling a counter it never issued would burn it. Returns whether
+  /// anything was sent. The resend is durable: a failure to queue it throws,
+  /// so the caller does not record the resend as done and tries again.
+  Future<bool> resendOwnCounterZero() async {
+    await _vectorClockService.initialized;
+    final host = await _vectorClockService.getHost();
+    if (host == null) return false;
+    final row = await _sequenceLogService.getEntryByHostAndCounter(host, 0);
+    if (row == null) return false;
+    return _processBackfillEntry(
+      hostId: host,
+      counter: 0,
+      sentPayloads: <VcPayloadRef>{},
+      durable: true,
+    );
+  }
+
   Future<void> settleOrphanedOwnCounters() async {
     await _vectorClockService.initialized;
     final hostId = await _vectorClockService.getHost();
@@ -627,6 +652,7 @@ class BackfillResponseHandler {
     required String hostId,
     required int counter,
     required Set<VcPayloadRef> sentPayloads,
+    bool durable = false,
   }) async {
     // Look up in our sequence log
     var logEntry = await _sequenceLogService.getEntryByHostAndCounter(
@@ -671,6 +697,7 @@ class BackfillResponseHandler {
           stackTrace: stackTrace,
           subDomain: 'backfill.settle',
         );
+        if (durable) rethrow;
         return false;
       }
       if (outcome != OwnCounterSettlement.alreadySettled) {
@@ -784,6 +811,7 @@ class BackfillResponseHandler {
       counter: counter,
       entry: logEntry,
       sentPayloads: sentPayloads,
+      durable: durable,
     );
   }
 
