@@ -7,17 +7,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  group('DesignSystemTimerPill.formatElapsed', () {
-    test('mm:ss under an hour, hh:mm:ss from then on, without the '
-        'fraction', () {
-      String f(Duration d) => DesignSystemTimerPill.formatElapsed(d);
-      expect(f(const Duration(seconds: 42, milliseconds: 730)), '00:42');
-      expect(f(const Duration(minutes: 59, seconds: 59)), '59:59');
-      expect(f(const Duration(hours: 1, minutes: 2, seconds: 3)), '01:02:03');
-      expect(f(const Duration(hours: 12)), '12:00:00');
-    });
-  });
-
   final calls = <String>[];
   setUp(calls.clear);
 

@@ -593,4 +593,171 @@ void main() {
       },
     );
   });
+  group('formatElapsed', () {
+    test('formats zero duration', () {
+      expect(formatElapsed(Duration.zero), '00:00');
+    });
+
+    test('formats seconds only', () {
+      expect(formatElapsed(const Duration(seconds: 5)), '00:05');
+      expect(formatElapsed(const Duration(seconds: 45)), '00:45');
+    });
+
+    test('formats minutes and seconds', () {
+      expect(formatElapsed(const Duration(minutes: 1)), '01:00');
+      expect(
+        formatElapsed(const Duration(minutes: 1, seconds: 30)),
+        '01:30',
+      );
+      expect(
+        formatElapsed(const Duration(minutes: 59, seconds: 59)),
+        '59:59',
+      );
+    });
+
+    test('formats hours, minutes, and seconds', () {
+      expect(
+        formatElapsed(const Duration(hours: 1)),
+        '01:00:00',
+      );
+      expect(
+        formatElapsed(
+          const Duration(hours: 1, minutes: 23, seconds: 45),
+        ),
+        '01:23:45',
+      );
+      expect(
+        formatElapsed(
+          const Duration(hours: 12, minutes: 34, seconds: 56),
+        ),
+        '12:34:56',
+      );
+    });
+
+    test('clamps negative values to zero', () {
+      expect(
+        formatElapsed(const Duration(seconds: -10)),
+        '00:00',
+      );
+    });
+
+    test('clamps values above max (359999 seconds)', () {
+      // Max value: 99:59:59 = 359999 seconds
+      expect(
+        formatElapsed(const Duration(seconds: 359999)),
+        '99:59:59',
+      );
+      // Above max should be clamped
+      expect(
+        formatElapsed(const Duration(seconds: 400000)),
+        '99:59:59',
+      );
+    });
+
+    test('pads single digits with zeros', () {
+      expect(
+        formatElapsed(const Duration(minutes: 5, seconds: 3)),
+        '05:03',
+      );
+      expect(
+        formatElapsed(
+          const Duration(hours: 2, minutes: 5, seconds: 3),
+        ),
+        '02:05:03',
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // formatElapsed — Glados property tests
+  // -------------------------------------------------------------------------
+
+  group('formatElapsed — properties', () {
+    glados.Glados<int>(
+      glados.any.audioSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is never empty and always contains exactly one or two colons',
+      (seconds) {
+        final result = formatElapsed(Duration(seconds: seconds));
+        expect(result, isNotEmpty);
+        final colonCount = result.split(':').length - 1;
+        // mm:ss → 1 colon; hh:mm:ss → 2 colons
+        expect(colonCount, anyOf(1, 2));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.audioSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output for non-negative inputs never starts with a negative sign',
+      (seconds) {
+        final result = formatElapsed(Duration(seconds: seconds));
+        // All components are clamped ≥ 0 so no minus sign is possible.
+        expect(result.startsWith('-'), isFalse);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 3599),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'durations under one hour produce exactly mm:ss (no hour cell)',
+      (seconds) {
+        final result = formatElapsed(Duration(seconds: seconds));
+        // Must contain exactly one colon → mm:ss form.
+        expect(result.contains(':'), isTrue);
+        expect(
+          result.split(':').length,
+          2,
+          reason: 'expected mm:ss but got "$result"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(3600, 360000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'durations of at least one hour produce exactly hh:mm:ss (two colons)',
+      (seconds) {
+        final result = formatElapsed(Duration(seconds: seconds));
+        expect(
+          result.split(':').length,
+          3,
+          reason: 'expected hh:mm:ss but got "$result"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 360000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every component is exactly two digits (zero-padded)',
+      (seconds) {
+        final result = formatElapsed(Duration(seconds: seconds));
+        for (final part in result.split(':')) {
+          expect(
+            part.length,
+            2,
+            reason: 'component "$part" in "$result" is not 2 digits',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+extension AnyAudioDuration on glados.Any {
+  /// A duration in seconds drawn uniformly from [−10000, 400010] to exercise
+  /// the negative-clamp and the ≥ 359 999 s cap paths.
+  glados.Generator<int> get audioSeconds =>
+      glados.any.intInRange(-10000, 400010);
 }

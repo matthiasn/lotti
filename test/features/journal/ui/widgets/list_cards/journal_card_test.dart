@@ -481,7 +481,7 @@ void main() {
 
       expect(find.byIcon(LottiIcons.mic), findsOneWidget);
       // The audio entry spans one hour; a duration chip surfaces it as H:MM:SS.
-      expect(find.text('1:00:00'), findsOneWidget);
+      expect(find.text('01:00:00'), findsOneWidget);
     });
 
     testWidgets('renders image entry preview text', (tester) async {
@@ -1941,7 +1941,7 @@ void main() {
       );
     });
 
-    testWidgets('audio under an hour shows a m:ss duration chip', (
+    testWidgets('audio under an hour shows an mm:ss duration chip', (
       tester,
     ) async {
       final audio = testAudioEntry.copyWith(
@@ -1955,7 +1955,7 @@ void main() {
         makeTestableWidget(ModernJournalCard(item: audio)),
       );
 
-      expect(find.text('2:05'), findsOneWidget);
+      expect(find.text('02:05'), findsOneWidget);
     });
 
     for (final completion in [

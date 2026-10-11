@@ -167,28 +167,6 @@ void main() {
     });
   });
 
-  group('checkInClockLabel', () {
-    test('m:ss under an hour, h:mm:ss beyond or when asked', () {
-      expect(checkInClockLabel(const Duration(seconds: 23)), '0:23');
-      expect(
-        checkInClockLabel(const Duration(minutes: 11, seconds: 5)),
-        '11:05',
-      );
-      expect(
-        checkInClockLabel(const Duration(hours: 1, seconds: 2)),
-        '1:00:02',
-      );
-      expect(
-        checkInClockLabel(const Duration(hours: 1, seconds: 23)),
-        '1:00:23',
-      );
-    });
-
-    test('never goes negative', () {
-      expect(checkInClockLabel(const Duration(seconds: -5)), '0:00');
-    });
-  });
-
   group('CheckInSpeechFailure', () {
     test('maps the recorder refusals: denied is denied, the rest failed', () {
       expect(

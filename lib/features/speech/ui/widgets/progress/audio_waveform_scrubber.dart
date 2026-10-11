@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Target bar width and spacing for the rendered waveform. Shared with the
@@ -145,8 +146,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
 
     String positionLabel(Duration progress) =>
         context.messages.audioPlayerPosition(
-          formatAudioDuration(progress),
-          formatAudioDuration(widget.total),
+          formatElapsed(progress),
+          formatElapsed(widget.total),
         );
     final increased = audioSemanticSeekTarget(
       progress: widget.progress,

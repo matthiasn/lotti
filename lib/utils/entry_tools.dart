@@ -26,6 +26,19 @@ bool isTimeRecordingSpan(Duration span) => span >= const Duration(minutes: 1);
 /// Formats a duration as zero-padded `H:MM:SS`, dropping sub-second precision;
 /// returns an empty string for null. See [formatRangeDuration] for the
 /// day-aware, seconds-less variant used by the date-time editor.
+/// Elapsed time as every clock in the app writes it — a running timer, a
+/// recording, a saved take's length, a playback position: `mm:ss` under an
+/// hour, `hh:mm:ss` from then on, clamped to `00:00`…`99:59:59`.
+String formatElapsed(Duration duration) {
+  final clampedSeconds = duration.inSeconds.clamp(0, 359999);
+  final hours = clampedSeconds ~/ 3600;
+  final minutes = (clampedSeconds % 3600) ~/ 60;
+  final seconds = clampedSeconds % 60;
+  String two(int value) => value.toString().padLeft(2, '0');
+  if (hours > 0) return '${two(hours)}:${two(minutes)}:${two(seconds)}';
+  return '${two(minutes)}:${two(seconds)}';
+}
+
 String formatDuration(Duration? duration) {
   if (duration == null) {
     return '';

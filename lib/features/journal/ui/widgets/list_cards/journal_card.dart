@@ -61,7 +61,7 @@ class _EntryCardContent extends StatelessWidget {
           _metricChip(
             context,
             icon: LottiIcons.waveform,
-            label: _shortDuration(a.data.dateTo.difference(a.data.dateFrom)),
+            label: formatElapsed(a.data.dateTo.difference(a.data.dateFrom)),
           ),
         ],
       ),
@@ -524,15 +524,6 @@ class _EntryCardContent extends StatelessWidget {
       'cfq11SurveyTask' => 'CFQ 11',
       _ => context.messages.entryTypeLabelSurveyEntry,
     };
-  }
-
-  String _shortDuration(Duration d) {
-    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
-    if (d.inHours > 0) {
-      final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
-      return '${d.inHours}:$minutes:$seconds';
-    }
-    return '${d.inMinutes}:$seconds';
   }
 
   Color _categoryColor(BuildContext context, JournalEntity item) {

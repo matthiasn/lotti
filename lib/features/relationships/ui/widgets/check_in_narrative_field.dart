@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The composer's one field (design 2026-09-13): the note, with *Dictate*
@@ -319,7 +320,7 @@ class CheckInTakeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final clock = checkInClockLabel(take.length);
+    final clock = formatElapsed(take.length);
     final meta = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
       // The app's own digit features, not a bare tabular flag: the same

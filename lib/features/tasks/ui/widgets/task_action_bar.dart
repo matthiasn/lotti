@@ -14,6 +14,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -246,7 +247,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
 
     final isTracking = _isTrackingThisTask;
     final elapsedLabel = isTracking
-        ? DesignSystemTimerPill.formatElapsed(
+        ? formatElapsed(
             _running!.meta.dateTo.difference(_running!.meta.dateFrom),
           )
         : messages.taskActionBarTrackTime;

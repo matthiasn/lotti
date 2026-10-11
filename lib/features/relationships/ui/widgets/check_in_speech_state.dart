@@ -240,17 +240,6 @@ String checkInSpokenClockLabel(AppLocalizations messages, Duration length) {
   ].join(' ');
 }
 
-String checkInClockLabel(Duration length) {
-  final total = length.inSeconds.clamp(0, 1 << 31);
-  final hours = total ~/ 3600;
-  final minutes = (total % 3600) ~/ 60;
-  final seconds = total % 60;
-  final mm = minutes.toString().padLeft(2, '0');
-  final ss = seconds.toString().padLeft(2, '0');
-  if (hours > 0) return '$hours:$mm:$ss';
-  return '$minutes:$ss';
-}
-
 /// What the composer's header says on its second line while speech is in
 /// flight — the recorder's phase first, then the takes' words.
 enum CheckInComposerStatus {
