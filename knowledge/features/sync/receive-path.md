@@ -369,8 +369,7 @@ timestamp spans pages, the backward walk continues until that entire
 millisecond bucket is exhausted. It retains only the event IDs emitted at the
 current oldest timestamp, so newly loaded collisions are delivered once
 without an unbounded all-history seen-set. Equal-timestamp continuation uses
-the same round-trip cap as stale-cache continuation; reaching the cap reports
-an incomplete walk and keeps the floor for a later retry. Bridge and
+the same round-trip cap as stale-cache continuation; reaching the cap reports an incomplete walk and keeps the floor for a later retry. `BridgeCoordinator` retries an incomplete walk until one completes: three quick retries ten seconds apart, then each wait twice the last, up to five minutes. Once the quick retries are spent, the backfill completion hook runs after each pass ([ADR 0129](../../../docs/adr/0129-sync-repairs-instead-of-giving-up.md)). Bridge and
 gap-recovery backward walks also have a wall-clock budget.
 
 ```mermaid
@@ -493,6 +492,7 @@ flowchart TD
     DescriptorRetry -->|no| PeriodicRetry
     DescriptorRetry -->|yes| Skip
     Outcome -->|permanentSkip| Skip["markSkipped"]
+  Outcome -->|undecodable| SkipU["markSkipped(undecodable)<br/>resurrected at queue start"]
     Commit --> NextEntry["next entry in batch"]
     Retry --> NextEntry
     DecryptRetry --> NextEntry
@@ -528,7 +528,7 @@ entry rather than the sum. With `inboundWorkerBatchSize = 1` there is nothing to
 parallelise at runtime; the hook remains for batch sizes above 1.
 
 Prepared payloads are cached by `eventId` and consumed one at a time by apply.
-Outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
+An event that does not decode as a sync message this build knows maps to `undecodable`, skipped under that reason; the queue resurrects those rows each time it starts, so an updated build applies them. Outcomes caught at prepare time (`permanentSkip`, `undecodable`, `pendingAttachment`,
 `pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 

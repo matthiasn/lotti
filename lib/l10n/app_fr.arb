@@ -5932,6 +5932,7 @@
   "syncStepLabels": "Étiquettes",
   "syncStepMeasurables": "Mesurables",
   "syncStepSavedTaskFilters": "Filtres de tâches enregistrés",
+  "syncStepPreferences": "Thème, salutation et options",
   "syncStepSpeechDictionary": "Dictionnaire vocal",
   "syncVerifiedCelebrationBody": "À partir de maintenant, tout ce que tu écris se synchronise — chiffré de bout en bout, de machine à machine.",
   "syncVerifiedCelebrationTitle": "Tes appareils se font confiance",

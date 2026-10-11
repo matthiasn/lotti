@@ -134,8 +134,7 @@ Residuals, recorded in `specs/tla/README.md`:
 - **Equal milliseconds**: a claim or a checkpoint one millisecond above an
   event can leave a same-millisecond event later in timeline order outside a
   backward walk bounded there. The model has distinct timestamps.
-- **The bridge still gives up after three incomplete passes in a row**; the
-  durable floor waits for the next trigger.
+- **The bridge still gives up after three incomplete passes in a row**; the durable floor waits for the next trigger. (Superseded by ADR 0129: it now backs off instead.)
 
 ## Related
 

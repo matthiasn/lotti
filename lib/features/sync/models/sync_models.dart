@@ -13,6 +13,7 @@ enum SyncStep {
   habits,
   aiSettings,
   savedTaskFilters,
+  preferences,
   backfillDefinitionClocks,
   backfillAgentEntityClocks,
   backfillAgentLinkClocks,

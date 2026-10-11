@@ -15576,6 +15576,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Opgeslagen taakfilters';
 
   @override
+  String get syncStepPreferences => 'Thema, begroeting en schakelaars';
+
+  @override
   String get syncStepSpeechDictionary => 'Spraakwoordenboek';
 
   @override

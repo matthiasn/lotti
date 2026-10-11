@@ -194,7 +194,7 @@ class QueueApplyAdapter {
         'queue.apply.undeserialisable eventId=${entry.eventId}',
         subDomain: _logSub,
       );
-      return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
+      return const _PreparedState.terminal(ApplyOutcome.undecodable);
     }
 
     return _PreparedState.ready(prepared);

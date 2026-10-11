@@ -352,6 +352,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4753](https://github.com/matthiasn/lotti/pull/4753) | 10-10 | sync | `VerificationLaunch`, `DevicePairing` | 4 | 5 (5) | P2×2 P3×3 | — | The sync setup flow around the emoji ceremony. Two devices starting the ceremony at each other left both sheets waiting forever, because each side's own sheet held the modal lock and the other's request was dropped; three devices could do the same in a ring, and even yielding to the peer's request let them withdraw ceremonies from under each other until a total order on identities settled it. Also: an abandoned sheet left the peer waiting on a ceremony nobody would finish, "Show the emoji" could reopen a device whose keys landed mid-ceremony, and the inviting sheet took its roster baseline from whatever resolved after the code was up, or named an old session before any baseline existed |
 | [#4756](https://github.com/matthiasn/lotti/pull/4756) | pending | sync, relationships, agents | — | 0 | 4 (0) | P1×2 P2×2 | [0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md) | Four residuals the JournalReplication, EntryLinkIdentity and TaskAgentAssignment sections recorded as open. A purge no longer hard-deletes dashboards and measurable types, whose deletion rows now refuse an older copy; a link version that loses its triple is remembered in `entry_link_losses` (schema 53), so a late pre-retype copy or a displaced holder is not written back; the relationship dispatcher reads deleted rows and passes over any deleted one, the undone task or its purged tombstone, to the next generation of the id, the same on every replica; deep backfill inventories name the agents of agent records and a device no longer requests records of an agent it deleted. No spec changed: each is checked by unit tests that fail with the fix reverted |
 | [#4755](https://github.com/matthiasn/lotti/pull/4755) | pending | sync | — | 0 | 1 (1) | P3 | — | Review of #4753 found what the model had taken as one step: "Show the emoji" bumps a counter every mounted launcher listens to, and each listener released the device last shown on its own. The first launches synchronously up to `markShown`, so with two launchers mounted the second undid that record and the device was offered again once the reopened sheet closed. The request now releases once, before the bump; `ReleaseOnce = FALSE` breaks `NoReoffer` in six states. State counts unchanged |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | pending | sync | — | 0 | 5 (0) | P2×3 P3×2 | [0129](../../docs/adr/0129-sync-repairs-instead-of-giving-up.md) | Four paths that ended in a state nothing left on its own, recorded as residuals by InboundQueue, SyncSettings and SavedTaskFilterSync. Catch-up now backs off up to five minutes instead of giving up after three passes, as the InboundQueue model already assumed; "Send settings" re-sends the theme, greeting name and config flags with their stamps; an undecodable event is skipped as `undecodable` and resurrected at each queue start; and a message over the inline event limit, including a backfill request queued before #4593 split them, travels as a one-child bundle. No spec changed; each fix has unit tests that fail without it |
 | pending | pending | speech, ai | `TranscriptionRun` | 0 | 0 (–) | — | [0126](../../docs/adr/0126-post-processing-follows-every-speech-to-text-transcription.md) | No model change: post-processing now follows every speech-to-text transcription, so a check-in's transcript is held like any other. `TranscriptionRunHeld` already pairs `Held` with the check-in `Waiter`, and re-checked: `WaiterResolves` and `HeldTextLands` hold through the fill. 90,328 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -581,7 +582,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 143 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 149 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -729,6 +730,11 @@ The P0 and P1 bugs:
 | [#4756](https://github.com/matthiasn/lotti/pull/4756) | P1 | no | A link retyped onto a relationship another id held newer lost there, and a late copy from before the retype was inserted again under its old type |
 | [#4756](https://github.com/matthiasn/lotti/pull/4756) | P2 | no | Confirming a relationship suggestion again after undo created the task over its tombstone, which every peer showed as a conflict, and after a purge reused the id |
 | [#4756](https://github.com/matthiasn/lotti/pull/4756) | P2 | no | Deep backfill requested a peer's records of an agent this device had deleted on every round, and refused them again |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | P2 | no | Catch-up gave up after three incomplete passes, leaving the gap until the next limited sync, which on a quiet room might not come |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | P2 | no | A lost theme, greeting-name or config-flag message was never repaired; the other device kept the old value until the setting changed again |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | P2 | no | A single change over the 60 KB inline event limit went to error and never reached the other devices |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | P3 | no | A sync message this build could not decode, such as a saved filter from a newer build, was skipped for good, even after the update that could read it |
+| [#4759](https://github.com/matthiasn/lotti/pull/4759) | P3 | no | A backfill request queued too large before #4593 split them failed for good, and was asked again split only an hour later |
 
 </details>
 

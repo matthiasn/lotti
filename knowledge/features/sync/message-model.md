@@ -180,9 +180,7 @@ What each piece guarantees:
   inbound, over the single JSON blob.
 - **Decoding degrades rather than drops.** An enum value from a newer build
   decodes to the default (`TasksFilter`'s `unknownEnumValue`), and one
-  undecodable stored entry is skipped rather than blanking the list. A message
-  that still cannot be decoded is skipped for good by the processor — the one
-  residual the model leaves unchecked.
+  undecodable stored entry is skipped rather than blanking the list. A message that still cannot be decoded is skipped under the reason `undecodable`, and the queue tries it again at each start, so a build that learns it applies it ([ADR 0129](../../../docs/adr/0129-sync-repairs-instead-of-giving-up.md)).
 
 The `SyncStep.savedTaskFilters` maintenance step (*Settings → Sync → Sync
 Entities*) still re-enqueues every stored definition; receivers treat the
@@ -208,7 +206,7 @@ comparison in the [settings group contract](../../architecture/persistence.md#se
 Its optional wire stamp falls back to the Matrix event timestamp for old senders.
 Older receivers still overwrite on arrival, so the convergence guarantee requires
 updated receivers.
-They have no sequence-gap repair. Theme/name apply persists the values,
+They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
 are emitted only after successful persistence. Cache publication follows the

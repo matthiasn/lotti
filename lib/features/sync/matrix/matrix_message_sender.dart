@@ -349,7 +349,7 @@ class MatrixMessageSender {
           'type=${message.runtimeType} inline event body '
           '${error.actualSize} bytes exceeds ${error.maxSize}';
       _trace('TOO_LARGE $detail', subDomain: 'matrix.send.error');
-      throw SyncMessageTooLargeException(detail);
+      throw SyncMessageTooLargeException(detail, inlineBody: true);
     } catch (error, stackTrace) {
       _trace(
         'EXCEPTION type=${message.runtimeType} '

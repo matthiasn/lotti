@@ -25751,6 +25751,12 @@ abstract class AppLocalizations {
   /// **'Saved task filters'**
   String get syncStepSavedTaskFilters;
 
+  /// No description provided for @syncStepPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme, greeting and flags'**
+  String get syncStepPreferences;
+
   /// No description provided for @syncStepSpeechDictionary.
   ///
   /// In en, this message translates to:

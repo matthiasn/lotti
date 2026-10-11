@@ -108,6 +108,7 @@ void main() {
       SyncStep.habits: 9,
       SyncStep.aiSettings: 10,
       SyncStep.savedTaskFilters: 13,
+      SyncStep.preferences: 3,
       SyncStep.backfillAgentEntityClocks: 11,
       SyncStep.backfillAgentLinkClocks: 12,
     };
@@ -194,6 +195,14 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.savedTaskFilters, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncPreferences(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.preferences, invocation),
     );
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -326,6 +335,7 @@ void main() {
             SyncStep.habits,
             SyncStep.aiSettings,
             SyncStep.savedTaskFilters,
+            SyncStep.preferences,
             // Settings only. Agent entities/links are offered on the entries
             // path (Send message history), and the two agent clock backfills
             // are a repair on the Sync health page — neither belongs in a
@@ -375,17 +385,18 @@ void main() {
       expect(find.text(messages.syncStepHabits), findsOneWidget);
       expect(find.text(messages.syncStepAiSettings), findsOneWidget);
       expect(find.text(messages.syncStepSavedTaskFilters), findsOneWidget);
+      expect(find.text(messages.syncStepPreferences), findsOneWidget);
 
       // Agent data is journal-side, not settings: the entries path offers it
       // (one "Agent entities" checkbox in Send message history covering both
       // entities and links), and the two clock backfills are a repair on the
-      // Sync health page. Exactly the eight settings steps are offered.
+      // Sync health page. Exactly the nine settings steps are offered.
       final rows = tester
           .widgetList<DesignSystemSelectionRow>(
             find.byType(DesignSystemSelectionRow),
           )
           .toList();
-      expect(rows.length, 8);
+      expect(rows.length, 9);
       expect(
         rows,
         everyElement(

@@ -15525,6 +15525,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Gemte opgavefiltre';
 
   @override
+  String get syncStepPreferences => 'Tema, hilsen og flag';
+
+  @override
   String get syncStepSpeechDictionary => 'Taleordbog';
 
   @override

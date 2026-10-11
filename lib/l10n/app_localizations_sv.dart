@@ -15542,6 +15542,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncStepSavedTaskFilters => 'Sparade uppgiftsfilter';
 
   @override
+  String get syncStepPreferences => 'Tema, hälsning och flaggor';
+
+  @override
   String get syncStepSpeechDictionary => 'Röstordlista';
 
   @override

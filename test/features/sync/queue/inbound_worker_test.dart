@@ -118,6 +118,7 @@ class _ExpectedWorkerLifecycle {
         attempts++;
         return 0;
       case ApplyOutcome.permanentSkip:
+      case ApplyOutcome.undecodable:
         active = false;
         abandoned = true;
         return 0;
@@ -622,6 +623,30 @@ void main() {
       )..where((t) => t.roomId.equals(roomId))).getSingle();
       expect(marker.lastAppliedEventId, r'$poison');
       expect(marker.lastAppliedTs, 5000);
+    },
+  );
+
+  test(
+    'an undecodable event is skipped under its own reason, and resurrecting '
+    'that reason makes it drainable again for a build that can decode it',
+    () async {
+      await queue.enqueueLive(
+        _buildSyncEvent(
+          eventId: r'$future',
+          roomId: roomId,
+          originTsMs: 5000,
+        ),
+      );
+      final first = buildWorker(
+        apply: (_) async => ApplyOutcome.undecodable,
+      );
+      expect(await first.drainToCompletion(), 0);
+      final row = await db.select(db.inboundEventQueue).getSingle();
+      expect(row.lastErrorReason, undecodableReason);
+
+      expect(await queue.resurrectByReason(undecodableReason), 1);
+      final upgraded = buildWorker(apply: (_) async => ApplyOutcome.applied);
+      expect(await upgraded.drainToCompletion(), 1);
     },
   );
 

@@ -14,6 +14,7 @@ import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
@@ -39,6 +40,7 @@ void main() {
   late MockSavedTaskFiltersRepository mockSavedTaskFiltersRepository;
   late MockAgentRepository mockAgentRepository;
   late MockVectorClockService mockVectorClockService;
+  late MockSettingsDb mockSettingsDb;
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
@@ -89,6 +91,13 @@ void main() {
     ).thenAnswer((_) async => []);
     mockAgentRepository = MockAgentRepository();
     mockVectorClockService = MockVectorClockService();
+    mockSettingsDb = MockSettingsDb();
+    when(
+      () => mockSettingsDb.itemsByKeys(any<Iterable<String>>()),
+    ).thenAnswer((_) async => const {});
+    when(() => mockJournalDb.stampedConfigFlags()).thenAnswer(
+      (_) async => const [],
+    );
 
     when(
       () => mockLoggingService.error(
@@ -107,7 +116,69 @@ void main() {
       savedTaskFiltersRepository: mockSavedTaskFiltersRepository,
       agentRepository: mockAgentRepository,
       vectorClockService: mockVectorClockService,
+      settingsDb: mockSettingsDb,
     );
+  });
+
+  test('the preferences step re-sends the theme, the greeting name and every '
+      'stamped flag with its stored stamp', () async {
+    when(() => mockSettingsDb.itemsByKeys(any<Iterable<String>>())).thenAnswer(
+      (_) async => {
+        'LIGHT_SCHEME': 'Indigo',
+        'DARK_SCHEMA': 'Shark',
+        'THEME_MODE': 'dark',
+        'THEME_PREFS_UPDATED_AT': '1700',
+        'DAILY_OS_USER_NAME': 'Pingu',
+        'DAILY_OS_USER_NAME_UPDATED_AT': '1800',
+      },
+    );
+    when(() => mockJournalDb.stampedConfigFlags()).thenAnswer(
+      (_) async => [
+        (
+          flag: const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: true,
+          ),
+          updatedAt: 1900,
+        ),
+      ],
+    );
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async {});
+
+    expect(
+      await syncMaintenanceRepository.fetchTotalsForSteps({
+        SyncStep.preferences,
+      }),
+      {SyncStep.preferences: 3},
+    );
+    await syncMaintenanceRepository.syncPreferences();
+
+    final sent = verify(
+      () => mockOutboxService.enqueueMessage(captureAny()),
+    ).captured;
+    expect(sent, [
+      const SyncMessage.themingSelection(
+        lightThemeName: 'Indigo',
+        darkThemeName: 'Shark',
+        themeMode: 'dark',
+        updatedAt: 1700,
+        status: SyncEntryStatus.update,
+      ),
+      const SyncMessage.dailyOsUserName(
+        userName: 'Pingu',
+        updatedAt: 1800,
+        status: SyncEntryStatus.update,
+      ),
+      const SyncMessage.configFlag(
+        name: 'private',
+        description: 'Show private entries?',
+        status: true,
+        updatedAt: 1900,
+      ),
+    ]);
   });
 
   group('SyncMaintenanceRepository - Original Tests', () {
@@ -1687,6 +1758,7 @@ void main() {
       SyncStep.habits: 'syncHabits',
       SyncStep.aiSettings: 'syncAiSettings',
       SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
+      SyncStep.preferences: 'syncPreferences',
       SyncStep.backfillDefinitionClocks: 'backfillDefinitionClocks',
       SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
@@ -1701,6 +1773,7 @@ void main() {
       SyncStep.habits: 'fetchTotals_habits',
       SyncStep.aiSettings: 'fetchTotals_aiSettings',
       SyncStep.savedTaskFilters: 'fetchTotals_savedTaskFilters',
+      SyncStep.preferences: 'fetchTotals_preferences',
       SyncStep.backfillDefinitionClocks: 'fetchTotals_backfillDefinitionClocks',
       SyncStep.backfillAgentEntityClocks:
           'fetchTotals_backfillAgentEntityClocks',

@@ -164,7 +164,7 @@ void main() {
     expect(outcome, ApplyOutcome.permanentSkip);
   });
 
-  test('prepare returning null maps to permanentSkip', () async {
+  test('prepare returning null maps to undecodable', () async {
     final entry = hBuildEntry(
       eventId: r'$none',
       roomId: '!r',
@@ -174,7 +174,7 @@ void main() {
       () => processor.prepare(event: any(named: 'event')),
     ).thenAnswer((_) async => null);
     final outcome = await build().bind()(entry, room);
-    expect(outcome, ApplyOutcome.permanentSkip);
+    expect(outcome, ApplyOutcome.undecodable);
     verifyNever(
       () => processor.apply(
         prepared: any(named: 'prepared'),

@@ -204,6 +204,86 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
       );
 
       test(
+        'starting the pipeline resurrects the events skipped as '
+        'undecodable, so an updated build applies them',
+        () {
+          fakeAsync((async) {
+            when(
+              () => queue.resurrectByReason(any<String>()),
+            ).thenAnswer((_) async => 0);
+            final coordinator = QueuePipelineCoordinator(
+              syncEventTrust: AdmittingSyncEventTrust(),
+              syncDb: syncDb,
+              settingsDb: settingsDb,
+              journalDb: journalDb,
+              sessionManager: sessionManager,
+              roomManager: roomManager,
+              eventProcessor: processor,
+              sequenceLogService: sequenceLog,
+              activityGate: null,
+              logging: logging,
+              queueOverride: queue,
+              workerOverride: worker,
+              bridgeOverride: bridge,
+              seederOverride: seeder,
+            );
+            addTearDown(() async => coordinator.stop());
+            unawaited(coordinator.start());
+            async.flushMicrotasks();
+
+            verify(
+              () => queue.resurrectByReason(undecodableReason),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'a failed undecodable resurrection is logged and the pipeline '
+        'still starts',
+        () {
+          fakeAsync((async) {
+            when(
+              () => queue.resurrectByReason(undecodableReason),
+            ).thenThrow(StateError('ledger locked'));
+            final coordinator = QueuePipelineCoordinator(
+              syncEventTrust: AdmittingSyncEventTrust(),
+              syncDb: syncDb,
+              settingsDb: settingsDb,
+              journalDb: journalDb,
+              sessionManager: sessionManager,
+              roomManager: roomManager,
+              eventProcessor: processor,
+              sequenceLogService: sequenceLog,
+              activityGate: null,
+              logging: logging,
+              queueOverride: queue,
+              workerOverride: worker,
+              bridgeOverride: bridge,
+              seederOverride: seeder,
+            );
+            addTearDown(() async => coordinator.stop());
+            var started = false;
+            unawaited(coordinator.start().then((_) => started = true));
+            async.flushMicrotasks();
+
+            expect(started, isTrue);
+            verify(
+              () => logging.error(
+                any<LogDomain>(),
+                any<Object>(),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: any(
+                  named: 'subDomain',
+                  that: contains('resurrectUndecodable'),
+                ),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
         'when UpdateNotifications emits, the coordinator calls '
         'resurrectByReason(missingBase) so any abandoned row waiting '
         'on its base journal entry becomes drainable again',

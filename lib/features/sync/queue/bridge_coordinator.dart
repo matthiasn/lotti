@@ -93,7 +93,7 @@ typedef CatchUpRangeClaim = Future<void> Function(String roomId);
 /// Returns `true` when the walk reached the server's tip. Returns
 /// `false` when it stopped early (budget tripped, error,
 /// back-pressure timeout, user cancelled) — the bridge treats that
-/// as incomplete and schedules a bounded retry.
+/// as incomplete and retries, backing off, until a walk completes.
 typedef BootstrapRunner =
     Future<bool> Function({
       required Room room,
@@ -125,6 +125,7 @@ class BridgeCoordinator {
     this._claimGap,
     this._incompleteRetryDelay = const Duration(seconds: 10),
     this._maxIncompleteRetries = 3,
+    this._maxIncompleteRetryDelay = const Duration(minutes: 5),
   });
 
   final Client _client;
@@ -143,7 +144,13 @@ class BridgeCoordinator {
   /// (`ClaimOnGap` in `specs/tla/InboundQueue.tla`).
   final CatchUpRangeClaim? _claimGap;
   final Duration _incompleteRetryDelay;
+
+  /// How many retries run at [_incompleteRetryDelay] while the backfill
+  /// completion hook waits for them; later ones back off and let it run.
   final int _maxIncompleteRetries;
+
+  /// The longest wait between two retries of an incomplete walk.
+  final Duration _maxIncompleteRetryDelay;
 
   StreamSubscription<SyncUpdate>? _sub;
   Future<void>? _inFlightBridge;
@@ -327,8 +334,12 @@ class BridgeCoordinator {
         // expected to close the gap imminently, and firing
         // onBridgeCompleted here would let the backfill service
         // dispatch ~100-entry requests ahead of a retry that is
-        // about to arrive.
-        if (!_stopped && _incompleteRetryTimer == null) {
+        // about to arrive. Once the quick retries are spent the walk
+        // keeps retrying with back-off, and the hook runs meanwhile, so
+        // a catch-up that keeps failing does not hold backfill back too.
+        if (!_stopped &&
+            (_incompleteRetryTimer == null ||
+                _consecutiveIncomplete > _maxIncompleteRetries)) {
           try {
             onBridgeCompleted?.call();
           } catch (error, stackTrace) {
@@ -425,11 +436,17 @@ class BridgeCoordinator {
     );
   }
 
-  /// Schedules a bounded retry when the bootstrap runner reports an
-  /// incomplete walk (error, timeout, back-pressure cancellation).
-  /// Without this, recovery would depend on another limited-sync
-  /// happening to arrive, which can leave gaps indefinitely on a
-  /// quiet room.
+  /// Schedules a retry when the bootstrap runner reports an incomplete
+  /// walk (error, timeout, back-pressure cancellation), and keeps
+  /// retrying until one completes. Without this, recovery would depend
+  /// on another limited-sync happening to arrive, which can leave gaps
+  /// indefinitely on a quiet room.
+  ///
+  /// The first [_maxIncompleteRetries] retries wait
+  /// [_incompleteRetryDelay]; each later one waits twice as long as the
+  /// last, up to [_maxIncompleteRetryDelay]. A walk that gave up after a
+  /// few passes left the gap until the next trigger, which on a quiet
+  /// room might not come.
   ///
   /// The retry targets the room that triggered the original bridge so
   /// a sync-room change during the retry delay cannot redirect the
@@ -446,18 +463,17 @@ class BridgeCoordinator {
       return;
     }
     _consecutiveIncomplete++;
+    final delay = _incompleteRetryDelayFor(_consecutiveIncomplete);
     if (_consecutiveIncomplete > _maxIncompleteRetries) {
       _logging.log(
         LogDomain.sync,
-        'queue.bridge.incomplete.giveUp '
-        'retries=$_consecutiveIncomplete',
+        'queue.bridge.incomplete.backoff '
+        'retries=$_consecutiveIncomplete delayMs=${delay.inMilliseconds}',
         subDomain: _logSub,
       );
-      _consecutiveIncomplete = 0;
-      return;
     }
     _incompleteRetryTimer?.cancel();
-    _incompleteRetryTimer = Timer(_incompleteRetryDelay, () {
+    _incompleteRetryTimer = Timer(delay, () {
       _incompleteRetryTimer = null;
       if (_stopped) return;
       _logging.log(
@@ -468,5 +484,17 @@ class BridgeCoordinator {
       );
       unawaited(_bridge(expectedRoomId));
     });
+  }
+
+  /// The wait before the [attempt]th retry of an incomplete walk.
+  Duration _incompleteRetryDelayFor(int attempt) {
+    final doublings = attempt - _maxIncompleteRetries;
+    if (doublings <= 0) return _incompleteRetryDelay;
+    final cap = _maxIncompleteRetryDelay.inMicroseconds;
+    var micros = _incompleteRetryDelay.inMicroseconds;
+    for (var i = 0; i < doublings && micros < cap; i++) {
+      micros *= 2;
+    }
+    return Duration(microseconds: micros < cap ? micros : cap);
   }
 }
