@@ -527,22 +527,17 @@ class AiConfigRepository {
   /// The transaction performs database writes only. Caches and the outbox
   /// follow the commit, so a rollback never leaves peer deletes queued.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
-    String providerId, {
-    bool fromSync = false,
-  }) async {
-    if (fromSync) return _deleteCascade(providerId, fromSync: true);
+    String providerId,
+  ) async {
     // Owed outside the transaction, which a flush would deadlock on.
     final models = await _liveModelsOf(providerId);
     return _sender.owing(
       [providerId, ...models.map((m) => m.id)],
-      () => _deleteCascade(providerId, fromSync: false),
+      () => _deleteCascade(providerId),
     );
   }
 
-  Future<CascadeDeletionResult> _deleteCascade(
-    String providerId, {
-    required bool fromSync,
-  }) async {
+  Future<CascadeDeletionResult> _deleteCascade(String providerId) async {
     final deletedIds = <String, int>{};
     final result = await _db.transaction(() async {
       try {
@@ -574,19 +569,17 @@ class AiConfigRepository {
     // Committed: only now are the rows really gone, so only now may the caches
     // drop them and the peers hear about it.
     deletedIds.keys.forEach(_noteHardDeleted);
-    if (!fromSync) {
-      // Non-fatal: the rows are gone locally, and a refused deletion stays
-      // owed for the next flush.
-      for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
-        await _sender.send(
-          id,
-          SyncMessage.aiConfigDelete(
-            id: id,
-            hardDelete: true,
-            versionStamp: stamp,
-          ),
-        );
-      }
+    // Non-fatal: the rows are gone locally, and a refused deletion stays
+    // owed for the next flush.
+    for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
+      await _sender.send(
+        id,
+        SyncMessage.aiConfigDelete(
+          id: id,
+          hardDelete: true,
+          versionStamp: stamp,
+        ),
+      );
     }
 
     return result;

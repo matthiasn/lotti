@@ -3035,55 +3035,6 @@ void main() {
       verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(1);
     });
 
-    test('should not send sync messages when fromSync is true', () async {
-      // Arrange
-      const providerId = 'provider-sync';
-      final model = AiConfigModel(
-        id: 'model-sync',
-        name: 'Model Sync',
-        providerModelId: 'provider-model-sync',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model.id,
-            type: 'AiConfigModel',
-            name: model.name,
-            serialized: jsonEncode(model.toJson()),
-            createdAt: model.createdAt,
-          ),
-        ],
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-        fromSync: true,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(1));
-      expect(
-        result.deletedModels.map((m) => m.id),
-        containsAll(['model-sync']),
-      );
-
-      // Verify deletions happened
-      verify(() => mockDb.deleteConfig('model-sync')).called(1);
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-
-      // Verify no sync messages were sent
-      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
-    });
-
     test('should handle database errors gracefully', () async {
       // Arrange
       const providerId = 'provider-error';
