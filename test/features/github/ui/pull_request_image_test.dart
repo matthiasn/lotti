@@ -471,6 +471,50 @@ void main() {
     expect(widths, [200, 200]);
   });
 
+  group('htmlImagesAsMarkdown', () {
+    const a = 'https://x.example/a.png';
+
+    test('writes a tag as a markdown image, its pixel size as the alt', () {
+      expect(htmlImagesAsMarkdown('<img src="$a" width="320">'), '![320x]($a)');
+      expect(
+        htmlImagesAsMarkdown("<IMG height='200px' SRC='$a' width=320 />"),
+        '![320x200]($a)',
+      );
+      expect(htmlImagesAsMarkdown('<img src=$a height="90">'), '![x90]($a)');
+    });
+
+    test('drops its alt text and a size not in pixels, and decodes the '
+        'URL for markdown', () {
+      expect(
+        htmlImagesAsMarkdown(
+          '<img alt="2024 run" width="50%" src="https://x.example/a b.png?w=1&amp;h=2">',
+        ),
+        '![](https://x.example/a%20b.png?w=1&h=2)',
+      );
+    });
+
+    test('rewrites every tag of a screenshot table, and its shares follow', () {
+      const b = 'https://x.example/b.png';
+      final markdown = htmlImagesAsMarkdown(
+        '| Surface | Before | After |\n|---|---|---|\n'
+        '| Desktop | <img src="$a" width="320"> | <img src="$b" width="320"> |',
+      );
+      expect(
+        markdown,
+        '| Surface | Before | After |\n|---|---|---|\n'
+        '| Desktop | ![320x]($a) | ![320x]($b) |',
+      );
+      expect(tableSharesOf(markdown), {a: 3, b: 3});
+    });
+
+    test('leaves a tag without a source, and one inside code, as written', () {
+      const text =
+          '<img alt="none"> and `<img src="$a">` and\n'
+          '```html\n<img src="$a">\n```';
+      expect(htmlImagesAsMarkdown(text), text);
+    });
+  });
+
   group('tableSharesOf', () {
     test('counts the cells of the widest table row holding each image', () {
       const a = 'https://x.example/a.png';

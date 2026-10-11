@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
@@ -51,6 +52,7 @@ void main() {
     PullRequestEntry? shown,
     PullRequestSummary? summarized = summary,
     PullRequestSummaryOutcome? blocker,
+    MockPullRequestImageFetcher? fetcher,
   }) async {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
@@ -69,6 +71,8 @@ void main() {
             pullRequestHoldersProvider.overrideWith(
               (ref, pr) => Stream.value(const {taskId}),
             ),
+            if (fetcher != null)
+              pullRequestImageFetcherProvider.overrideWithValue(fetcher),
           ],
         ),
       );
@@ -187,6 +191,41 @@ void main() {
     );
     expect(find.textContaining('not loaded'), findsNothing);
     expect(find.text('Desktop dark'), findsOneWidget);
+  });
+
+  testWidgets('images written as HTML tags are shown, not their tags', (
+    tester,
+  ) async {
+    const before = 'https://pub-example.r2.dev/shots/before.png';
+    const after = 'https://pub-example.r2.dev/shots/after.png';
+    final fetcher = MockPullRequestImageFetcher();
+    when(() => fetcher.cached(any())).thenReturn(null);
+    when(() => fetcher.fetch(any())).thenAnswer((_) async => onePixelPng);
+    await pump(
+      tester,
+      shown: entry.copyWith(
+        data: entry.data.copyWith(
+          snapshot: entry.data.snapshot!.copyWith(
+            body:
+                '## Screenshots\n\n'
+                '| Surface | Before | After |\n|---|---|---|\n'
+                '| Desktop dark | <img src="$before" width="320"> '
+                '| <img src="$after" width="320"> |',
+          ),
+        ),
+      ),
+      fetcher: fetcher,
+    );
+
+    final images = tester
+        .widgetList<PullRequestImage>(find.byType(PullRequestImage))
+        .toList();
+    expect(images.map((image) => image.url), [before, after]);
+    // The tag's width carried over, as GitHub shows it.
+    expect(images.map((image) => image.width), [320, 320]);
+    expect(find.textContaining('<img', findRichText: true), findsNothing);
+    verify(() => fetcher.fetch(before)).called(1);
+    verify(() => fetcher.fetch(after)).called(1);
   });
 
   testWidgets(
@@ -399,6 +438,74 @@ void main() {
         .modalTypeBuilder!(tester.element(sheet));
     expect(modalType, isA<WoltBottomSheetType>());
   });
+
+  for (final (layout, media) in [
+    ('dialog', null),
+    ('bottom sheet', phoneMediaQueryData),
+  ]) {
+    testWidgets(
+      'scrolled to its end, the description clears the action bar in the '
+      '$layout',
+      (tester) async {
+        final long = entry.copyWith(
+          data: entry.data.copyWith(
+            snapshot: entry.data.snapshot!.copyWith(
+              body: [
+                for (var i = 0; i < 40; i++) 'Paragraph $i of the description.',
+                'The last line of the description.',
+              ].join('\n\n'),
+            ),
+          ),
+        );
+        await withClock(Clock.fixed(now), () async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => showPullRequestDetailsModal(
+                    context,
+                    taskId: taskId,
+                    entry: long,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+              mediaQueryData: media,
+              overrides: [
+                pullRequestSummaryProvider.overrideWith(
+                  (ref, id) => Stream.value(summary),
+                ),
+                pullRequestSummarizerProvider.overrideWithValue(summarizer),
+                pullRequestHoldersProvider.overrideWith(
+                  (ref, pr) => Stream.value(const {taskId}),
+                ),
+              ],
+            ),
+          );
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
+        });
+
+        final scrollable = find
+            .ancestor(
+              of: find.byType(PullRequestDetails),
+              matching: find.byType(Scrollable),
+            )
+            .first;
+        final position = tester.state<ScrollableState>(scrollable).position;
+        expect(position.maxScrollExtent, greaterThan(0));
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+
+        final bar = tester.getRect(find.byType(DesignSystemModalActionBar));
+        final description = tester.getRect(find.byType(AgentMarkdownView));
+        // The whole description, its last line included, sits above the
+        // bar that floats over the page, not behind it.
+        expect(description.bottom, lessThanOrEqualTo(bar.top));
+        expect(bar.height, greaterThan(0));
+      },
+    );
+  }
 
   test('a pull request never read is opened by its reference', () {
     expect(

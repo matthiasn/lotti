@@ -90,6 +90,46 @@ Map<String, int> tableSharesOf(String markdown) {
   return shares;
 }
 
+/// A code span or fenced block — left as written — or an HTML image tag.
+final _codeOrImageTag = RegExp(
+  r'(`+)[\s\S]*?\1|<img\b[^>]*>',
+  caseSensitive: false,
+);
+
+/// One attribute of an HTML tag, its value double-, single- or unquoted.
+final _attribute = RegExp(
+  r'''([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))''',
+);
+
+/// [markdown] with each HTML `<img>` tag written as a markdown image, which
+/// is all the renderer reads: a description sizing its screenshots in a
+/// table — `<img src="…" width="320">`, as GitHub shows it — would show the
+/// tag as text instead. The tag's pixel `width` and `height` become the alt
+/// text the renderer sizes an image by — `![320x200](…)`, or `![320x](…)`
+/// for a width alone, since a bare number is no size to it; its own alt text
+/// is dropped, since the renderer would read digits in it as a size. A tag
+/// without a `src`, and one inside code, stays as written.
+String htmlImagesAsMarkdown(String markdown) =>
+    markdown.replaceAllMapped(_codeOrImageTag, (match) {
+      if (match.group(1) != null) return match[0]!;
+      final attributes = {
+        for (final attribute in _attribute.allMatches(match[0]!))
+          attribute[1]!.toLowerCase():
+              attribute[2] ?? attribute[3] ?? attribute[4]!,
+      };
+      final src = attributes['src']?.trim();
+      if (src == null || src.isEmpty) return match[0]!;
+      int? pixels(String? value) =>
+          int.tryParse(value?.trim().replaceFirst(RegExp(r'px$'), '') ?? '');
+      final width = pixels(attributes['width']);
+      final height = pixels(attributes['height']);
+      final size = width == null && height == null
+          ? ''
+          : '${width ?? ''}x${height ?? ''}';
+      final url = src.replaceAll('&amp;', '&').replaceAll(' ', '%20');
+      return '![$size]($url)';
+    });
+
 /// One image of a pull request description, fetched from its own URL.
 ///
 /// While it loads, a quiet box the size of a thumbnail; once it has, the

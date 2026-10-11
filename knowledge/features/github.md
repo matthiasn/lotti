@@ -541,7 +541,11 @@ the same status line, the one-liner and the TL;DR, with the action to
 summarise it — or summarise it again — and the pull request's own
 description, rendered as Markdown in a panel of its own. "Open on GitHub"
 stays in reach in the modal's action bar however long the description runs,
-and in the row's menu beside Unlink.
+and in the row's menu beside Unlink. Wolt lays that sticky bar over the
+scrolling page and reserves no room for it, so the page measures the bar as
+laid out (`StickyActionBarClearance`) and ends its content with exactly that
+height: scrolled to the end, the description's last line sits above the bar,
+not behind it, whatever the bar's padding or text scale.
 
 The description's images are loaded, where a model's never are
 (`AgentMarkdownView.imageBuilder`, which defaults to the blocking builder):
@@ -554,6 +558,11 @@ fetched, within a 64 MiB budget, so the details reopened, the full-size
 viewer and attaching share one read. A private repository's images need
 GitHub's own session and show the notice instead; nothing is retried on a
 schedule. While it loads, a quiet box; failed, the notice naming its host.
+The renderer reads only Markdown images, so a description's HTML `<img>`
+tags — screenshot tables are often written `<img src="…" width="320">` — are
+rewritten as Markdown images first (`htmlImagesAsMarkdown`), their pixel
+`width`/`height` carried as the `WxH` alt text the renderer sizes by; a tag
+inside code is left as written.
 Within a table row, an image takes at most the row's equal share of that
 width (`tableSharesOf`, computed from the markdown's own rows), so a
 "Before | After" row of screenshots sits side by side as written instead of
