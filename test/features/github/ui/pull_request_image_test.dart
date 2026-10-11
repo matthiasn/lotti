@@ -507,6 +507,30 @@ void main() {
       expect(tableSharesOf(markdown), {a: 3, b: 3});
     });
 
+    test('leaves a tag in a tilde fence, a longer fence and an indented '
+        'block as written, and rewrites the text around them', () {
+      const tag = '<img src="$a">';
+      const code =
+          '~~~html\n$tag\n~~~\n\n'
+          '````md\n```\n$tag\n```\n````\n\n'
+          'Quoted:\n\n    $tag\n    $tag\n';
+      expect(
+        htmlImagesAsMarkdown('$code\nShown: $tag'),
+        '$code\nShown: ![]($a)',
+      );
+    });
+
+    test("a list item's indented lines are its content, not code, until a "
+        'paragraph ends the list', () {
+      const tag = '<img src="$a">';
+      expect(
+        htmlImagesAsMarkdown(
+          '- Phone\n\n    $tag\n\nAfter the list.\n\n    $tag',
+        ),
+        '- Phone\n\n    ![]($a)\n\nAfter the list.\n\n    $tag',
+      );
+    });
+
     test('leaves a tag without a source, and one inside code, as written', () {
       const text =
           '<img alt="none"> and `<img src="$a">` and\n'
