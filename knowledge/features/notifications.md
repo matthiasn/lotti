@@ -219,11 +219,16 @@ Both `notification` and `notificationStateUpdate` are **sequence-tracked**
 [sync message families](sync/message-model.md), so a missed transition is a
 detectable gap rather than silent divergence.
 
-Full snapshots choose content by vector clock first: a version that follows
-the other wins, so a peer whose clock runs fast, or a late copy of the
-template, cannot outrank a re-wording made after it
-([ADR 0135](../../docs/adr/0135-ordering-and-restores-hold.md)). Concurrent
-versions fall back to `updatedAt`, then canonical content JSON. Lifecycle
+Full snapshots choose content by its content clock first
+(`meta.contentVectorClock`, stamped by every create and re-wording and left
+alone by state patches): content that follows the other wins, so a peer whose
+clock runs fast, or a late copy of the template, cannot outrank a re-wording
+made after it ([ADR 0135](../../docs/adr/0135-ordering-and-restores-hold.md)).
+The row clock does not rank content, because a mark-seen that reaches a peer
+before the re-wording advances it past the new words. The merge keeps the
+union of both content clocks. Concurrent versions, and rows written before
+content clocks existed, fall back to `updatedAt`, then canonical content
+JSON. Lifecycle
 marks and the state-mutable `originatingHostId` do not rank competing
 content. The owner is only a final metadata tie-break when
 content is identical; state updates can still replace it in arrival order.
@@ -749,7 +754,7 @@ banner that wake created.
 rescheduling would announce it again), one seen, acted on or deleted, and one
 whose words already read this way (a re-run wake writes nothing). The
 re-worded row keeps its id — the OS alarm is replaced, not doubled — and
-travels whole; `NotificationMerge` picks content by vector clock, then
+travels whole; `NotificationMerge` picks content by content clock, then
 `updatedAt`, so the new words win on every peer whatever order the create and
 the re-wording arrive in. A peer applies the words but re-arms only a row still ahead: a
 re-wording that lands after that peer's own alarm fired — the device was

@@ -370,6 +370,30 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return null;
   }
 
+  /// Every stored definition's id and vector clock — deleted and private ones
+  /// included — a page at a time, table by table, for populating the sync
+  /// sequence log.
+  Stream<List<VectorClockRecord>> streamDefinitionsWithVectorClock({
+    int batchSize = 1000,
+  }) async* {
+    for (final table in _definitionTables) {
+      yield* streamTableVectorClocks(
+        this,
+        table: table.actualTableName,
+        clockSql: r"json_extract(serialized, '$.vectorClock')",
+        batchSize: batchSize,
+      );
+    }
+  }
+
+  Future<int> countAllDefinitions() async {
+    var total = 0;
+    for (final table in _definitionTables) {
+      total += await countTableRows(this, table.actualTableName);
+    }
+    return total;
+  }
+
   /// Every stored definition that carries no vector clock, deleted and
   /// private ones included: what the manual clock migration stamps. A
   /// document that no longer parses is left out — it cannot be re-sent.

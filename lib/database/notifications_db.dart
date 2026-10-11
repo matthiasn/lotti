@@ -6,6 +6,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/notification_merge.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/vector_clock_rows.dart';
 
 part 'notifications_db.g.dart';
 
@@ -43,6 +44,19 @@ class NotificationsDb extends _$NotificationsDb {
   MigrationStrategy get migration {
     return MigrationStrategy(onCreate: (m) => m.createAll());
   }
+
+  /// Every notification's id and row clock, a page at a time, for populating
+  /// the sync sequence log.
+  Stream<List<VectorClockRecord>> streamNotificationsWithVectorClock({
+    int batchSize = 1000,
+  }) => streamTableVectorClocks(
+    this,
+    table: 'notifications',
+    clockSql: 'vector_clock',
+    batchSize: batchSize,
+  );
+
+  Future<int> countAllNotifications() => countTableRows(this, 'notifications');
 
   Future<NotificationEntity?> notificationById(String id) async {
     final row = await notificationRowById(id).getSingleOrNull();

@@ -22,6 +22,29 @@ void main() {
   });
 
   group('NotificationsDb', () {
+    test('streams every row with its clock, for the sequence log '
+        'population', () async {
+      await db.upsertNotification(
+        _notification(id: 'n-1', linkedTaskId: 'task-1'),
+      );
+
+      final records = (await db.streamNotificationsWithVectorClock().toList())
+          .expand((page) => page);
+
+      expect(
+        [
+          for (final r in records) [r.id, r.vectorClock],
+        ],
+        [
+          [
+            'n-1',
+            (await db.notificationById('n-1'))!.meta.vectorClock.vclock,
+          ],
+        ],
+      );
+      expect(await db.countAllNotifications(), 1);
+    });
+
     test('forLinkedEntity returns empty list for unknown task id', () async {
       await db.upsertNotification(
         _notification(

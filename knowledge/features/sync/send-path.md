@@ -192,7 +192,8 @@ successive requests, an attempt cap so a blob no peer holds is eventually
 abandoned, and a tracking cap so the pending set cannot grow without limit.
 The attempt counts are kept in `SettingsDb` (`mediaRepairAttempts`), so a
 restart does not reset the cap and request the same unanswerable blobs on
-every launch. Every holder still answers a request: duplicate uploads cost
+every launch. They are saved only once the request is queued: a failed
+enqueue costs no attempt, in memory or on disk. Every holder still answers a request: duplicate uploads cost
 bandwidth, not data, and choosing one responder would need an origin host
 journal entries do not carry ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 
@@ -320,8 +321,9 @@ before upload: a payload older than the queued version would cover a newer
 counter than it carries. An absent row or an older or concurrent clock keeps
 the outbox item retryable; neither acknowledges an unsent generation. A bundle
 holds its children to the same rule: a child whose row does not cover its
-queued version, and whose version no open conflict holds, fails the whole
-bundle into retry rather than adopting the row's clock ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)). The
+queued versions, and whose queued version no open conflict carries with
+every covered clock, fails the whole bundle into retry rather than adopting
+the row's clock ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)). The
 upload keeps `jsonPath` as its `relativePath`, so older receivers see no
 difference.
 

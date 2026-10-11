@@ -245,6 +245,7 @@ class NotificationRepository {
             row.meta.copyWith(
               updatedAt: now,
               vectorClock: vectorClock,
+              contentVectorClock: vectorClock,
               originatingHostId: host,
             ),
           );
@@ -315,6 +316,7 @@ class NotificationRepository {
           updatedAt: now,
           scheduledFor: entity.meta.scheduledFor,
           vectorClock: vectorClock,
+          contentVectorClock: vectorClock,
           originatingHostId: host,
         ),
       );

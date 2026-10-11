@@ -194,21 +194,27 @@ void main() {
     });
   });
 
+  /// A settings store backed by [stored], so a second service instance
+  /// reads what the first one saved.
+  MockSettingsDb settingsBackedBy(Map<String, String> stored) {
+    final settings = MockSettingsDb();
+    when(() => settings.itemByKey(any())).thenAnswer(
+      (invocation) async => stored[invocation.positionalArguments.single],
+    );
+    when(() => settings.saveSettingsItem(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      stored[invocation.positionalArguments[0] as String] =
+          invocation.positionalArguments[1] as String;
+      return 1;
+    });
+    return settings;
+  }
+
   test('the attempt cap holds across a restart, so an unanswerable entry '
       'is not requested again on every launch', () {
     fakeAsync((async) {
-      final stored = <String, String>{};
-      final settings = MockSettingsDb();
-      when(() => settings.itemByKey(any())).thenAnswer(
-        (invocation) async => stored[invocation.positionalArguments.single],
-      );
-      when(() => settings.saveSettingsItem(any(), any())).thenAnswer((
-        invocation,
-      ) async {
-        stored[invocation.positionalArguments[0] as String] =
-            invocation.positionalArguments[1] as String;
-        return 1;
-      });
+      final settings = settingsBackedBy(<String, String>{});
       MediaRepairService launch() => MediaRepairService(
         outboxService: outboxService,
         vectorClockService: vectorClockService,
@@ -233,6 +239,74 @@ void main() {
       async.elapse(debounce);
 
       expect(requests, hasLength(2));
+    });
+  });
+
+  test('a failed enqueue stores no attempt, so the next launch still asks', () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final settings = settingsBackedBy(stored);
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenThrow(Exception('outbox unavailable'));
+      final first = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 1,
+      )..reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+      first.dispose();
+      expect(stored, isEmpty);
+
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((
+        invocation,
+      ) async {
+        final message = invocation.positionalArguments.first as SyncMessage;
+        if (message is SyncMediaRequest) requests.add(message);
+      });
+      final second = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 1,
+      );
+      addTearDown(second.dispose);
+      async.flushMicrotasks();
+      second.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+
+      expect(requests.single.entryIds, ['orphan']);
+    });
+  });
+
+  test('a request sent while the service is disposed still counts', () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final enqueue = Completer<void>();
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenAnswer((_) => enqueue.future);
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settingsBackedBy(stored),
+        debounce: debounce,
+      )..reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+      service.dispose();
+      enqueue.complete();
+      async.flushMicrotasks();
+
+      expect(
+        stored[MediaRepairService.attemptsSettingsKey],
+        '{"orphan":1}',
+      );
     });
   });
 

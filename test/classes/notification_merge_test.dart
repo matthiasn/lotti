@@ -44,6 +44,96 @@ void main() {
       );
     });
 
+    test('a state patch that arrives before the reword cannot keep the '
+        'template words', () {
+      final template = buildNotification(
+        id: 'state-first',
+        title: 'Template title',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'agent-host': 1}),
+      );
+      final reword = buildNotification(
+        id: 'state-first',
+        title: 'The agent reworded this',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'agent-host': 2}),
+      );
+      // The agent host marks the reworded row seen; that patch reaches the
+      // peer while the peer still holds the template.
+      final seenTemplate = NotificationMerge.mergeState(
+        template,
+        seenAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'agent-host': 3}),
+      );
+      expect(
+        seenTemplate.meta.contentVectorClock,
+        const VectorClock({'agent-host': 1}),
+      );
+
+      for (final merged in [
+        NotificationMerge.mergeFull(seenTemplate, reword),
+        NotificationMerge.mergeFull(reword, seenTemplate),
+      ]) {
+        expect(merged.title, 'The agent reworded this');
+        expect(merged.meta.seenAt, DateTime.utc(2026, 5, 17, 10));
+        expect(merged.meta.vectorClock, const VectorClock({'agent-host': 3}));
+        expect(
+          merged.meta.contentVectorClock,
+          const VectorClock({'agent-host': 2}),
+        );
+      }
+    });
+
+    test('a row without a content clock falls back to the timestamp', () {
+      final legacy = buildNotification(
+        id: 'legacy',
+        title: 'Legacy words',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'host-a': 1}),
+        legacyContent: true,
+      );
+      // The row clocks order these, but a legacy row's clock may carry state
+      // patches, so only the timestamp decides.
+      final reword = buildNotification(
+        id: 'legacy',
+        title: 'Reworded',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 5}),
+      );
+
+      for (final merged in [
+        NotificationMerge.mergeFull(legacy, reword),
+        NotificationMerge.mergeFull(reword, legacy),
+      ]) {
+        expect(merged.title, 'Legacy words');
+        expect(merged.meta.contentVectorClock, isNull);
+      }
+    });
+
+    test('concurrent content merges both content clocks, so a late copy of '
+        'the losing version stays behind', () {
+      final earlier = buildNotification(
+        id: 'union',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final later = buildNotification(
+        id: 'union',
+        title: 'Later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-b': 1}),
+      );
+
+      final merged = NotificationMerge.mergeFull(earlier, later);
+
+      expect(
+        merged.meta.contentVectorClock,
+        const VectorClock({'host-a': 1, 'host-b': 1}),
+      );
+      expect(NotificationMerge.mergeFull(merged, earlier).title, 'Later');
+    });
+
     test('concurrent versions still fall back to the timestamp', () {
       final earlier = buildNotification(
         id: 'concurrent',

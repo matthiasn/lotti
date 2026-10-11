@@ -36,19 +36,32 @@ protocol assumes. It also found two specs that no longer describe the code.
 ## Decision
 
 - **A bundle child must be carried.** If neither the row nor an open
-  conflict holds the queued version, the bundle fails into the outbox retry.
+  conflict covers the queued version and every covered clock, the bundle
+  fails into the outbox retry. A single send serves an open conflict under
+  the same rule.
 - **A definition owns its commit.** The adapter no longer wraps definitions.
   The upsert has its own transaction, so the receipt follows the commit.
-- **Notification content follows the vector clocks.** A version that follows
-  the other wins. Concurrent versions keep last-writer-wins on `updatedAt`,
-  then canonical content.
+- **Notification content follows its own clock.** Every create and
+  re-wording stamps `contentVectorClock` with the write's clock, and state
+  patches leave it alone. The row clock cannot order content: it also absorbs
+  lifecycle patches, so a mark-seen that reached a peer before the re-wording
+  would make the stale words look newer. Content that follows the other wins;
+  the merged content clock is the union of both. Concurrent versions, and
+  rows written before the field existed, keep last-writer-wins on
+  `updatedAt`, then canonical content.
 - **Counters survive restores.**
   - At startup `VectorClockService` raises the next counter above the
     highest counter of this host that the sequence log records.
   - After a sync database restore, which leaves a `sync.sqlite.restored`
     marker, the sequence log population runs once more. It records every
-    counter the stored payloads carry.
-- **The media repair cap is persisted** in `SettingsDb`.
+    counter the stored payloads carry, notifications, consumption events
+    and entity definitions included.
+  - Reservations wait for that population pass, and the catch-up runs again
+    after it. Settings and sync database restored from the same old backup
+    would otherwise let a reservation reuse a counter that only a stored
+    payload records.
+- **The media repair cap is persisted** in `SettingsDb`, once the request
+  is queued, so a failed enqueue costs no attempt.
 - **Specs.**
   - `DefinitionClocks.tla` models the repair as `Repair(h)`, weakly fair on
     every host under `RepairAtStartup`. It is re-enabled whenever a host

@@ -312,6 +312,59 @@ void main() {
       );
 
       test(
+        'a reservation waits for the restore re-population and continues '
+        'above the counters it re-records',
+        () async {
+          final syncDb = SyncDatabase(inMemoryDatabase: true);
+          addTearDown(syncDb.close);
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '3');
+          final restarted = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+          );
+          final population = Completer<void>();
+          final held = restarted.holdReservationsWhile(
+            () => population.future,
+          );
+
+          VectorClock? reserved;
+          final reservation = restarted.getNextVectorClock().then(
+            (vc) => reserved = vc,
+          );
+          await pumpEventQueue();
+          expect(reserved, isNull);
+
+          // The population re-records a counter a stored payload carries.
+          await syncDb.recordSequenceEntry(
+            SyncSequenceLogCompanion.insert(
+              hostId: 'penguin-host',
+              counter: 9,
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: DateTime(2026, 10, 11),
+              updatedAt: DateTime(2026, 10, 11),
+            ),
+          );
+          population.complete();
+          await held;
+          await reservation;
+
+          expect(reserved!.vclock, {'penguin-host': 10});
+        },
+      );
+
+      test('a failed population still lifts the hold', () async {
+        final restarted = buildVectorClockService();
+        final held = restarted.holdReservationsWhile(
+          () async => throw StateError('population failed'),
+        );
+
+        await expectLater(held, throwsStateError);
+        final vc = await restarted.getNextVectorClock();
+        expect(vc.vclock, hasLength(1));
+      });
+
+      test(
         'a host that never handed out a counter skips 0 on its next start',
         () async {
           // A build before ADR 0080 persisted watermark 0 for a new host.

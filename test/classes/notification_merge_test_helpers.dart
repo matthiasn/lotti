@@ -310,6 +310,11 @@ NotificationEntity buildNotification({
   DateTime? actedOnAt,
   DateTime? deletedAt,
   VectorClock vectorClock = const VectorClock({'base': 1}),
+  // The clock of the content write; defaults to [vectorClock], as on a row
+  // a create or restate just wrote.
+  VectorClock? contentVectorClock,
+  // A row written before content clocks existed carries none.
+  bool legacyContent = false,
   String originatingHostId = 'base-host',
   String linkedTaskId = 'task-id',
   String title = 'Task reminder',
@@ -326,6 +331,9 @@ NotificationEntity buildNotification({
     actedOnAt: actedOnAt,
     deletedAt: deletedAt,
     vectorClock: vectorClock,
+    contentVectorClock: legacyContent
+        ? null
+        : contentVectorClock ?? vectorClock,
     originatingHostId: originatingHostId,
   );
 

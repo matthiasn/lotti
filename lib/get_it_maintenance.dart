@@ -42,6 +42,28 @@ Future<void> _checkAndPopulateSequenceLog() async {
     final syncDatabase = getIt<SyncDatabase>();
     final journalDb = getIt<JournalDb>();
     final agentDb = getIt<AgentDatabase>();
+    final notificationsDb = getIt<NotificationsDb>();
+    final consumptionDb = getIt<ConsumptionDatabase>();
+
+    // The payloads every other sequence-tracked family stores. A restore
+    // loses their rows as much as the journal's.
+    final recordSources = [
+      (
+        payloadType: SyncSequencePayloadType.notification,
+        records: notificationsDb.streamNotificationsWithVectorClock,
+        count: notificationsDb.countAllNotifications,
+      ),
+      (
+        payloadType: SyncSequencePayloadType.consumptionEvent,
+        records: consumptionDb.streamEventsWithVectorClock,
+        count: consumptionDb.countAllEvents,
+      ),
+      (
+        payloadType: SyncSequencePayloadType.entityDefinition,
+        records: journalDb.streamDefinitionsWithVectorClock,
+        count: journalDb.countAllDefinitions,
+      ),
+    ];
 
     // Check current sequence log count
     final sequenceLogCount = await syncDatabase.getSequenceLogCount();
@@ -55,11 +77,15 @@ Future<void> _checkAndPopulateSequenceLog() async {
     final linksCount = await journalDb.countAllEntryLinks();
     final agentEntityCount = await agentDb.countAllAgentEntities();
     final agentLinkCount = await agentDb.countAllAgentLinks();
+    final recordCounts = [
+      for (final source in recordSources) await source.count(),
+    ];
 
     if (journalCount == 0 &&
         linksCount == 0 &&
         agentEntityCount == 0 &&
-        agentLinkCount == 0) {
+        agentLinkCount == 0 &&
+        recordCounts.every((count) => count == 0)) {
       // Empty database, nothing to populate
       await markDone();
       return;
@@ -70,7 +96,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
       'Starting automatic sequence log population (V2): '
       'journal=$journalCount links=$linksCount '
       'agentEntities=$agentEntityCount agentLinks=$agentLinkCount '
-      'sequenceLog=$sequenceLogCount',
+      'other=$recordCounts sequenceLog=$sequenceLogCount',
       subDomain: 'sequenceLogPopulation',
     );
 
@@ -101,6 +127,15 @@ Future<void> _checkAndPopulateSequenceLog() async {
       getTotalCount: agentDb.countAllAgentLinks,
     );
 
+    final populatedRecords = [
+      for (final source in recordSources)
+        await sequenceLogService.populateFromRecords(
+          payloadType: source.payloadType,
+          records: source.records(),
+          getTotalCount: source.count,
+        ),
+    ];
+
     // Mark as completed
     await markDone();
 
@@ -108,7 +143,8 @@ Future<void> _checkAndPopulateSequenceLog() async {
       LogDomain.database,
       'Automatic sequence log population (V2) completed: '
       'journal=$populatedJournal links=$populatedLinks '
-      'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks',
+      'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks '
+      'other=$populatedRecords',
       subDomain: 'sequenceLogPopulation',
     );
   } catch (e, stackTrace) {

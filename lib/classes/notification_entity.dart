@@ -141,6 +141,13 @@ abstract class NotificationMeta with _$NotificationMeta {
     DateTime? actedOnAt,
     DateTime? deletedAt,
     String? category,
+
+    /// The clock of the write that produced the current title, body and
+    /// kind fields. [vectorClock] also absorbs lifecycle-only state patches,
+    /// so it cannot order content: a mark-seen that arrives before a reword
+    /// would make the stale words look newer. Null on rows written before
+    /// this field existed; content then falls back to `updatedAt`.
+    VectorClock? contentVectorClock,
   }) = _NotificationMeta;
 
   factory NotificationMeta.fromJson(Map<String, dynamic> json) =>

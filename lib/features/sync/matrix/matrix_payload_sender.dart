@@ -263,12 +263,16 @@ class MatrixPayloadSender {
     if (_coversQueued(entity.meta.vectorClock, message)) return entity;
     // A deep-backfill answer or push may name a concurrent version the entry
     // keeps as an open conflict rather than as its row: serve exactly that
-    // version. Such a message failed on every attempt before, so nothing the
-    // app queued otherwise takes this branch.
+    // version, provided it covers every covered clock as well. Such a message
+    // failed on every attempt before, so nothing the app queued otherwise
+    // takes this branch.
     final queued = message.vectorClock;
     if (queued != null) {
       final conflict = await journalDb.openConflictVersion(message.id, queued);
-      if (conflict != null) return conflict;
+      if (conflict != null &&
+          _coversQueued(conflict.meta.vectorClock, message)) {
+        return conflict;
+      }
     }
     throw StateError('Database payload does not cover queued version');
   }
@@ -527,14 +531,16 @@ class MatrixPayloadSender {
         continue;
       }
       final conflict = await journalDb.openConflictVersion(child.id, queued);
-      if (conflict == null) {
-        // Nothing carries the queued version: adopting the row's clock would
-        // claim counters it does not hold, which a single send refuses (ADR
-        // 0086). Fail the bundle into the retry path instead.
+      if (conflict == null ||
+          !_coversQueued(conflict.meta.vectorClock, child)) {
+        // Nothing carries every queued version: adopting the row's clock, or
+        // a conflict short of a covered clock, would claim counters the
+        // payload does not hold, which a single send refuses (ADR 0086).
+        // Fail the bundle into the retry path instead.
         loggingService.error(
           LogDomain.sync,
-          'outboxBundle aborting: the stored row of ${child.id} does not '
-          'cover its queued version',
+          'outboxBundle aborting: neither the stored row of ${child.id} nor '
+          'an open conflict covers its queued versions',
           subDomain: 'sendMatrixMsg.outboxBundle.uncovered',
         );
         return null;

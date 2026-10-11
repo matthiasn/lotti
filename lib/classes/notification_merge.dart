@@ -10,11 +10,13 @@ import 'package:lotti/classes/vector_clock.dart';
 /// resolve those conflicts deterministically so every device converges on the
 /// same content, lifecycle and clock regardless of event-arrival order.
 /// The last state sender's `originatingHostId` is arrival-dependent metadata:
-/// - **Content** (title/body/kind) follows the vector clocks: a version
-///   that follows the other wins. Concurrent versions fall back to
-///   last-writer-wins on `meta.updatedAt`, broken by a canonical-JSON
-///   comparison so identical timestamps still pick a stable winner on every
-///   host.
+/// - **Content** (title/body/kind) follows the content clocks
+///   (`meta.contentVectorClock`): a version whose content follows the other
+///   wins. The row clock is not used, since lifecycle patches advance it
+///   without touching the words. Concurrent versions, and rows without a
+///   content clock, fall back to last-writer-wins on `meta.updatedAt`, broken
+///   by a canonical-JSON comparison so identical timestamps still pick a
+///   stable winner on every host.
 /// - **Lifecycle state** (`seenAt`/`actedOnAt`/`deletedAt`) converges via
 ///   [earliestNonNull]: these transitions are monotonic and irreversible, so
 ///   the first device to observe each transition wins permanently.
@@ -27,10 +29,12 @@ abstract final class NotificationMerge {
   ///
   /// Used by `NotificationsDb.upsertNotification` when a synced create/update
   /// lands on a row that already exists locally. Content fields come from the
-  /// last-writer-wins winner (see the class doc), while the three lifecycle
-  /// timestamps and the vector clock are merged independently of who won the
+  /// content winner (see the class doc), while the three lifecycle
+  /// timestamps and the vector clocks are merged independently of who won the
   /// content race — so a remote title edit cannot resurrect a row this device
-  /// already marked seen/acted-on/deleted.
+  /// already marked seen/acted-on/deleted. The merged content clock is the
+  /// union of both when both carry one, so a late copy of the losing version
+  /// is ordered behind the result.
   static NotificationEntity mergeFull(
     NotificationEntity existing,
     NotificationEntity incoming,
@@ -55,12 +59,20 @@ abstract final class NotificationMerge {
           existingMeta.vectorClock,
           incomingMeta.vectorClock,
         ),
+        contentVectorClock:
+            existingMeta.contentVectorClock == null ||
+                incomingMeta.contentVectorClock == null
+            ? winnerMeta.contentVectorClock
+            : VectorClock.merge(
+                existingMeta.contentVectorClock,
+                incomingMeta.contentVectorClock,
+              ),
       ),
     );
   }
 
   /// Applies a lifecycle-only state change to [existing], leaving its content
-  /// untouched.
+  /// and its content clock untouched.
   ///
   /// Used for local actions (mark-seen/acted-on/retract) and for sync state
   /// events that carry no content. Each supplied timestamp is folded in with
@@ -118,14 +130,16 @@ abstract final class NotificationMerge {
     NotificationEntity existing,
     NotificationEntity incoming,
   ) {
-    // A version that follows the other causally wins whatever the wall
-    // clocks say: a peer whose clock runs fast, or a late copy of the
-    // template, must not outrank a reword made after it.
+    // Content that follows the other causally wins whatever the wall clocks
+    // say: a peer whose clock runs fast, or a late copy of the template, must
+    // not outrank a reword made after it. Only the content clocks order it:
+    // the row clock also counts lifecycle patches that carried no words.
+    final existingContent = existing.meta.contentVectorClock;
+    final incomingContent = incoming.meta.contentVectorClock;
     try {
-      switch (VectorClock.compare(
-        existing.meta.vectorClock,
-        incoming.meta.vectorClock,
-      )) {
+      switch (existingContent == null || incomingContent == null
+          ? VclockStatus.concurrent
+          : VectorClock.compare(existingContent, incomingContent)) {
         case VclockStatus.a_gt_b:
           return existing;
         case VclockStatus.b_gt_a:
@@ -175,7 +189,8 @@ abstract final class NotificationMerge {
       ..remove('actedOnAt')
       ..remove('deletedAt')
       ..remove('originatingHostId')
-      ..remove('vectorClock');
+      ..remove('vectorClock')
+      ..remove('contentVectorClock');
     json['meta'] = meta;
     return _canonicalize(json)! as Map<String, dynamic>;
   }

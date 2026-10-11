@@ -207,6 +207,10 @@ class VectorClockService {
 
   late final Future<void> _initialized;
 
+  /// What every reservation waits for besides [_initialized]; see
+  /// [holdReservationsWhile]. Never fails.
+  Future<void> _reservationsHeld = Future<void>.value();
+
   /// Serializes [reserveNextVectorClock] so the in-memory bump, the
   /// [SettingsDb] write, and the return of the reservation happen atomically
   /// from the caller's perspective. Concurrent reservations then see
@@ -253,6 +257,31 @@ class VectorClockService {
     }
     _nextAvailableCounter = _persistedCounter;
     await _catchUpWithRecordedCounters();
+  }
+
+  /// Holds every reservation until [work] has finished, then raises the next
+  /// counter above what the sequence log records once more.
+  ///
+  /// The sequence log population passes itself here: after a sync database
+  /// restore the log lacks the rows written after the snapshot, so the
+  /// catch-up at [init] can stop short of a counter a stored payload carries,
+  /// and a reservation made before the population re-records it would hand
+  /// that counter out again (ADR 0135). [work] must not reserve a counter
+  /// itself. The returned future fails if [work] does; the hold lifts either
+  /// way.
+  Future<void> holdReservationsWhile(Future<void> Function() work) {
+    final held = () async {
+      await _initialized;
+      try {
+        await work();
+      } finally {
+        // Under the lock: a reservation that got past the hold before it was
+        // set must not write its lower counter back over the catch-up.
+        await _underReserveLock(_catchUpWithRecordedCounters);
+      }
+    }();
+    _reservationsHeld = held.then((_) {}, onError: (Object _) {});
+    return held;
   }
 
   /// Raises the next counter above the highest one the sequence log records
@@ -347,6 +376,7 @@ class VectorClockService {
     VcPayloadRef? payload,
   }) async {
     await _initialized;
+    await _reservationsHeld;
 
     // Serialize so concurrent reservers never observe the same
     // _nextAvailableCounter between the in-memory bump and the [_persistCounter]

@@ -178,12 +178,16 @@ class MediaRepairService {
     // New counters count against the cap too; without this a run of flushes
     // with no later miss would keep more than the cap indefinitely.
     _evictIfOverCapacity();
-    await _saveAttempts();
+    // Persisted only once the request is queued: a failed enqueue rolls the
+    // counts back in memory and leaves the stored ones untouched, and the
+    // snapshot survives a disposal (which clears the map) during the send.
+    final sentAttempts = jsonEncode(_attempts);
 
     try {
       await _outbox.enqueueMessage(
         SyncMessage.mediaRequest(entryIds: batch, requesterId: requesterId),
       );
+      await _saveAttempts(sentAttempts);
       _logging.log(
         LogDomain.sync,
         'mediaRepair.requested count=${batch.length} '
@@ -235,14 +239,11 @@ class MediaRepairService {
     }
   }
 
-  Future<void> _saveAttempts() async {
+  Future<void> _saveAttempts(String encodedAttempts) async {
     final settings = _settings;
     if (settings == null) return;
     try {
-      await settings.saveSettingsItem(
-        attemptsSettingsKey,
-        jsonEncode(_attempts),
-      );
+      await settings.saveSettingsItem(attemptsSettingsKey, encodedAttempts);
     } catch (error, stackTrace) {
       _logging.error(
         LogDomain.sync,

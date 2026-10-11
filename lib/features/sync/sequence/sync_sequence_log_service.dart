@@ -428,6 +428,20 @@ class SyncSequenceLogService {
     onProgress: onProgress,
   );
 
+  /// Populate the sequence log from any stored [payloadType] — notifications,
+  /// consumption events, entity definitions — given their records.
+  Future<int> populateFromRecords({
+    required SyncSequencePayloadType payloadType,
+    required Stream<List<({String id, Map<String, int>? vectorClock})>> records,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) => _backfillQueries.populateFromRecords(
+    payloadType: payloadType,
+    records: records,
+    getTotalCount: getTotalCount,
+    onProgress: onProgress,
+  );
+
   // ── Testing ───────────────────────────────────────────────────────────────
 
   /// Force-expire every cache. Used in tests to verify that expired caches are

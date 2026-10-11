@@ -149,8 +149,11 @@ Future<void> _registerLateAndOptionalServices({
   if (profile.capabilities.syncEnabled) {
     getIt<StartupTasks>()
       // The counter-0 resend reads the own row the population records.
+      // Reservations wait for the population: after a restore it re-records
+      // the counters a reservation must not hand out again.
       ..track(
-        _checkAndPopulateSequenceLog()
+        getIt<VectorClockService>()
+            .holdReservationsWhile(_checkAndPopulateSequenceLog)
             .then((_) => _resendOwnCounterZeroOnce())
             .then((_) => _resendBurnedOwnCountersOnce()),
       )

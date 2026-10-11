@@ -191,7 +191,11 @@ from a backup lacks the rows written after its snapshot, and an own counter
 with no row is answered as burned: the sequence log population runs once more
 after such a restore (the `sync.sqlite.restored` marker
 `restoreDatabaseFromBackup` writes), recording every counter the stored
-payloads carry again ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
+payloads carry again — journal entries, links, agent rows, notifications,
+consumption events and entity definitions. Reservations wait for that pass
+(`VectorClockService.holdReservationsWhile`), and the catch-up runs once more
+after it, so a counter only a stored payload records is not handed out before
+the log knows it ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 
 # Own-host reservations
 
@@ -774,6 +778,8 @@ only as an open conflict would otherwise never reach a third device whose row
 equals the others'. The journal send path serves a queued version that the
 row does not cover from the entry's open conflict of exactly that version
 (`JournalDb.openConflictVersion`), which is how an answer or push carries it.
+The conflict must cover every covered clock too; one that misses any fails
+the send like an uncovered row.
 
 A request goes only to the advertiser, and only it answers
 (`handleRequest`), with the current row of each record — a deletion as much

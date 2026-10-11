@@ -181,6 +181,52 @@ void main() {
     });
   });
 
+  group('populateFromRecords', () {
+    for (final payloadType in [
+      SyncSequencePayloadType.notification,
+      SyncSequencePayloadType.consumptionEvent,
+      SyncSequencePayloadType.entityDefinition,
+    ]) {
+      test(
+        'records every host of a ${payloadType.name} as that type',
+        () async {
+          when(
+            () => mockDb.getCountersForHost(any()),
+          ).thenAnswer((_) async => <int>{});
+          List<SyncSequenceLogCompanion>? inserted;
+          when(() => mockDb.batchInsertSequenceEntries(any())).thenAnswer((
+            invocation,
+          ) async {
+            inserted =
+                invocation.positionalArguments.single
+                    as List<SyncSequenceLogCompanion>;
+          });
+
+          final count = await service.populateFromRecords(
+            payloadType: payloadType,
+            records: Stream.value([
+              (id: 'payload-1', vectorClock: {myHostId: 4, aliceHostId: 2}),
+            ]),
+            getTotalCount: () async => 1,
+          );
+
+          expect(count, 2);
+          expect(
+            {
+              for (final row in inserted!)
+                (row.hostId.value, row.counter.value, row.entryId.value),
+            },
+            {(myHostId, 4, 'payload-1'), (aliceHostId, 2, 'payload-1')},
+          );
+          expect(
+            inserted!.map((row) => row.payloadType.value).toSet(),
+            {payloadType.index},
+          );
+        },
+      );
+    }
+  });
+
   group('getBackfillStats', () {
     test('delegates to database', () async {
       final mockStats = BackfillStats.fromHostStats([
