@@ -134,6 +134,32 @@ void main() {
       expect(NotificationMerge.mergeFull(merged, earlier).title, 'Later');
     });
 
+    test('a malformed content clock orders nothing; the timestamp '
+        'decides', () {
+      final malformed = buildNotification(
+        id: 'malformed',
+        title: 'Malformed but later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-a': 1}),
+        contentVectorClock: const VectorClock({'host-a': -1}),
+      );
+      final ordered = buildNotification(
+        id: 'malformed',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 2}),
+      );
+
+      expect(
+        NotificationMerge.mergeFull(ordered, malformed).title,
+        'Malformed but later',
+      );
+      expect(
+        NotificationMerge.mergeFull(malformed, ordered).title,
+        'Malformed but later',
+      );
+    });
+
     test('concurrent versions still fall back to the timestamp', () {
       final earlier = buildNotification(
         id: 'concurrent',

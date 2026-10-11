@@ -364,6 +364,35 @@ void main() {
         expect(vc.vclock, hasLength(1));
       });
 
+      test('an unreadable sequence log is logged and the stored counter '
+          'stands', () async {
+        final syncDb = MockSyncDatabase();
+        final domainLogger = MockDomainLogger();
+        _stubDomainLoggerError(domainLogger);
+        when(
+          () => syncDb.highestRecordedCounterForHost(any()),
+        ).thenThrow(StateError('sync database closed'));
+        await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+        await settingsDb.saveSettingsItem(nextAvailableCounterKey, '7');
+
+        final restarted = VectorClockService(
+          settingsDb: settingsDb,
+          syncDatabase: () => syncDb,
+          domainLogger: () => domainLogger,
+        );
+        await restarted.initialized;
+
+        expect(await restarted.getNextAvailableCounter(), 7);
+        verify(
+          () => domainLogger.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vectorClock.catchUp',
+          ),
+        ).called(1);
+      });
+
       test(
         'a host that never handed out a counter skips 0 on its next start',
         () async {
