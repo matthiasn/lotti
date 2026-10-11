@@ -64,6 +64,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
+import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
 export 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';

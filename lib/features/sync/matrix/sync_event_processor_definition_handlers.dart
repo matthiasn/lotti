@@ -6,12 +6,16 @@ part of 'sync_event_processor.dart';
 /// version, stamps a clockless row that kept its place against a clocked
 /// copy, and records the copy's counters in the sequence log either way.
 extension SyncEventProcessorDefinitionHandlers on SyncEventProcessor {
-  /// An older peer's clockless definition or link was stored here: clears
-  /// the startup repair's flag, so the next start stamps it (ADR 0130). A
-  /// failure is logged; the row then waits for the manual repair.
+  /// An older peer's clockless definition or link was stored here: writes a
+  /// fresh token under the startup repair's key, so the next start stamps
+  /// it, even when a sweep is running now (ADR 0130). A failure is logged;
+  /// the row then waits for the manual repair.
   Future<void> _requestClocklessRepair() async {
     try {
-      await _settingsDb.removeSettingsItem(clocklessRepairSettingsKey);
+      await _settingsDb.saveSettingsItem(
+        clocklessRepairSettingsKey,
+        'pending:${const Uuid().v4()}',
+      );
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,

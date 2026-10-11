@@ -273,6 +273,26 @@ class SettingsDb extends _$SettingsDb {
     }
   }
 
+  /// Saves [value] under [configKey] only while the key still holds
+  /// [expected] (null: absent), and returns whether it saved. Serialized with
+  /// every other write, so nothing changes the key between the check and the
+  /// save.
+  Future<bool> saveSettingsItemIfUnchanged(
+    String configKey, {
+    required String? expected,
+    required String value,
+  }) => _write(() async {
+    final row = await (select(
+      settings,
+    )..where((t) => t.configKey.equals(configKey))).getSingleOrNull();
+    if (row?.value != expected) return false;
+    await into(settings).insertOnConflictUpdate(
+      SettingsItem(configKey: configKey, value: value, updatedAt: clock.now()),
+    );
+    _publishValue(configKey, value);
+    return true;
+  });
+
   Future<void> removeSettingsItem(String configKey) => _write(() async {
     await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
     _publishValue(configKey, null);

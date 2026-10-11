@@ -176,12 +176,19 @@ void main() {
           MockSavedTaskFiltersRepository(),
         )
         ..registerSingleton<AgentDatabase>(MockAgentDatabase());
+      when(
+        () => settingsDb.saveSettingsItemIfUnchanged(
+          any(),
+          expected: any(named: 'expected'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async => true);
     });
 
     test('does nothing once a device has run it', () async {
       when(
         () => settingsDb.itemByKey(clocklessRepairSettingsKey),
-      ).thenAnswer((_) async => 'true');
+      ).thenAnswer((_) async => clocklessRepairDone);
 
       await repairClocklessRowsOnceForTesting();
 
@@ -201,7 +208,39 @@ void main() {
         verify(journalDb.clocklessDefinitions).called(1);
         verify(journalDb.entryLinksWithNullVectorClock).called(1);
         verify(
-          () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, 'true'),
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: null,
+            value: clocklessRepairDone,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a clockless row stored during the sweep keeps the repair pending: '
+      'completion is recorded only over the token read before sweeping',
+      () async {
+        when(
+          () => settingsDb.itemByKey(clocklessRepairSettingsKey),
+        ).thenAnswer((_) async => 'pending:first');
+        when(
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: 'pending:first',
+            value: clocklessRepairDone,
+          ),
+        ).thenAnswer((_) async => false);
+
+        await repairClocklessRowsOnceForTesting();
+
+        verify(journalDb.entryLinksWithNullVectorClock).called(1);
+        verify(
+          () => logger.log(
+            any<LogDomain>(),
+            any<String>(that: contains('next start sweeps again')),
+            subDomain: 'clocklessRepair',
+          ),
         ).called(1);
       },
     );
@@ -219,7 +258,11 @@ void main() {
         await repairClocklessRowsOnceForTesting();
 
         verifyNever(
-          () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
+          () => settingsDb.saveSettingsItemIfUnchanged(
+            clocklessRepairSettingsKey,
+            expected: any(named: 'expected'),
+            value: any(named: 'value'),
+          ),
         );
         verify(
           () => logger.error(

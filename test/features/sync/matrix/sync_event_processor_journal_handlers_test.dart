@@ -471,7 +471,9 @@ void main() {
         ),
       );
       await processor.process(event: event, journalDb: journalDb);
-      verifyNever(() => settingsDb.removeSettingsItem(any()));
+      verifyNever(
+        () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
+      );
 
       when(() => event.text).thenReturn(
         encodeMessage(
@@ -483,7 +485,10 @@ void main() {
       );
       await processor.process(event: event, journalDb: journalDb);
       verify(
-        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+        () => settingsDb.saveSettingsItem(
+          clocklessRepairSettingsKey,
+          any(that: startsWith('pending:')),
+        ),
       ).called(1);
     });
 

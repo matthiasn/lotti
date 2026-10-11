@@ -98,8 +98,8 @@ void main() {
   group('the startup clock repair', () {
     setUp(() {
       when(
-        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
-      ).thenAnswer((_) async {});
+        () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
+      ).thenAnswer((_) async => 1);
     });
 
     test('a stored clockless definition from an older peer asks the next '
@@ -110,7 +110,10 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(
-        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+        () => settingsDb.saveSettingsItem(
+          clocklessRepairSettingsKey,
+          any(that: startsWith('pending:')),
+        ),
       ).called(1);
     });
 
@@ -126,7 +129,7 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verifyNever(
-          () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+          () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
         );
       },
     );
@@ -135,7 +138,7 @@ void main() {
         'applied', () async {
       journalAnswers(1);
       when(
-        () => settingsDb.removeSettingsItem(clocklessRepairSettingsKey),
+        () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
       ).thenThrow(StateError('settings closed'));
       receive(testLabelDefinition1.copyWith(vectorClock: null));
 

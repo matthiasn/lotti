@@ -128,9 +128,8 @@ Future<void> _repairClocklessRowsOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
   try {
-    if (await settingsDb.itemByKey(clocklessRepairSettingsKey) == 'true') {
-      return;
-    }
+    final token = await settingsDb.itemByKey(clocklessRepairSettingsKey);
+    if (token == clocklessRepairDone) return;
     final vectorClockService = getIt<VectorClockService>();
     await vectorClockService.initialized;
     final repository = SyncMaintenanceRepository(
@@ -145,7 +144,19 @@ Future<void> _repairClocklessRowsOnce() async {
     );
     await repository.backfillDefinitionClocks();
     await repository.backfillEntryLinkClocks();
-    await settingsDb.saveSettingsItem(clocklessRepairSettingsKey, 'true');
+    final recorded = await settingsDb.saveSettingsItemIfUnchanged(
+      clocklessRepairSettingsKey,
+      expected: token,
+      value: clocklessRepairDone,
+    );
+    if (!recorded) {
+      domainLogger.log(
+        LogDomain.sync,
+        'A clockless row arrived during the clock repair; '
+        'the next start sweeps again',
+        subDomain: 'clocklessRepair',
+      );
+    }
   } catch (error, stackTrace) {
     domainLogger.error(
       LogDomain.sync,

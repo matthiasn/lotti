@@ -2758,7 +2758,7 @@ speech dictionary entries — replicate as whole documents. Every local write
 reserves the host's next counter on top of the stored clock; the receiving
 gate keeps a version whose clock dominates and settles two concurrent ones
 last-writer-wins (`updatedAt`, then content), storing the winner under the
-join of both clocks. Rows from builds before clocks carry none: a migration stamps them, on every device once at startup since ADR 0130 and on demand from Sync health, a clockless copy
+join of both clocks. Rows from builds before clocks carry none: a migration stamps them — on every device at startup since ADR 0130, once and again at the next start after an older peer delivers another clockless row (even one stored while a sweep runs), and on demand from Sync health — a clockless copy
 never displaces a clocked row, and a clockless row that keeps its place
 against a clocked copy stamps itself on top of it. With `Backfill`, delivery
 is lossy and the sequence log repairs it: a receiver learns every counter in
