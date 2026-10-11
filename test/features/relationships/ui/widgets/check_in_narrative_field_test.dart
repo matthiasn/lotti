@@ -534,6 +534,14 @@ void main() {
       );
       expect(dictate.variant, DesignSystemButtonVariant.tertiary);
       expect(dictate.size, DesignSystemButtonSize.dense);
+      // Nor the note's hint: the long one would wrap and grow the field.
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
+            .decoration!
+            .hintText,
+        'Add a note…',
+      );
       // Removing the only take leaves nothing to save: no shortcut either.
       await pump(
         tester,

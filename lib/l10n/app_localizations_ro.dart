@@ -3620,7 +3620,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInTranscriptMissingBody =>
-      'Fișierul audio rămâne salvat în jurnal, chiar dacă renunțați la această înregistrare. Încercați din nou în scurt timp.';
+      'Fișierul audio rămâne salvat în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
 
   @override
   String get checkInTranscriptUnavailable =>

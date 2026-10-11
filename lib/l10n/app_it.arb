@@ -1758,7 +1758,7 @@
   "checkInTopicsLabel": "Argomenti",
   "checkInTranscribingLabel": "Trascrizione in corso…",
   "checkInTranscriptionUnavailableTitle": "Nessun modello di trascrizione configurato",
-  "checkInTranscriptMissingBody": "La tua registrazione resta salvata nel diario, anche se scarti questo contatto. Riprova tra un momento.",
+  "checkInTranscriptMissingBody": "La tua registrazione resta salvata nel diario, anche se scarti questo check-in. Riprova tra un momento.",
   "checkInTranscriptUnavailable": "Scegli un profilo di inferenza predefinito con un modello di trascrizione nelle impostazioni IA, oppure scrivi il tuo check-in.",
   "checkInTypeChipSemantics": "Tipo: {type}. Cambia",
   "checkInTypeInstead": "Scrivi invece",

@@ -3601,7 +3601,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get checkInTranscriptMissingBody =>
-      'La tua registrazione resta salvata nel diario, anche se scarti questo contatto. Riprova tra un momento.';
+      'La tua registrazione resta salvata nel diario, anche se scarti questo check-in. Riprova tra un momento.';
 
   @override
   String get checkInTranscriptUnavailable =>

@@ -324,9 +324,11 @@ class CheckInNarrativeField extends StatelessWidget {
         ],
         _textField(
           context,
-          hint: takes.isEmpty
-              ? messages.checkInNarrativeHint
-              : messages.checkInAddNoteHint,
+          // The slot a removed take left counts too: the long hint would
+          // wrap and grow the field until Undo.
+          hint: hasTakes
+              ? messages.checkInAddNoteHint
+              : messages.checkInNarrativeHint,
           // "One line is enough": the box says so by not asking for five.
           // Neither does it beside a recording, or the slot one left.
           minLines: underCard || hasTakes ? 1 : restMinLines,

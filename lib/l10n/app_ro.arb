@@ -1536,7 +1536,7 @@
   "checkInTopicsLabel": "Subiecte",
   "checkInTranscribingLabel": "Se transcrie…",
   "checkInTranscriptionUnavailableTitle": "Niciun model de transcriere configurat",
-  "checkInTranscriptMissingBody": "Fișierul audio rămâne salvat în jurnal, chiar dacă renunțați la această înregistrare. Încercați din nou în scurt timp.",
+  "checkInTranscriptMissingBody": "Fișierul audio rămâne salvat în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.",
   "checkInTranscriptUnavailable": "Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.",
   "checkInTypeChipSemantics": "Tip: {type}. Schimbați",
   "checkInTypeInstead": "Scrieți în schimb",

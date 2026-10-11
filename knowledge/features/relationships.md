@@ -1692,7 +1692,8 @@ The composer's parts, top to bottom:
   news, not a bigger size — only a missing take's line steps up to high
   emphasis, so the news outranks its explanation. *Try again* stays out of the header row, where
   on a phone it pushed the state off the line. The note's word count is
-  the note's, so beside a take it goes, and the shortcut hint is offered
+  the note's, so beside a take it is not shown at all, and the shortcut
+  hint is offered
   with no words typed, since a take alone is enough to save. Once a take
   is in, *Dictate* steps down to the `tertiary` text action at the `dense`
   size — still the action ink, so it never reads as part of the caption
