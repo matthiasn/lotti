@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -43,6 +45,7 @@ void main() {
     String? runningFor,
     bool adoptRunning = false,
     String style = 'modern',
+    bool showStatus = false,
   }) async {
     recorder = FakeAudioRecorderController(
       recordFailure: recordFailure,
@@ -56,6 +59,7 @@ void main() {
           linkedId: 'person-1',
           categoryId: 'category-7',
           adoptRunning: adoptRunning,
+          showStatus: showStatus,
           onRecorded: (id, length) => recorded.add((id, length)),
           onDiscarded: () => discarded++,
           onFailed: failed.add,
@@ -296,6 +300,43 @@ void main() {
     expect(recorder.resumeCalls, 1);
     expect(labelOf(tester, 'check-in-recorder-pause'), 'Pause');
     semantics.dispose();
+  });
+
+  testWidgets("the composer's recorder leaves the status to its header", (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(
+      find.byKey(const ValueKey('check-in-recorder-status')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('where the host has no header of its own it says Recording '
+      'or Paused in the header grammar', (tester) async {
+    await pump(tester, showStatus: true);
+    recorder.tick(progress: const Duration(seconds: 3));
+    await tester.pump();
+    final status = find.byKey(const ValueKey('check-in-recorder-status'));
+    expect(
+      find.descendant(of: status, matching: find.text('Recording')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: status, matching: find.byType(DesignSystemBadge)),
+      findsOneWidget,
+    );
+
+    await recorder.pause();
+    await tester.pump();
+    expect(
+      find.descendant(of: status, matching: find.text('Paused')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: status, matching: find.byIcon(LottiIcons.pause)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the clock ticks in place: crossing a digit boundary moves '

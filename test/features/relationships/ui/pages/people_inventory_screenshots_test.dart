@@ -1947,7 +1947,7 @@ void main() {
           );
           await tester.pump();
         }
-        expect(find.text('Recording'), findsOne);
+        expect(find.textContaining('Recording ·'), findsOne);
         await captureScreenshot(
           tester,
           'check_in_recording_${viewport}_dark',
@@ -1984,17 +1984,27 @@ void main() {
           find.byKey(const ValueKey('check-in-take-transcript')),
           findsOne,
         );
-        // The note stays the user's: the words are the take's, and the
-        // count is the note's alone. The desktop dialog shows the shortcut
-        // it is the one place to use — macOS's, as the theme's platform
-        // now says.
-        expect(find.textContaining('5 words'), findsOne);
+        // The note stays the user's: the words are the take's, and beside
+        // a take the note's count would read as the take's, so it goes.
+        // The desktop dialog shows the shortcut it is the one place to use
+        // — macOS's, as the theme's platform now says.
+        expect(find.textContaining('5 words'), findsNothing);
         if (viewport == 'desktop') {
           expect(find.textContaining('⌘Enter to save'), findsOne);
         }
         await captureScreenshot(
           tester,
           'check_in_transcript_ready_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        // Removed: the offer to put it back stands in the take's slot.
+        await tester.tap(find.byKey(const ValueKey('check-in-take-remove')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('check-in-take-undo')), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_take_removed_${viewport}_dark',
           subdir: _subdir,
         );
       });
@@ -2080,7 +2090,8 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
         expect(find.text('Allow microphone access'), findsOne);
-        expect(find.text('Microphone unavailable'), findsOne);
+        // The callout owns the failure; the header stays at rest.
+        expect(find.text('Microphone unavailable'), findsNothing);
         await captureScreenshot(
           tester,
           'check_in_mic_denied_${viewport}_dark',
@@ -2099,7 +2110,7 @@ void main() {
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
-        expect(find.text('Transcript not received'), findsOneWidget);
+        expect(find.textContaining('Transcript not received'), findsOneWidget);
         expect(
           find.byKey(const ValueKey('check-in-retry-transcript')),
           findsOne,

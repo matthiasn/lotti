@@ -3273,6 +3273,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
+  String get checkInAddNoteHint => 'Tilføj en note…';
+
+  @override
   String get checkInAvoidLabel => 'Bedst at undgå';
 
   @override
@@ -3413,9 +3416,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Åbn indstillinger';
 
   @override
-  String get checkInOrTypeHint => 'Eller skriv det her…';
-
-  @override
   String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
 
   @override
@@ -3522,29 +3522,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInStartedLabel => 'Startet';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Mikrofon ikke tilgængelig';
-
-  @override
   String get checkInStatusPaused => 'På pause';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Optageren er optaget';
 
   @override
   String get checkInStatusRecording => 'Optager';
 
   @override
-  String get checkInStatusRecordingFailed => 'Optagelsen startede ikke';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Optagelsen blev ikke gemt';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Ingen transskriptionsmodel';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Ingen transskription modtaget';
+
+  @override
+  String get checkInTakeRemoved => 'Optagelse fjernet';
 
   @override
   String get checkInTakeWordsFollow => 'Du kan gemme nu – ordene følger efter.';
@@ -3568,9 +3555,8 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen transskriptionsmodel sat op';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Din optagelse på $length er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Din optagelse er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.';
 
   @override
   String get checkInTranscriptUnavailable =>

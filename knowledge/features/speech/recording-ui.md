@@ -101,7 +101,7 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 | Surface | Shows |
 |---------|-------|
 | Recording modal | The whole `RecordingStage`: VU meter or orb, level line, record / discard–timed Stop–pause, *Transcribe* |
-| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder` |
+| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder`, with its own status line in the stage's notice slot (`showStatus`: `● Recording` / `Paused` in the composer header's grammar, a live region), since no header above it says so |
 | Check-in composer | The whole stage, under the composer's header and its status line |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |

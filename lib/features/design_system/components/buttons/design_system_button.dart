@@ -71,6 +71,7 @@ class DesignSystemButton extends StatefulWidget {
     this.fullWidth = false,
     this.isLoading = false,
     this.alignsLabelToLeadingEdge = false,
+    this.alignsLabelToTrailingEdge = false,
     this.suppressHoverFill = false,
     this.tabularFigures = false,
     this.tapTargetSize = MaterialTapTargetSize.shrinkWrap,
@@ -78,6 +79,10 @@ class DesignSystemButton extends StatefulWidget {
   }) : assert(
          label != '' || semanticsLabel != null,
          'Provide either a visible label or a semanticsLabel.',
+       ),
+       assert(
+         !(alignsLabelToLeadingEdge && alignsLabelToTrailingEdge),
+         'A button lands its content on one edge, not both.',
        );
 
   final String label;
@@ -106,6 +111,12 @@ class DesignSystemButton extends StatefulWidget {
   /// button sits in a stack of text rows — which is exactly where the caption
   /// tier gets used. Direction-aware, so it pulls right in RTL.
   final bool alignsLabelToLeadingEdge;
+
+  /// [alignsLabelToLeadingEdge]'s mirror: pushes the button outward by its
+  /// own horizontal content inset so its label ends on the parent's
+  /// trailing edge — a quiet action closing a row of text, whose label must
+  /// end where the row's other trailing content does.
+  final bool alignsLabelToTrailingEdge;
 
   /// Drops the hover/focus/pressed *fill* on the fill-less variants
   /// (tertiary and the outlined family), leaving the ink to carry the state.
@@ -264,12 +275,17 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       ),
     );
 
-    if (!widget.alignsLabelToLeadingEdge) return button;
+    if (!widget.alignsLabelToLeadingEdge && !widget.alignsLabelToTrailingEdge) {
+      return button;
+    }
     final towardsLeading = Directionality.of(context) == TextDirection.rtl
         ? 1.0
         : -1.0;
+    final outward = widget.alignsLabelToLeadingEdge
+        ? towardsLeading
+        : -towardsLeading;
     return Transform.translate(
-      offset: Offset(towardsLeading * sizeSpec.horizontalPadding, 0),
+      offset: Offset(outward * sizeSpec.horizontalPadding, 0),
       child: button,
     );
   }

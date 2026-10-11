@@ -29,6 +29,8 @@ void main() {
     int restMinLines = 3,
     bool offersDictation = true,
     List<CheckInTake> takes = const [],
+    bool undoOffered = false,
+    int removedAt = 0,
   }) async {
     controller = TextEditingController(text: text);
     focusNode = FocusNode();
@@ -57,6 +59,8 @@ void main() {
             onDictate: dictateEnabled ? () => calls.add('dictate') : null,
             onRetryTake: (id) => calls.add('retry $id'),
             onRemoveTake: (id) => calls.add('remove $id'),
+            onUndoRemove: undoOffered ? () => calls.add('undo') : null,
+            removedAt: removedAt,
             onOpenSettings: () => calls.add('open-settings'),
             onDismissFailure: () => calls.add('dismiss'),
           ),
@@ -372,7 +376,8 @@ void main() {
         'Pip wants the contract signed before the freeze.',
       );
       expect(controller.text, 'Send krill tonight.');
-      expect(find.text('3 words'), findsOneWidget);
+      // Beside a take the note's count would read as the take's: it goes.
+      expect(find.textContaining('words'), findsNothing);
     });
 
     testWidgets(
@@ -388,7 +393,7 @@ void main() {
         );
         expect(find.text('00:23 · Transcript not received'), findsOneWidget);
         expect(
-          find.textContaining('Your 00:23 recording is saved in the journal'),
+          find.textContaining('Your recording is saved in the journal'),
           findsOneWidget,
         );
         await tester.tap(
@@ -450,6 +455,108 @@ void main() {
       );
       expect(find.text('⌘Enter to save'), findsOneWidget);
     });
+
+    testWidgets('what was said leads: the takes stand above the note, whose '
+        'placeholder invites a note of its own in the same tier', (
+      tester,
+    ) async {
+      await pump(tester, phase: const CheckInSpeechIdle());
+      final note = find.byKey(const ValueKey('check-in-narrative'));
+      final restingHint = tester.widget<TextField>(note).decoration!;
+      expect(
+        restingHint.hintText,
+        'What did you talk about? One line is enough.',
+      );
+
+      await pump(tester, phase: const CheckInSpeechIdle(), takes: [take]);
+      final besideTake = tester.widget<TextField>(note).decoration!;
+      expect(besideTake.hintText, 'Add a note…');
+      // The placeholder keeps its size when a take lands; the copy changes.
+      expect(
+        besideTake.hintStyle!.fontSize,
+        restingHint.hintStyle!.fontSize,
+      );
+      expect(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('check-in-take-audio-1')))
+            .dy,
+        lessThan(tester.getTopLeft(note).dy),
+      );
+    });
+
+    testWidgets('the offer to put a removed take back stands in its slot, '
+        'and Undo asks for it', (tester) async {
+      const second = CheckInTake(
+        audioEntryId: 'audio-2',
+        length: Duration(seconds: 9),
+      );
+      // The middle of three was removed: the offer stands between the two
+      // that remain.
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        takes: [take, second],
+        undoOffered: true,
+        removedAt: 1,
+      );
+      double top(Finder finder) => tester.getTopLeft(finder).dy;
+      final slot = find.byKey(const ValueKey('check-in-take-removed'));
+      expect(
+        find.descendant(
+          of: slot,
+          matching: find.text('Recording removed'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        top(slot),
+        greaterThan(top(find.byKey(const ValueKey('check-in-take-audio-1')))),
+      );
+      expect(
+        top(slot),
+        lessThan(top(find.byKey(const ValueKey('check-in-take-audio-2')))),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-take-undo')));
+      expect(calls, ['undo']);
+
+      // The slot counts as a take for the footer: with only the slot left,
+      // Dictate stays quiet and the note's count stays away, so removing a
+      // take never reshapes the footer.
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        wordCount: 5,
+        undoOffered: true,
+      );
+      final dictate = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('check-in-dictate')),
+      );
+      expect(dictate.variant, DesignSystemButtonVariant.tertiary);
+      expect(dictate.size, DesignSystemButtonSize.dense);
+      // Removing the only take leaves nothing to save: no shortcut either.
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        shortcutHint: '⌘Enter',
+        undoOffered: true,
+      );
+      expect(find.textContaining('to save'), findsNothing);
+      expect(find.textContaining('5 words'), findsNothing);
+
+      // A slot past the takes there are now is clamped to the end.
+      await pump(
+        tester,
+        phase: const CheckInSpeechIdle(),
+        takes: [take],
+        undoOffered: true,
+        removedAt: 5,
+      );
+      expect(
+        top(slot),
+        greaterThan(top(find.byKey(const ValueKey('check-in-take-audio-1')))),
+      );
+    });
   });
 
   testWidgets('the actions keep one corner: beside the caption on a wide '
@@ -479,6 +586,149 @@ void main() {
     );
   });
 
+  testWidgets('beside a take a one-line note is one line tall — no blank '
+      'second line on a touch platform', (tester) async {
+    await pump(
+      tester,
+      phase: const CheckInSpeechIdle(),
+      // Short enough to stay one line in the test font, whose every glyph
+      // is a full em wide — beside a hint that is not.
+      text: 'Krill.',
+      wordCount: 1,
+      width: 400,
+      takes: [
+        const CheckInTake(
+          audioEntryId: 'audio-1',
+          length: Duration(seconds: 23),
+        ).heard('Reviewed the launch.'),
+      ],
+    );
+    final field = find.byKey(const ValueKey('check-in-narrative'));
+    final editable = tester
+        .state<EditableTextState>(
+          find.descendant(of: field, matching: find.byType(EditableText)),
+        )
+        .renderEditable;
+    // The hidden two-line hint holds no second line open.
+    expect(editable.size.height, closeTo(editable.preferredLineHeight, 0.5));
+    expect(
+      tester.getSize(field).height,
+      closeTo(editable.preferredLineHeight, 0.5),
+    );
+  });
+
+  testWidgets('a heard take shows its whole transcript; once a take is in, '
+      'Dictate steps down to a dense text action so Save leads', (
+    tester,
+  ) async {
+    const long =
+        'Reviewed the habitat launch with Pip. The window slips a week, '
+        'Pip is calm about it, the krill contract needs signing before the '
+        'freeze, and the pad-3 decision is not to be reopened.';
+    await pump(
+      tester,
+      phase: const CheckInSpeechIdle(),
+      takes: [
+        const CheckInTake(
+          audioEntryId: 'audio-1',
+          length: Duration(seconds: 23),
+        ).heard(long),
+      ],
+    );
+    final transcript = tester.widget<Text>(
+      find.byKey(const ValueKey('check-in-take-transcript')),
+    );
+    expect(transcript.maxLines, isNull);
+    expect(transcript.overflow, isNot(TextOverflow.ellipsis));
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(const ValueKey('check-in-dictate')),
+          )
+          .variant,
+      DesignSystemButtonVariant.tertiary,
+    );
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(const ValueKey('check-in-dictate')),
+          )
+          .size,
+      DesignSystemButtonSize.dense,
+    );
+
+    await pump(tester, phase: const CheckInSpeechIdle());
+    expect(
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(const ValueKey('check-in-dictate')),
+          )
+          .variant,
+      DesignSystemButtonVariant.outlined,
+    );
+  });
+
+  testWidgets("the take's header line is the live one: where its words are "
+      'is announced from the card, not the sheet header', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(
+      tester,
+      phase: const CheckInSpeechIdle(),
+      takes: [
+        const CheckInTake(
+          audioEntryId: 'audio-1',
+          length: Duration(seconds: 23),
+        ),
+      ],
+    );
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('check-in-take-meta'))),
+      isSemantics(isLiveRegion: true),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets("a take's glyph says where its words are: on their way, "
+      'here, or missing — and its line stays in the quiet ink until it is '
+      'the news', (
+    tester,
+  ) async {
+    const take = CheckInTake(
+      audioEntryId: 'audio-1',
+      length: Duration(seconds: 23),
+    );
+    for (final (state, glyph) in [
+      (take, 'check-in-take-glyph-transcribing'),
+      (take.heard('Words.'), 'check-in-take-glyph-heard'),
+      (take.missing(null), 'check-in-take-glyph-missing'),
+    ]) {
+      await pump(tester, phase: const CheckInSpeechIdle(), takes: [state]);
+      expect(find.byKey(ValueKey(glyph)), findsOneWidget, reason: glyph);
+      final tokens = tester
+          .element(find.byKey(const ValueKey('check-in-take-meta')))
+          .designTokens;
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('check-in-take-meta')))
+            .style
+            ?.color,
+        // Missing words are the news: the line outranks its explanation.
+        state.words == CheckInTakeWords.missing
+            ? tokens.colors.text.highEmphasis
+            : tokens.colors.text.mediumEmphasis,
+        reason: glyph,
+      );
+    }
+    expect(
+      tester
+          .widget<Icon>(
+            find.byKey(const ValueKey('check-in-take-glyph-missing')),
+          )
+          .icon,
+      LottiIcons.warning,
+    );
+  });
+
   group('failed', () {
     testWidgets('a denied microphone: the error card, Open settings, Try '
         'again, and the field still there to type into', (tester) async {
@@ -489,20 +739,20 @@ void main() {
         ),
       );
       expect(find.text('Allow microphone access'), findsOneWidget);
-      expect(find.text('Or type it here…'), findsOneWidget);
-      // The field's own ladder holds under the card: the placeholder steps
-      // down a size and the retry is a quiet text action, so the card's
-      // pill is the face's one shape.
-      final tokens = tester
-          .element(find.byKey(const ValueKey('check-in-narrative')))
-          .designTokens;
+      // The callout stands above the field, not inside its frame: one
+      // bordered object at a time.
+      final card = find.byKey(const ValueKey('check-in-speech-failure'));
+      final frame = find.byKey(const ValueKey('check-in-narrative-field'));
+      expect(find.descendant(of: frame, matching: card), findsNothing);
       expect(
-        tester
-            .widget<TextField>(find.byKey(const ValueKey('check-in-narrative')))
-            .decoration!
-            .hintStyle!
-            .fontSize,
-        tokens.typography.styles.body.bodyMedium.fontSize,
+        tester.getRect(card).bottom,
+        lessThanOrEqualTo(tester.getRect(frame).top),
+      );
+      // The field keeps its own hint, and its Dictate — the retry the
+      // card's body names — keeps its resting shape.
+      expect(
+        find.text('What did you talk about? One line is enough.'),
+        findsOneWidget,
       );
       expect(
         tester
@@ -510,7 +760,7 @@ void main() {
               find.byKey(const ValueKey('check-in-dictate')),
             )
             .variant,
-        DesignSystemButtonVariant.tertiary,
+        DesignSystemButtonVariant.outlined,
       );
       // The card offers typing as a quiet button — the way out, not a
       // second accent — and its recommended action is the secondary pill:
@@ -545,6 +795,24 @@ void main() {
       expect(find.byKey(const ValueKey('check-in-word-count')), findsNothing);
     });
 
+    testWidgets('under a refused microphone Dictate is the named retry, in '
+        'its resting shape even beside a take', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechFailed(
+          CheckInSpeechFailure(CheckInSpeechFailureKind.microphoneDenied),
+        ),
+        takes: const [
+          CheckInTake(audioEntryId: 'audio-1', length: Duration(seconds: 5)),
+        ],
+      );
+      final dictate = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('check-in-dictate')),
+      );
+      expect(dictate.variant, DesignSystemButtonVariant.outlined);
+      expect(dictate.size, DesignSystemButtonSize.medium);
+    });
+
     testWidgets('a failed start offers Try again, which records again', (
       tester,
     ) async {
@@ -555,6 +823,8 @@ void main() {
         ),
       );
       expect(find.text("Recording didn't start"), findsOneWidget);
+      // The callout owns the retry: the field offers no second Dictate.
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
       expect(calls, ['dictate']);
     });
@@ -606,6 +876,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('check-in-retry-audio')), findsNothing);
+      // Recording again would only lead back here: no Dictate either.
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
       expect(calls, ['dismiss']);
     });

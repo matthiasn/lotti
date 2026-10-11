@@ -3306,6 +3306,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
 
   @override
+  String get checkInAddNoteHint => 'Adiciona uma nota…';
+
+  @override
   String get checkInAvoidLabel => 'Melhor evitar';
 
   @override
@@ -3447,9 +3450,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Abrir definições';
 
   @override
-  String get checkInOrTypeHint => 'Ou escreve aqui…';
-
-  @override
   String get checkInPayAttentionLabel => 'Na próxima vez, preste atenção em';
 
   @override
@@ -3558,29 +3558,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInStartedLabel => 'Começou';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Microfone indisponível';
-
-  @override
   String get checkInStatusPaused => 'Em pausa';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Gravador ocupado';
 
   @override
   String get checkInStatusRecording => 'A gravar';
 
   @override
-  String get checkInStatusRecordingFailed => 'A gravação não começou';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Gravação não guardada';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Sem modelo de transcrição';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Transcrição não recebida';
+
+  @override
+  String get checkInTakeRemoved => 'Gravação removida';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3606,9 +3593,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sem modelo de transcrição configurado';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'A tua gravação de $length fica guardada no diário, mesmo que descartes este check-in. Tenta de novo daqui a pouco.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'A tua gravação fica guardada no diário, mesmo que descartes este registro. Tenta de novo daqui a pouco.';
 
   @override
   String get checkInTranscriptUnavailable =>

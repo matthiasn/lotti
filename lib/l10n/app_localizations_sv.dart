@@ -3282,6 +3282,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
+  String get checkInAddNoteHint => 'Lägg till en anteckning…';
+
+  @override
   String get checkInAvoidLabel => 'Bäst att undvika';
 
   @override
@@ -3422,9 +3425,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Öppna inställningar';
 
   @override
-  String get checkInOrTypeHint => 'Eller skriv här…';
-
-  @override
   String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
 
   @override
@@ -3530,29 +3530,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInStartedLabel => 'Startade';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Mikrofonen är inte tillgänglig';
-
-  @override
   String get checkInStatusPaused => 'Pausad';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Inspelaren är upptagen';
 
   @override
   String get checkInStatusRecording => 'Spelar in';
 
   @override
-  String get checkInStatusRecordingFailed => 'Inspelningen startade inte';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Inspelningen sparades inte';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Ingen transkriptionsmodell';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Ingen transkription mottagen';
+
+  @override
+  String get checkInTakeRemoved => 'Inspelningen togs bort';
 
   @override
   String get checkInTakeWordsFollow => 'Du kan spara nu – orden kommer sen.';
@@ -3576,9 +3563,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen transkriptionsmodell inställd';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Din inspelning på $length finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Din inspelning finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.';
 
   @override
   String get checkInTranscriptUnavailable =>

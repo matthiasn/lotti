@@ -67,7 +67,11 @@ share a type tier with the surface's primary action.
 A button pays its own content inset, which puts its *label* — not its box — off
 the column when it sits first on a leading edge. `alignsLabelToLeadingEdge`
 cancels exactly that inset, direction-aware, so a button can start a shared
-column without a call site open-coding a `Transform`.
+column without a call site open-coding a `Transform`; its mirror
+`alignsLabelToTrailingEdge` ends a row instead — a text action closing a line
+of copy, whose label must end where the row's other trailing content does
+(the check-in composer's *Undo*, *Try again* and footer *Dictate*). A button
+takes one edge, never both.
 
 A label that carries a live value — a countdown — sets `tabularFigures`, so
 every digit shares one advance and a changing digit cannot resize the button.

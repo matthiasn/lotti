@@ -3259,6 +3259,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'The recording was captured, but transcribing it failed. Please try again.';
 
   @override
+  String get checkInAddNoteHint => 'Add a note…';
+
+  @override
   String get checkInAvoidLabel => 'Better to avoid';
 
   @override
@@ -3400,9 +3403,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Open settings';
 
   @override
-  String get checkInOrTypeHint => 'Or type it here…';
-
-  @override
   String get checkInPayAttentionLabel => 'Next time, pay attention to';
 
   @override
@@ -3509,28 +3509,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInStartedLabel => 'Started';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Microphone unavailable';
-
-  @override
   String get checkInStatusPaused => 'Paused';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Recorder busy';
 
   @override
   String get checkInStatusRecording => 'Recording';
 
   @override
-  String get checkInStatusRecordingFailed => 'Recording didn\'t start';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Recording not saved';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable => 'No transcription model';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Transcript not received';
+
+  @override
+  String get checkInTakeRemoved => 'Recording removed';
 
   @override
   String get checkInTakeWordsFollow => 'You can save now — the words follow.';
@@ -3554,9 +3542,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No transcription model set up';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Your $length recording is saved in the journal, even if you cancel this check-in. Try again in a moment.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Your recording is saved in the journal, even if you cancel this check-in. Try again in a moment.';
 
   @override
   String get checkInTranscriptUnavailable =>

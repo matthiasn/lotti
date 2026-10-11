@@ -15,6 +15,53 @@ void main() {
   // the tabular-figures test could not tell proportional digits apart.
   setUpAll(loadAppFonts);
   group('DesignSystemButton', () {
+    for (final (direction, leading) in [
+      (TextDirection.ltr, true),
+      (TextDirection.ltr, false),
+      (TextDirection.rtl, true),
+      (TextDirection.rtl, false),
+    ]) {
+      testWidgets('lands its label on the ${leading ? 'leading' : 'trailing'} '
+          'edge of its slot — ${direction.name}', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Directionality(
+              textDirection: direction,
+              child: Center(
+                child: SizedBox(
+                  key: const Key('slot'),
+                  width: 300,
+                  child: Align(
+                    alignment: leading
+                        ? AlignmentDirectional.centerStart
+                        : AlignmentDirectional.centerEnd,
+                    child: DesignSystemButton(
+                      label: 'Undo',
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                      alignsLabelToLeadingEdge: leading,
+                      alignsLabelToTrailingEdge: !leading,
+                      onPressed: _noop,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+        final slot = tester.getRect(find.byKey(const Key('slot')));
+        final label = tester.getRect(find.text('Undo'));
+        // The edge the label should land on, by side and direction.
+        final atLeft = leading == (direction == TextDirection.ltr);
+        if (atLeft) {
+          expect(label.left, moreOrLessEquals(slot.left, epsilon: 0.5));
+        } else {
+          expect(label.right, moreOrLessEquals(slot.right, epsilon: 0.5));
+        }
+      });
+    }
+
     testWidgets('renders the primary small variant from tokens', (
       tester,
     ) async {

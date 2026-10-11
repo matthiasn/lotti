@@ -1635,85 +1635,129 @@ The composer's parts, top to bottom:
 * [`CheckInComposerHeader`](../../lib/features/relationships/ui/widgets/check_in_composer_header.dart)
   in the sheet's pinned toolbar slot: the person's avatar, the title and one
   status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
-  `relationshipDetailControllerProvider`; what the recorder is doing
-  (`● Recording`, `Paused`, `Microphone unavailable`); and, with the recorder
-  at rest, where the takes' words are (`Transcribing…` while one is on its
-  way, `Transcript not received` when one never came —
-  `checkInComposerStatusOf`) — while a take is live the
-  glyph alone carries the tone (the red dot is the design system's
-  `danger` presence dot) and the words stay in the quiet ink, so accent on
-  text means only pressable; a failure wears its alert ink on the words as
-  well, the briefing card's rule for its own status line, so the two
-  surfaces read one way; *Paused* wears a pause glyph. The line is a live
-  region for the recorder and the transcript wait only — never for the
-  resting subtitle, which would otherwise be re-read before a landing
-  transcript, and never for a failure, which the callout beneath announces
-  (its title is the next step), so one region speaks per event. Editing an existing check-in, the ladder starts at `with Pip`:
-  the *Started* row is the one source of its date. The close control
-  is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
-  tone). The
-  status line is **tiered**, not truncated: a `DsTieredText` shows the
-  widest of its wordings that fits (`with Pip · last spoke Sat 1 Aug` →
-  `with Pip`), so a narrow phone or a large text scale sheds the date before
-  the person — a check-in is *with* someone — and assistive technology hears
-  the full first wording whatever the screen shows. Above
-  `TextScales.large` (1.3×) the avatar steps aside for the text, and the
-  toolbar's height is computed from the styles' own line
-  heights plus the number of lines the title actually needs at the modal's
-  real width (`titleLinesFor`, a `TextPainter` measurement, capped at two)
-  — Wolt reserves the slot up front, so the sheet and the header must agree
-  on the number rather than guess it.
+  `relationshipDetailControllerProvider`, and while a take runs what the
+  recorder is doing, still with the person (`● Recording · with Pip`,
+  `Paused · with Pip` — `checkInComposerStatusOf` knows only idle,
+  preparing, recording and paused). The glyph alone carries the tone (the
+  red dot is the design system's `danger` presence dot, *Paused* wears a
+  pause glyph) and the words stay in the quiet ink, so accent on text means
+  only pressable. Where a take's words are is the take's own line to say,
+  and a failure is its callout's, so the header never repeats either; the
+  line is a live region for the recorder only. While a take runs the
+  header's ✕ steps aside (`Visibility` keeping its size, so the title does
+  not move): the recorder's own discard is the way out a finger away, and
+  the back gesture still asks the sheet's question. Editing an existing
+  check-in, the ladder starts at `with Pip`: the *Started* row is the one
+  source of its date. The close control is a `DesignSystemIconAction`, as
+  is the edit sheet's delete (in the error tone). The status line is
+  **tiered**, not truncated: a `DsTieredText` shows the widest of its
+  wordings that fits (`with Pip · last spoke Sat 1 Aug` → `with Pip`), so a
+  narrow phone or a large text scale sheds the date before the person — a
+  check-in is *with* someone — and assistive technology hears the full
+  first wording whatever the screen shows. Above `TextScales.large` (1.3×)
+  the avatar steps aside for the text, and the toolbar's height is
+  computed from the styles' own line heights plus the number of lines the
+  title actually needs at the modal's real width (`titleLinesFor`, a
+  `TextPainter` measurement, capped at two) — Wolt reserves the slot up
+  front, so the sheet and the header must agree on the number rather than
+  guess it.
 * [`CheckInNarrativeField`](../../lib/features/relationships/ui/widgets/check_in_narrative_field.dart):
-  the note, then the takes, then one caption row (`5 words`, and on desktop
-  the save shortcut) with *Dictate* in its footer. The recorder and its
-  failure cards render **in place of the text**; a take never does. Each
-  take is a `CheckInTakeRow` on the next surface up: the length and where
-  its words are on the first line — a `DsTieredText` ladder that sheds the
-  route before the state (`0:23 · Transcribing… · Whisper large v3 · via
-  Groq` → `0:23 · Transcribing…` → `0:23`) — then *You can save now — the
-  words follow* while they are on their way, the words themselves (three
-  lines, a live region as they land), or, when they never came, the
-  provider's own reason (or *Your 0:23 recording is saved in the journal…*)
-  with *Try again*, which asks for the **same** recording's words. *Remove
-  recording* on its trailing edge leaves the take out of the check-in; its
-  audio stays in the journal, linked to the person, as the discard question
-  says. Beside a take the note asks for one line, and the shortcut hint is
-  offered with no words typed, since a take alone is enough to save. The
-  failure cards — the recorder could not record — sit above a field that
-  starts short and says *Or type it here…*; typing a word under one is
-  choosing to type instead, so the card goes on its own (the form's
+  the takes, then the note, then one caption row (`5 words`, and on desktop
+  the save shortcut) with *Dictate* in its footer — before any take, the
+  note alone. What was said leads: beside a take the empty note is an
+  invitation (*Add a note…*), not the heading of the words beneath it, and
+  its placeholder keeps the typed text's tier in every state, so it never
+  changes size when a take lands — only the copy changes. The recorder
+  renders **in place of the text**; a take never does. Each take is a
+  `CheckInTakeRow` on the next surface up (`surface.enabled`, a lift, not a
+  darker well), step4 from the next take and a card's own inset (step5)
+  above the note, so the note reads as the field's and not as the card's
+  last line; one inset on every side — the remove action's own 48 px
+  target sets the header row, and the leading glyph, the body's end and the
+  bottom keep the same step5. Its header line is a state glyph (a spinner
+  on its track while the words are on their way, a waveform once heard, a
+  warning triangle in the warning tone when they never came), then the
+  length and where its words are — a `DsTieredText` ladder, and the take's
+  live region, that sheds the route before the state (`00:23 ·
+  Transcribing… · Whisper large v3 · via Groq` → `00:23 · Transcribing…` →
+  `00:23`) — and *Remove recording* (a circled minus, not the sheet's ✕)
+  at its end. Beneath it at the card's full width: the words themselves, in
+  the typed note's own tier, whole; *You can save now — the words follow*
+  while they are on their way; or, when they never came, the provider's own
+  reason (or *Your recording is saved in the journal…* — the length is the
+  header's to say, once) with a `tertiary`, `dense` *Try again* — the
+  explanation's own caption tier — a step below it on the trailing rail,
+  which asks for the **same** recording's words. The state and its
+  explanation share one caption tier: the glyph and its tone carry the
+  news, not a bigger size — only a missing take's line steps up to high
+  emphasis, so the news outranks its explanation. *Try again* stays out of the header row, where
+  on a phone it pushed the state off the line. The note's word count is
+  the note's, so beside a take it goes, and the shortcut hint is offered
+  with no words typed, since a take alone is enough to save. Once a take
+  is in, *Dictate* steps down to the `tertiary` text action at the `dense`
+  size — still the action ink, so it never reads as part of the caption
+  beside it — ink-tight and ending on the field's content edge
+  (`alignsLabelToTrailingEdge`), so the footer stays a caption line tall —
+  Save, not another recording, is the next thing to do — and so it does
+  while a removed take's slot stands (the slot counts as a take for the
+  footer, so removing one and putting it back never reshapes it).
+  **Removing a take** leaves it out of the check-in — its audio stays in
+  the journal, linked to the person, as the discard question says — and
+  what dictation filled is read again from the takes that remain
+  (`_refillFromTakes`: every dictated fact back to the composer's opening
+  value, then `fillCheckInContextFromTakes` over the takes there are), so a
+  fact only that take named goes and one another take names stays; a fact
+  the user chose is never touched. The slot it left offers it back — the
+  take's trace without its card, so without a card's inset — on the
+  field's own edges: its glyph faded to low emphasis on the note's edge,
+  *Recording removed*, and a dense `tertiary` *Undo* with its glyph ending
+  on *Dictate*'s edge,
+  where it stood rather than a toast the sheet would cover — until the next
+  removal, the next take or the save. Undo keeps only the removed take and
+  its index and puts it back among the takes there are **now**, then reads
+  them again: a sibling's words that landed in between stay (the snapshot
+  it once restored wound them back). A take whose words were still on their
+  way listens for them again through `CheckInTranscriptionService.watch` —
+  its request is still running, and asking again would run inference
+  twice.
+  The failure callouts — the recorder could not record — sit **above** the
+  field frame, one bordered object at a time, the field below them the way
+  out; the field starts one line short under one, and typing a word under
+  one is choosing to type instead, so the card goes on its own (the form's
   `_onNarrativeChanged`). The cards are the design system's
   `DesignSystemInlineCallout` with a title and two actions on the trailing
   rail, quietest first — *Type instead* in the `quiet` variant (the way out,
   not a second accent) and the recommended secondary pill, so the alert tone
   is the card's one colour, the pill its one shape, and the filled accent
   stays Save's — and they announce themselves once, whole
-  (`announce: true`). The header already names the state, so a card's title
-  is the *next step*, short enough for one phone line (`Allow microphone
-  access`); under the refused microphone the field's own *Dictate* is the
-  retry — one tier down, `tertiary`, with the placeholder at `bodyMedium`,
-  so the card's pill is the face's one shape and the field's ladder does not
-  invert beneath it — and the body says so (`…then tap Dictate`). The
-  caption row is a `DsTieredText` ladder too (`5 words · ⌘↩ to save` sheds
-  the count before the shortcut), and the caption and *Dictate* share one
-  corner: beside each other when they fit a line, else *Dictate* on its own
-  line at the trailing edge (`_CaptionAndActions`), always so above
-  `TextScales.large`. The keyboard-shortcut hint joins the caption only once
-  there is something to save — beside a held Save it would be a promise the
-  footer contradicts. The empty field rests two lines tall in the desktop
-  dialog and
-  three on the phone (`restMinLines`). The field paints no well of its own —
-  the sheet's surface shows through, as in the app's other form sheets —
-  and its frame is the shared `designSystemFieldBorderColor` hairline, the
-  accent (at 2 px) meaning keyboard focus and nothing else; while the
-  recorder owns the box the frame steps back entirely, so the recorder sits
-  on the sheet like the recording sheet's. A take under the note is a
-  `surface.enabled` lift, not a darker well. The
-  `TextField` inside silences every border the app's
+  (`announce: true`). A card's title is the *next step*, short enough for
+  one phone line (`Allow microphone access`). Retrying has one owner: a
+  card that offers its own *Try again* (a failed start, a take not saved,
+  someone else's recording) has the field show no *Dictate*; under the
+  refused microphone the field's *Dictate* is the retry, in its resting
+  outlined shape even beside a take, and the body says so (`…then tap
+  Dictate`); with no transcription model (`transcriptionUnavailable`) there
+  is no *Dictate* at all — recording again would only lead back to the
+  card, so typing is the one way forward until it goes. The caption row is a `DsTieredText` ladder too (`5 words · ⌘↩ to
+  save` sheds the count before the shortcut), and the caption and *Dictate*
+  share one corner: beside each other when they fit a line, else *Dictate*
+  on its own line at the trailing edge (`_CaptionAndActions`), always so
+  above `TextScales.large`. The keyboard-shortcut hint joins the caption
+  only once there is something to save — beside a held Save it would be a
+  promise the footer contradicts. The empty field rests two lines tall in
+  the desktop dialog and three on the phone (`restMinLines`), and one line
+  beside a take or the slot one left — the decorator sizes for its hint
+  even when the hint is hidden, so a hidden hint may claim no more lines
+  than the field asks for (`hintMaxLines`). The field paints no well of its
+  own — the sheet's surface shows through, as in the app's other form
+  sheets — and its frame is the shared `designSystemFieldBorderColor`
+  hairline, the accent (at 2 px) meaning keyboard focus and nothing else;
+  while the recorder owns the box the frame and its inset step back
+  entirely, so the recorder sits on the sheet like the recording sheet's.
+  The `TextField` inside silences every border the app's
   `InputDecorationTheme` would fill in (its 2.5 px focused outline used to
   ring the text inside the hairline): the red dot, the visualizer and the
-  red Stop say "live". The phases swap in place
-  rather than through an
+  red Stop say "live". The phases swap in place rather than through an
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
   pass.

@@ -25,6 +25,7 @@ class DesignSystemSpinner extends StatefulWidget {
     this.size = 48,
     this.strokeWidth,
     this.semanticsLabel,
+    this.color,
     super.key,
   });
 
@@ -38,6 +39,10 @@ class DesignSystemSpinner extends StatefulWidget {
   /// hole: an 18pt spinner drew as a filled disc with a wedge cut out.
   final double? strokeWidth;
   final String? semanticsLabel;
+
+  /// The arc's ink; the interactive accent when null. A spinner inside
+  /// quiet content takes the quiet ink, so it never reads as an action.
+  final Color? color;
 
   static const double _standaloneStroke = 8;
 
@@ -83,7 +88,7 @@ class _DesignSystemSpinnerState extends State<DesignSystemSpinner>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = tokens.colors.interactive.enabled;
+    final color = widget.color ?? tokens.colors.interactive.enabled;
 
     return Semantics(
       container: true,

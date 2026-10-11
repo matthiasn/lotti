@@ -107,7 +107,9 @@ void main() {
 
   /// Runs [body] against a service whose stream lives inside the fake zone —
   /// a controller built outside it would never settle under `fakeAsync`.
-  void withRun(void Function(_Run run) body) {
+  ///
+  /// With [watchOnly] the wait comes from `watch` — listening, no request.
+  void withRun(void Function(_Run run) body, {bool watchOnly = false}) {
     fakeAsync((async) {
       final updates = StreamController<Set<String>>.broadcast();
       final notifications = MockUpdateNotifications();
@@ -123,10 +125,12 @@ void main() {
         logger,
       );
 
-      final wait = service.transcribe(
-        audioEntryId: audioEntryId,
-        relationshipId: personId,
-      );
+      final wait = watchOnly
+          ? service.watch(audioEntryId: audioEntryId)
+          : service.transcribe(
+              audioEntryId: audioEntryId,
+              relationshipId: personId,
+            );
       final run = _Run(async, updates, wait)..settle();
       body(run);
       // Drain the deadline so fakeAsync does not report a pending timer.
@@ -230,6 +234,28 @@ void main() {
   });
 
   group('transcript arrives later', () {
+    // A take put back by Undo: its request is still running, so a second
+    // one would run inference twice.
+    test('watch listens for the words without asking for them', () {
+      withRun((run) {
+        expect(run.isDone, isFalse);
+        stubEntity(audioWith('Late transcript.'));
+        run.notify({audioEntryId});
+        expect(run.result, 'Late transcript.');
+      }, watchOnly: true);
+      verifyNever(
+        () => runner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          onError: any(named: 'onError'),
+          knownTerms: any(named: 'knownTerms'),
+        ),
+      );
+    });
+
     test('resolves on a notification carrying the entry id', () {
       withRun((run) {
         expect(run.isDone, isFalse, reason: 'nothing written yet');

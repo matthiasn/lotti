@@ -552,4 +552,30 @@ void main() {
       expect(dark.shouldRepaint(light), isTrue);
     });
   });
+
+  testWidgets('takes an ink of its own, the accent when none is given', (
+    tester,
+  ) async {
+    const ink = Color(0xFF123456);
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const DesignSystemSpinner(
+          style: DesignSystemSpinnerStyle.plain,
+          size: 16,
+          color: ink,
+        ),
+      ),
+    );
+    final painter = tester
+        .widgetList<CustomPaint>(
+          find.descendant(
+            of: find.byType(DesignSystemSpinner),
+            matching: find.byType(CustomPaint),
+          ),
+        )
+        .map((p) => p.painter)
+        .whereType<CustomPainter>()
+        .first;
+    expect((painter as dynamic).color, ink);
+  });
 }
