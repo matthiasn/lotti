@@ -582,7 +582,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 148 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 149 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
