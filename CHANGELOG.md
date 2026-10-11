@@ -4,6 +4,188 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.52]
+
+### Changed
+
+- **A check-in's page now looks like a task's.** It opens under the person's
+  category and name, as a task opens under its category and project, with the
+  same large title and the same square tags for when, how, how long and how it
+  felt — each still a tap away from changing, and the feeling now shown with a
+  face in its colour. A length or feeling not yet set is offered as a soft
+  round pill, the topics share one tag, and *Edit check-in* now sits at the
+  end of that row, where a task keeps *Details*, instead of in the far corner.
+  The words the check-in was logged with sit on the page under a faint rule,
+  where a task keeps its notes, instead of in a box of their own.
+- **The check-in form now shows the same facts as the saved check-in.** Under
+  the note, how you connected, when, how long, how it felt and the topics sit
+  in the same row of tags the check-in page shows — each still opening its
+  picker, a missing one offered in a soft round pill — so what you set is
+  exactly what you'll see once it's saved. Topics and the notes for next time
+  fold out of the last pill, already open when you edit a check-in. While
+  you're recording, the recorder takes the whole sheet.
+- **The check-in form no longer punches dark boxes into the sheet.** The note
+  and the topics and next-time fields are now outlined on the sheet itself,
+  like the fields in the app's other forms, in light and dark mode.
+- **Recording a check-in now uses the same recorder as a task.** Dictating
+  into a check-in — in the form or on its page — shows the recording look you
+  chose (the orb or the VU meter) and the same Discard, Stop and Pause
+  controls as the recorder a task's microphone opens, instead of a recorder of
+  its own.
+- **The recorder has a calmer, studio-style layout.** Stop is now the same red
+  button a task's *Track time* shows while it runs, with the recording's
+  running time inside it. The moving level bars from onboarding run as a thin
+  line under the orb or VU meter — teal under the orb, neutral under the meter
+  — and lie flat when you are silent. Discard and Pause sit either side of
+  Stop as quiet rings, and *Transcribe* is a small switch underneath.
+  Dictating on a check-in's page no longer covers half of it: the recorder
+  there leaves the orb out.
+- **Recording lengths read the same everywhere.** A recording's length now
+  shows as `00:42` (and `01:02:03` past the hour) in the journal, on an
+  entry's header and in a check-in, matching the recorder, the audio player
+  and a task's running timer — no more `0:42` beside `00:42` on one screen.
+- **An AI cost pill now appears only when the cost is known.** A transcript
+  from Melious's speech-to-text models carried a pill reading "Cost unknown"
+  on every recording, because that service does not report what a
+  transcription costs. Pills now show only where a cost was reported; the full
+  attribution details are unchanged.
+
+### Fixed
+
+- **The voice orb no longer draws dark streaks in light mode.** Its brightest
+  moments now glow in a light mint instead of turning near-black, and the grey
+  haze around the ring is gone — on the recorder, in the Daily OS capture and
+  in onboarding. On the recorder it now sits on a soft pool of light. Dark
+  mode looks exactly as before.
+- **The correction of a Daily OS voice capture is counted with its
+  transcript.** The model call that fixes misheard speech-dictionary words was
+  recorded as separate work of its own. It is now part of the transcription it
+  corrects, so its cost appears alongside that transcript.
+- **A pull request's details now scroll to the very end of its description.**
+  The "Open on GitHub" bar floats over the page, and the last lines of a long
+  description stayed hidden behind it however far you scrolled. The page now
+  leaves exactly the bar's height of room below the description.
+- **Screenshots written as HTML in a pull request's description now show as
+  images.** Descriptions that size their screenshots with `<img>` tags, as
+  many screenshot tables do, showed the tags as text. They are now loaded and
+  shown like any other image of the description, at the width the tag asks
+  for, with the full-size viewer and "Add to task".
+- **Pairing no longer stalls when both devices open the emoji check at once.**
+  Right after a device joined, each side could start the verification at the
+  other, and each then sat on a sheet waiting for a request the other never
+  showed. One side now hands over to the other's request inside the sheet it
+  already has open, and a request that arrives while another verification
+  sheet is up is shown as soon as that sheet closes instead of being lost.
+- **Closing a verification sheet cancels it for the other device too.**
+  Tapping outside the emoji sheet used to leave the other device waiting on a
+  ceremony nobody would finish. It now sees the cancellation and can start
+  again.
+- **"Show the emoji" reopens the device you were looking at.** When another
+  device's keys arrived while a ceremony was open, the button could reopen
+  that device instead of the one just dismissed.
+- **"Show the emoji" no longer reopens the sheet a second time.** With the
+  sync settings open behind the setup sheet, closing the reopened emoji sheet
+  brought it straight back once more.
+- **Add device waits for the device list before showing the pairing code.** A
+  code shown while the list was still loading could mistake the device that
+  scanned it for one that had been there all along, and never unlock the
+  settings and history transfers for it.
+- **Sync starts on its own once the network is back.** Opening the app without
+  a connection used to leave sync off until the next restart.
+- **Signing in with your own homeserver details joins your existing sync
+  room** instead of creating a new one, so your devices stay together.
+- **Changes a device sent before you verified it now arrive** once the
+  verification completes, instead of being dropped.
+- **Catching up after a gap no longer stops trying.** When fetching the
+  messages a device missed kept failing, sync gave up after three tries and
+  waited for something else to wake it, which on a quiet account might not
+  happen. It now keeps trying, waiting a little longer each time, up to five
+  minutes.
+- **Settings, feature flags and AI settings changed while you were offline now
+  reach your other devices.** Changes that failed to send used to stay in the
+  outbox as failed until you tapped Retry. They are now tried again
+  automatically.
+- **Changes sent from a newer version of the app are no longer lost on a
+  device that has not updated yet.** That device applies them once it updates.
+- **A sync message an older version of the app could not read is read once the
+  app is updated.** Before, such a message, like a saved filter using an
+  option from a newer version, was skipped for good.
+- **A very large single change now reaches your other devices.** A change too
+  big for one sync message used to fail for good; it now travels as a
+  compressed attachment instead.
+- **"Send settings" now also repairs your theme, your Daily OS greeting name
+  and your feature flags.** These were sent once when you changed them, so a
+  lost message left another device on the old value. A device that already
+  holds a newer value keeps it.
+- **Restoring a backup no longer confuses sync.** Changes made after the
+  backup are not mistaken for missing ones, and new changes never reuse an old
+  change's number.
+- **A reworded reminder keeps its new words on every device,** even when
+  another device's clock runs ahead.
+- **A missing photo or recording is not requested again on every launch** once
+  no device can supply it.
+- **An AI provider, model, prompt or skill deleted on one device could stay on
+  the others.** When the change could not be queued for sending — the sync
+  outbox was briefly unavailable, or the app closed between the write and the
+  queue — the deletion was gone here and nothing recorded that the other
+  devices had not heard. A deleted prompt had no row left for *Send settings*
+  to re-send either. Every AI configuration change is now owed to the other
+  devices until the outbox has taken it, sent again at the next start or a
+  minute later if it was not, and *Send settings* re-sends deletions along
+  with the rows.
+- **A lost change to your AI settings is found and fetched again.** If a
+  device missed an edit to a provider, model, prompt, profile or skill, or its
+  deletion, it now notices the gap and asks your other devices for it, instead
+  of keeping the old setting until it changes again or you press "Send
+  settings".
+- **A model left behind by a deleted provider is no longer listed.** A model
+  edited on a device that had not yet heard the provider was deleted stays
+  stored, so undoing the provider's deletion brings it back, but it is hidden
+  from the model lists until then rather than shown under a provider that no
+  longer exists.
+- **Removing a provider's API key now removes it on every device.** Before, an
+  empty key arriving from another device was taken for a failed keychain read
+  and the other devices kept theirs; a key cleared on purpose now says so, and
+  the peers clear it too.
+- **Deleted dashboards and measurables, and removed links, stay deleted on
+  every device.** Cleaning up deleted entries used to erase deleted dashboards
+  and measurable types outright, so a device that still held an old copy could
+  bring them back. A link changed to another type could likewise reappear
+  under its old type when a late copy arrived. Both now stay gone.
+- **Confirming a relationship suggestion again after undoing it creates the
+  task cleanly on every device.** Before, it created the task over the undone
+  one in a way other devices showed as a conflict.
+- **Sync no longer asks other devices over and over for the records of an
+  agent you deleted.**
+- **An agent you delete stops on your other devices too,** even when one of
+  them missed the deletion at the time.
+- **Repairing vector clocks no longer overwrites a recent agent change** made
+  while the repair ran.
+- **A resumed task agent follows its task again right away** after a sync
+  hiccup, instead of only after a restart.
+- **Old agent observations cleaned up on one device no longer come back** from
+  devices that have not cleaned up yet.
+- **Disconnecting GitHub reaches your other devices** when you use "Send
+  settings", even if the original message was lost.
+- **Older categories, dashboards, habits and links now sync like everything
+  else without a manual repair.** Items saved before sync tracked their
+  versions used to need "Repair vector clocks" on one device; every device now
+  does this once by itself when the app starts.
+- **A feature flag changed right after an update no longer flips back on your
+  other devices.** A change queued by the previous version could arrive after
+  the newer one; the older change is now dropped.
+- **Devices still on an older version end up with your latest settings.** An
+  older version applied feature flags and AI settings in whatever order they
+  arrived, so a late, outdated change could win there. Updated devices now
+  send the current value again whenever they see that happening.
+- **Entries deleted and cleaned up by an older version no longer come back.**
+  When another device still held such an entry, it could reappear after a full
+  resync; it is now recognised and kept away.
+- **Photos and recordings you delete are also removed on devices that have not
+  updated yet,** instead of leaving their files behind.
+- **A few tasks, AI responses and people created on an older version now reach
+  your other devices** without having to be edited first.
+
 ## [1.1.51]
 
 ### Added
