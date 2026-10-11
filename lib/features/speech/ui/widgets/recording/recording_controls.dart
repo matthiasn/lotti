@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -83,9 +84,7 @@ class _RecordingLevelVisualizerState
         dbfs: widget.state.dBFS,
         size: widget.orbSize,
         intensity: 1,
-        primaryColor: tokens.colors.interactive.enabled,
-        secondaryColor: tokens.colors.text.highEmphasis,
-        backgroundColor: Colors.transparent,
+        palette: AiVoiceOrbPalette.fromTokens(tokens),
       );
     } else {
       primary = LayoutBuilder(
@@ -93,9 +92,8 @@ class _RecordingLevelVisualizerState
           key: const ValueKey('recording-visualizer-meter'),
           vu: widget.state.vu,
           dBFS: widget.state.dBFS,
-          size: constraints.hasBoundedWidth
-              ? constraints.maxWidth.clamp(0, widget.meterWidth).toDouble()
-              : widget.meterWidth,
+          // Clamping an unbounded width lands on the meter's own.
+          size: constraints.maxWidth.clamp(0, widget.meterWidth).toDouble(),
           colorScheme: Theme.of(context).colorScheme,
         ),
       );
@@ -104,7 +102,10 @@ class _RecordingLevelVisualizerState
       mainAxisSize: MainAxisSize.min,
       children: [
         primary,
-        SizedBox(height: tokens.spacing.step4),
+        // The orb's canvas already holds its own air around the ring — the
+        // shader crops well inside its square — so the bars sit straight
+        // under it; the meter fills its box and takes a step.
+        if (!modern) SizedBox(height: tokens.spacing.step4),
         // Onboarding's own pairing: the accent under the orb, the neutral
         // ink under the meter.
         LiveWaveform(
@@ -115,8 +116,8 @@ class _RecordingLevelVisualizerState
               : tokens.colors.text.highEmphasis,
         ),
         // The clock that every host sets under the display reads as its own
-        // line, not the bars' caption.
-        SizedBox(height: tokens.spacing.step3),
+        // line, not the bars' caption: a full step, as below the clock.
+        SizedBox(height: tokens.spacing.step4),
       ],
     );
   }
@@ -154,10 +155,16 @@ class RecordingClock extends StatelessWidget {
       style: monoMetaStyle(
         tokens,
         tokens.colors,
-        base: tokens.typography.styles.heading.heading2.copyWith(
+        // A step under the page titles: the clock reads the take, it does
+        // not headline the sheet over the orb.
+        base: tokens.typography.styles.heading.heading3.copyWith(
           fontWeight: tokens.typography.weight.regular,
         ),
-        color: tokens.colors.interactive.enabled,
+        // The accent on a dark sheet; on a light one the neutral ink, so
+        // the teal is left to the live parts — the orb and its bars.
+        color: AiVoiceOrbPalette.fromTokens(tokens).onLightSurface
+            ? tokens.colors.text.highEmphasis
+            : tokens.colors.interactive.enabled,
       ),
     );
   }

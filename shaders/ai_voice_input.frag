@@ -11,7 +11,12 @@ uniform float uLineDensity;
 uniform float uOrbitalMix;
 uniform vec4 uPrimaryColor;
 uniform vec4 uSecondaryColor;
-uniform vec4 uBackgroundColor;
+// The halo's colour: a deepened accent on dark, a lit teal on light.
+uniform vec4 uHaloColor;
+// 0 = light on a dark surface (the original look, unchanged), 1 = light on
+// paper: narrower, softer halos and glints, so the orb never hazes a pale
+// sheet. Every use is `mix(dark, light, L)`, exact at L = 0.
+uniform float uLightSurface;
 
 out vec4 fragColor;
 
@@ -40,6 +45,8 @@ void main() {
   float dbfsLevel = saturate((uDbfs - dbfsFloor) / abs(dbfsFloor));
   float level = smoothstep(0.02, 1.0, dbfsLevel);
   float intensity = saturate(uIntensity);
+  float L = saturate(uLightSurface);
+  float haloSpread = mix(1.0, 0.62, L);
   float tension = saturate((uLineDensity - 8.0) / 26.0);
   float orbital = saturate(uOrbitalMix);
   // The loop must remain visibly alive in silence. Voice adds force, but it
@@ -161,11 +168,13 @@ void main() {
   float hairF = filament(hairDistanceF, hairWidth * 0.70);
 
   // Geometry is reused for halos instead of recomputing another contour.
-  float heroHaloA = filament(heroDistanceA, heroWidth * 5.8);
-  float heroHaloB = filament(heroDistanceB, heroWidth * 5.4);
-  float outerHalo = filament(secondaryDistanceA, secondaryWidth * 6.2);
-  float innerHalo = filament(secondaryDistanceB, secondaryWidth * 5.8);
-  float hotRibbonA = filament(heroDistanceB, heroWidth * 3.0);
+  float heroHaloA = filament(heroDistanceA, heroWidth * 5.8 * haloSpread);
+  float heroHaloB = filament(heroDistanceB, heroWidth * 5.4 * haloSpread);
+  float outerHalo =
+      filament(secondaryDistanceA, secondaryWidth * 6.2 * haloSpread);
+  float innerHalo =
+      filament(secondaryDistanceB, secondaryWidth * 5.8 * haloSpread);
+  float hotRibbonA = filament(heroDistanceB, heroWidth * mix(3.0, 2.0, L));
   float hotRibbonB = filament(secondaryDistanceC, secondaryWidth * 4.0);
   float heroMask = max(heroA, heroB);
   float secondaryMask = max(max(secondaryA, secondaryB),
@@ -190,8 +199,9 @@ void main() {
   float heroAlpha = heroMask * mix(0.90, 1.00, level) * heroEnergy;
   float secondaryAlpha = secondaryMask * 0.72 * secondaryEnergy;
   float hairAlpha = hairMask * 0.50 * hairEnergy;
-  float haloAlpha = haloMask * mix(0.16, 0.30, level);
-  float glintAlpha = crossingMask * mix(0.48, 0.92, level);
+  float haloAlpha = haloMask * mix(0.16, 0.30, level) * mix(1.0, 0.40, L);
+  float glintAlpha =
+      crossingMask * mix(0.48, 0.92, level) * mix(1.0, 0.70, L);
   // The broad ribbons stay quiet until a pressure lobe reaches them. This
   // produces a few thick, soft white blooms instead of tinting every contour
   // toward mint at all times.
@@ -203,9 +213,10 @@ void main() {
       (1.0 - hairAlpha) * (1.0 - haloAlpha) *
       (1.0 - glintAlpha) * (1.0 - hotRibbonAlpha);
 
-  vec3 atmosphere = uPrimaryColor.rgb * 0.72;
+  vec3 atmosphere = uHaloColor.rgb;
   vec3 bodyPrimary = uPrimaryColor.rgb;
-  vec3 energizedEdge = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, 0.15);
+  vec3 energizedEdge =
+      mix(uPrimaryColor.rgb, uSecondaryColor.rgb, mix(0.15, 0.0, L));
   vec3 crossingGlint = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, 0.54);
   float deepWeight = haloAlpha * 0.92;
   float bodyWeight = heroAlpha + secondaryAlpha * 0.72 + hairAlpha * 0.28;
@@ -220,7 +231,9 @@ void main() {
       uSecondaryColor.rgb * hotRibbonWeight) / colorWeight;
   float whiteBloom = saturate(
       hotRibbonAlpha * mix(1.10, 1.45, level) + glintAlpha * 0.08);
-  hue = mix(hue, uSecondaryColor.rgb, whiteBloom * 0.78);
+  // On paper the bloom stops short of the glint, so the teal body still
+  // carries the shape where the energy passes.
+  hue = mix(hue, uSecondaryColor.rgb, whiteBloom * mix(0.78, 0.65, L));
 
   float crop = 1.0 - smoothstep(0.485, 0.555, radius);
   float alpha = saturate(alphaUnion * intensity * crop);

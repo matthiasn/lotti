@@ -13,6 +13,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -1829,8 +1830,7 @@ void main() {
                 : dsTokensLight);
         expect(shader.dbfs, -7);
         expect(shader.intensity, 1);
-        expect(shader.primaryColor, tokens.colors.interactive.enabled);
-        expect(shader.secondaryColor, tokens.colors.text.highEmphasis);
+        expect(shader.palette, AiVoiceOrbPalette.fromTokens(tokens));
       });
 
       testWidgets(
@@ -1859,10 +1859,14 @@ void main() {
             final shader = tester.widget<AiVoiceInputShader>(
               find.byType(AiVoiceInputShader),
             );
-            expect(shader.primaryColor, scenario.$2.colors.interactive.enabled);
+            // The theme's own palette: on light, a lit-mint glint rather
+            // than the near-black text ink.
+            expect(shader.palette, AiVoiceOrbPalette.fromTokens(scenario.$2));
             expect(
-              shader.secondaryColor,
-              scenario.$2.colors.text.highEmphasis,
+              shader.palette.glint,
+              isNot(scenario.$2.colors.text.highEmphasis),
+              reason: 'only the dark theme glints in the text ink',
+              skip: scenario.$2 == dsTokensDark,
             );
             await tester.pumpWidget(const SizedBox.shrink());
             await tester.pump();

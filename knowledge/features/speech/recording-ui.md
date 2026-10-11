@@ -34,6 +34,20 @@ while the take runs and holds it still while paused, so the bars read as speech
 over time where the orb and meter read the level now. Daily OS Capture and the
 onboarding previews draw the same bars from the same helpers.
 
+The orb takes its colours by role from one palette,
+[`AiVoiceOrbPalette`](../../../lib/features/ai/ui/animation/ai_voice_orb_palette.dart),
+built from the tokens of the surface it sits on — the recording sheet, Daily OS's
+voice button and onboarding's style previews all use it. The shader draws light:
+its body is the accent, its glints the brightest parts, a soft halo around each
+strand. On a dark surface the palette is the accent, white glints and the accent
+deepened for the halo, as the orb always was. On a light surface the energy must
+still read *lighter*, so the glint is the accent's hue at the dark theme's
+lightness, the halo the lit teal between them, and the shader's `uLightSurface`
+narrows and softens the halos and glints — every light-surface change written as
+`mix(dark, light, L)`, so dark mode is unchanged to the pixel. The text ink once
+fed the glints, which on a light sheet drew the peaks as black strands. There the
+recorder's clock takes the neutral ink, leaving the teal to the live parts.
+
 The dBFS values come from `AudioRecorderController`, which samples amplitude every
 20 ms and derives VU through the standalone `VuMeter` sliding-window unit. See
 [the speech overview](overview.md).

@@ -37,7 +37,7 @@ void main() {
         orbitalMix: 0.55,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x00000000),
+        haloColor: const Color(0x00000000),
       );
       final samePainter = AiVoiceInputShaderPainter(
         shader: voiceShader,
@@ -49,7 +49,7 @@ void main() {
         orbitalMix: 0.55,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x00000000),
+        haloColor: const Color(0x00000000),
       );
       final changedPainter = AiVoiceInputShaderPainter(
         shader: voiceShader,
@@ -61,13 +61,29 @@ void main() {
         orbitalMix: 0.55,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x00000000),
+        haloColor: const Color(0x00000000),
       );
 
       hPaintWith(painter, const Size(96, 96));
 
       expect(samePainter.shouldRepaint(painter), isFalse);
       expect(changedPainter.shouldRepaint(painter), isTrue);
+      // A light surface is its own repaint: the shader composes for paper.
+      final onPaper = AiVoiceInputShaderPainter(
+        shader: voiceShader,
+        dbfs: -18,
+        dbfsFloor: -80,
+        time: 1.4,
+        intensity: 0.9,
+        lineDensity: 24,
+        orbitalMix: 0.55,
+        primaryColor: const Color(0xFF63D7C7),
+        secondaryColor: const Color(0xFFE9EEF2),
+        haloColor: const Color(0x00000000),
+        lightSurface: 1,
+      );
+      expect(onPaper.shouldRepaint(painter), isTrue);
+      hPaintWith(onPaper, const Size(96, 96));
     });
 
     testWidgets('paint thinking shader and compare repaint inputs', (
@@ -180,7 +196,6 @@ void main() {
         orbitalMix: 0.5,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x11000000),
       );
       final sameVoicePainter = AiVoiceInputFallbackPainter(
         dbfs: -22,
@@ -191,7 +206,6 @@ void main() {
         orbitalMix: 0.5,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x11000000),
       );
       final changedVoicePainter = AiVoiceInputFallbackPainter(
         dbfs: -22,
@@ -202,7 +216,6 @@ void main() {
         orbitalMix: 0.5,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
-        backgroundColor: const Color(0x11000000),
       );
       final thinkingPainter = AiThinkingLineFallbackPainter(
         time: 1.4,
@@ -318,7 +331,7 @@ void main() {
         orbitalMix: f(5),
         primaryColor: c(6),
         secondaryColor: c(7),
-        backgroundColor: c(8),
+        haloColor: c(8),
       );
     }
 

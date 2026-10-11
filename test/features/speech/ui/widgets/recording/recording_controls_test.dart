@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_levels.dart';
@@ -68,7 +70,7 @@ void main() {
           .designTokens;
       expect(orb.dbfs, -18);
       expect(orb.size, RecordingLevelVisualizer.defaultOrbSize);
-      expect(orb.primaryColor, tokens.colors.interactive.enabled);
+      expect(orb.palette, AiVoiceOrbPalette.fromTokens(tokens));
       expect(find.byType(AnalogVuMeter), findsNothing);
     });
 
@@ -165,22 +167,42 @@ void main() {
       );
     });
 
-    testWidgets("is the accent in the monospace face, read in the host's "
-        'words', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const RecordingClock(
-            progress: Duration(seconds: 23),
-            semanticsLabel: '23 seconds',
+    for (final (name, theme, inkOf) in [
+      (
+        'dark',
+        DesignSystemTheme.dark,
+        (DsTokens t) => t.colors.interactive.enabled,
+      ),
+      (
+        'light',
+        DesignSystemTheme.light,
+        (DsTokens t) => t.colors.text.highEmphasis,
+      ),
+    ]) {
+      testWidgets("is the monospace heading3 read in the host's words — in "
+          'the accent on dark, the neutral ink on light ($name)', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const RecordingClock(
+              progress: Duration(seconds: 23),
+              semanticsLabel: '23 seconds',
+            ),
+            theme: theme(),
           ),
-        ),
-      );
-      final text = tester.widget<Text>(find.text('0:00:23'));
-      final tokens = tester.element(find.text('0:00:23')).designTokens;
-      expect(text.style?.fontFamily, 'Inconsolata');
-      expect(text.style?.color, tokens.colors.interactive.enabled);
-      expect(text.semanticsLabel, '23 seconds');
-    });
+        );
+        final text = tester.widget<Text>(find.text('0:00:23'));
+        final tokens = tester.element(find.text('0:00:23')).designTokens;
+        expect(text.style?.fontFamily, 'Inconsolata');
+        expect(
+          text.style?.fontSize,
+          tokens.typography.styles.heading.heading3.fontSize,
+        );
+        expect(text.style?.color, inkOf(tokens));
+        expect(text.semanticsLabel, '23 seconds');
+      });
+    }
   });
 
   group('RecordingTransportControls', () {

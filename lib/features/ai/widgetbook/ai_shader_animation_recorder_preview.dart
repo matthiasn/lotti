@@ -472,9 +472,18 @@ class _VoiceRecorderDrivenPreviewState
       intensity: widget.config.intensity,
       lineDensity: widget.config.lineDensity,
       orbitalMix: widget.config.orbitalMix,
-      primaryColor: widget.config.primaryColor,
-      secondaryColor: widget.config.secondaryColor,
-      backgroundColor: widget.config.backgroundColor,
+      // The knobs' colours as the orb's roles; the background knob says
+      // which surface the preview stands for.
+      palette: AiVoiceOrbPalette(
+        body: widget.config.primaryColor,
+        glint: widget.config.secondaryColor,
+        halo: AiVoiceOrbPalette.deepened(widget.config.primaryColor),
+        onLightSurface:
+            ThemeData.estimateBrightnessForColor(
+              widget.config.backgroundColor,
+            ) ==
+            Brightness.light,
+      ),
       semanticsLabel: 'AI voice input shader preview',
     );
 

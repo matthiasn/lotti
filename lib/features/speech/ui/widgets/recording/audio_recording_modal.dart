@@ -197,7 +197,7 @@ class _AudioRecordingModalContentState
               ),
             RecordingClock(progress: state.progress),
 
-            const SizedBox(height: 20),
+            SizedBox(height: context.designTokens.spacing.step5),
 
             // Control buttons in a row
             Row(
@@ -232,7 +232,7 @@ class _AudioRecordingModalContentState
             // may provide automatic prompts, including profile-driven skills).
             if (widget.showTranscriptionOptions &&
                 (widget.categoryId != null || widget.linkedId != null)) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: context.designTokens.spacing.step5),
               _buildAutomaticPromptOptions(context, controller, state, theme),
             ],
           ],
