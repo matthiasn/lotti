@@ -323,8 +323,8 @@ width, and reads top to bottom:
   dashed muted pill *Edit check-in*, opening the composer for everything no
   read-out edits — topics, the notes for next time, the logged note — and
   the topics tag opens the same sheet, so nothing in the lane is a tag that
-  looks tappable and is not. The form opens the same pickers from its
-  settings rows. The top bar
+  looks tappable and is not. The form wears this same lane, its last
+  lever folding out the details instead. The top bar
   holds back alone, a `DesignSystemIconAction` with the chevron a task's
   page and the person hero lead back with.
 * **A faint rule, then the logged note** on the page itself, where a task
@@ -1717,32 +1717,31 @@ The composer's parts, top to bottom:
   `AnimatedSize`: the tiered captions lay themselves out with a
   `LayoutBuilder`, which re-dirties an animating size box in its own layout
   pass.
-* **The facts as settings rows** — the app's create-form grammar
-  (`ProjectCreateForm`): a `DesignSystemDivider`, then one
-  `DesignSystemSelectionRow` (navigation, the list's `small` size so the
-  facts and the details fit one phone screen) per fact, ruled apart and
-  named with nouns as the create form names its rows — *Type* (the
-  interaction's icon and kind), *Started* (`checkInStartedLabelOf`),
-  *Duration* and *Feeling* (its `sentimentGlyph` in its
-  `sentimentColor`); an unset fact reads *Not set*, alike on every row.
-  That the feeling is optional and never the agent's is said in its picker,
-  under the options, where it is chosen. Each opens the picker the
-  check-in page uses
+* **The facts as the check-in page's own lane** —
+  [`CheckInMetaSummaryLine`](../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart),
+  the very widget the saved check-in shows, so what is set here is what the
+  page will show: set facts as square tags (the interaction's icon and kind,
+  the start from `checkInStartedLabelOf`, the duration, the feeling's
+  `sentimentGlyph` in its `sentimentColor`), unset ones offered as dashed
+  round pills in their own words (*Duration*, *How did it feel?*), and the
+  topics as the page's topics tag (`check-in-topics-tag`). That the feeling
+  is optional and never the agent's is said in its picker, under the
+  options, where it is chosen. Each fact opens the picker the check-in page
+  uses
   ([`check_in_pickers.dart`](../../lib/features/relationships/ui/widgets/check_in_pickers.dart):
   `showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
   `showCheckInSentimentPicker`), and each is held — no tap — while the
   recorder or a save owns the sheet. Opened from the post-call offer the
-  rows are prefilled, and a caption over them says where the numbers came
+  facts are prefilled, and a caption over them says where the numbers came
   from.
-* **Topics and next time**: one more row (an `action` row with its own
-  chevron) whose value says what is set — `2 topics · next time noted`, or
-  *Not set* (`_moreCaption`), never the field names its title already says
-  — folding out the three text details. It starts open when editing, or
-  when the draft already holds any, so both sheets keep one structure and
-  the group always has its heading and a way to fold back. Each
-  detail is the design system's own labelled field
-  (`DesignSystemTextInput(label:, filled: false)`), one `step5` apart.
-* **While a take runs the recorder is the sheet**: the rows and the
+* **Topics and next time**: the lane's last lever (`leverLabel` /
+  `leverIcon` / `leverKey`, here *Topics and next time* with a chevron,
+  key `check-in-more`) where the page's lever reads *Edit check-in*. It
+  folds out the three text details, and starts open when editing, or when
+  the draft already holds any. Each detail is the design system's own
+  labelled field (`DesignSystemTextInput(label:, filled: false)`), one
+  `step5` apart under a `sectionGap`.
+* **While a take runs the recorder is the sheet**: the lane and the
   details wait under it until it stops, as the recording sheet shows
   nothing but its take, rather than standing greyed out beneath it.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
@@ -2192,7 +2191,7 @@ on a call or message placed from the person's page starts with the values
 the channel that came with that start — each measured, so each held only when
 it was handed in. A type the composer merely started from — how the two of you
 last connected, handed in without a start — is not held. While any row holds a dictated value, a caption
-over the rows says so (`checkInSourceDictation`), as the post-call strip
+over the facts says so (`checkInSourceDictation`), as the post-call strip
 does for a call. Words that land after the composer closed fill nothing: the
 check-in was saved with the values the user had when they pressed Save.
 
