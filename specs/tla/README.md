@@ -4553,6 +4553,11 @@ pending answers it instead of starting a second one.
 
 What the model leaves out:
 
+- **The handoff as one step.** In the code a yield stops the runner's timer,
+  waits for the cancel to go out and then accepts the peer's request, while the
+  peer's own traffic keeps arriving. `integration_test/verification_crossing_test.dart`
+  runs that crossing against Dendrite, through the production helpers, with
+  both devices starting at once.
 - **The SDK's own glare rule.** Two `start`s inside one transaction are
   reconciled by the SDK; the model never reaches that step.
 - **Several deferred requests.** `MatrixService` keeps one incoming runner,

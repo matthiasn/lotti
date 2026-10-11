@@ -26,6 +26,19 @@ The ordinary Matrix suite includes explicit history/retry actions in some
 convergence helpers. Use the resilience suite below to check recovery without
 those test-driven actions.
 
+`verification_crossing_test.dart` runs after it from the same script, on its
+own pair of fresh accounts. The suite above only ever has one device start the
+emoji ceremony; this one has both devices start it at each other at once, the
+crossing `specs/tla/VerificationLaunch.tla` found would leave both sheets
+waiting. Each device follows the app's rules through the production helpers in
+`lib/features/sync/matrix/verification_glare.dart`: it answers a request the
+peer already sent, and while its own request is unanswered it yields to a
+smaller identity and otherwise keeps the peer's request back. The test checks
+that both devices end up verified with the same emoji, that only the larger
+identity withdrew its request, and that the peer sees that request cancelled.
+Without the yield, both devices keep the other's request back and the test
+times out.
+
 ### 2. Sync Resilience Tests (`sync_resilience_test.dart`)
 
 Tests automatic sync recovery under adverse network conditions using Toxiproxy.
@@ -163,10 +176,11 @@ project root.
    docker compose up
    ```
 
-2. **Run the Matrix sync test:**
+2. **Run the Matrix sync tests:**
    ```shell
    ./run_matrix_tests.sh
    ```
+   This runs `matrix_service_test.dart`, then `verification_crossing_test.dart`.
 
 3. **Run the resilience tests:**
    ```shell
@@ -194,7 +208,9 @@ The run scripts create dedicated test users on the Dendrite server. Each resilie
 - `run_resilience_tests.sh` provisions four pairs as `TEST_USER1` through `TEST_USER8`
   (one pair per resilience test, the first test using `TEST_USER1`/`TEST_USER2`).
 - `run_matrix_tests.sh` independently provisions its own freshly-created users and passes
-  them as `TEST_USER1`/`TEST_USER2` for the standalone Matrix sync test.
+  them as `TEST_USER1`/`TEST_USER2` for the standalone Matrix sync test, and a second
+  fresh pair under the same names for the crossing verification test, whose devices
+  must start out unverified.
 
 ### Runtime budgets
 
