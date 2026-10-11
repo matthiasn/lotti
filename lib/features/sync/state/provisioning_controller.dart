@@ -283,9 +283,11 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       }
 
       state = const ProvisioningState.joiningRoom();
-      final roomId =
-          await matrixService.findSyncRoom() ??
-          await matrixService.createRoom();
+      final existing = await matrixService.findSyncRoom();
+      // Joining the room found applies what a sync room needs, such as its
+      // retention policy; the account is already a member.
+      if (existing != null) await matrixService.joinRoom(existing);
+      final roomId = existing ?? await matrixService.createRoom();
       await matrixService.saveRoom(roomId);
 
       final handoverBundle = SyncProvisioningBundle(

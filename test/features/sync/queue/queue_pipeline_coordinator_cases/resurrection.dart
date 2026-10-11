@@ -243,8 +243,6 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
         'trusted yet, and a failing check is logged without stopping it',
         () {
           fakeAsync((async) {
-            Room? noRoom(String _) => null;
-            registerFallbackValue(noRoom);
             when(
               () => queue.resurrectByReason(any<String>()),
             ).thenAnswer((_) async => 0);

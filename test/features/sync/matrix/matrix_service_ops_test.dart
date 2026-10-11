@@ -33,8 +33,6 @@ QueueStats _stats({
 
 void main() {
   setUpAll(() {
-    Room? noRoom(String _) => null;
-    registerFallbackValue(noRoom);
     registerFallbackValue(LogDomain.sync);
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(
@@ -398,6 +396,8 @@ void main() {
       when(() => svc.keyVerificationRunner).thenReturn(null);
       when(() => svc.incomingKeyVerificationRunner).thenReturn(null);
       when(() => queue.readmitUntrusted(any())).thenAnswer((_) async => 0);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => client.getRoomById('!room:server')).thenReturn(null);
     });
 
     test(

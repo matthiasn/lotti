@@ -959,12 +959,19 @@ void main() {
         when(
           () => mockMatrixService.findSyncRoom(),
         ).thenAnswer((_) async => '!existing:example.com');
+        when(
+          () => mockMatrixService.joinRoom('!existing:example.com'),
+        ).thenAnswer((_) async => '!existing:example.com');
 
         await container
             .read(provisioningControllerProvider.notifier)
             .configureFromCredentials(credentials);
 
         verifyNever(() => mockMatrixService.createRoom());
+        // Joined, so the room gets what a sync room needs (retention).
+        verify(
+          () => mockMatrixService.joinRoom('!existing:example.com'),
+        ).called(1);
         verify(
           () => mockMatrixService.saveRoom('!existing:example.com'),
         ).called(1);

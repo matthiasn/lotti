@@ -794,6 +794,44 @@ void main() {
       );
 
       test(
+        'every held row is re-checked, past the first page, so rows that '
+        'stay untrusted never starve later ones',
+        () async {
+          final events = [
+            for (var i = 0; i < 502; i++)
+              _buildSyncEvent(
+                eventId: '\$held-$i',
+                roomId: roomA,
+                originTsMs: 8000 + i,
+              ),
+          ];
+          for (final event in events) {
+            final json = event.toJson();
+            when(event.toJson).thenReturn({...json, 'sender': '@user:server'});
+          }
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.untrustedDevice);
+          await guarded.enqueueBatch(
+            events,
+            producer: InboundEventProducer.bootstrap,
+          );
+
+          // Only the newest becomes trusted: it sits past the first page.
+          when(() => trust.evaluate(any())).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return event.eventId == r'$held-501'
+                ? SyncEventTrustVerdict.trusted
+                : SyncEventTrustVerdict.untrustedDevice;
+          });
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomA);
+
+          expect(await guarded.readmitUntrusted(room), 1);
+        },
+      );
+
+      test(
         'one from a device not trusted yet is held, untouched by "Retry '
         'all", and re-armed once a fresh check trusts its device',
         () async {
@@ -844,12 +882,17 @@ void main() {
           final room = MockRoom();
           when(() => room.id).thenReturn(roomA);
 
-          // A row whose room is unknown waits.
-          expect(await guarded.readmitUntrusted((_) => null), 0);
-          expect(await guarded.readmitUntrusted((_) => room), 1);
+          // Without a current room nothing is re-checked; another room's
+          // rows stay held, since the worker applies against the current
+          // room only.
+          expect(await guarded.readmitUntrusted(null), 0);
+          final otherRoom = MockRoom();
+          when(() => otherRoom.id).thenReturn('!other:server');
+          expect(await guarded.readmitUntrusted(otherRoom), 0);
+          expect(await guarded.readmitUntrusted(room), 1);
           final ready = await guarded.peekBatchReady(maxBatch: 10);
           expect(ready.map((entry) => entry.eventId), [r'$pending']);
-          expect(await guarded.readmitUntrusted((_) => room), 0);
+          expect(await guarded.readmitUntrusted(room), 0);
         },
       );
 

@@ -245,7 +245,10 @@ class MatrixServiceOps {
     }
 
     try {
-      await queueCoordinator.queue.readmitUntrusted(_client.getRoomById);
+      final roomId = roomManager.currentRoomId;
+      await queueCoordinator.queue.readmitUntrusted(
+        roomId == null ? null : _client.getRoomById(roomId),
+      );
     } catch (error, stackTrace) {
       loggingService.error(
         LogDomain.sync,

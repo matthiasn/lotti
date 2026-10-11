@@ -110,7 +110,10 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       // Likewise an event held because its device was not trusted yet:
       // the device's keys may have arrived, or it was verified, since.
       try {
-        await _queue.readmitUntrusted(_sessionManager.client.getRoomById);
+        final roomId = _roomManager.currentRoomId;
+        await _queue.readmitUntrusted(
+          roomId == null ? null : _sessionManager.client.getRoomById(roomId),
+        );
       } catch (error, stackTrace) {
         _logging.error(
           LogDomain.sync,

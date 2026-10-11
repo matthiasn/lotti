@@ -323,6 +323,24 @@ void main() {
 
     when(() => client.getJoinedRooms()).thenAnswer((_) async => []);
     expect(await gateway.findSyncRoom(), isNull);
+
+    // Any other failure fails the lookup rather than passing a room over.
+    when(
+      () => client.getJoinedRooms(),
+    ).thenAnswer((_) async => ['!plain:server']);
+    when(
+      () => client.getRoomStateWithKey(
+        '!plain:server',
+        'm.lotti.sync_room',
+        '',
+      ),
+    ).thenThrow(
+      MatrixException.fromJson(const {
+        'errcode': 'M_LIMIT_EXCEEDED',
+        'error': 'Too many requests',
+      }),
+    );
+    await expectLater(gateway.findSyncRoom(), throwsA(isA<MatrixException>()));
   });
 
   test('joinRoom delegates to client', () async {

@@ -564,30 +564,40 @@ class InboundQueue {
       _resurrection.resurrectAll(hardCap: hardCap);
 
   /// See [InboundQueueResurrection.resurrectByReason].
-  /// Re-checks the events held from a device that was not trusted yet
-  /// ([untrustedReason]) and re-arms those whose device this one now shares
-  /// its keys with, so what such a device sent before its verification
-  /// still applies. [roomOf] resolves the room each event belongs to; a row
-  /// whose room is unknown waits for a later pass. Returns how many were
-  /// re-armed.
-  Future<int> readmitUntrusted(Room? Function(String roomId) roomOf) async {
+  /// Re-checks the events of the current sync [room] held from a device that
+  /// was not trusted yet ([untrustedReason]) and re-arms those whose device
+  /// this one now shares its keys with, so what such a device sent before
+  /// its verification still applies. Every held row of the room is checked,
+  /// page by page. Rows of another room stay held: the worker applies
+  /// against the current room only, so a room switched away from must not
+  /// feed it. Returns how many were re-armed.
+  Future<int> readmitUntrusted(Room? room) async {
+    if (room == null) return 0;
     final admitted = <int>[];
-    for (final row in await _resurrection.abandonedWithReason(
-      untrustedReason,
-    )) {
-      final room = roomOf(row.roomId);
-      if (room == null) continue;
-      final event = Event.fromJson(
-        jsonDecode(row.rawJson) as Map<String, dynamic>,
-        room,
+    var after = 0;
+    while (true) {
+      final page = await _resurrection.abandonedWithReason(
+        untrustedReason,
+        roomId: room.id,
+        afterQueueId: after,
       );
-      if (await _trust.evaluate(event) == SyncEventTrustVerdict.trusted) {
-        admitted.add(row.queueId);
+      for (final row in page) {
+        final event = Event.fromJson(
+          jsonDecode(row.rawJson) as Map<String, dynamic>,
+          room,
+        );
+        if (await _trust.evaluate(event) == SyncEventTrustVerdict.trusted) {
+          admitted.add(row.queueId);
+        }
       }
+      if (page.length < _readmitPageSize) break;
+      after = page.last.queueId;
     }
     if (admitted.isEmpty) return 0;
     return _resurrection.resurrectIds(admitted, reasonName: untrustedReason);
   }
+
+  static const _readmitPageSize = 500;
 
   Future<int> resurrectByReason(String reasonName, {int hardCap = 50}) =>
       _resurrection.resurrectByReason(reasonName, hardCap: hardCap);

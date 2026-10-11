@@ -94,18 +94,24 @@ class InboundQueueResurrection {
     );
   }
 
-  /// Up to [limit] abandoned rows skipped for [reasonName], oldest first.
+  /// Up to [limit] abandoned rows of [roomId] skipped for [reasonName] whose
+  /// queue id is above [afterQueueId], in queue id order — a page a caller
+  /// walks by passing the last id it saw.
   Future<List<InboundEventQueueItem>> abandonedWithReason(
     String reasonName, {
+    required String roomId,
+    int afterQueueId = 0,
     int limit = 500,
   }) =>
       (_db.select(_db.inboundEventQueue)
             ..where(
               (t) =>
                   const CustomExpression<bool>("status = 'abandoned'") &
-                  t.lastErrorReason.equals(reasonName),
+                  t.lastErrorReason.equals(reasonName) &
+                  t.roomId.equals(roomId) &
+                  t.queueId.isBiggerThanValue(afterQueueId),
             )
-            ..orderBy([(t) => OrderingTerm(expression: t.originTs)])
+            ..orderBy([(t) => OrderingTerm(expression: t.queueId)])
             ..limit(limit))
           .get();
 

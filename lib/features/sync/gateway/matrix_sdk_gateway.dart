@@ -159,8 +159,12 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     for (final roomId in await _client.getJoinedRooms()) {
       try {
         await _client.getRoomStateWithKey(roomId, _syncRoomStateType, '');
-      } on MatrixException {
-        continue; // not a sync room
+      } on MatrixException catch (error) {
+        // Only an absent marker means "not a sync room"; anything else —
+        // a rate limit, a server error — fails the lookup rather than
+        // passing over the room the account's devices use.
+        if (error.errcode == 'M_NOT_FOUND') continue;
+        rethrow;
       }
       final latest = await _client.getRoomEvents(
         roomId,
