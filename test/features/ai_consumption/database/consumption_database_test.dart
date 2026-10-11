@@ -16,6 +16,44 @@ void main() {
     await db.close();
   });
 
+  test('streams every event with the vector clock its document carries, '
+      'for the sequence log population', () async {
+    for (final (id, document) in [
+      ('event-b', '{"vectorClock": {"host-a": 2}}'),
+      ('event-a', '{"vectorClock": {"host-a": 1, "host-b": 4}}'),
+      ('event-c', '{}'),
+    ]) {
+      await db.customStatement(
+        'INSERT INTO consumption_events '
+        '(id, created_at, provider_type, response_type, serialized) '
+        "VALUES (?, 0, 'openAi', 'textGeneration', ?)",
+        [id, document],
+      );
+    }
+
+    final records = (await db.streamEventsWithVectorClock().toList()).expand(
+      (page) => page,
+    );
+
+    expect(
+      [
+        for (final r in records) [r.id, r.vectorClock],
+      ],
+      [
+        [
+          'event-a',
+          {'host-a': 1, 'host-b': 4},
+        ],
+        [
+          'event-b',
+          {'host-a': 2},
+        ],
+        ['event-c', null],
+      ],
+    );
+    expect(await db.countAllEvents(), 3);
+  });
+
   test(
     'migrates schema v1 through latest-attribution index schema v4',
     () async {

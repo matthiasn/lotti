@@ -921,7 +921,12 @@ $NotificationMetaCopyWith<$Res> get meta {
 /// @nodoc
 mixin _$NotificationMeta {
 
- String get id; DateTime get createdAt; DateTime get updatedAt; DateTime get scheduledFor; VectorClock get vectorClock; String get originatingHostId; DateTime? get seenAt; DateTime? get actedOnAt; DateTime? get deletedAt; String? get category;
+ String get id; DateTime get createdAt; DateTime get updatedAt; DateTime get scheduledFor; VectorClock get vectorClock; String get originatingHostId; DateTime? get seenAt; DateTime? get actedOnAt; DateTime? get deletedAt; String? get category;/// The clock of the write that produced the current title, body and
+/// kind fields. [vectorClock] also absorbs lifecycle-only state patches,
+/// so it cannot order content: a mark-seen that arrives before a reword
+/// would make the stale words look newer. Null on rows written before
+/// this field existed; content then falls back to `updatedAt`.
+ VectorClock? get contentVectorClock;
 /// Create a copy of NotificationMeta
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -934,16 +939,16 @@ $NotificationMetaCopyWith<NotificationMeta> get copyWith => _$NotificationMetaCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationMeta&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.scheduledFor, scheduledFor) || other.scheduledFor == scheduledFor)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&(identical(other.seenAt, seenAt) || other.seenAt == seenAt)&&(identical(other.actedOnAt, actedOnAt) || other.actedOnAt == actedOnAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.category, category) || other.category == category));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationMeta&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.scheduledFor, scheduledFor) || other.scheduledFor == scheduledFor)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&(identical(other.seenAt, seenAt) || other.seenAt == seenAt)&&(identical(other.actedOnAt, actedOnAt) || other.actedOnAt == actedOnAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.contentVectorClock, contentVectorClock) || other.contentVectorClock == contentVectorClock));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,scheduledFor,vectorClock,originatingHostId,seenAt,actedOnAt,deletedAt,category);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,scheduledFor,vectorClock,originatingHostId,seenAt,actedOnAt,deletedAt,category,contentVectorClock);
 
 @override
 String toString() {
-  return 'NotificationMeta(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, scheduledFor: $scheduledFor, vectorClock: $vectorClock, originatingHostId: $originatingHostId, seenAt: $seenAt, actedOnAt: $actedOnAt, deletedAt: $deletedAt, category: $category)';
+  return 'NotificationMeta(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, scheduledFor: $scheduledFor, vectorClock: $vectorClock, originatingHostId: $originatingHostId, seenAt: $seenAt, actedOnAt: $actedOnAt, deletedAt: $deletedAt, category: $category, contentVectorClock: $contentVectorClock)';
 }
 
 
@@ -954,7 +959,7 @@ abstract mixin class $NotificationMetaCopyWith<$Res>  {
   factory $NotificationMetaCopyWith(NotificationMeta value, $Res Function(NotificationMeta) _then) = _$NotificationMetaCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, DateTime scheduledFor, VectorClock vectorClock, String originatingHostId, DateTime? seenAt, DateTime? actedOnAt, DateTime? deletedAt, String? category
+ String id, DateTime createdAt, DateTime updatedAt, DateTime scheduledFor, VectorClock vectorClock, String originatingHostId, DateTime? seenAt, DateTime? actedOnAt, DateTime? deletedAt, String? category, VectorClock? contentVectorClock
 });
 
 
@@ -971,7 +976,7 @@ class _$NotificationMetaCopyWithImpl<$Res>
 
 /// Create a copy of NotificationMeta
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? scheduledFor = null,Object? vectorClock = null,Object? originatingHostId = null,Object? seenAt = freezed,Object? actedOnAt = freezed,Object? deletedAt = freezed,Object? category = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? scheduledFor = null,Object? vectorClock = null,Object? originatingHostId = null,Object? seenAt = freezed,Object? actedOnAt = freezed,Object? deletedAt = freezed,Object? category = freezed,Object? contentVectorClock = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -983,7 +988,8 @@ as String,seenAt: freezed == seenAt ? _self.seenAt : seenAt // ignore: cast_null
 as DateTime?,actedOnAt: freezed == actedOnAt ? _self.actedOnAt : actedOnAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contentVectorClock: freezed == contentVectorClock ? _self.contentVectorClock : contentVectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,
   ));
 }
 
@@ -1068,10 +1074,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category,  VectorClock? contentVectorClock)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationMeta() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category,_that.contentVectorClock);case _:
   return orElse();
 
 }
@@ -1089,10 +1095,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category,  VectorClock? contentVectorClock)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationMeta():
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category,_that.contentVectorClock);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1109,10 +1115,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime scheduledFor,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt,  String? category,  VectorClock? contentVectorClock)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationMeta() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt,_that.category,_that.contentVectorClock);case _:
   return null;
 
 }
@@ -1124,7 +1130,7 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.scheduledFor,_tha
 @JsonSerializable()
 
 class _NotificationMeta implements NotificationMeta {
-  const _NotificationMeta({required this.id, required this.createdAt, required this.updatedAt, required this.scheduledFor, required this.vectorClock, required this.originatingHostId, this.seenAt, this.actedOnAt, this.deletedAt, this.category});
+  const _NotificationMeta({required this.id, required this.createdAt, required this.updatedAt, required this.scheduledFor, required this.vectorClock, required this.originatingHostId, this.seenAt, this.actedOnAt, this.deletedAt, this.category, this.contentVectorClock});
   factory _NotificationMeta.fromJson(Map<String, dynamic> json) => _$NotificationMetaFromJson(json);
 
 @override final  String id;
@@ -1137,6 +1143,12 @@ class _NotificationMeta implements NotificationMeta {
 @override final  DateTime? actedOnAt;
 @override final  DateTime? deletedAt;
 @override final  String? category;
+/// The clock of the write that produced the current title, body and
+/// kind fields. [vectorClock] also absorbs lifecycle-only state patches,
+/// so it cannot order content: a mark-seen that arrives before a reword
+/// would make the stale words look newer. Null on rows written before
+/// this field existed; content then falls back to `updatedAt`.
+@override final  VectorClock? contentVectorClock;
 
 /// Create a copy of NotificationMeta
 /// with the given fields replaced by the non-null parameter values.
@@ -1151,16 +1163,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationMeta&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.scheduledFor, scheduledFor) || other.scheduledFor == scheduledFor)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&(identical(other.seenAt, seenAt) || other.seenAt == seenAt)&&(identical(other.actedOnAt, actedOnAt) || other.actedOnAt == actedOnAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.category, category) || other.category == category));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationMeta&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.scheduledFor, scheduledFor) || other.scheduledFor == scheduledFor)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&(identical(other.seenAt, seenAt) || other.seenAt == seenAt)&&(identical(other.actedOnAt, actedOnAt) || other.actedOnAt == actedOnAt)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.contentVectorClock, contentVectorClock) || other.contentVectorClock == contentVectorClock));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,scheduledFor,vectorClock,originatingHostId,seenAt,actedOnAt,deletedAt,category);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,scheduledFor,vectorClock,originatingHostId,seenAt,actedOnAt,deletedAt,category,contentVectorClock);
 
 @override
 String toString() {
-  return 'NotificationMeta(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, scheduledFor: $scheduledFor, vectorClock: $vectorClock, originatingHostId: $originatingHostId, seenAt: $seenAt, actedOnAt: $actedOnAt, deletedAt: $deletedAt, category: $category)';
+  return 'NotificationMeta(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, scheduledFor: $scheduledFor, vectorClock: $vectorClock, originatingHostId: $originatingHostId, seenAt: $seenAt, actedOnAt: $actedOnAt, deletedAt: $deletedAt, category: $category, contentVectorClock: $contentVectorClock)';
 }
 
 
@@ -1171,7 +1183,7 @@ abstract mixin class _$NotificationMetaCopyWith<$Res> implements $NotificationMe
   factory _$NotificationMetaCopyWith(_NotificationMeta value, $Res Function(_NotificationMeta) _then) = __$NotificationMetaCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, DateTime scheduledFor, VectorClock vectorClock, String originatingHostId, DateTime? seenAt, DateTime? actedOnAt, DateTime? deletedAt, String? category
+ String id, DateTime createdAt, DateTime updatedAt, DateTime scheduledFor, VectorClock vectorClock, String originatingHostId, DateTime? seenAt, DateTime? actedOnAt, DateTime? deletedAt, String? category, VectorClock? contentVectorClock
 });
 
 
@@ -1188,7 +1200,7 @@ class __$NotificationMetaCopyWithImpl<$Res>
 
 /// Create a copy of NotificationMeta
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? scheduledFor = null,Object? vectorClock = null,Object? originatingHostId = null,Object? seenAt = freezed,Object? actedOnAt = freezed,Object? deletedAt = freezed,Object? category = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? scheduledFor = null,Object? vectorClock = null,Object? originatingHostId = null,Object? seenAt = freezed,Object? actedOnAt = freezed,Object? deletedAt = freezed,Object? category = freezed,Object? contentVectorClock = freezed,}) {
   return _then(_NotificationMeta(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1200,7 +1212,8 @@ as String,seenAt: freezed == seenAt ? _self.seenAt : seenAt // ignore: cast_null
 as DateTime?,actedOnAt: freezed == actedOnAt ? _self.actedOnAt : actedOnAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,contentVectorClock: freezed == contentVectorClock ? _self.contentVectorClock : contentVectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,
   ));
 }
 

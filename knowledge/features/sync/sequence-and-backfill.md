@@ -182,6 +182,21 @@ It is usually superseded, being that host's first write, and the next version
 of the same payload carries its clock. A device that never handed out a
 counter moves its watermark from 0 to 1 at startup and skips 0 altogether.
 
+**Restored stores keep counters unique.** The next counter is kept in
+`SettingsDb`; at startup `VectorClockService` raises it above the highest
+counter of this host the sequence log records
+(`highestRecordedCounterForHost`), so settings restored from an older backup
+never hand out a counter a payload already carries. A sync database restored
+from a backup lacks the rows written after its snapshot, and an own counter
+with no row is answered as burned: the sequence log population runs once more
+after such a restore (the `sync.sqlite.restored` marker
+`restoreDatabaseFromBackup` writes), recording every counter the stored
+payloads carry again — journal entries, links, agent rows, notifications,
+consumption events and entity definitions. Reservations wait for that pass
+(`VectorClockService.holdReservationsWhile`), and the catch-up runs once more
+after it, so a counter only a stored payload records is not handed out before
+the log knows it ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
+
 # Own-host reservations
 
 A local write reserves its counter *before* the write path gets it, so a crash
@@ -763,6 +778,8 @@ only as an open conflict would otherwise never reach a third device whose row
 equals the others'. The journal send path serves a queued version that the
 row does not cover from the entry's open conflict of exactly that version
 (`JournalDb.openConflictVersion`), which is how an answer or push carries it.
+The conflict must cover every covered clock too; one that misses any fails
+the send like an uncovered row.
 
 A request goes only to the advertiser, and only it answers
 (`handleRequest`), with the current row of each record — a deletion as much

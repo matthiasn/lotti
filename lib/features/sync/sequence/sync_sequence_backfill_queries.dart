@@ -245,8 +245,26 @@ class SyncSequenceBackfillQueries {
     );
   }
 
+  /// Populate the sequence log from any stored [payloadType] — notifications,
+  /// consumption events, entity definitions — given their records.
+  /// Returns the number of sequence log entries populated.
+  Future<int> populateFromRecords({
+    required SyncSequencePayloadType payloadType,
+    required Stream<List<({String id, Map<String, int>? vectorClock})>> records,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) {
+    return _populateFromStream(
+      dataStream: records,
+      getTotalCount: getTotalCount,
+      onProgress: onProgress,
+      payloadType: payloadType,
+      label: 'populateFrom${payloadType.name}',
+    );
+  }
+
   /// Shared implementation for populating the sequence log from a paginated
-  /// stream of records with vector clocks. Used by all four populate methods.
+  /// stream of records with vector clocks. Used by every populate method.
   Future<int> _populateFromStream({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
     dataStream,

@@ -241,10 +241,11 @@ class QueueApplyAdapter {
     }
 
     // Step 3 — apply. Wrap in a JournalDb writer transaction ONLY for
-    // payload families that need an outer transaction (entity-definition
-    // upserts). Config flags, journal entities and entry links own their
-    // transactions: their cross-database receipt must follow the real commit,
-    // not a nested savepoint that a later outer rollback could undo. Other
+    // payload families that need an outer transaction (backfill requests and
+    // responses). Config flags, journal entities, entry links and entity
+    // definitions own their transactions: their cross-database receipt must
+    // follow the real commit, not a nested savepoint that a later outer
+    // rollback could undo. Other
     // families (theming, ai-config, agent entity/link/bundle, outbox
     // bundle, backfill request/response) write to other databases
     // (settings_db, ai_config_db, agent_db, outbox via sync_db) and
@@ -386,9 +387,10 @@ class QueueApplyAdapter {
       journalEntity: (_) => false,
       // upsertEntryLink owns its transaction. Its receipt must follow commit.
       entryLink: (_) => false,
-      // category/habit/dashboard/measurable/label _definitions —
-      // JournalDb.
-      entityDefinition: (_) => true,
+      // The definition upsert owns its JournalDb transaction, like links:
+      // its receipt must follow the commit, not a savepoint an outer
+      // rollback could undo.
+      entityDefinition: (_) => false,
       // ai_config_db.
       aiConfig: (_) => false,
       // ai_consumption.sqlite — not JournalDb.

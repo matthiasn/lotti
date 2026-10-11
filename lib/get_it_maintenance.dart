@@ -10,23 +10,60 @@ part of 'get_it.dart';
 ///
 /// V2 adds agent entities and links to the population, which were missing in V1.
 /// Devices that already ran V1 will re-run with the full set of data sources.
+///
+/// It runs once more after the sync database was restored from a backup
+/// (`sync.sqlite.restored`, written by `restoreDatabaseFromBackup`): the
+/// restored log lacks every row written after the snapshot, and an own
+/// counter with no row is answered as burned, so a peer would give up on
+/// payloads this device still holds (ADR 0135).
 Future<void> _checkAndPopulateSequenceLog() async {
   // Bumped from 'maintenance_sequenceLogPopulated' to V2 so devices that
   // ran V1 (journal + links only) will re-run with agent data included.
   const settingsKey = 'maintenance_sequenceLogPopulatedV2';
+  const restoreKey = 'maintenance_sequenceLogRestoreRepopulated';
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
 
   try {
-    // Check if we've already run this migration
+    final restore = await _syncDbRestoreMarker();
     final hasRun = await settingsDb.itemByKey(settingsKey);
-    if (hasRun == 'true') {
+    if (hasRun == 'true' &&
+        (restore == null ||
+            restore == await settingsDb.itemByKey(restoreKey))) {
       return;
+    }
+    Future<void> markDone() async {
+      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      if (restore != null) {
+        await settingsDb.saveSettingsItem(restoreKey, restore);
+      }
     }
 
     final syncDatabase = getIt<SyncDatabase>();
     final journalDb = getIt<JournalDb>();
     final agentDb = getIt<AgentDatabase>();
+    final notificationsDb = getIt<NotificationsDb>();
+    final consumptionDb = getIt<ConsumptionDatabase>();
+
+    // The payloads every other sequence-tracked family stores. A restore
+    // loses their rows as much as the journal's.
+    final recordSources = [
+      (
+        payloadType: SyncSequencePayloadType.notification,
+        records: notificationsDb.streamNotificationsWithVectorClock,
+        count: notificationsDb.countAllNotifications,
+      ),
+      (
+        payloadType: SyncSequencePayloadType.consumptionEvent,
+        records: consumptionDb.streamEventsWithVectorClock,
+        count: consumptionDb.countAllEvents,
+      ),
+      (
+        payloadType: SyncSequencePayloadType.entityDefinition,
+        records: journalDb.streamDefinitionsWithVectorClock,
+        count: journalDb.countAllDefinitions,
+      ),
+    ];
 
     // Check current sequence log count
     final sequenceLogCount = await syncDatabase.getSequenceLogCount();
@@ -40,13 +77,17 @@ Future<void> _checkAndPopulateSequenceLog() async {
     final linksCount = await journalDb.countAllEntryLinks();
     final agentEntityCount = await agentDb.countAllAgentEntities();
     final agentLinkCount = await agentDb.countAllAgentLinks();
+    final recordCounts = [
+      for (final source in recordSources) await source.count(),
+    ];
 
     if (journalCount == 0 &&
         linksCount == 0 &&
         agentEntityCount == 0 &&
-        agentLinkCount == 0) {
+        agentLinkCount == 0 &&
+        recordCounts.every((count) => count == 0)) {
       // Empty database, nothing to populate
-      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      await markDone();
       return;
     }
 
@@ -55,7 +96,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
       'Starting automatic sequence log population (V2): '
       'journal=$journalCount links=$linksCount '
       'agentEntities=$agentEntityCount agentLinks=$agentLinkCount '
-      'sequenceLog=$sequenceLogCount',
+      'other=$recordCounts sequenceLog=$sequenceLogCount',
       subDomain: 'sequenceLogPopulation',
     );
 
@@ -86,14 +127,24 @@ Future<void> _checkAndPopulateSequenceLog() async {
       getTotalCount: agentDb.countAllAgentLinks,
     );
 
+    final populatedRecords = [
+      for (final source in recordSources)
+        await sequenceLogService.populateFromRecords(
+          payloadType: source.payloadType,
+          records: source.records(),
+          getTotalCount: source.count,
+        ),
+    ];
+
     // Mark as completed
-    await settingsDb.saveSettingsItem(settingsKey, 'true');
+    await markDone();
 
     domainLogger.log(
       LogDomain.database,
       'Automatic sequence log population (V2) completed: '
       'journal=$populatedJournal links=$populatedLinks '
-      'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks',
+      'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks '
+      'other=$populatedRecords',
       subDomain: 'sequenceLogPopulation',
     );
   } catch (e, stackTrace) {
@@ -105,6 +156,14 @@ Future<void> _checkAndPopulateSequenceLog() async {
     );
     // Don't mark as completed on error - will retry on next startup
   }
+}
+
+/// The marker `restoreDatabaseFromBackup` leaves beside a restored sync
+/// database — the time it restored it — or null when it never did.
+Future<String?> _syncDbRestoreMarker() async {
+  if (!getIt.isRegistered<Directory>()) return null;
+  final marker = File('${getIt<Directory>().path}/$syncDbFileName.restored');
+  return marker.existsSync() ? marker.readAsString() : null;
 }
 
 @visibleForTesting

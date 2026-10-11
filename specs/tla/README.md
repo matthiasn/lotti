@@ -1718,6 +1718,13 @@ What the model leaves out, deliberately or as a residual:
   entries carry attachments, and their receivers order the JSON by clock, so
   the older JSON is dropped and the attachment lands.
 - **Unstamped flags follow the callers' order.** The collapse orders config flags by their version stamp; two rows without one (from before #4517) keep enqueue order, and one without a stamp ranks below any stamped row of the same flag (ADR 0130).
+- **Size limits.** No send here is too large. In the code a single message
+  over the inline event limit travels again as a one-child bundle, a bundle
+  over the upload limit releases its rows uncounted and the next claims —
+  a count kept in settings, so a restart keeps it — take one row each, and
+  a single send too large even as a file is set aside past the retry cap
+  (ADR 0129, ADR 0130, ADR 0132). The model has no size fault, so none of
+  these paths is checked; their tests are in the processor's suite.
 - The claim and the collapse are one step. Between the Dart claim and its
   collapse lookups only appends (rows the collapse did not read), the
   monitor (guarded by a compare-and-set on status) and pruning (sent rows
@@ -2778,8 +2785,9 @@ and decided in [ADR 0125](../../docs/adr/0125-definitions-carry-vector-clocks.md
 | `CausalWriteWins` | invariant | wherever a write is known, no version its author had seen is the stored one |
 | `CountersAreWrites` | invariant | every counter in a stored clock was spent by a write or a stamp — resolution spends none |
 | `LegacyNeverRegresses` | action | no host replaces a legacy row by an older legacy row |
-| `NewestLegacyWins` | liveness | once the migration has run on any host, with nothing edited, every host holds the newest legacy version |
-| `EventuallyConverged` | liveness | once the migration has run — or every row was written with a clock — all hosts hold the same content, under a clock |
+| `NewestLegacyWins` | liveness | once a repair has run on any host, with nothing edited, every host holds the newest legacy version |
+| `EventuallyConverged` | liveness | once a repair has run — or every row was written with a clock — all hosts hold the same content, under a clock |
+| `ConvergesWithoutUser` | liveness | with the repair running at startup on every host (`RepairAtStartup`), all hosts hold the same content under a clock without the user acting |
 | `GapsHeal` | liveness | every counter a host learns of is eventually received |
 
 | Configuration | Hosts | Writes per host | Rows from before clocks | Losses | Backfill | Stamps | Distinct states |
@@ -2797,7 +2805,8 @@ configuration gives (twenty workers):
 | `ContentTieBreak = FALSE` | `EqualClocksAgree` in every profile (102–172 states): two writes at the same `updatedAt` are each applied on arrival; the hosts swap contents under the same joined clock |
 | `NullFallsBack = FALSE` | `LegacyNeverRegresses` in the legacy profile (106 states): a clockless row yields to any clocked copy, so a host holding the newer legacy row takes the older one the other host has just stamped |
 | `MonotoneEditStamp = FALSE` | `CausalWriteWins` in every profile (544–1,007 states): host `a` writes `A1` and then `A2` with an earlier `updatedAt`; `b` has kept `A1` against its own concurrent write under the join, and `A2` — concurrent with that join — loses to `A1` by `updatedAt`. The join puts a host's own older version up against its newer one, so a write must stamp past the stored `updatedAt` |
-| `StampsBeaten = FALSE` | `EventuallyConverged` in the legacy profile (2,877 states): the migration runs on `a`, whose legacy row is the older; `b` keeps its newer clockless row against `a`'s stamped copy, nothing ever sends it, and the hosts hold different versions for good |
+| `StampsBeaten = FALSE` | With `RepairAtStartup = FALSE` too, `EventuallyConverged` in the legacy profile (2,877 states, seven steps): a manual repair runs on `a`, whose legacy row is the older; `b` keeps its newer clockless row against `a`'s stamped copy, nothing ever sends it, and the hosts hold different versions for good. With the repair at startup the profile passes without the self-stamp: `b` stamps its row at its next start (ADR 0130) |
+| `RepairAtStartup = FALSE` | `ConvergesWithoutUser` in the legacy profile (2,812 states, five steps): no host stamps its legacy row unless the user runs the repair, and nothing else gives a clockless row a clock |
 
 What the model leaves out:
 

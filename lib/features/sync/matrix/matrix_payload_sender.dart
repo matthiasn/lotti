@@ -25,6 +25,7 @@ import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
 
 part 'matrix_payload_sender_notifications.dart';
+part 'matrix_payload_sender_upload_checks.dart';
 
 typedef _FileSendResult = ({String? eventId, bool succeeded});
 
@@ -206,46 +207,6 @@ class MatrixPayloadSender {
     return eventId;
   }
 
-  /// Requires a server name and one media ID, without URI normalization hiding
-  /// malformed paths. Uri parsing also rejects invalid bracketed IPv6 hosts.
-  static bool _hasValidMxcUri(String value) =>
-      RegExp(
-        r'^mxc://(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])'
-        r'(?::[0-9]+)?/[A-Za-z0-9_-]+$',
-      ).hasMatch(value) &&
-      Uri.tryParse(value) != null;
-
-  /// Checks the v2 encryption metadata emitted by our SDK before acknowledging
-  /// its upload. The ciphertext bytes and their hash are not downloaded here.
-  static bool _hasValidEncryptedFileMetadata(Object? value) {
-    if (value is! Map || value['v'] != 'v2') return false;
-    final key = value['key'];
-    final hashes = value['hashes'];
-    if (key is! Map || hashes is! Map) return false;
-    final operations = key['key_ops'];
-    return key['alg'] == 'A256CTR' &&
-        key['kty'] == 'oct' &&
-        key['ext'] == true &&
-        operations is List &&
-        operations.every((operation) => operation is String) &&
-        operations.contains('encrypt') &&
-        operations.contains('decrypt') &&
-        _hasBase64ByteLength(key['k'], 32) &&
-        _hasBase64ByteLength(value['iv'], 16) &&
-        _hasBase64ByteLength(hashes['sha256'], 32);
-  }
-
-  static bool _hasBase64ByteLength(Object? value, int expectedLength) {
-    if (value is! String) return false;
-    try {
-      // normalize accepts the SDK's unpadded base64 and base64url forms.
-      return base64.decode(base64.normalize(value)).length == expectedLength;
-    } on FormatException {
-      // Do not propagate a decoding error containing key/IV material to logs.
-      return false;
-    }
-  }
-
   /// The entry's stored row. It must cover the queued version and every
   /// covered clock: a payload older than what was queued would cover a
   /// counter it does not carry (ADR 0086). Otherwise the send fails and the
@@ -263,12 +224,16 @@ class MatrixPayloadSender {
     if (_coversQueued(entity.meta.vectorClock, message)) return entity;
     // A deep-backfill answer or push may name a concurrent version the entry
     // keeps as an open conflict rather than as its row: serve exactly that
-    // version. Such a message failed on every attempt before, so nothing the
-    // app queued otherwise takes this branch.
+    // version, provided it covers every covered clock as well. Such a message
+    // failed on every attempt before, so nothing the app queued otherwise
+    // takes this branch.
     final queued = message.vectorClock;
     if (queued != null) {
       final conflict = await journalDb.openConflictVersion(message.id, queued);
-      if (conflict != null) return conflict;
+      if (conflict != null &&
+          _coversQueued(conflict.meta.vectorClock, message)) {
+        return conflict;
+      }
     }
     throw StateError('Database payload does not cover queued version');
   }
@@ -527,7 +492,21 @@ class MatrixPayloadSender {
         continue;
       }
       final conflict = await journalDb.openConflictVersion(child.id, queued);
-      if (conflict != null) conflictVersionAt[index] = conflict;
+      if (conflict == null ||
+          !_coversQueued(conflict.meta.vectorClock, child)) {
+        // Nothing carries every queued version: adopting the row's clock, or
+        // a conflict short of a covered clock, would claim counters the
+        // payload does not hold, which a single send refuses (ADR 0086).
+        // Fail the bundle into the retry path instead.
+        loggingService.error(
+          LogDomain.sync,
+          'outboxBundle aborting: neither the stored row of ${child.id} nor '
+          'an open conflict covers its queued versions',
+          subDomain: 'sendMatrixMsg.outboxBundle.uncovered',
+        );
+        return null;
+      }
+      conflictVersionAt[index] = conflict;
     }
 
     // Track journal-entity children whose DB row was hard-purged between

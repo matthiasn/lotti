@@ -19,6 +19,202 @@ void main() {
       expect(NotificationMerge.mergeFull(second, first), second);
     });
 
+    test('a version that follows the other wins whatever the wall clocks '
+        'say, so a fast-clock peer cannot outrank a later reword', () {
+      final template = buildNotification(
+        id: 'reworded',
+        title: 'Template title',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'fast-host': 1}),
+      );
+      final reword = buildNotification(
+        id: 'reworded',
+        title: 'The agent reworded this',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'fast-host': 1, 'agent-host': 1}),
+      );
+
+      expect(
+        NotificationMerge.mergeFull(template, reword).title,
+        'The agent reworded this',
+      );
+      expect(
+        NotificationMerge.mergeFull(reword, template).title,
+        'The agent reworded this',
+      );
+    });
+
+    test('a state patch that arrives before the reword cannot keep the '
+        'template words', () {
+      final template = buildNotification(
+        id: 'state-first',
+        title: 'Template title',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'agent-host': 1}),
+      );
+      final reword = buildNotification(
+        id: 'state-first',
+        title: 'The agent reworded this',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'agent-host': 2}),
+      );
+      // The agent host marks the reworded row seen; that patch reaches the
+      // peer while the peer still holds the template.
+      final seenTemplate = NotificationMerge.mergeState(
+        template,
+        seenAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'agent-host': 3}),
+      );
+      expect(
+        seenTemplate.meta.contentVectorClock,
+        const VectorClock({'agent-host': 1}),
+      );
+
+      for (final merged in [
+        NotificationMerge.mergeFull(seenTemplate, reword),
+        NotificationMerge.mergeFull(reword, seenTemplate),
+      ]) {
+        expect(merged.title, 'The agent reworded this');
+        expect(merged.meta.seenAt, DateTime.utc(2026, 5, 17, 10));
+        expect(merged.meta.vectorClock, const VectorClock({'agent-host': 3}));
+        expect(
+          merged.meta.contentVectorClock,
+          const VectorClock({'agent-host': 2}),
+        );
+      }
+    });
+
+    test('a row without a content clock ranks below any with one, whatever '
+        'the timestamps say', () {
+      final legacy = buildNotification(
+        id: 'legacy',
+        title: 'Legacy words',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'host-a': 5}),
+        legacyContent: true,
+      );
+      final reword = buildNotification(
+        id: 'legacy',
+        title: 'Reworded',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+
+      for (final merged in [
+        NotificationMerge.mergeFull(legacy, reword),
+        NotificationMerge.mergeFull(reword, legacy),
+      ]) {
+        expect(merged.title, 'Reworded');
+        expect(
+          merged.meta.contentVectorClock,
+          const VectorClock({'host-a': 1}),
+        );
+      }
+    });
+
+    test('the merge keeps the winning content clock, not a union of both', () {
+      final earlier = buildNotification(
+        id: 'kept',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final later = buildNotification(
+        id: 'kept',
+        title: 'Later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-b': 1}),
+      );
+
+      final merged = NotificationMerge.mergeFull(earlier, later);
+
+      expect(merged.title, 'Later');
+      expect(merged.meta.contentVectorClock, const VectorClock({'host-b': 1}));
+      expect(
+        merged.meta.vectorClock,
+        const VectorClock({'host-a': 1, 'host-b': 1}),
+      );
+      expect(NotificationMerge.mergeFull(merged, earlier).title, 'Later');
+    });
+
+    test('three versions settle on the same content in every order of '
+        'arrival', () {
+      // A runs a fast wall clock; B is concurrent with it; C follows A.
+      final a = buildNotification(
+        id: 'three',
+        title: 'A',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'a': 1}),
+      );
+      final b = buildNotification(
+        id: 'three',
+        title: 'B',
+        updatedAt: DateTime.utc(2026, 5, 17, 12),
+        vectorClock: const VectorClock({'b': 1}),
+      );
+      final c = buildNotification(
+        id: 'three',
+        title: 'C',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'a': 1, 'c': 1}),
+      );
+      final orders = [
+        [a, b, c],
+        [a, c, b],
+        [b, a, c],
+        [b, c, a],
+        [c, a, b],
+        [c, b, a],
+      ];
+
+      final titles = {
+        for (final order in orders)
+          NotificationMerge.mergeFull(
+            NotificationMerge.mergeFull(order[0], order[1]),
+            order[2],
+          ).title,
+      };
+
+      expect(titles, {'C'});
+    });
+
+    test('a malformed content clock ranks like none', () {
+      final malformed = buildNotification(
+        id: 'malformed',
+        title: 'Malformed but later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-a': 1}),
+        contentVectorClock: const VectorClock({'host-a': -1}),
+      );
+      final ordered = buildNotification(
+        id: 'malformed',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 2}),
+      );
+
+      expect(NotificationMerge.mergeFull(ordered, malformed).title, 'Earlier');
+      expect(NotificationMerge.mergeFull(malformed, ordered).title, 'Earlier');
+    });
+
+    test('concurrent versions still fall back to the timestamp', () {
+      final earlier = buildNotification(
+        id: 'concurrent',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final later = buildNotification(
+        id: 'concurrent',
+        title: 'Later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-b': 1}),
+      );
+
+      expect(NotificationMerge.mergeFull(earlier, later).title, 'Later');
+      expect(NotificationMerge.mergeFull(later, earlier).title, 'Later');
+    });
+
     test('a lifecycle patch cannot change the equal-time content winner '
         '(NotificationReplication ContentConverged)', () {
       final first = buildNotification(
@@ -225,7 +421,7 @@ void main() {
           reason: '$scenario',
         );
 
-        final expectedWinner = scenario.updatedAtWinner;
+        final expectedWinner = scenario.expectedContentWinner;
         if (expectedWinner != null) {
           expectContentMatches(forward, expectedWinner);
           expect(

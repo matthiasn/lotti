@@ -543,14 +543,15 @@ An event that does not decode as a sync message this build knows maps to `undeco
 `pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 
-Journal entities and entry links own their narrow JournalDb transactions.
+Journal entities, entry links and entity definitions own their narrow
+JournalDb transactions (a definition since [ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 Their sequence receipt is written to SyncDatabase only after the domain commit
 returns. The adapter must not wrap these handlers or outbox bundles in another
 journal transaction: a nested savepoint can succeed before an outer commit
 fails, leaving a receipt whose payload rolled back. Other families use their
 own database. Config flags also own their commit so cache publication cannot
-precede an outer rollback; the adapter retains the outer journal transaction for
-definitions and backfill controls.
+precede an outer rollback; the adapter retains the outer journal transaction
+only for backfill requests and responses.
 
 Receipt write errors propagate to the queue's retriable outcome for journal
 entities, entry links, agents, notifications and consumption events. Replay

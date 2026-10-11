@@ -337,6 +337,8 @@ void main() {
           scheduledFor: fixedNow,
           vectorClock: const VectorClock({'host-a': 1}),
           originatingHostId: 'host-a',
+          // As `create` writes it: the content carries the write's clock.
+          contentVectorClock: const VectorClock({'host-a': 1}),
         );
         await notificationsDb.upsertNotification(old);
         await notificationsDb.upsertNotification(replacement);
@@ -423,6 +425,10 @@ void main() {
         expect(entity.meta.updatedAt, fixedNow);
         expect(entity.meta.scheduledFor, fixedNow);
         expect(entity.meta.vectorClock, const VectorClock({'host-a': 1}));
+        expect(
+          entity.meta.contentVectorClock,
+          const VectorClock({'host-a': 1}),
+        );
         expect(entity.meta.category, 'work');
 
         expect(
@@ -482,6 +488,8 @@ void main() {
           scheduledFor: fixedNow,
           vectorClock: const VectorClock({'host-a': 1}),
           originatingHostId: 'host-a',
+          // As `create` writes it: the content carries the write's clock.
+          contentVectorClock: const VectorClock({'host-a': 1}),
         );
         await notificationsDb.upsertNotification(placeholder);
         clearInteractions(updateNotifications);
@@ -1261,6 +1269,9 @@ void main() {
       expect(saved.meta.createdAt, row.meta.createdAt);
       expect(saved.meta.scheduledFor, ahead);
       expect(saved.meta.originatingHostId, 'host-a');
+      // The new words carry the write's clock, so they order ahead of the
+      // template on every peer whatever state patches its row absorbed.
+      expect(saved.meta.contentVectorClock, saved.meta.vectorClock);
     });
 
     test('re-arms the row under its unchanged id and syncs it whole', () async {
@@ -1651,6 +1662,7 @@ NotificationEntity _entityForCreate({
   DateTime? seenAt,
   DateTime? actedOnAt,
   DateTime? deletedAt,
+  VectorClock? contentVectorClock,
 }) {
   return NotificationEntity.taskSuggestion(
     meta: NotificationMeta(
@@ -1663,6 +1675,7 @@ NotificationEntity _entityForCreate({
       deletedAt: deletedAt,
       vectorClock: vectorClock,
       originatingHostId: originatingHostId,
+      contentVectorClock: contentVectorClock,
     ),
     linkedTaskId: linkedTaskId,
     suggestionCount: 2,

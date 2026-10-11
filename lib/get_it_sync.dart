@@ -381,6 +381,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     loggingService: domainLogger,
+    settingsDb: settingsDb,
   );
   syncEventProcessor
     ..missingMediaListener = mediaRepairService.reportMissing

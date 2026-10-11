@@ -174,6 +174,11 @@ _NotificationMeta _$NotificationMetaFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['deletedAt'] as String),
       category: json['category'] as String?,
+      contentVectorClock: json['contentVectorClock'] == null
+          ? null
+          : VectorClock.fromJson(
+              json['contentVectorClock'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$NotificationMetaToJson(_NotificationMeta instance) =>
@@ -188,4 +193,5 @@ Map<String, dynamic> _$NotificationMetaToJson(_NotificationMeta instance) =>
       'actedOnAt': instance.actedOnAt?.toIso8601String(),
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'category': instance.category,
+      'contentVectorClock': instance.contentVectorClock,
     };

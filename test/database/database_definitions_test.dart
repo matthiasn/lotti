@@ -335,6 +335,35 @@ void main() {
       });
     });
 
+    test('streams every definition table with its clocks, for the sequence '
+        'log population', () async {
+      await db!.upsertEntityDefinition(
+        categoryMindfulness.copyWith(
+          vectorClock: const VectorClock({'host-a': 3}),
+        ),
+      );
+      await db!.upsertEntityDefinition(
+        measurableWater.copyWith(vectorClock: null),
+      );
+
+      final records = (await db!.streamDefinitionsWithVectorClock().toList())
+          .expand((page) => page);
+
+      expect(
+        [
+          for (final r in records) [r.id, r.vectorClock],
+        ],
+        [
+          [
+            categoryMindfulness.id,
+            {'host-a': 3},
+          ],
+          [measurableWater.id, null],
+        ],
+      );
+      expect(await db!.countAllDefinitions(), 2);
+    });
+
     group('Recency gate -', () {
       final base = DateTime(2026, 9, 5, 10);
 

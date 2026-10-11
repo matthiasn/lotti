@@ -268,6 +268,148 @@ void main() {
       );
 
       test(
+        'settings restored from an older backup continue above the highest '
+        'counter the sequence log records, so no counter is used twice',
+        () async {
+          final syncDb = SyncDatabase(inMemoryDatabase: true);
+          addTearDown(syncDb.close);
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '3');
+          await syncDb.recordSequenceEntry(
+            SyncSequenceLogCompanion.insert(
+              hostId: 'penguin-host',
+              counter: 9,
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: DateTime(2026, 10, 11),
+              updatedAt: DateTime(2026, 10, 11),
+            ),
+          );
+          expect(
+            await syncDb.highestRecordedCounterForHost('penguin-host'),
+            9,
+          );
+          expect(await syncDb.highestRecordedCounterForHost('other'), isNull);
+
+          final domainLogger = MockDomainLogger();
+          when(
+            () => domainLogger.log(
+              any<LogDomain>(),
+              any<String>(),
+              subDomain: any<String?>(named: 'subDomain'),
+            ),
+          ).thenAnswer((_) {});
+          final restarted = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+            domainLogger: () => domainLogger,
+          );
+          await restarted.initialized;
+          final vc = await restarted.getNextVectorClock();
+
+          expect(vc.vclock, {'penguin-host': 10});
+          verify(
+            () => domainLogger.log(
+              LogDomain.sync,
+              any<String>(that: contains('continuing at 10')),
+              subDomain: 'vectorClock.catchUp',
+            ),
+          ).called(1);
+          expect(await settingsDb.itemByKey(nextAvailableCounterKey), '11');
+
+          // A counter already above what the log records stands.
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '20');
+          final ahead = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+          );
+          await ahead.initialized;
+          expect(await ahead.getNextAvailableCounter(), 20);
+        },
+      );
+
+      test(
+        'a reservation waits for the restore re-population and continues '
+        'above the counters it re-records',
+        () async {
+          final syncDb = SyncDatabase(inMemoryDatabase: true);
+          addTearDown(syncDb.close);
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '3');
+          final restarted = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+          );
+          final population = Completer<void>();
+          final held = restarted.holdReservationsWhile(
+            () => population.future,
+          );
+
+          VectorClock? reserved;
+          final reservation = restarted.getNextVectorClock().then(
+            (vc) => reserved = vc,
+          );
+          await pumpEventQueue();
+          expect(reserved, isNull);
+
+          // The population re-records a counter a stored payload carries.
+          await syncDb.recordSequenceEntry(
+            SyncSequenceLogCompanion.insert(
+              hostId: 'penguin-host',
+              counter: 9,
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: DateTime(2026, 10, 11),
+              updatedAt: DateTime(2026, 10, 11),
+            ),
+          );
+          population.complete();
+          await held;
+          await reservation;
+
+          expect(reserved!.vclock, {'penguin-host': 10});
+        },
+      );
+
+      test('a failed population still lifts the hold', () async {
+        final restarted = buildVectorClockService();
+        final held = restarted.holdReservationsWhile(
+          () async => throw StateError('population failed'),
+        );
+
+        await expectLater(held, throwsStateError);
+        final vc = await restarted.getNextVectorClock();
+        expect(vc.vclock, hasLength(1));
+      });
+
+      test('an unreadable sequence log is logged and the stored counter '
+          'stands', () async {
+        final syncDb = MockSyncDatabase();
+        final domainLogger = MockDomainLogger();
+        _stubDomainLoggerError(domainLogger);
+        when(
+          () => syncDb.highestRecordedCounterForHost(any()),
+        ).thenThrow(StateError('sync database closed'));
+        await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+        await settingsDb.saveSettingsItem(nextAvailableCounterKey, '7');
+
+        final restarted = VectorClockService(
+          settingsDb: settingsDb,
+          syncDatabase: () => syncDb,
+          domainLogger: () => domainLogger,
+        );
+        await restarted.initialized;
+
+        expect(await restarted.getNextAvailableCounter(), 7);
+        verify(
+          () => domainLogger.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vectorClock.catchUp',
+          ),
+        ).called(1);
+      });
+
+      test(
         'a host that never handed out a counter skips 0 on its next start',
         () async {
           // A build before ADR 0080 persisted watermark 0 for a new host.

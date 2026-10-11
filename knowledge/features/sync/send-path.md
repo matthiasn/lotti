@@ -190,6 +190,13 @@ Bounds live in `SyncTuning` (`mediaRepair*`): a debounce window so a catch-up's
 burst of misses becomes one request, a batch cap so a backlog drains across
 successive requests, an attempt cap so a blob no peer holds is eventually
 abandoned, and a tracking cap so the pending set cannot grow without limit.
+The attempt counts are kept in `SettingsDb` (`mediaRepairAttempts`), so a
+restart does not reset the cap and request the same unanswerable blobs on
+every launch. They are saved only once the request is queued: a failed
+enqueue costs no attempt, in memory or on disk. Flushes run one at a time,
+so an older flush cannot store its counts over a newer one's. Every holder still answers a request: duplicate uploads cost
+bandwidth, not data, and choosing one responder would need an origin host
+journal entries do not carry ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 
 Media repair disposal cancels its debounce and clears pending ids and attempt
 counts. A host lookup completing after disposal cannot enqueue a request; a
@@ -313,7 +320,11 @@ entry to a file, and a JSON file an older build left at `jsonPath` is
 ignored. The row must cover the queued vector clock and every covered clock
 before upload: a payload older than the queued version would cover a newer
 counter than it carries. An absent row or an older or concurrent clock keeps
-the outbox item retryable; neither acknowledges an unsent generation. The
+the outbox item retryable; neither acknowledges an unsent generation. A bundle
+holds its children to the same rule: a child whose row does not cover its
+queued versions, and whose queued version no open conflict carries with
+every covered clock, fails the whole bundle into retry rather than adopting
+the row's clock ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)). The
 upload keeps `jsonPath` as its `relativePath`, so older receivers see no
 difference.
 

@@ -2,12 +2,15 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -33,6 +36,7 @@ void main() {
     );
     registerFallbackValue(() async => 0);
     registerFallbackValue(FakeCategoryDefinition());
+    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
   setUp(() async {
     // Use a dedicated scope per test to avoid cross-file contamination
@@ -375,9 +379,13 @@ void main() {
     late MockSyncDatabase syncDatabase;
     late MockJournalDb journalDb;
     late MockAgentDatabase agentDb;
+    late MockNotificationsDb notificationsDb;
+    late MockConsumptionDatabase consumptionDb;
     late MockSyncSequenceLogService sequenceLogService;
 
     const settingsKey = 'maintenance_sequenceLogPopulatedV2';
+    const noRecords =
+        Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
 
     setUp(() {
       mockDomainLogger = MockDomainLogger();
@@ -385,7 +393,30 @@ void main() {
       syncDatabase = MockSyncDatabase();
       journalDb = MockJournalDb();
       agentDb = MockAgentDatabase();
+      notificationsDb = MockNotificationsDb();
+      consumptionDb = MockConsumptionDatabase();
       sequenceLogService = MockSyncSequenceLogService();
+
+      // The other sequence-tracked stores hold nothing unless a test says so.
+      when(notificationsDb.countAllNotifications).thenAnswer((_) async => 0);
+      when(
+        notificationsDb.streamNotificationsWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(consumptionDb.countAllEvents).thenAnswer((_) async => 0);
+      when(
+        consumptionDb.streamEventsWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(journalDb.countAllDefinitions).thenAnswer((_) async => 0);
+      when(
+        journalDb.streamDefinitionsWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        () => sequenceLogService.populateFromRecords(
+          payloadType: any(named: 'payloadType'),
+          records: any(named: 'records'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ).thenAnswer((_) async => 0);
 
       when(
         () => mockDomainLogger.log(
@@ -409,6 +440,8 @@ void main() {
         ..registerSingleton<SyncDatabase>(syncDatabase)
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<AgentDatabase>(agentDb)
+        ..registerSingleton<NotificationsDb>(notificationsDb)
+        ..registerSingleton<ConsumptionDatabase>(consumptionDb)
         ..registerSingleton<SyncSequenceLogService>(sequenceLogService);
     });
 
@@ -421,6 +454,46 @@ void main() {
 
       verifyNever(() => syncDatabase.getSequenceLogCount());
       verifyNever(() => journalDb.countAllJournalEntries());
+    });
+
+    test('runs once more after the sync database was restored from a '
+        'backup, and only once per restore', () async {
+      final documents = Directory.systemTemp.createTempSync('restored_');
+      addTearDown(() => documents.deleteSync(recursive: true));
+      File(
+        '${documents.path}/sync.sqlite.restored',
+      ).writeAsStringSync('2026-10-11T10:00:00.000');
+      getIt.registerSingleton<Directory>(documents);
+      addTearDown(() => getIt.unregister<Directory>());
+      const restoreKey = 'maintenance_sequenceLogRestoreRepopulated';
+      when(
+        () => settingsDb.itemByKey(settingsKey),
+      ).thenAnswer((_) async => 'true');
+      String? handled;
+      when(
+        () => settingsDb.itemByKey(restoreKey),
+      ).thenAnswer((_) async => handled);
+      when(() => settingsDb.saveSettingsItem(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        if (invocation.positionalArguments.first == restoreKey) {
+          handled = invocation.positionalArguments[1] as String;
+        }
+        return 1;
+      });
+      when(
+        () => syncDatabase.getSequenceLogCount(),
+      ).thenAnswer((_) async => 10);
+      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
+
+      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLogForTesting();
+
+      verify(() => journalDb.countAllJournalEntries()).called(1);
+      expect(handled, '2026-10-11T10:00:00.000');
     });
 
     test(
@@ -458,6 +531,70 @@ void main() {
         ).called(1);
       },
     );
+
+    test('populates notifications, consumption events and definitions, '
+        'even when they are all a restored device holds', () async {
+      when(
+        () => settingsDb.itemByKey(settingsKey),
+      ).thenAnswer((_) async => null);
+      when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
+      when(notificationsDb.countAllNotifications).thenAnswer((_) async => 3);
+      for (final populate in [
+        () => sequenceLogService.populateFromJournal(
+          entryStream: any(named: 'entryStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromEntryLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromAgentEntities(
+          entityStream: any(named: 'entityStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromAgentLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ]) {
+        when(populate).thenAnswer((_) async => 0);
+      }
+      when(
+        journalDb.streamEntriesWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        journalDb.streamEntryLinksWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        agentDb.streamAgentEntitiesWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        agentDb.streamAgentLinksWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      await checkAndPopulateSequenceLogForTesting();
+
+      final populated = verify(
+        () => sequenceLogService.populateFromRecords(
+          payloadType: captureAny(named: 'payloadType'),
+          records: any(named: 'records'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ).captured;
+      expect(populated, [
+        SyncSequencePayloadType.notification,
+        SyncSequencePayloadType.consumptionEvent,
+        SyncSequencePayloadType.entityDefinition,
+      ]);
+      verify(() => settingsDb.saveSettingsItem(settingsKey, 'true')).called(1);
+    });
 
     test('logs exception when population fails', () async {
       when(

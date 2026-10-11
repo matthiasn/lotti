@@ -794,6 +794,33 @@ void main() {
       );
     });
 
+    test(
+      'does not serve an open conflict that misses a covered clock',
+      () async {
+        stubRow(
+          entity(clock: const VectorClock({'hostB': 5})),
+          conflict: entity(clock: message.vectorClock),
+        );
+
+        final result = await payloadSender.sendJournalEntityPayload(
+          room: room,
+          message: message.copyWith(
+            coveredVectorClocks: const [
+              VectorClock({'hostC': 1}),
+            ],
+          ),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
     test('checks covered clocks as well as the queued version', () async {
       stubRow(entity(clock: const VectorClock({'hostA': 3})));
       final merged = message.copyWith(
@@ -1133,6 +1160,116 @@ void main() {
           (row.meta.vectorClock, 'row'),
           (conflict.meta.vectorClock, 'conflict'),
         ]);
+      },
+    );
+
+    test(
+      'fails the bundle when a child names a version neither its row nor an '
+      'open conflict carries, instead of claiming counters it does not hold',
+      () async {
+        final date = DateTime.utc(2026, 8);
+        final row = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'behind',
+            createdAt: date,
+            updatedAt: date,
+            dateFrom: date,
+            dateTo: date,
+            vectorClock: const VectorClock({'a': 1}),
+          ),
+          entryText: const EntryText(plainText: 'older'),
+        );
+        when(
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
+        ).thenAnswer((_) async => {'behind': row});
+        when(
+          () => journalDb.openConflictVersion('behind', any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await payloadSender.sendOutboxBundlePayload(
+          room: room,
+          message: const SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'behind',
+                jsonPath: '/journal/behind.json',
+                vectorClock: VectorClock({'a': 2}),
+                status: SyncEntryStatus.update,
+              ),
+            ],
+            jsonPath: '/outbox_bundles/behind.json',
+          ),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'fails the bundle when the open conflict carries the queued version '
+      'but not every covered one',
+      () async {
+        final date = DateTime.utc(2026, 8);
+        JournalEntity version(VectorClock clock) => JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'partial',
+            createdAt: date,
+            updatedAt: date,
+            dateFrom: date,
+            dateTo: date,
+            vectorClock: clock,
+          ),
+          entryText: const EntryText(plainText: 'text'),
+        );
+        when(
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'partial': version(const VectorClock({'a': 2})),
+          },
+        );
+        when(
+          () => journalDb.openConflictVersion(
+            'partial',
+            const VectorClock({'b': 1}),
+          ),
+        ).thenAnswer((_) async => version(const VectorClock({'b': 1})));
+
+        final result = await payloadSender.sendOutboxBundlePayload(
+          room: room,
+          message: const SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'partial',
+                jsonPath: '/journal/partial.json',
+                vectorClock: VectorClock({'b': 1}),
+                coveredVectorClocks: [
+                  VectorClock({'c': 1}),
+                ],
+                status: SyncEntryStatus.update,
+              ),
+            ],
+            jsonPath: '/outbox_bundles/partial.json',
+          ),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
       },
     );
 

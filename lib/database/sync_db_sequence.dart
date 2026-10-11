@@ -94,6 +94,17 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     });
   }
 
+  /// The highest counter of [hostId] the sequence log records, in any
+  /// status, or null when it records none.
+  Future<int?> highestRecordedCounterForHost(String hostId) async {
+    final row = await customSelect(
+      'SELECT MAX(counter) AS c FROM sync_sequence_log WHERE host_id = ?',
+      variables: [Variable.withString(hostId)],
+      readsFrom: {syncSequenceLog},
+    ).getSingle();
+    return row.readNullable<int>('c');
+  }
+
   /// The highest counter per host among the versions of journal entry
   /// [entryId] this device received or backfilled, or authored: a clock no
   /// newer than any version it held. Empty when it holds no record of one.

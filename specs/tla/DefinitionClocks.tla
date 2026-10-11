@@ -11,12 +11,12 @@ EXTENDS Naturals, FiniteSets
 (* both clocks — strictly greater than either, so no counter is spent on   *)
 (* the resolution and nothing is sent because of it.                       *)
 (*                                                                         *)
-(* Rows written by older builds carry no clock. A manual migration stamps  *)
-(* a host's clockless rows, as writes with unchanged content; the user may *)
-(* run it on one host only. A clockless side is ordered by updatedAt       *)
-(* alone, and a clockless row that keeps its place against a clocked copy *)
-(* stamps itself on top of that copy's clock, so its content wins          *)
-(* everywhere without the migration running on its host.                  *)
+(* Rows written by older builds carry no clock. Every host stamps its      *)
+(* clockless rows at startup (ADR 0130), as writes with unchanged content, *)
+(* and again after it stores another clockless row; the user may also run *)
+(* the repair by hand. A clockless side is ordered by updatedAt alone, and *)
+(* a clockless row that keeps its place against a clocked copy stamps      *)
+(* itself on top of that copy's clock, so its content wins everywhere.    *)
 (*                                                                         *)
 (* With Backfill, delivery is lossy (MaxLoss). A receiver learns every     *)
 (* counter in a clock it processes, sees the counters below it as gaps,   *)
@@ -35,10 +35,12 @@ EXTENDS Naturals, FiniteSets
 (*                       version's                                         *)
 (*   StampsBeaten      — a clockless row that beats a clocked copy stamps  *)
 (*                       itself                                            *)
+(*   RepairAtStartup   — every host stamps its clockless rows without the  *)
+(*                       user; FALSE leaves the repair to a manual action  *)
 (***************************************************************************)
 CONSTANTS Hosts, MaxCounter, Stamps, MaxLoss, Legacy, Backfill,
           JoinOnResolve, ContentTieBreak, NullFallsBack, MonotoneEditStamp,
-          StampsBeaten
+          StampsBeaten, RepairAtStartup
 
 ASSUME /\ Cardinality(Hosts) \in 2..3
        /\ MaxCounter \in 1..3
@@ -162,8 +164,10 @@ Resend(h) ==
     /\ resent' = resent \cup {h}
     /\ UNCHANGED <<row, ctr, rec, seen, losses, known, edits, beaten, migrated>>
 
-\* The manual migration, which the user runs on whichever host they choose.
-Migrate(h) == StampRow(h) /\ migrated' = TRUE
+\* The repair: every host runs it at startup, and again once it stores
+\* another clockless row (RepairAtStartup); or the user runs it by hand on
+\* whichever host they choose.
+Repair(h) == StampRow(h) /\ migrated' = TRUE
 
 \* A clockless row that kept its place against a clocked copy.
 StampBeaten(h) == beaten[h] # Zero /\ StampRow(h) /\ UNCHANGED migrated
@@ -224,13 +228,14 @@ Announce(o, h) ==
 \* Fairness is per inbox: a quiet host eventually drains what reached it.
 DeliverAny(h) == \E m \in net[h] : Deliver(h, m)
 
-Next == \/ \E h \in Hosts : Edit(h) \/ Migrate(h) \/ StampBeaten(h) \/ Resend(h)
+Next == \/ \E h \in Hosts : Edit(h) \/ Repair(h) \/ StampBeaten(h) \/ Resend(h)
         \/ \E h \in Hosts : DeliverAny(h) \/ \E m \in net[h] : Lose(h, m)
         \/ \E h, o \in Hosts, k \in 1..MaxCounter : Answer(h, o, k)
         \/ \E h, o \in Hosts : Announce(o, h)
 
 Spec == Init /\ [][Next]_vars
         /\ (\A h \in Hosts : WF_vars(StampBeaten(h)))
+        /\ (\A h \in Hosts : RepairAtStartup => WF_vars(Repair(h)))
         /\ (\A h \in Hosts : WF_vars(DeliverAny(h)))
         /\ (\A h, o \in Hosts, k \in 1..MaxCounter : WF_vars(Answer(h, o, k)))
         /\ (\A h, o \in Hosts : WF_vars(Announce(o, h)))
@@ -278,6 +283,9 @@ CountersAreWrites == \A h, g \in Hosts : row[g].clock[h] <= ctr[h]
 Converged == \A a, b \in Hosts : /\ row[a].content = row[b].content
                                  /\ row[a] = None \/ row[a].hasClock
 EventuallyConverged == (<>(migrated \/ ~Legacy)) => <>[]Converged
+
+\* With the repair at startup the hosts converge without the user acting.
+ConvergesWithoutUser == <>[]Converged
 
 \* Every counter a host learns of is eventually received: some host's
 \* stored version still covers it, so a backfill request is answered.

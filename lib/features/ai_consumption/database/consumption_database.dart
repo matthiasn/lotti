@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/vector_clock_rows.dart';
 
 part 'consumption_database.g.dart';
 
@@ -43,6 +44,19 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
 
   @override
   int get schemaVersion => currentSchemaVersion;
+
+  /// Every consumption event's id and vector clock, a page at a time, for
+  /// populating the sync sequence log.
+  Stream<List<VectorClockRecord>> streamEventsWithVectorClock({
+    int batchSize = 1000,
+  }) => streamTableVectorClocks(
+    this,
+    table: 'consumption_events',
+    clockSql: r"json_extract(serialized, '$.vectorClock')",
+    batchSize: batchSize,
+  );
+
+  Future<int> countAllEvents() => countTableRows(this, 'consumption_events');
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

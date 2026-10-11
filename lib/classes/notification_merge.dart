@@ -10,9 +10,13 @@ import 'package:lotti/classes/vector_clock.dart';
 /// resolve those conflicts deterministically so every device converges on the
 /// same content, lifecycle and clock regardless of event-arrival order.
 /// The last state sender's `originatingHostId` is arrival-dependent metadata:
-/// - **Content** (title/body/kind) follows last-writer-wins on
-///   `meta.updatedAt`, broken by a canonical-JSON comparison so identical
-///   timestamps still pick a stable winner on every host.
+/// - **Content** (title/body/kind) is the maximum of one total order: the
+///   content rank (from `meta.contentVectorClock`, which grows along every
+///   causal step), then `meta.updatedAt`, then canonical JSON. A version whose
+///   content follows the other therefore wins, and every host settles on the
+///   same content whatever order three or more versions arrive in. The row
+///   clock is not used, since lifecycle patches advance it without touching
+///   the words. A row without a content clock ranks below any with one.
 /// - **Lifecycle state** (`seenAt`/`actedOnAt`/`deletedAt`) converges via
 ///   [earliestNonNull]: these transitions are monotonic and irreversible, so
 ///   the first device to observe each transition wins permanently.
@@ -25,10 +29,12 @@ abstract final class NotificationMerge {
   ///
   /// Used by `NotificationsDb.upsertNotification` when a synced create/update
   /// lands on a row that already exists locally. Content fields come from the
-  /// last-writer-wins winner (see the class doc), while the three lifecycle
-  /// timestamps and the vector clock are merged independently of who won the
-  /// content race — so a remote title edit cannot resurrect a row this device
-  /// already marked seen/acted-on/deleted.
+  /// content winner (see the class doc), together with its content clock,
+  /// while the three lifecycle timestamps and the row clock are merged
+  /// independently of who won the content race — so a remote title edit
+  /// cannot resurrect a row this device already marked seen/acted-on/deleted.
+  /// Keeping the winner's own content clock, not a union, is what keeps the
+  /// content choice independent of arrival order.
   static NotificationEntity mergeFull(
     NotificationEntity existing,
     NotificationEntity incoming,
@@ -58,7 +64,7 @@ abstract final class NotificationMerge {
   }
 
   /// Applies a lifecycle-only state change to [existing], leaving its content
-  /// untouched.
+  /// and its content clock untouched.
   ///
   /// Used for local actions (mark-seen/acted-on/retract) and for sync state
   /// events that carry no content. Each supplied timestamp is folded in with
@@ -116,6 +122,17 @@ abstract final class NotificationMerge {
     NotificationEntity existing,
     NotificationEntity incoming,
   ) {
+    // Content goes to the higher content rank whatever the wall clocks say:
+    // a peer whose clock runs fast, or a late copy of the template, must not
+    // outrank a reword made after it. The rank grows along every causal step,
+    // and the full key below is one total order, so the merge picks the same
+    // content in any order of arrival.
+    final rankComparison = _contentRank(
+      existing,
+    ).compareTo(_contentRank(incoming));
+    if (rankComparison > 0) return existing;
+    if (rankComparison < 0) return incoming;
+
     final updatedComparison = existing.meta.updatedAt.compareTo(
       incoming.meta.updatedAt,
     );
@@ -140,6 +157,18 @@ abstract final class NotificationMerge {
         : existing;
   }
 
+  /// The content clock's counters, each plus one, summed. Content that
+  /// causally follows other content holds every counter of it and one more,
+  /// so its rank is strictly higher; the `+ 1` keeps a host whose first
+  /// counter is 0 from adding nothing (ADR 0080). The row clock is not used:
+  /// it also counts lifecycle patches that carried no words. A row without a
+  /// content clock, or with a malformed one, ranks 0.
+  static int _contentRank(NotificationEntity entity) {
+    final clock = entity.meta.contentVectorClock;
+    if (clock == null || !clock.isValid()) return 0;
+    return clock.vclock.values.fold(0, (sum, counter) => sum + counter + 1);
+  }
+
   // Builds a canonical map for deterministic tie-breaking when two devices
   // produce edits with identical updatedAt. Sorting keys recursively makes
   // the comparison stable across app versions that may differ in JSON key
@@ -153,7 +182,8 @@ abstract final class NotificationMerge {
       ..remove('actedOnAt')
       ..remove('deletedAt')
       ..remove('originatingHostId')
-      ..remove('vectorClock');
+      ..remove('vectorClock')
+      ..remove('contentVectorClock');
     json['meta'] = meta;
     return _canonicalize(json)! as Map<String, dynamic>;
   }

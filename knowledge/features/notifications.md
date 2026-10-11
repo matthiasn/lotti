@@ -219,9 +219,20 @@ Both `notification` and `notificationStateUpdate` are **sequence-tracked**
 [sync message families](sync/message-model.md), so a missed transition is a
 detectable gap rather than silent divergence.
 
-Full snapshots choose content by `updatedAt`, then canonical content JSON.
-Lifecycle marks, vector clocks and the state-mutable `originatingHostId` do not
-rank competing content. The owner is only a final metadata tie-break when
+Full snapshots choose content as the maximum of one total order: the content
+rank, then `updatedAt`, then canonical content JSON. The rank sums each counter
+of `meta.contentVectorClock` plus one; every create and re-wording stamps that
+clock and state patches leave it alone, so content that follows the other
+always ranks higher. A peer whose clock runs fast, or a late copy of the
+template, therefore cannot outrank a re-wording made after it, and every
+device settles on the same words in any order of arrival
+([ADR 0135](../../docs/adr/0135-ordering-and-restores-hold.md)). The row clock
+does not rank content, because a mark-seen that reaches a peer before the
+re-wording advances it past the new words. The merged row keeps the winner's
+own content clock; a row written before content clocks existed ranks below
+any with one. Lifecycle
+marks and the state-mutable `originatingHostId` do not rank competing
+content. The owner is only a final metadata tie-break when
 content is identical; state updates can still replace it in arrival order.
 Otherwise a seen/retracted patch could change which same-time title wins.
 
@@ -745,9 +756,9 @@ banner that wake created.
 rescheduling would announce it again), one seen, acted on or deleted, and one
 whose words already read this way (a re-run wake writes nothing). The
 re-worded row keeps its id — the OS alarm is replaced, not doubled — and
-travels whole; `NotificationMerge` picks content by `updatedAt`, so the new
-words win on every peer whatever order the create and the re-wording arrive
-in. A peer applies the words but re-arms only a row still ahead: a
+travels whole; `NotificationMerge` picks content by content rank, then
+`updatedAt`, so the new words win on every peer whatever order the create and
+the re-wording arrive in. A peer applies the words but re-arms only a row still ahead: a
 re-wording that lands after that peer's own alarm fired — the device was
 offline across it — would otherwise be announced on the spot a second time
 (`schedule` shows a due row at once), so the inbound handler skips the

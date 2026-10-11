@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,6 +192,192 @@ void main() {
         hasLength(2),
         reason: 'a blob no peer holds must not be requested forever',
       );
+    });
+  });
+
+  /// A settings store backed by [stored], so a second service instance
+  /// reads what the first one saved.
+  MockSettingsDb settingsBackedBy(Map<String, String> stored) {
+    final settings = MockSettingsDb();
+    when(() => settings.itemByKey(any())).thenAnswer(
+      (invocation) async => stored[invocation.positionalArguments.single],
+    );
+    when(() => settings.saveSettingsItem(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      stored[invocation.positionalArguments[0] as String] =
+          invocation.positionalArguments[1] as String;
+      return 1;
+    });
+    return settings;
+  }
+
+  test('the attempt cap holds across a restart, so an unanswerable entry '
+      'is not requested again on every launch', () {
+    fakeAsync((async) {
+      final settings = settingsBackedBy(<String, String>{});
+      MediaRepairService launch() => MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 2,
+      );
+
+      final first = launch();
+      for (var round = 0; round < 2; round++) {
+        first.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+        async.elapse(debounce);
+      }
+      first.dispose();
+      expect(requests, hasLength(2));
+
+      final second = launch();
+      addTearDown(second.dispose);
+      async.flushMicrotasks();
+      second.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+
+      expect(requests, hasLength(2));
+    });
+  });
+
+  test('a failed enqueue stores no attempt, so the next launch still asks', () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final settings = settingsBackedBy(stored);
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenThrow(Exception('outbox unavailable'));
+      final first = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 1,
+      )..reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+      first.dispose();
+      expect(stored, isEmpty);
+
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((
+        invocation,
+      ) async {
+        final message = invocation.positionalArguments.first as SyncMessage;
+        if (message is SyncMediaRequest) requests.add(message);
+      });
+      final second = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 1,
+      );
+      addTearDown(second.dispose);
+      async.flushMicrotasks();
+      second.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+
+      expect(requests.single.entryIds, ['orphan']);
+    });
+  });
+
+  test('a request sent while the service is disposed still counts', () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final enqueue = Completer<void>();
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenAnswer((_) => enqueue.future);
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settingsBackedBy(stored),
+        debounce: debounce,
+      )..reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+      service.dispose();
+      enqueue.complete();
+      async.flushMicrotasks();
+
+      expect(
+        stored[MediaRepairService.attemptsSettingsKey],
+        '{"orphan":1}',
+      );
+    });
+  });
+
+  test('an older flush finishing last cannot store its counts over a newer '
+      "flush's", () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final firstEnqueue = Completer<void>();
+      var enqueues = 0;
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) {
+        enqueues++;
+        return enqueues == 1 ? firstEnqueue.future : Future<void>.value();
+      });
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settingsBackedBy(stored),
+        debounce: debounce,
+      );
+      addTearDown(service.dispose);
+
+      service.reportMissing(entryId: 'first', relativePath: '/images/1');
+      async.elapse(debounce);
+      service.reportMissing(entryId: 'second', relativePath: '/images/2');
+      unawaited(service.flushPendingForTesting());
+      async.flushMicrotasks();
+      firstEnqueue.complete();
+      async.flushMicrotasks();
+
+      expect(enqueues, 2);
+      expect(
+        jsonDecode(stored[MediaRepairService.attemptsSettingsKey]!),
+        {'first': 1, 'second': 1},
+      );
+    });
+  });
+
+  test('stored counts that cannot be read are logged and not applied', () {
+    fakeAsync((async) {
+      final settings = MockSettingsDb();
+      when(
+        () => settings.itemByKey(any()),
+      ).thenAnswer((_) async => 'not json');
+      when(
+        () => settings.saveSettingsItem(any(), any()),
+      ).thenThrow(StateError('settings closed'));
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+      );
+      addTearDown(service.dispose);
+
+      service.reportMissing(entryId: 'photo', relativePath: '/images/p');
+      async.elapse(debounce);
+
+      expect(requests, hasLength(1));
+      for (final sub in ['mediaRepair.load', 'mediaRepair.save']) {
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: sub,
+          ),
+        ).called(1);
+      }
     });
   });
 
