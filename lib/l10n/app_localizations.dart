@@ -5736,18 +5736,6 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get checkInOpenSettingsButton;
 
-  /// No description provided for @checkInOrbResumeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to resume'**
-  String get checkInOrbResumeHint;
-
-  /// No description provided for @checkInOrbStopHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to stop'**
-  String get checkInOrbStopHint;
-
   /// No description provided for @checkInOrTypeHint.
   ///
   /// In en, this message translates to:

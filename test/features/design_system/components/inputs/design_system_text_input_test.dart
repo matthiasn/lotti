@@ -466,6 +466,78 @@ void main() {
       );
     });
 
+    testWidgets('a rounded field paints its level01 well by default, and none '
+        'when unfilled — the sheet it sits on shows through', (tester) async {
+      BoxDecoration frameOf(Key key) =>
+          tester
+                  .widget<DecoratedBox>(
+                    find.descendant(
+                      of: find.byKey(key),
+                      matching: find.byWidgetPredicate(
+                        (widget) =>
+                            widget is DecoratedBox &&
+                            widget.decoration is BoxDecoration &&
+                            (widget.decoration as BoxDecoration).border != null,
+                      ),
+                    ),
+                  )
+                  .decoration
+              as BoxDecoration;
+
+      const filledKey = Key('filled-input');
+      const unfilledKey = Key('unfilled-input');
+      await _pumpInput(
+        tester,
+        const Column(
+          children: [
+            DesignSystemTextInput(key: filledKey, label: 'Filled'),
+            DesignSystemTextInput(
+              key: unfilledKey,
+              label: 'On a sheet',
+              filled: false,
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        frameOf(filledKey).color,
+        dsTokensLight.colors.background.level01,
+      );
+      expect(frameOf(unfilledKey).color, Colors.transparent);
+      // The frame stays: the same hairline either way.
+      expect(
+        (frameOf(unfilledKey).border! as Border).top.color,
+        designSystemFieldBorderColor(dsTokensLight),
+      );
+    });
+
+    test('the shared field hairline: error, then focus, then hover, then '
+        'rest', () {
+      const tokens = dsTokensDark;
+      expect(
+        designSystemFieldBorderColor(
+          tokens,
+          error: true,
+          focused: true,
+          hovered: true,
+        ),
+        tokens.colors.alert.error.defaultColor,
+      );
+      expect(
+        designSystemFieldBorderColor(tokens, focused: true, hovered: true),
+        tokens.colors.interactive.enabled,
+      );
+      expect(
+        designSystemFieldBorderColor(tokens, hovered: true),
+        tokens.colors.text.mediumEmphasis,
+      );
+      expect(
+        designSystemFieldBorderColor(tokens),
+        tokens.colors.text.highEmphasis.withValues(alpha: 0.12),
+      );
+    });
+
     testWidgets('provides semantics label', (tester) async {
       const key = Key('semantics-input');
 

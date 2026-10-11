@@ -53,8 +53,8 @@ class CheckInMetaSummaryLine extends StatelessWidget {
   /// Opens the edit sheet — from the closing lever and the topics tag.
   final VoidCallback onEdit;
 
-  /// False while a take is live: the facts stay readable, drop to the low
-  /// ink, and take no tap.
+  /// False while a take is live: the facts stay readable, fade as one lane
+  /// — the recorder's own inert treatment — and take no tap.
   final bool enabled;
 
   /// How many topics spell out before the rest fold into "+N" — the task
@@ -75,7 +75,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     // The task lane's own rhythm: tags step2 apart, tighter than their own
     // step3 inset, so the lane reads as one cluster. No run gap of its own:
     // each tag's full touch target already sets wrapped rows apart.
-    return Wrap(
+    final lane = Wrap(
       key: const ValueKey('check-in-meta-line'),
       spacing: tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -154,6 +154,15 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         ),
       ],
     );
+    // Held, the whole lane fades by the low ink's own alpha, as the
+    // recorder's inert controls do: a shade change on each tag's text was
+    // too faint to read as "not now".
+    return AnimatedOpacity(
+      key: const ValueKey('check-in-meta-line-hold'),
+      opacity: enabled ? 1 : tokens.colors.text.lowEmphasis.a,
+      duration: MotionDurations.short4,
+      child: lane,
+    );
   }
 
   String _topicsLabel(BuildContext context) {
@@ -181,7 +190,7 @@ class _Fact extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  /// Null while held, which also drops the tag to the low ink.
+  /// Null while held.
   final VoidCallback? onTap;
 
   /// High-emphasis label — the facts a reader opens a check-in to see, as
@@ -190,9 +199,7 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.designTokens.colors;
-    final text = colors.text;
-    final held = onTap == null;
+    final text = context.designTokens.colors.text;
     return _Tappable(
       semanticsLabel: semanticsLabel,
       onTap: onTap,
@@ -200,19 +207,12 @@ class _Fact extends StatelessWidget {
         variant: DsPillVariant.filled,
         shape: DsPillShape.tag,
         bordered: true,
-        // Held, the frame recedes with the ink, so the lane reads as frozen
-        // in its structure and not only in a shade of its text.
-        borderColor: held ? colors.decorative.level01 : null,
         label: label,
-        labelColor: held
-            ? text.lowEmphasis
-            : emphasised
-            ? text.highEmphasis
-            : text.mediumEmphasis,
+        labelColor: emphasised ? text.highEmphasis : text.mediumEmphasis,
         leading: Icon(
           icon,
           size: kTaskChipGlyphSize,
-          color: held ? text.lowEmphasis : text.mediumEmphasis,
+          color: text.mediumEmphasis,
         ),
         onTap: onTap,
       ),
@@ -234,10 +234,7 @@ class _SentimentFact extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final label = checkInSentimentLabel(context, sentiment);
-    final held = onTap == null;
-    final accent = held
-        ? tokens.colors.text.lowEmphasis
-        : sentimentColor(tokens, sentiment);
+    final accent = sentimentColor(tokens, sentiment);
     final glyph = switch (sentiment) {
       CheckInSentiment.delightful ||
       CheckInSentiment.good => LottiIcons.moodGood,
@@ -254,9 +251,7 @@ class _SentimentFact extends StatelessWidget {
         // The accent is the tint and the glyph; as text on its own tint it
         // falls short of contrast, so the label keeps the high ink — the
         // task status tag's rule.
-        labelColor: held
-            ? tokens.colors.text.lowEmphasis
-            : tokens.colors.text.highEmphasis,
+        labelColor: tokens.colors.text.highEmphasis,
         label: label,
         leading: Icon(glyph, size: kTaskChipGlyphSize, color: accent),
         onTap: onTap,
@@ -282,8 +277,7 @@ class _Offer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = context.designTokens.colors.text;
-    final ink = onTap == null ? text.lowEmphasis : text.mediumEmphasis;
+    final ink = context.designTokens.colors.text.mediumEmphasis;
     return _Tappable(
       semanticsLabel: semanticsLabel,
       onTap: onTap,

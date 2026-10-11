@@ -2225,8 +2225,6 @@
   "checkInNarrativeHint": "What did you talk about? One line is enough.",
   "checkInNoDuration": "No duration",
   "checkInOpenSettingsButton": "Open settings",
-  "checkInOrbResumeHint": "Tap to resume",
-  "checkInOrbStopHint": "Tap to stop",
   "checkInOrTypeHint": "Or type it here…",
   "checkInPayAttentionLabel": "Next time, pay attention to",
   "checkInPreparingLabel": "Preparing audio…",

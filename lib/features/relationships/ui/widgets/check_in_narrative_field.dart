@@ -1,6 +1,7 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -83,20 +84,23 @@ class CheckInNarrativeField extends StatelessWidget {
     return ListenableBuilder(
       listenable: focusNode,
       builder: (context, _) {
-        // The accent hairline means one thing on the field: keyboard focus,
-        // the app-wide convention. The red dot, the waveform and the filled
-        // Stop already say "live".
-        final border = focusNode.hasFocus
-            ? tokens.colors.interactive.enabled
-            : tokens.colors.decorative.level01;
+        // The design-system field frame: no well of its own — the sheet's
+        // surface shows through, as in every field of the app's form
+        // sheets — and the shared hairline, the accent meaning keyboard
+        // focus alone. While the recorder owns the box the frame steps
+        // back entirely, so the recorder sits on the sheet the way the
+        // app's recording sheet does rather than in a box inside it.
+        final focused = focusNode.hasFocus;
+        final border = phase is CheckInSpeechRecording
+            ? Colors.transparent
+            : designSystemFieldBorderColor(tokens, focused: focused);
         return AnimatedContainer(
           key: const ValueKey('check-in-narrative-field'),
           duration: MotionDurations.short4,
           curve: MotionCurves.standard,
           decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(tokens.radii.l),
-            border: Border.all(color: border),
+            border: Border.all(color: border, width: focused ? 2 : 1),
           ),
           padding: EdgeInsets.all(tokens.spacing.step5),
           // Not an AnimatedSize: the tiered captions lay themselves out with
@@ -338,7 +342,10 @@ class CheckInTakeRow extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        // A lift, not a well: the translucent surface reads one step above
+        // whatever the field sits on, where a fixed level punched a darker
+        // or a lighter hole depending on the sheet behind it.
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: Padding(

@@ -3420,12 +3420,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Öppna inställningar';
 
   @override
-  String get checkInOrbResumeHint => 'Tryck för att fortsätta';
-
-  @override
-  String get checkInOrbStopHint => 'Tryck för att stoppa';
-
-  @override
   String get checkInOrTypeHint => 'Eller skriv här…';
 
   @override

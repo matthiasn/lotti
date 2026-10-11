@@ -1703,8 +1703,6 @@
   "checkInNarrativeHint": "Di cosa avete parlato? Basta una riga.",
   "checkInNoDuration": "Nessuna durata",
   "checkInOpenSettingsButton": "Apri impostazioni",
-  "checkInOrbResumeHint": "Tocca per riprendere",
-  "checkInOrbStopHint": "Tocca per fermare",
   "checkInOrTypeHint": "Oppure scrivilo qui…",
   "checkInPayAttentionLabel": "La prossima volta fai attenzione a",
   "checkInPreparingLabel": "Preparazione dell’audio…",

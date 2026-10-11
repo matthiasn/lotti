@@ -1,18 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/state/recording_style.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/ui/app_fonts.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
@@ -166,16 +162,11 @@ class _AudioRecordingModalContentState
     super.dispose();
   }
 
-  String formatDuration(String str) {
-    return str.substring(0, str.length - 7);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    final recordingStyle = ref.watch(recordingStyleProvider).asData?.value;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -189,7 +180,7 @@ class _AudioRecordingModalContentState
                   ? context.messages.audioRecordingLive
                   : '',
               child: ExcludeSemantics(
-                child: _buildVisualizer(state, recordingStyle, theme),
+                child: RecordingLevelVisualizer(state: state),
               ),
             ),
 
@@ -204,15 +195,7 @@ class _AudioRecordingModalContentState
                       ),
                 ),
               ),
-            // Duration display
-            Text(
-              formatDuration(state.progress.toString()),
-              style: AppFonts.inconsolata(
-                fontSize: fontSizeLarge,
-                fontWeight: FontWeight.w300,
-                color: theme.colorScheme.primaryFixedDim,
-              ),
-            ),
+            RecordingClock(progress: state.progress),
 
             const SizedBox(height: 20),
 
@@ -229,7 +212,17 @@ class _AudioRecordingModalContentState
                 AnimatedSwitcher(
                   duration: Duration.zero,
                   child: _isRecording(state)
-                      ? _buildStopButton(context, theme, state, controller)
+                      ? RecordingTransportControls(
+                          key: const ValueKey('stop_controls'),
+                          paused: state.status == AudioRecorderStatus.paused,
+                          busy: _terminalActionInProgress,
+                          onDiscard: _cancel,
+                          onTogglePause: () =>
+                              state.status == AudioRecorderStatus.paused
+                              ? controller.resume()
+                              : controller.pause(),
+                          onStop: _stop,
+                        )
                       : _buildRecordButton(context, controller, theme),
                 ),
               ],
@@ -245,39 +238,6 @@ class _AudioRecordingModalContentState
           ],
         ),
       ],
-    );
-  }
-
-  /// Picks the primary level visualizer per [RecordingStyleController]'s
-  /// persisted preference: [AiVoiceInputShader] (the orb) for
-  /// [RecordingStyle.modern], the skeuomorphic [AnalogVuMeter] otherwise —
-  /// including while the preference is still loading (`null`), so the meter
-  /// never flashes to the orb and back on first frame.
-  ///
-  /// Unlike the onboarding preview, [AudioRecorderState] has no amplitude
-  /// history, so only the primary visualizer swaps — the onboarding
-  /// meter/orb + waveform "pair" isn't reproduced here.
-  Widget _buildVisualizer(
-    AudioRecorderState state,
-    RecordingStyle? style,
-    ThemeData theme,
-  ) {
-    if (style == RecordingStyle.modern) {
-      final tokens = context.designTokens;
-      return AiVoiceInputShader(
-        dbfs: state.dBFS,
-        size: 220,
-        intensity: 1,
-        primaryColor: tokens.colors.interactive.enabled,
-        secondaryColor: tokens.colors.text.highEmphasis,
-        backgroundColor: Colors.transparent,
-      );
-    }
-    return AnalogVuMeter(
-      vu: state.vu,
-      dBFS: state.dBFS,
-      size: 400,
-      colorScheme: theme.colorScheme,
     );
   }
 
@@ -353,194 +313,6 @@ class _AudioRecordingModalContentState
       message: messages.audioRecordingDiscardDialogBody,
       cancelLabel: messages.audioRecordingDiscardDialogCancel,
       confirmLabel: messages.audioRecordingDiscardDialogConfirm,
-    );
-  }
-
-  /// Compact circular X control that discards the recording. Rendered to the
-  /// left of the stop button while recording. Uses the localized cancel
-  /// label for accessibility/tooltip.
-  Widget _buildCancelButton(BuildContext context, ThemeData theme) {
-    final tokens = context.designTokens;
-    return Tooltip(
-      message: context.messages.audioRecordingCancel,
-      child: Semantics(
-        button: true,
-        label: context.messages.audioRecordingCancel,
-        child: GestureDetector(
-          key: const ValueKey('cancel_recording'),
-          // Make the whole 48×48 ring tappable, not just the inner icon — the
-          // Container fill is transparent so without this hits only land on
-          // the icon.
-          behavior: HitTestBehavior.opaque,
-          onTap: _terminalActionInProgress ? null : _cancel,
-          child: Container(
-            width: tokens.spacing.step9,
-            height: tokens.spacing.step9,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Icon(
-              LottiIcons.close,
-              size: 22,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Circular pause / resume control shown between the cancel and stop buttons
-  /// while a recording is in progress.
-  ///
-  /// Tapping toggles [AudioRecorderController.pause] and
-  /// [AudioRecorderController.resume]; the glyph swaps pause ↔ play and the
-  /// accessibility/tooltip label follows. Tinted with the primary accent so it
-  /// reads as a distinct, benign transport control next to the grey destructive
-  /// cancel — a fumbled pause can't be mistaken for discard. Mirrors
-  /// [_buildCancelButton]'s 48×48 ring so the whole control is tappable.
-  /// Disabled while a terminal stop/cancel is already underway.
-  Widget _buildPauseResumeButton(
-    BuildContext context,
-    AudioRecorderController controller,
-    AudioRecorderState state,
-    ThemeData theme,
-  ) {
-    final tokens = context.designTokens;
-    final isPaused = state.status == AudioRecorderStatus.paused;
-    final label = isPaused
-        ? context.messages.audioRecordingResume
-        : context.messages.audioRecordingPause;
-
-    return Tooltip(
-      message: label,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: GestureDetector(
-          // Static key: a key that changed with [isPaused] would tear down and
-          // rebuild this subtree on every toggle, so the AnimatedSwitcher below
-          // could never run its cross-fade. The icon swap is animated by the
-          // switcher's own child key instead.
-          key: const ValueKey('pause_resume_button'),
-          behavior: HitTestBehavior.opaque,
-          onTap: _terminalActionInProgress
-              ? null
-              : () {
-                  if (isPaused) {
-                    controller.resume();
-                  } else {
-                    controller.pause();
-                  }
-                },
-          child: Container(
-            width: tokens.spacing.step9,
-            height: tokens.spacing.step9,
-            decoration: BoxDecoration(
-              // A touch more fill + a stronger ring than a bare outline so the
-              // circle body stays visible on the near-black surface and the
-              // purple identity doesn't rely on the glyph alone.
-              color: theme.colorScheme.primary.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.85),
-              ),
-            ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Padding(
-                key: ValueKey(isPaused),
-                // The play triangle's ink sits left of the glyph's geometric
-                // center, so nudge it right to optically center it in the ring;
-                // the symmetric pause bars need no offset.
-                padding: EdgeInsets.only(
-                  left: isPaused ? tokens.spacing.step1 : 0,
-                ),
-                child: Icon(
-                  isPaused ? LottiIcons.play : LottiIcons.pause,
-                  // Matches the sibling cancel (X) glyph size so the two
-                  // circular controls read as one family.
-                  size: 22,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStopButton(
-    BuildContext context,
-    ThemeData theme,
-    AudioRecorderState state,
-    AudioRecorderController controller,
-  ) {
-    final tokens = context.designTokens;
-    return Row(
-      key: const ValueKey('stop_controls'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Cancel (X) button — discards the whole recording without creating
-        // an entry.
-        _buildCancelButton(context, theme),
-        SizedBox(width: tokens.spacing.step4),
-        _buildPauseResumeButton(context, controller, state, theme),
-        SizedBox(width: tokens.spacing.step4),
-        // Stop button
-        GestureDetector(
-          onTap: _terminalActionInProgress ? null : _stop,
-          child: Container(
-            width: 120,
-            height: tokens.spacing.step9,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(tokens.radii.xl),
-              border: Border.all(
-                color: theme.colorScheme.error,
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: tokens.spacing.step3,
-                    height: tokens.spacing.step3,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withValues(alpha: 0.6),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    context.messages.audioRecordingStop,
-                    style: TextStyle(
-                      color: theme.colorScheme.error,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/speech/state/vu_meter.dart
     title: VuMeter — sliding-window RMS→VU
     last_modified: 2026-06-13
+  - id: recording-controls
+    resource: ../../../lib/features/speech/ui/widgets/recording/recording_controls.dart
+    title: The app's one recorder anatomy — visualizer, clock, transport row
+    last_modified: 2026-10-11
 ---
 
 The speech feature owns audio capture, playback, waveform extraction and
@@ -83,7 +87,17 @@ transcription automation.
 accent card, a pulsing record dot and elapsed time only.
 
 The modal renders either the skeuomorphic VU meter or the energy orb depending on
-`recordingStyleProvider`, from the same dBFS feed.
+`recordingStyleProvider`, from the same dBFS feed. That choice, the running
+clock and the transport row — discard ✕, pause ⏸ / resume ▶, the red Stop —
+live in
+[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart)
+(`RecordingLevelVisualizer`, `RecordingClock`, `RecordingTransportControls`),
+so every surface that records in place — the check-in composer and page
+(`CheckInInlineRecorder`) as well as this modal — wears one recorder rather
+than drawing its own buttons. The host keeps the meaning of each act (whether
+a discard asks first, where a stopped take goes) and may name the controls'
+keys; the controls are inert while it reports `busy`. The visualizer keeps
+moving while paused, so a test with one mounted pumps by hand.
 
 ## `record()` is a toggle
 

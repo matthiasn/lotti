@@ -3455,12 +3455,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Otevřít nastavení';
 
   @override
-  String get checkInOrbResumeHint => 'Klepni pro pokračování';
-
-  @override
-  String get checkInOrbStopHint => 'Klepni pro zastavení';
-
-  @override
   String get checkInOrTypeHint => 'Nebo to napiš sem…';
 
   @override

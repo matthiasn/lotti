@@ -1,19 +1,26 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/state/capture_state.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recording_style.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+
+/// The user's recording look, as the recording sheet's tests seed it.
+AppPrefs _stylePrefs(String style) => AppPrefs(
+  getBool: (_) async => null,
+  setBool: ({required key, required value}) async => true,
+  getString: (key) async => key == recordingStylePrefsKey ? style : null,
+  setString: ({required key, required value}) async => true,
+);
 
 void main() {
   late FakeAudioRecorderController recorder;
@@ -35,6 +42,7 @@ void main() {
     Completer<void>? stopGate,
     String? runningFor,
     bool adoptRunning = false,
+    String style = 'modern',
   }) async {
     recorder = FakeAudioRecorderController(
       recordFailure: recordFailure,
@@ -54,6 +62,7 @@ void main() {
         ),
         overrides: [
           audioRecorderControllerProvider.overrideWith(() => recorder),
+          recordingStyleAppPrefsProvider.overrideWithValue(_stylePrefs(style)),
         ],
       ),
     );
@@ -64,16 +73,25 @@ void main() {
   Finder key(String name) => find.byKey(ValueKey(name));
 
   /// Pumps a confirmation modal's transition through, frame by frame. Not
-  /// `pumpAndSettle`: while the take is live the orb's shader and breath
-  /// repeat, so the tree never settles — the Capture surface's reality too.
+  /// `pumpAndSettle`: while the take is live the visualizer keeps moving,
+  /// so the tree never settles.
   Future<void> settleModal(WidgetTester tester) async {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
   }
 
-  VoiceButton orb(WidgetTester tester) =>
-      tester.widget<VoiceButton>(key('check-in-recorder-orb'));
+  /// What a control announces itself as.
+  String? labelOf(WidgetTester tester, String name) =>
+      tester.getSemantics(key(name)).label;
+
+  /// Whether a control takes a tap.
+  bool enabled(WidgetTester tester, String name) => tester
+      .getSemantics(key(name))
+      .getSemanticsData()
+      .flagsCollection
+      .isEnabled
+      .toBoolOrNull()!;
 
   testWidgets('starts recording on mount, linked to the person, with '
       'transcription left to the caller, and hides the floating indicator', (
@@ -87,139 +105,70 @@ void main() {
     expect(recorder.categoryIds, ['category-7']);
     expect(recorder.modalVisibleLog, [true]);
     expect(failed, isEmpty);
-    expect(find.byType(LiveWaveform), findsOneWidget);
     expect(find.text('Audio saved to this device as you go'), findsOneWidget);
   });
 
-  group('the voice orb', () {
-    testWidgets("is the Capture surface's, listening on the live level, as "
-        'wide as the hero avatar', (tester) async {
+  group("the recording sheet's anatomy", () {
+    testWidgets('the shared visualizer, clock and transport row, in that '
+        'order, with no orb doubling as Stop', (tester) async {
+      final semantics = tester.ensureSemantics();
       await pump(tester);
-      recorder.tick(progress: const Duration(seconds: 3), dBFS: -18);
-      await tester.pump();
 
-      final button = orb(tester);
-      expect(button.phase, CapturePhase.listening);
-      expect(button.dbfs, -18);
-      final tokens = tester
-          .element(find.byType(CheckInInlineRecorder))
-          .designTokens;
-      expect(button.size, tokens.spacing.step11);
-      expect(button.semanticLabel, 'Stop');
-    });
-
-    testWidgets('sits under the level strip, then its hint, then the clock — '
-        "the voice zone's own order and air", (tester) async {
-      await pump(tester);
-      final strip = tester.getRect(find.byType(LiveWaveform));
-      final field = tester.getRect(find.byKey(VoiceButton.fieldKey));
-      final hint = tester.getRect(key('check-in-recorder-orb-hint'));
+      expect(find.byType(RecordingLevelVisualizer), findsOneWidget);
+      expect(find.byType(RecordingTransportControls), findsOneWidget);
+      final visualizer = tester.getRect(find.byType(RecordingLevelVisualizer));
       final clock = tester.getRect(key('check-in-recorder-clock'));
-      final tokens = tester
-          .element(find.byType(CheckInInlineRecorder))
-          .designTokens;
-
-      expect(field.top - strip.bottom, closeTo(tokens.spacing.step5, 0.5));
-      expect(hint.top - field.bottom, closeTo(tokens.spacing.step5, 0.5));
-      expect(clock.top - hint.bottom, closeTo(tokens.spacing.step2, 0.5));
-      expect(field.center.dx, closeTo(strip.center.dx, 0.5));
+      final controls = tester.getRect(find.byType(RecordingTransportControls));
+      expect(visualizer.bottom, lessThanOrEqualTo(clock.top + 0.5));
+      expect(clock.bottom, lessThan(controls.top));
+      // Discard, Pause, Stop: the sheet's order, left to right.
+      final discard = tester.getRect(key('check-in-recorder-discard'));
+      final pause = tester.getRect(key('check-in-recorder-pause'));
+      final stop = tester.getRect(key('check-in-recorder-stop'));
+      expect(discard.right, lessThan(pause.left));
+      expect(pause.right, lessThan(stop.left));
+      // The Stop pill carries its word; the discard is this surface's own.
+      expect(find.text('Stop'), findsOneWidget);
+      expect(labelOf(tester, 'check-in-recorder-discard'), 'Discard');
+      semantics.dispose();
     });
 
-    testWidgets('tapped while live it stops, like Capture, and hands back '
-        'the take', (tester) async {
+    for (final (style, type) in [
+      ('modern', AiVoiceInputShader),
+      ('analogue', AnalogVuMeter),
+    ]) {
+      testWidgets('draws the look the user chose — $style', (tester) async {
+        await pump(tester, style: style);
+        recorder.tick(progress: const Duration(seconds: 3), dBFS: -18);
+        await tester.pump();
+        expect(find.byType(type), findsOneWidget);
+      });
+    }
+
+    testWidgets("the clock is the sheet's and reads in words", (
+      tester,
+    ) async {
       await pump(tester);
-      recorder.tick(progress: const Duration(seconds: 23), dBFS: -20);
+      recorder.tick(progress: const Duration(seconds: 83));
       await tester.pump();
-
-      await tester.tap(key('check-in-recorder-orb'));
-      await tester.pump();
-      await tester.pump();
-
-      expect(recorder.stopCalls, 1);
-      expect(recorded, [('audio-1', const Duration(seconds: 23))]);
-    });
-
-    testWidgets('says nothing under it before the take runs', (tester) async {
-      await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
-      expect(
-        tester.widget<Text>(key('check-in-recorder-orb-hint')).data,
-        isEmpty,
+      final clock = tester.widget<RecordingClock>(
+        key('check-in-recorder-clock'),
       );
-    });
-
-    testWidgets('says what a tap does, in words under it: stop while live, '
-        'resume while paused', (tester) async {
-      await pump(tester);
-      expect(find.text('Tap to stop'), findsOneWidget);
-      final tokens = tester
-          .element(find.byType(CheckInInlineRecorder))
-          .designTokens;
-      final hint = tester.widget<Text>(key('check-in-recorder-orb-hint'));
-      expect(hint.style?.color, tokens.colors.text.mediumEmphasis);
-      // Under the orb, above the clock — Capture's caption slot.
-      final orbRect = tester.getRect(find.byKey(VoiceButton.fieldKey));
-      final hintRect = tester.getRect(key('check-in-recorder-orb-hint'));
-      final clockRect = tester.getRect(key('check-in-recorder-clock'));
-      expect(hintRect.top, greaterThan(orbRect.bottom - 1));
-      expect(clockRect.top, greaterThan(hintRect.bottom - 1));
-
-      await tester.tap(key('check-in-recorder-pause'));
-      await tester.pump();
-      expect(find.text('Tap to resume'), findsOneWidget);
-      expect(find.text('Tap to stop'), findsNothing);
-    });
-
-    testWidgets('paused, it rests as the idle disc and a tap resumes', (
-      tester,
-    ) async {
-      await pump(tester);
-      await tester.tap(key('check-in-recorder-pause'));
-      await tester.pump();
-
-      final button = orb(tester);
-      expect(button.phase, CapturePhase.idle);
-      expect(button.semanticLabel, 'Resume');
-      expect(button.onTap, isNotNull);
-
-      await tester.tap(key('check-in-recorder-orb'));
-      await tester.pump();
-      expect(recorder.resumeCalls, 1);
-      expect(recorder.stopCalls, 0);
-      expect(orb(tester).phase, CapturePhase.listening);
-    });
-
-    testWidgets('is inert after a refused start: nothing to stop or resume', (
-      tester,
-    ) async {
-      await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
-      final button = orb(tester);
-      expect(button.phase, CapturePhase.idle);
-      expect(button.onTap, isNull);
-    });
-
-    testWidgets('goes quiet while a stop is in flight, with the buttons', (
-      tester,
-    ) async {
-      final gate = Completer<void>();
-      await pump(tester, stopGate: gate);
-      await tester.tap(key('check-in-recorder-orb'));
-      await tester.pump();
-
-      expect(orb(tester).onTap, isNull);
-      // Dimmed like Capture while it transcribes, so the wait is visible.
-      expect(orb(tester).phase, CapturePhase.transcribing);
-      gate.complete();
-      await tester.pump();
-      expect(recorded, hasLength(1));
+      expect(clock.progress, const Duration(seconds: 83));
+      expect(clock.semanticsLabel, '1 minute 23 seconds');
+      expect(find.text('0:01:23'), findsOneWidget);
     });
   });
 
-  testWidgets("a refused start is reported in the composer's own terms", (
-    tester,
-  ) async {
+  testWidgets("a refused start is reported in the composer's own terms, "
+      'and leaves nothing to pause or stop', (tester) async {
+    final semantics = tester.ensureSemantics();
     await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
     expect(failed, [CheckInSpeechFailureKind.microphoneDenied]);
     expect(recorded, isEmpty);
+    expect(enabled(tester, 'check-in-recorder-stop'), isFalse);
+    expect(enabled(tester, 'check-in-recorder-pause'), isFalse);
+    semantics.dispose();
   });
 
   testWidgets('a start the recorder refuses as busy or failed is a failed '
@@ -235,9 +184,8 @@ void main() {
     expect(recorder.recordCalls, isEmpty);
     expect(recorder.categoryIds, isEmpty);
     expect(recorder.modalVisibleLog, [true]);
-    expect(find.text('Pause'), findsOneWidget);
 
-    await tester.tap(key('check-in-recorder-orb'));
+    await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
     expect(recorded, [('audio-1', Duration.zero)]);
   });
@@ -248,9 +196,9 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 23), dBFS: -20);
     await tester.pump();
-    expect(find.text('0:23'), findsOneWidget);
+    expect(find.text('0:00:23'), findsOneWidget);
 
-    await tester.tap(key('check-in-recorder-orb'));
+    await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
     await tester.pump();
 
@@ -260,51 +208,49 @@ void main() {
 
   testWidgets('a stop that saves nothing, or throws, is a recording not '
       'saved — never a start that failed', (tester) async {
+    final semantics = tester.ensureSemantics();
     await pump(tester, stopResult: null);
-    await tester.tap(key('check-in-recorder-orb'));
+    await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
     expect(failed, [CheckInSpeechFailureKind.recordingNotSaved]);
     expect(recorded, isEmpty);
-    // No longer in flight: the host swaps the recorder for its failure
-    // card, so the orb only has to stop claiming a stop is under way.
-    expect(orb(tester).phase, isNot(CapturePhase.transcribing));
 
     await pump(tester, stopThrows: true);
-    await tester.tap(key('check-in-recorder-orb'));
+    await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
     expect(failed.last, CheckInSpeechFailureKind.recordingNotSaved);
+    semantics.dispose();
   });
 
-  testWidgets('the controls go quiet while a stop is in flight', (
+  testWidgets('every control goes quiet while a stop is in flight', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     final gate = Completer<void>();
     await pump(tester, stopGate: gate);
-    await tester.tap(key('check-in-recorder-orb'));
+    await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
 
     for (final name in [
       'check-in-recorder-pause',
       'check-in-recorder-discard',
+      'check-in-recorder-stop',
     ]) {
-      expect(
-        tester.widget<DesignSystemButton>(key(name)).onPressed,
-        isNull,
-        reason: name,
-      );
+      expect(enabled(tester, name), isFalse, reason: name);
     }
-    expect(orb(tester).onTap, isNull);
+    // A second press while the first is in flight stops nothing twice.
+    await tester.tap(key('check-in-recorder-stop'), warnIfMissed: false);
+    expect(recorder.stopCalls, 1);
     gate.complete();
     await tester.pump();
     expect(recorded, hasLength(1));
+    semantics.dispose();
   });
 
   testWidgets('Discard asks first; confirming cancels and says so, backing '
       'out keeps recording', (tester) async {
     await pump(tester);
     await tester.tap(key('check-in-recorder-discard'));
-    // Bounded pumps throughout: the orb breathes for as long as the take
-    // is live, so nothing here ever "settles".
     await settleModal(tester);
     expect(find.text('Discard recording?'), findsOneWidget);
     // This surface's own words, not the journal recorder's: the audio goes,
@@ -321,9 +267,6 @@ void main() {
 
     await tester.tap(key('check-in-recorder-discard'));
     await settleModal(tester);
-    // The dialog's confirm, not the recorder's own Discard beneath it. Pump
-    // by hand: Stop wears its spinner until the parent takes the recorder
-    // down, so nothing here ever "settles".
     await tester.tap(find.text('Discard').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -331,21 +274,23 @@ void main() {
     expect(discarded, 1);
   });
 
-  testWidgets('Pause and Resume toggle the recorder and the label', (
+  testWidgets('Pause and Resume toggle the recorder and the control', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     await pump(tester);
-    expect(find.text('Pause'), findsOneWidget);
+    expect(labelOf(tester, 'check-in-recorder-pause'), 'Pause');
     await tester.tap(key('check-in-recorder-pause'));
     await tester.pump();
     expect(recorder.pauseCalls, 1);
-    expect(find.text('Resume'), findsOneWidget);
+    expect(labelOf(tester, 'check-in-recorder-pause'), 'Resume');
     // The live region says so too, as it says "recording" while live.
     expect(find.bySemanticsLabel('Paused'), findsOneWidget);
     await tester.tap(key('check-in-recorder-pause'));
     await tester.pump();
     expect(recorder.resumeCalls, 1);
-    expect(find.text('Pause'), findsOneWidget);
+    expect(labelOf(tester, 'check-in-recorder-pause'), 'Pause');
+    semantics.dispose();
   });
 
   testWidgets('the clock ticks in place: crossing a digit boundary moves '
@@ -353,72 +298,12 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 9));
     await tester.pump();
-    final stopBefore = tester.getRect(key('check-in-recorder-orb'));
-    final clockBefore = tester.getRect(key('check-in-recorder-clock'));
+    final stopBefore = tester.getRect(key('check-in-recorder-stop'));
 
     recorder.tick(progress: const Duration(minutes: 59, seconds: 59));
     await tester.pump();
-    expect(find.text('59:59'), findsOneWidget);
-    expect(tester.getRect(key('check-in-recorder-orb')), stopBefore);
-    expect(tester.getRect(key('check-in-recorder-clock')), clockBefore);
-  });
-
-  testWidgets('the level strip keeps a bounded window of samples', (
-    tester,
-  ) async {
-    await pump(tester);
-    for (var i = 0; i < CheckInInlineRecorder.amplitudeWindow + 10; i++) {
-      recorder.tick(
-        progress: Duration(milliseconds: 20 * i),
-        dBFS: -30.0 - i,
-      );
-      await tester.pump();
-    }
-    final strip = tester.widget<LiveWaveform>(find.byType(LiveWaveform));
-    expect(strip.amplitudes.length, CheckInInlineRecorder.amplitudeWindow);
-    expect(strip.amplitudes.every((a) => a >= 0 && a <= 1), isTrue);
-  });
-
-  testWidgets("the level strip is Capture's: its width, its height and its "
-      'default teal, centred over the orb', (tester) async {
-    await pump(tester);
-    final strip = tester.widget<LiveWaveform>(find.byType(LiveWaveform));
-    expect(strip.width, VoiceOrbZone.waveformWidth);
-    expect(strip.height, VoiceOrbZone.waveformSlotHeight);
-    expect(strip.color, isNull, reason: 'the widget default — teal');
-    expect(
-      tester.getRect(find.byType(LiveWaveform)).center.dx,
-      closeTo(tester.getRect(find.byKey(VoiceButton.fieldKey)).center.dx, 0.5),
-    );
-  });
-
-  testWidgets('the clock reads to a screen reader in words', (tester) async {
-    await pump(tester);
-    recorder.tick(progress: const Duration(seconds: 83));
-    await tester.pump();
-    final clock = tester.widget<Text>(key('check-in-recorder-clock'));
-    expect(clock.data, '1:23');
-    expect(clock.semanticsLabel, '1 minute 23 seconds');
-  });
-
-  testWidgets('the clock is the UI face with tabular figures — no monospace '
-      'left on People', (tester) async {
-    await pump(tester);
-    final clock = tester.widget<Text>(key('check-in-recorder-clock'));
-    final tokens = tester
-        .element(find.byType(CheckInInlineRecorder))
-        .designTokens;
-    expect(clock.style?.fontFamily, isNot('Inconsolata'));
-    expect(
-      clock.style?.fontFeatures,
-      contains(const FontFeature.tabularFigures()),
-    );
-    // A subtitle, not a heading: the orb is the one large thing here.
-    expect(
-      clock.style?.fontSize,
-      tokens.typography.styles.subtitle.subtitle1.fontSize,
-    );
-    expect(clock.style?.color, tokens.colors.text.highEmphasis);
+    expect(find.text('0:59:59'), findsOneWidget);
+    expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
   });
 
   // The sheet brings the indicator back once it has closed; the recorder
@@ -430,30 +315,5 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     expect(recorder.stopCalls, 0);
     expect(recorder.cancelCalls, 0);
-  });
-
-  testWidgets('Discard and Pause sit centred under the orb, and there is no '
-      'Stop button: the orb is the one Stop', (tester) async {
-    await pump(tester);
-    final wrap = tester.widget<Wrap>(
-      find.ancestor(
-        of: key('check-in-recorder-discard'),
-        matching: find.byType(Wrap),
-      ),
-    );
-    expect(wrap.alignment, WrapAlignment.center);
-    expect(find.byType(DesignSystemButton), findsNWidgets(2));
-    expect(find.widgetWithText(DesignSystemButton, 'Stop'), findsNothing);
-    // Neither secondary wears the accent: the orb is the way forward.
-    expect(
-      tester
-          .widget<DesignSystemButton>(key('check-in-recorder-discard'))
-          .variant,
-      DesignSystemButtonVariant.quiet,
-    );
-    expect(
-      tester.widget<DesignSystemButton>(key('check-in-recorder-pause')).variant,
-      DesignSystemButtonVariant.outlined,
-    );
   });
 }

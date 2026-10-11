@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
@@ -69,12 +70,15 @@ void main() {
     await tester.pump();
   }
 
-  Color borderColor(WidgetTester tester) {
-    final box = tester.widget<AnimatedContainer>(
-      find.byKey(const ValueKey('check-in-narrative-field')),
-    );
-    return (box.decoration! as BoxDecoration).border!.top.color;
-  }
+  BoxDecoration frame(WidgetTester tester) =>
+      tester
+              .widget<AnimatedContainer>(
+                find.byKey(const ValueKey('check-in-narrative-field')),
+              )
+              .decoration!
+          as BoxDecoration;
+
+  Color borderColor(WidgetTester tester) => frame(tester).border!.top.color;
 
   DsTokens tokens(WidgetTester tester) => tester
       .element(find.byKey(const ValueKey('check-in-narrative-field')))
@@ -98,7 +102,25 @@ void main() {
         find.byKey(const ValueKey('check-in-inline-recorder')),
         findsNothing,
       );
-      expect(borderColor(tester), tokens(tester).colors.decorative.level01);
+      // The design-system field frame: the shared hairline at rest, and no
+      // well of its own — the sheet's surface shows through.
+      expect(
+        borderColor(tester),
+        designSystemFieldBorderColor(tokens(tester)),
+      );
+      expect(frame(tester).color, isNull);
+    });
+
+    testWidgets('focused, the frame is the shared accent hairline at full '
+        'weight', (tester) async {
+      await pump(tester, phase: const CheckInSpeechIdle());
+      await tester.tap(find.byKey(const ValueKey('check-in-narrative')));
+      await tester.pump();
+      expect(
+        borderColor(tester),
+        designSystemFieldBorderColor(tokens(tester), focused: true),
+      );
+      expect(frame(tester).border!.top.width, 2);
     });
 
     testWidgets('one word is singular, and the shortcut rides the count', (
@@ -270,10 +292,10 @@ void main() {
     // what an instruction line used to narrate.
     expect(find.byKey(const ValueKey('check-in-recording-hint')), findsNothing);
     expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
-    // The accent, not the error tone: a live take is not an error.
-    // The accent hairline means focus only; the dot, the waveform and Stop
-    // say live.
-    expect(borderColor(tester), tokens(tester).colors.decorative.level01);
+    // No frame at all while the recorder owns the box: it sits on the
+    // sheet as the recording sheet's recorder does, not in a box inside it.
+    expect(borderColor(tester), Colors.transparent);
+    expect(frame(tester).color, isNull);
   });
 
   // ADR 0062: each recording is the check-in's entry, shown under the note

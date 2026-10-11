@@ -192,9 +192,9 @@ class CheckInStickyActions extends StatelessWidget {
             ),
           );
 
-          // One action bar at a time: while the recorder owns the field,
-          // its Discard · Pause and the orb are the actions, and the orb's
-          // own caption is the instruction — so the bar is nothing at all.
+          // One action bar at a time: while the recorder owns the field, its
+          // own discard ✕ · pause · Stop are the actions — so the bar is
+          // nothing at all.
           // A strip holding only "Stop recording to save" was read as a
           // hollow bar with a second Stop instruction; the one settle when
           // Stop brings the actions back costs less than that.
@@ -398,14 +398,16 @@ class _MoreHeader extends StatelessWidget {
                 )
               else
                 const Spacer(),
-              SizedBox(width: tokens.spacing.step2),
-              Icon(
-                open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-                size: IconSizes.s,
-                color: enabled
-                    ? tokens.colors.text.mediumEmphasis
-                    : tokens.colors.text.lowEmphasis,
-              ),
+              // Held, the chevron goes with the chips' own: a disclosure that
+              // kept its arrow while inert promised a tap that did nothing.
+              if (enabled) ...[
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+                  size: IconSizes.s,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
             ],
           ),
         ),

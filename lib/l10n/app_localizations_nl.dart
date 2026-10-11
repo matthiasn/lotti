@@ -3425,12 +3425,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Instellingen openen';
 
   @override
-  String get checkInOrbResumeHint => 'Tik om verder te gaan';
-
-  @override
-  String get checkInOrbStopHint => 'Tik om te stoppen';
-
-  @override
   String get checkInOrTypeHint => 'Of typ het hier…';
 
   @override

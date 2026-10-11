@@ -82,7 +82,6 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
@@ -1570,7 +1569,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'check-pip-3');
-      for (var i = 0; i < CheckInInlineRecorder.amplitudeWindow; i++) {
+      for (var i = 0; i < 8; i++) {
         recorder.tick(
           progress: const Duration(seconds: 23),
           dBFS: -48 + 30 * math.sin(i / 3).abs(),
@@ -1941,7 +1940,7 @@ void main() {
           reason: 'the recorder replaces the text, not the sheet',
         );
         // A live level strip and a running clock, the way a real take looks.
-        for (var i = 0; i < CheckInInlineRecorder.amplitudeWindow; i++) {
+        for (var i = 0; i < 8; i++) {
           recorder.tick(
             progress: const Duration(seconds: 23),
             dBFS: -48 + 30 * math.sin(i / 3).abs(),
@@ -1955,7 +1954,7 @@ void main() {
           subdir: _subdir,
         );
 
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -2034,7 +2033,7 @@ void main() {
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
@@ -2098,7 +2097,7 @@ void main() {
         }
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();
-        await tester.tap(find.byKey(const ValueKey('check-in-recorder-orb')));
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
         expect(find.text('Transcript not received'), findsOneWidget);
         expect(
