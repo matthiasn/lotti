@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
@@ -167,7 +168,7 @@ class OutboxProcessor {
     );
     if (batch.isEmpty) {
       await _setSingleClaims(0);
-      return OutboxProcessingResult.none;
+      return _afterDrained();
     }
     if (_singleClaimsRemaining > 0) {
       await _setSingleClaims(_singleClaimsRemaining - 1);
@@ -305,6 +306,40 @@ class OutboxProcessor {
       for (final c in members)
         if (!supersededBy(c, newest)) _OutboxSend(c.message, [c.row]),
     ];
+  }
+
+  /// Once the queue has drained, gives each row that failed at least
+  /// [SyncTuning.outboxFailedRequeueAfter] ago one more attempt and drains
+  /// again at once, so a row that ran out of retries while the device was
+  /// offline still goes out. The service's watchdog runs a drained pass
+  /// once per window while rows wait in `error`, so nothing waits for the
+  /// next write or start. A row that keeps failing costs one attempt per
+  /// window. Never throws.
+  Future<OutboxProcessingResult> _afterDrained() async {
+    try {
+      final requeued = await _repository.requeueFailed(
+        failedBefore: clock.now().subtract(
+          SyncTuning.outboxFailedRequeueAfter,
+        ),
+      );
+      if (requeued > 0) {
+        _loggingService.log(
+          LogDomain.sync,
+          'requeuedFailed rows=$requeued',
+          subDomain: 'outbox.requeue',
+        );
+        return OutboxProcessingResult.schedule(Duration.zero);
+      }
+      return OutboxProcessingResult.none;
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'outbox.requeue',
+      );
+      return OutboxProcessingResult.none;
+    }
   }
 
   Future<void> _markSent(List<OutboxItem> rows) => rows.length == 1

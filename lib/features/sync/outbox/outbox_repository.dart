@@ -100,6 +100,17 @@ abstract class OutboxRepository {
   /// bundle's failure says nothing about any single row.
   Future<void> releaseClaims(List<OutboxItem> items);
 
+  /// Returns every `error` row last touched before [failedBefore] to the
+  /// queue for one more attempt: a failure sends it straight back to
+  /// `error`. Messages without a sequence counter — settings, flags, AI
+  /// configuration — have no backfill to recover them, so a row that
+  /// failed while the device was offline must not stay failed for good.
+  /// Returns the number of rows requeued.
+  Future<int> requeueFailed({required DateTime failedBefore});
+
+  /// Whether any row is in `error`, waiting for [requeueFailed].
+  Future<bool> hasFailed();
+
   /// Delete rows with `status = sent` older than [retention]. Never
   /// touches `pending`, `sending`, or `error` — error rows are kept
   /// forever so persistent failures remain inspectable.
@@ -303,6 +314,31 @@ class DatabaseOutboxRepository implements OutboxRepository {
         );
       }
     });
+  }
+
+  @override
+  Future<int> requeueFailed({required DateTime failedBefore}) =>
+      (_database.update(_database.outbox)..where(
+            (t) =>
+                t.status.equals(OutboxStatus.error.index) &
+                t.updatedAt.isSmallerThanValue(failedBefore),
+          ))
+          .write(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              retries: Value(maxRetries - 1),
+              updatedAt: Value(clock.now()),
+            ),
+          );
+
+  @override
+  Future<bool> hasFailed() async {
+    final row =
+        await (_database.select(_database.outbox)
+              ..where((t) => t.status.equals(OutboxStatus.error.index))
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
   }
 
   @override

@@ -8,6 +8,7 @@ mixin _OutboxSend on _OutboxServiceBase {
   // Backoff gate + coalesced-log state — private to the send pipeline.
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
+  DateTime? _failedRecheckAt;
   String? _lastLoggedSendNextState;
   DateTime? _lastLoggedSendNextStateAt;
 
@@ -108,12 +109,17 @@ mixin _OutboxSend on _OutboxServiceBase {
           limit: 1,
         )).isNotEmpty;
         final idleQueue = _clientRunner.queueSize == 0;
-        if (hasPending && loggedIn && idleQueue) {
-          _loggingService.log(
-            LogDomain.sync,
-            'watchdog: pending+loggedIn idleQueue → enqueue',
-            subDomain: 'watchdog',
-          );
+        // A drained pass gives rows failed a window ago one more attempt
+        // (OutboxProcessor), so failed rows never wait for the next write.
+        final reason = !idleQueue
+            ? null
+            : hasPending
+            ? 'watchdog: pending+loggedIn idleQueue → enqueue'
+            : await _failedRecheckDue()
+            ? 'watchdog: failed rows → drained pass'
+            : null;
+        if (reason != null) {
+          _loggingService.log(LogDomain.sync, reason, subDomain: 'watchdog');
           unawaited(enqueueNextSendRequest(delay: Duration.zero));
         }
       } catch (e, st) {
@@ -125,6 +131,20 @@ mixin _OutboxSend on _OutboxServiceBase {
         );
       }
     });
+  }
+
+  /// Whether a window has passed since the last drained pass this watchdog
+  /// ran for rows in `error`, and some row still waits there.
+  Future<bool> _failedRecheckDue() async {
+    final now = clock.now();
+    final last = _failedRecheckAt;
+    if (last != null &&
+        now.difference(last) < SyncTuning.outboxFailedRequeueAfter) {
+      return false;
+    }
+    if (!await _repository.hasFailed()) return false;
+    _failedRecheckAt = now;
+    return true;
   }
 
   /// Test seam for [_recordBackoff] — drives the zero/negative

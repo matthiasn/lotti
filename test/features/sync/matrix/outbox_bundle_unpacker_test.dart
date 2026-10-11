@@ -334,6 +334,8 @@ void main() {
             .map((c) => (c.syncMessage as SyncAiConfigDelete).id)
             .toList();
         expect(ids, ['before', 'after']);
+        // The left-out child marks the bundle for another pass.
+        expect(result.incomplete, isTrue);
         verify(
           () => logging.error(
             LogDomain.sync,
@@ -342,6 +344,39 @@ void main() {
             subDomain: 'processor.resolve.outboxBundle.child',
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'a manifest entry the resolver could not decode marks the bundle '
+      'incomplete; one that prepared whole is not',
+      () async {
+        const bundle = SyncOutboxBundle(
+          children: [SyncMessage.aiConfigDelete(id: 'known')],
+        );
+        Future<PreparedOutboxSyncBundle?> prepareWith({
+          required bool incomplete,
+        }) => unpacker.prepare(
+          event: event,
+          msg: const SyncOutboxBundle(children: [], jsonPath: '/m.json'),
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+              ResolvedOutboxSyncBundle(
+                children: [
+                  OutboxBundleChildEnvelope(
+                    syncMessage: bundle.children.single,
+                    rawJson: null,
+                  ),
+                ],
+                jsonPath: jsonPath,
+                incomplete: incomplete,
+              ),
+          prepareChild: (e, m, _) async => _preparedFor(e, m),
+        );
+
+        final partial = await prepareWith(incomplete: true);
+        expect(partial!.children, hasLength(1));
+        expect(partial.incomplete, isTrue);
+        expect((await prepareWith(incomplete: false))!.incomplete, isFalse);
       },
     );
 

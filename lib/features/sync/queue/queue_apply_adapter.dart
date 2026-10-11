@@ -175,18 +175,28 @@ class QueueApplyAdapter {
         subDomain: '$_logSub.prepare.retriable',
       );
       return const _PreparedState.terminal(ApplyOutcome.retriable);
+    } on MatrixException catch (error, stackTrace) {
+      // A rate limit or a server error on the download is transient.
+      _logging.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$_logSub.prepare.retriable',
+      );
+      return const _PreparedState.terminal(ApplyOutcome.retriable);
     } catch (error, stackTrace) {
-      // Unknown error classes (TypeError, StateError, ArgumentError,
-      // …) are not transient; retrying them just burns attempts and
-      // keeps the entry in the queue until maxAttempts gives up. Treat
-      // them as permanent so a logic bug does not stall the worker.
+      // Any other failure (TypeError, StateError, a payload from a newer
+      // build that does not parse here, …) is not transient, so retrying
+      // only burns attempts. Skipped as undecodable rather than for good:
+      // the queue tries it again at its next start, when an updated build
+      // may apply it, and the resurrection cap bounds one that never does.
       _logging.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
         subDomain: '$_logSub.prepare.failed',
       );
-      return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
+      return const _PreparedState.terminal(ApplyOutcome.undecodable);
     }
     if (prepared == null) {
       _logging.log(
@@ -281,6 +291,14 @@ class QueueApplyAdapter {
       }
       for (final action in afterCommit) {
         await action();
+      }
+      if (prepared.hasUndecodableParts) {
+        _logging.log(
+          LogDomain.sync,
+          'queue.apply.partlyUndecodable eventId=${entry.eventId}',
+          subDomain: _logSub,
+        );
+        return ApplyOutcome.undecodable;
       }
       return ApplyOutcome.applied;
     } on IOException catch (error, stackTrace) {

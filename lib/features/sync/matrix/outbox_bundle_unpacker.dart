@@ -10,9 +10,14 @@ import 'package:matrix/matrix.dart';
 /// recursively run through the parent processor's prepare phase so apply
 /// can reuse the existing per-type pipeline by iterating [children].
 class PreparedOutboxSyncBundle {
-  PreparedOutboxSyncBundle({required this.children});
+  PreparedOutboxSyncBundle({required this.children, this.incomplete = false});
 
   final List<PreparedSyncEvent> children;
+
+  /// Whether a child could not be decoded or prepared, and is missing from
+  /// [children]. The rest still apply; the bundle is then skipped as
+  /// undecodable, so the queue applies it whole again at its next start.
+  final bool incomplete;
 }
 
 /// One reconstructed child of a [SyncOutboxBundle]: the typed envelope
@@ -39,10 +44,15 @@ class ResolvedOutboxSyncBundle {
   ResolvedOutboxSyncBundle({
     required this.children,
     required this.jsonPath,
+    this.incomplete = false,
   });
 
   final List<OutboxBundleChildEnvelope> children;
   final String? jsonPath;
+
+  /// Whether a manifest entry did not decode as a sync message this build
+  /// knows, and is missing from [children].
+  final bool incomplete;
 
   /// The reconstructed wire envelope, derived from [children] so the typed
   /// list can never drift out of step with the raw envelopes.
@@ -114,7 +124,8 @@ class OutboxBundleUnpacker {
   ///   the pipeline can retry the whole bundle later — partial application
   ///   would leave gaps in the sequence log.
   /// - All other exceptions on a single child are logged and the child is
-  ///   skipped; the remaining children still apply.
+  ///   left out; the remaining children still apply, and the result is
+  ///   [PreparedOutboxSyncBundle.incomplete], so the bundle is tried again.
   Future<PreparedOutboxSyncBundle?> prepare({
     required Event event,
     required SyncOutboxBundle msg,
@@ -123,6 +134,7 @@ class OutboxBundleUnpacker {
     List<Map<String, dynamic>?> rawChildren = const [],
   }) async {
     final List<OutboxBundleChildEnvelope> children;
+    var incomplete = false;
     if (msg.children.isEmpty) {
       final resolved = await resolveSidecar(
         jsonPath: msg.jsonPath,
@@ -130,6 +142,7 @@ class OutboxBundleUnpacker {
       );
       if (resolved == null) return null;
       children = resolved.children;
+      incomplete = resolved.incomplete;
     } else {
       children = [
         for (var index = 0; index < msg.children.length; index++)
@@ -167,6 +180,7 @@ class OutboxBundleUnpacker {
         // that the parent pipeline already knows how to back off on.
         rethrow;
       } catch (error, stackTrace) {
+        incomplete = true;
         loggingService.error(
           LogDomain.sync,
           error,
@@ -176,7 +190,10 @@ class OutboxBundleUnpacker {
       }
     }
 
-    return PreparedOutboxSyncBundle(children: prepared);
+    return PreparedOutboxSyncBundle(
+      children: prepared,
+      incomplete: incomplete,
+    );
   }
 
   /// Iterates the bundle's children and dispatches each through [applyChild]

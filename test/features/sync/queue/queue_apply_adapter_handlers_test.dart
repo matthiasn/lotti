@@ -335,7 +335,8 @@ void main() {
   });
 
   test(
-    'generic exception during prepare maps to permanentSkip',
+    'generic exception during prepare maps to undecodable, which the '
+    'queue tries again at its next start',
     () async {
       final entry = hBuildEntry(
         eventId: r'$preparePermanent',
@@ -347,7 +348,7 @@ void main() {
       ).thenThrow(StateError('logic bug'));
 
       final outcome = await build().bind()(entry, room);
-      expect(outcome, ApplyOutcome.permanentSkip);
+      expect(outcome, ApplyOutcome.undecodable);
       verify(
         () => logging.error(
           any<LogDomain>(),

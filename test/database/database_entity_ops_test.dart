@@ -1280,6 +1280,38 @@ void main() {
         },
       );
 
+      test(
+        'a concurrent version whose conflict cannot be recorded fails the '
+        'write, so the receive retries instead of recording it as held',
+        () async {
+          final stored = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 1}),
+          );
+          await db!.updateJournalEntity(stored);
+          final concurrent = createJournalEntryWithVclock(
+            const VectorClock({'device-b': 1}),
+            id: stored.meta.id,
+          );
+          // Hide the table the conflict is stored in; the database is shared
+          // by the file, so it comes back after the test.
+          await db!.customStatement(
+            'ALTER TABLE conflicts RENAME TO conflicts_hidden',
+          );
+          addTearDown(
+            () => db!.customStatement(
+              'ALTER TABLE conflicts_hidden RENAME TO conflicts',
+            ),
+          );
+
+          await expectLater(
+            db!.updateJournalEntity(concurrent),
+            throwsA(isA<Exception>()),
+          );
+          final row = await db!.journalEntityById(stored.meta.id);
+          expect(row?.meta.vectorClock, const VectorClock({'device-a': 1}));
+        },
+      );
+
       test('detectConflict detects concurrent vector clocks', () async {
         DevLogger.clear();
 

@@ -336,7 +336,7 @@ received, in one transaction: it reads the stored row **with its deletion**
 |--------------------|---------|
 | incoming newer | applied; each of the entry's open conflicts is marked resolved **only if the written version includes it** (its clock covers the conflict's). A task this device wrote (`fromThisDevice`, set by `PersistenceUpdates.updateDbEntity`) keeps the stored row's pull request tracking; a received version is stored as it came |
 | equal or older | refused — a late copy of the version a deletion replaced included |
-| concurrent | refused and stored as a `Conflict` row of the entry, **unless an open conflict already holds that version or a newer one**; it replaces the open conflicts it follows and stands beside the others |
+| concurrent | refused and stored as a `Conflict` row of the entry, **unless an open conflict already holds that version or a newer one**; it replaces the open conflicts it follows and stands beside the others. A failure storing it fails the write, so the receive retries rather than record the version as held |
 | concurrent, both deleted | merged, no conflict: the canonically greater deletion's fields under the join of both clocks, the same row on every device |
 | concurrent, both pull request entries | merged, no conflict: the newer observation, deleted if either side is, under the join of both clocks, the same row on every device (`mergeConcurrentPullRequestVersions`; the snapshot is fetched, not authored, so there is nothing for the user to choose — [GitHub pull requests](../github.md)) |
 | incoming without a clock | refused over a clocked row; applied over a row without one |

@@ -625,6 +625,31 @@ void main() {
     expect(capturedLink.collapsed, isTrue);
   });
 
+  test(
+    'a bundle whose manifest cannot be resolved is marked undecodable, so '
+    'the queue tries it again instead of acknowledging it unapplied; an '
+    'inline bundle that prepared whole is not',
+    () async {
+      when(() => event.text).thenReturn(
+        encodeMessage(const SyncMessage.outboxBundle(children: [])),
+      );
+      final unresolved = await processor.prepare(event: event);
+      expect(unresolved!.resolvedOutboxBundle, isNull);
+      expect(unresolved.hasUndecodableParts, isTrue);
+
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          const SyncMessage.outboxBundle(
+            children: [SyncMessage.aiConfigDelete(id: 'cfg')],
+          ),
+        ),
+      );
+      final whole = await processor.prepare(event: event);
+      expect(whole!.resolvedOutboxBundle!.children, hasLength(1));
+      expect(whole.hasUndecodableParts, isFalse);
+    },
+  );
+
   test('processes entity definitions', () async {
     final message = SyncMessage.entityDefinition(
       entityDefinition: measurableWater,

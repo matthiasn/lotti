@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -370,6 +371,70 @@ void main() {
     registerFallbackValue(_item());
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'x'));
     registerFallbackValue(StackTrace.empty);
+  });
+
+  group('a drained queue gives long-failed rows another attempt', () {
+    late MockOutboxRepository repo;
+    late MockDomainLogger log;
+    late OutboxProcessor proc;
+
+    setUp(() {
+      repo = MockOutboxRepository();
+      log = MockDomainLogger();
+      _stubSilentLogging(log);
+      when(
+        () => repo.claimNextBatch(
+          maxSize: any(named: 'maxSize'),
+          leaseDuration: any(named: 'leaseDuration'),
+        ),
+      ).thenAnswer((_) async => const <OutboxItem>[]);
+      proc = OutboxProcessor(
+        repository: repo,
+        messageSender: MockOutboxMessageSender(),
+        loggingService: log,
+      );
+    });
+
+    test('requeued rows are drained at once, cut off at the requeue '
+        'window', () async {
+      final now = DateTime(2024, 3, 15, 12);
+      when(
+        () => repo.requeueFailed(failedBefore: any(named: 'failedBefore')),
+      ).thenAnswer((_) async => 2);
+
+      final result = await withClock(Clock.fixed(now), proc.processQueue);
+
+      expect(result.nextDelay, Duration.zero);
+      verify(
+        () => repo.requeueFailed(
+          failedBefore: now.subtract(SyncTuning.outboxFailedRequeueAfter),
+        ),
+      ).called(1);
+    });
+
+    test('nothing requeued leaves the processor idle', () async {
+      when(
+        () => repo.requeueFailed(failedBefore: any(named: 'failedBefore')),
+      ).thenAnswer((_) async => 0);
+
+      expect(await proc.processQueue(), OutboxProcessingResult.none);
+    });
+
+    test('a failing requeue is logged and leaves the processor idle', () async {
+      when(
+        () => repo.requeueFailed(failedBefore: any(named: 'failedBefore')),
+      ).thenThrow(StateError('db closed'));
+
+      expect(await proc.processQueue(), OutboxProcessingResult.none);
+      verify(
+        () => log.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'outbox.requeue',
+        ),
+      ).called(1);
+    });
   });
 
   test('send timeout triggers retry and schedules backoff', () async {

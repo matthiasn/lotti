@@ -1634,7 +1634,10 @@ drain at a time claims a bundle and collapses each entity's rows into one
 send of its newest version by clock, covering every other counter and
 carrying the attachment if any collapsed row owed it. Every collapsed row is
 then marked sent, or all of them are retried up to `maxRetries`, then
-`error`. A send also settles the entity's failed rows it supersedes. Sends
+`error`. A drained queue gives every `error` row one more attempt, and the
+service's watchdog runs such a pass while rows wait there, so no failure is
+final (the 15-minute window between passes is not modelled). A send also
+settles the entity's failed rows it supersedes. Sends
 fail, time out and land anyway, marks throw, the process dies between the
 send and the mark, claim leases run out, the same profile is torn down and
 restarted, sent rows are pruned, and the monitor's Retry and Remove act on
@@ -1664,22 +1667,27 @@ properties.
 | `MediaNotDropped` | invariant | a row that owed the attachment is `sent` only after a send of its entity carried it |
 | `PruneOnlySent` | action | pruning deletes only sent rows |
 | `NewestLandsLast` | invariant | with callers enqueuing in order, the last payload of an entity in the room is the newest the room holds |
+| `NewestJsonLandsLast` | invariant | `NewestLandsLast`, except for an older version resent for the attachment it owes, which a clock-ordered receiver takes only the file of |
 | `PeerHoldsNewest` | invariant | a peer applying the room in arrival order holds the newest version of each entity the room carries, however late an older send lands |
 | `EveryRowSettles` | liveness | every pending or sending row ends sent, failed for good, or removed |
 | `EnqueuedIsDelivered` | liveness | every enqueued version reaches the room, unless its row failed for good or was removed |
+| `FailedIsRetried` | liveness | a row in `error` is tried again: settings, flags and AI configurations have no backfill, so a failure that stays final loses the change |
 
 | Configuration | Enqueue order | Faults | Distinct states |
 |---------------|---------------|--------|-----------------|
-| `Outbox` | in order, three versions (the first owing the attachment), one simple message, bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 945,340 |
-| `OutboxConcurrent` | any order, three versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 167,990 |
-| `OutboxConcurrentLive` | any order, two versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown | 4,814 |
-| `OutboxOperator` | in order, two versions | failed sends, marks that throw, a crash or a teardown, the monitor's Retry | 5,890 |
-| `OutboxGhost` | in order, two versions (the first owing the attachment) | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 16,097 |
-| `OutboxGhostRows` | in order, two versions of an AI configuration, sent row by row | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 28,782 |
+| `Outbox` | in order, three versions (the first owing the attachment), one simple message, bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 2,250,270 |
+| `OutboxConcurrent` | any order, three versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 180,772 |
+| `OutboxConcurrentLive` | any order, two versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown | 4,960 |
+| `OutboxOperator` | in order, two versions | failed sends, marks that throw, a crash or a teardown, the monitor's Retry | 6,050 |
+| `OutboxRequeue` | in order, two versions | failed sends, marks that throw, a crash or a teardown, no user | 5,551 |
+| `OutboxGhost` | in order, two versions (the first owing the attachment) | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 16,993 |
+| `OutboxGhostRows` | in order, two versions of an AI configuration, sent row by row | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 29,880 |
 
 Every configuration claims `PeerHoldsNewest`; `NewestLandsLast` only
-`Outbox` and `OutboxOperator`, which have no late landings and no row-by-row
-keys.
+`OutboxOperator`, which has no late landings, no row-by-row keys and no
+attachment, and `Outbox` the narrower `NewestJsonLandsLast`: with failed rows
+requeued, an older version that owes the attachment is resent after the
+newer one without the user (the residual below).
 
 | Switch | Without it | Counterexample |
 |--------|------------|----------------|
@@ -1687,8 +1695,9 @@ keys.
 | `CoverCollapsed` | the send covers nothing it folded in | `NoLostCounter`, seven steps: v1 and v2 go out as v2 alone and both rows are marked sent |
 | `CarryMedia` | the send carries the attachment only if its own row owed it | `MediaNotDropped`, seven steps: the audio row and the edit after it go out as the edit, and the audio row is marked sent |
 | `AbsorbErrorRows` | a send leaves the entity's failed rows alone | `NewestLandsLast`, fifteen steps: v1 fails to `error`, v2 is sent, the monitor retries v1 and it lands last — ADR 0085's residual 2, which this design resolves |
-| `ReleaseBeforeDrain` | a claim a crash left behind waits out its lease | `NewestLandsLast`, ten steps (ADR 0085) |
-| `QuiesceOnDispose` | dispose returns while its drain still sends | `NewestLandsLast`, nine steps (ADR 0085) |
+| `ReleaseBeforeDrain` | a claim a crash left behind waits out its lease | `NewestJsonLandsLast` in `Outbox`, twelve steps (ADR 0085) |
+| `QuiesceOnDispose` | dispose returns while its drain still sends | `NewestJsonLandsLast` in `Outbox`, thirteen steps (ADR 0085) |
+| `RequeueFailed` | a row that ran out of retries waits in `error` for the user's Retry | `FailedIsRetried` in `OutboxRequeue`, sixteen steps: both sends of v1 fail, the row reaches `error`, and nothing ever tries it again |
 | `StampedReceiver` | the receiver applies config flags and AI configurations in arrival order | `PeerHoldsNewest`, ten steps in both `OutboxGhost` and `OutboxGhostRows`: v1 is claimed, v2 is enqueued, v1's send times out and is retried, v2 goes out, and the abandoned v1 lands last — ADR 0085's residual 1, which ADR 0094 resolves |
 
 What the model leaves out, deliberately or as a residual:
@@ -1707,8 +1716,9 @@ What the model leaves out, deliberately or as a residual:
   confirmation that the change will not reach other devices.
 - **A bundle does not settle a failed row that owes an attachment.** A bundle
   ships JSON only, so when an entity's other rows owe the attachment, the
-  bundled send of a newer version leaves them alone; a later Retry sends
-  that older version, with its attachment, after the newer one. Only journal
+  bundled send of a newer version leaves them alone; the drained queue's
+  requeue, or a Retry, sends that older version, with its attachment, after
+  the newer one. Only journal
   entries carry attachments, and their receivers order the JSON by clock, so
   the older JSON is dropped and the attachment lands.
 - **Unstamped flags follow the callers' order.** The collapse orders config flags by their version stamp; two rows without one (from before #4517) keep enqueue order, and one without a stamp ranks below any stamped row of the same flag (ADR 0130).

@@ -357,7 +357,7 @@ mixin _JournalDbEntityOps
         skipReason = JournalUpdateSkipReason.overwritePrevented;
       } else if (existingDbEntity != null) {
         final existing = fromDbEntity(existingDbEntity);
-        VclockStatus? status;
+        final VclockStatus status;
         try {
           status = await detectConflict(existing, updated);
         } catch (error, stackTrace) {
@@ -366,7 +366,9 @@ mixin _JournalDbEntityOps
             subDomain: 'detectConflict',
             stackTrace: stackTrace,
           );
-          skipReason = JournalUpdateSkipReason.conflict;
+          // The concurrent version was not recorded. Skipping would let
+          // the receive record it as held; failing lets it retry.
+          rethrow;
         }
 
         final merged =
@@ -382,7 +384,7 @@ mixin _JournalDbEntityOps
           rowsWritten = await upsertJournalDbEntity(_toRow(written));
           applied = true;
           await _settleConflictCoveredBy(written);
-        } else if (status != null) {
+        } else {
           _captureEvent(
             EnumToString.convertToString(status),
             subDomain: 'Conflict status',
@@ -390,8 +392,6 @@ mixin _JournalDbEntityOps
           skipReason = status == VclockStatus.concurrent
               ? JournalUpdateSkipReason.conflict
               : JournalUpdateSkipReason.olderOrEqual;
-        } else {
-          skipReason ??= JournalUpdateSkipReason.conflict;
         }
       } else {
         rowsWritten = await upsertJournalDbEntity(_toRow(updated));

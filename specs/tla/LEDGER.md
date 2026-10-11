@@ -354,6 +354,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4755](https://github.com/matthiasn/lotti/pull/4755) | pending | sync | — | 0 | 1 (1) | P3 | — | Review of #4753 found what the model had taken as one step: "Show the emoji" bumps a counter every mounted launcher listens to, and each listener released the device last shown on its own. The first launches synchronously up to `markShown`, so with two launchers mounted the second undid that record and the device was offered again once the reopened sheet closed. The request now releases once, before the bump; `ReleaseOnce = FALSE` breaks `NoReoffer` in six states. State counts unchanged |
 | [#4759](https://github.com/matthiasn/lotti/pull/4759) | pending | sync | — | 0 | 5 (0) | P2×3 P3×2 | [0129](../../docs/adr/0129-sync-repairs-instead-of-giving-up.md) | Four paths that ended in a state nothing left on its own, recorded as residuals by InboundQueue, SyncSettings and SavedTaskFilterSync. Catch-up now backs off up to five minutes instead of giving up after three passes, as the InboundQueue model already assumed; "Send settings" re-sends the theme, greeting name and config flags with their stamps; an undecodable event is skipped as `undecodable` and resurrected at each queue start; and a message over the inline event limit, including a backfill request queued before #4593 split them, travels as a one-child bundle. No spec changed; each fix has unit tests that fail without it |
 | [#4760](https://github.com/matthiasn/lotti/pull/4760) | pending | sync | — | 0 | 4 (0) | P3×4 | [0130](../../docs/adr/0130-legacy-sync-rows-are-repaired-without-asking.md) | Rows older builds left behind. Every device now stamps its clockless definitions and entry links once at startup instead of waiting for the manual Repair vector clocks action; an unstamped config-flag outbox row from before #4517 ranks below a stamped one and folds into its send; and the too-large bundle fallback count is stored in settings so a restart keeps sending the rows singly. A host an older build created resends its own counter-0 write once at startup, since no peer would ask for it. No spec changed |
+| Delivery without a counter (pending) | pending | sync | — | 1 | 6 (0) | P1×6 | [0132](../../docs/adr/0132-messages-without-a-counter-are-delivered.md) | Settings, flags, preferences and AI configurations carry no sequence counter, so delivery is their only guarantee, and five paths broke it. An outbox row in `error` is now tried again once per 15-minute window after the queue drains, and the watchdog runs that pass while rows wait; Outbox.tla gains `RequeueFailed` and `FailedIsRetried` (OutboxRequeue, 5,551 states; without the switch, sixteen steps). A bundle with an undecodable manifest or child applies what decoded and is resurrected whole at the next start; a prepare failure is `undecodable` (a `MatrixException` `retriable`) instead of a permanent skip; a relay that never held a payload no longer answers `deleted`; and a conflict that cannot be stored fails the write so the receive retries |
 | pending | pending | speech, ai | `TranscriptionRun` | 0 | 0 (–) | — | [0126](../../docs/adr/0126-post-processing-follows-every-speech-to-text-transcription.md) | No model change: post-processing now follows every speech-to-text transcription, so a check-in's transcript is held like any other. `TranscriptionRunHeld` already pairs `Held` with the check-in `Waiter`, and re-checked: `WaiterResolves` and `HeldTextLands` hold through the fill. 90,328 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -583,7 +584,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 153 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 159 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -740,6 +741,12 @@ The P0 and P1 bugs:
 | [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | A config-flag outbox row queued before #4517 was sent alongside a newer stamped one, so the older value could arrive last |
 | [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | After a restart, rows a too-large bundle had released were bundled again, failed by size again and fell back again |
 | [#4760](https://github.com/matthiasn/lotti/pull/4760) | P3 | no | A lost counter-0 write of a host an older build created was never requested, so peers missed it until the payload changed again |
+| Delivery without a counter | P1 | no | A settings, flag or AI-configuration change that ran out of outbox retries while the device was offline stayed failed until the user tapped Retry; nothing else would ever send it |
+| Delivery without a counter | P1 | no | A bundle child that did not decode or prepare, or a bundle manifest this build could not read, was dropped while the bundle was acknowledged as applied |
+| Delivery without a counter | P1 | no | A prepare failure that was not an IOException, such as a journal entity from a newer build or a rate-limited download, was skipped for good |
+| Delivery without a counter | P1 | no | A relay that only knew a counter existed answered `deleted`, so two devices that had both lost a payload closed each other's gap for good |
+| Delivery without a counter | P1 | no | A concurrent journal version whose conflict row failed to store was dropped while its receipt was recorded, so backfill never asked again |
+| Delivery without a counter | P1 | no | One bad row in a bundle took all fifty rows to the retry cap together, and each of them stayed failed |
 
 </details>
 

@@ -716,6 +716,9 @@ class SyncEventProcessor {
           event: event,
           syncMessage: msg,
           resolvedOutboxBundle: resolved,
+          // An unresolvable manifest — a newer version, say — or a child
+          // left out is tried again at the next start, not acknowledged.
+          hasUndecodableParts: resolved == null || resolved.incomplete,
         );
       default:
         return PreparedSyncEvent._(event: event, syncMessage: syncMessage);

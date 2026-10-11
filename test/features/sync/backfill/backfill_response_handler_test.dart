@@ -1984,6 +1984,52 @@ void main() {
 
     // ADR 0083: a deletion is a version. Answering `deleted` settled a lost
     // deletion with nothing applied, and the requester kept the entry.
+    for (final (status, answers) in [
+      (SyncSequenceStatus.missing, false),
+      (SyncSequenceStatus.requested, false),
+      (SyncSequenceStatus.received, true),
+    ]) {
+      test(
+        'a payload it holds no row for is answered deleted only by a device '
+        'that held it: row ${status.name} answers ${answers ? '' : 'nothing'}',
+        () async {
+          const request = SyncBackfillRequest(
+            entries: [BackfillRequestEntry(hostId: bobHostId, counter: 3)],
+            requesterId: requesterId,
+          );
+          when(
+            () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3),
+          ).thenAnswer(
+            (_) async => _createLogItem(
+              bobHostId,
+              3,
+              entryId: entryId,
+              originatingHostId: bobHostId,
+              status: status,
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+          ).thenAnswer((_) async => null);
+          final captured = <SyncMessage>[];
+          when(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).thenAnswer((inv) async {
+            captured.add(inv.positionalArguments.first as SyncMessage);
+          });
+
+          await handler.handleBackfillRequest(request);
+
+          expect(
+            captured.whereType<SyncBackfillResponse>().where(
+              (r) => r.deleted,
+            ),
+            hasLength(answers ? 1 : 0),
+          );
+        },
+      );
+    }
+
     test('serves a soft-deleted journal entry like any version', () async {
       const request = SyncBackfillRequest(
         entries: [

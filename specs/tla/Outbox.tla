@@ -77,6 +77,10 @@
 (*   ReleaseBeforeDrain  a drain first returns orphaned `sending` rows to  *)
 (*                       `pending` (ADR 0085)                              *)
 (*   QuiesceOnDispose    dispose waits for the drain in flight (ADR 0085)  *)
+(*   RequeueFailed       a drained queue gives `error` rows one more       *)
+(*                       attempt (OutboxProcessor._afterDrained), and the  *)
+(*                       watchdog runs such a pass while rows wait there;  *)
+(*                       the 15-minute window is not modelled              *)
 (*   StampedReceiver     the receiver drops a payload whose stamp is not   *)
 (*                       greater than the one it holds (config flags,     *)
 (*                       AI configurations; ADR 0094)                      *)
@@ -109,7 +113,8 @@ CONSTANTS
     AbsorbErrorRows,
     ReleaseBeforeDrain,
     QuiesceOnDispose,
-    StampedReceiver
+    StampedReceiver,
+    RequeueFailed
 
 FaultKinds == {
     "sendFail",     \* the sender returns false or throws
@@ -212,7 +217,10 @@ EnqSimple(m) ==
 \* every `sending` row is an orphan and goes back to pending.
 StartDrain ==
     /\ phase = "off"
-    /\ \E r \in Ids : Eligible(r) \/ rows[r].st = "sending"
+    /\ \E r \in Ids :
+          \/ Eligible(r)
+          \/ rows[r].st = "sending"
+          \/ RequeueFailed /\ rows[r].st = "error"
     /\ phase' = "idle"
     /\ IF ReleaseBeforeDrain
        THEN /\ rows' = [r \in Ids |->
@@ -283,8 +291,16 @@ Claim ==
            All == UNION {Group(h) : h \in {h2 \in BS : IsHead(h2)}}
        IN
        IF Len(B) = 0
-       THEN /\ phase' = "off"
-            /\ UNCHANGED <<rows, expired, inflight, msgs>>
+       THEN IF RequeueFailed /\ \E r \in Ids : rows[r].st = "error"
+            \* requeueFailed: one attempt left, then drain again at once.
+            THEN /\ rows' = [r \in Ids |->
+                               IF rows[r].st = "error"
+                               THEN [rows[r] EXCEPT !.st = "pending",
+                                                    !.tries = MaxRetries - 1]
+                               ELSE rows[r]]
+                 /\ UNCHANGED <<phase, expired, inflight, msgs>>
+            ELSE /\ phase' = "off"
+                 /\ UNCHANGED <<rows, expired, inflight, msgs>>
        ELSE /\ rows' = [r \in Ids |->
                           IF r \in All THEN [rows[r] EXCEPT !.st = "sending"]
                           ELSE rows[r]]
@@ -520,6 +536,18 @@ NewestLandsLast ==
         LET I == {i \in 1..Len(wire) : wire[i].key = k} IN
         I # {} => wire[Max(I)].ver = Max({wire[i].ver : i \in I})
 
+\* NewestLandsLast, except for an older version resent for the attachment
+\* it owes. A bundle ships JSON only, so it leaves such a row failed, and
+\* the drained queue's requeue (or the monitor's Retry) sends it after the
+\* newer version; journal receivers order the JSON by clock, so only the
+\* attachment takes effect.
+NewestJsonLandsLast ==
+    \A k \in Keys :
+        LET I == {i \in 1..Len(wire) : wire[i].key = k}
+            V == {wire[i].ver : i \in I}
+            J == {i \in I : ~wire[i].media \/ wire[i].ver = Max(V)}
+        IN I # {} => wire[Max(J)].ver = Max(V)
+
 \* The version a peer holds for key k after applying the first n payloads
 \* of the room in arrival order; 0 is nothing yet. A stamped receiver keeps
 \* a payload only when its stamp is greater (applyConfigFlagVersion,
@@ -546,6 +574,12 @@ EveryRowSettles ==
         (r \in Ids /\ rows[r].st \in {"pending", "sending"})
             ~> (r \in Ids /\ rows[r].st \in {"sent", "error", "pruned",
                                              "removed"})
+
+\* A row in `error` is tried again: with RequeueFailed no failure is final.
+FailedIsRetried ==
+    \A r \in RowIds :
+        (r \in Ids /\ rows[r].st = "error")
+            ~> (r \in Ids /\ rows[r].st # "error")
 
 \* Every enqueued version reaches the room unless its row failed for good.
 EnqueuedIsDelivered ==

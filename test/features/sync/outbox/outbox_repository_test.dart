@@ -490,6 +490,60 @@ void main() {
         },
       );
 
+      test(
+        'requeueFailed gives only error rows older than the cutoff one more '
+        'attempt, after which a failure sends them straight back to error',
+        () async {
+          final stale = await insertRow(
+            status: OutboxStatus.error,
+            retries: 2,
+            createdAt: DateTime(2024),
+          );
+          final recent = await insertRow(
+            status: OutboxStatus.error,
+            retries: 2,
+            createdAt: DateTime(2024, 1, 1, 0, 30),
+          );
+          final pending = await insertRow(status: OutboxStatus.pending);
+          final sent = await insertRow(status: OutboxStatus.sent);
+
+          final requeued = await withClock(
+            Clock.fixed(DateTime(2024, 1, 1, 1)),
+            () => realRepo.requeueFailed(
+              failedBefore: DateTime(2024, 1, 1, 0, 15),
+            ),
+          );
+
+          expect(requeued, 1);
+          final rows = {
+            for (final row in await realDb.select(realDb.outbox).get())
+              row.id: row,
+          };
+          expect(rows[stale]!.status, OutboxStatus.pending.index);
+          // maxRetries is 2: one attempt left.
+          expect(rows[stale]!.retries, 1);
+          expect(rows[stale]!.updatedAt, DateTime(2024, 1, 1, 1));
+          expect(rows[recent]!.status, OutboxStatus.error.index);
+          expect(rows[pending]!.status, OutboxStatus.pending.index);
+          expect(rows[sent]!.status, OutboxStatus.sent.index);
+
+          await realRepo.markRetry(rows[stale]!);
+          final retried = await (realDb.select(
+            realDb.outbox,
+          )..where((t) => t.id.equals(stale))).getSingle();
+          expect(retried.status, OutboxStatus.error.index);
+        },
+      );
+
+      test('hasFailed reports whether any row waits in error', () async {
+        await insertRow(status: OutboxStatus.pending);
+        await insertRow(status: OutboxStatus.sent);
+        expect(await realRepo.hasFailed(), isFalse);
+
+        await insertRow(status: OutboxStatus.error, retries: 2);
+        expect(await realRepo.hasFailed(), isTrue);
+      });
+
       test('releaseOrphanedClaims puts orphaned sending rows back in the '
           'queue', () async {
         final orphan = await insertRow(status: OutboxStatus.sending);
