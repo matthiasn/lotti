@@ -2777,9 +2777,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordings => 'Ljudinspelningar';
 
   @override
-  String get audioRecordingStatusPaused => 'Pausad';
-
-  @override
   String get audioRecordingStop => 'Stoppa';
 
   @override

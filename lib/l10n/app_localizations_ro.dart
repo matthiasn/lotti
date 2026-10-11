@@ -2809,9 +2809,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordings => 'Înregistrări audio';
 
   @override
-  String get audioRecordingStatusPaused => 'În pauză';
-
-  @override
   String get audioRecordingStop => 'Opriți';
 
   @override

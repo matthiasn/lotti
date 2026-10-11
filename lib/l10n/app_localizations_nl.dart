@@ -2780,9 +2780,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordings => 'Audio-opnames';
 
   @override
-  String get audioRecordingStatusPaused => 'Gepauzeerd';
-
-  @override
   String get audioRecordingStop => 'Stoppen';
 
   @override

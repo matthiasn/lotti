@@ -2768,9 +2768,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordings => 'Lydoptagelser';
 
   @override
-  String get audioRecordingStatusPaused => 'Sat på pause';
-
-  @override
   String get audioRecordingStop => 'Stop';
 
   @override

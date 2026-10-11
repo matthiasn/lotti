@@ -2808,9 +2808,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordings => 'Enregistrements audio';
 
   @override
-  String get audioRecordingStatusPaused => 'En pause';
-
-  @override
   String get audioRecordingStop => 'Arrêter';
 
   @override

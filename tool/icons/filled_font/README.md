@@ -44,6 +44,7 @@ Only glyphs whose outline is a **single closed silhouette** work this way:
 | Glyph | Why it is here |
 |---|---|
 | `star`, `bookmark`, `heart`, `circle`, `folder`, `moon` | one closed path; fills cleanly |
+| `pause`, `play` | not toggles: the recorder's pause and resume, solid beside its filled Stop square so the transport row speaks one glyph style. `pause` is Lucide's two bars filled, `play` its rounded triangle. |
 | `square` | not a toggle: the timer's stop control. Outlined it read as an empty checkbox on the red pill. (`circle` doubles as the timer's full-size record mark for continue.) |
 | `flag` | needed a correction — see below |
 

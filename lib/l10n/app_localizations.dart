@@ -4704,12 +4704,6 @@ abstract class AppLocalizations {
   /// **'Audio Recordings'**
   String get audioRecordings;
 
-  /// Status line above the recorder while a recording is paused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get audioRecordingStatusPaused;
-
   /// No description provided for @audioRecordingStop.
   ///
   /// In en, this message translates to:

@@ -1899,10 +1899,6 @@
   "audioRecordingRecord": "Record",
   "audioRecordingResume": "Resume",
   "audioRecordings": "Audio Recordings",
-  "audioRecordingStatusPaused": "Paused",
-  "@audioRecordingStatusPaused": {
-    "description": "Status line above the recorder while a recording is paused."
-  },
   "audioRecordingStop": "Stop",
   "audioRecordingTranscribeOption": "Transcribe",
   "@audioRecordingTranscribeOption": {

@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart'
 import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -184,11 +187,11 @@ void main() {
       });
     }
 
-    testWidgets('spans its room up to its own width, and fades out at both '
-        'ends', (tester) async {
+    testWidgets("spans its room up to the orb's diameter, and fades out "
+        'at its oldest end', (tester) async {
       for (final (room, expected) in [
-        (300.0, 300.0),
-        (900.0, RecordingLevelLine.maxWidth),
+        (150.0, 150.0),
+        (900.0, RecordingLevelVisualizer.defaultOrbSize),
       ]) {
         await pumpWith(
           tester,
@@ -211,6 +214,23 @@ void main() {
         ),
       );
       expect(mask.blendMode, BlendMode.dstIn);
+      // Only the oldest end fades: from transparent at the left to opaque,
+      // and opaque from there to the newest bar at the right.
+      final tokens = tester.element(find.byType(LiveWaveform)).designTokens;
+      final fade = RecordingLevelLine.fadeOf(tokens);
+      expect(fade.colors.first.a, 0);
+      expect(fade.colors.last.a, tokens.colors.text.highEmphasis.a);
+      expect(fade.stops!.last, lessThan(0.5));
+      expect(fade.begin, Alignment.centerLeft);
+      expect(
+        mask.shaderCallback(const Rect.fromLTWH(0, 0, 100, 10)),
+        isNotNull,
+      );
+      // Silence lies flat on a hairline in the rings' decorative tone.
+      expect(
+        tester.widget<LiveWaveform>(find.byType(LiveWaveform)).baselineColor,
+        tokens.colors.decorative.level02,
+      );
     });
 
     // A sample per recorder tick, as the controller advances progress on
@@ -229,6 +249,24 @@ void main() {
         pumpWith(tester, RecordingLevelLine(state: state));
     List<double> bars(WidgetTester tester) =>
         tester.widget<LiveWaveform>(find.byType(LiveWaveform)).amplitudes;
+
+    testWidgets("under the meter it takes the meter's width, one measure "
+        'with the look above it', (tester) async {
+      await pumpWith(
+        tester,
+        Center(
+          child: SizedBox(
+            width: 900,
+            child: RecordingLevelLine(state: _state()),
+          ),
+        ),
+        style: () async => 'analogue',
+      );
+      expect(
+        tester.widget<LiveWaveform>(find.byType(LiveWaveform)).width,
+        RecordingLevelVisualizer.defaultMeterWidth,
+      );
+    });
 
     testWidgets('keeps a bounded window of the live level, drawn as one bar '
         'per pair of samples, and holds still while paused', (tester) async {
@@ -295,88 +333,10 @@ void main() {
     });
   });
 
-  group('RecordingClock', () {
-    test('m:ss under an hour, h:mm:ss from then on, without the fraction', () {
-      expect(
-        RecordingClock.format(const Duration(seconds: 42, milliseconds: 730)),
-        '0:42',
-      );
-      expect(
-        RecordingClock.format(const Duration(minutes: 59, seconds: 59)),
-        '59:59',
-      );
-      expect(
-        RecordingClock.format(const Duration(hours: 1, minutes: 2, seconds: 3)),
-        '1:02:03',
-      );
-      expect(RecordingClock.format(const Duration(hours: 12)), '12:00:00');
-    });
-
-    for (final (name, theme) in [
-      ('dark', DesignSystemTheme.dark),
-      ('light', DesignSystemTheme.light),
-    ]) {
-      testWidgets('is the one large type — a regular heading1 in the UI face, '
-          'with digits that do not shift, in the neutral ink, read in the '
-          "host's words ($name)", (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const RecordingClock(
-              progress: Duration(seconds: 23),
-              semanticsLabel: '23 seconds',
-            ),
-            theme: theme(),
-          ),
-        );
-        final text = tester.widget<Text>(find.text('0:23'));
-        final tokens = tester.element(find.text('0:23')).designTokens;
-        final heading1 = tokens.typography.styles.heading.heading1;
-        expect(text.style?.fontFamily, heading1.fontFamily);
-        expect(text.style?.fontSize, heading1.fontSize);
-        expect(text.style?.fontWeight, tokens.typography.weight.regular);
-        expect(text.style?.fontFeatures, const [
-          FontFeature.tabularFigures(),
-        ]);
-        expect(text.style?.color, tokens.colors.text.highEmphasis);
-        expect(text.semanticsLabel, '23 seconds');
-      });
-    }
-  });
-
-  group('RecordingStatus', () {
-    for (final (paused, word, dotOf) in [
-      (false, 'Recording', (DsTokens t) => t.colors.alert.error.defaultColor),
-      (true, 'Paused', (DsTokens t) => t.colors.text.lowEmphasis),
-    ]) {
-      testWidgets('a dot, red only while live, that a reader hears as $word', (
-        tester,
-      ) async {
-        final semantics = tester.ensureSemantics();
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(RecordingStatus(paused: paused)),
-        );
-        expect(find.text(word), findsNothing, reason: 'no word on screen');
-        expect(tester.getSemantics(find.byType(RecordingStatus)).label, word);
-        final tokens = tester
-            .element(find.byType(RecordingStatus))
-            .designTokens;
-        final dot = tester.widget<Container>(
-          find.descendant(
-            of: find.byType(RecordingStatus),
-            matching: find.byType(Container),
-          ),
-        );
-        expect((dot.decoration! as BoxDecoration).color, dotOf(tokens));
-        semantics.dispose();
-      });
-    }
-  });
-
   group('RecordingStage', () {
     Future<void> pump(
       WidgetTester tester, {
       AudioRecorderStatus status = AudioRecorderStatus.recording,
-      bool showStatus = true,
       bool compact = false,
       Widget? notice,
       Widget? footer,
@@ -386,7 +346,6 @@ void main() {
       SingleChildScrollView(
         child: RecordingStage(
           state: _state(status: status),
-          showStatus: showStatus,
           compact: compact,
           levelSemanticsLabel: 'Recording live',
           announceLevel: announceLevel,
@@ -397,8 +356,8 @@ void main() {
       ),
     );
 
-    testWidgets('stacks display, time, notice, level line, controls and '
-        'footer, top to bottom', (tester) async {
+    testWidgets('stacks display, level line, notice, controls and footer, '
+        'top to bottom', (tester) async {
       await pump(
         tester,
         notice: const Text('notice'),
@@ -406,9 +365,8 @@ void main() {
       );
       final order = [
         find.byType(RecordingLevelVisualizer),
-        find.byType(RecordingClock),
-        find.text('notice'),
         find.byType(RecordingLevelLine),
+        find.text('notice'),
         find.byKey(const ValueKey('controls')),
         find.text('footer'),
       ].map(tester.getRect).toList();
@@ -421,15 +379,14 @@ void main() {
       }
     });
 
-    testWidgets('the live dot leads the time on its line, and the digits — '
-        'not dot and digits — sit on the axis', (tester) async {
+    testWidgets("the level line takes the orb's measure, on its axis", (
+      tester,
+    ) async {
       await pump(tester);
-      final dot = tester.getRect(find.byType(RecordingStatus));
-      final clock = tester.getRect(find.byType(RecordingClock));
-      final line = tester.getRect(find.byType(RecordingLevelLine));
-      expect(dot.right, lessThan(clock.left));
-      expect(dot.center.dy, closeTo(clock.center.dy, 1));
-      expect(clock.center.dx, closeTo(line.center.dx, 0.5));
+      final orb = tester.getRect(find.byType(AiVoiceInputShader));
+      final line = tester.getRect(find.byType(LiveWaveform));
+      expect(line.width, closeTo(orb.width, 0.5));
+      expect(line.center.dx, closeTo(orb.center.dx, 0.5));
     });
 
     testWidgets('one column no wider than the level line, centred in a wide '
@@ -455,7 +412,6 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pump(tester, compact: true);
       expect(find.byType(RecordingLevelVisualizer), findsNothing);
-      expect(find.byType(RecordingClock), findsOneWidget);
       expect(
         tester.getSemantics(find.byType(RecordingLevelLine)).label,
         'Recording live',
@@ -463,17 +419,17 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('no dot where the host says the take is live, or before one '
-        'runs; paused, the dot rests', (tester) async {
-      await pump(tester, showStatus: false);
-      expect(find.byType(RecordingStatus), findsNothing);
-      await pump(tester, status: AudioRecorderStatus.stopped);
-      expect(find.byType(RecordingStatus), findsNothing);
-      await pump(tester, status: AudioRecorderStatus.paused);
-      expect(
-        tester.widget<RecordingStatus>(find.byType(RecordingStatus)).paused,
-        isTrue,
-      );
+    testWidgets('compact tightens the gaps between the line, controls and '
+        'footer by a step', (tester) async {
+      double gapBelowLine() =>
+          tester.getRect(find.byKey(const ValueKey('controls'))).top -
+          tester.getRect(find.byType(RecordingLevelLine)).bottom;
+
+      await pump(tester, footer: const Text('footer'));
+      final tokens = tester.element(find.byType(RecordingStage)).designTokens;
+      expect(gapBelowLine(), closeTo(tokens.spacing.step6, 0.5));
+      await pump(tester, compact: true, footer: const Text('footer'));
+      expect(gapBelowLine(), closeTo(tokens.spacing.step4, 0.5));
     });
 
     for (final announce in [true, false]) {
@@ -545,6 +501,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           RecordingTransportControls(
             paused: paused,
+            progress: const Duration(seconds: 65),
             busy: busy,
             discardLabel: discardLabel,
             onDiscard: () => calls.add('discard'),
@@ -566,11 +523,11 @@ void main() {
       final stop = tester.getRect(key('stop_recording'));
       expect(discard.right, lessThan(stop.left));
       expect(stop.right, lessThan(pause.left));
-      // The quiet rings are full 48px targets; Stop is the bigger disc, and
-      // all three share a centre line.
+      // The quiet rings and the Stop pill are one height, full 48px
+      // targets, on one centre line.
       expect(discard.height, greaterThanOrEqualTo(kMinInteractiveDimension));
-      expect(pause.height, greaterThanOrEqualTo(kMinInteractiveDimension));
-      expect(stop.height, greaterThan(pause.height));
+      expect(pause.height, closeTo(discard.height, 0.5));
+      expect(stop.height, closeTo(discard.height, 0.5));
       expect(discard.center.dy, closeTo(stop.center.dy, 0.5));
       expect(pause.center.dy, closeTo(stop.center.dy, 0.5));
 
@@ -579,55 +536,43 @@ void main() {
       await tester.tap(key('stop_recording'));
       expect(calls, ['discard', 'pause', 'stop']);
 
-      // Stop is the one filled red disc, its square in the alert-fill ink.
-      final tokens = tester.element(key('stop_recording')).designTokens;
-      final fills = tester
-          .widgetList<Container>(
-            find.descendant(
-              of: key('stop_recording'),
-              matching: find.byType(Container),
-            ),
-          )
-          .map((c) => (c.decoration as BoxDecoration?)?.color)
-          .toList();
-      expect(fills, [
-        tokens.colors.alert.error.defaultColor,
-        dsTokensLight.colors.text.onInteractiveAlert,
-      ]);
+      // Stop is the app's running-clock pill — a task's Track time — with
+      // the take's time inside it.
+      final pill = tester.widget<DesignSystemTimerPill>(
+        find.descendant(
+          of: key('stop_recording'),
+          matching: find.byType(DesignSystemTimerPill),
+        ),
+      );
+      expect(pill.running, isTrue);
+      expect(pill.label, '01:05');
+      expect(find.text('01:05'), findsOneWidget);
     });
 
-    testWidgets('the stop square is white on red in the dark theme too', (
-      tester,
-    ) async {
+    testWidgets('Stop is one button named Stop whose value is the time, in '
+        "the host's words when it has them", (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester);
+      expect(tester.getSemantics(key('stop_recording')).label, 'Stop');
+      expect(tester.getSemantics(key('stop_recording')).value, '01:05');
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           RecordingTransportControls(
             paused: false,
+            progress: const Duration(seconds: 65),
+            progressSemanticsLabel: '1 minute 5 seconds',
             onDiscard: () {},
             onTogglePause: () {},
             onStop: () {},
           ),
-          theme: DesignSystemTheme.dark(),
         ),
       );
-      final tokens = tester.element(key('stop_recording')).designTokens;
-      final square = tester
-          .widgetList<Container>(
-            find.descendant(
-              of: key('stop_recording'),
-              matching: find.byType(Container),
-            ),
-          )
-          .last;
       expect(
-        (square.decoration! as BoxDecoration).color,
-        isNot(tokens.colors.text.onInteractiveAlert),
-        reason: "the dark theme's alert ink is near-black",
+        tester.getSemantics(key('stop_recording')).value,
+        '1 minute 5 seconds',
       );
-      expect(
-        (square.decoration! as BoxDecoration).color,
-        dsTokensLight.colors.text.onInteractiveAlert,
-      );
+      semantics.dispose();
     });
 
     testWidgets('each control is one button by its name; paused, the pause '
@@ -641,19 +586,22 @@ void main() {
       await pump(tester, paused: true);
       expect(tester.getSemantics(key('pause_resume_button')).label, 'Resume');
       expect(tester.getSemantics(key('cancel_recording')).label, 'Cancel');
-      expect(find.byIcon(LottiIcons.play), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
       semantics.dispose();
     });
 
-    testWidgets('on a 150px screen the row wraps: nothing overflows and '
-        'every control stays on screen and tappable', (tester) async {
+    testWidgets('on a 280px screen at 3x text the row wraps: nothing '
+        'overflows and every control stays on screen and tappable', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           Center(
             child: SizedBox(
-              width: 150,
+              width: 280,
               child: RecordingTransportControls(
                 paused: false,
+                progress: const Duration(seconds: 65),
                 onDiscard: () => calls.add('discard'),
                 onTogglePause: () => calls.add('pause'),
                 onStop: () => calls.add('stop'),
@@ -661,7 +609,7 @@ void main() {
             ),
           ),
           mediaQueryData: const MediaQueryData(
-            size: Size(150, 800),
+            size: Size(280, 800),
             textScaler: TextScaler.linear(3),
           ),
         ),
@@ -683,6 +631,56 @@ void main() {
       expect(calls, ['stop', 'pause']);
     });
 
+    for (final (haptics, expected) in [
+      (
+        true,
+        ['HapticFeedbackType.lightImpact', 'HapticFeedbackType.mediumImpact'],
+      ),
+      (false, <String>[]),
+    ]) {
+      testWidgets('a tap is felt — firmer on Stop — only with haptics on '
+          '(haptics: $haptics)', (tester) async {
+        final felt = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              felt.add(call.arguments as String);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            RecordingTransportControls(
+              paused: false,
+              progress: const Duration(seconds: 65),
+              onDiscard: () => calls.add('discard'),
+              onTogglePause: () => calls.add('pause'),
+              onStop: () => calls.add('stop'),
+            ),
+            overrides: [
+              celebrationPreferencesProvider.overrideWithValue(
+                const CelebrationPreferences.allEnabled().copyWith(
+                  haptics: haptics,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.tap(key('pause_resume_button'));
+        await tester.tap(key('stop_recording'));
+        expect(calls, ['pause', 'stop']);
+        expect(felt, expected);
+      });
+    }
+
     testWidgets('busy, nothing takes a tap', (tester) async {
       await pump(tester, busy: true);
       for (final name in [
@@ -700,6 +698,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           RecordingTransportControls(
             paused: false,
+            progress: const Duration(seconds: 65),
             discardKey: const ValueKey('host-discard'),
             pauseKey: const ValueKey('host-pause'),
             stopKey: const ValueKey('host-stop'),

@@ -14,8 +14,8 @@ import 'package:material_ui/material_ui.dart';
 /// missing trailing slots render as a small idle baseline so the
 /// strip never collapses to nothing while we wait for the first
 /// amplitude sample to land. With a [baselineColor] that idle baseline
-/// is one hairline across the strip instead, and only sound draws a bar —
-/// silence reads as flat, not as a row of dots.
+/// is one hairline instead, from the oldest sample to now, and only sound
+/// draws a bar — silence reads as flat, not as a row of dots.
 class LiveWaveform extends StatelessWidget {
   const LiveWaveform({
     required this.amplitudes,
@@ -103,16 +103,6 @@ class LiveWaveformPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final baseline = baselineColor;
-    if (baseline != null) {
-      final y = size.height / 2;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        Paint()
-          ..color = baseline
-          ..strokeWidth = baselineWidth,
-      );
-    }
     // Over a baseline, silence draws nothing of its own.
     final idle = baseline == null ? _idleFraction : 0.0;
 
@@ -122,6 +112,25 @@ class LiveWaveformPainter extends CustomPainter {
     final slice = reducedMotion
         ? const <double>[]
         : amplitudes.sublist(math.max(0, amplitudes.length - barCount));
+
+    if (baseline != null) {
+      // From the oldest sample to now, so the line grows with the take
+      // rather than lying across the strip like a divider — or, standing
+      // still for a reduced-motion user, the whole strip.
+      final start = reducedMotion
+          ? 0.0
+          : (barCount - math.min(slice.length, barCount)) * spacing;
+      final y = size.height / 2;
+      if (start < size.width) {
+        canvas.drawLine(
+          Offset(start, y),
+          Offset(size.width, y),
+          Paint()
+            ..color = baseline
+            ..strokeWidth = baselineWidth,
+        );
+      }
+    }
 
     for (var i = 0; i < barCount; i++) {
       final double fraction;

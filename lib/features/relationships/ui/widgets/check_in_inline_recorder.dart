@@ -50,7 +50,6 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     required this.onFailed,
     this.categoryId,
     this.adoptRunning = false,
-    this.showStatus = false,
     this.compact = false,
     super.key,
   });
@@ -67,11 +66,6 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
 
   /// Attach to the recording already running rather than starting one.
   final bool adoptRunning;
-
-  /// Whether the live dot leads the time — where the host has no status
-  /// line of its own, as the check-in page's dock has none and the
-  /// composer's header does.
-  final bool showStatus;
 
   /// Whether to leave the orb or meter out, as the check-in page's dock
   /// does, so dictating never covers the check-in it adds to.
@@ -169,7 +163,6 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
     return RecordingStage(
       key: const ValueKey('check-in-inline-recorder'),
       state: state,
-      showStatus: widget.showStatus,
       compact: widget.compact,
       // Named, not live: the header's status line announces recording and
       // paused, so a reader hears each transition once.
@@ -178,10 +171,14 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           : paused
           ? messages.checkInStatusPaused
           : null,
-      // In words for a reader: "23 seconds", not "zero colon two three".
-      clockSemanticsLabel: checkInSpokenClockLabel(messages, state.progress),
       controls: RecordingTransportControls(
         paused: paused,
+        progress: state.progress,
+        // In words for a reader: "23 seconds", not "zero colon two three".
+        progressSemanticsLabel: checkInSpokenClockLabel(
+          messages,
+          state.progress,
+        ),
         // Inert while a stop or discard is in flight, and until the take is
         // actually running: before `record` lands, or after a refused
         // start, there is nothing to pause or stop.

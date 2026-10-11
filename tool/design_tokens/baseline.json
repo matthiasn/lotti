@@ -228,7 +228,6 @@
     "lib/features/settings/ui/pages/settings_desktop_page.dart": {"spacing":1},
     "lib/features/speech/ui/widgets/audio_player.dart": {"spacing":1},
     "lib/features/speech/ui/widgets/progress/audio_progress_bar.dart": {"color":5},
-    "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": {"spacing":1},
     "lib/features/speech/ui/widgets/recording/glass_record_button.dart": {"color":1},
     "lib/features/speech/ui/widgets/recording/vu_meter_painter.dart": {"typography":3,"color":11},
     "lib/features/sync/ui/provisioned/add_device_page.dart": {"color":1},

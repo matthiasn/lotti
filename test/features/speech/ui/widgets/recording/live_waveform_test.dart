@@ -44,16 +44,38 @@ void main() {
       expect(canvas.bars, hasLength(10));
     });
 
-    test('with one, silence is a single hairline across the strip at its '
-        'middle, in its colour and weight, and only sound draws a bar', () {
+    test('with one, silence is a single hairline at the middle, in its '
+        'colour and weight, from the oldest sample to now — and only sound '
+        'draws a bar', () {
+      // Four samples of ten slots: the line starts at the seventh slot.
       final canvas = paint(const [0, 0, 0.8, 0], baseline: hairline);
       final (start, end, linePaint) = canvas.lines.single;
-      expect(start, const Offset(0, 12));
+      expect(start, const Offset(120, 12));
       expect(end, const Offset(200, 12));
       expect(linePaint.color.toARGB32(), hairline.toARGB32());
       expect(linePaint.strokeWidth, 2);
       expect(canvas.bars, hasLength(1));
       expect(canvas.bars.single.height, closeTo(24 * 0.8, 0.01));
+    });
+
+    test('before the first sample there is no line yet; a full window '
+        'spans the strip', () {
+      expect(paint(const [], baseline: hairline).lines, isEmpty);
+      final full = paint(List.filled(12, 0), baseline: hairline);
+      expect(full.lines.single.$1, const Offset(0, 12));
+    });
+
+    test('standing still for reduced motion, the line spans the strip', () {
+      final canvas = _CountingCanvas();
+      LiveWaveformPainter(
+        barCount: 10,
+        color: ink,
+        amplitudes: const [0.5],
+        reducedMotion: true,
+        baselineColor: hairline,
+      ).paint(canvas, size);
+      expect(canvas.lines.single.$1, const Offset(0, 12));
+      expect(canvas.bars, isEmpty);
     });
 
     test('a change of baseline repaints', () {

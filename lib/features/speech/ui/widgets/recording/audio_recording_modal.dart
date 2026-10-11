@@ -192,6 +192,7 @@ class _AudioRecordingModalContentState
           ? RecordingTransportControls(
               key: const ValueKey('stop_controls'),
               paused: state.status == AudioRecorderStatus.paused,
+              progress: state.progress,
               busy: _terminalActionInProgress,
               onDiscard: _cancel,
               onTogglePause: () => state.status == AudioRecorderStatus.paused
