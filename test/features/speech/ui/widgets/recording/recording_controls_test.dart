@@ -189,6 +189,41 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('on a 200px screen at 3x text the row wraps: nothing '
+        'overflows and Stop stays on screen and tappable', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Center(
+            child: SizedBox(
+              width: 200,
+              child: RecordingTransportControls(
+                paused: false,
+                onDiscard: () => calls.add('discard'),
+                onTogglePause: () => calls.add('pause'),
+                onStop: () => calls.add('stop'),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(
+            size: Size(200, 800),
+            textScaler: TextScaler.linear(3),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final row = tester.getRect(find.byType(RecordingTransportControls));
+      final stop = tester.getRect(key('stop_recording'));
+      final pause = tester.getRect(key('pause_resume_button'));
+      expect(stop.left, greaterThanOrEqualTo(row.left - 0.5));
+      expect(stop.right, lessThanOrEqualTo(row.right + 0.5));
+      // Stop took a line of its own beneath the round controls.
+      expect(stop.top, greaterThan(pause.bottom - 0.5));
+      await tester.tap(key('stop_recording'));
+      expect(calls, ['stop']);
+    });
+
     testWidgets('busy, nothing takes a tap', (tester) async {
       await pump(tester, busy: true);
       for (final name in [

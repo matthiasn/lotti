@@ -146,8 +146,13 @@ class RecordingTransportControls extends StatelessWidget {
     final pauseLabel = paused
         ? messages.audioRecordingResume
         : messages.audioRecordingPause;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // Wraps rather than overflows: on a narrow phone or at a large text
+    // size Stop takes a line of its own instead of leaving the screen.
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: tokens.spacing.step4,
+      runSpacing: tokens.spacing.step3,
       children: [
         // Grey and round: the destructive act is the quiet one, so a
         // fumbled pause can never read as a discard.
@@ -159,7 +164,6 @@ class RecordingTransportControls extends StatelessWidget {
           border: tokens.colors.decorative.level02,
           onTap: busy ? null : onDiscard,
         ),
-        SizedBox(width: tokens.spacing.step4),
         // Accent-tinted: a benign transport control.
         _RoundControl(
           key: pauseKey,
@@ -170,7 +174,6 @@ class RecordingTransportControls extends StatelessWidget {
           fill: tokens.colors.surface.selected,
           onTap: busy ? null : onTogglePause,
         ),
-        SizedBox(width: tokens.spacing.step4),
         _StopPill(key: stopKey, onTap: busy ? null : onStop),
       ],
     );
@@ -266,8 +269,13 @@ class _StopPill extends StatelessWidget {
           opacity: enabled ? 1 : tokens.colors.text.lowEmphasis.a,
           duration: MotionDurations.short4,
           child: Container(
-            height: tokens.spacing.step9,
-            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step7),
+            // A floor, not a fixed height: a large text size grows the pill
+            // rather than clipping its word.
+            constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step7,
+              vertical: tokens.spacing.step2,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               border: Border.all(color: red, width: 2),
@@ -281,10 +289,16 @@ class _StopPill extends StatelessWidget {
                   decoration: BoxDecoration(color: red, shape: BoxShape.circle),
                 ),
                 SizedBox(width: tokens.spacing.step3),
-                Text(
-                  label,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: red,
+                // Shrinks before it overflows, on a screen narrower than
+                // the pill at its text size.
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: red,
+                    ),
                   ),
                 ),
               ],
