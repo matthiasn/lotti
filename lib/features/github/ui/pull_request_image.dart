@@ -90,6 +90,119 @@ Map<String, int> tableSharesOf(String markdown) {
   return shares;
 }
 
+/// A code span — left as written — or an HTML image tag.
+final _codeSpanOrImageTag = RegExp(
+  r'(`+)[\s\S]*?\1|<img\b[^>]*>',
+  caseSensitive: false,
+);
+
+/// The opening line of a fenced code block, and its fence: three or more
+/// backticks or tildes, at any indent, since a fence nested in a list item
+/// is indented with it.
+final _fence = RegExp(r'^\s*(`{3,}|~{3,})');
+
+/// A line indented four spaces, or a tab: code, when it opens a block.
+final _indented = RegExp(r'^( {4}|\t)');
+
+/// A list item's first line: its bullet or number, then a space.
+final _listItem = RegExp(r'^\s*([-*+]|\d+[.)])\s');
+
+/// One attribute of an HTML tag, its value double-, single- or unquoted.
+final _attribute = RegExp(
+  r'''([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))''',
+);
+
+/// [markdown] with each HTML `<img>` tag written as a markdown image, which
+/// is all the renderer reads: a description sizing its screenshots in a
+/// table — `<img src="…" width="320">`, as GitHub shows it — would show the
+/// tag as text instead. The tag's pixel `width` and `height` become the alt
+/// text the renderer sizes an image by — `![320x200](…)`, or `![320x](…)`
+/// for a width alone, since a bare number is no size to it; its own alt text
+/// is dropped, since the renderer would read digits in it as a size. A tag
+/// without a `src`, and one inside code, stays as written — a code span, a
+/// fenced block of backticks or tildes, or an indented block, as GitHub
+/// reads them — so a description quoting the tag shows what it quotes.
+String htmlImagesAsMarkdown(String markdown) {
+  final out = <String>[];
+  final text = <String>[];
+  void flushText() {
+    if (text.isEmpty) return;
+    out.add(_imagesOfText(text.join('\n')));
+    text.clear();
+  }
+
+  String? fence;
+  var indentedCode = false;
+  var inList = false;
+  var afterBlank = true;
+  for (final line in markdown.split('\n')) {
+    final blank = line.trim().isEmpty;
+    final opening = _fence.firstMatch(line)?.group(1);
+    final bool code;
+    if (fence != null) {
+      // Closed by a fence of the same character, at least as long.
+      final closing = line.trim();
+      if (closing.startsWith(fence) &&
+          closing.replaceAll(fence[0], '').isEmpty) {
+        fence = null;
+      }
+      code = true;
+    } else if (opening != null) {
+      fence = opening;
+      code = true;
+    } else if (!blank &&
+        _indented.hasMatch(line) &&
+        (indentedCode || (afterBlank && !inList))) {
+      // Indented code opens only after a blank line, and not under a list
+      // item, whose own indented lines are its content.
+      indentedCode = true;
+      code = true;
+    } else {
+      code = false;
+      if (!blank) {
+        indentedCode = false;
+        if (_listItem.hasMatch(line)) {
+          inList = true;
+        } else if (afterBlank && !line.startsWith(' ')) {
+          inList = false;
+        }
+      }
+    }
+    if (code) {
+      flushText();
+      out.add(line);
+    } else {
+      text.add(line);
+    }
+    afterBlank = blank;
+  }
+  flushText();
+  return out.join('\n');
+}
+
+/// [text], which holds no code block, with each image tag outside a code
+/// span written as a markdown image.
+String _imagesOfText(String text) =>
+    text.replaceAllMapped(_codeSpanOrImageTag, (match) {
+      if (match.group(1) != null) return match[0]!;
+      final attributes = {
+        for (final attribute in _attribute.allMatches(match[0]!))
+          attribute[1]!.toLowerCase():
+              attribute[2] ?? attribute[3] ?? attribute[4]!,
+      };
+      final src = attributes['src']?.trim();
+      if (src == null || src.isEmpty) return match[0]!;
+      int? pixels(String? value) =>
+          int.tryParse(value?.trim().replaceFirst(RegExp(r'px$'), '') ?? '');
+      final width = pixels(attributes['width']);
+      final height = pixels(attributes['height']);
+      final size = width == null && height == null
+          ? ''
+          : '${width ?? ''}x${height ?? ''}';
+      final url = src.replaceAll('&amp;', '&').replaceAll(' ', '%20');
+      return '![$size]($url)';
+    });
+
 /// One image of a pull request description, fetched from its own URL.
 ///
 /// While it loads, a quiet box the size of a thumbnail; once it has, the

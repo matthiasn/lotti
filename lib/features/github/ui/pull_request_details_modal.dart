@@ -20,6 +20,7 @@ import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/sticky_action_bar_clearance.dart';
 import 'package:lotti/widgets/modal/wide_wolt_dialog_type.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -38,27 +39,32 @@ Future<void> showPullRequestDetailsModal(
   BuildContext context, {
   required String taskId,
   required PullRequestEntry entry,
-}) =>
-    // The bar holds one line: the reference fits it, a title may not, so the
-    // title opens the body instead.
-    ModalUtils.showSinglePageModal<void>(
-      context: context,
-      // Where the pull request lives, quietly; its number leads its title,
-      // which opens the body as the heading.
-      titleWidget: ModalUtils.modalTitle(
-        context,
-        '${entry.data.owner}/${entry.data.repo}',
-        quiet: true,
-      ),
-      // Most of a desktop window: a description lays its screenshots side
-      // by side, and in the standard column they stack, each clipped.
-      modalTypeBuilderOverride: (modalContext) =>
-          MediaQuery.sizeOf(modalContext).width < WoltModalConfig.pageBreakpoint
-          ? WoltModalType.bottomSheet()
-          : const WideWoltDialogType(),
-      // Within reach however long the description runs; at its own width,
-      // since a button the width of that dialog would be a band.
-      stickyActionBar: DesignSystemModalActionBar(
+}) {
+  // The action bar floats over the description; without its height of room
+  // under the text, the description's last lines could never scroll out
+  // from behind it.
+  final clearance = StickyActionBarClearance();
+  // The bar holds one line: the reference fits it, a title may not, so the
+  // title opens the body instead.
+  return ModalUtils.showSinglePageModal<void>(
+    context: context,
+    // Where the pull request lives, quietly; its number leads its title,
+    // which opens the body as the heading.
+    titleWidget: ModalUtils.modalTitle(
+      context,
+      '${entry.data.owner}/${entry.data.repo}',
+      quiet: true,
+    ),
+    // Most of a desktop window: a description lays its screenshots side
+    // by side, and in the standard column they stack, each clipped.
+    modalTypeBuilderOverride: (modalContext) =>
+        MediaQuery.sizeOf(modalContext).width < WoltModalConfig.pageBreakpoint
+        ? WoltModalType.bottomSheet()
+        : const WideWoltDialogType(),
+    // Within reach however long the description runs; at its own width,
+    // since a button the width of that dialog would be a band.
+    stickyActionBar: clearance.bar(
+      DesignSystemModalActionBar(
         glass: true,
         layout: DesignSystemModalActionBarLayout.compactPrimary,
         padding: EdgeInsets.all(context.designTokens.spacing.step5),
@@ -74,9 +80,12 @@ Future<void> showPullRequestDetailsModal(
           ),
         ),
       ),
-      builder: (modalContext) =>
-          PullRequestDetails(taskId: taskId, entry: entry),
-    );
+    ),
+    builder: (modalContext) => clearance.content(
+      PullRequestDetails(taskId: taskId, entry: entry),
+    ),
+  );
+}
 
 /// Where [entry]'s pull request lives on GitHub: the URL GitHub reported,
 /// or the one its reference spells before the first read.
@@ -188,7 +197,9 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
     final quiet = styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    final description = snapshot?.body?.trim() ?? '';
+    // Its HTML images as markdown ones, so a screenshot table written with
+    // `<img>` tags shows its screenshots rather than the tags.
+    final description = htmlImagesAsMarkdown(snapshot?.body?.trim() ?? '');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
