@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -306,6 +307,41 @@ void main() {
       expect(
         stored[MediaRepairService.attemptsSettingsKey],
         '{"orphan":1}',
+      );
+    });
+  });
+
+  test('an older flush finishing last cannot store its counts over a newer '
+      "flush's", () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final firstEnqueue = Completer<void>();
+      var enqueues = 0;
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) {
+        enqueues++;
+        return enqueues == 1 ? firstEnqueue.future : Future<void>.value();
+      });
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settingsBackedBy(stored),
+        debounce: debounce,
+      );
+      addTearDown(service.dispose);
+
+      service.reportMissing(entryId: 'first', relativePath: '/images/1');
+      async.elapse(debounce);
+      service.reportMissing(entryId: 'second', relativePath: '/images/2');
+      unawaited(service.flushPendingForTesting());
+      async.flushMicrotasks();
+      firstEnqueue.complete();
+      async.flushMicrotasks();
+
+      expect(enqueues, 2);
+      expect(
+        jsonDecode(stored[MediaRepairService.attemptsSettingsKey]!),
+        {'first': 1, 'second': 1},
       );
     });
   });

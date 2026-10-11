@@ -193,7 +193,8 @@ abandoned, and a tracking cap so the pending set cannot grow without limit.
 The attempt counts are kept in `SettingsDb` (`mediaRepairAttempts`), so a
 restart does not reset the cap and request the same unanswerable blobs on
 every launch. They are saved only once the request is queued: a failed
-enqueue costs no attempt, in memory or on disk. Every holder still answers a request: duplicate uploads cost
+enqueue costs no attempt, in memory or on disk. Flushes run one at a time,
+so an older flush cannot store its counts over a newer one's. Every holder still answers a request: duplicate uploads cost
 bandwidth, not data, and choosing one responder would need an origin host
 journal entries do not carry ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 

@@ -337,6 +337,8 @@ void main() {
           scheduledFor: fixedNow,
           vectorClock: const VectorClock({'host-a': 1}),
           originatingHostId: 'host-a',
+          // As `create` writes it: the content carries the write's clock.
+          contentVectorClock: const VectorClock({'host-a': 1}),
         );
         await notificationsDb.upsertNotification(old);
         await notificationsDb.upsertNotification(replacement);
@@ -486,6 +488,8 @@ void main() {
           scheduledFor: fixedNow,
           vectorClock: const VectorClock({'host-a': 1}),
           originatingHostId: 'host-a',
+          // As `create` writes it: the content carries the write's clock.
+          contentVectorClock: const VectorClock({'host-a': 1}),
         );
         await notificationsDb.upsertNotification(placeholder);
         clearInteractions(updateNotifications);
@@ -1658,6 +1662,7 @@ NotificationEntity _entityForCreate({
   DateTime? seenAt,
   DateTime? actedOnAt,
   DateTime? deletedAt,
+  VectorClock? contentVectorClock,
 }) {
   return NotificationEntity.taskSuggestion(
     meta: NotificationMeta(
@@ -1670,6 +1675,7 @@ NotificationEntity _entityForCreate({
       deletedAt: deletedAt,
       vectorClock: vectorClock,
       originatingHostId: originatingHostId,
+      contentVectorClock: contentVectorClock,
     ),
     linkedTaskId: linkedTaskId,
     suggestionCount: 2,

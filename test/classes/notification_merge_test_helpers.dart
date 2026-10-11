@@ -182,7 +182,14 @@ class GeneratedFullMergeScenario {
     suggestionCount: incomingUpdatedSlot + 10,
   );
 
-  NotificationEntity? get updatedAtWinner {
+  /// The content winner the merge must pick: the higher content rank (each
+  /// counter of the content clock plus one, summed), then the later
+  /// `updatedAt`; null when both tie and the canonical content decides.
+  NotificationEntity? get expectedContentWinner {
+    int rank(NotificationEntity e) => e.meta.contentVectorClock!.vclock.values
+        .fold(0, (sum, counter) => sum + counter + 1);
+    final byRank = rank(existing).compareTo(rank(incoming));
+    if (byRank != 0) return byRank > 0 ? existing : incoming;
     final comparison = existing.meta.updatedAt.compareTo(
       incoming.meta.updatedAt,
     );

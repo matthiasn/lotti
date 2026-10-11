@@ -45,10 +45,15 @@ protocol assumes. It also found two specs that no longer describe the code.
   re-wording stamps `contentVectorClock` with the write's clock, and state
   patches leave it alone. The row clock cannot order content: it also absorbs
   lifecycle patches, so a mark-seen that reached a peer before the re-wording
-  would make the stale words look newer. Content that follows the other wins;
-  the merged content clock is the union of both. Concurrent versions, and
-  rows written before the field existed, keep last-writer-wins on
-  `updatedAt`, then canonical content.
+  would make the stale words look newer. Content is the maximum of one total
+  order: the content rank (each counter of the content clock plus one,
+  summed, which grows along every causal step), then `updatedAt`, then
+  canonical content. Content that follows the other therefore wins, and
+  every device settles on the same words whatever order three or more
+  versions arrive in. "Causal first, timestamp for concurrent versions" is
+  not associative: merging A with a concurrent B first could keep A against
+  a C that follows it. The merged row keeps the winner's own content clock,
+  and a row written before the field existed ranks below any with one.
 - **Counters survive restores.**
   - At startup `VectorClockService` raises the next counter above the
     highest counter of this host that the sequence log records.

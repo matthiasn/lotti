@@ -148,7 +148,19 @@ class MediaRepairService {
   /// stay pending and a fresh debounce window is armed for them, so a large
   /// backlog drains in successive requests instead of one oversized envelope.
   /// Disposal during an await must not send or restore cleared retry state.
-  Future<void> _flush() async {
+  ///
+  /// Flushes run one at a time, each through its enqueue and save: an older
+  /// flush finishing last would otherwise store its older snapshot over the
+  /// counts a newer one saved.
+  Future<void> _flush() {
+    final run = _flushTail.then((_) => _flushOnce());
+    _flushTail = run.then((_) {}, onError: (Object _) {});
+    return run;
+  }
+
+  Future<void> _flushTail = Future<void>.value();
+
+  Future<void> _flushOnce() async {
     if (_disposed || _pending.isEmpty) return;
     await _loaded;
     if (_disposed) return;

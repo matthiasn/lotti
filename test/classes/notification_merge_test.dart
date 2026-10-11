@@ -84,42 +84,43 @@ void main() {
       }
     });
 
-    test('a row without a content clock falls back to the timestamp', () {
+    test('a row without a content clock ranks below any with one, whatever '
+        'the timestamps say', () {
       final legacy = buildNotification(
         id: 'legacy',
         title: 'Legacy words',
         updatedAt: DateTime.utc(2026, 5, 17, 23),
-        vectorClock: const VectorClock({'host-a': 1}),
+        vectorClock: const VectorClock({'host-a': 5}),
         legacyContent: true,
       );
-      // The row clocks order these, but a legacy row's clock may carry state
-      // patches, so only the timestamp decides.
       final reword = buildNotification(
         id: 'legacy',
         title: 'Reworded',
         updatedAt: DateTime.utc(2026, 5, 17, 9),
-        vectorClock: const VectorClock({'host-a': 5}),
+        vectorClock: const VectorClock({'host-a': 1}),
       );
 
       for (final merged in [
         NotificationMerge.mergeFull(legacy, reword),
         NotificationMerge.mergeFull(reword, legacy),
       ]) {
-        expect(merged.title, 'Legacy words');
-        expect(merged.meta.contentVectorClock, isNull);
+        expect(merged.title, 'Reworded');
+        expect(
+          merged.meta.contentVectorClock,
+          const VectorClock({'host-a': 1}),
+        );
       }
     });
 
-    test('concurrent content merges both content clocks, so a late copy of '
-        'the losing version stays behind', () {
+    test('the merge keeps the winning content clock, not a union of both', () {
       final earlier = buildNotification(
-        id: 'union',
+        id: 'kept',
         title: 'Earlier',
         updatedAt: DateTime.utc(2026, 5, 17, 9),
         vectorClock: const VectorClock({'host-a': 1}),
       );
       final later = buildNotification(
-        id: 'union',
+        id: 'kept',
         title: 'Later',
         updatedAt: DateTime.utc(2026, 5, 17, 10),
         vectorClock: const VectorClock({'host-b': 1}),
@@ -127,15 +128,57 @@ void main() {
 
       final merged = NotificationMerge.mergeFull(earlier, later);
 
+      expect(merged.title, 'Later');
+      expect(merged.meta.contentVectorClock, const VectorClock({'host-b': 1}));
       expect(
-        merged.meta.contentVectorClock,
+        merged.meta.vectorClock,
         const VectorClock({'host-a': 1, 'host-b': 1}),
       );
       expect(NotificationMerge.mergeFull(merged, earlier).title, 'Later');
     });
 
-    test('a malformed content clock orders nothing; the timestamp '
-        'decides', () {
+    test('three versions settle on the same content in every order of '
+        'arrival', () {
+      // A runs a fast wall clock; B is concurrent with it; C follows A.
+      final a = buildNotification(
+        id: 'three',
+        title: 'A',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'a': 1}),
+      );
+      final b = buildNotification(
+        id: 'three',
+        title: 'B',
+        updatedAt: DateTime.utc(2026, 5, 17, 12),
+        vectorClock: const VectorClock({'b': 1}),
+      );
+      final c = buildNotification(
+        id: 'three',
+        title: 'C',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'a': 1, 'c': 1}),
+      );
+      final orders = [
+        [a, b, c],
+        [a, c, b],
+        [b, a, c],
+        [b, c, a],
+        [c, a, b],
+        [c, b, a],
+      ];
+
+      final titles = {
+        for (final order in orders)
+          NotificationMerge.mergeFull(
+            NotificationMerge.mergeFull(order[0], order[1]),
+            order[2],
+          ).title,
+      };
+
+      expect(titles, {'C'});
+    });
+
+    test('a malformed content clock ranks like none', () {
       final malformed = buildNotification(
         id: 'malformed',
         title: 'Malformed but later',
@@ -150,14 +193,8 @@ void main() {
         vectorClock: const VectorClock({'host-a': 2}),
       );
 
-      expect(
-        NotificationMerge.mergeFull(ordered, malformed).title,
-        'Malformed but later',
-      );
-      expect(
-        NotificationMerge.mergeFull(malformed, ordered).title,
-        'Malformed but later',
-      );
+      expect(NotificationMerge.mergeFull(ordered, malformed).title, 'Earlier');
+      expect(NotificationMerge.mergeFull(malformed, ordered).title, 'Earlier');
     });
 
     test('concurrent versions still fall back to the timestamp', () {
@@ -384,7 +421,7 @@ void main() {
           reason: '$scenario',
         );
 
-        final expectedWinner = scenario.updatedAtWinner;
+        final expectedWinner = scenario.expectedContentWinner;
         if (expectedWinner != null) {
           expectContentMatches(forward, expectedWinner);
           expect(
