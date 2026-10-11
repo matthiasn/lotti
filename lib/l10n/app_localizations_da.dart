@@ -2768,6 +2768,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordings => 'Lydoptagelser';
 
   @override
+  String get audioRecordingStatusPaused => 'Sat på pause';
+
+  @override
   String get audioRecordingStop => 'Stop';
 
   @override
@@ -15516,10 +15519,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncStepMeasurables => 'Målbare ting';
 
   @override
-  String get syncStepSavedTaskFilters => 'Gemte opgavefiltre';
+  String get syncStepPreferences => 'Tema, hilsen og flag';
 
   @override
-  String get syncStepPreferences => 'Tema, hilsen og flag';
+  String get syncStepSavedTaskFilters => 'Gemte opgavefiltre';
 
   @override
   String get syncStepSpeechDictionary => 'Taleordbog';

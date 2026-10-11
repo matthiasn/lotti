@@ -685,7 +685,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -822,7 +822,7 @@ void main() {
         await tester.tap(find.text('Show Modal'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(results, isEmpty);
@@ -933,7 +933,7 @@ void main() {
             isEmpty,
           );
 
-          await tester.tap(find.text('Stop'));
+          await tester.tap(find.byKey(const ValueKey('stop_recording')));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
@@ -1154,7 +1154,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
           expect(
             find.descendant(
               of: stopControlsFinder,
@@ -1198,7 +1198,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         },
       );
     });
@@ -1232,7 +1232,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 250));
 
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
 
         final messages = AppLocalizations.of(
@@ -1481,7 +1481,7 @@ void main() {
             findsOneWidget,
           );
           expect(find.byIcon(LottiIcons.close), findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         },
       );
 
@@ -1587,7 +1587,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(cancelCalled, isFalse);
-        expect(find.text('Stop'), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
       });
     });
 
@@ -1626,7 +1626,7 @@ void main() {
         expect(find.byIcon(LottiIcons.pause), findsOneWidget);
         // Cancel and stop stay alongside it.
         expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
-        expect(find.text('Stop'), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
       });
 
       testWidgets(
@@ -1698,7 +1698,7 @@ void main() {
           // Paused → shows the play (resume) glyph.
           expect(find.byIcon(LottiIcons.play), findsOneWidget);
           // Stop controls remain visible while paused.
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
 
           await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
           await tester.pump();

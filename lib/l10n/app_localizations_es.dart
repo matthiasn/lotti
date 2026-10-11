@@ -2795,6 +2795,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordings => 'Grabaciones de audio';
 
   @override
+  String get audioRecordingStatusPaused => 'En pausa';
+
+  @override
   String get audioRecordingStop => 'Parar';
 
   @override
@@ -15717,10 +15720,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepMeasurables => 'Valores medibles';
 
   @override
-  String get syncStepSavedTaskFilters => 'Filtros de tareas guardados';
+  String get syncStepPreferences => 'Tema, saludo e interruptores';
 
   @override
-  String get syncStepPreferences => 'Tema, saludo e interruptores';
+  String get syncStepSavedTaskFilters => 'Filtros de tareas guardados';
 
   @override
   String get syncStepSpeechDictionary => 'Diccionario de voz';

@@ -2809,6 +2809,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordings => 'Înregistrări audio';
 
   @override
+  String get audioRecordingStatusPaused => 'În pauză';
+
+  @override
   String get audioRecordingStop => 'Opriți';
 
   @override
@@ -15825,10 +15828,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepMeasurables => 'Măsurabile';
 
   @override
-  String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
+  String get syncStepPreferences => 'Temă, salut și opțiuni';
 
   @override
-  String get syncStepPreferences => 'Temă, salut și opțiuni';
+  String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
 
   @override
   String get syncStepSpeechDictionary => 'Dicționar vocal';

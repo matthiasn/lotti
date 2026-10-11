@@ -72,7 +72,7 @@ void main() {
 
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
         expect(find.text('0:00:42'), findsOneWidget);
-        expect(find.text(messages.audioRecordingStop), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         expect(
           find.widgetWithText(
             LottiAnimatedCheckbox,

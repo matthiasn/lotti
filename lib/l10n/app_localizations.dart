@@ -4704,6 +4704,12 @@ abstract class AppLocalizations {
   /// **'Audio Recordings'**
   String get audioRecordings;
 
+  /// Status line above the recorder while a recording is paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get audioRecordingStatusPaused;
+
   /// No description provided for @audioRecordingStop.
   ///
   /// In en, this message translates to:
@@ -25733,17 +25739,17 @@ abstract class AppLocalizations {
   /// **'Measurables'**
   String get syncStepMeasurables;
 
-  /// No description provided for @syncStepSavedTaskFilters.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved task filters'**
-  String get syncStepSavedTaskFilters;
-
   /// No description provided for @syncStepPreferences.
   ///
   /// In en, this message translates to:
   /// **'Theme, greeting and flags'**
   String get syncStepPreferences;
+
+  /// No description provided for @syncStepSavedTaskFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filters'**
+  String get syncStepSavedTaskFilters;
 
   /// No description provided for @syncStepSpeechDictionary.
   ///

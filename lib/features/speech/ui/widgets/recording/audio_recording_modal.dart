@@ -168,76 +168,48 @@ class _AudioRecordingModalContentState
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
+    final tokens = context.designTokens;
+    return RecordingStage(
+      state: state,
+      levelSemanticsLabel: state.status == AudioRecorderStatus.recording
+          ? context.messages.audioRecordingLive
+          : null,
+      announceLevel: true,
+      notice: _failure == null
+          ? null
+          : Semantics(
               liveRegion: true,
-              label: state.status == AudioRecorderStatus.recording
-                  ? context.messages.audioRecordingLive
-                  : '',
-              child: ExcludeSemantics(
-                child: RecordingLevelVisualizer(state: state),
-              ),
-            ),
-
-            if (_failure != null)
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _failure!,
-                  style: context.designTokens.typography.styles.body.bodyMedium
-                      .copyWith(
-                        color: context.designTokens.colors.alert.error.ink,
-                      ),
+              child: Text(
+                _failure!,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.alert.error.ink,
                 ),
               ),
-            RecordingClock(progress: state.progress),
-
-            SizedBox(height: context.designTokens.spacing.step5),
-
-            // Control buttons in a row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Record/Stop button. No cross-fade here: AnimatedSwitcher
-                // centers and stacks both children for the whole transition,
-                // and the two states have very different footprints (one
-                // button vs. a three-button row) — any nonzero duration
-                // shows the record button overlapping the stop/pause/cancel
-                // row mid-fade, which reads as broken rather than smooth.
-                AnimatedSwitcher(
-                  duration: Duration.zero,
-                  child: _isRecording(state)
-                      ? RecordingTransportControls(
-                          key: const ValueKey('stop_controls'),
-                          paused: state.status == AudioRecorderStatus.paused,
-                          busy: _terminalActionInProgress,
-                          onDiscard: _cancel,
-                          onTogglePause: () =>
-                              state.status == AudioRecorderStatus.paused
-                              ? controller.resume()
-                              : controller.pause(),
-                          onStop: _stop,
-                        )
-                      : _buildRecordButton(context, controller, theme),
-                ),
-              ],
             ),
-
-            // Automatic prompt options (shown when category or linked task
-            // may provide automatic prompts, including profile-driven skills).
-            if (widget.showTranscriptionOptions &&
-                (widget.categoryId != null || widget.linkedId != null)) ...[
-              SizedBox(height: context.designTokens.spacing.step5),
-              _buildAutomaticPromptOptions(context, controller, state, theme),
-            ],
-          ],
-        ),
-      ],
+      // No cross-fade between the record button and the transport row:
+      // AnimatedSwitcher stacks both for the whole transition, and their
+      // footprints differ so much that any fade shows the one overlapping
+      // the other, which reads as broken rather than smooth.
+      controls: _isRecording(state)
+          ? RecordingTransportControls(
+              key: const ValueKey('stop_controls'),
+              paused: state.status == AudioRecorderStatus.paused,
+              busy: _terminalActionInProgress,
+              onDiscard: _cancel,
+              onTogglePause: () => state.status == AudioRecorderStatus.paused
+                  ? controller.resume()
+                  : controller.pause(),
+              onStop: _stop,
+            )
+          : _buildRecordButton(context, controller, theme),
+      // Automatic prompt options (shown when category or linked task may
+      // provide automatic prompts, including profile-driven skills).
+      footer:
+          widget.showTranscriptionOptions &&
+              (widget.categoryId != null || widget.linkedId != null)
+          ? _buildAutomaticPromptOptions(context, controller, state, theme)
+          : null,
     );
   }
 

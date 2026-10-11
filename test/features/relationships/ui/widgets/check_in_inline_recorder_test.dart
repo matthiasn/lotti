@@ -109,27 +109,34 @@ void main() {
   });
 
   group("the recording sheet's anatomy", () {
-    testWidgets('the shared visualizer, clock and transport row, in that '
-        'order, with no orb doubling as Stop', (tester) async {
+    testWidgets('the shared visualizer, clock, level line and transport '
+        'row, in that order, with Stop between discard and pause', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       await pump(tester);
 
       expect(find.byType(RecordingLevelVisualizer), findsOneWidget);
       expect(find.byType(RecordingTransportControls), findsOneWidget);
       final visualizer = tester.getRect(find.byType(RecordingLevelVisualizer));
-      final clock = tester.getRect(key('check-in-recorder-clock'));
+      final clock = tester.getRect(find.byType(RecordingClock));
+      final line = tester.getRect(find.byType(RecordingLevelLine));
       final controls = tester.getRect(find.byType(RecordingTransportControls));
       expect(visualizer.bottom, lessThanOrEqualTo(clock.top + 0.5));
-      expect(clock.bottom, lessThan(controls.top));
-      // Discard, Pause, Stop: the sheet's order, left to right.
+      expect(clock.bottom, lessThan(line.top));
+      expect(line.bottom, lessThan(controls.top));
+      // Discard, Stop, Pause: the sheet's order, left to right.
       final discard = tester.getRect(key('check-in-recorder-discard'));
       final pause = tester.getRect(key('check-in-recorder-pause'));
       final stop = tester.getRect(key('check-in-recorder-stop'));
-      expect(discard.right, lessThan(pause.left));
-      expect(pause.right, lessThan(stop.left));
-      // The Stop pill carries its word; the discard is this surface's own.
-      expect(find.text('Stop'), findsOneWidget);
+      expect(discard.right, lessThan(stop.left));
+      expect(stop.right, lessThan(pause.left));
+      // Stop is named for a reader; the discard is this surface's own.
+      expect(labelOf(tester, 'check-in-recorder-stop'), 'Stop');
       expect(labelOf(tester, 'check-in-recorder-discard'), 'Discard');
+      // The composer's header says Recording; the recorder does not repeat
+      // it unless asked.
+      expect(find.byType(RecordingStatus), findsNothing);
       semantics.dispose();
     });
 
@@ -151,9 +158,7 @@ void main() {
       await pump(tester);
       recorder.tick(progress: const Duration(seconds: 83));
       await tester.pump();
-      final clock = tester.widget<RecordingClock>(
-        key('check-in-recorder-clock'),
-      );
+      final clock = tester.widget<RecordingClock>(find.byType(RecordingClock));
       expect(clock.progress, const Duration(seconds: 83));
       expect(clock.semanticsLabel, '1 minute 23 seconds');
       expect(find.text('0:01:23'), findsOneWidget);

@@ -50,6 +50,7 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     required this.onFailed,
     this.categoryId,
     this.adoptRunning = false,
+    this.showStatus = false,
     super.key,
   });
 
@@ -65,6 +66,11 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
 
   /// Attach to the recording already running rather than starting one.
   final bool adoptRunning;
+
+  /// Whether the recorder says *Recording* / *Paused* itself — where the
+  /// host has no status line of its own, as the check-in page's dock has
+  /// none and the composer's header does.
+  final bool showStatus;
 
   @override
   ConsumerState<CheckInInlineRecorder> createState() =>
@@ -155,72 +161,52 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
     final paused = state.status == AudioRecorderStatus.paused;
     final live = state.status == AudioRecorderStatus.recording;
 
-    return Column(
+    return RecordingStage(
       key: const ValueKey('check-in-inline-recorder'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Named, not live: the header's status line announces recording
-        // and paused, so a reader hears each transition once.
-        Semantics(
-          label: live
-              ? messages.audioRecordingLive
-              : paused
-              ? messages.checkInStatusPaused
-              : '',
-          child: ExcludeSemantics(
-            child: Center(child: RecordingLevelVisualizer(state: state)),
+      state: state,
+      showStatus: widget.showStatus,
+      // Named, not live: the header's status line announces recording and
+      // paused, so a reader hears each transition once.
+      levelSemanticsLabel: live
+          ? messages.audioRecordingLive
+          : paused
+          ? messages.checkInStatusPaused
+          : null,
+      // In words for a reader: "23 seconds", not "zero colon two three".
+      clockSemanticsLabel: checkInSpokenClockLabel(messages, state.progress),
+      controls: RecordingTransportControls(
+        paused: paused,
+        // Inert while a stop or discard is in flight, and until the take is
+        // actually running: before `record` lands, or after a refused
+        // start, there is nothing to pause or stop.
+        busy: _busy || !(live || paused),
+        discardLabel: messages.checkInDiscardRecording,
+        discardKey: const ValueKey('check-in-recorder-discard'),
+        pauseKey: const ValueKey('check-in-recorder-pause'),
+        stopKey: const ValueKey('check-in-recorder-stop'),
+        onDiscard: _discard,
+        onTogglePause: () => _togglePause(state.status),
+        onStop: _stop,
+      ),
+      footer: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            LottiIcons.confirmCircled,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
           ),
-        ),
-        Center(
-          child: RecordingClock(
-            key: const ValueKey('check-in-recorder-clock'),
-            progress: state.progress,
-            // In words for a reader: "23 seconds", not "zero colon two
-            // three".
-            semanticsLabel: checkInSpokenClockLabel(messages, state.progress),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        Center(
-          child: RecordingTransportControls(
-            paused: paused,
-            // Inert while a stop or discard is in flight, and until the
-            // take is actually running: before `record` lands, or after a
-            // refused start, there is nothing to pause or stop.
-            busy: _busy || !(live || paused),
-            discardLabel: messages.checkInDiscardRecording,
-            discardKey: const ValueKey('check-in-recorder-discard'),
-            pauseKey: const ValueKey('check-in-recorder-pause'),
-            stopKey: const ValueKey('check-in-recorder-stop'),
-            onDiscard: _discard,
-            onTogglePause: () => _togglePause(state.status),
-            onStop: _stop,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        // Where the recording sheet keeps its one option: the reassurance
-        // that nothing is lost if the sheet goes.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              LottiIcons.confirmCircled,
-              size: IconSizes.s,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                messages.checkInAudioSavedAsYouGo,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
+          SizedBox(width: tokens.spacing.step2),
+          Flexible(
+            child: Text(
+              messages.checkInAudioSavedAsYouGo,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
