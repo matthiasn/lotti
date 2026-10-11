@@ -24,8 +24,9 @@ it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 
 CI packs every `.cfg` in this directory into runtime-balanced shards
 (`shards.py`) and runs them with `fail-fast: false`. It adds shards as the work
-grows, so that no shard's estimate passes `SHARD_BUDGET_SECONDS` (40 minutes)
-inside the one-hour job limit.
+grows, so that no shard's estimate passes `SHARD_BUDGET_SECONDS` (about 33
+minutes): half as long again, the spread `SECONDS` notes between runners,
+still fits the one-hour job limit.
 A shard checks all of its configurations even after one fails, and lists each
 result in the job summary. A new configuration joins a shard automatically,
 counted at a pessimistic five minutes until its runtime is added to
