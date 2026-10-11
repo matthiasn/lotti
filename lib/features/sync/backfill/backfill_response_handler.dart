@@ -306,7 +306,8 @@ class BackfillResponseHandler {
   /// peers receive a version that covers the lost write. A host without a
   /// row at counter 0 — every host a later build created — sends nothing:
   /// settling a counter it never issued would burn it. Returns whether
-  /// anything was sent.
+  /// anything was sent. The resend is durable: a failure to queue it throws,
+  /// so the caller does not record the resend as done and tries again.
   Future<bool> resendOwnCounterZero() async {
     await _vectorClockService.initialized;
     final host = await _vectorClockService.getHost();
@@ -317,6 +318,7 @@ class BackfillResponseHandler {
       hostId: host,
       counter: 0,
       sentPayloads: <VcPayloadRef>{},
+      durable: true,
     );
   }
 
@@ -650,6 +652,7 @@ class BackfillResponseHandler {
     required String hostId,
     required int counter,
     required Set<VcPayloadRef> sentPayloads,
+    bool durable = false,
   }) async {
     // Look up in our sequence log
     var logEntry = await _sequenceLogService.getEntryByHostAndCounter(
@@ -694,6 +697,7 @@ class BackfillResponseHandler {
           stackTrace: stackTrace,
           subDomain: 'backfill.settle',
         );
+        if (durable) rethrow;
         return false;
       }
       if (outcome != OwnCounterSettlement.alreadySettled) {
@@ -807,6 +811,7 @@ class BackfillResponseHandler {
       counter: counter,
       entry: logEntry,
       sentPayloads: sentPayloads,
+      durable: durable,
     );
   }
 

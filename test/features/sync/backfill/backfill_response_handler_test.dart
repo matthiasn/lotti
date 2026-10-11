@@ -2741,10 +2741,33 @@ void main() {
 
       final sent =
           verify(
-                () => mockOutboxService.enqueueMessage(captureAny()),
+                () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
               ).captured.single
               as SyncJournalEntity;
       expect(sent.id, entryId);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
+    test('a resend the outbox cannot queue throws, so it is tried again at '
+        'the next start', () async {
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 0),
+      ).thenAnswer(
+        (_) async => _createLogItem(aliceHostId, 0, entryId: entryId),
+      );
+      when(
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+      ).thenAnswer(
+        (_) async => _createJournalEntry(
+          entryId,
+          vectorClock: const VectorClock({aliceHostId: 0}),
+        ),
+      );
+      when(
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
+      ).thenThrow(StateError('outbox closed'));
+
+      await expectLater(handler.resendOwnCounterZero(), throwsStateError);
     });
 
     test('a host a later build created has no counter 0, and sends nothing '

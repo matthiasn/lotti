@@ -121,9 +121,11 @@ Future<void> checkAndPopulateSequenceLogForTesting() =>
 /// same way and a stamp never outranks a genuine edit (ADR 0125). Agent
 /// rows are left to the manual action: their stamp does not keep that
 /// property. The flag ([clocklessRepairSettingsKey]) is set only after both
-/// repairs succeed, so a failure retries at the next start, and the inbound
-/// sync path clears it when an older peer delivers a clockless row, so the
-/// next start sweeps again.
+/// repairs succeed, so a failure retries at the next start. The inbound sync
+/// path writes a fresh token under it whenever it stores a clockless row from
+/// an older peer, and completion is recorded only if the token read before
+/// the sweep is unchanged, so a row stored even mid-sweep leaves the next
+/// start to sweep again.
 Future<void> _repairClocklessRowsOnce() async {
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
