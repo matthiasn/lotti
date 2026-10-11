@@ -385,8 +385,6 @@ Future<String? Function()> _registerMatrixSyncStack({
     vectorClockService: vectorClockService,
     loggingService: domainLogger,
     settingsDb: settingsDb,
-    likelyHolder: (entryId, ownHost) =>
-        syncDatabase.latestSenderOfEntry(entryId, excludingHost: ownHost),
   );
   syncEventProcessor
     ..missingMediaListener = mediaRepairService.reportMissing

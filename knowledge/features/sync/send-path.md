@@ -155,10 +155,9 @@ sequenceDiagram
   Note over Loader: AttachmentIndex has no descriptor<br/>for this path
   Loader->>Repair: onMissingMedia(entryId, relativePath)
   Repair->>Repair: debounce + dedupe + cap
-  Repair->>Repair: first attempt: latestSenderOfEntry
-  Repair->>Room: SyncMediaRequest(entryIds, requesterId, holders)
+  Repair->>Room: SyncMediaRequest(entryIds, requesterId)
   Room->>Peer: broadcast
-  Peer->>Peer: addressed to another holder? entry known? blob on disk?
+  Peer->>Peer: entry known? blob on disk?
   Peer->>Room: SyncJournalEntity(includeAttachments: true)
   Room->>Ingest: m.file (the blob)
   Ingest->>Ingest: write to disk unless the local copy is as large
@@ -175,18 +174,15 @@ Three properties are load-bearing:
   event and `AttachmentIngestor` writes it, the same way any attachment lands.
   The requester never learns a request succeeded; it stops asking because the
   file now exists and the loader stops reporting it missing.
-- **The request is broadcast, a first attempt names a holder, and answers are
-  optional.** The device that created the entry is often the one that is
-  offline, so the request goes to the room, not to its author. A first
-  attempt names, per entry, the host that most recently sent this device a
-  version of it (`SyncDatabase.latestSenderOfEntry`, from the sequence log's
-  `originating_host_id`) in `SyncMediaRequest.holders`; every other peer
-  leaves that entry to it, so the blob is uploaded once. An entry with no
-  known sender, and every retry, is answered by any holder — the guess may be
-  wrong or its device away. A lookup that fails counts as no guess. A peer
-  that lacks the file stays silent rather than answering with nothing; a build
-  before this ignores `holders` and answers anyway
-  ([ADR 0137](../../../docs/adr/0137-media-requests-name-a-holder.md)).
+- **The request is broadcast and answers are optional.** Any peer holding the
+  blob may answer, because the device that created the entry is often the one
+  that is offline. A peer that lacks the file stays silent rather than
+  answering with nothing. Every holder answering costs bandwidth, not data,
+  and is deliberate: the request does not stall on one offline device, and
+  since the ingestor writes only a larger file, a complete answer replaces a
+  short copy an old holder sent. Addressing one likely holder was built and
+  withdrawn for those two reasons
+  ([ADR 0137](../../../docs/adr/0137-a-short-media-copy-is-fetched-again.md)).
 
 This loop sees a file that is missing when its entry is loaded, and one
 shorter than its attachment event declares (`declaredMediaSize` in
@@ -209,7 +205,7 @@ enqueue costs no attempt, in memory or on disk. Flushes run one at a time,
 so an older flush cannot store its counts over a newer one's.
 
 Media repair disposal cancels its debounce and clears pending ids and attempt
-counts. A host or holder lookup completing after disposal cannot enqueue a request; a
+counts. A host lookup completing after disposal cannot enqueue a request; a
 pending enqueue failure cannot restore cleared state or arm another retry.
 Failures while the service remains active still restore the batch and its
 attempt budget for the normal debounced retry.

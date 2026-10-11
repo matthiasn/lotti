@@ -38,6 +38,19 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(len(planned), 20)
         self.assertTrue(all(shard['estimate'] <= SHARD_BUDGET_SECONDS for shard in planned))
 
+    def test_uneven_weights_get_shards_until_they_fit(self):
+        # Nine at two thirds of the budget: the total asks for eight shards,
+        # and eight would pack two of them, past the budget, into one.
+        uneven = [f'Uneven{i}' for i in range(9)]
+        SECONDS.update({name: SHARD_BUDGET_SECONDS * 2 // 3 for name in uneven})
+        try:
+            planned = plan(uneven)
+        finally:
+            for name in uneven:
+                SECONDS.pop(name)
+        self.assertEqual(len(planned), 9)
+        self.assertTrue(all(shard['estimate'] <= SHARD_BUDGET_SECONDS for shard in planned))
+
     def test_manual_configurations_are_not_planned(self):
         # Too long for any CI job; run by hand (manual/).
         configurations = sorted(path.stem for path in Path(__file__).parent.glob('*.cfg'))

@@ -635,9 +635,6 @@ SyncMediaRequest _$SyncMediaRequestFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       requesterId: json['requesterId'] as String,
-      holders: (json['holders'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as String),
-      ),
       $type: json['runtimeType'] as String?,
     );
 
@@ -645,7 +642,6 @@ Map<String, dynamic> _$SyncMediaRequestToJson(SyncMediaRequest instance) =>
     <String, dynamic>{
       'entryIds': instance.entryIds,
       'requesterId': instance.requesterId,
-      'holders': instance.holders,
       'runtimeType': instance.$type,
     };
 

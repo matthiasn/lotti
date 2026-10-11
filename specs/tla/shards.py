@@ -257,21 +257,44 @@ DEFAULT_SECONDS = 300
 
 
 def shard_count(configurations):
-    """Enough shards that the configurations fit SHARD_BUDGET_SECONDS each —
-    at least SHARDS, and never more than there are configurations."""
+    """The fewest shards that could hold the configurations within
+    SHARD_BUDGET_SECONDS each — at least SHARDS, and never more than there are
+    configurations. A lower bound: `plan` adds shards until the packing fits."""
     total = sum(SECONDS.get(c, DEFAULT_SECONDS) for c in configurations)
     return min(len(configurations), max(SHARDS, math.ceil(total / SHARD_BUDGET_SECONDS)))
 
 
-def plan(configurations, shards=None):
+def _pack(configurations, count):
     """Longest-first greedy packing: each configuration goes to the lightest shard."""
-    count = shard_count(configurations) if shards is None else min(shards, len(configurations))
     bins = [{"seconds": 0, "configurations": []} for _ in range(count)]
     ordered = sorted(configurations, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
     for configuration in ordered:
         lightest = min(bins, key=lambda b: b["seconds"])
         lightest["configurations"].append(configuration)
         lightest["seconds"] += SECONDS.get(configuration, DEFAULT_SECONDS)
+    return bins
+
+
+def _overflows(bins):
+    """A shard of several configurations past the budget. One configuration
+    over the budget alone cannot be split, so it does not count."""
+    return any(len(b["configurations"]) > 1 and b["seconds"] > SHARD_BUDGET_SECONDS
+               for b in bins)
+
+
+def plan(configurations, shards=None):
+    """Packs the configurations into shards. Unless [shards] fixes the count,
+    shards are added until every shard of several configurations fits the
+    budget: the total over the budget is only a lower bound when weights are
+    uneven."""
+    if shards is not None:
+        bins = _pack(configurations, min(shards, len(configurations)))
+    else:
+        count = shard_count(configurations)
+        bins = _pack(configurations, count)
+        while _overflows(bins) and count < len(configurations):
+            count += 1
+            bins = _pack(configurations, count)
     assigned = sorted(c for b in bins for c in b["configurations"])
     assert assigned == sorted(configurations), "every configuration runs exactly once"
     return [

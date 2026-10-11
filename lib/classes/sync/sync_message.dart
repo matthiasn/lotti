@@ -538,13 +538,6 @@ sealed class SyncMessage with _$SyncMessage {
 
     /// The host UUID asking for the blobs. Peers ignore their own requests.
     required String requesterId,
-
-    /// Per entry, the one host this request is addressed to: the device that
-    /// last sent a version of it, and so held its blob. Others leave that
-    /// entry to it, so a request is answered once, not by every holder. Only
-    /// a first attempt names one; a retry asks everyone. Builds before it
-    /// ignore the field and answer every entry they hold.
-    Map<String, String>? holders,
   }) = SyncMediaRequest;
 
   /// Cross-device coordination of one agent's wakes, so that one device runs

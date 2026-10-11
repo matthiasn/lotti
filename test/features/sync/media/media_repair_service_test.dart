@@ -25,7 +25,6 @@ void main() {
     int? maxBatchSize,
     int? maxAttemptsPerEntry,
     int? maxTrackedEntries,
-    Future<String?> Function(String entryId, String ownHost)? likelyHolder,
   }) => MediaRepairService(
     outboxService: outboxService,
     vectorClockService: vectorClockService,
@@ -34,7 +33,6 @@ void main() {
     maxBatchSize: maxBatchSize,
     maxAttemptsPerEntry: maxAttemptsPerEntry,
     maxTrackedEntries: maxTrackedEntries,
-    likelyHolder: likelyHolder,
   );
 
   setUp(() {
@@ -175,92 +173,6 @@ void main() {
       // Drained — no further traffic.
       async.elapse(debounce * 3);
       expect(requests, hasLength(3));
-    });
-  });
-
-  group('addressing a request to the likely holder', () {
-    test('a first attempt names the holder; a retry asks everyone', () {
-      fakeAsync((async) {
-        final asked = <(String, String)>[];
-        final service = buildService(
-          likelyHolder: (entryId, ownHost) async {
-            asked.add((entryId, ownHost));
-            return entryId == 'known' ? 'host-c' : null;
-          },
-        );
-        addTearDown(service.dispose);
-
-        service
-          ..reportMissing(entryId: 'known', relativePath: '/images/k')
-          ..reportMissing(entryId: 'unknown', relativePath: '/images/u');
-        async.elapse(debounce);
-
-        expect(requests.single.entryIds, ['known', 'unknown']);
-        // Only the entry with a known holder is addressed; the other is
-        // left to every holder.
-        expect(requests.single.holders, {'known': 'host-c'});
-        expect(asked, [('known', 'host-a'), ('unknown', 'host-a')]);
-
-        // Nobody answered: the next attempt is a broadcast, in case the
-        // guessed device is away or lacks the blob after all.
-        service.reportMissing(entryId: 'known', relativePath: '/images/k');
-        async.elapse(debounce);
-
-        expect(requests, hasLength(2));
-        expect(requests.last.entryIds, ['known']);
-        expect(requests.last.holders, isNull);
-        expect(asked, hasLength(2), reason: 'a retry looks nobody up');
-      });
-    });
-
-    test('without a lookup every request is a broadcast', () {
-      fakeAsync((async) {
-        final service = buildService();
-        addTearDown(service.dispose);
-
-        service.reportMissing(entryId: 'entry-1', relativePath: '/images/1');
-        async.elapse(debounce);
-
-        expect(requests.single.holders, isNull);
-      });
-    });
-
-    test('a failed lookup is logged and the entry is broadcast', () {
-      fakeAsync((async) {
-        final service = buildService(
-          likelyHolder: (_, _) async => throw StateError('db closed'),
-        );
-        addTearDown(service.dispose);
-
-        service.reportMissing(entryId: 'entry-1', relativePath: '/images/1');
-        async.elapse(debounce);
-
-        expect(requests.single.entryIds, ['entry-1']);
-        expect(requests.single.holders, isNull);
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(that: isA<StateError>()),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'mediaRepair.holder',
-          ),
-        ).called(1);
-      });
-    });
-
-    test('dispose during the lookup sends nothing', () {
-      fakeAsync((async) {
-        final lookup = Completer<String?>();
-        final service = buildService(likelyHolder: (_, _) => lookup.future)
-          ..reportMissing(entryId: 'entry-1', relativePath: '/images/1');
-        async.elapse(debounce);
-        service.dispose();
-        lookup.complete('host-c');
-        async.flushMicrotasks();
-
-        expect(requests, isEmpty);
-        expect(service.debugAttemptedEntryCount, 0);
-      });
     });
   });
 
