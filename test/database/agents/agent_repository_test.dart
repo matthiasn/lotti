@@ -17,6 +17,7 @@ import 'package:lotti/classes/day_plan.dart' show dayAgentIdForDate;
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repo_internals.dart';
+import 'package:lotti/database/agents/agent_repo_retention.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/agents/agent_repository_exception.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -3796,6 +3797,25 @@ void main() {
       await repo.forgetDeletedAgent(testAgentId);
       expect(await repo.deletedAgentAt(testAgentId), isNull);
       expect(await repo.deletedAgentIdsAmong([testAgentId]), isEmpty);
+    });
+
+    test('keeps the destroyed identity it deleted, and lists the entities '
+        'retention pruned', () async {
+      final identity = makeTestIdentity(
+        lifecycle: AgentLifecycle.destroyed,
+        vectorClock: const VectorClock({'node-1': 2}),
+      );
+      await repo.upsertEntity(identity);
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(await repo.deletedAgentIdentity(testAgentId), identity);
+      expect(await repo.deletedAgentIdentity('never-deleted'), isNull);
+      await recordPrunedAgentEntities(db, ['pruned-event']);
+      expect(
+        await repo.prunedAgentEntityIdsAmong(['pruned-event', 'kept']),
+        {'pruned-event'},
+      );
     });
 
     test('deletes all entities for the target agent', () async {

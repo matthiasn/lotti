@@ -541,6 +541,21 @@ void main() {
       );
 
       expect(await store.deletedAgentsAmong(['gone']), isEmpty);
+
+      // A store over records that belong to no agent prunes and destroys
+      // nothing either.
+      final entries = JournalDeepBackfillStore(
+        journalDb: journalDb,
+        outboxService: outbox,
+        documentsDirectory: Directory.systemTemp,
+      );
+      expect(await entries.prunedAmong(['pruned']), isEmpty);
+      expect(
+        await entries.resendDestroyedAgents({
+          'gone': const VectorClock({'h': 1}),
+        }),
+        0,
+      );
     });
   });
 

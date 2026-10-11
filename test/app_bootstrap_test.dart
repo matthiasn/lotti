@@ -33,6 +33,8 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
+import 'package:lotti/features/github/repository/github_account_sync.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -56,6 +58,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/get_it.dart';
@@ -72,6 +75,7 @@ import 'package:lotti/services/window_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 
+import 'features/github/in_memory_keychain.dart';
 import 'features/lockdown/lockdown_test_utils.dart';
 import 'helpers/db_settle.dart';
 import 'helpers/entity_factories.dart';
@@ -917,6 +921,29 @@ void main() {
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dashboardHabitChartBuilderProvider), isNotNull);
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
+    });
+
+    test('"Send settings" re-sends the GitHub account the device holds, a '
+        'disconnection included, and nothing before any account', () async {
+      final storage = GitHubTokenStorage(inMemoryKeychain({}), namespace: 'p');
+      final container = ProviderContainer(
+        overrides: [
+          ...appFeatureWiringOverrides(),
+          gitHubAccountSyncProvider.overrideWithValue(
+            GitHubAccountSync(storage: storage, enqueueOrThrow: (_) async {}),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final extras = container.read(preferenceResendExtrasProvider);
+
+      expect(await extras(), isEmpty);
+      await storage.save(token: 'ghp_secret', login: 'pingu');
+      await storage.clear();
+      expect(
+        (await extras()).single,
+        isA<SyncGitHubAccount>().having((m) => m.token, 'token', isNull),
+      );
     });
 
     test('the coding prompt and the task agent read pull requests from '
