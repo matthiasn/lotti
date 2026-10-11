@@ -87,7 +87,8 @@ transcription automation.
 accent card, a pulsing record dot and elapsed time only.
 
 The modal renders either the skeuomorphic VU meter or the energy orb depending on
-`recordingStyleProvider`, from the same dBFS feed. That choice, the running
+`recordingStyleProvider`, from the same dBFS feed, with the level bars beneath
+either. That choice, the running
 clock and the transport row — discard ✕, pause ⏸ / resume ▶, the red Stop —
 live in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart)

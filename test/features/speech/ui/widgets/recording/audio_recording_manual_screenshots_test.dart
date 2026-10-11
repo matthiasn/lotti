@@ -4,6 +4,8 @@
 /// staging inputs for the manual media manifest and are never committed here.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -38,6 +40,9 @@ class _FixedAudioRecorderController extends AudioRecorderController {
 
   @override
   AudioRecorderState build() => fixedState;
+
+  /// A new live level, as the recorder reports one every 20 ms.
+  void tick(double dbfs) => state = state.copyWith(dBFS: dbfs);
 }
 
 void main() {
@@ -91,6 +96,7 @@ Future<void> _pumpActiveRecording(
   required Brightness brightness,
 }) async {
   applyScreenshotDevice(tester, device);
+  late _FixedAudioRecorderController controller;
   final fixedState = AudioRecorderState(
     status: AudioRecorderStatus.recording,
     progress: const Duration(seconds: 42),
@@ -108,7 +114,7 @@ Future<void> _pumpActiveRecording(
       child: ProviderScope(
         overrides: [
           audioRecorderControllerProvider.overrideWith(
-            () => _FixedAudioRecorderController(fixedState),
+            () => controller = _FixedAudioRecorderController(fixedState),
           ),
           recordingStyleAppPrefsProvider.overrideWithValue(
             _modernRecordingStylePreferences,
@@ -168,6 +174,12 @@ Future<void> _pumpActiveRecording(
   await tester.pump();
   await tester.tap(find.byKey(_openRecordingKey));
   await settleFrames(tester, 8);
+  // A few seconds of speech-shaped levels, so the bars show a take in
+  // progress rather than their resting baseline.
+  for (var i = 0; i < 56; i++) {
+    controller.tick(-38 + 26 * math.sin(i / 3).abs());
+    await tester.pump(const Duration(milliseconds: 20));
+  }
 }
 
 const _modernRecordingStylePreferences = AppPrefs(

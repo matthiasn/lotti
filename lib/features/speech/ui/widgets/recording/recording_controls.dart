@@ -3,8 +3,10 @@ import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_levels.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -15,11 +17,14 @@ import 'package:material_ui/material_ui.dart';
 /// the red Stop). A recorder that drew its own buttons read as another
 /// app's recorder however carefully it was spaced.
 
-/// The primary level visualizer, per the persisted [RecordingStyle]: the
-/// voice orb for [RecordingStyle.modern], the analog VU meter otherwise —
-/// including while the preference is still loading, so the meter never
-/// flashes to the orb and back on the first frame.
-class RecordingLevelVisualizer extends ConsumerWidget {
+/// The level display, per the persisted [RecordingStyle], as the pair the
+/// user chose it from in onboarding: the voice orb over accent level bars
+/// for [RecordingStyle.modern], the analog VU meter over neutral bars
+/// otherwise — including while the preference is still loading, so the
+/// meter never flashes to the orb and back on the first frame. The bars
+/// keep a short history of the live level, so a take reads as speech over
+/// time, not only as a level now; while paused they hold still.
+class RecordingLevelVisualizer extends ConsumerStatefulWidget {
   const RecordingLevelVisualizer({
     required this.state,
     this.orbSize = defaultOrbSize,
@@ -33,6 +38,10 @@ class RecordingLevelVisualizer extends ConsumerWidget {
   /// The recording sheet's meter, at its widest.
   static const double defaultMeterWidth = 400;
 
+  /// How many level samples the bars keep — two per bar, so the strip
+  /// moves smoothly without each 20 ms sample jolting it.
+  static const int levelWindow = 56;
+
   final AudioRecorderState state;
   final double orbSize;
 
@@ -40,30 +49,75 @@ class RecordingLevelVisualizer extends ConsumerWidget {
   final double meterWidth;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecordingLevelVisualizer> createState() =>
+      _RecordingLevelVisualizerState();
+}
+
+class _RecordingLevelVisualizerState
+    extends ConsumerState<RecordingLevelVisualizer> {
+  List<double> _levels = const [];
+
+  @override
+  void didUpdateWidget(covariant RecordingLevelVisualizer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A sample per level change while the take runs; a paused take keeps
+    // its last stretch on screen rather than draining to a flat line.
+    if (widget.state.status == AudioRecorderStatus.recording &&
+        widget.state.dBFS != oldWidget.state.dBFS) {
+      final next = [..._levels, normaliseDbfs(widget.state.dBFS)];
+      _levels = next.length > RecordingLevelVisualizer.levelWindow
+          ? next.sublist(next.length - RecordingLevelVisualizer.levelWindow)
+          : next;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final style = ref.watch(recordingStyleProvider).asData?.value;
-    if (style == RecordingStyle.modern) {
-      final tokens = context.designTokens;
-      return AiVoiceInputShader(
+    final modern = style == RecordingStyle.modern;
+    final Widget primary;
+    if (modern) {
+      primary = AiVoiceInputShader(
         key: const ValueKey('recording-visualizer-orb'),
-        dbfs: state.dBFS,
-        size: orbSize,
+        dbfs: widget.state.dBFS,
+        size: widget.orbSize,
         intensity: 1,
         primaryColor: tokens.colors.interactive.enabled,
         secondaryColor: tokens.colors.text.highEmphasis,
         backgroundColor: Colors.transparent,
       );
+    } else {
+      primary = LayoutBuilder(
+        builder: (context, constraints) => AnalogVuMeter(
+          key: const ValueKey('recording-visualizer-meter'),
+          vu: widget.state.vu,
+          dBFS: widget.state.dBFS,
+          size: constraints.hasBoundedWidth
+              ? constraints.maxWidth.clamp(0, widget.meterWidth).toDouble()
+              : widget.meterWidth,
+          colorScheme: Theme.of(context).colorScheme,
+        ),
+      );
     }
-    return LayoutBuilder(
-      builder: (context, constraints) => AnalogVuMeter(
-        key: const ValueKey('recording-visualizer-meter'),
-        vu: state.vu,
-        dBFS: state.dBFS,
-        size: constraints.hasBoundedWidth
-            ? constraints.maxWidth.clamp(0, meterWidth).toDouble()
-            : meterWidth,
-        colorScheme: Theme.of(context).colorScheme,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        primary,
+        SizedBox(height: tokens.spacing.step4),
+        // Onboarding's own pairing: the accent under the orb, the neutral
+        // ink under the meter.
+        LiveWaveform(
+          key: const ValueKey('recording-visualizer-bars'),
+          amplitudes: _levels,
+          color: modern
+              ? tokens.colors.interactive.enabled
+              : tokens.colors.text.highEmphasis,
+        ),
+        // The clock that every host sets under the display reads as its own
+        // line, not the bars' caption.
+        SizedBox(height: tokens.spacing.step3),
+      ],
     );
   }
 }

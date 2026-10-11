@@ -24,6 +24,16 @@ renders is a user preference (*Settings → Recording Style*), and **the feed is
 identical either way** — the choice is purely presentational, so neither variant
 can report a different level than the other.
 
+Whichever look renders, the level bars
+([`live_waveform.dart`](../../../lib/features/speech/ui/widgets/recording/live_waveform.dart))
+sit beneath it — the pair the user chose the look from in onboarding: accent
+bars under the orb, neutral bars under the meter. `RecordingLevelVisualizer`
+keeps a short window of normalised levels (`normaliseDbfs`, in
+[`recording_levels.dart`](../../../lib/features/speech/state/recording_levels.dart))
+while the take runs and holds it still while paused, so the bars read as speech
+over time where the orb and meter read the level now. Daily OS Capture and the
+onboarding previews draw the same bars from the same helpers.
+
 The dBFS values come from `AudioRecorderController`, which samples amplitude every
 20 ms and derives VU through the standalone `VuMeter` sliding-window unit. See
 [the speech overview](overview.md).
@@ -32,7 +42,7 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 
 | Surface | Shows |
 |---------|-------|
-| Recording modal | The full visualizer (VU meter or orb), elapsed time, record/stop/discard |
+| Recording modal | The full visualizer (VU meter or orb) over its level bars, elapsed time, record/stop/discard |
 | Check-in composer and page | The same visualizer, clock and transport row as the modal ([`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart)), embedded in place by `CheckInInlineRecorder` |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |

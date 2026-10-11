@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/recording_levels.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,15 +21,18 @@ AppPrefs _prefs(Future<String?> Function() style) => AppPrefs(
   setString: ({required key, required value}) async => true,
 );
 
-AudioRecorderState _state({double dbfs = -30, double vu = -10}) =>
-    AudioRecorderState(
-      status: AudioRecorderStatus.recording,
-      progress: const Duration(seconds: 3),
-      vu: vu,
-      dBFS: dbfs,
-      showIndicator: false,
-      modalVisible: true,
-    );
+AudioRecorderState _state({
+  double dbfs = -30,
+  double vu = -10,
+  AudioRecorderStatus status = AudioRecorderStatus.recording,
+}) => AudioRecorderState(
+  status: status,
+  progress: const Duration(seconds: 3),
+  vu: vu,
+  dBFS: dbfs,
+  showIndicator: false,
+  modalVisible: true,
+);
 
 void main() {
   group('RecordingLevelVisualizer', () {
@@ -82,6 +87,62 @@ void main() {
       await pump(tester, style: () async => 'analogue', width: 600);
       final meter = tester.widget<AnalogVuMeter>(find.byType(AnalogVuMeter));
       expect(meter.size, RecordingLevelVisualizer.defaultMeterWidth);
+    });
+
+    for (final (style, inkOf) in [
+      ('modern', (DsTokens t) => t.colors.interactive.enabled),
+      ('analogue', (DsTokens t) => t.colors.text.highEmphasis),
+    ]) {
+      testWidgets("pairs the $style look with onboarding's bars, under it", (
+        tester,
+      ) async {
+        await pump(tester, style: () async => style);
+        final bars = tester.widget<LiveWaveform>(find.byType(LiveWaveform));
+        final tokens = tester.element(find.byType(LiveWaveform)).designTokens;
+        expect(bars.color, inkOf(tokens));
+        final primary = find.byKey(
+          ValueKey(
+            style == 'modern'
+                ? 'recording-visualizer-orb'
+                : 'recording-visualizer-meter',
+          ),
+        );
+        expect(
+          tester.getRect(find.byType(LiveWaveform)).top,
+          greaterThanOrEqualTo(tester.getRect(primary).bottom),
+        );
+      });
+    }
+
+    testWidgets('the bars keep a bounded history of the live level, and '
+        'hold still while paused', (tester) async {
+      Future<void> show(AudioRecorderState state) => tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          RecordingLevelVisualizer(state: state),
+          overrides: [
+            recordingStyleAppPrefsProvider.overrideWithValue(
+              _prefs(() async => 'modern'),
+            ),
+          ],
+        ),
+      );
+      List<double> levels() =>
+          tester.widget<LiveWaveform>(find.byType(LiveWaveform)).amplitudes;
+
+      await show(_state(dbfs: -60));
+      expect(levels(), isEmpty, reason: 'no change yet, no sample');
+      for (var i = 0; i < RecordingLevelVisualizer.levelWindow + 10; i++) {
+        await show(_state(dbfs: -40.0 + (i % 20)));
+      }
+      expect(levels(), hasLength(RecordingLevelVisualizer.levelWindow));
+      expect(levels().every((level) => level >= 0 && level <= 1), isTrue);
+      // The newest sample is the last level shown, normalised.
+      const newest = -40.0 + ((RecordingLevelVisualizer.levelWindow + 9) % 20);
+      expect(levels().last, normaliseDbfs(newest));
+
+      final held = List<double>.of(levels());
+      await show(_state(dbfs: -5, status: AudioRecorderStatus.paused));
+      expect(levels(), held, reason: 'a paused take adds nothing');
     });
 
     testWidgets('while the preference loads it is the meter, so the orb '
