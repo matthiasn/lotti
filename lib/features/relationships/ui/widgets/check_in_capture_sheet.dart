@@ -49,6 +49,7 @@ import 'package:permission_handler/permission_handler.dart' as permissions;
 part 'check_in_capture_sheet_actions_part.dart';
 part 'check_in_capture_sheet_form_part.dart';
 part 'check_in_capture_sheet_launch_part.dart';
+part 'check_in_capture_sheet_rows_part.dart';
 
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
@@ -785,53 +786,8 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         : null;
     final shortcut = _saveShortcut(context);
     final speechIdle = _speechIdle && !_isSaving;
-    final notSet = messages.checkInRowNotSet;
-    final sentiment = _sentiment;
-
-    // The app's create-form grammar (`ProjectCreateForm`): the lead field,
-    // a rule, then one settings row per fact — icon, noun, value, chevron —
-    // each opening the same picker the check-in page uses, ruled apart, at
-    // the list's compact size so the facts and the details fit one phone
-    // screen. Held, not hidden, while the recorder or a save owns the sheet.
     // The note opens unfocused on a phone on purpose: a keyboard raised at
     // once would cover the rows the user may want first.
-    VoidCallback? live(VoidCallback onTap) => speechIdle ? onTap : null;
-    Widget row({
-      required String key,
-      required IconData icon,
-      required String title,
-      required String value,
-      required VoidCallback onTap,
-      Color? iconColor,
-    }) => DesignSystemSelectionRow(
-      key: ValueKey(key),
-      title: title,
-      subtitle: value,
-      type: DesignSystemSelectionRowType.navigation,
-      size: DesignSystemListItemSize.small,
-      leading: Icon(
-        icon,
-        color: iconColor ?? tokens.colors.text.mediumEmphasis,
-      ),
-      onTap: live(onTap),
-    );
-
-    // Each text detail is the design system's own labelled field, unfilled
-    // on the sheet like the note, one `step5` apart.
-    Widget field({
-      required String key,
-      required TextEditingController controller,
-      required String label,
-      String? hint,
-    }) => DesignSystemTextInput(
-      key: ValueKey(key),
-      controller: controller,
-      label: label,
-      semanticsLabel: label,
-      hintText: hint,
-      textCapitalization: TextCapitalization.sentences,
-      filled: false,
-    );
 
     // One scrollable, not two. The modal page already scrolls its child and
     // adds a top bar, padding and the bottom safe area on top of it, so a
@@ -895,95 +851,23 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ),
           ],
           SizedBox(height: tokens.spacing.step4),
-          const DesignSystemDivider(),
-          row(
-            key: 'check-in-type',
-            icon: checkInInteractionIcon(_interactionType),
-            title: messages.checkInRowType,
-            value: checkInInteractionLabel(context, _interactionType),
-            onTap: _pickType,
+          _CheckInFactRows(
+            interactionType: _interactionType,
+            startedLabel: _startedLabel(context),
+            duration: _duration,
+            sentiment: _sentiment,
+            detailsCaption: _moreCaption(messages),
+            detailsOpen: _moreOpen,
+            enabled: speechIdle,
+            onPickType: _pickType,
+            onPickStart: _pickStart,
+            onPickDuration: _pickDuration,
+            onPickSentiment: _pickSentiment,
+            onToggleDetails: () => setState(() => _moreOpen = !_moreOpen),
+            topicsController: _topicsController,
+            payAttentionController: _payAttentionController,
+            avoidController: _avoidController,
           ),
-          const DesignSystemDivider(),
-          row(
-            key: 'check-in-started',
-            icon: LottiIcons.today,
-            title: messages.checkInStartedLabel,
-            value: _startedLabel(context),
-            onTap: _pickStart,
-          ),
-          const DesignSystemDivider(),
-          row(
-            key: 'check-in-duration',
-            icon: LottiIcons.timer,
-            title: messages.checkInDurationChip,
-            value: _duration == Duration.zero
-                ? notSet
-                : checkInDurationLabel(context, _duration),
-            onTap: _pickDuration,
-          ),
-          const DesignSystemDivider(),
-          // Unset reads *Not set* like every other fact; that the feeling is
-          // optional and never the agent's is said in its picker, where it
-          // is chosen.
-          row(
-            key: 'check-in-sentiment',
-            icon: sentiment == null
-                ? LottiIcons.moodNeutral
-                : sentimentGlyph(sentiment),
-            iconColor: sentiment == null
-                ? null
-                : sentimentColor(tokens, sentiment),
-            title: messages.checkInMoreCaptionFeeling,
-            value: sentiment == null
-                ? notSet
-                : checkInSentimentLabel(context, sentiment),
-            onTap: _pickSentiment,
-          ),
-          const DesignSystemDivider(),
-          // The text details fold under one more row that says what they
-          // hold — open from the start when editing, or when the draft
-          // already holds any — so both sheets keep one structure and the
-          // group always has its heading and a way to fold back.
-          DesignSystemSelectionRow(
-            key: const ValueKey('check-in-more'),
-            title: messages.checkInRowDetails,
-            subtitle: _moreCaption(messages),
-            type: DesignSystemSelectionRowType.action,
-            size: DesignSystemListItemSize.small,
-            leading: Icon(
-              LottiIcons.label,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            trailing: Icon(
-              _moreOpen ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-              color: tokens.colors.text.mediumEmphasis,
-              size: tokens.spacing.step6,
-            ),
-            semanticLabel: messages.checkInRowDetails,
-            onTap: live(() => setState(() => _moreOpen = !_moreOpen)),
-          ),
-          if (_moreOpen) const DesignSystemDivider(),
-          if (_moreOpen) ...[
-            SizedBox(height: tokens.spacing.step5),
-            field(
-              key: 'check-in-topics',
-              controller: _topicsController,
-              label: messages.checkInTopicsLabel,
-              hint: messages.checkInTopicsHint,
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            field(
-              key: 'check-in-pay-attention',
-              controller: _payAttentionController,
-              label: messages.checkInPayAttentionLabel,
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            field(
-              key: 'check-in-avoid',
-              controller: _avoidController,
-              label: messages.checkInAvoidLabel,
-            ),
-          ],
         ],
         _BarSlack(handle: widget.handle),
       ],
