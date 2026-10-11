@@ -80,6 +80,26 @@ class DesignSystemTimerPill extends StatelessWidget {
 
   final Key stopKey;
 
+  /// The pill's width around [label] in its idle layout — the width it
+  /// holds to — so a host can lay out beside it before it is built.
+  static double heldWidth(BuildContext context, String label) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    return spacing.step5 * 2 +
+        iconSize +
+        spacing.step2 +
+        _singleLineWidth(context, label, _labelStyle(tokens, _onRunning)) +
+        spacing.step3;
+  }
+
+  static TextStyle _labelStyle(DsTokens tokens, Color color) =>
+      tokens.typography.styles.subtitle.subtitle2.copyWith(
+        color: color,
+        // Tabular figures, slashed zero and open 4/6/9, matching the
+        // sidebar timer, so elapsed digits never shift width as they tick.
+        fontFeatures: numericBadgeFontFeatures,
+      );
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -87,28 +107,19 @@ class DesignSystemTimerPill extends StatelessWidget {
     final fillColor = running
         ? tokens.colors.alert.error.defaultColor
         : tokens.colors.interactive.enabled;
-    // The error palette has no dedicated on-colour token, so a fixed white
-    // foreground marks the running clock in both themes, as the white
-    // stop glyph does. The interactive accent does have
+    // The error palette has no on-colour token of its own; the light
+    // theme's ink for alert fills (white) marks the running clock in both
+    // themes — the dark theme's is near-black, which on its lighter red
+    // read as a hole, not a control. The interactive accent does have
     // one: `text.onInteractiveAlert`.
     final foreground = running
-        ? Colors.white
+        ? _onRunning
         : tokens.colors.text.onInteractiveAlert;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
-    final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
-      color: foreground,
-      // Tabular figures, slashed zero and open 4/6/9, matching the sidebar
-      // timer, so elapsed digits never shift width as they tick.
-      fontFeatures: numericBadgeFontFeatures,
-    );
+    final textStyle = _labelStyle(tokens, foreground);
     // The pill's width is held to its idle layout around [widthLabel], so
     // it never shrinks when it starts nor grows as the time ticks.
-    final minWidth =
-        spacing.step5 * 2 +
-        iconSize +
-        spacing.step2 +
-        _singleLineWidth(context, widthLabel ?? label, textStyle) +
-        spacing.step3;
+    final minWidth = heldWidth(context, widthLabel ?? label);
 
     // Running: the circle's concentric inset before it, the pill's own
     // inset after the time.
@@ -185,6 +196,9 @@ class DesignSystemTimerPill extends StatelessWidget {
   }
 }
 
+/// The ink on the running pill's red, in either theme.
+final Color _onRunning = dsTokensLight.colors.text.onInteractiveAlert;
+
 double _singleLineWidth(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: style),
@@ -213,7 +227,9 @@ class _StopCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
     final circle = Material(
-      color: Colors.white.withValues(alpha: 0.18),
+      // The ink's own lift on the red: a translucent disc, not a second
+      // colour.
+      color: _onRunning.withValues(alpha: 0.18),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -223,10 +239,10 @@ class _StopCircle extends StatelessWidget {
           dimension: spacing.step7,
           // Filled: the outlined square read as an empty checkbox on the
           // red pill, not as the stop control it is.
-          child: const Icon(
+          child: Icon(
             LottiIconsFilled.square,
             size: IconSizes.m,
-            color: Colors.white,
+            color: _onRunning,
           ),
         ),
       ),

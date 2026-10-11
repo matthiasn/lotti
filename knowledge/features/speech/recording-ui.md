@@ -27,8 +27,9 @@ can report a different level than the other.
 Every recorder is one studio layout, `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
 one centred column no wider than `RecordingLevelLine.maxWidth`, whose parts
-share one measure — the orb's diameter (or the meter's width) is the level
-line's width, and the transport row matches it. Every word on it that is
+share one measure: the level line takes the transport row's width
+(`RecordingTransportControls.rowWidth` — two rings, two gaps and the Stop
+pill at its held width), so the two share their edges in every host. Every word on it that is
 not the running time speaks in one caption voice (`recordingCaptionStyle`).
 Top to bottom:
 
@@ -41,7 +42,7 @@ Top to bottom:
   its ring, and that margin is the whole gap to the line.
 - **The level line** — `RecordingLevelLine`, the level bars from
   [`live_waveform.dart`](../../../lib/features/speech/ui/widgets/recording/live_waveform.dart)
-  at the look's width (`RecordingLevelLine.widthFor`), fading in at its
+  at the transport row's width, fading in at its
   oldest end only so the newest bars are at full strength: accent under the
   orb, neutral under the meter, the pair the user chose the look from in
   onboarding. Silence is a hairline (`baselineColor`) from the oldest
@@ -53,7 +54,8 @@ Top to bottom:
   while paused and empties when a take stops. Daily OS Capture and the
   onboarding previews draw the same bars from the same helpers.
 - **The transport row** — `RecordingTransportControls`: discard ✕ and
-  pause ⏸ / resume ▶ (filled glyphs) as 48px border-only rings either side
+  pause ⏸ / resume ▶ (filled glyphs, a size below the stroked ✕ so the
+  two weigh the same) as 48px border-only rings either side
   of Stop, which carries the running time. Stop is the app's running-clock
   control,
   [`DesignSystemTimerPill`](../../../lib/features/design_system/components/buttons/design_system_timer_pill.dart)

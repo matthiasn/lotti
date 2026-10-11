@@ -102,7 +102,11 @@ class CheckInNarrativeField extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.l),
             border: Border.all(color: border, width: focused ? 2 : 1),
           ),
-          padding: EdgeInsets.all(tokens.spacing.step5),
+          // While recording the inset goes with the frame: the recorder
+          // brings its own, and the two stacked left a hole above the orb.
+          padding: phase is CheckInSpeechRecording
+              ? EdgeInsets.zero
+              : EdgeInsets.all(tokens.spacing.step5),
           // Not an AnimatedSize: the tiered captions lay themselves out with
           // a LayoutBuilder, which re-dirties an animating size box in its
           // own layout pass. The phases swap in place instead.

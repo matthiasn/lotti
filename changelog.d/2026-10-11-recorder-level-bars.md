@@ -1,12 +1,12 @@
 ### Changed
-- **The recorder has a calmer, studio-style layout.** The running time is
-  now the big number under the orb or VU meter, with a red dot while you
-  record, and reads `0:42` rather than `0:00:42`. The moving level bars from
-  onboarding run as a thin line beneath it — teal under the orb, neutral
-  under the meter — and lie flat when you are silent. Stop is one big red
-  button between quiet Discard and Pause buttons, and *Transcribe* is a small
-  switch underneath. Dictating on a check-in's page no longer covers half of
-  it: the recorder there leaves the orb out.
+- **The recorder has a calmer, studio-style layout.** Stop is now the same
+  red button a task's *Track time* shows while it runs, with the recording's
+  running time inside it. The moving level bars from onboarding run as a thin
+  line under the orb or VU meter — teal under the orb, neutral under the
+  meter — and lie flat when you are silent. Discard and Pause sit either side
+  of Stop as quiet rings, and *Transcribe* is a small switch underneath.
+  Dictating on a check-in's page no longer covers half of it: the recorder
+  there leaves the orb out.
 
 ### Fixed
 - **The voice orb no longer draws dark streaks in light mode.** Its brightest

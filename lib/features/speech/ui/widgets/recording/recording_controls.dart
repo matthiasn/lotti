@@ -218,13 +218,6 @@ class RecordingLevelLine extends ConsumerStatefulWidget {
   /// The recorder's column at its widest.
   static const double maxWidth = 400;
 
-  /// The line's width under each look: the orb's diameter, or the meter's
-  /// width — so the line, the look above it and the transport row below
-  /// share one measure instead of three.
-  static double widthFor({required bool modern}) => modern
-      ? RecordingLevelVisualizer.defaultOrbSize
-      : RecordingLevelVisualizer.defaultMeterWidth;
-
   /// The mask the line is drawn through: it fades in at the oldest end
   /// only, so the line reads as time passing towards *now*, the newest bars
   /// at full strength.
@@ -290,8 +283,10 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
           key: const ValueKey('recording-visualizer-bars'),
           amplitudes: bars,
           barCount: RecordingLevelLine.barCount,
+          // The transport row's width, so the line and the controls under
+          // it share their edges in every host — with the orb or without.
           width: constraints.maxWidth
-              .clamp(0, RecordingLevelLine.widthFor(modern: modern))
+              .clamp(0, RecordingTransportControls.rowWidth(context))
               .toDouble(),
           height: tokens.spacing.step6,
           color: modern
@@ -387,6 +382,18 @@ class RecordingTransportControls extends StatelessWidget {
   final Key pauseKey;
   final Key stopKey;
 
+  /// The row's width on one line: two rings, the Stop pill at its held
+  /// width, and the gaps between them — the recorder's one measure.
+  static double rowWidth(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return spacing.step9 * 2 +
+        spacing.step6 * 2 +
+        DesignSystemTimerPill.heldWidth(
+          context,
+          DesignSystemTimerPill.elapsedWidthTemplate,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -417,6 +424,7 @@ class RecordingTransportControls extends StatelessWidget {
               ? messages.audioRecordingResume
               : messages.audioRecordingPause,
           icon: paused ? LottiIconsFilled.play : LottiIconsFilled.pause,
+          solid: true,
           onTap: busy ? null : onTogglePause,
         ),
       ],
@@ -489,12 +497,16 @@ class _RoundControl extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.solid = false,
     super.key,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback? onTap;
+
+  /// Whether [icon] is a filled glyph rather than a stroked one.
+  final bool solid;
 
   @override
   Widget build(BuildContext context) {
@@ -514,7 +526,9 @@ class _RoundControl extends StatelessWidget {
           child: Icon(
             icon,
             key: ValueKey(icon),
-            size: IconSizes.l,
+            // A solid glyph carries more ink than a stroked one at the same
+            // size: a step smaller, the two rings weigh the same.
+            size: solid ? IconSizes.m : IconSizes.l,
             color: tokens.colors.text.highEmphasis,
           ),
         ),

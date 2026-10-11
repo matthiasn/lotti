@@ -187,24 +187,24 @@ void main() {
       });
     }
 
-    testWidgets("spans its room up to the orb's diameter, and fades out "
-        'at its oldest end', (tester) async {
-      for (final (room, expected) in [
-        (150.0, 150.0),
-        (900.0, RecordingLevelVisualizer.defaultOrbSize),
-      ]) {
+    testWidgets("spans its room up to the transport row's width, and fades "
+        'out at its oldest end', (tester) async {
+      for (final wide in [false, true]) {
         await pumpWith(
           tester,
           Center(
             child: SizedBox(
-              width: room,
+              width: wide ? 900 : 150,
               child: RecordingLevelLine(state: _state()),
             ),
           ),
         );
+        final row = RecordingTransportControls.rowWidth(
+          tester.element(find.byType(RecordingLevelLine)),
+        );
         expect(
           tester.widget<LiveWaveform>(find.byType(LiveWaveform)).width,
-          expected,
+          wide ? row : 150,
         );
       }
       final mask = tester.widget<ShaderMask>(
@@ -249,24 +249,6 @@ void main() {
         pumpWith(tester, RecordingLevelLine(state: state));
     List<double> bars(WidgetTester tester) =>
         tester.widget<LiveWaveform>(find.byType(LiveWaveform)).amplitudes;
-
-    testWidgets("under the meter it takes the meter's width, one measure "
-        'with the look above it', (tester) async {
-      await pumpWith(
-        tester,
-        Center(
-          child: SizedBox(
-            width: 900,
-            child: RecordingLevelLine(state: _state()),
-          ),
-        ),
-        style: () async => 'analogue',
-      );
-      expect(
-        tester.widget<LiveWaveform>(find.byType(LiveWaveform)).width,
-        RecordingLevelVisualizer.defaultMeterWidth,
-      );
-    });
 
     testWidgets('keeps a bounded window of the live level, drawn as one bar '
         'per pair of samples, and holds still while paused', (tester) async {
@@ -379,14 +361,34 @@ void main() {
       }
     });
 
-    testWidgets("the level line takes the orb's measure, on its axis", (
-      tester,
-    ) async {
-      await pump(tester);
-      final orb = tester.getRect(find.byType(AiVoiceInputShader));
+    testWidgets('the level line and a transport row share their edges — '
+        'one measure, on one axis', (tester) async {
+      await pumpWith(
+        tester,
+        SingleChildScrollView(
+          child: RecordingStage(
+            state: _state(),
+            controls: RecordingTransportControls(
+              paused: false,
+              progress: const Duration(seconds: 3),
+              onDiscard: () {},
+              onTogglePause: () {},
+              onStop: () {},
+            ),
+          ),
+        ),
+      );
       final line = tester.getRect(find.byType(LiveWaveform));
-      expect(line.width, closeTo(orb.width, 0.5));
-      expect(line.center.dx, closeTo(orb.center.dx, 0.5));
+      final row = tester.getRect(find.byType(RecordingTransportControls));
+      final discard = tester.getRect(
+        find.byKey(const ValueKey('cancel_recording')),
+      );
+      final pause = tester.getRect(
+        find.byKey(const ValueKey('pause_resume_button')),
+      );
+      expect(line.left, closeTo(discard.left, 0.5));
+      expect(line.right, closeTo(pause.right, 0.5));
+      expect(line.center.dx, closeTo(row.center.dx, 0.5));
     });
 
     testWidgets('one column no wider than the level line, centred in a wide '
@@ -524,7 +526,16 @@ void main() {
       expect(discard.right, lessThan(stop.left));
       expect(stop.right, lessThan(pause.left));
       // The quiet rings and the Stop pill are one height, full 48px
-      // targets, on one centre line.
+      // targets, on one centre line; the solid pause glyph a size below the
+      // stroked ✕, so the two rings weigh the same.
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIconsFilled.pause)).size,
+        IconSizes.m,
+      );
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.close)).size,
+        IconSizes.l,
+      );
       expect(discard.height, greaterThanOrEqualTo(kMinInteractiveDimension));
       expect(pause.height, closeTo(discard.height, 0.5));
       expect(stop.height, closeTo(discard.height, 0.5));
