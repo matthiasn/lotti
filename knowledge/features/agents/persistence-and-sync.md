@@ -677,26 +677,23 @@ cannot see enough to be sure:
   `repeated sweeps` tests pin it, seeding chains the way production appends —
   both the link *and* `prevMessageId`, which earlier fixtures did not.
 
-## Hard delete, no tombstone — and no inbound guard
+## Hard delete, no synced tombstone
 
 A tombstone per pruned row would grow the sync payload in the exact dimension
 retention exists to shrink, and there is nothing to converge on: every device
 applies the same rule to the same synced rows and reaches the same conclusion
 independently.
 
-**Nothing is dropped on ingest.** An earlier version of this dropped inbound
-rows already past the local horizon, to stop a returning peer re-inserting what
-every device had agreed to forget. That guard is gone, because no rule here is a
-pure per-row age test: status events keep each day's newest, and an
-observation's fate depends on whether its ancestors may go. A single arriving
-row cannot be judged
-against a per-day property — and a guard that ignored it would drop precisely
-the event an old day is presented by, on a fresh device or a historical
-backfill, where the local store has nothing else for that day.
-
-The cost is churn: a peer replaying old rows re-materializes them, and the next
-sweep removes them again. That is a bounded, once-per-reconnect cost against a
-correctness one, and the sweep is idempotent by design.
+**What a device pruned stays pruned there.** No rule here is a pure per-row
+age test — status events keep each day's newest, and an observation's fate
+depends on whether its ancestors may go — so an arriving row cannot be judged
+by its age. It is judged by its id instead: each sweep records the ids it
+deletes in `pruned_agent_entities` (`recordPrunedAgentEntities`, schema v25),
+locally, in the transaction that deletes them. A received copy of a recorded id
+is refused (`refusesPrunedAgentEntity`), and deep backfill does not ask for one.
+Without it a peer that had not swept yet re-materialized the rows every deep
+backfill round ([ADR 0133](../../../docs/adr/0133-removals-and-repairs-reach-every-device.md)). A fresh device has recorded
+nothing, so it still receives every row it never pruned.
 
 A row sitting exactly on the boundary may survive a few hours longer on one
 device than another. For observational data that is invisible, and it converges
@@ -722,18 +719,17 @@ The propagation is asynchronous, though, and worth stating plainly:
 ask for it — until the lifecycle update reaches it. The deleted response is what
 makes that window terminate cleanly; it is not something reclamation prevents.
 
-**And it is not guaranteed to close.** A peer that missed the `destroyed`
-identity update and then asks for it gets that same deleted response, because
-`hardDeleteAgent` has already removed the row it would have been served from.
-`SyncSequenceBackfillResponder` marks the counter deleted and moves on, so the
-lifecycle is never applied and that peer can keep an agent this device
-destroyed. Reclaiming the sidecar does not cause that — the row is gone either
-way — but the sentence above should not be read as a promise that every device
-converges on the delete.
+**A peer that missed the destroy is still told.** `hardDeleteAgent` keeps the
+agent's destroyed identity in `deleted_agents.identity` (schema v25). A request
+for an agent entity this device has no row of is answered with that identity
+rather than `deleted`, and deep backfill sends it to an advertiser that still
+lists the agent's identity under an older clock
+(`DeepBackfillStore.resendDestroyedAgents`). The identity is not a row: writes
+about the agent are still refused. Agents deleted before v25 kept no identity,
+so a peer that missed their destroy stays unrepaired ([ADR 0133](../../../docs/adr/0133-removals-and-repairs-reach-every-device.md)).
 
-**A deleted agent is the one exception to "nothing is dropped on ingest".**
-Retention prunes by a rule every device applies to the same rows, so a
-replayed row is pruned again. A deletion is one device's decision, and the
+**A deleted agent is refused by agent, not by id.** A deletion is one
+device's decision, and the
 rows it removed are the only record of the agent there: a late write about
 it — its creation, its link, a message from a run still going on a peer —
 would be inserted as new, and the agent would come back.

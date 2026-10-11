@@ -187,6 +187,10 @@ such as its version from before the retype, is refused instead of inserted
 again at the old triple; a newer version clears the entry and takes a row.
 A holder displaced by a newer version is remembered the same way
 ([ADR 0128](../../docs/adr/0128-deletions-stick-across-purges-retypes-restores-and-backfill.md)).
+Deep backfill's link inventory lists each such lost version under its own
+clock, so this device does not ask a peer for the id every round only to
+refuse the answer, and resends it to a peer that lacks it
+([ADR 0133](../../docs/adr/0133-removals-and-repairs-reach-every-device.md)).
 
 ```mermaid
 stateDiagram-v2

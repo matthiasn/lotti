@@ -577,6 +577,9 @@ The agent phases stamp before they send. An agent entity or link persisted with
 detection and backfill. `HistoricalSyncService.reSyncInterval`'s agent
 `enqueueAction` therefore
 gives any clockless row a vector clock and persists it *before* enqueueing —
+through `AgentClockStamper`, which reads the stored row again in the transaction
+that writes the stamp, so an edit made since the page was read is what gets
+stamped ([ADR 0133](../../../docs/adr/0133-removals-and-repairs-reach-every-device.md)) —
 inside the interval sweep, so a *Last 30 days* run repairs only what it is
 about to send rather than every legacy row in the database. The stamp is
 persisted before enqueue, and the failed-row retry retains that stamped value

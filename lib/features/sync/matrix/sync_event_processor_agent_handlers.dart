@@ -163,6 +163,63 @@ extension _AgentHandlers on SyncEventProcessor {
         typeName: 'agentLink',
       );
 
+  /// Mirrors [identity]'s runtime — wake subscriptions, cadence, automatic
+  /// updates — onto this device's orchestrator. Task agents retain
+  /// observation when automation is off, while project agents restore their
+  /// direct-project subscription. Idempotent, so it also runs when a retried
+  /// apply finds the identity already stored: a failure after the commit
+  /// otherwise left a resumed agent without subscriptions until restart.
+  Future<void> _mirrorIdentityRuntime(AgentIdentityEntity identity) async {
+    if (wakeOrchestrator == null) return;
+    if (identity.kind == 'task_agent') {
+      final activeAndConfigured =
+          identity.lifecycle == AgentLifecycle.active &&
+          identity.config.inferenceSetup?.mode !=
+              AgentInferenceSetupMode.disabled;
+      if (!activeAndConfigured) {
+        wakeOrchestrator!
+          ..removeSubscriptions(identity.agentId)
+          ..disableAutomaticUpdatesRuntime(identity.agentId);
+        // A pause on another device halts this device's work as well.
+        if (identity.lifecycle != AgentLifecycle.active) {
+          wakeOrchestrator!.haltAgent(identity.agentId);
+        }
+      } else {
+        wakeOrchestrator!.mirrorTaskWakeCadence(identity);
+        if (identity.config.automaticUpdatesEnabledEffective) {
+          wakeOrchestrator!.enableAutomaticUpdatesRuntime(
+            identity.agentId,
+          );
+        } else {
+          wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+            identity.agentId,
+          );
+        }
+        final links = await agentRepository!.getLinksFrom(
+          identity.agentId,
+          type: 'agent_task',
+        );
+        for (final link in links) {
+          wakeOrchestrator!.addSubscription(
+            AgentSubscription(
+              id: '${identity.agentId}_task_${link.toId}',
+              agentId: identity.agentId,
+              matchEntityIds: {link.toId},
+              deferPropagatedMatches: false,
+            ),
+          );
+        }
+      }
+    } else if (identity.kind == AgentKinds.projectAgent) {
+      await _reconcileProjectAgentRuntime(identity);
+    }
+    // Plug-in kinds (goal agents today): offer the identity to each
+    // registered runtime-maintenance contributor, so the owning feature
+    // mirrors its subscriptions without this file hard-coding another kind
+    // branch. Contributors contain their own failures.
+    await _offerIdentityToRuntimeMaintenance(identity);
+  }
+
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
@@ -193,8 +250,12 @@ extension _AgentHandlers on SyncEventProcessor {
       final outcome = await agentRepository!.runInTransaction(
         () async =>
             await refusesWriteAboutDeletedAgent(agentRepository!, {
-              resolvedEntity.agentId,
-            })
+                  resolvedEntity.agentId,
+                }) ||
+                await refusesPrunedAgentEntity(
+                  agentRepository!,
+                  resolvedEntity.id,
+                )
             ? null
             : await _resolveAndPersistAgentEntity(
                 incoming: resolvedEntity,
@@ -242,6 +303,14 @@ extension _AgentHandlers on SyncEventProcessor {
             );
           }
         }
+        // A retried apply lands here when its first attempt committed and
+        // then failed: mirror the identity that stands, idempotently.
+        if (projectIdentity == null && resolvedEntity is AgentIdentityEntity) {
+          final stored = await agentRepository!.getEntity(resolvedEntity.id);
+          if (stored is AgentIdentityEntity) {
+            await _mirrorIdentityRuntime(stored);
+          }
+        }
         await _projectAgentAttribution(resolvedEntity);
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
@@ -253,61 +322,13 @@ extension _AgentHandlers on SyncEventProcessor {
         );
       }
       await _projectAgentAttribution(entityToApply);
-      // Mirror runtime subscriptions after a remote identity update. Task
-      // agents retain observation when automation is off, while project agents
-      // restore their direct-project subscription. This also closes the
-      // link-before-identity ordering gap during sync.
+      // Mirror runtime subscriptions after a remote identity update. This
+      // also closes the link-before-identity ordering gap during sync.
       final appliedIdentity = entityToApply is AgentIdentityEntity
           ? entityToApply
           : null;
-      if (wakeOrchestrator != null && appliedIdentity != null) {
-        if (appliedIdentity.kind == 'task_agent') {
-          final activeAndConfigured =
-              appliedIdentity.lifecycle == AgentLifecycle.active &&
-              appliedIdentity.config.inferenceSetup?.mode !=
-                  AgentInferenceSetupMode.disabled;
-          if (!activeAndConfigured) {
-            wakeOrchestrator!
-              ..removeSubscriptions(appliedIdentity.agentId)
-              ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
-            // A pause on another device halts this device's work as well.
-            if (appliedIdentity.lifecycle != AgentLifecycle.active) {
-              wakeOrchestrator!.haltAgent(appliedIdentity.agentId);
-            }
-          } else {
-            wakeOrchestrator!.mirrorTaskWakeCadence(appliedIdentity);
-            if (appliedIdentity.config.automaticUpdatesEnabledEffective) {
-              wakeOrchestrator!.enableAutomaticUpdatesRuntime(
-                appliedIdentity.agentId,
-              );
-            } else {
-              wakeOrchestrator!.disableAutomaticUpdatesRuntime(
-                appliedIdentity.agentId,
-              );
-            }
-            final links = await agentRepository!.getLinksFrom(
-              appliedIdentity.agentId,
-              type: 'agent_task',
-            );
-            for (final link in links) {
-              wakeOrchestrator!.addSubscription(
-                AgentSubscription(
-                  id: '${appliedIdentity.agentId}_task_${link.toId}',
-                  agentId: appliedIdentity.agentId,
-                  matchEntityIds: {link.toId},
-                  deferPropagatedMatches: false,
-                ),
-              );
-            }
-          }
-        } else if (appliedIdentity.kind == AgentKinds.projectAgent) {
-          await _reconcileProjectAgentRuntime(appliedIdentity);
-        }
-        // Plug-in kinds (goal agents today): offer the identity to each
-        // registered runtime-maintenance contributor, so the owning
-        // feature mirrors its subscriptions without this file hard-coding
-        // another kind branch. Contributors contain their own failures.
-        await _offerIdentityToRuntimeMaintenance(appliedIdentity);
+      if (appliedIdentity != null) {
+        await _mirrorIdentityRuntime(appliedIdentity);
       }
       // A task agent's identity can arrive after its link: only now does the
       // retirement pass rank that link (ADR 0104).

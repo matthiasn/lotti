@@ -1179,6 +1179,12 @@ class MockAgentRepository extends Mock implements AgentRepository {
       (invocation) =>
           getEntity(invocation.positionalArguments.single as String),
     );
+    // Nothing pruned by retention and no deleted agent's identity kept,
+    // unless a test says otherwise.
+    when(
+      () => prunedAgentEntityIdsAmong(any()),
+    ).thenAnswer((_) async => const <String>{});
+    when(() => deletedAgentIdentity(any())).thenAnswer((_) async => null);
   }
 
   /// Optional transaction boundary hook for concurrency regression tests.

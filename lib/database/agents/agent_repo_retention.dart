@@ -1,6 +1,19 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/agents/agent_database.dart';
+
+/// Records [ids] as pruned by retention, so a copy that arrives later is
+/// refused and deep backfill does not ask for it. Local to this device.
+Future<void> recordPrunedAgentEntities(
+  AgentDatabase db,
+  Iterable<String> ids,
+) async {
+  final prunedAt = clock.now();
+  for (final id in ids) {
+    await db.recordPrunedAgentEntity(id, prunedAt);
+  }
+}
 
 /// Batched hard deletes for the derived rows retention may forget.
 ///
@@ -9,12 +22,13 @@ import 'package:lotti/database/agents/agent_database.dart';
 /// DAG and need an ancestor-closed set plus the edges into it, which is
 /// `AgentRepoObservationRetention`'s job.
 ///
-/// **Hard delete, no tombstone.** A tombstone per pruned row would grow the
-/// sync payload in exactly the dimension retention exists to shrink, and there
-/// is nothing to converge on: every device applies the same deterministic rule
-/// to the same synced rows and reaches the same conclusion on its own. A row
-/// sitting on the boundary may survive a few hours longer on one device than
-/// another; for derived, observational data that is invisible.
+/// **Hard delete, no synced tombstone.** A tombstone per pruned row would grow
+/// the sync payload in exactly the dimension retention exists to shrink, and
+/// every device applies the same deterministic rule to the same synced rows. A
+/// device does remember, locally, which ids it pruned
+/// ([recordPrunedAgentEntities]): a peer that has not swept yet still lists
+/// those rows in deep backfill, and without the record they were asked for
+/// and stored again every round, until the next sweep removed them.
 ///
 /// Every method deletes at most `batchSize * maxBatchesPerSweep` rows and
 /// returns how many it removed, so a sweep is bounded, resumable, and safe to
@@ -112,6 +126,7 @@ class AgentRepoRetention {
         updateKind: UpdateKind.delete,
       );
     }
+    await recordPrunedAgentEntities(_db, ids);
   }
 
   /// Accumulates ids until a batch comes back empty or [maxBatches] is

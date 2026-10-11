@@ -56,6 +56,7 @@ import 'package:lotti/features/relationships/state/relationship_agent_providers.
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/agent_sync_attachment.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
@@ -338,6 +339,13 @@ List<Override> buildProviderOverrides(ProfileContext context) {
 List<Override> appFeatureWiringOverrides() => [
   // The profile pinning picker lists the devices sync knows.
   pairedSyncNodesProvider.overrideWith(knownSyncNodes),
+  // "Send settings" re-sends the GitHub account record too.
+  preferenceResendExtrasProvider.overrideWith(
+    (ref) =>
+        () async => [
+          ?await ref.read(gitHubAccountSyncProvider).heldMessage(),
+        ],
+  ),
   // The Daily OS walkthrough waits behind the general welcome.
   welcomeOnboardingOwedProvider.overrideWith(
     (ref) => ref.watch(shouldAutoShowOnboardingProvider.future),

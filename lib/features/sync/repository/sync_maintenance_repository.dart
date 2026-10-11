@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/preference_resend.dart';
+import 'package:lotti/features/sync/services/agent_clock_stamper.dart';
 import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
@@ -60,6 +61,7 @@ class SyncMaintenanceRepository {
     required this._agentRepository,
     required this._vectorClockService,
     required this._settingsDb,
+    this._preferenceExtras,
   });
 
   final JournalDb _journalDb;
@@ -70,6 +72,13 @@ class SyncMaintenanceRepository {
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
   final SettingsDb _settingsDb;
+  final Future<List<SyncMessage>> Function()? _preferenceExtras;
+
+  late final AgentClockStamper _agentClockStamper = AgentClockStamper(
+    agentRepository: _agentRepository,
+    vectorClockService: _vectorClockService,
+    outboxService: _outboxService,
+  );
 
   late final DefinitionClockStamper _definitionClockStamper =
       DefinitionClockStamper(
@@ -188,16 +197,20 @@ class SyncMaintenanceRepository {
         shouldSync: (_) => true,
       );
 
-  // Synced preferences — theme, greeting name, config flags — re-sent with
-  // their stored stamps, so a message that was lost is repaired; a peer with
-  // a newer value keeps it ([preferenceResendMessages]).
+  // Synced preferences — theme, greeting name, config flags, and the records
+  // of features above sync such as the GitHub account — re-sent with their
+  // stored stamps, so a message that was lost is repaired; a peer with a
+  // newer value keeps it ([preferenceResendMessages]).
   late final SyncOperation<SyncMessage> _preferencesSyncOperation =
       _createOperation<SyncMessage>(
         step: SyncStep.preferences,
-        fetchEntities: () => preferenceResendMessages(
-          journalDb: _journalDb,
-          settingsDb: _settingsDb,
-        ),
+        fetchEntities: () async => [
+          ...await preferenceResendMessages(
+            journalDb: _journalDb,
+            settingsDb: _settingsDb,
+          ),
+          ...?await _preferenceExtras?.call(),
+        ],
         enqueueEntity: _outboxService.enqueueMessage,
         shouldSync: (_) => true,
       );
@@ -254,10 +267,10 @@ class SyncMaintenanceRepository {
 
   /// Backfill vector clocks on agent entities that have `vectorClock: null`.
   ///
-  /// Fetches all null-clock entities oldest-first, stamps each with a new
-  /// vector clock via [VectorClockService], persists directly via the
-  /// repository (not `AgentSyncService` which would double-stamp), and
-  /// enqueues each for outbox sync.
+  /// Fetches all null-clock entities oldest-first and stamps each through
+  /// [AgentClockStamper], which re-reads the row in the transaction that
+  /// writes the stamp: an entity edited or received since the list was read
+  /// keeps that version, and one that has a clock by now is left alone.
   Future<void> backfillAgentEntityClocks({
     SyncProgressCallback? onProgress,
     SyncDetailedProgressCallback? onDetailedProgress,
@@ -278,34 +291,9 @@ class SyncMaintenanceRepository {
 
         var processed = 0;
         for (final entity in entities) {
-          // Each stamping is its own scope — if the outbox enqueue throws
-          // before the upsertEntity commits to disk, the reservation
-          // releases and the burn handler broadcasts an unresolvable hint.
-          // Once upsertEntity lands, the scope commits regardless of later
-          // failures (commit-on-write invariant).
-          await _vectorClockService.withVcScope<void>(() async {
-            final stamped = entity.copyWith(
-              vectorClock: await _vectorClockService.getNextVectorClock(
-                previous: entity.vectorClock,
-                payload: (
-                  id: entity.id,
-                  type: SyncSequencePayloadType.agentEntity,
-                ),
-              ),
-            );
-            // Enqueue before persisting, and with the variant that throws:
-            // the plain enqueueMessage logs and swallows a failed outbox
-            // write, which would store the stamp without ever sending it.
-            // A throw leaves the entity's clock null on disk, so the next
-            // run retries it, and releases the reservation via the scope.
-            await _outboxService.enqueueMessageOrThrow(
-              SyncMessage.agentEntity(
-                agentEntity: stamped,
-                status: SyncEntryStatus.update,
-              ),
-            );
-            await _agentRepository.upsertEntity(stamped);
-          });
+          // A failed enqueue rolls the stamp back and releases the
+          // reservation, so the next run retries the entity.
+          await _agentClockStamper.stampEntity(entity.id);
 
           processed++;
           onDetailedProgress?.call(processed, total);
@@ -338,23 +326,7 @@ class SyncMaintenanceRepository {
 
         var processed = 0;
         for (final link in links) {
-          await _vectorClockService.withVcScope<void>(() async {
-            final stamped = link.copyWith(
-              vectorClock: await _vectorClockService.getNextVectorClock(
-                previous: link.vectorClock,
-                payload: (id: link.id, type: SyncSequencePayloadType.agentLink),
-              ),
-            );
-            // Enqueue before persisting — see backfillAgentEntityClocks.
-            // A throw here propagates and releases the reservation.
-            await _outboxService.enqueueMessageOrThrow(
-              SyncMessage.agentLink(
-                agentLink: stamped,
-                status: SyncEntryStatus.update,
-              ),
-            );
-            await _agentRepository.upsertLink(stamped);
-          });
+          await _agentClockStamper.stampLink(link.id);
 
           processed++;
           onDetailedProgress?.call(processed, total);
@@ -767,5 +739,6 @@ final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
     agentRepository: ref.watch(agentRepositoryProvider),
     vectorClockService: ref.read(vectorClockServiceProvider),
     settingsDb: ref.watch(settingsDbProvider),
+    preferenceExtras: ref.watch(preferenceResendExtrasProvider),
   );
 });

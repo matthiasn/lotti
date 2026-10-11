@@ -198,10 +198,22 @@ CREATE INDEX idx_saga_log_agent ON saga_log(agent_id);
 -- that arrives by sync afterwards — its creation delivered late, a link, a
 -- message from a run on another device — is refused rather than inserted
 -- again (ADR 0108, specs/tla/TaskAgentAssignment.tla DeletedStaysDeleted).
--- Agent ids are never reused, so a row here is permanent.
+-- Agent ids are never reused, so a row here is permanent. `identity` keeps
+-- the agent's destroyed identity (v25): a peer that missed the destroy is
+-- sent it again by backfill and deep backfill, which otherwise find no row.
 CREATE TABLE deleted_agents (
   agent_id TEXT NOT NULL PRIMARY KEY,
-  deleted_at DATETIME NOT NULL
+  deleted_at DATETIME NOT NULL,
+  identity TEXT
+);
+
+-- Agent entities the retention sweeps removed on purpose (v25): old status
+-- events and observations. A copy that arrives afterwards — a peer that has
+-- not swept yet answering deep backfill — is refused rather than stored
+-- again, and deep backfill does not ask for one.
+CREATE TABLE pruned_agent_entities (
+  id TEXT NOT NULL PRIMARY KEY,
+  pruned_at DATETIME NOT NULL
 );
 
 -- Named queries
@@ -263,7 +275,13 @@ getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND del
 
 deleteAgentEntities: DELETE FROM agent_entities WHERE agent_id = :agentId;
 
-recordDeletedAgent: INSERT OR IGNORE INTO deleted_agents (agent_id, deleted_at) VALUES (:agentId, :deletedAt);
+recordDeletedAgent: INSERT OR IGNORE INTO deleted_agents (agent_id, deleted_at, identity) VALUES (:agentId, :deletedAt, :identity);
+
+deletedAgentIdentity: SELECT identity FROM deleted_agents WHERE agent_id = :agentId;
+
+recordPrunedAgentEntity: INSERT OR IGNORE INTO pruned_agent_entities (id, pruned_at) VALUES (:id, :prunedAt);
+
+prunedAgentEntityIdsAmong: SELECT id FROM pruned_agent_entities WHERE id IN :ids;
 
 deletedAgentIdsAmong: SELECT agent_id FROM deleted_agents WHERE agent_id IN :agentIds;
 

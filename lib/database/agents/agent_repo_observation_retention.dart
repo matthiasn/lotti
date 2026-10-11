@@ -293,6 +293,7 @@ class AgentRepoObservationRetention {
         updateKind: UpdateKind.delete,
       );
     }
+    await recordPrunedAgentEntities(_db, ids);
   }
 }
 

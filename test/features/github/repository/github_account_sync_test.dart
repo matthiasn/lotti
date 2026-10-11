@@ -137,6 +137,26 @@ void main() {
     });
   });
 
+  group('heldMessage', () {
+    test('is the held version with its own stamp, a disconnection as much '
+        'as a token, and nothing before any account', () async {
+      expect(await sync().heldMessage(), isNull);
+
+      final connected = await storage.save(token: 'ghp_secret', login: 'pingu');
+      final withToken = await sync().heldMessage() as SyncGitHubAccount?;
+      expect(withToken?.updatedAt, connected.updatedAt);
+      expect(withToken?.token, isNotNull);
+
+      // A disconnection lost on its way is repaired by "Send settings".
+      await storage.clear();
+      final cleared = await storage.read();
+      final disconnection = await sync().heldMessage() as SyncGitHubAccount?;
+      expect(disconnection?.updatedAt, cleared!.updatedAt);
+      expect(disconnection?.token, isNull);
+      expect(sent, isEmpty);
+    });
+  });
+
   test('checking other devices asks sync to catch up', () async {
     final s = sync();
     expect(s.canCheckOtherDevices, isTrue);

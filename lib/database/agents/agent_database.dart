@@ -38,7 +38,7 @@ class AgentDatabase extends _$AgentDatabase {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 24;
+  static const int currentSchemaVersion = 25;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -525,6 +525,27 @@ class AgentDatabase extends _$AgentDatabase {
           await customStatement(
             'ALTER TABLE wake_run_log ADD COLUMN input_fingerprint TEXT',
           );
+        }
+        if (from < 25) {
+          // Agents deleted before this build keep no identity: a peer that
+          // missed their destroy is not repaired. Rows pruned before it are
+          // not recorded either.
+          // A database created at v23 or later has the table without the
+          // column; one upgraded from before v23 created it with the column.
+          final columns = {
+            for (final row in await customSelect(
+              "SELECT name FROM pragma_table_info('deleted_agents')",
+            ).get())
+              row.read<String>('name'),
+          };
+          if (columns.isEmpty) {
+            await m.createTable(deletedAgents);
+          } else if (!columns.contains('identity')) {
+            await customStatement(
+              'ALTER TABLE deleted_agents ADD COLUMN identity TEXT',
+            );
+          }
+          await m.createTable(prunedAgentEntities);
         }
       },
     );

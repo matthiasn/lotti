@@ -4,11 +4,11 @@ import 'package:lotti/classes/agents/agent_link.dart' as agent_model;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
-import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/services/agent_clock_stamper.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -301,6 +301,16 @@ class HistoricalSyncService {
   final AgentRepository _agentRepository;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
+
+  /// The row a stamp left as it now stands, or [read] when it is gone.
+  static Future<T> _stampedOr<T>(Future<T?> stamped, T read) async =>
+      await stamped ?? read;
+
+  late final AgentClockStamper _agentClockStamper = AgentClockStamper(
+    agentRepository: _agentRepository,
+    vectorClockService: _vectorClockService,
+    outboxService: _outboxService,
+  );
   final DomainLogger _logger;
 
   /// Re-enqueue persisted entries within [start]..[end] so peers can backfill.
@@ -553,23 +563,15 @@ class HistoricalSyncService {
               var toSend = preparedEntity ??= AgentDbConversions.fromEntityRow(
                 row,
               );
+              // Stamped from the stored row, read again in the transaction
+              // that writes the stamp; one that gained a clock meanwhile is
+              // sent as it now stands.
               toSend = await stampIfClockless(
                 toSend,
                 toSend.vectorClock,
-                (e) => _vectorClockService.withVcScope<AgentDomainEntity>(
-                  () async {
-                    final stamped = e.copyWith(
-                      vectorClock: await _vectorClockService.getNextVectorClock(
-                        previous: e.vectorClock,
-                        payload: (
-                          id: e.id,
-                          type: SyncSequencePayloadType.agentEntity,
-                        ),
-                      ),
-                    );
-                    await _agentRepository.upsertEntity(stamped);
-                    return stamped;
-                  },
+                (e) => _stampedOr(
+                  _agentClockStamper.stampEntity(e.id, send: false),
+                  e,
                 ),
               );
               preparedEntity = toSend;
@@ -631,20 +633,9 @@ class HistoricalSyncService {
             toSend = await stampIfClockless(
               toSend,
               toSend.vectorClock,
-              (l) => _vectorClockService.withVcScope<agent_model.AgentLink>(
-                () async {
-                  final stamped = l.copyWith(
-                    vectorClock: await _vectorClockService.getNextVectorClock(
-                      previous: l.vectorClock,
-                      payload: (
-                        id: l.id,
-                        type: SyncSequencePayloadType.agentLink,
-                      ),
-                    ),
-                  );
-                  await _agentRepository.upsertLink(stamped);
-                  return stamped;
-                },
+              (l) => _stampedOr(
+                _agentClockStamper.stampLink(l.id, send: false),
+                l,
               ),
             );
             preparedLink = toSend;

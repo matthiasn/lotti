@@ -133,6 +133,16 @@ void main() {
 
       expect(result.messageIds, ['a', 'b', 'c']);
       expect(await messageIds(), ['tip']);
+      // Remembered, so a peer that has not swept yet cannot hand them back.
+      expect(
+        (await db.prunedAgentEntityIdsAmong([
+          'a',
+          'b',
+          'c',
+          'tip',
+        ]).get()).toSet(),
+        {'a', 'b', 'c'},
+      );
 
       final projection = await survivingProjection();
       expect(projection.headIds, ['tip']);

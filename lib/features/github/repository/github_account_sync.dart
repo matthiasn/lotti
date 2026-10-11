@@ -54,6 +54,16 @@ class GitHubAccountSync {
     }
   }
 
+  /// The message carrying the held version, connected or disconnected, with
+  /// its own stamp; null when this device has never held an account. "Send
+  /// settings" includes it: the message carries no sequence counter, so a
+  /// disconnection lost on its way would otherwise leave another device
+  /// holding the token.
+  Future<SyncMessage?> heldMessage() async {
+    final record = await _storage.read();
+    return record == null ? null : _message(record);
+  }
+
   /// Whether this world syncs at all; a guest world has nothing to ask.
   bool get canCheckOtherDevices => _rescan != null;
 

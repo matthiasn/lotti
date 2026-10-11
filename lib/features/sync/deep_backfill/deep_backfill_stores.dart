@@ -35,6 +35,8 @@ class TableDeepBackfillStore extends DeepBackfillStore {
     required this.queries,
     required this.resend,
     this.deletedAgents,
+    this.destroyedAgents,
+    this.pruned,
   });
 
   @override
@@ -45,9 +47,24 @@ class TableDeepBackfillStore extends DeepBackfillStore {
   /// The deleted-agent lookup of the agent stores; null elsewhere.
   final Future<Set<String>> Function(Iterable<String> agentIds)? deletedAgents;
 
+  /// The retention-pruned lookup of the agent entity store; null elsewhere.
+  final Future<Set<String>> Function(Iterable<String> ids)? pruned;
+
+  @override
+  Future<Set<String>> prunedAmong(Iterable<String> ids) =>
+      pruned?.call(ids) ?? Future.value(const {});
+
+  /// The destroyed-identity resend of the agent entity store; null elsewhere.
+  final Future<int> Function(Map<String, VectorClock?> advertised)?
+  destroyedAgents;
+
   @override
   Future<Set<String>> deletedAgentsAmong(Iterable<String> agentIds) =>
       deletedAgents?.call(agentIds) ?? Future.value(const {});
+
+  @override
+  Future<int> resendDestroyedAgents(Map<String, VectorClock?> advertised) =>
+      destroyedAgents?.call(advertised) ?? Future.value(0);
 
   @override
   Future<int> count() => queries.count();
@@ -265,7 +282,10 @@ class JournalDeepBackfillStore extends DeepBackfillStore {
   );
 }
 
-/// Entry links: a removal is a row whose `deletedAt` is set (ADR 0078).
+/// Entry links: a removal is a row whose `deletedAt` is set (ADR 0078). A
+/// version that lost its triple to another id (ADR 0128) is listed too, by
+/// its own clock: without it this device lacked the id and asked a peer for
+/// it every round, only to refuse the answer.
 TableDeepBackfillStore entryLinkDeepBackfillStore({
   required JournalDb journalDb,
   required OutboxService outboxService,
@@ -274,6 +294,10 @@ TableDeepBackfillStore entryLinkDeepBackfillStore({
   queries: DeepBackfillTableQueries(
     db: journalDb,
     table: 'linked_entries',
+    source:
+        '(SELECT id, serialized FROM linked_entries UNION ALL '
+        'SELECT id, serialized FROM entry_link_losses '
+        'WHERE id NOT IN (SELECT id FROM linked_entries))',
     clockSql: r"json_extract(serialized, '$.vectorClock')",
   ),
   resend: (serialized) => outboxService.enqueueMessage(
@@ -319,7 +343,54 @@ TableDeepBackfillStore agentEntityDeepBackfillStore({
     ),
   ),
   deletedAgents: (ids) => _deletedAgentsIn(agentDatabase, ids),
+  destroyedAgents: (advertised) => _resendDestroyedAgents(
+    agentDatabase,
+    outboxService,
+    advertised,
+  ),
+  pruned: (ids) async {
+    final list = ids.toSet().toList();
+    if (list.isEmpty) return const {};
+    return (await agentDatabase.prunedAgentEntityIdsAmong(list).get()).toSet();
+  },
 );
+
+/// Sends the destroyed identity this device kept for each agent of
+/// [advertised] it deleted, unless the advertiser already holds that
+/// version or a newer one.
+Future<int> _resendDestroyedAgents(
+  AgentDatabase agentDatabase,
+  OutboxService outboxService,
+  Map<String, VectorClock?> advertised,
+) async {
+  var sent = 0;
+  for (final agentId in await _deletedAgentsIn(
+    agentDatabase,
+    advertised.keys,
+  )) {
+    final serialized = await agentDatabase
+        .deletedAgentIdentity(agentId)
+        .getSingleOrNull();
+    if (serialized == null) continue;
+    final identity = AgentDbConversions.fromSerialized(serialized);
+    final theirs = advertised[agentId];
+    final ours = identity.vectorClock;
+    if (theirs != null && ours != null) {
+      final order = VectorClock.compare(theirs, ours);
+      if (order == VclockStatus.a_gt_b || order == VclockStatus.equal) {
+        continue;
+      }
+    }
+    await outboxService.enqueueMessage(
+      SyncMessage.agentEntity(
+        status: SyncEntryStatus.update,
+        agentEntity: identity,
+      ),
+    );
+    sent++;
+  }
+  return sent;
+}
 
 /// Agent links: a removal keeps its row with `deleted_at` (ADR 0081). The
 /// inventory names both ends, since either may be a deleted agent.

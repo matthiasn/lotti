@@ -73,31 +73,51 @@ abstract class DeepBackfillStore {
   /// records it would refuse if asked for. Only the agent stores know any.
   Future<Set<String>> deletedAgentsAmong(Iterable<String> agentIds) async =>
       const {};
+
+  /// Those of [ids] this device's retention pruned on purpose, which it
+  /// would refuse if sent. Only the agent entity store knows any.
+  Future<Set<String>> prunedAmong(Iterable<String> ids) async => const {};
+
+  /// Sends the destroyed identity of each agent in [advertised] — agent id
+  /// to the clock the advertiser holds for its identity — that this device
+  /// deleted and the advertiser holds an older version of: a peer that
+  /// missed the destroy keeps the agent running otherwise. Returns how many
+  /// were sent. Only the agent entity store knows any.
+  Future<int> resendDestroyedAgents(
+    Map<String, VectorClock?> advertised,
+  ) async => 0;
 }
 
 /// The SQL every store shares: a table with a TEXT primary key `id` and a
 /// clock at [clockSql]. [agentIdsSql], set for the agent tables, is a JSON
-/// array of the agent ids a row belongs to. [table], [clockSql] and
-/// [agentIdsSql] are constants of the store, never input.
+/// array of the agent ids a row belongs to. [source], when set, is what the
+/// records are read from instead of [table] — a subquery with `id` and
+/// `serialized` columns — while [table] still names what [changes] watches.
+/// [table], [source], [clockSql] and [agentIdsSql] are constants of the
+/// store, never input.
 class DeepBackfillTableQueries {
   const DeepBackfillTableQueries({
     required this.db,
     required this.table,
     required this.clockSql,
     this.agentIdsSql,
+    this.source,
   });
 
   final GeneratedDatabase db;
   final String table;
   final String clockSql;
   final String? agentIdsSql;
+  final String? source;
+
+  String get _from => source ?? table;
 
   /// Chunk size for `IN (...)` lists, well under SQLite's variable limit.
   static const int inListChunk = 500;
 
   Future<int> count() async {
     final row = await db
-        .customSelect('SELECT COUNT(*) AS n FROM $table')
+        .customSelect('SELECT COUNT(*) AS n FROM $_from')
         .getSingle();
     return row.read<int>('n');
   }
@@ -113,7 +133,7 @@ class DeepBackfillTableQueries {
     final agents = agentIdsSql == null ? '' : ', $agentIdsSql AS agents';
     final rows = await db
         .customSelect(
-          'SELECT id, $clockSql AS vc$agents FROM $table '
+          'SELECT id, $clockSql AS vc$agents FROM $_from '
           '${after == null ? '' : 'WHERE id > ? '}'
           'ORDER BY id LIMIT ?',
           variables: [
@@ -155,7 +175,7 @@ class DeepBackfillTableQueries {
     final (where, variables) = rangeClause(start: start, end: end);
     final rows = await db
         .customSelect(
-          'SELECT id, $clockSql AS vc FROM $table $where',
+          'SELECT id, $clockSql AS vc FROM $_from $where',
           variables: variables,
         )
         .get();
@@ -177,7 +197,7 @@ class DeepBackfillTableQueries {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final rows = await db
           .customSelect(
-            'SELECT id, serialized FROM $table WHERE id IN ($placeholders)',
+            'SELECT id, serialized FROM $_from WHERE id IN ($placeholders)',
             variables: [for (final id in chunk) Variable.withString(id)],
           )
           .get();

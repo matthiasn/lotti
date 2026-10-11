@@ -4529,6 +4529,99 @@ void main() {
         ).called(1);
       });
 
+      test('a retried identity whose first apply committed still restores '
+          'the runtime from the identity that stands', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-retried',
+          agentId: 'agent-retried',
+          kind: 'task_agent',
+          displayName: 'Retried Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(automaticUpdatesEnabled: true),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 3}),
+        );
+        // The first attempt wrote it, then failed after the commit.
+        when(
+          () => mockAgentRepo.getEntity('agent-retried'),
+        ).thenAnswer((_) async => entity);
+        when(
+          () => mockAgentRepo.getLinksFrom('agent-retried', type: 'agent_task'),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.basic(
+              id: 'link-retried',
+              fromId: 'agent-retried',
+              toId: 'task-7',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: entity,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-retried'),
+        ).called(1);
+        verify(
+          () => mockOrchestrator.addSubscription(
+            any(
+              that: isA<AgentSubscription>().having(
+                (sub) => sub.matchEntityIds,
+                'matchEntityIds',
+                {'task-7'},
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'an entity this device pruned is refused, not stored again',
+        () async {
+          when(
+            () => mockAgentRepo.prunedAgentEntityIdsAmong(['msg-pruned']),
+          ).thenAnswer((_) async => {'msg-pruned'});
+          final entity = AgentDomainEntity.agentMessage(
+            id: 'msg-pruned',
+            agentId: 'agent-active',
+            threadId: 'thread-1',
+            kind: AgentMessageKind.observation,
+            createdAt: DateTime(2024, 3, 15),
+            vectorClock: const VectorClock({'host-a': 1}),
+            metadata: const AgentMessageMetadata(),
+            tokensApprox: 1,
+          );
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: entity,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        },
+      );
+
       test(
         'restores existing project link when project_agent identity arrives',
         () async {
