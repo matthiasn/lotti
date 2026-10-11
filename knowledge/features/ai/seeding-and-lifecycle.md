@@ -244,11 +244,7 @@ checks this against is `specs/tla/AiConfigReplication.tla`.
   such a model out of the model lists until its provider is live again;
   `includeDeleted` reads, which the seeding passes and the cleanup use, still
   see it (ADR 0127).
-- **Every write is owed until the outbox takes it.** The write commits
-  before its message is staged, and the outbox's ordinary enqueue swallows
-  its own failure, so `AiConfigRepository` records the id in
-  `AiConfigSyncLedger` (one `SettingsDb` key of owed ids) before staging and
-  settles it once the row is staged. A failed enqueue leaves the id owed;
+- **Every write is owed until the outbox takes it.** The outbox's ordinary enqueue swallows its own failure, so `AiConfigRepository` records the id in `AiConfigSyncLedger` (one `SettingsDb` key of owed ids) before the write commits (`AiConfigSyncSender.owe`) and settles it once the row is staged: a crash between the write and its send still leaves the debt. A failed enqueue leaves the id owed;
   `flushPending` — at startup, a minute after a failure, and from the next
   successful write of the same id — sends what the device holds for it then:
   the stored row with its stamp, or the hard deletion its stamp alone

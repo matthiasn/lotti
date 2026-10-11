@@ -1018,6 +1018,167 @@ void main() {
     ).called(1);
   });
 
+  group('answering a peer that applies in arrival order (ADR 0131)', () {
+    const flag = ConfigFlag(name: 'f', description: 'd', status: true);
+    late List<SyncMessage> answered;
+
+    setUp(() {
+      answered = [];
+      processor.answerWithHeld = (message) async => answered.add(message);
+      when(
+        () => aiConfigRepository.resendHeld(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    void flagHeld({required bool applied, required int updatedAt}) =>
+        when(
+          () => journalDb.applyConfigFlagVersion(
+            any(),
+            updatedAt: any(named: 'updatedAt'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            flag: flag,
+            updatedAt: updatedAt,
+            applied: applied,
+            statusChanged: false,
+          ),
+        );
+
+    Future<void> receiveFlag({int? updatedAt, bool status = true}) async {
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.configFlag(
+            name: flag.name,
+            description: flag.description,
+            status: status,
+            updatedAt: updatedAt,
+          ),
+        ),
+      );
+      await processor.process(event: event, journalDb: journalDb);
+    }
+
+    const heldMessage = SyncMessage.configFlag(
+      name: 'f',
+      description: 'd',
+      status: true,
+      updatedAt: 9,
+    );
+
+    test('an unstamped flag from an old build is answered with the version '
+        'held here', () async {
+      flagHeld(applied: false, updatedAt: 9);
+      await receiveFlag();
+      expect(answered, [heldMessage]);
+    });
+
+    test('a stamped flag older than the one held is answered, since an old '
+        'build would keep it', () async {
+      flagHeld(applied: false, updatedAt: 9);
+      await receiveFlag(updatedAt: 5, status: false);
+      expect(answered, [heldMessage]);
+    });
+
+    test('a stamped flag as new as the one held, or newer, is not answered, '
+        'so two current builds never answer each other', () async {
+      flagHeld(applied: false, updatedAt: 9);
+      await receiveFlag(updatedAt: 9);
+      flagHeld(applied: true, updatedAt: 12);
+      await receiveFlag(updatedAt: 12);
+      expect(answered, isEmpty);
+    });
+
+    test('a failed answer is logged and the flag is still applied', () async {
+      flagHeld(applied: false, updatedAt: 9);
+      processor.answerWithHeld = (_) async => throw StateError('outbox down');
+
+      await receiveFlag();
+
+      verify(
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'processor.apply.answerWithHeld',
+        ),
+      ).called(1);
+    });
+
+    test('an unstamped ai config, or one older than the version held, has '
+        'the held version resent; one as new is not', () async {
+      Future<void> receive(int? stamp) async {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.aiConfig(
+              aiConfig: fallbackAiConfig,
+              status: SyncEntryStatus.update,
+              versionStamp: stamp,
+            ),
+          ),
+        );
+        await processor.process(event: event, journalDb: journalDb);
+      }
+
+      when(
+        () => aiConfigRepository.versionStamp(fallbackAiConfig.id),
+      ).thenAnswer((_) async => 42);
+
+      await receive(null);
+      await receive(40);
+      verify(
+        () => aiConfigRepository.resendHeld(fallbackAiConfig.id),
+      ).called(2);
+
+      await receive(42);
+      await receive(50);
+      verifyNever(() => aiConfigRepository.resendHeld(any()));
+    });
+
+    test('an ai config deletion from an old build has the held version '
+        'resent', () async {
+      when(() => event.text).thenReturn(
+        encodeMessage(const SyncMessage.aiConfigDelete(id: 'cfg')),
+      );
+      when(
+        () => aiConfigRepository.deleteConfig(
+          any(),
+          fromSync: any(named: 'fromSync'),
+          versionStamp: any(named: 'versionStamp'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => aiConfigRepository.resendHeld('cfg')).called(1);
+    });
+
+    test('a failed ai config resend is logged', () async {
+      when(
+        () => aiConfigRepository.resendHeld(any()),
+      ).thenThrow(StateError('closed'));
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.aiConfig(
+            aiConfig: fallbackAiConfig,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'processor.apply.answerLegacyAiConfig',
+        ),
+      ).called(1);
+    });
+  });
+
   group('a synced notification preference (ADR 0073, the settings page)', () {
     late MockNotificationPreferenceEffects effects;
 

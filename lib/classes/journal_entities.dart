@@ -64,28 +64,52 @@ abstract class Metadata with _$Metadata {
 /// A purge removes a deleted entry's files and fields but keeps its id, its
 /// dates, its vector clock and its deletion, so the deletion stays a version
 /// like any other: backfill still serves it to a device that missed it, and a
-/// late copy of an older version is still refused. The tombstone is a
-/// [JournalEntry] whatever the entry was, since only that variant has no
-/// required fields to keep, and [Metadata.purgedAt] marks it.
+/// late copy of an older version is still refused. [Metadata.purgedAt] marks
+/// it. The tombstone is a [JournalEntry], the one variant with no required
+/// fields to keep — except for an image or an audio recording, which keeps
+/// its variant and the fields that name its file (ADR 0131). A build before
+/// #4534 purges a deleted row together with its file, and finds that file
+/// through those fields; a plain entry in its place left the file behind.
 extension JournalEntityTombstone on JournalEntity {
   /// Whether this is a purge's tombstone rather than an entry with fields.
   bool get isPurgedTombstone => meta.purgedAt != null;
 
   /// This deleted entry reduced to its tombstone, purged at [purgedAt]: the
-  /// id, dates, clock and deletion, nothing else.
-  JournalEntity toPurgedTombstone(DateTime purgedAt) =>
-      JournalEntity.journalEntry(
-        meta: Metadata(
-          id: meta.id,
-          createdAt: meta.createdAt,
-          updatedAt: meta.updatedAt,
-          dateFrom: meta.dateFrom,
-          dateTo: meta.dateTo,
-          vectorClock: meta.vectorClock,
-          deletedAt: meta.deletedAt ?? purgedAt,
-          purgedAt: purgedAt,
+  /// id, dates, clock and deletion, and for media the path of its file.
+  JournalEntity toPurgedTombstone(DateTime purgedAt) {
+    final tombstoneMeta = Metadata(
+      id: meta.id,
+      createdAt: meta.createdAt,
+      updatedAt: meta.updatedAt,
+      dateFrom: meta.dateFrom,
+      dateTo: meta.dateTo,
+      vectorClock: meta.vectorClock,
+      deletedAt: meta.deletedAt ?? purgedAt,
+      purgedAt: purgedAt,
+    );
+    return switch (this) {
+      JournalImage(:final data) => JournalEntity.journalImage(
+        meta: tombstoneMeta,
+        data: ImageData(
+          capturedAt: data.capturedAt,
+          imageId: data.imageId,
+          imageFile: data.imageFile,
+          imageDirectory: data.imageDirectory,
         ),
-      );
+      ),
+      JournalAudio(:final data) => JournalEntity.journalAudio(
+        meta: tombstoneMeta,
+        data: AudioData(
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          audioFile: data.audioFile,
+          audioDirectory: data.audioDirectory,
+          duration: data.duration,
+        ),
+      ),
+      _ => JournalEntity.journalEntry(meta: tombstoneMeta),
+    };
+  }
 }
 
 /// The one definition of "this entry carries the user-facing flag".

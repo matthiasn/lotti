@@ -202,6 +202,7 @@ import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
+import 'package:lotti/features/sync/sequence/purged_entry_guard.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
@@ -2010,3 +2011,5 @@ class MockPullRequestImageAttacher extends Mock
 
 class MockPullRequestContextService extends Mock
     implements PullRequestContextService {}
+
+class MockPurgedEntryGuard extends Mock implements PurgedEntryGuard {}

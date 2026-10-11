@@ -56,6 +56,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           versionStamp: versionStamp,
           fallbackStamp: event.originServerTs.millisecondsSinceEpoch,
         );
+        await _answerLegacyAiConfig(aiConfig.id, versionStamp);
         return null;
       case SyncAiConfigDelete(
         :final id,
@@ -86,6 +87,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             versionStamp: stamp,
           );
         }
+        await _answerLegacyAiConfig(id, versionStamp);
         return null;
       case SyncSavedTaskFilter(:final filter):
         await _savedTaskFiltersRepository.upsert(
@@ -115,6 +117,24 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           configFlag,
           updatedAt: updatedAt ?? event.originServerTs.millisecondsSinceEpoch,
         );
+        // A build before stamps (#4517) applies flags in arrival order. It
+        // sent this unstamped one, or a stamped one reached it after a newer
+        // version: send the version held here, so the newest arrives last
+        // (ADR 0131).
+        // A new peer ignores the answer, being no newer than what it holds.
+        final staleAtOldPeer =
+            !result.applied &&
+            (result.updatedAt != updatedAt || result.flag != configFlag);
+        if (updatedAt == null || staleAtOldPeer) {
+          await _answerWithHeld(
+            SyncMessage.configFlag(
+              name: result.flag.name,
+              description: result.flag.description,
+              status: result.flag.status,
+              updatedAt: result.updatedAt,
+            ),
+          );
+        }
         if (!result.applied) return null;
         if (configFlag.name == 'private') {
           _updateNotifications.notify(
@@ -367,6 +387,46 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           }
         }
         return null;
+    }
+  }
+
+  /// Sends [message] through [SyncEventProcessor.answerWithHeld]. A failure
+  /// is logged: the next stale or unstamped arrival answers again.
+  Future<void> _answerWithHeld(SyncMessage message) async {
+    final answer = answerWithHeld;
+    if (answer == null) return;
+    try {
+      await answer(message);
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'processor.apply.answerWithHeld',
+      );
+    }
+  }
+
+  /// Resends the version of AI configuration [id] held here when the one
+  /// received came from a build that applies them in arrival order (no
+  /// [receivedStamp]), or was older than the one held: that build keeps
+  /// whatever arrives last, so the newest has to arrive last (ADR 0131). A
+  /// copy as new as the one held is no answer's cause, so two current
+  /// builds never answer each other.
+  Future<void> _answerLegacyAiConfig(String id, int? receivedStamp) async {
+    try {
+      if (receivedStamp != null) {
+        final held = await _aiConfigRepository.versionStamp(id);
+        if (held == null || held <= receivedStamp) return;
+      }
+      await _aiConfigRepository.resendHeld(id);
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'processor.apply.answerLegacyAiConfig',
+      );
     }
   }
 }

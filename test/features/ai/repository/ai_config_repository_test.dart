@@ -47,6 +47,34 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  test('a local save is owed before its write commits, so a crash before '
+      'the send still leaves the debt (ADR 0127)', () async {
+    final settings = SettingsDb(inMemoryDatabase: true);
+    addTearDown(settings.close);
+    final db = MockAiConfigDb();
+    when(db.close).thenAnswer((_) async {});
+    Set<String>? owedAtWrite;
+    when(() => db.saveConfig(any())).thenAnswer((_) async {
+      owedAtWrite = await AiConfigSyncLedger(settings).load();
+      return 1;
+    });
+    final repository = AiConfigRepository(db, settingsDb: settings);
+    addTearDown(repository.close);
+    final provider = AiConfig.inferenceProvider(
+      id: 'owed-first',
+      baseUrl: 'https://api.example.com',
+      apiKey: 'key',
+      name: 'Provider',
+      createdAt: fixedDate,
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+    );
+
+    await repository.saveConfig(provider);
+
+    expect(owedAtWrite, {'owed-first'});
+    expect(await AiConfigSyncLedger(settings).load(), isEmpty);
+  });
+
   test('default profile persists and clears in device settings', () async {
     final settings = MockSettingsDb();
     final db = MockAiConfigDb();

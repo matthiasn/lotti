@@ -125,6 +125,23 @@ class SyncSequenceLogService {
     required VectorClock vectorClock,
   }) => _sender.recordSentEntryLink(linkId: linkId, vectorClock: vectorClock);
 
+  /// See [SyncDatabase.burnedOwnCountersWithoutPayload].
+  Future<Set<int>> burnedOwnCountersWithoutPayload(String hostId) =>
+      _sender.burnedOwnCountersWithoutPayload(hostId);
+
+  /// See [SyncDatabase.rebindBurnedOwnSequenceCounter].
+  Future<bool> rebindBurnedOwnCounter({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+  }) => _sender.rebindBurnedOwnCounter(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType,
+  );
+
   /// Bind an unsettled own-host counter to the payload proven to cover it.
   Future<bool> bindOwnCounter({
     required String hostId,

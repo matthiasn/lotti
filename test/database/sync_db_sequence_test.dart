@@ -841,6 +841,95 @@ void main() {
     });
   });
 
+  group('old-build repairs (ADR 0131)', () {
+    late SyncDatabase database;
+    final now = DateTime(2024, 1, 1);
+
+    setUp(() => database = SyncDatabase(inMemoryDatabase: true));
+    tearDown(() => database.close());
+
+    Future<void> row(
+      String host,
+      int counter, {
+      required SyncSequenceStatus status,
+      String? entryId,
+      SyncSequencePayloadType type = SyncSequencePayloadType.journalEntity,
+    }) => database.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(host),
+        counter: Value(counter),
+        entryId: Value(entryId),
+        payloadType: Value(type.index),
+        status: Value(status.index),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+
+    test('burned own counters are the non-events of this host that name no '
+        'payload', () async {
+      await row('me', 1, status: SyncSequenceStatus.burned);
+      await row('me', 2, status: SyncSequenceStatus.unresolvable);
+      await row('me', 3, entryId: 'e', status: SyncSequenceStatus.received);
+      await row('me', 4, entryId: 'e', status: SyncSequenceStatus.burned);
+      await row('peer', 5, status: SyncSequenceStatus.burned);
+
+      expect(await database.burnedOwnCountersWithoutPayload('me'), {1, 2});
+    });
+
+    test('a burned own counter rebinds to the payload that carries it, '
+        'once, and nothing else is touched', () async {
+      await row('me', 1, status: SyncSequenceStatus.burned);
+      await row('me', 2, entryId: 'other', status: SyncSequenceStatus.received);
+
+      expect(
+        await database.rebindBurnedOwnSequenceCounter(
+          hostId: 'me',
+          counter: 1,
+          entryId: 'entry',
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+        isTrue,
+      );
+      final rebound = await database.getEntryByHostAndCounter('me', 1);
+      expect(rebound!.entryId, 'entry');
+      expect(rebound.status, SyncSequenceStatus.received.index);
+
+      expect(
+        await database.rebindBurnedOwnSequenceCounter(
+          hostId: 'me',
+          counter: 2,
+          entryId: 'entry',
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+        isFalse,
+      );
+      expect(
+        (await database.getEntryByHostAndCounter('me', 2))!.entryId,
+        'other',
+      );
+    });
+
+    test('the held clock floor of an entry is the highest counter per host '
+        'among the versions received or backfilled', () async {
+      await row('a', 1, entryId: 'e', status: SyncSequenceStatus.received);
+      await row('a', 4, entryId: 'e', status: SyncSequenceStatus.backfilled);
+      await row('b', 2, entryId: 'e', status: SyncSequenceStatus.received);
+      await row('b', 9, entryId: 'e', status: SyncSequenceStatus.missing);
+      await row('c', 7, entryId: 'other', status: SyncSequenceStatus.received);
+      await row(
+        'd',
+        3,
+        entryId: 'e',
+        status: SyncSequenceStatus.received,
+        type: SyncSequencePayloadType.entryLink,
+      );
+
+      expect(await database.heldJournalClockFloor('e'), {'a': 4, 'b': 2});
+      expect(await database.heldJournalClockFloor('none'), isEmpty);
+    });
+  });
+
   group('HostActivity Tests', () {
     setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);

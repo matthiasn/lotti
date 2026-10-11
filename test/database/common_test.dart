@@ -1106,6 +1106,9 @@ void main() {
       // staged copy behind.
       expect(names.where((name) => name.contains('.corrupt-')), hasLength(1));
       expect(names.where((name) => name.contains('restore-tmp')), isEmpty);
+      // A lasting record of the restore, which the purged-entry guard reads
+      // even after the corrupt copy is cleared away.
+      expect(names, contains('db.sqlite.restored'));
     });
 
     test(

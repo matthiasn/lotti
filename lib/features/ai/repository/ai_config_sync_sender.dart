@@ -124,6 +124,30 @@ class AiConfigSyncSender {
     }
   }
 
+  /// Records [ids] as owed before the writes that name them commit, so a
+  /// crash between a write and its send still leaves the debt for [flush]
+  /// (ADR 0127). Serialized with sends and flushes; a failure is reported
+  /// and the write goes ahead without the record, as before the ledger.
+  Future<void> owe(Iterable<String> ids) => _serially(() async {
+    final ledger = _ledger;
+    if (ledger == null) return;
+    try {
+      for (final id in ids) {
+        await ledger.owe(id);
+      }
+    } catch (error, stackTrace) {
+      onError(error, stackTrace, 'aiConfig.owe');
+    }
+  });
+
+  /// Sends what the device holds for [id] now, owed like any write: to a
+  /// peer on a build that applies AI configurations in arrival order, so
+  /// the newest version is the last to reach it.
+  Future<void> resendHeld(String id) async {
+    final held = await resendOf(id);
+    if (held != null) await send(id, held.toSyncMessage());
+  }
+
   void _scheduleRetry() {
     if (_disposed) return;
     // The flush never throws: a failure is logged and re-armed inside it.

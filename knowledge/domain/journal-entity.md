@@ -141,16 +141,12 @@ A few consequences worth stating:
 - **A purge keeps the tombstone and drops the rest.** `JournalDb.purgeDeleted`
   — reachable from *Settings → Advanced → Maintenance*, and irreversible by its
   own confirmation copy — deletes the files of every row flagged `deleted` and
-  compacts the row to a tombstone: a `JournalEntry` with no text, whatever the
-  entry was, holding only the id, the dates, the vector clock, `deletedAt` and
-  `purgedAt` (`JournalEntityTombstone.toPurgedTombstone`). The clock is the
+  compacts the row to a tombstone: a `JournalEntry` with no text, whatever the entry was, holding only the id, the dates, the vector clock, `deletedAt` and `purgedAt` (`JournalEntityTombstone.toPurgedTombstone`). An image or audio recording keeps its variant and the fields that name its file, so a build before #4534 that stores the tombstone still finds the file to delete ([ADR 0131](../../docs/adr/0131-current-builds-repair-what-old-builds-left.md)). The clock is the
   deletion's, so it is still the deletion: backfill serves it, a late copy is
   refused, and a concurrent edit is a conflict
   ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)). A tombstone
   received over a copy that still has its fields deletes that copy and keeps
-  its fields; a deletion received over a tombstone is compacted. Rows purged
-  by a build before ADR 0095 are gone, so an id can still have no row and a
-  past deletion.
+  its fields; a deletion received over a tombstone is compacted. Rows purged by a build before ADR 0095 are gone, so an id can still have no row and a past deletion; a device whose sequence log shows it held the entry refuses a late copy no newer than that, unless its journal was ever restored from a backup (`PurgedEntryGuard`, ADR 0131).
 
 # Where variant data lives
 

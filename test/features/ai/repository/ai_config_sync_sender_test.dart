@@ -158,6 +158,47 @@ void main() {
     subject.dispose();
   });
 
+  test('owing records ids before any send, and a failure to record is '
+      'reported without stopping the write', () async {
+    final subject = sender(settings: settingsDb);
+    await subject.owe(['a', 'b']);
+    expect(await owed(), {'a', 'b'});
+    subject.dispose();
+
+    await settingsDb.close();
+    final closed = sender(settings: settingsDb);
+    await closed.owe(['c']);
+    expect(errors.single, startsWith('aiConfig.owe:'));
+    closed.dispose();
+    settingsDb = SettingsDb(inMemoryDatabase: true);
+  });
+
+  test('owing without settings storage records nothing', () async {
+    await sender().owe(['a']);
+    expect(await owed(), isEmpty);
+  });
+
+  test('resendHeld sends what is held for an id, owed, and nothing when '
+      'nothing is held', () async {
+    held['a'] = const AiConfigResend(id: 'a', stamp: 7);
+    final subject = sender(settings: settingsDb);
+
+    await subject.resendHeld('a');
+    await subject.resendHeld('missing');
+
+    verify(
+      () => outbox.enqueueMessageOrThrow(
+        const SyncMessage.aiConfigDelete(
+          id: 'a',
+          hardDelete: true,
+          versionStamp: 7,
+        ),
+      ),
+    ).called(1);
+    expect(await owed(), isEmpty);
+    subject.dispose();
+  });
+
   test('a flush forgets an id the device holds nothing for', () async {
     final ledger = AiConfigSyncLedger(settingsDb);
     await ledger.owe('pruned');

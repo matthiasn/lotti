@@ -204,8 +204,7 @@ with changes made on the devices themselves; see
 comparison in the [settings group contract](../../architecture/persistence.md#settings-groups).
 `configFlag` uses the [flag version contract](../../architecture/persistence.md#config-flag-versions).
 Its optional wire stamp falls back to the Matrix event timestamp for old senders.
-Older receivers still overwrite on arrival, so the convergence guarantee requires
-updated receivers.
+Older receivers still overwrite on arrival, so a current receiver answers an unstamped flag, or a stamped one older than the version it holds, by sending that version: the newest is then the last to arrive at the old build ([ADR 0131](../../../docs/adr/0131-current-builds-repair-what-old-builds-left.md)). Two current builds never answer each other, since a copy as new as the one held is no cause.
 They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
@@ -236,15 +235,13 @@ sender's `AiConfigDb` gave that version or deletion; the maintenance resend
 only if its stamp is greater than the one it holds, so a send that timed out
 and lands after a newer version, a monitor Retry of an older row, or a replay
 is dropped, and a copy sent before a hard delete does not bring the config
-back. A message from an older sender has no stamp and is ordered by the Matrix
-event's server timestamp, as a config flag's is. The storage contract is in
+back. A message from an older sender has no stamp and is ordered by the Matrix event's server timestamp, as a config flag's is, and is answered with the version held here, as is a stamped one older than it (ADR 0131). The storage contract is in
 [AI config versions](../../architecture/persistence.md#ai-config-versions);
 the decision is
 [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
 
 Every write owes its message until the outbox accepts it, as saved filters
-do: `AiConfigRepository` sends through `AiConfigSyncSender`, which records
-the id in `AiConfigSyncLedger` before staging and settles it after, and
+do: `AiConfigRepository` records the id in `AiConfigSyncLedger` through `AiConfigSyncSender.owe` before the write commits, sends through `AiConfigSyncSender`, and settles the id once the row is staged, and
 `flushPending` sends what the device holds
 for an owed id — the row with its stamp, or the hard deletion the stamp alone
 records — at startup and a minute after a failed enqueue. The maintenance

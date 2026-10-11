@@ -2846,6 +2846,144 @@ void main() {
     });
   });
 
+  group('resendBurnedOwnCountersCarried (ADR 0131)', () {
+    Stream<List<({String id, Map<String, int>? vectorClock})>> pages(
+      List<({String id, Map<String, int>? vectorClock})> rows,
+    ) => Stream.value(rows);
+
+    setUp(() {
+      when(
+        () => mockSequenceService.rebindBurnedOwnCounter(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.streamEntryLinksWithVectorClock(),
+      ).thenAnswer((_) => pages(const []));
+    });
+
+    test('resends and rebinds a burned own counter a journal entry carries '
+        'exactly, and leaves the rest burned', () async {
+      when(
+        () => mockSequenceService.burnedOwnCountersWithoutPayload(aliceHostId),
+      ).thenAnswer((_) async => {3, 5});
+      when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
+        (_) => pages([
+          (id: entryId, vectorClock: {aliceHostId: 3, 'other': 1}),
+          (id: 'later', vectorClock: {aliceHostId: 6}),
+          (id: 'clockless', vectorClock: null),
+        ]),
+      );
+      when(
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+      ).thenAnswer(
+        (_) async => _createJournalEntry(
+          entryId,
+          vectorClock: const VectorClock({aliceHostId: 3, 'other': 1}),
+        ),
+      );
+
+      expect(await handler.resendBurnedOwnCountersCarried(), 1);
+
+      final sent =
+          verify(
+                () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+              ).captured.single
+              as SyncJournalEntity;
+      expect(sent.id, entryId);
+      verify(
+        () => mockSequenceService.rebindBurnedOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+          entryId: entryId,
+          payloadType: SyncSequencePayloadType.journalEntity,
+        ),
+      ).called(1);
+      verify(() => mockJournalDb.streamEntryLinksWithVectorClock()).called(1);
+    });
+
+    test('a counter an entry link carries is resent as the link', () async {
+      when(
+        () => mockSequenceService.burnedOwnCountersWithoutPayload(aliceHostId),
+      ).thenAnswer((_) async => {4});
+      when(
+        () => mockJournalDb.streamEntriesWithVectorClock(),
+      ).thenAnswer((_) => pages(const []));
+      when(() => mockJournalDb.streamEntryLinksWithVectorClock()).thenAnswer(
+        (_) => pages([
+          (id: 'link-1', vectorClock: {aliceHostId: 4}),
+        ]),
+      );
+      when(() => mockJournalDb.entryLinkById('link-1')).thenAnswer(
+        (_) async => EntryLink.basic(
+          id: 'link-1',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: const VectorClock({aliceHostId: 4}),
+        ),
+      );
+
+      expect(await handler.resendBurnedOwnCountersCarried(), 1);
+
+      verify(
+        () => mockSequenceService.rebindBurnedOwnCounter(
+          hostId: aliceHostId,
+          counter: 4,
+          entryId: 'link-1',
+          payloadType: SyncSequencePayloadType.entryLink,
+        ),
+      ).called(1);
+    });
+
+    test('with no burned own counter, nothing is read or sent', () async {
+      when(
+        () => mockSequenceService.burnedOwnCountersWithoutPayload(aliceHostId),
+      ).thenAnswer((_) async => <int>{});
+
+      expect(await handler.resendBurnedOwnCountersCarried(), 0);
+
+      verifyNever(() => mockJournalDb.streamEntriesWithVectorClock());
+    });
+
+    test('a device without a host id yet resends nothing', () async {
+      when(() => mockVcService.getHost()).thenAnswer((_) async => null);
+
+      expect(await handler.resendBurnedOwnCountersCarried(), 0);
+
+      verifyNever(
+        () => mockSequenceService.burnedOwnCountersWithoutPayload(any()),
+      );
+    });
+  });
+
+  test('a counter-0 write of an agent payload throws until the agent store '
+      'is attached, so the startup step tries again', () async {
+    final unattached = BackfillResponseHandler(
+      journalDb: mockJournalDb,
+      sequenceLogService: mockSequenceService,
+      outboxService: mockOutboxService,
+      loggingService: mockLogging,
+      vectorClockService: mockVcService,
+    );
+    when(
+      () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 0),
+    ).thenAnswer(
+      (_) async => _createLogItem(
+        aliceHostId,
+        0,
+        entryId: 'agent-1',
+        payloadType: SyncSequencePayloadType.agentEntity,
+      ),
+    );
+
+    await expectLater(unattached.resendOwnCounterZero(), throwsStateError);
+  });
+
   group('handleBackfillResponse', () {
     test('delegates to sequenceLogService for deleted response', () async {
       const response = SyncBackfillResponse(

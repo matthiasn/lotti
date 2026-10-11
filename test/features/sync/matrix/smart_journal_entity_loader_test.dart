@@ -957,6 +957,48 @@ void main() {
     );
 
     test(
+      'a deleted image, a purge tombstone keeping its file path among them, '
+      'asks no peer for the file it deleted on purpose',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-deleted',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+            deletedAt: fixedDate,
+            purgedAt: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-deleted',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'gone.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+        String? pendingPath;
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex(logging: loggingService),
+          loggingService: loggingService,
+        );
+        loader.onMissingMedia = ({required entryId, required relativePath}) {
+          pendingPath = relativePath;
+        };
+
+        final loaded = await loader.load(jsonPath: relJson);
+
+        expect(loaded.meta.id, 'img-deleted');
+        expect(pendingPath, isNull);
+      },
+    );
+
+    test(
       'logs SmartLoader.localRead on non-FileSystemException local failure',
       () async {
         // Write a malformed JSON file so readEntityFromJson throws a

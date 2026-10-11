@@ -320,6 +320,46 @@ extension _JournalHandlers on SyncEventProcessor {
     return diag;
   }
 
+  /// Whether [entity] is a late copy of an entry an older build purged here
+  /// without a tombstone ([PurgedEntryGuard], ADR 0131): this device holds no
+  /// row for it, yet once held a version at least as new. Read outside the
+  /// journal transaction, since the sequence log is another database; a row
+  /// written meanwhile is no reason to store a copy no newer than one held.
+  /// A failed check lets the copy through, as before the guard.
+  Future<bool> _isStaleCopyOfPurged(
+    JournalEntity entity,
+    JournalDb journalDb,
+  ) async {
+    final guard = purgedEntryGuard;
+    if (guard == null) return false;
+    try {
+      final existing = await journalDb.journalEntityByIdIncludingDeleted(
+        entity.meta.id,
+      );
+      if (existing != null) return false;
+      final stale = await guard.isStaleCopyOfPurged(
+        entryId: entity.meta.id,
+        incoming: entity.meta.vectorClock,
+      );
+      if (stale) {
+        _loggingService.log(
+          LogDomain.sync,
+          'refused a late copy of purged entry ${entity.meta.id}',
+          subDomain: 'apply.purgedEntry',
+        );
+      }
+      return stale;
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'apply.purgedEntry',
+      );
+      return false;
+    }
+  }
+
   /// Persists a pre-resolved journal entity and its embedded links. The
   /// [journalEntity] argument was already loaded by the prepare phase, so
   /// this runs entirely in the writer transaction.
@@ -372,11 +412,16 @@ extension _JournalHandlers on SyncEventProcessor {
     //     entry-exists read both run *after* this commits, freeing the
     //     writer lock for unrelated readers.
     final vcB = journalEntity.meta.vectorClock;
+    final refused = await _isStaleCopyOfPurged(journalEntity, journalDb);
     final JournalUpdateResult updateResult;
     final int processedLinksCount;
     try {
       final tx = await journalDb.transaction(() async {
-        final result = await journalDb.updateJournalEntity(journalEntity);
+        final result = refused
+            ? JournalUpdateResult.skipped(
+                reason: JournalUpdateSkipReason.olderOrEqual,
+              )
+            : await journalDb.updateJournalEntity(journalEntity);
         // Process embedded entry links regardless of journal entity
         // application status. EntryLinks have their own vector clock
         // for conflict resolution via upsertEntryLink(). This ensures

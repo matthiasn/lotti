@@ -314,12 +314,90 @@ class BackfillResponseHandler {
     if (host == null) return false;
     final row = await _sequenceLogService.getEntryByHostAndCounter(host, 0);
     if (row == null) return false;
+    // An agent payload's store is attached after startup; resending before
+    // then would answer nothing, and the caller would record it as done.
+    final type = SyncSequencePayloadType.values[row.payloadType];
+    if (!_payloadStoreWired(type)) {
+      throw StateError('the ${type.name} store is not attached yet');
+    }
     return _processBackfillEntry(
       hostId: host,
       counter: 0,
       sentPayloads: <VcPayloadRef>{},
       durable: true,
     );
+  }
+
+  /// Resends, and rebinds, every own counter recorded as a non-event that a
+  /// payload in fact carries.
+  ///
+  /// Before ADR 0077 a create could reserve a counter under one id and write
+  /// the entry under another; the reservation was then burned, so peers
+  /// recorded the counter as a non-event and never asked for the write it
+  /// carried. A payload whose clock holds exactly that own counter proves it
+  /// was written. Each is resent first, durably, then its row rebound to the
+  /// payload, as a settlement resends before it binds; a failure propagates,
+  /// so the caller tries again. Journal entries and entry links are swept:
+  /// ADR 0077 found the misnamed reservations in journal creates only.
+  /// Returns how many counters were resent.
+  Future<int> resendBurnedOwnCountersCarried() async {
+    await _vectorClockService.initialized;
+    final host = await _vectorClockService.getHost();
+    if (host == null) return 0;
+    final burned = await _sequenceLogService.burnedOwnCountersWithoutPayload(
+      host,
+    );
+    if (burned.isEmpty) return 0;
+    var resent = 0;
+    Future<void> sweep(
+      Stream<List<({String id, Map<String, int>? vectorClock})>> pages,
+      SyncSequencePayloadType payloadType,
+    ) async {
+      await for (final page in pages) {
+        for (final (:id, :vectorClock) in page) {
+          final counter = vectorClock?[host];
+          if (counter == null || !burned.remove(counter)) continue;
+          final now = clock.now();
+          await _answerFromEntry(
+            hostId: host,
+            counter: counter,
+            entry: SyncSequenceLogItem(
+              hostId: host,
+              counter: counter,
+              entryId: id,
+              payloadType: payloadType.index,
+              originatingHostId: host,
+              status: SyncSequenceStatus.received.index,
+              createdAt: now,
+              updatedAt: now,
+              requestCount: 0,
+            ),
+            sentPayloads: <VcPayloadRef>{},
+            durable: true,
+          );
+          await _sequenceLogService.rebindBurnedOwnCounter(
+            hostId: host,
+            counter: counter,
+            entryId: id,
+            payloadType: payloadType,
+          );
+          resent++;
+        }
+        if (burned.isEmpty) return;
+      }
+    }
+
+    await sweep(
+      _journalDb.streamEntriesWithVectorClock(),
+      SyncSequencePayloadType.journalEntity,
+    );
+    if (burned.isNotEmpty) {
+      await sweep(
+        _journalDb.streamEntryLinksWithVectorClock(),
+        SyncSequencePayloadType.entryLink,
+      );
+    }
+    return resent;
   }
 
   Future<void> settleOrphanedOwnCounters() async {

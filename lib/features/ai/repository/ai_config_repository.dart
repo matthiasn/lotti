@@ -121,10 +121,9 @@ class AiConfigRepository {
   /// ([_deleteOrphanedModels]), so a model a peer created before it heard of
   /// its provider's deletion does not outlive it.
   ///
-  /// A local write owes its message to the peers until the outbox accepts it
-  /// ([AiConfigSyncSender.send]): the write is durable before the message is staged, so a
-  /// failed enqueue, or a crash in between, leaves the id in the
-  /// ledger for [flushPending].
+  /// A local write owes its message to the peers from before it commits
+  /// until the outbox accepts it ([AiConfigSyncSender.owe]): a failed enqueue,
+  /// or a crash in between, leaves the id in the ledger for [flushPending].
   ///
   /// A model created on this device takes its provider's stamp rather than
   /// the clock: it belongs to the provider as it was, so a deletion of the
@@ -176,6 +175,7 @@ class AiConfigRepository {
             config.apiKey.isNotEmpty
         ? config.copyWith(apiKeyCleared: false)
         : config;
+    if (!fromSync) await _sender.owe([written.id]);
     final stamp = await _saveLocal(written);
     _storeConfig(written);
     if (!fromSync) await _enqueue(written, stamp);
@@ -207,14 +207,14 @@ class AiConfigRepository {
     ),
   );
 
-  /// Sends every write still owed: the stored row of each owed id with its
-  /// stamp, or the hard deletion its stamp alone records. An id with neither
-  /// is forgotten. Called at startup and by "Send settings".
+  /// Sends every owed write ([_resendOf]); at startup and by Send settings.
   Future<void> flushPending() => _sender.flush();
 
+  /// Sends what this device holds for [id] again ([AiConfigSyncSender]).
+  Future<void> resendHeld(String id) => _sender.resendHeld(id);
+
   /// What this device holds for [id]: its row with its stamp, or the hard
-  /// deletion the stamp alone records; null when it holds neither (the
-  /// orphaned-seed prune forgets both).
+  /// deletion the stamp alone records; null when it holds neither.
   Future<AiConfigResend?> _resendOf(String id) async {
     final stamp = await _db.versionStamp(id);
     if (stamp == null) return null;
@@ -260,6 +260,7 @@ class AiConfigRepository {
     for (final model in await _liveModelsOf(providerId)) {
       final held = await _db.versionStamp(model.id);
       if (held != null && held > deletion) continue;
+      await _sender.owe([model.id]);
       if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
         _noteHardDeleted(model.id);
       }
@@ -423,6 +424,7 @@ class AiConfigRepository {
     int? versionStamp,
   }) async {
     if (!fromSync) {
+      await _sender.owe([id]);
       final stamp = await _db.deleteConfig(id);
       _noteHardDeleted(id);
       await _sender.send(
@@ -485,6 +487,7 @@ class AiConfigRepository {
     AiConfigInferenceProvider provider,
     List<AiConfigModel> models,
   ) async {
+    await _sender.owe([provider.id, for (final model in models) model.id]);
     final providerStamp = await _db.saveConfig(provider);
     _storeConfig(provider);
     await _enqueue(provider, providerStamp);
@@ -514,13 +517,7 @@ class AiConfigRepository {
     return !incomingUpdatedAt.isAfter(localUpdatedAt);
   }
 
-  /// Delete an inference provider and all its associated models.
-  ///
-  /// This method performs cascade deletion within a transaction to ensure
-  /// atomicity:
-  /// 1. Fetches all models associated with the provider
-  /// 2. Deletes each model
-  /// 3. Deletes the provider itself
+  /// Deletes an inference provider and its models in one transaction.
   ///
   /// If any deletion fails, the entire transaction is rolled back to maintain
   /// data integrity and prevent partial deletions. Each deletion leaves its
@@ -532,8 +529,6 @@ class AiConfigRepository {
   /// commits: enqueuing from inside means a later failure rolls the local rows
   /// back while the peer deletes stay queued, hard-deleting rows on other
   /// devices that still exist here.
-  ///
-  /// Returns detailed information about the deletion operation.
   Future<CascadeDeletionResult> deleteInferenceProviderWithModels(
     String providerId, {
     bool fromSync = false,
@@ -543,6 +538,10 @@ class AiConfigRepository {
     final result = await _db.transaction(() async {
       try {
         final associatedModels = await _liveModelsOf(providerId);
+        // Owed before the deletes commit; a rollback only resends live rows.
+        if (!fromSync) {
+          await _sender.owe([providerId, ...associatedModels.map((m) => m.id)]);
+        }
 
         // Hard deletes: re-adding this provider must bring its models back, so
         // the cascade must not leave tombstones behind.

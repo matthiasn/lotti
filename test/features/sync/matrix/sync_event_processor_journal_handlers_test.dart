@@ -492,6 +492,101 @@ void main() {
       ).called(1);
     });
 
+    group('a late copy of an entry an old build purged (ADR 0131)', () {
+      late MockPurgedEntryGuard guard;
+      final link = EntryLink.basic(
+        id: 'link-p',
+        fromId: 'entry-id',
+        toId: 'other',
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
+        vectorClock: const VectorClock({'host': 1}),
+      );
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: const VectorClock({'old': 1}),
+        status: SyncEntryStatus.update,
+        entryLinks: [link],
+      );
+
+      setUp(() {
+        guard = MockPurgedEntryGuard();
+        processor.purgedEntryGuard = guard;
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/entry.json',
+            incomingVectorClock: const VectorClock({'old': 1}),
+          ),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalDb.journalEntityByIdIncludingDeleted(any()),
+        ).thenAnswer((_) async => null);
+        when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
+      });
+
+      test('is not stored, while its embedded links still apply', () async {
+        when(
+          () => guard.isStaleCopyOfPurged(
+            entryId: any(named: 'entryId'),
+            incoming: any(named: 'incoming'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => journalDb.updateJournalEntity(any<JournalEntity>()));
+        verify(() => journalDb.upsertEntryLink(link)).called(1);
+      });
+
+      test('a copy the guard does not recognise, or an entry still held, is '
+          'stored as before', () async {
+        when(
+          () => guard.isStaleCopyOfPurged(
+            entryId: any(named: 'entryId'),
+            incoming: any(named: 'incoming'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await processor.process(event: event, journalDb: journalDb);
+        verify(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        ).called(1);
+
+        when(
+          () => journalDb.journalEntityByIdIncludingDeleted(any()),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        await processor.process(event: event, journalDb: journalDb);
+        verify(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        ).called(1);
+      });
+
+      test('a guard that fails lets the copy through and logs', () async {
+        when(
+          () => guard.isStaleCopyOfPurged(
+            entryId: any(named: 'entryId'),
+            incoming: any(named: 'incoming'),
+          ),
+        ).thenThrow(StateError('closed'));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        ).called(1);
+        verify(
+          () => loggingService.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'apply.purgedEntry',
+          ),
+        ).called(1);
+      });
+    });
+
     test('processes embedded links even when entity update is skipped', () async {
       final link = EntryLink.basic(
         id: 'link-1',

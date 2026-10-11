@@ -561,6 +561,11 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       }
     }
     await staged.rename(file.path);
+    // A lasting record that this file was rolled back to a snapshot, kept
+    // even if the corrupt copy beside it is cleared away: a store that lost
+    // rows another store still names must not take those rows for deleted
+    // (`PurgedEntryGuard`, ADR 0131).
+    await File('${file.path}.restored').writeAsString(ts);
     return snapshot;
   }
   return null;
