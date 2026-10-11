@@ -44,7 +44,8 @@ class MediaRequestHandler {
   final DomainLogger _logging;
   final int _maxEntries;
 
-  /// Re-sends every entry in [request] whose blob this device actually holds.
+  /// Re-sends every entry in [request] whose blob this device actually holds,
+  /// unless the request addresses that entry to another host.
   ///
   /// Skips the whole request when it originated here — the request is
   /// broadcast, so this device receives its own — and skips individual
@@ -66,6 +67,9 @@ class MediaRequestHandler {
 
     var sent = 0;
     for (final entryId in entryIds) {
+      // Addressed to another holder: left to it, so the blob is uploaded once.
+      final holder = request.holders?[entryId];
+      if (holder != null && holder != host) continue;
       final entity = entities[entryId];
       if (entity == null) continue;
 

@@ -4,20 +4,27 @@
     python3 specs/tla/shards.py            # JSON matrix for GitHub Actions
     python3 specs/tla/shards.py --table    # the plan, for reading
 
-Every checked-in `*.cfg` is assigned to exactly one shard; SECONDS only decides
-the balance, never whether a configuration runs. A configuration missing from
+Every `*.cfg` in this directory is assigned to exactly one shard; SECONDS only
+decides the balance, never whether a configuration runs. A configuration that
+cannot finish within a CI job lives in `manual/` and is run by hand. A configuration missing from
 SECONDS is assumed to take DEFAULT_SECONDS until it is measured and added.
 """
 
 import argparse
 import json
+import math
 from pathlib import Path
 
+# The fewest regular shards a plan uses.
 SHARDS = 8
 
-# Keep measured multi-hour profiles out of the one-hour regular shards. They
-# run in the same nightly or manual workflow and feed the same TLC check.
-EXTENDED_CONFIGURATIONS = {"SyncPipelineForkSuccessor"}
+# Estimated seconds a shard may hold. Its job times out at 60
+# minutes, and a configuration can take half as long again on another runner
+# (see SECONDS), so a shard planned to the minute is planned to time out:
+# every regular shard of the nightly runs from 30 Sep to 11 Oct 2026 was
+# cancelled at 60 minutes after being packed to about 61. The plan adds
+# shards until none is estimated past this.
+SHARD_BUDGET_SECONDS = 2400
 
 # Seconds TLC spent on each configuration in CI runs 36198815983 and
 # 36217391296, retaining
@@ -30,8 +37,6 @@ SECONDS = {
     # slower 36198563598 measurement: the old 300s estimate overloaded a shard
     # past its 45-minute deadline even though the profile itself passed.
     "SyncPipeline": 685,
-    # Local exhaustive runs with six workers; refresh from CI measurements.
-    "SyncPipelineForkSuccessor": 9860,
     "SyncPipelineMixedPeers": 1078,
     "SyncPipelineJournal": 646,
     "SyncPipelineAgentEntity": 6,
@@ -241,9 +246,9 @@ SECONDS = {
     "RelationshipCadenceEnroll": 2,
     # Six times a local run with twenty workers (11 s, 5 s, 2 s and 25 s),
     # since a CI runner has fewer cores; refresh from CI.
-    "VerificationLaunch": 66,
-    "VerificationLaunchTwoLaunchers": 30,
-    "VerificationLaunchCrossStart": 12,
+    "VerificationLaunch": 120,
+    "VerificationLaunchTwoLaunchers": 60,
+    "VerificationLaunchCrossStart": 15,
     "DevicePairing": 150,
 }
 
@@ -251,24 +256,27 @@ SECONDS = {
 DEFAULT_SECONDS = 300
 
 
-def plan(configurations, shards=SHARDS):
+def shard_count(configurations):
+    """Enough shards that the configurations fit SHARD_BUDGET_SECONDS each —
+    at least SHARDS, and never more than there are configurations."""
+    total = sum(SECONDS.get(c, DEFAULT_SECONDS) for c in configurations)
+    return min(len(configurations), max(SHARDS, math.ceil(total / SHARD_BUDGET_SECONDS)))
+
+
+def plan(configurations, shards=None):
     """Longest-first greedy packing: each configuration goes to the lightest shard."""
-    regular = [c for c in configurations if c not in EXTENDED_CONFIGURATIONS]
-    bins = [{"seconds": 0, "configurations": []} for _ in range(min(shards, len(regular)))]
-    ordered = sorted(regular, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
+    count = shard_count(configurations) if shards is None else min(shards, len(configurations))
+    bins = [{"seconds": 0, "configurations": []} for _ in range(count)]
+    ordered = sorted(configurations, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
     for configuration in ordered:
         lightest = min(bins, key=lambda b: b["seconds"])
         lightest["configurations"].append(configuration)
         lightest["seconds"] += SECONDS.get(configuration, DEFAULT_SECONDS)
-    for configuration in sorted(set(configurations) & EXTENDED_CONFIGURATIONS):
-        bins.append({"seconds": SECONDS[configuration], "configurations": [configuration]})
     assigned = sorted(c for b in bins for c in b["configurations"])
     assert assigned == sorted(configurations), "every configuration runs exactly once"
     return [
         {"shard": index + 1, "estimate": b["seconds"],
-         "configurations": " ".join(b["configurations"]),
-         "timeout_minutes": 360 if b["configurations"][0] in EXTENDED_CONFIGURATIONS else 60,
-         "java_options": "-Xmx12g" if b["configurations"][0] in EXTENDED_CONFIGURATIONS else ""}
+         "configurations": " ".join(b["configurations"])}
         for index, b in enumerate(bins)
     ]
 
@@ -284,8 +292,7 @@ def main():
     shards = plan(configurations)
     if args.table:
         for shard in shards:
-            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  "
-                  f"limit={shard['timeout_minutes']}m  {shard['configurations']}")
+            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  {shard['configurations']}")
     else:
         print(json.dumps(shards))
 

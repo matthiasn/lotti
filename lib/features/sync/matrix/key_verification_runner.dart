@@ -170,7 +170,10 @@ class KeyVerificationRunner {
     emojis = keyVerification.sasEmojis;
   }
 
+  /// Publishes this runner's state; after its service closed the stream (a
+  /// late SDK callback during dispose) there is no one left to tell.
   void publishState() {
+    if (controller.isClosed) return;
     controller.add(this);
   }
 

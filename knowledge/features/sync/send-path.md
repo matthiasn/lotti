@@ -155,9 +155,10 @@ sequenceDiagram
   Note over Loader: AttachmentIndex has no descriptor<br/>for this path
   Loader->>Repair: onMissingMedia(entryId, relativePath)
   Repair->>Repair: debounce + dedupe + cap
-  Repair->>Room: SyncMediaRequest(entryIds, requesterId)
+  Repair->>Repair: first attempt: latestSenderOfEntry
+  Repair->>Room: SyncMediaRequest(entryIds, requesterId, holders)
   Room->>Peer: broadcast
-  Peer->>Peer: entry known? blob on disk?
+  Peer->>Peer: addressed to another holder? entry known? blob on disk?
   Peer->>Room: SyncJournalEntity(includeAttachments: true)
   Room->>Ingest: m.file (the blob)
   Ingest->>Ingest: write to disk unless the local copy is as large
@@ -174,14 +175,25 @@ Three properties are load-bearing:
   event and `AttachmentIngestor` writes it, the same way any attachment lands.
   The requester never learns a request succeeded; it stops asking because the
   file now exists and the loader stops reporting it missing.
-- **The request is broadcast and answers are optional.** Any peer holding the
-  blob may answer, because the device that created the entry is often the one
-  that is offline. A peer that lacks the file stays silent rather than
-  answering with nothing.
+- **The request is broadcast, a first attempt names a holder, and answers are
+  optional.** The device that created the entry is often the one that is
+  offline, so the request goes to the room, not to its author. A first
+  attempt names, per entry, the host that most recently sent this device a
+  version of it (`SyncDatabase.latestSenderOfEntry`, from the sequence log's
+  `originating_host_id`) in `SyncMediaRequest.holders`; every other peer
+  leaves that entry to it, so the blob is uploaded once. An entry with no
+  known sender, and every retry, is answered by any holder — the guess may be
+  wrong or its device away. A lookup that fails counts as no guess. A peer
+  that lacks the file stays silent rather than answering with nothing; a build
+  before this ignores `holders` and answers anyway
+  ([ADR 0137](../../../docs/adr/0137-media-requests-name-a-holder.md)).
 
-This loop sees only a file that is missing when its entry is loaded. A file
-that is truncated, or belongs to an entry nobody opens, is found by the manual
-deep-backfill round instead, which compares file sizes between devices
+This loop sees a file that is missing when its entry is loaded, and one
+shorter than its attachment event declares (`declaredMediaSize` in
+`matrix/utils/attachment_decoding.dart`) while that event is still indexed:
+the loader logs `smart.media.truncated` and downloads it again. A file whose
+event is gone, or that belongs to an entry nobody opens, is found by the
+manual deep-backfill round instead, which compares file sizes between devices
 ([files behind image and audio entries](sequence-and-backfill.md#files-behind-image-and-audio-entries)).
 Both paths resolve the file through `entryMedia`
 (`lib/features/sync/media/entry_media.dart`), as the enqueue and the upload do.
@@ -194,12 +206,10 @@ The attempt counts are kept in `SettingsDb` (`mediaRepairAttempts`), so a
 restart does not reset the cap and request the same unanswerable blobs on
 every launch. They are saved only once the request is queued: a failed
 enqueue costs no attempt, in memory or on disk. Flushes run one at a time,
-so an older flush cannot store its counts over a newer one's. Every holder still answers a request: duplicate uploads cost
-bandwidth, not data, and choosing one responder would need an origin host
-journal entries do not carry ([ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
+so an older flush cannot store its counts over a newer one's.
 
 Media repair disposal cancels its debounce and clears pending ids and attempt
-counts. A host lookup completing after disposal cannot enqueue a request; a
+counts. A host or holder lookup completing after disposal cannot enqueue a request; a
 pending enqueue failure cannot restore cleared state or arm another retry.
 Failures while the service remains active still restore the batch and its
 attempt budget for the normal debounced retry.

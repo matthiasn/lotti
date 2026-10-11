@@ -41,9 +41,10 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    # Regular shards retain one hour. The measured multi-hour fork/successor
-    # profile gets an isolated six-hour shard and still gates the aggregate.
-    timeout-minutes: ${{ matrix.timeout_minutes }}
+    # The plan keeps each shard's estimate well inside this (shards.py,
+    # SHARD_BUDGET_SECONDS); a configuration no job can finish lives in
+    # specs/tla/manual and is run by hand.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +66,6 @@ jobs:
       - name: Model-check the shard's configurations
         env:
           CONFIGURATIONS: ${{ matrix.configurations }}
-          JAVA_TOOL_OPTIONS: ${{ matrix.java_options }}
         run: |
           failed=()
           echo "| Configuration | Result | Seconds |" >> "$GITHUB_STEP_SUMMARY"

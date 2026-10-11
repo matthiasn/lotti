@@ -104,7 +104,7 @@ extension _AttachmentSaver on AttachmentIngestor {
       if (!isAgentPayload && await file.exists()) {
         try {
           existingLength = await file.length();
-          final declared = _declaredMediaSize(event, relativePath);
+          final declared = declaredMediaSize(event, relativePath);
           if (existingLength > 0 &&
               (declared == null || existingLength >= declared)) {
             return false; // already present
@@ -236,17 +236,5 @@ extension _AttachmentSaver on AttachmentIngestor {
     } catch (_) {
       return null;
     }
-  }
-
-  /// The size the sender declared for a media file (`info.size`, the
-  /// plaintext length), or null for JSON payloads — uploaded gzipped, so
-  /// their declared size is not the local file's — and for events without
-  /// one.
-  int? _declaredMediaSize(Event event, String relativePath) {
-    if (relativePath.toLowerCase().endsWith('.json')) return null;
-    final info = event.content['info'];
-    if (info is! Map) return null;
-    final size = info['size'];
-    return size is int ? size : null;
   }
 }

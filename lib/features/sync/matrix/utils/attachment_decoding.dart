@@ -326,3 +326,14 @@ String formatCompressionRatio({required int raw, required int compressed}) {
   if (raw <= 0) return '-';
   return (compressed / raw).toStringAsFixed(3);
 }
+
+/// The size the sender declared for a media file (`info.size`, the plaintext
+/// length), or null for JSON payloads — uploaded gzipped, so their declared
+/// size is not the local file's — and for events without one.
+int? declaredMediaSize(Event event, String relativePath) {
+  if (relativePath.toLowerCase().endsWith('.json')) return null;
+  final info = event.content['info'];
+  if (info is! Map) return null;
+  final size = info['size'];
+  return size is int ? size : null;
+}

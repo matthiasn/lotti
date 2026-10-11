@@ -210,6 +210,7 @@ class IncomingVerificationWrapper extends ConsumerStatefulWidget {
 class _IncomingVerificationWrapperState
     extends ConsumerState<IncomingVerificationWrapper> {
   StreamSubscription<KeyVerification>? _subscription;
+  StreamSubscription<KeyVerificationRunner>? _ownRunnerSubscription;
   ProviderSubscription<bool>? _lockSubscription;
 
   /// The latest request that arrived while another sheet held the lock.
@@ -238,17 +239,26 @@ class _IncomingVerificationWrapperState
         if (!deferred.isDone) _arrived(deferred);
       },
     );
-    _subscription = ref
-        .read(matrixServiceProvider)
-        .getIncomingKeyVerificationStream()
-        .listen((keyVerification) {
-          if (mounted) _arrived(keyVerification);
-        });
+    final service = ref.read(matrixServiceProvider);
+    _subscription = service.getIncomingKeyVerificationStream().listen((
+      keyVerification,
+    ) {
+      if (mounted) _arrived(keyVerification);
+    });
+    // A request held back before this device's own runner existed is offered
+    // again once it does, so the device that should yield can.
+    _ownRunnerSubscription = reofferOnOwnRunner(service, () {
+      final deferred = _deferred;
+      if (!mounted || deferred == null || deferred.isDone) return;
+      _deferred = null;
+      _arrived(deferred);
+    });
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _ownRunnerSubscription?.cancel();
     _lockSubscription?.close();
     super.dispose();
   }

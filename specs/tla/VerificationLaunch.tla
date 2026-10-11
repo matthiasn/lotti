@@ -40,6 +40,12 @@
 (*                  .onKeyVerificationRequest: open the incoming sheet if  *)
 (*                  the lock is free, else drop the request                *)
 (*   DeferredOpen   with DeferIncoming, a request held until the lock frees*)
+(*   Register       verifyMatrixDevice stores the outgoing runner once the *)
+(*                  request has been sent: until then the request is live  *)
+(*                  at the peer but this device does not know it waits     *)
+(*   ReofferDeferred  with ReofferOnRegister, a request held back while    *)
+(*                  the own runner was not registered yet is offered again *)
+(*                  once it is, and yields if it should                    *)
 (*   AcceptIncoming IncomingVerificationModal's auto-accept                *)
 (*   AcceptSas      the user confirms the emoji on either sheet            *)
 (*   Cancel         the Cancel button on either sheet                      *)
@@ -48,7 +54,9 @@
 (* Switches. RecordOnlyShown, SharedHandled and ReleaseOne are three fixes *)
 (* that shipped before this model; each FALSE is the bug it fixed.         *)
 (* GlareHandoff, PreferLastShown and ReleaseOnce are the three fixes this *)
-(* model found; FALSE is the code before them. DeferIncoming and CancelOnDismiss are    *)
+(* model found; FALSE is the code before them. ReofferOnRegister is the  *)
+(* fix for the race a CI run showed once the request's send and its       *)
+(* registration became two steps. DeferIncoming and CancelOnDismiss are    *)
 (* alternatives TLC rejected, kept so the README's table can be re-run.    *)
 (* Cooperative users confirm, and never cancel or abandon a live ceremony: *)
 (* the automatic flow has to finish on its own.                            *)
@@ -71,16 +79,21 @@ CONSTANTS
     RecordOnlyShown,  \* record an identity only when its sheet was shown
     SharedHandled,    \* the handled set is app-wide, not per launcher
     ReleaseOne,       \* a relaunch releases the identity last shown, not the whole set
-    ReleaseOnce       \* the relaunch request releases once, before any listener
+    ReleaseOnce,      \* the relaunch request releases once, before any listener
                       \* runs; otherwise each listener releases on its own, and
                       \* the ones after the winner undo the winner's record
+    ReofferOnRegister \* a request deferred before the own runner existed is
+                      \* offered again once it does
 
 ASSUME Active \subseteq Devices /\ Launchers # {} /\ Devices \subseteq Nat
 
 None == 0
 Peers(d) == Devices \ {d}
 NoSheet == [kind |-> "none", peer |-> None, via |-> None]
-Phases == {"none", "requested", "accepted", "done", "cancelled"}
+Phases == {"none", "sending", "requested", "accepted", "done", "cancelled"}
+\* A request the peer can see and answer: "sending" while its sender has not
+\* stored the runner yet, "requested" once it has.
+Live == {"sending", "requested"}
 
 VARIABLES
     present,       \* present[d][e]: d holds e's device keys
@@ -161,7 +174,11 @@ NoClearPending(d) == \A l \in Launchers : ~clearPending[d][l]
 \* The peer's own request toward d is still pending in d's SDK — whether or
 \* not the wrapper could show it: MatrixService keeps the latest incoming
 \* runner either way.
-Waiting(d, t) == cer[t][d] = "requested"
+Waiting(d, t) ==
+    \/ cer[t][d] = "requested"
+    \* A request still in flight is seen once it reached d's UI layer: two
+    \* launchers can each start a ceremony before the other's arrives.
+    \/ cer[t][d] = "sending" /\ t \notin inbox[d]
 
 ----------------------------------------------------------------------------
 (* Keys and the cached view. *)
@@ -208,7 +225,7 @@ Show(d, l, t) ==
             /\ deferred' = [deferred EXCEPT ![d] = @ \ {t}]
             /\ UNCHANGED <<cer, sas>>
        ELSE /\ sheet' = [sheet EXCEPT ![d] = [kind |-> "out", peer |-> t, via |-> l]]
-            /\ cer' = [cer EXCEPT ![d][t] = "requested"]
+            /\ cer' = [cer EXCEPT ![d][t] = "sending"]
             /\ sas' = [sas EXCEPT ![d][t] = {}]
             /\ inbox' = IF t \in Active THEN [inbox EXCEPT ![t] = @ \cup {d}] ELSE inbox
             /\ UNCHANGED deferred
@@ -339,6 +356,18 @@ Unanswered(r) ==
 \* step earlier.
 Yield(r, i) == Unanswered(r) /\ i < r
 
+\* r cancels its own unanswered ceremony and shows i's inside the sheet it
+\* already holds (handOffOutgoingVerification).
+HandOff(r, i) ==
+    /\ cer' = [cer EXCEPT ![r][sheet[r].peer] = "cancelled"]
+    /\ sheet' = [sheet EXCEPT ![r] = [kind |-> "in", peer |-> i, via |-> @.via]]
+    /\ seen' = [seen EXCEPT ![r][i] = TRUE]
+    \* The peer whose ceremony was just withdrawn was never really offered
+    \* one: it must stay eligible for the launcher.
+    /\ handled' = [handled EXCEPT ![r] =
+                     [m \in Launchers |-> @[m] \ {sheet[r].peer}]]
+    /\ offered' = [offered EXCEPT ![r][sheet[r].peer] = FALSE]
+
 \* The wrapper receives i's request: the sheet opens if the lock is free;
 \* under GlareHandoff a yielding device cancels its own ceremony and shows
 \* i's inside the sheet it already holds; under DeferIncoming the request
@@ -347,21 +376,13 @@ HandleIncoming(r, i) ==
     /\ r \in Active
     /\ i \in inbox[r]
     /\ inbox' = [inbox EXCEPT ![r] = @ \ {i}]
-    /\ IF cer[i][r] # "requested"
+    /\ IF cer[i][r] \notin Live
        THEN UNCHANGED <<lock, sheet, seen, cer, deferred, handled, offered>>
        ELSE IF lock[r] = "free"
        THEN /\ OpenIn(r, i)
             /\ UNCHANGED <<cer, deferred, handled, offered>>
        ELSE IF GlareHandoff /\ Yield(r, i)
-       THEN /\ cer' = [cer EXCEPT ![r][sheet[r].peer] = "cancelled"]
-            /\ sheet' = [sheet EXCEPT ![r] =
-                           [kind |-> "in", peer |-> i, via |-> @.via]]
-            /\ seen' = [seen EXCEPT ![r][i] = TRUE]
-            \* The peer whose ceremony was just withdrawn was never really
-            \* offered one: it must stay eligible for the launcher.
-            /\ handled' = [handled EXCEPT ![r] =
-                             [m \in Launchers |-> @[m] \ {sheet[r].peer}]]
-            /\ offered' = [offered EXCEPT ![r][sheet[r].peer] = FALSE]
+       THEN /\ HandOff(r, i)
             /\ UNCHANGED <<lock, deferred>>
        ELSE IF DeferIncoming
        THEN /\ deferred' = [deferred EXCEPT ![r] = @ \cup {i}]
@@ -371,11 +392,35 @@ HandleIncoming(r, i) ==
                    sas, relaunches, relaunchSince, lastSeen, reoffer,
                    relaunchMiss>>
 
+\* verifyMatrixDevice stores the outgoing runner once its request is sent.
+Register(d) ==
+    /\ sheet[d].kind = "out"
+    /\ cer[d][sheet[d].peer] = "sending"
+    /\ cer' = [cer EXCEPT ![d][sheet[d].peer] = "requested"]
+    /\ UNCHANGED <<present, verified, view, lock, handled, lastOffered,
+                   clearPending, sheet, sas, inbox, deferred, relaunches,
+                   offered, seen, relaunchSince, lastSeen, reoffer,
+                   relaunchMiss>>
+
+\* With ReofferOnRegister, a request r held back while its own runner did not
+\* exist yet is offered again once it does, and yields if it should.
+ReofferDeferred(r, i) ==
+    /\ ReofferOnRegister /\ GlareHandoff
+    /\ r \in Active
+    /\ i \in deferred[r]
+    /\ cer[i][r] \in Live
+    /\ Yield(r, i)
+    /\ HandOff(r, i)
+    /\ deferred' = [deferred EXCEPT ![r] = @ \ {i}]
+    /\ UNCHANGED <<present, verified, view, lock, lastOffered, clearPending,
+                   sas, inbox, relaunches, relaunchSince, lastSeen, reoffer,
+                   relaunchMiss>>
+
 DeferredOpen(r) ==
     /\ lock[r] = "free"
     /\ \E i \in deferred[r] :
          /\ deferred' = [deferred EXCEPT ![r] = @ \ {i}]
-         /\ IF cer[i][r] = "requested"
+         /\ IF cer[i][r] \in Live
             THEN OpenIn(r, i)
             ELSE UNCHANGED <<lock, sheet, seen>>
     /\ UNCHANGED <<present, verified, view, handled, lastOffered, clearPending,
@@ -388,7 +433,7 @@ DeferredOpen(r) ==
 AcceptIncoming(r) ==
     /\ sheet[r].kind = "in"
     /\ LET i == sheet[r].peer IN
-       /\ cer[i][r] = "requested"
+       /\ cer[i][r] \in Live
        /\ cer' = [cer EXCEPT ![i][r] = "accepted"]
     /\ UNCHANGED <<present, verified, view, lock, handled, lastOffered,
                    clearPending, sheet, sas, inbox, deferred, relaunches,
@@ -417,7 +462,7 @@ AcceptSas(d) ==
 Cancel(d) ==
     /\ ~Cooperative
     /\ sheet[d].kind # "none"
-    /\ Phase(d) \in {"requested", "accepted"}
+    /\ Phase(d) \in Live \cup {"accepted"}
     /\ LET i == IF sheet[d].kind = "out" THEN d ELSE sheet[d].peer
            r == IF sheet[d].kind = "out" THEN sheet[d].peer ELSE d
        IN cer' = [cer EXCEPT ![i][r] = "cancelled"]
@@ -442,7 +487,7 @@ Dismiss(d) ==
 
 \* A sheet that waits on a request nobody will answer is eventually given up
 \* on — the one dismissal even a patient user performs.
-DismissStuck(d) == Dismiss(d) /\ Phase(d) = "requested"
+DismissStuck(d) == Dismiss(d) /\ Phase(d) \in Live
 
 ----------------------------------------------------------------------------
 
@@ -452,7 +497,8 @@ Next ==
           \/ Refresh(d) \/ Relaunch(d) \/ DeferredOpen(d)
           \/ AcceptIncoming(d) \/ AcceptSas(d) \/ Cancel(d) \/ Dismiss(d)
           \/ \E l \in Launchers : Launch(d, l) \/ EmptyBuild(d, l) \/ ClearHandled(d, l)
-          \/ \E i \in Devices : HandleIncoming(d, i)
+          \/ \E i \in Devices : HandleIncoming(d, i) \/ ReofferDeferred(d, i)
+          \/ Register(d)
 
 Fairness ==
     \A d \in Devices :
@@ -464,7 +510,9 @@ Fairness ==
         /\ ~Cooperative => WF_vars(DismissStuck(d))
         /\ \A l \in Launchers :
               WF_vars(Launch(d, l)) /\ WF_vars(EmptyBuild(d, l)) /\ WF_vars(ClearHandled(d, l))
-        /\ \A i \in Devices : WF_vars(HandleIncoming(d, i))
+        /\ \A i \in Devices :
+              WF_vars(HandleIncoming(d, i)) /\ WF_vars(ReofferDeferred(d, i))
+        /\ WF_vars(Register(d))
 
 Spec == Init /\ [][Next]_vars /\ Fairness
 

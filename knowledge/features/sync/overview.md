@@ -717,6 +717,14 @@ reach the wrong device or none at all:
   any third device instead let three devices withdraw ceremonies from under
   each other forever, and dropping instead of holding left a three-device
   ring stuck with the handoff alone — both TLC traces.
+  One window remains between those rules: `verifyMatrixDevice` stores the
+  outgoing runner only after `startVerification` has sent the request, so a
+  crossing request can land while this device has a request out but no
+  runner to compare it with. It is held then, and both devices could hold
+  each other's request for good — a CI run of the crossing integration test
+  did exactly that. `reofferOnOwnRunner` watches `keyVerificationStream`, and
+  once the device's own runner is stored the wrapper offers its held requests
+  again, yielding if it should (`ReofferOnRegister` in the model).
 - **Dismissing a live sheet cancels its ceremony.** A backdrop tap used to
   leave the SDK ceremony running: the peer's sheet waited at the emoji step
   for a confirmation that would never come, holding its lock (TLC's

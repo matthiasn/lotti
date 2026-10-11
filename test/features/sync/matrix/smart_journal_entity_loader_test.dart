@@ -506,6 +506,67 @@ void main() {
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
+    for (final (label, existing, fetched) in [
+      ('shorter than its attachment declared is fetched again', 2, true),
+      ('as long as its attachment declared is kept', 3, false),
+    ]) {
+      test('an image file $label', () async {
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-trunc',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: ImageData(
+            imageId: 'img-trunc',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'cut.jpg',
+            capturedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        final jsonFile = File(
+          path.join(tempDir.path, stripLeadingSlashes(relJson)),
+        );
+        await jsonFile.create(recursive: true);
+        await jsonFile.writeAsString(jsonEncode(image.toJson()));
+        final relMedia = getRelativeImagePath(image);
+        final mediaFile = File(
+          path.join(tempDir.path, stripLeadingSlashes(relMedia)),
+        );
+        await mediaFile.create(recursive: true);
+        await mediaFile.writeAsBytes(List.filled(existing, 7));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-img-trunc');
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({
+          'relativePath': relMedia,
+          'info': {'size': 3},
+        });
+        when(ev.downloadAndDecryptAttachment).thenAnswer(
+          (_) async =>
+              MatrixFile(bytes: Uint8List.fromList([1, 2, 3]), name: 'cut.jpg'),
+        );
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex()..record(ev),
+          loggingService: loggingService,
+        );
+
+        await loader.load(jsonPath: relJson);
+
+        if (fetched) {
+          verify(ev.downloadAndDecryptAttachment).called(1);
+          expect(mediaFile.readAsBytesSync(), [1, 2, 3]);
+        } else {
+          verifyNever(ev.downloadAndDecryptAttachment);
+          expect(mediaFile.lengthSync(), 3);
+        }
+      });
+    }
+
     test(
       'image media ensure logs and registers pending on empty bytes',
       () async {

@@ -22,14 +22,21 @@ It downloads the pinned `tla2tools.jar` once, verifies its SHA-256, and caches
 it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 `<Spec><Variant>.cfg` checks `<Spec>.tla`.
 
-CI packs every checked-in `.cfg` into runtime-balanced shards (`shards.py`)
-and runs them with `fail-fast: false`.
+CI packs every `.cfg` in this directory into runtime-balanced shards
+(`shards.py`) and runs them with `fail-fast: false`. It adds shards as the work
+grows, so that no shard's estimate passes `SHARD_BUDGET_SECONDS` (40 minutes)
+inside the one-hour job limit.
 A shard checks all of its configurations even after one fails, and lists each
 result in the job summary. A new configuration joins a shard automatically,
 counted at a pessimistic five minutes until its runtime is added to
 `SECONDS`; `python3 specs/tla/shards.py --table` prints the plan. The
 aggregate `TLC` check passes only when planning and every shard succeed; local
 `make tla_check` still runs all configurations sequentially.
+
+A configuration that no CI job can finish lives in `manual/` and is checked by
+hand by name, for example
+`JAVA_TOOL_OPTIONS=-Xmx12g specs/tla/tlc.sh SyncPipelineForkSuccessor`.
+Neither `make tla_check` nor CI runs it.
 
 ## `SyncPipeline` — the composed sync protocol
 
@@ -128,12 +135,13 @@ agreement. `ForkSuccessor` checks successor coverage through the complete
 pipeline without injecting crashes. Neither profile claims the full product of
 three-version forks, mixed families, multiple receivers and every fault.
 
-The fork/successor exploration took about 164 minutes locally and gets an
-isolated CI shard with a six-hour deadline and 12 GiB heap. It runs with every
-other configuration, nightly or on demand, and gates the same aggregate `TLC`
-check; regular shards
-retain their one-hour deadline. `shards_test.py` protects complete configuration
-assignment and isolation of the long profile.
+The fork/successor exploration took about 164 minutes locally with six
+workers and 12 GiB heap. On a four-core CI runner it needs about eight hours,
+so even a six-hour shard reached only 1.67 million of its states: every nightly
+run timed out. `manual/SyncPipelineForkSuccessor.cfg` is therefore checked by
+hand (see Running) and never planned. `shards_test.py` protects complete
+configuration assignment, the shard budget, and that the profile stays out of
+the plan.
 
 The original eight configurations explore **922,564 distinct states** in total.
 `Heads`, `HeadsBurn` and `HeadsCrash` additionally enable periodic origin-head
@@ -4558,7 +4566,10 @@ is described in
 ```mermaid
 stateDiagram-v2
   direction LR
-  [*] --> Requested: Launch, or Relaunch
+  [*] --> Sending: Launch, or Relaunch
+  Sending --> Requested: Register (the own runner is stored)
+  Sending --> Accepted: the peer's incoming sheet auto-accepts
+  Sending --> Cancelled: Cancel, Dismiss, or the peer yields
   Requested --> Accepted: the peer's incoming sheet auto-accepts
   Requested --> Cancelled: Cancel, Dismiss, or the peer yields
   Accepted --> Done: both users confirm the emoji
@@ -4566,6 +4577,13 @@ stateDiagram-v2
   Done --> [*]
   Cancelled --> [*]
 ```
+
+A request is two steps in the code: `verifyMatrixDevice` awaits the SDK's
+`startVerification`, which sends it, and only then stores the outgoing
+runner. Between the two, the peer can already see and answer the request,
+but this device has no runner to compare an incoming request against: the
+"sending" phase. A crossing request that lands then cannot tell that it
+should yield, and is deferred.
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -4579,29 +4597,30 @@ stateDiagram-v2
 
 | Configuration | Devices | Active | Launchers | Relaunch | Users | Checks | Distinct states |
 |---------------|---------|--------|-----------|----------|-------|--------|-----------------|
-| `VerificationLaunch` | 3 | 2 | 1 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 118,461 |
-| `VerificationLaunchTwoLaunchers` | 2 | 2 | 2 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 75,195 |
-| `VerificationLaunchCrossStart` | 2 | 2 | 2 | 0 | patient | all | 2,201 |
+| `VerificationLaunch` | 3 | 2 | 1 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 242,952 |
+| `VerificationLaunchTwoLaunchers` | 2 | 2 | 2 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 153,086 |
+| `VerificationLaunchCrossStart` | 2 | 2 | 2 | 0 | patient | all | 3,519 |
 
 A three-active-device profile (`Launchers = {1}`, patient users) was checked
 once by hand — 3,240,481 distinct states in eleven minutes on twenty workers —
 and is kept out of the directory for its runtime; it is what showed the ring
-and the need to defer (below).
+and the need to defer (below). It predates the "sending" phase.
 
 Each fix has a switch; in a temporary copy of a configuration outside this
 directory, set it and run TLC against `VerificationLaunch.tla`:
 
 | Mutation | Configuration | Counterexample |
 |----------|---------------|----------------|
-| `GlareHandoff = FALSE` (the code before this model) | `VerificationLaunchCrossStart` | `AutoVerifies`, 9 steps: both launchers open a sheet at the other device, each wrapper finds the lock held and drops the other's request, and both sheets wait forever |
+| `GlareHandoff = FALSE` (the code before this model) | `VerificationLaunchCrossStart` | `AutoVerifies`, 12 steps: both launchers open a sheet at the other device, each wrapper finds the lock held and drops the other's request, and both sheets wait forever |
 | `DeferIncoming = FALSE` | three active devices, by hand | `AutoVerifies`, 21 steps: with the handoff alone, a request that arrives while a sheet for a third device is up is dropped, and the launcher — which offers each device once — never asks again |
 | yield to any third device (a spec copy with `Yield(r, i) == Unanswered(r)`) | three active devices, by hand | `AutoVerifies`, a 24-step cycle: three devices in a ring each yield their unanswered request to the next, cancelling a ceremony the previous one was answering, forever |
-| `CancelOnDismiss = FALSE` (the code before this model) | `VerificationLaunch` | `EventuallyOffered`, 11 steps: a user abandons the outgoing sheet with a backdrop tap; the peer's sheet waits at the emoji step for a confirmation that never comes, and its lock is never freed |
+| `CancelOnDismiss = FALSE` (the code before this model) | `VerificationLaunch` | `EventuallyOffered`, 10 steps: a user abandons the outgoing sheet with a backdrop tap; the peer's sheet waits at the emoji step for a confirmation that never comes, and its lock is never freed |
 | `PreferLastShown = FALSE` (the code before this model) | `VerificationLaunch` | `RelaunchHonoured`, 7 steps: a cancel refreshes the view, which now holds a peer whose keys landed during the ceremony; the relaunch releases the last identity and then opens the first unhandled device — the newcomer |
 | `ReleaseOnce = FALSE` (found in review of #4753) | `VerificationLaunchTwoLaunchers` | `NoReoffer`, 6 steps: both launchers' listeners release the last identity on their own; the first reopens it and records it, the second releases it again, and once the reopened sheet closes the refresh offers it a third time unasked |
-| `RecordOnlyShown = FALSE` (fixed in #3634) | `VerificationLaunch` | `HandledWasShown`, 9 steps: a device is recorded while an incoming sheet holds the lock, and is never offered a ceremony |
+| `RecordOnlyShown = FALSE` (fixed in #3634) | `VerificationLaunch` | `HandledWasShown`, 8 steps: a device is recorded while an incoming sheet holds the lock, and is never offered a ceremony |
 | `SharedHandled = FALSE` (fixed in #3634) | `VerificationLaunchTwoLaunchers` | `NoReoffer`, 6 steps: the launcher that lost the lock knew nothing about what the winner had shown and reopened the sheet the user had just dismissed |
-| `ReleaseOne = FALSE` (fixed in #3634) | `VerificationLaunch` | `RelaunchHonoured`, 7 steps: the relaunch clears the whole set and restarts at the head of the list |
+| `ReofferOnRegister = FALSE` (seen in CI) | `VerificationLaunchCrossStart` | `AutoVerifies`, 12 states: both devices show their sheet at each other, and each request lands while the other's runner is not stored yet; neither can tell it should yield, both defer, and the deferred requests wait for a lock that never frees |
+| `ReleaseOne = FALSE` (fixed in #3634) | — | no counterexample of its own any more: it decides what a relaunch releases only while `PreferLastShown = FALSE`, which already fails `RelaunchHonoured` |
 
 The yield rule is the SDK's own rule for a `start` glare, applied one step
 earlier, to crossing *requests*: while this device's own request is still
@@ -4612,7 +4631,9 @@ its own ceremony, answers the peer's inside the sheet it already holds (on the
 stream `VerificationModal` renders, so the emoji appear there), and releases
 the withdrawn target from the handled set: that device was never really
 offered a ceremony. A launcher that finds the target's own request already
-pending answers it instead of starting a second one.
+pending answers it instead of starting a second one. A request deferred while
+this device's own request was still "sending" is offered again once its runner
+is stored (`reofferOnOwnRunner`), and yields then if it should.
 
 What the model leaves out:
 

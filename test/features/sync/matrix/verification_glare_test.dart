@@ -189,4 +189,37 @@ void main() {
       verify(incoming.acceptVerification).called(1);
     });
   });
+
+  group('reofferOnOwnRunner', () {
+    test('calls back once for each runner the service stores, not for a '
+        "runner's later updates nor for one it does not hold", () async {
+      final service = MockMatrixService();
+      final stream = StreamController<KeyVerificationRunner>.broadcast();
+      addTearDown(stream.close);
+      when(
+        () => service.keyVerificationStream,
+      ).thenAnswer((_) => stream.stream);
+      final first = MockKeyVerificationRunner();
+      final second = MockKeyVerificationRunner();
+      final stranger = MockKeyVerificationRunner();
+      KeyVerificationRunner? stored;
+      when(() => service.keyVerificationRunner).thenAnswer((_) => stored);
+      var reoffers = 0;
+      final subscription = reofferOnOwnRunner(service, () => reoffers++);
+      addTearDown(subscription.cancel);
+
+      stored = first;
+      stream
+        ..add(first)
+        ..add(first)
+        ..add(stranger);
+      await pumpEventQueue();
+      expect(reoffers, 1);
+
+      stored = second;
+      stream.add(second);
+      await pumpEventQueue();
+      expect(reoffers, 2);
+    });
+  });
 }

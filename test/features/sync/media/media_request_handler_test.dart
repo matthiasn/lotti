@@ -148,6 +148,30 @@ void main() {
     expect(answers.first.status, SyncEntryStatus.update);
   });
 
+  test('leaves an entry addressed to another holder to it', () async {
+    haveEntities({
+      'img-1': imageEntry('img-1'),
+      'aud-1': audioEntry('aud-1'),
+      'img-2': imageEntry('img-2'),
+    });
+    writeBlob('/images/img-1.jpg');
+    writeBlob('/audio/2024-01-01/aud-1.aac');
+    writeBlob('/images/img-2.jpg');
+
+    await handler.handleMediaRequest(
+      const SyncMessage.mediaRequest(
+            entryIds: ['img-1', 'aud-1', 'img-2'],
+            requesterId: 'host-a',
+            // img-1 is another device's to answer; aud-1 is this one's;
+            // img-2 names nobody, so every holder answers it.
+            holders: {'img-1': 'host-c', 'aud-1': 'host-b'},
+          )
+          as SyncMediaRequest,
+    );
+
+    expect(answers.map((a) => a.id), ['aud-1', 'img-2']);
+  });
+
   test("ignores this device's own broadcast", () async {
     haveEntities({'img-1': imageEntry('img-1')});
     writeBlob('/images/img-1.jpg');

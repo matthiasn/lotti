@@ -506,6 +506,25 @@ void main() {
       });
     });
 
+    test('a late update after its stream closed publishes nothing and does '
+        'not throw', () async {
+      final controller = StreamController<KeyVerificationRunner>.broadcast();
+      final verification = MockKeyVerification();
+      when(() => verification.lastStep).thenReturn(null);
+      when(() => verification.isDone).thenReturn(false);
+      final runner = KeyVerificationRunner(
+        verification,
+        controller: controller,
+        name: 'Closed stream test',
+        domainLogger: MockDomainLogger(),
+      );
+      addTearDown(runner.stopTimer);
+      await controller.close();
+
+      // An SDK callback can still land while the service tears down.
+      expect(runner.publishState, returnsNormally);
+    });
+
     test('cancel step stops the timer', () {
       final controller = runnerController();
 
