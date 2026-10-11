@@ -201,37 +201,29 @@ void main() {
     expect(calls, ['duration', 'sentiment']);
   });
 
-  testWidgets('held while a take is live: the facts stay, drop to the low '
-      'ink, and take no tap', (tester) async {
-    await pump(tester, enabled: false);
+  testWidgets('held while a take is live: the facts stay, the lane fades '
+      "as one by the low ink's alpha — the recorder's inert look — and "
+      'nothing takes a tap', (tester) async {
+    double laneOpacity() => tester
+        .widget<AnimatedOpacity>(
+          find.byKey(const ValueKey('check-in-meta-line-hold')),
+        )
+        .opacity;
 
-    final colors = tokensOf(tester).colors;
-    final low = colors.text.lowEmphasis;
+    await pump(tester);
+    expect(laneOpacity(), 1);
+
+    await pump(tester, enabled: false);
+    expect(laneOpacity(), tokensOf(tester).colors.text.lowEmphasis.a);
     for (final key in [...facts, 'check-in-detail-edit']) {
-      final pill = tag(tester, key);
-      expect(pill.onTap, isNull, reason: key);
-      expect(pill.labelColor, low, reason: key);
-      expect(glyph(tester, key).color, low, reason: key);
+      expect(tag(tester, key).onTap, isNull, reason: key);
       await tester.tap(find.byKey(ValueKey(key)), warnIfMissed: false);
-    }
-    // The bordered facts' frames recede with their ink.
-    for (final key in [
-      'check-in-type',
-      'check-in-started',
-      'check-in-duration',
-      'check-in-topics',
-    ]) {
-      expect(
-        tag(tester, key).borderColor,
-        colors.decorative.level01,
-        reason: key,
-      );
     }
     expect(calls, isEmpty);
     expect(find.text('Call'), findsOneWidget);
   });
 
-  testWidgets('a live fact keeps its own ink and frame — high for how, when '
+  testWidgets('a live fact keeps its own ink — high for how, when '
       'and how long, medium for the topics and the lever', (tester) async {
     await pump(tester);
 
@@ -242,7 +234,6 @@ void main() {
       'check-in-duration',
     ]) {
       expect(tag(tester, key).labelColor, text.highEmphasis, reason: key);
-      expect(tag(tester, key).borderColor, isNull, reason: key);
     }
     expect(tag(tester, 'check-in-topics').labelColor, text.mediumEmphasis);
     expect(tag(tester, 'check-in-detail-edit').labelColor, text.mediumEmphasis);

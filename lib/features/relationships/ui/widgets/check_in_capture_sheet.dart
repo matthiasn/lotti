@@ -764,8 +764,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // Under the composer's fold, one level below its trigger: the same size,
     // the quieter ink. Editing has no fold, so the labels are the sheet's
     // field labels — the high ink the app's other form sheets give theirs.
-    Widget sectionLabel(String text) => Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+    //
+    // [gap] is the label's air to its control: `step3` to a field, none to
+    // a row of touch chips, whose 48px targets already hold that much air
+    // above the pill — so every label sits the same visible step above
+    // what it names.
+    Widget sectionLabel(String text, {double? gap}) => Padding(
+      padding: EdgeInsets.only(bottom: gap ?? tokens.spacing.step3),
       child: Text(
         text,
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -884,7 +889,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 ? tokens.spacing.sectionGap
                 : tokens.spacing.step4,
           ),
-          sectionLabel(messages.checkInSentimentLabel),
+          sectionLabel(messages.checkInSentimentLabel, gap: 0),
           Wrap(
             spacing: tokens.spacing.step3,
             runSpacing: tokens.spacing.step3,
@@ -911,7 +916,8 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 ),
             ],
           ),
-          SizedBox(height: tokens.spacing.step3),
+          // Tucked under the chips — their targets' air is its gap — so the
+          // line reads as the feeling's own note, not a heading's stray.
           caption(messages.checkInSentimentOptional),
           // One section gap between the folded sections, whatever each
           // holds: the edit sheet opens on all of them at once.

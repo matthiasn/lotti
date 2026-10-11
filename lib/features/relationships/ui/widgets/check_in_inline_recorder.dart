@@ -15,9 +15,9 @@ import 'package:material_ui/material_ui.dart';
 /// (`recording_controls.dart`) — the recording sheet's: the level
 /// visualizer the user chose, the running clock, and discard ✕ · pause ⏸ ·
 /// the red Stop — then the reassurance that audio is on disk as it goes.
-/// A Capture-shaped recorder, the orb doubling as Stop over Discard ·
-/// Pause in words, read as a second app's recorder beside the sheet a
-/// task's microphone opens. It starts recording the moment it is mounted —
+/// It replaced a Capture-shaped recorder whose orb doubled as Stop, which
+/// read as a second app's recorder beside the sheet a task's microphone
+/// opens. It starts recording the moment it is mounted —
 /// the user already pressed *Dictate* — and reports one of three outcomes:
 ///
 /// - [onRecorded] with the audio entry the recording became and how long it

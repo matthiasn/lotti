@@ -756,6 +756,23 @@ void main() {
           reason: label,
         );
       }
+      // One visible step from every label to what it names: a field's
+      // label carries `step3`, the chips' none — their 48px targets already
+      // hold that air above the pill.
+      EdgeInsets labelGap(String label) =>
+          tester
+                  .widget<Padding>(
+                    find
+                        .ancestor(
+                          of: find.text(label),
+                          matching: find.byType(Padding),
+                        )
+                        .first,
+                  )
+                  .padding
+              as EdgeInsets;
+      expect(labelGap('How did it feel?').bottom, 0);
+      expect(labelGap('Topics').bottom, tokens.spacing.step3);
       for (final key in [
         'check-in-topics',
         'check-in-pay-attention',
@@ -1675,6 +1692,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(capturedSave().entryText?.plainText, 'Words.');
       expect(find.byType(CheckInCaptureForm), findsNothing);
+    });
+
+    testWidgets('while a take is live More is held like the chips: dimmed, '
+        'its chevron gone', (tester) async {
+      await openSheet(tester);
+      Finder chevron() => find.descendant(
+        of: find.byKey(const ValueKey('check-in-more')),
+        matching: find.byIcon(LottiIcons.chevronDown),
+      );
+      expect(chevron(), findsOneWidget);
+      await startDictation(tester);
+      expect(chevron(), findsNothing);
     });
 
     testWidgets('the header follows the recorder', (tester) async {
