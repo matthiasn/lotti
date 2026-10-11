@@ -145,16 +145,23 @@ class SyncEventTrust {
     return SyncEventTrustVerdict.trusted;
   }
 
+  /// Logs that [event] was rejected for [verdict].
+  void logRejection(
+    Event event,
+    SyncEventTrustVerdict verdict, {
+    required String subDomain,
+  }) => _logging.log(
+    LogDomain.sync,
+    'sync.trust.rejected eventId=${event.eventId} verdict=${verdict.name}',
+    subDomain: subDomain,
+    level: InsightLevel.warn,
+  );
+
   /// Whether [event] may be applied. Logs every rejection with its reason.
   Future<bool> admits(Event event, {required String subDomain}) async {
     final verdict = await evaluate(event);
     if (verdict == SyncEventTrustVerdict.trusted) return true;
-    _logging.log(
-      LogDomain.sync,
-      'sync.trust.rejected eventId=${event.eventId} verdict=${verdict.name}',
-      subDomain: subDomain,
-      level: InsightLevel.warn,
-    );
+    logRejection(event, verdict, subDomain: subDomain);
     return false;
   }
 }

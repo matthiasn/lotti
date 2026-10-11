@@ -62,6 +62,9 @@ class FakeMatrixGateway implements MatrixSyncGateway {
   }
 
   @override
+  Future<String?> findSyncRoom() async => null;
+
+  @override
   Future<void> joinRoom(String roomId) async {}
 
   @override

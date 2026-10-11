@@ -33,6 +33,8 @@ QueueStats _stats({
 
 void main() {
   setUpAll(() {
+    Room? noRoom(String _) => null;
+    registerFallbackValue(noRoom);
     registerFallbackValue(LogDomain.sync);
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(
@@ -395,6 +397,7 @@ void main() {
       when(lifecycle.reconcileLifecycleState).thenAnswer((_) async {});
       when(() => svc.keyVerificationRunner).thenReturn(null);
       when(() => svc.incomingKeyVerificationRunner).thenReturn(null);
+      when(() => queue.readmitUntrusted(any())).thenAnswer((_) async => 0);
     });
 
     test(
@@ -416,10 +419,34 @@ void main() {
         verify(
           () => client.updateUserDeviceKeys(additionalUsers: {userId}),
         ).called(1);
+        // Events held from a device not trusted yet get a fresh check.
+        verify(() => queue.readmitUntrusted(any())).called(1);
         verify(lifecycle.reconcileLifecycleState).called(1);
         verify(() => coordinator.triggerBridge()).called(1);
       },
     );
+
+    test('a failing re-check of held events is logged and the refresh goes '
+        'on', () async {
+      when(
+        () => queue.readmitUntrusted(any()),
+      ).thenThrow(StateError('queue closed'));
+
+      await buildDeleteOps().deleteDeviceById('DEV1');
+
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any(
+            named: 'subDomain',
+            that: endsWith('.readmitUntrusted'),
+          ),
+        ),
+      ).called(1);
+      verify(() => coordinator.triggerBridge()).called(1);
+    });
 
     test(
       'cancels an in-flight verification against the device before deleting, '

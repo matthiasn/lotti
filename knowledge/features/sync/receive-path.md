@@ -223,8 +223,17 @@ flowchart TD
   attachment hook neither indexes nor downloads an untrusted one, and exact-id
   recovery checks a fetched descriptor before indexing it — without a policy
   the processor skips the lookup entirely.
-- **Dropped, not retried.** A rejected payload never enters the queue, so the
-  marker may pass it like a non-payload event; no legitimate peer produces one.
+- **Dropped, or held until the device is trusted.** A forgery — plaintext, a
+  forwarded or unknown session, a device that is not the sender's — never
+  enters the queue, so the marker may pass it like a non-payload event. A
+  payload from a device that is only not trusted *yet* (`untrustedDevice`, or
+  `unknownDevice` whose keys have not arrived) is stored as an abandoned row
+  under `untrustedReason`. Device verification
+  (`MatrixServiceOps.refreshDeviceKeysAndResumeSync`) and every queue start
+  run `InboundQueue.readmitUntrusted`, which checks each held event again and
+  re-arms the ones now trusted, so what a device sent before its verification
+  still applies ([ADR 0134](../../../docs/adr/0134-sessions-rooms-and-trust-recover.md)). No other resurrection — "Retry
+  all", an attachment landing — touches a held row.
 - **Rows from before the gate are fetched again.** The gate checks at enqueue,
   so rows already queued when an install upgrades past sync DB v34 were never
   checked. That migration drops the ones never applied after lowering each

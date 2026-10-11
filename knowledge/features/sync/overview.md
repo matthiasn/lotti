@@ -358,8 +358,13 @@ where the user types a homeserver, a full Matrix ID and a password
 ([GitHub #4055](https://github.com/matthiasn/lotti/issues/4055)). It exists for
 the account's first device when nobody runs the provisioning CLI: the user has
 a Matrix account, on their own homeserver or a public one, and no code.
-`ProvisioningController.configureFromCredentials` signs in, **creates** the
-encrypted sync room through `SyncRoomManager.createRoom` (the gateway creates it
+`ProvisioningController.configureFromCredentials` signs in and uses the
+account's existing sync room when it has one — `MatrixSyncGateway.findSyncRoom`,
+the joined room with the `m.lotti.sync_room` marker whose latest event is
+newest — so a second device signing in by hand joins its other devices rather
+than splitting them into a new room ([ADR 0134](../../../docs/adr/0134-sessions-rooms-and-trust-recover.md)). Only an
+account without one **creates** the encrypted sync room through
+`SyncRoomManager.createRoom` (the gateway creates it
 non-federated and stamps the `m.lotti.sync_room` marker, megolm encryption and
 an `m.room.retention` policy of `SyncTuning.syncRoomRetention`, 30 days, at
 creation; a room created before that gets the policy the next time
@@ -745,7 +750,10 @@ truth. Login state alone is not enough, and the gap is not theoretical:
 join (`M_FORBIDDEN`/`M_NOT_FOUND`) *after* the login event has already fired,
 leaving the roster on screen for a room that no longer exists.
 `SyncRoomManager.roomIdChanges` closes that — every mutation of the room id
-goes through one private setter, so no path can change it without emitting.
+goes through one private setter, so no path can change it without emitting. A stored session that cannot reach the homeserver at start — no network yet
+— is not left disconnected: `MatrixService.init` keeps connecting it, with a
+wait doubling from 30 seconds to five minutes, and at once when connectivity
+returns ([ADR 0134](../../../docs/adr/0134-sessions-rooms-and-trust-recover.md)).
 
 ## Telling a finished ceremony from a failed one
 

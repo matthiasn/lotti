@@ -8,6 +8,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -768,11 +769,11 @@ void main() {
             originTsMs: 5001,
           );
           when(
-            () => trust.admits(forged, subDomain: 'queue.enqueue'),
-          ).thenAnswer((_) async => false);
+            () => trust.evaluate(forged),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.senderMismatch);
           when(
-            () => trust.admits(genuine, subDomain: 'queue.enqueue'),
-          ).thenAnswer((_) async => true);
+            () => trust.evaluate(genuine),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.trusted);
 
           final result = await guarded.enqueueBatch(
             [forged, genuine],
@@ -783,6 +784,72 @@ void main() {
           expect(result.rejectedUntrusted, 1);
           final ready = await guarded.peekBatchReady(maxBatch: 10);
           expect(ready.map((entry) => entry.eventId), [r'$genuine']);
+          // A forgery is not held for later.
+          expect(
+            await guarded.resurrectByReason(untrustedReason),
+            0,
+          );
+          expect(await db.select(db.inboundEventQueue).get(), hasLength(1));
+        },
+      );
+
+      test(
+        'one from a device not trusted yet is held, untouched by "Retry '
+        'all", and re-armed once a fresh check trusts its device',
+        () async {
+          final pending = _buildSyncEvent(
+            eventId: r'$pending',
+            roomId: roomA,
+            originTsMs: 7000,
+          );
+          final stranger = _buildSyncEvent(
+            eventId: r'$stranger',
+            roomId: roomA,
+            originTsMs: 7001,
+          );
+          // A real event names its sender, which decoding it again needs.
+          for (final event in [pending, stranger]) {
+            final json = event.toJson();
+            when(event.toJson).thenReturn({...json, 'sender': '@user:server'});
+          }
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return event.eventId == r'$pending'
+                ? SyncEventTrustVerdict.untrustedDevice
+                : SyncEventTrustVerdict.unknownDevice;
+          });
+
+          final result = await guarded.enqueueBatch(
+            [pending, stranger],
+            producer: InboundEventProducer.live,
+          );
+
+          expect(result.accepted, 0);
+          expect(result.rejectedUntrusted, 2);
+          expect(await guarded.peekBatchReady(maxBatch: 10), isEmpty);
+          expect(await guarded.resurrectAll(), 0);
+          expect(await guarded.peekBatchReady(maxBatch: 10), isEmpty);
+
+          // The pending device is verified; the stranger still is not.
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return event.eventId == r'$pending'
+                ? SyncEventTrustVerdict.trusted
+                : SyncEventTrustVerdict.unknownDevice;
+          });
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomA);
+
+          // A row whose room is unknown waits.
+          expect(await guarded.readmitUntrusted((_) => null), 0);
+          expect(await guarded.readmitUntrusted((_) => room), 1);
+          final ready = await guarded.peekBatchReady(maxBatch: 10);
+          expect(ready.map((entry) => entry.eventId), [r'$pending']);
+          expect(await guarded.readmitUntrusted((_) => room), 0);
         },
       );
 

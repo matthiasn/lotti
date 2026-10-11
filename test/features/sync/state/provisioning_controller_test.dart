@@ -948,6 +948,36 @@ void main() {
         password: 'my-own-password',
       );
 
+      setUp(() {
+        when(
+          () => mockMatrixService.findSyncRoom(),
+        ).thenAnswer((_) async => null);
+      });
+
+      test('an account already in a sync room joins it instead of creating '
+          'another, which would split its devices', () async {
+        when(
+          () => mockMatrixService.findSyncRoom(),
+        ).thenAnswer((_) async => '!existing:example.com');
+
+        await container
+            .read(provisioningControllerProvider.notifier)
+            .configureFromCredentials(credentials);
+
+        verifyNever(() => mockMatrixService.createRoom());
+        verify(
+          () => mockMatrixService.saveRoom('!existing:example.com'),
+        ).called(1);
+        expect(
+          container.read(provisioningControllerProvider),
+          isA<ProvisioningState>().having(
+            (state) => state.maybeWhen(ready: (_) => true, orElse: () => false),
+            'ready',
+            isTrue,
+          ),
+        );
+      });
+
       test('logs in, creates the sync room and ends ready', () async {
         final states = <ProvisioningState>[];
         container.listen(

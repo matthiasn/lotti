@@ -56,6 +56,12 @@ class SyncTuning {
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops
 
+  /// The first wait before connecting again after a start that could not
+  /// reach the homeserver; each failed attempt doubles it, up to
+  /// [matrixReconnectMaxDelay]. Connectivity coming back retries at once.
+  static const Duration matrixReconnectInitialDelay = Duration(seconds: 30);
+  static const Duration matrixReconnectMaxDelay = Duration(minutes: 5);
+
   /// How long a row stays in `error` before a drained outbox gives it one
   /// more attempt (`OutboxRepository.requeueFailed`).
   static const Duration outboxFailedRequeueAfter = Duration(minutes: 15);

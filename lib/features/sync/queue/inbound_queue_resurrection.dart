@@ -94,6 +94,33 @@ class InboundQueueResurrection {
     );
   }
 
+  /// Up to [limit] abandoned rows skipped for [reasonName], oldest first.
+  Future<List<InboundEventQueueItem>> abandonedWithReason(
+    String reasonName, {
+    int limit = 500,
+  }) =>
+      (_db.select(_db.inboundEventQueue)
+            ..where(
+              (t) =>
+                  const CustomExpression<bool>("status = 'abandoned'") &
+                  t.lastErrorReason.equals(reasonName),
+            )
+            ..orderBy([(t) => OrderingTerm(expression: t.originTs)])
+            ..limit(limit))
+          .get();
+
+  /// Re-arms the rows [queueIds] that are still abandoned for [reasonName].
+  Future<int> resurrectIds(
+    List<int> queueIds, {
+    required String reasonName,
+    int hardCap = 50,
+  }) => _resurrectWhere(
+    (t) => t.queueId.isIn(queueIds) & t.lastErrorReason.equals(reasonName),
+    hardCap: hardCap,
+    diagnostic: 'reason=$reasonName ids=${queueIds.length}',
+    includeUntrusted: true,
+  );
+
   /// Flips abandoned rows whose most recent retry reason matches
   /// [reasonName] back to `enqueued`. Used by the coordinator's
   /// `UpdateNotifications.updateStream` subscriber: every
@@ -116,11 +143,19 @@ class InboundQueueResurrection {
     );
   }
 
+  /// Re-arms the abandoned rows below [hardCap] that [extraWhere] selects.
+  /// A row held because its device was not trusted yet ([untrustedReason])
+  /// is left out unless [includeUntrusted]: only a fresh trust check may
+  /// re-arm it, never "Retry all" or an attachment landing.
   Future<int> _resurrectWhere(
     Expression<bool> Function(InboundEventQueue t)? extraWhere, {
     required int hardCap,
     required String diagnostic,
+    bool includeUntrusted = false,
   }) async {
+    Expression<bool> notUntrusted(InboundEventQueue t) =>
+        t.lastErrorReason.isNull() |
+        t.lastErrorReason.equals(untrustedReason).not();
     final table = _db.inboundEventQueue;
     final nowMs = clock.now().millisecondsSinceEpoch;
 
@@ -147,6 +182,7 @@ class InboundQueueResurrection {
             const CustomExpression<bool>("status = 'abandoned'") &
             t.resurrectionCount.isSmallerThanValue(hardCap),
       );
+    if (!includeUntrusted) selectQuery.where(notUntrusted);
     if (extraWhere != null) {
       selectQuery.where(extraWhere);
     }
@@ -182,6 +218,7 @@ class InboundQueueResurrection {
               t.resurrectionCount.isSmallerThanValue(hardCap) &
               t.queueId.isIn(ids),
         );
+      if (!includeUntrusted) update.where(notUntrusted);
       if (extraWhere != null) {
         update.where(extraWhere);
       }

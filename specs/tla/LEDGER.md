@@ -357,6 +357,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4764](https://github.com/matthiasn/lotti/pull/4764) | pending | sync | — | 1 | 6 (0) | P1×6 | [0132](../../docs/adr/0132-messages-without-a-counter-are-delivered.md) | Settings, flags, preferences and AI configurations carry no sequence counter, so delivery is their only guarantee, and five paths broke it. An outbox row in `error` is now tried again once per 15-minute window after the queue drains, and the watchdog runs that pass while rows wait; Outbox.tla gains `RequeueFailed` and `FailedIsRetried` (OutboxRequeue, 5,551 states; without the switch, sixteen steps). A bundle with an undecodable manifest or child applies what decoded and is resurrected whole at the next start; a prepare failure is `undecodable` (a `MatrixException` `retriable`) instead of a permanent skip; a relay that never held a payload no longer answers `deleted`; and a conflict that cannot be stored fails the write so the receive retries |
 | [#4762](https://github.com/matthiasn/lotti/pull/4762) | pending | sync | — | 0 | 6 (0) | P1×3 P2 P3×2 | [0131](../../docs/adr/0131-current-builds-repair-what-old-builds-left.md) | Residuals recorded as ending only when old devices update, narrowed from the current build: a current device answers an unstamped or stale config flag or AI configuration with the version it holds, so an arrival-order receiver ends on the newest; own counters burned under the wrong id before ADR 0077 are resent and rebound at startup; a late copy of an entry purged before #4534 is refused locally, unless the journal was ever restored; media tombstones keep their file path. Also fixes #4754's ledger owing after the write commits and #4760's counter-0 resend recorded as done without sending. Peers older than 1.1.34 stay open: nothing sent heals their files. No spec changed |
 | [#4767](https://github.com/matthiasn/lotti/pull/4767) | pending | sync, agents | — | 0 | 6 (0) | P0 P1×3 P2×2 | [0133](../../docs/adr/0133-removals-and-repairs-reach-every-device.md) | Six paths where one device's removal, repair or disconnection never reached the others, or kept being undone. A deleted agent keeps its destroyed identity (agent schema v25), which backfill and deep backfill send to a peer that missed the destroy; Repair vector clocks and the historical re-sync stamp agent rows from the stored row, read again in the writing transaction (`AgentClockStamper`); a retried task agent identity mirrors its runtime from the identity that stands; retention records the ids it prunes, locally, so deep backfill neither asks for nor stores them again; the link inventory lists versions that lost their triple; and "Send settings" re-sends the GitHub account, connected or not. No spec changed |
+| Sessions recover (pending) | pending | sync | — | 0 | 3 (0) | P1×3 | [0134](../../docs/adr/0134-sessions-rooms-and-trust-recover.md) | Three places where starting or setting up sync left a device out of step for good. An event from a device not trusted yet (unverified, or keys not arrived) is held as an abandoned queue row and re-checked when a verification completes or the queue starts, instead of dropped while the marker passed it; a start without network keeps connecting with a doubling wait and at once when connectivity returns; and signing in with credentials joins the account's existing sync room instead of always creating one. No spec changed |
 | pending | pending | speech, ai | `TranscriptionRun` | 0 | 0 (–) | — | [0126](../../docs/adr/0126-post-processing-follows-every-speech-to-text-transcription.md) | No model change: post-processing now follows every speech-to-text transcription, so a check-in's transcript is held like any other. `TranscriptionRunHeld` already pairs `Held` with the check-in `Waiter`, and re-checked: `WaiterResolves` and `HeldTextLands` hold through the fill. 90,328 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -586,7 +587,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 171 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 174 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -761,6 +762,9 @@ The P0 and P1 bugs:
 | [#4767](https://github.com/matthiasn/lotti/pull/4767) | P1 | no | Deep backfill asked for a link version that lost its triple every round and refused the answer, since the inventory did not list the loss |
 | [#4767](https://github.com/matthiasn/lotti/pull/4767) | P2 | no | Deep backfill re-fetched agent rows retention had pruned from a peer that had not swept yet, every round |
 | [#4767](https://github.com/matthiasn/lotti/pull/4767) | P2 | no | A task agent identity retried after its first apply committed skipped the runtime mirror, so a resumed agent ignored task edits until restart |
+| Sessions recover | P1 | no | An event from a device verified on one side only, or whose keys had not arrived, was dropped for good, so settings it sent in that window never applied |
+| Sessions recover | P1 | no | Starting the app without network left sync off until the next launch: the connect was tried once |
+| Sessions recover | P1 | no | Signing in with a homeserver and password always created a new sync room, splitting the account's devices into rooms that never met |
 
 </details>
 

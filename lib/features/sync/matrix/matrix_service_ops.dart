@@ -75,6 +75,8 @@ class MatrixServiceOps {
     name: 'Lotti sync ${clock.now().toIso8601String()}',
   );
 
+  Future<String?> findSyncRoom() => roomManager.findSyncRoom();
+
   Future<void> saveRoom(String roomId) async {
     await roomManager.saveRoomId(roomId);
 
@@ -214,7 +216,9 @@ class MatrixServiceOps {
   }
 
   /// Refreshes cached device keys and nudges the pipeline so sync reflects a
-  /// changed device set without an app restart.
+  /// changed device set without an app restart. Events held because their
+  /// device was not trusted yet are checked again, so what a device sent
+  /// before its verification applies once it is verified.
   ///
   /// The send path consults the cached key list on every message, so a stale
   /// cache after a verification or a device deletion keeps blocking outbound
@@ -237,6 +241,17 @@ class MatrixServiceOps {
         error,
         stackTrace: stackTrace,
         subDomain: '$subDomain.updateUserDeviceKeys',
+      );
+    }
+
+    try {
+      await queueCoordinator.queue.readmitUntrusted(_client.getRoomById);
+    } catch (error, stackTrace) {
+      loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$subDomain.readmitUntrusted',
       );
     }
 

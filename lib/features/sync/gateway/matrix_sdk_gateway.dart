@@ -153,6 +153,32 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   @override
+  Future<String?> findSyncRoom() async {
+    String? newest;
+    var newestAt = -1;
+    for (final roomId in await _client.getJoinedRooms()) {
+      try {
+        await _client.getRoomStateWithKey(roomId, _syncRoomStateType, '');
+      } on MatrixException {
+        continue; // not a sync room
+      }
+      final latest = await _client.getRoomEvents(
+        roomId,
+        Direction.b,
+        limit: 1,
+      );
+      final at = latest.chunk.isEmpty
+          ? 0
+          : latest.chunk.first.originServerTs.millisecondsSinceEpoch;
+      if (at > newestAt) {
+        newest = roomId;
+        newestAt = at;
+      }
+    }
+    return newest;
+  }
+
+  @override
   Future<bool> ensureRoomRetention(String roomId) async =>
       _setRetentionUnlessPresent(roomId, await _client.getRoomState(roomId));
 
