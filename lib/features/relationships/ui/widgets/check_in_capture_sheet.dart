@@ -885,7 +885,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                       ? LottiIcons.confirm
                       : null,
                   selected: _sentiment == sentiment,
-                  size: DesignSystemChipSize.touch,
+                  // The context row's own chip, so the sheet speaks one chip
+                  // size; the touch variant keeps the full target around it.
+                  size: DesignSystemChipSize.compactPillTouch,
                   // Tapping the selected sentiment clears it again —
                   // sentiment is optional, never forced.
                   onPressed: () => setState(

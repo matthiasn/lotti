@@ -143,48 +143,11 @@ void main() {
     });
   });
 
-  group('the feeling chip', () {
-    Future<void> pumpWith(
-      WidgetTester tester, {
-      CheckInSentiment? sentiment,
-      bool editable = true,
-    }) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          CheckInContextChips(
-            type: CheckInInteractionType.call,
-            startedLabel: 'Now · 14:55',
-            durationLabel: 'Duration',
-            sentiment: sentiment,
-            onPickType: () {},
-            onPickStart: () {},
-            onPickDuration: () {},
-            onPickSentiment: editable ? () => calls.add('sentiment') : null,
-          ),
-        ),
-      );
-      await tester.pump();
-    }
-
-    testWidgets('shows only where it can be edited', (tester) async {
-      await pumpWith(tester, editable: false);
-      expect(
-        find.byKey(const ValueKey('check-in-sentiment-chip')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('reads the feeling, or asks for one, and opens its picker', (
-      tester,
-    ) async {
-      await pumpWith(tester);
-      expect(chip(tester, 'check-in-sentiment-chip').label, 'How did it feel?');
-
-      await pumpWith(tester, sentiment: CheckInSentiment.good);
-      expect(chip(tester, 'check-in-sentiment-chip').label, 'Good');
-      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-chip')));
-      expect(calls, ['sentiment']);
-    });
+  testWidgets('the composer row carries no feeling chip — the feeling sits '
+      'under More there', (tester) async {
+    await pump(tester);
+    expect(find.byKey(const ValueKey('check-in-sentiment-chip')), findsNothing);
+    expect(find.byType(DesignSystemChip), findsNWidgets(3));
   });
 
   group('showCheckInSentimentPicker', () {

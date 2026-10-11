@@ -96,6 +96,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -801,6 +802,11 @@ void main() {
     AudioRecorderController Function()? recorder,
   }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
+    // The check-in page's crumb reads the person's category from here, as
+    // production's bootstrap wires it.
+    entitiesCacheServiceProvider.overrideWithValue(
+      getIt<EntitiesCacheService>(),
+    ),
     // The person bar's record button watches the app-wide recorder; a
     // capture that drives a take passes its own fake.
     audioRecorderControllerProvider.overrideWith(
@@ -1397,52 +1403,67 @@ void main() {
     );
   });
 
-  testWidgets('mobile check-in detail — dark', (tester) async {
-    final held = [pipTake, pipCorrection];
-    // The real entry controller, so the comment opens in its editor the way
-    // it does in the app.
-    for (final entry in held) {
-      when(
-        () => getIt<JournalDb>().journalEntityById(entry.id),
-      ).thenAnswer((_) async => entry);
-    }
-    await pumpSurface(
-      tester,
-      home: const Scaffold(
-        body: SafeArea(
-          child: CheckInDetailView(
-            relationshipId: _pipId,
-            checkInId: 'check-pip-3',
+  // Dark is the reference; light and large German text are the edges the
+  // task page is held to as well.
+  for (final (variant, brightness, scale, locale) in [
+    ('dark', Brightness.dark, 1.0, null),
+    ('light', Brightness.light, 1.0, null),
+    ('large_text_de', Brightness.dark, 1.6, const Locale('de')),
+  ]) {
+    testWidgets('mobile check-in detail — $variant', (tester) async {
+      final held = [pipTake, pipCorrection];
+      // The real entry controller, so the comment opens in its editor the way
+      // it does in the app.
+      for (final entry in held) {
+        when(
+          () => getIt<JournalDb>().journalEntityById(entry.id),
+        ).thenAnswer((_) async => entry);
+      }
+      await pumpSurface(
+        tester,
+        // As `CheckInDetailPage` mounts it: on a phone the view leads back.
+        home: Scaffold(
+          body: SafeArea(
+            child: CheckInDetailView(
+              relationshipId: _pipId,
+              checkInId: 'check-pip-3',
+              onBack: () {},
+            ),
           ),
         ),
-      ),
-      device: proDevice,
-      brightness: Brightness.dark,
-      overrides: [
-        ...personOverrides(report: briefing()),
-        sortedLinkedEntriesProvider('check-pip-3').overrideWith(
-          (ref) => [
-            for (final entry in held)
-              EntryLink.basic(
-                id: 'check-pip-3->${entry.id}',
-                fromId: 'check-pip-3',
-                toId: entry.id,
-                createdAt: entry.meta.dateFrom,
-                updatedAt: entry.meta.dateFrom,
-                vectorClock: null,
-              ),
-          ],
-        ),
-      ],
-    );
+        device: proDevice,
+        brightness: brightness,
+        textScaler: TextScaler.linear(scale),
+        locale: locale,
+        overrides: [
+          ...personOverrides(report: briefing()),
+          sortedLinkedEntriesProvider('check-pip-3').overrideWith(
+            (ref) => [
+              for (final entry in held)
+                EntryLink.basic(
+                  id: 'check-pip-3->${entry.id}',
+                  fromId: 'check-pip-3',
+                  toId: entry.id,
+                  createdAt: entry.meta.dateFrom,
+                  updatedAt: entry.meta.dateFrom,
+                  vectorClock: null,
+                ),
+            ],
+          ),
+        ],
+      );
 
-    expect(find.byKey(const ValueKey('check-in-detail-note')), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'check_in_open_mobile_dark',
-      subdir: _subdir,
-    );
-  });
+      expect(
+        find.byKey(const ValueKey('check-in-detail-note')),
+        findsOneWidget,
+      );
+      await captureScreenshot(
+        tester,
+        'check_in_open_mobile_$variant',
+        subdir: _subdir,
+      );
+    });
+  }
 
   testWidgets('desktop check-in detail — dark', (tester) async {
     final held = [pipTake, pipCorrection];
@@ -1455,11 +1476,13 @@ void main() {
     }
     await pumpSurface(
       tester,
-      home: const Scaffold(
+      // As the People pane mounts it: on desktop too the view leads back.
+      home: Scaffold(
         body: SafeArea(
           child: CheckInDetailView(
             relationshipId: _pipId,
             checkInId: 'check-pip-3',
+            onBack: () {},
           ),
         ),
       ),
@@ -1508,11 +1531,13 @@ void main() {
       final recorder = FakeAudioRecorderController();
       await pumpSurface(
         tester,
-        home: const Scaffold(
+        // As the page and the pane mount it: the view leads back.
+        home: Scaffold(
           body: SafeArea(
             child: CheckInDetailView(
               relationshipId: _pipId,
               checkInId: 'check-pip-3',
+              onBack: () {},
             ),
           ),
         ),

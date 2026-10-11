@@ -15,9 +15,11 @@ import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Type · started · duration as one chip row (design 2026-09-13): each chip
-/// reads its current value and opens the picker for it. Wraps, so large
-/// text and a long locale get a second row rather than a truncated chip.
+/// The composer's type · started · duration as one chip row (design
+/// 2026-09-13): each chip reads its current value and opens the picker for
+/// it — the form's levers, so the fully-rounded pill with a chevron. Wraps,
+/// so large text and a long locale get a second row rather than a truncated
+/// chip. A saved check-in shows the same facts as `CheckInMetaSummaryLine`.
 class CheckInContextChips extends StatelessWidget {
   const CheckInContextChips({
     required this.type,
@@ -26,8 +28,6 @@ class CheckInContextChips extends StatelessWidget {
     required this.onPickType,
     required this.onPickStart,
     required this.onPickDuration,
-    this.sentiment,
-    this.onPickSentiment,
     this.enabled = true,
     super.key,
   });
@@ -42,12 +42,6 @@ class CheckInContextChips extends StatelessWidget {
   final VoidCallback onPickType;
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
-
-  /// How it felt, when set. The chip is shown only where [onPickSentiment]
-  /// is: the saved check-in's header edits it in place, while the composer
-  /// keeps it under *More*.
-  final CheckInSentiment? sentiment;
-  final VoidCallback? onPickSentiment;
 
   /// False while the recorder or the transcript owns the field: the chips
   /// stay visible so the context is never lost, and go quiet.
@@ -97,18 +91,6 @@ class CheckInContextChips extends StatelessWidget {
           semanticsLabel: messages.checkInDurationChipSemantics(durationLabel),
           onPressed: enabled ? onPickDuration : null,
         ),
-        if (onPickSentiment case final onPick?)
-          DesignSystemChip(
-            key: const ValueKey('check-in-sentiment-chip'),
-            label: sentiment == null
-                ? messages.checkInSentimentLabel
-                : checkInSentimentLabel(context, sentiment!),
-            trailing: enabled
-                ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
-                : null,
-            size: DesignSystemChipSize.compactPillTouch,
-            onPressed: enabled ? onPick : null,
-          ),
       ],
     );
   }
