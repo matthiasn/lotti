@@ -316,7 +316,7 @@ void main() {
       );
 
       expect(
-        find.text('0:23 · Transcribing… · whisper · via Melious'),
+        find.text('00:23 · Transcribing… · whisper · via Melious'),
         findsOneWidget,
       );
       // A narrow row sheds the route first; the length and state are facts.
@@ -330,9 +330,9 @@ void main() {
             )
             .tiers,
         [
-          '0:23 · Transcribing… · whisper · via Melious',
-          '0:23 · Transcribing…',
-          '0:23',
+          '00:23 · Transcribing… · whisper · via Melious',
+          '00:23 · Transcribing…',
+          '00:23',
         ],
       );
       expect(
@@ -362,7 +362,7 @@ void main() {
         takes: [take.heard('Pip wants the contract signed before the freeze.')],
       );
 
-      expect(find.text('0:23'), findsOneWidget);
+      expect(find.text('00:23'), findsOneWidget);
       expect(
         tester
             .widget<Text>(
@@ -386,9 +386,9 @@ void main() {
           phase: const CheckInSpeechIdle(),
           takes: [take.missing(null)],
         );
-        expect(find.text('0:23 · Transcript not received'), findsOneWidget);
+        expect(find.text('00:23 · Transcript not received'), findsOneWidget);
         expect(
-          find.textContaining('Your 0:23 recording is saved in the journal'),
+          find.textContaining('Your 00:23 recording is saved in the journal'),
           findsOneWidget,
         );
         await tester.tap(

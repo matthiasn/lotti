@@ -60,8 +60,10 @@ Top to bottom:
   control,
   [`DesignSystemTimerPill`](../../../lib/features/design_system/components/buttons/design_system_timer_pill.dart)
   — the pill a task's *Track time* wears while it runs: alert red, a white
-  stop square in an inset circle, the elapsed time (`formatElapsed`, `mm:ss`
-  then `hh:mm:ss`) in tabular figures, its width held to `00:00` so the
+  stop square in an inset circle, the elapsed time (`formatElapsed` in
+  [`entry_tools.dart`](../../../lib/utils/entry_tools.dart), `mm:ss` then
+  `hh:mm:ss` — as a saved take's length and playback read too) in tabular
+  figures, its width held to `00:00` so the
   rings never shift mid-take. Here its whole body stops the take, so it is
   one button named *Stop* whose value is the time. Taps are felt (a firmer
   one on Stop) when the user's haptics switch is on. Before a take starts

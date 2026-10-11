@@ -975,7 +975,7 @@ void main() {
 
             expect(find.byIcon(LottiIcons.mic), findsOneWidget);
             // testAudioEntry has duration of 1 hour -> h:mm:ss format
-            expect(find.text('1:00:00'), findsOneWidget);
+            expect(find.text('01:00:00'), findsOneWidget);
             expect(find.byIcon(LottiIcons.expand), findsOneWidget);
             expect(find.byIcon(LottiIcons.more), findsNothing);
           },
@@ -1344,7 +1344,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.text('2:34'), findsOneWidget);
+          expect(find.text('02:34'), findsOneWidget);
         });
 
         testWidgets('formats hour-long duration correctly', (tester) async {
@@ -1371,7 +1371,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
 
           // 1 hour = 3600 seconds, triggers h:mm:ss format
-          expect(find.text('1:00:00'), findsOneWidget);
+          expect(find.text('01:00:00'), findsOneWidget);
         });
 
         testWidgets('formats 59 minutes as m:ss (boundary)', (tester) async {
@@ -1442,7 +1442,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.text('1:00:00'), findsOneWidget);
+          expect(find.text('01:00:00'), findsOneWidget);
         });
 
         testWidgets('formats zero-second duration correctly', (tester) async {
@@ -1477,7 +1477,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.text('0:00'), findsOneWidget);
+          expect(find.text('00:00'), findsOneWidget);
         });
 
         testWidgets('formats >1 hour duration with h:mm:ss', (tester) async {
@@ -1512,7 +1512,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.text('1:05:30'), findsOneWidget);
+          expect(find.text('01:05:30'), findsOneWidget);
         });
       });
 

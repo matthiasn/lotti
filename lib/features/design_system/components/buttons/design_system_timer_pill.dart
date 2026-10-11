@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
-import 'package:lotti/utils/entry_tools.dart' show formatDuration;
 import 'package:material_ui/material_ui.dart';
 
 /// The app's one running-clock control: a pill that is the accent "start"
@@ -38,18 +37,9 @@ class DesignSystemTimerPill extends StatelessWidget {
   /// The idle glyph's size.
   static const double iconSize = 20;
 
-  /// The widest elapsed time under an hour, for [widthLabel]: with tabular
-  /// figures every digit is as wide as `0`.
+  /// The widest elapsed time under an hour (`formatElapsed`), for
+  /// [widthLabel]: with tabular figures every digit is as wide as `0`.
   static const String elapsedWidthTemplate = '00:00';
-
-  /// Elapsed time as the pill shows it: `mm:ss` under an hour, `hh:mm:ss`
-  /// from then on.
-  static String formatElapsed(Duration elapsed) {
-    if (elapsed >= const Duration(hours: 1)) return formatDuration(elapsed);
-    final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
 
   final bool running;
 

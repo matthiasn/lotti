@@ -321,8 +321,12 @@ task's *Track time* and the voice recorder's Stop are this one element — it
 was promoted out of the task action bar when the recorder needed the same
 control, so the two cannot drift into two looks for one meaning.
 
-**One formatter, one width.** `formatElapsed` is the only way its time is
-written (`mm:ss`, `hh:mm:ss` past the hour), in tabular figures, and the
+**One formatter, one width.** Its time is written by
+[`formatElapsed`](../../../lib/utils/entry_tools.dart) — `mm:ss`, `hh:mm:ss`
+past the hour — the formatter every elapsed time in the app uses (a saved
+take's length in the journal card, the entry header and the check-in
+composer; playback positions), so a take reads the same live and saved. It
+is set in tabular figures, and the
 pill's width is held to its idle layout around `widthLabel` — the idle
 action's name, so it never shrinks when it starts, or
 `elapsedWidthTemplate` (`00:00`), so it never grows as the minutes tick and

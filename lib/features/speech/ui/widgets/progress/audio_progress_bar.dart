@@ -4,21 +4,8 @@ import 'dart:ui' as ui;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// Formats a [Duration] into `hh:mm:ss` or `mm:ss` for audio playback UI.
-String formatAudioDuration(Duration duration) {
-  final clampedSeconds = duration.inSeconds.clamp(0, 359999);
-  final hours = clampedSeconds ~/ 3600;
-  final minutes = (clampedSeconds % 3600) ~/ 60;
-  final seconds = clampedSeconds % 60;
-
-  if (hours > 0) {
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-}
 
 /// Five-second semantic step used by both custom audio scrubbers.
 ///
@@ -264,8 +251,8 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
         String positionLabel(Duration progress) =>
             context.messages.audioPlayerPosition(
-              formatAudioDuration(progress),
-              formatAudioDuration(widget.total),
+              formatElapsed(progress),
+              formatElapsed(widget.total),
             );
         final increased = audioSemanticSeekTarget(
           progress: widget.progress,

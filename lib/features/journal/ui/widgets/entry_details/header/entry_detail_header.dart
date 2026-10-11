@@ -15,6 +15,7 @@ import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -422,12 +423,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   }
 
   Widget _buildDurationLabel(BuildContext context, JournalAudio audio) {
-    final duration = audio.data.duration;
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds.remainder(60);
-    final label = minutes >= 60
-        ? '${duration.inHours}:${minutes.remainder(60).toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
-        : '$minutes:${seconds.toString().padLeft(2, '0')}';
+    final label = formatElapsed(audio.data.duration);
 
     final tokens = context.designTokens;
     return Padding(

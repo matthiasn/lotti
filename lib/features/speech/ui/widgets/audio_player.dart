@@ -10,6 +10,7 @@ import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubbe
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
 const List<double> _speedSequence = <double>[
@@ -189,8 +190,8 @@ class _PlayerBody extends StatelessWidget {
             // once the indent + pill leave too little room on very narrow cards.
             Flexible(
               child: Text(
-                '${formatAudioDuration(progress)} / '
-                '${formatAudioDuration(totalDuration)}',
+                '${formatElapsed(progress)} / '
+                '${formatElapsed(totalDuration)}',
                 style: timeStyle,
                 maxLines: 1,
                 overflow: TextOverflow.clip,

@@ -13,6 +13,7 @@ import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -557,7 +558,7 @@ class _StopPill extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final stop = _felt(ref, onTap, HapticFeedback.mediumImpact);
-    final time = DesignSystemTimerPill.formatElapsed(progress);
+    final time = formatElapsed(progress);
     final label = context.messages.audioRecordingStop;
     final value = progressSemanticsLabel ?? time;
     // The button node outermost, on the host's key, as the rings have it.
