@@ -464,6 +464,9 @@ class _VoiceRecorderDrivenPreviewState
       _SignalMetric(label: 'Non-zero', value: '$_pcmNonZeroSampleCount'),
     ];
 
+    final onLight =
+        ThemeData.estimateBrightnessForColor(widget.config.backgroundColor) ==
+        Brightness.light;
     final shader = AiVoiceInputShader(
       dbfs: dbfs,
       dbfsFloor: widget.config.dbfsFloor,
@@ -477,12 +480,16 @@ class _VoiceRecorderDrivenPreviewState
       palette: AiVoiceOrbPalette(
         body: widget.config.primaryColor,
         glint: widget.config.secondaryColor,
-        halo: AiVoiceOrbPalette.deepened(widget.config.primaryColor),
-        onLightSurface:
-            ThemeData.estimateBrightnessForColor(
-              widget.config.backgroundColor,
-            ) ==
-            Brightness.light,
+        // The halo the recorder gives each surface: the body deepened on
+        // dark, the lit tint between body and glint on light.
+        halo: onLight
+            ? Color.lerp(
+                widget.config.primaryColor,
+                widget.config.secondaryColor,
+                0.5,
+              )!
+            : AiVoiceOrbPalette.deepened(widget.config.primaryColor),
+        onLightSurface: onLight,
       ),
       semanticsLabel: 'AI voice input shader preview',
     );

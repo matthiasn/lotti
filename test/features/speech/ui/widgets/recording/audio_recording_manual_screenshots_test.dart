@@ -42,7 +42,11 @@ class _FixedAudioRecorderController extends AudioRecorderController {
   AudioRecorderState build() => fixedState;
 
   /// A new live level, as the recorder reports one every 20 ms.
-  void tick(double dbfs) => state = state.copyWith(dBFS: dbfs);
+  // As the recorder does: every sample advances the take by 20 ms.
+  void tick(double dbfs) => state = state.copyWith(
+    dBFS: dbfs,
+    progress: state.progress + const Duration(milliseconds: 20),
+  );
 }
 
 void main() {
@@ -99,7 +103,8 @@ Future<void> _pumpActiveRecording(
   late _FixedAudioRecorderController controller;
   final fixedState = AudioRecorderState(
     status: AudioRecorderStatus.recording,
-    progress: const Duration(seconds: 42),
+    // The ticks below bring it to 0:00:42.
+    progress: const Duration(milliseconds: 40400),
     vu: 1.5,
     dBFS: -12,
     showIndicator: false,
@@ -176,7 +181,7 @@ Future<void> _pumpActiveRecording(
   await settleFrames(tester, 8);
   // A few seconds of speech-shaped levels, so the bars show a take in
   // progress rather than their resting baseline.
-  for (var i = 0; i < 56; i++) {
+  for (var i = 0; i < 80; i++) {
     controller.tick(-38 + 26 * math.sin(i / 3).abs());
     await tester.pump(const Duration(milliseconds: 20));
   }

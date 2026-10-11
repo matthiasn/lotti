@@ -27,9 +27,10 @@ AudioRecorderState _state({
   double dbfs = -30,
   double vu = -10,
   AudioRecorderStatus status = AudioRecorderStatus.recording,
+  Duration progress = const Duration(seconds: 3),
 }) => AudioRecorderState(
   status: status,
-  progress: const Duration(seconds: 3),
+  progress: progress,
   vu: vu,
   dBFS: dbfs,
   showIndicator: false,
@@ -211,27 +212,85 @@ void main() {
       expect(mask.blendMode, BlendMode.dstIn);
     });
 
-    testWidgets('keeps a bounded history of the live level, and holds still '
-        'while paused', (tester) async {
-      Future<void> show(AudioRecorderState state) =>
-          pumpWith(tester, RecordingLevelLine(state: state));
-      List<double> levels() =>
-          tester.widget<LiveWaveform>(find.byType(LiveWaveform)).amplitudes;
+    // A sample per recorder tick, as the controller advances progress on
+    // every one: the 20 ms cadence the recorder samples at.
+    AudioRecorderState sample(
+      int tick,
+      double dbfs, {
+      AudioRecorderStatus status = AudioRecorderStatus.recording,
+    }) => _state(
+      dbfs: dbfs,
+      status: status,
+      progress: Duration(milliseconds: 20 * tick),
+    );
 
-      await show(_state(dbfs: -60));
-      expect(levels(), isEmpty, reason: 'no change yet, no sample');
-      for (var i = 0; i < RecordingLevelLine.levelWindow + 10; i++) {
-        await show(_state(dbfs: -40.0 + (i % 20)));
+    Future<void> show(WidgetTester tester, AudioRecorderState state) =>
+        pumpWith(tester, RecordingLevelLine(state: state));
+    List<double> bars(WidgetTester tester) =>
+        tester.widget<LiveWaveform>(find.byType(LiveWaveform)).amplitudes;
+
+    testWidgets('keeps a bounded window of the live level, drawn as one bar '
+        'per pair of samples, and holds still while paused', (tester) async {
+      await show(tester, sample(0, -60));
+      expect(bars(tester), isEmpty, reason: 'no tick yet, no sample');
+      const ticks = RecordingLevelLine.levelWindow + 10;
+      for (var i = 1; i <= ticks; i++) {
+        await show(tester, sample(i, -40.0 + (i % 20)));
       }
-      expect(levels(), hasLength(RecordingLevelLine.levelWindow));
-      expect(levels().every((level) => level >= 0 && level <= 1), isTrue);
-      // The newest sample is the last level shown, normalised.
-      const newest = -40.0 + ((RecordingLevelLine.levelWindow + 9) % 20);
-      expect(levels().last, normaliseDbfs(newest));
+      // The whole window is drawn: every retained sample reaches a bar.
+      expect(bars(tester), hasLength(RecordingLevelLine.barCount));
+      expect(bars(tester).every((level) => level >= 0 && level <= 1), isTrue);
+      // The newest bar is the louder of the newest two samples.
+      expect(
+        bars(tester).last,
+        normaliseDbfs(-40.0 + (ticks % 20)),
+        reason: 'tick $ticks is louder than tick ${ticks - 1}',
+      );
 
-      final held = List<double>.of(levels());
-      await show(_state(dbfs: -5, status: AudioRecorderStatus.paused));
-      expect(levels(), held, reason: 'a paused take adds nothing');
+      final held = List<double>.of(bars(tester));
+      await show(
+        tester,
+        sample(ticks + 1, -5, status: AudioRecorderStatus.paused),
+      );
+      expect(bars(tester), held, reason: 'a paused take adds nothing');
+    });
+
+    testWidgets('a steady level is still a sample, so silence ages the loud '
+        'bars out', (tester) async {
+      await show(tester, sample(0, -60));
+      await show(tester, sample(1, -5));
+      await show(tester, sample(2, -5));
+      for (var i = 3; i < 3 + RecordingLevelLine.levelWindow; i++) {
+        await show(tester, sample(i, -60));
+      }
+      expect(
+        bars(tester).toSet(),
+        {normaliseDbfs(-60)},
+        reason: 'the loud start has left the window',
+      );
+    });
+
+    testWidgets('a stopped take clears the line, so a host that stays up '
+        'starts its next take empty', (tester) async {
+      await show(tester, sample(0, -60));
+      await show(tester, sample(1, -10));
+      await show(tester, sample(2, -10));
+      expect(bars(tester), isNotEmpty);
+
+      await show(tester, sample(3, -10, status: AudioRecorderStatus.stopped));
+      expect(bars(tester), isEmpty);
+      await show(tester, sample(1, -20));
+      expect(bars(tester), [normaliseDbfs(-20)]);
+    });
+
+    test('pairs samples from the newest back, the louder of each', () {
+      expect(RecordingLevelLine.barsOf(const <double>[]), isEmpty);
+      expect(RecordingLevelLine.barsOf(const [0.3]), [0.3]);
+      expect(RecordingLevelLine.barsOf(const [0.1, 0.5, 0.4, 0.2, 0.9]), [
+        0.1,
+        0.5,
+        0.9,
+      ]);
     });
   });
 

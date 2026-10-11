@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
@@ -213,15 +215,18 @@ class RecordingLevelVisualizer extends ConsumerWidget {
   }
 }
 
-/// The level over the last few seconds, as a thin line of bars across the
-/// sheet that fades out at both ends: the accent under the orb, the
-/// neutral ink under the meter, as onboarding pairs them. It adds a sample
-/// per level change while the take runs and holds still while paused.
+/// The level over the last stretch of the take, as a thin line of bars
+/// across the sheet that fades out at both ends: the accent under the orb,
+/// the neutral ink under the meter, as onboarding pairs them. It adds a
+/// sample per recorder tick while the take runs — a steady level too, so
+/// silence ages the loud bars out — holds still while paused, and starts
+/// empty for each new take.
 class RecordingLevelLine extends ConsumerStatefulWidget {
   const RecordingLevelLine({required this.state, super.key});
 
-  /// How many level samples the line keeps — two per bar, so it moves
-  /// smoothly without each 20 ms sample jolting it.
+  /// How many level samples the line keeps — two per bar, each bar the
+  /// louder of its pair, so it moves smoothly without each 20 ms sample
+  /// jolting it.
   static const int levelWindow = 80;
 
   /// Bars across the line.
@@ -229,6 +234,13 @@ class RecordingLevelLine extends ConsumerStatefulWidget {
 
   /// The line at its widest.
   static const double maxWidth = 400;
+
+  /// The window as bars: each bar the louder of its two samples, paired
+  /// from the newest back so the latest bar is always whole.
+  static List<double> barsOf(List<double> levels) => [
+    for (var end = levels.length; end > 0; end -= 2)
+      levels.sublist(end < 2 ? 0 : end - 2, end).reduce(math.max),
+  ].reversed.toList();
 
   final AudioRecorderState state;
 
@@ -242,8 +254,16 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
   @override
   void didUpdateWidget(covariant RecordingLevelLine oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // A stopped take is over: a host that stays up after a failed stop
+    // starts its next take on an empty line, not on the last one's bars.
+    if (widget.state.status == AudioRecorderStatus.stopped) {
+      _levels = const [];
+      return;
+    }
+    // The recorder advances progress on every sample it takes, so a
+    // repeated level is still a sample.
     if (widget.state.status == AudioRecorderStatus.recording &&
-        widget.state.dBFS != oldWidget.state.dBFS) {
+        widget.state.progress != oldWidget.state.progress) {
       final next = [..._levels, normaliseDbfs(widget.state.dBFS)];
       _levels = next.length > RecordingLevelLine.levelWindow
           ? next.sublist(next.length - RecordingLevelLine.levelWindow)
@@ -257,6 +277,7 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
     final modern =
         ref.watch(recordingStyleProvider).asData?.value ==
         RecordingStyle.modern;
+    final bars = RecordingLevelLine.barsOf(_levels);
     return LayoutBuilder(
       builder: (context, constraints) => ShaderMask(
         // The line fades in and out at its ends, so it reads as a stretch
@@ -273,7 +294,7 @@ class _RecordingLevelLineState extends ConsumerState<RecordingLevelLine> {
         ).createShader(bounds),
         child: LiveWaveform(
           key: const ValueKey('recording-visualizer-bars'),
-          amplitudes: _levels,
+          amplitudes: bars,
           barCount: RecordingLevelLine.barCount,
           width: constraints.maxWidth
               .clamp(0, RecordingLevelLine.maxWidth)
