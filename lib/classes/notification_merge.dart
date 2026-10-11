@@ -10,9 +10,11 @@ import 'package:lotti/classes/vector_clock.dart';
 /// resolve those conflicts deterministically so every device converges on the
 /// same content, lifecycle and clock regardless of event-arrival order.
 /// The last state sender's `originatingHostId` is arrival-dependent metadata:
-/// - **Content** (title/body/kind) follows last-writer-wins on
-///   `meta.updatedAt`, broken by a canonical-JSON comparison so identical
-///   timestamps still pick a stable winner on every host.
+/// - **Content** (title/body/kind) follows the vector clocks: a version
+///   that follows the other wins. Concurrent versions fall back to
+///   last-writer-wins on `meta.updatedAt`, broken by a canonical-JSON
+///   comparison so identical timestamps still pick a stable winner on every
+///   host.
 /// - **Lifecycle state** (`seenAt`/`actedOnAt`/`deletedAt`) converges via
 ///   [earliestNonNull]: these transitions are monotonic and irreversible, so
 ///   the first device to observe each transition wins permanently.
@@ -116,6 +118,26 @@ abstract final class NotificationMerge {
     NotificationEntity existing,
     NotificationEntity incoming,
   ) {
+    // A version that follows the other causally wins whatever the wall
+    // clocks say: a peer whose clock runs fast, or a late copy of the
+    // template, must not outrank a reword made after it.
+    try {
+      switch (VectorClock.compare(
+        existing.meta.vectorClock,
+        incoming.meta.vectorClock,
+      )) {
+        case VclockStatus.a_gt_b:
+          return existing;
+        case VclockStatus.b_gt_a:
+          return incoming;
+        case VclockStatus.equal:
+        case VclockStatus.concurrent:
+          break;
+      }
+    } on VclockException {
+      // A malformed clock orders nothing; fall through to the timestamp.
+    }
+
     final updatedComparison = existing.meta.updatedAt.compareTo(
       incoming.meta.updatedAt,
     );

@@ -240,7 +240,7 @@ void main() {
       'a journal-writing message runs the parked work after apply returned, '
       'once, and still maps to applied',
       () async {
-        // Entity definitions still use the adapter's outer transaction.
+        // Backfill requests still use the adapter's outer transaction.
         // Parked work runs only after that transaction has returned.
         final entry = hBuildEntry(
           eventId: r'$flag',
@@ -250,9 +250,9 @@ void main() {
         final prepared = AdapterMockPreparedSyncEvent();
         final log = stubParkingApply(
           prepared,
-          message: SyncMessage.entityDefinition(
-            entityDefinition: measurableWater,
-            status: SyncEntryStatus.update,
+          message: const SyncMessage.backfillRequest(
+            entries: [],
+            requesterId: 'peer',
           ),
         );
         expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isTrue);
@@ -404,13 +404,14 @@ void main() {
     });
 
     test(
-      'SyncEntityDefinition wraps — writes to *_definitions (JournalDb)',
+      'SyncEntityDefinition bypasses — its upsert owns its transaction, so '
+      'the receipt follows the commit',
       () {
         final message = SyncMessage.entityDefinition(
           entityDefinition: measurableWater,
           status: SyncEntryStatus.initial,
         );
-        expect(wraps(message), isTrue);
+        expect(wraps(message), isFalse);
       },
     );
 

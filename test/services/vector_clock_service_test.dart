@@ -268,6 +268,50 @@ void main() {
       );
 
       test(
+        'settings restored from an older backup continue above the highest '
+        'counter the sequence log records, so no counter is used twice',
+        () async {
+          final syncDb = SyncDatabase(inMemoryDatabase: true);
+          addTearDown(syncDb.close);
+          await settingsDb.saveSettingsItem(hostKey, 'penguin-host');
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '3');
+          await syncDb.recordSequenceEntry(
+            SyncSequenceLogCompanion.insert(
+              hostId: 'penguin-host',
+              counter: 9,
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: DateTime(2026, 10, 11),
+              updatedAt: DateTime(2026, 10, 11),
+            ),
+          );
+          expect(
+            await syncDb.highestRecordedCounterForHost('penguin-host'),
+            9,
+          );
+          expect(await syncDb.highestRecordedCounterForHost('other'), isNull);
+
+          final restarted = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+          );
+          await restarted.initialized;
+          final vc = await restarted.getNextVectorClock();
+
+          expect(vc.vclock, {'penguin-host': 10});
+          expect(await settingsDb.itemByKey(nextAvailableCounterKey), '11');
+
+          // A counter already above what the log records stands.
+          await settingsDb.saveSettingsItem(nextAvailableCounterKey, '20');
+          final ahead = VectorClockService(
+            settingsDb: settingsDb,
+            syncDatabase: () => syncDb,
+          );
+          await ahead.initialized;
+          expect(await ahead.getNextAvailableCounter(), 20);
+        },
+      );
+
+      test(
         'a host that never handed out a counter skips 0 on its next start',
         () async {
           // A build before ADR 0080 persisted watermark 0 for a new host.

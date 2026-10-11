@@ -423,6 +423,46 @@ void main() {
       verifyNever(() => journalDb.countAllJournalEntries());
     });
 
+    test('runs once more after the sync database was restored from a '
+        'backup, and only once per restore', () async {
+      final documents = Directory.systemTemp.createTempSync('restored_');
+      addTearDown(() => documents.deleteSync(recursive: true));
+      File(
+        '${documents.path}/sync.sqlite.restored',
+      ).writeAsStringSync('2026-10-11T10:00:00.000');
+      getIt.registerSingleton<Directory>(documents);
+      addTearDown(() => getIt.unregister<Directory>());
+      const restoreKey = 'maintenance_sequenceLogRestoreRepopulated';
+      when(
+        () => settingsDb.itemByKey(settingsKey),
+      ).thenAnswer((_) async => 'true');
+      String? handled;
+      when(
+        () => settingsDb.itemByKey(restoreKey),
+      ).thenAnswer((_) async => handled);
+      when(() => settingsDb.saveSettingsItem(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        if (invocation.positionalArguments.first == restoreKey) {
+          handled = invocation.positionalArguments[1] as String;
+        }
+        return 1;
+      });
+      when(
+        () => syncDatabase.getSequenceLogCount(),
+      ).thenAnswer((_) async => 10);
+      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
+
+      await checkAndPopulateSequenceLogForTesting();
+      await checkAndPopulateSequenceLogForTesting();
+
+      verify(() => journalDb.countAllJournalEntries()).called(1);
+      expect(handled, '2026-10-11T10:00:00.000');
+    });
+
     test(
       'marks done and skips when all data sources are empty',
       () async {

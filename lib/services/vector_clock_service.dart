@@ -252,6 +252,38 @@ class VectorClockService {
       await _persistCounter(firstVectorClockCounter);
     }
     _nextAvailableCounter = _persistedCounter;
+    await _catchUpWithRecordedCounters();
+  }
+
+  /// Raises the next counter above the highest one the sequence log records
+  /// for this host. Settings restored from an older backup would otherwise
+  /// hand out counters this device already used, and two versions would
+  /// share one counter on every peer (ADR 0135). Best effort: without the
+  /// sync database the stored counter stands.
+  Future<void> _catchUpWithRecordedCounters() async {
+    final int? recorded;
+    try {
+      recorded = await _syncDatabase()?.highestRecordedCounterForHost(_host);
+    } catch (error, stackTrace) {
+      _domainLogger()?.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'vectorClock.catchUp',
+      );
+      return;
+    }
+    if (recorded == null || recorded < _persistedCounter) return;
+    _domainLogger()?.log(
+      LogDomain.sync,
+      'counter $_persistedCounter is at or below recorded counter $recorded '
+      '— settings restored from an older backup; continuing at '
+      '${recorded + 1}',
+      subDomain: 'vectorClock.catchUp',
+    );
+    _persistedCounter = recorded + 1;
+    _nextAvailableCounter = _persistedCounter;
+    await _persistCounter(_persistedCounter);
   }
 
   /// Gives this device a new host id, whose first counter is

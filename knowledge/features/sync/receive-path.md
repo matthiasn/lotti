@@ -543,7 +543,8 @@ An event that does not decode as a sync message this build knows maps to `undeco
 `pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 
-Journal entities and entry links own their narrow JournalDb transactions.
+Journal entities, entry links and entity definitions own their narrow
+JournalDb transactions (a definition since [ADR 0135](../../../docs/adr/0135-ordering-and-restores-hold.md)).
 Their sequence receipt is written to SyncDatabase only after the domain commit
 returns. The adapter must not wrap these handlers or outbox bundles in another
 journal transaction: a nested savepoint can succeed before an outer commit

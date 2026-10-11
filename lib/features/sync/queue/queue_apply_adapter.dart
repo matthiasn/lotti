@@ -386,9 +386,10 @@ class QueueApplyAdapter {
       journalEntity: (_) => false,
       // upsertEntryLink owns its transaction. Its receipt must follow commit.
       entryLink: (_) => false,
-      // category/habit/dashboard/measurable/label _definitions —
-      // JournalDb.
-      entityDefinition: (_) => true,
+      // The definition upsert owns its JournalDb transaction, like links:
+      // its receipt must follow the commit, not a savepoint an outer
+      // rollback could undo.
+      entityDefinition: (_) => false,
       // ai_config_db.
       aiConfig: (_) => false,
       // ai_consumption.sqlite — not JournalDb.

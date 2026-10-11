@@ -19,6 +19,49 @@ void main() {
       expect(NotificationMerge.mergeFull(second, first), second);
     });
 
+    test('a version that follows the other wins whatever the wall clocks '
+        'say, so a fast-clock peer cannot outrank a later reword', () {
+      final template = buildNotification(
+        id: 'reworded',
+        title: 'Template title',
+        updatedAt: DateTime.utc(2026, 5, 17, 23),
+        vectorClock: const VectorClock({'fast-host': 1}),
+      );
+      final reword = buildNotification(
+        id: 'reworded',
+        title: 'The agent reworded this',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'fast-host': 1, 'agent-host': 1}),
+      );
+
+      expect(
+        NotificationMerge.mergeFull(template, reword).title,
+        'The agent reworded this',
+      );
+      expect(
+        NotificationMerge.mergeFull(reword, template).title,
+        'The agent reworded this',
+      );
+    });
+
+    test('concurrent versions still fall back to the timestamp', () {
+      final earlier = buildNotification(
+        id: 'concurrent',
+        title: 'Earlier',
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final later = buildNotification(
+        id: 'concurrent',
+        title: 'Later',
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+        vectorClock: const VectorClock({'host-b': 1}),
+      );
+
+      expect(NotificationMerge.mergeFull(earlier, later).title, 'Later');
+      expect(NotificationMerge.mergeFull(later, earlier).title, 'Later');
+    });
+
     test('a lifecycle patch cannot change the equal-time content winner '
         '(NotificationReplication ContentConverged)', () {
       final first = buildNotification(

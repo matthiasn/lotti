@@ -110,7 +110,8 @@ extension SyncEventProcessorDefinitionHandlers on SyncEventProcessor {
       await stamper.stamp(incoming.id, over: incomingClock);
     } catch (exception, stackTrace) {
       // The row stays clockless and is stamped by the next clocked arrival
-      // or the manual migration; the received copy is still recorded.
+      // or the startup repair (ADR 0130); the received copy is still
+      // recorded.
       _loggingService.error(
         LogDomain.sync,
         exception,

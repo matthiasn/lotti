@@ -527,7 +527,19 @@ class MatrixPayloadSender {
         continue;
       }
       final conflict = await journalDb.openConflictVersion(child.id, queued);
-      if (conflict != null) conflictVersionAt[index] = conflict;
+      if (conflict == null) {
+        // Nothing carries the queued version: adopting the row's clock would
+        // claim counters it does not hold, which a single send refuses (ADR
+        // 0086). Fail the bundle into the retry path instead.
+        loggingService.error(
+          LogDomain.sync,
+          'outboxBundle aborting: the stored row of ${child.id} does not '
+          'cover its queued version',
+          subDomain: 'sendMatrixMsg.outboxBundle.uncovered',
+        );
+        return null;
+      }
+      conflictVersionAt[index] = conflict;
     }
 
     // Track journal-entity children whose DB row was hard-purged between

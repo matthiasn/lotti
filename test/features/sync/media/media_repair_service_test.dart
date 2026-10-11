@@ -194,6 +194,83 @@ void main() {
     });
   });
 
+  test('the attempt cap holds across a restart, so an unanswerable entry '
+      'is not requested again on every launch', () {
+    fakeAsync((async) {
+      final stored = <String, String>{};
+      final settings = MockSettingsDb();
+      when(() => settings.itemByKey(any())).thenAnswer(
+        (invocation) async => stored[invocation.positionalArguments.single],
+      );
+      when(() => settings.saveSettingsItem(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        stored[invocation.positionalArguments[0] as String] =
+            invocation.positionalArguments[1] as String;
+        return 1;
+      });
+      MediaRepairService launch() => MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+        maxAttemptsPerEntry: 2,
+      );
+
+      final first = launch();
+      for (var round = 0; round < 2; round++) {
+        first.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+        async.elapse(debounce);
+      }
+      first.dispose();
+      expect(requests, hasLength(2));
+
+      final second = launch();
+      addTearDown(second.dispose);
+      async.flushMicrotasks();
+      second.reportMissing(entryId: 'orphan', relativePath: '/images/x');
+      async.elapse(debounce);
+
+      expect(requests, hasLength(2));
+    });
+  });
+
+  test('stored counts that cannot be read are logged and not applied', () {
+    fakeAsync((async) {
+      final settings = MockSettingsDb();
+      when(
+        () => settings.itemByKey(any()),
+      ).thenAnswer((_) async => 'not json');
+      when(
+        () => settings.saveSettingsItem(any(), any()),
+      ).thenThrow(StateError('settings closed'));
+      final service = MediaRepairService(
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+        loggingService: loggingService,
+        settingsDb: settings,
+        debounce: debounce,
+      );
+      addTearDown(service.dispose);
+
+      service.reportMissing(entryId: 'photo', relativePath: '/images/p');
+      async.elapse(debounce);
+
+      expect(requests, hasLength(1));
+      for (final sub in ['mediaRepair.load', 'mediaRepair.save']) {
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: sub,
+          ),
+        ).called(1);
+      }
+    });
+  });
+
   test('keeps ids pending when the host id is not resolvable yet', () {
     fakeAsync((async) {
       when(() => vectorClockService.getHost()).thenAnswer((_) async => null);

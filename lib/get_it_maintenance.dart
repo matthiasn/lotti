@@ -10,18 +10,33 @@ part of 'get_it.dart';
 ///
 /// V2 adds agent entities and links to the population, which were missing in V1.
 /// Devices that already ran V1 will re-run with the full set of data sources.
+///
+/// It runs once more after the sync database was restored from a backup
+/// (`sync.sqlite.restored`, written by `restoreDatabaseFromBackup`): the
+/// restored log lacks every row written after the snapshot, and an own
+/// counter with no row is answered as burned, so a peer would give up on
+/// payloads this device still holds (ADR 0135).
 Future<void> _checkAndPopulateSequenceLog() async {
   // Bumped from 'maintenance_sequenceLogPopulated' to V2 so devices that
   // ran V1 (journal + links only) will re-run with agent data included.
   const settingsKey = 'maintenance_sequenceLogPopulatedV2';
+  const restoreKey = 'maintenance_sequenceLogRestoreRepopulated';
   final settingsDb = getIt<SettingsDb>();
   final domainLogger = getIt<DomainLogger>();
 
   try {
-    // Check if we've already run this migration
+    final restore = await _syncDbRestoreMarker();
     final hasRun = await settingsDb.itemByKey(settingsKey);
-    if (hasRun == 'true') {
+    if (hasRun == 'true' &&
+        (restore == null ||
+            restore == await settingsDb.itemByKey(restoreKey))) {
       return;
+    }
+    Future<void> markDone() async {
+      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      if (restore != null) {
+        await settingsDb.saveSettingsItem(restoreKey, restore);
+      }
     }
 
     final syncDatabase = getIt<SyncDatabase>();
@@ -46,7 +61,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
         agentEntityCount == 0 &&
         agentLinkCount == 0) {
       // Empty database, nothing to populate
-      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      await markDone();
       return;
     }
 
@@ -87,7 +102,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
     );
 
     // Mark as completed
-    await settingsDb.saveSettingsItem(settingsKey, 'true');
+    await markDone();
 
     domainLogger.log(
       LogDomain.database,
@@ -105,6 +120,14 @@ Future<void> _checkAndPopulateSequenceLog() async {
     );
     // Don't mark as completed on error - will retry on next startup
   }
+}
+
+/// The marker `restoreDatabaseFromBackup` leaves beside a restored sync
+/// database — the time it restored it — or null when it never did.
+Future<String?> _syncDbRestoreMarker() async {
+  if (!getIt.isRegistered<Directory>()) return null;
+  final marker = File('${getIt<Directory>().path}/$syncDbFileName.restored');
+  return marker.existsSync() ? marker.readAsString() : null;
 }
 
 @visibleForTesting

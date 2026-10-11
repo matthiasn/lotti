@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
@@ -28,7 +30,9 @@ import 'package:meta/meta.dart';
 ///   for the next request instead of growing one envelope without bound.
 /// - **Attempt cap** ([SyncTuning.mediaRepairMaxAttemptsPerEntry]) — an entry
 ///   nobody can answer for (a blob deleted on every device) is abandoned
-///   instead of being asked for forever.
+///   instead of being asked for forever. The counts are kept in [SettingsDb]
+///   when one is given, so a restart does not reset the cap and send the
+///   same unanswerable requests on every launch (ADR 0135).
 ///
 /// A repaired blob simply arrives as an attachment event and is written by the
 /// inbound attachment pipeline; there is no response envelope to wait for and
@@ -40,6 +44,7 @@ class MediaRepairService {
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
     required DomainLogger loggingService,
+    SettingsDb? settingsDb,
     Duration? debounce,
     int? maxBatchSize,
     int? maxAttemptsPerEntry,
@@ -47,16 +52,27 @@ class MediaRepairService {
   }) : _outbox = outboxService,
        _vectorClock = vectorClockService,
        _logging = loggingService,
+       _settings = settingsDb,
        _debounce = debounce ?? SyncTuning.mediaRepairDebounce,
        _maxBatchSize = maxBatchSize ?? SyncTuning.mediaRepairMaxBatchSize,
        _maxAttempts =
            maxAttemptsPerEntry ?? SyncTuning.mediaRepairMaxAttemptsPerEntry,
        _maxTracked =
-           maxTrackedEntries ?? SyncTuning.mediaRepairMaxTrackedEntries;
+           maxTrackedEntries ?? SyncTuning.mediaRepairMaxTrackedEntries {
+    _loaded = _loadAttempts();
+  }
 
   final OutboxService _outbox;
   final VectorClockService _vectorClock;
   final DomainLogger _logging;
+  final SettingsDb? _settings;
+
+  /// The [SettingsDb] key holding the attempt counts, as a JSON object.
+  static const attemptsSettingsKey = 'mediaRepairAttempts';
+
+  /// The stored attempt counts, read once before the first request and
+  /// merged under the counts this process has already kept.
+  late final Future<void> _loaded;
   final Duration _debounce;
   final int _maxBatchSize;
   final int _maxAttempts;
@@ -134,6 +150,11 @@ class MediaRepairService {
   /// Disposal during an await must not send or restore cleared retry state.
   Future<void> _flush() async {
     if (_disposed || _pending.isEmpty) return;
+    await _loaded;
+    if (_disposed) return;
+    // A stored count may have reached the cap since the miss was reported.
+    _pending.removeWhere((id) => (_attempts[id] ?? 0) >= _maxAttempts);
+    if (_pending.isEmpty) return;
 
     final batch = _pending.take(_maxBatchSize).toList();
     final requesterId = await _vectorClock.getHost();
@@ -157,6 +178,7 @@ class MediaRepairService {
     // New counters count against the cap too; without this a run of flushes
     // with no later miss would keep more than the cap indefinitely.
     _evictIfOverCapacity();
+    await _saveAttempts();
 
     try {
       await _outbox.enqueueMessage(
@@ -189,6 +211,45 @@ class MediaRepairService {
         _timer = null;
         unawaited(_flush());
       });
+    }
+  }
+
+  Future<void> _loadAttempts() async {
+    final settings = _settings;
+    if (settings == null) return;
+    try {
+      final stored = await settings.itemByKey(attemptsSettingsKey);
+      if (stored == null) return;
+      final decoded = jsonDecode(stored) as Map<String, dynamic>;
+      for (final MapEntry(key: id, value: count) in decoded.entries) {
+        if (count is int) _attempts.putIfAbsent(id, () => count);
+      }
+      _evictIfOverCapacity();
+    } catch (error, stackTrace) {
+      _logging.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'mediaRepair.load',
+      );
+    }
+  }
+
+  Future<void> _saveAttempts() async {
+    final settings = _settings;
+    if (settings == null) return;
+    try {
+      await settings.saveSettingsItem(
+        attemptsSettingsKey,
+        jsonEncode(_attempts),
+      );
+    } catch (error, stackTrace) {
+      _logging.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'mediaRepair.save',
+      );
     }
   }
 

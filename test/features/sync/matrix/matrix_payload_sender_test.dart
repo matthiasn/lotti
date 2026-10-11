@@ -1137,6 +1137,56 @@ void main() {
     );
 
     test(
+      'fails the bundle when a child names a version neither its row nor an '
+      'open conflict carries, instead of claiming counters it does not hold',
+      () async {
+        final date = DateTime.utc(2026, 8);
+        final row = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'behind',
+            createdAt: date,
+            updatedAt: date,
+            dateFrom: date,
+            dateTo: date,
+            vectorClock: const VectorClock({'a': 1}),
+          ),
+          entryText: const EntryText(plainText: 'older'),
+        );
+        when(
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
+        ).thenAnswer((_) async => {'behind': row});
+        when(
+          () => journalDb.openConflictVersion('behind', any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await payloadSender.sendOutboxBundlePayload(
+          room: room,
+          message: const SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'behind',
+                jsonPath: '/journal/behind.json',
+                vectorClock: VectorClock({'a': 2}),
+                status: SyncEntryStatus.update,
+              ),
+            ],
+            jsonPath: '/outbox_bundles/behind.json',
+          ),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
+    test(
       'replaces unsafe bundle paths before uploading the manifest',
       () async {
         final uploadedPaths = <String>[];
