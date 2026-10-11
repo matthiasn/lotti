@@ -287,7 +287,10 @@ class DeepBackfillService {
     }
     // The advertiser still holds an agent this device deleted: if its
     // identity is older than the destroy, the destroy never reached it.
+    // A clockless identity is listed only by id, without its agent: an id
+    // the store holds a deletion of is that agent's identity.
     final destroyedSent = await store.resendDestroyedAgents({
+      for (final id in inventory.unclocked) id: null,
       for (final record in inventory.records)
         if (record.agentIds?.contains(record.id) ?? false)
           record.id: record.vectorClock,

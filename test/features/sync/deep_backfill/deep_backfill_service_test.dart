@@ -173,6 +173,7 @@ void main() {
     Map<String, VectorClock> conflicts = const {},
     Map<String, int> mediaSizes = const {},
     Map<String, List<String>> agentIds = const {},
+    List<String> unclocked = const [],
     String? attachmentEventId,
   }) =>
       SyncMessage.deepBackfillInventory(
@@ -195,6 +196,7 @@ void main() {
               for (final MapEntry(key: id, value: clock) in conflicts.entries)
                 DeepBackfillRecord(id: id, vectorClock: clock),
             ],
+            unclocked: unclocked,
             attachmentEventId: attachmentEventId,
           )
           as SyncDeepBackfillInventory;
@@ -509,6 +511,17 @@ void main() {
       expect(store.destroyedAsked.single, {
         'agent-1': const VectorClock({'x': 2}),
       });
+    });
+
+    test('offers a clockless record for the destroy resend too, since a '
+        'legacy identity is listed by id alone', () async {
+      final store = _FakeStore(_journal);
+
+      await service(stores: [store]).handleInventory(
+        inventory(unclocked: ['legacy-agent']),
+      );
+
+      expect(store.destroyedAsked.single, {'legacy-agent': null});
     });
 
     test('sends no request when every missing record belongs to a deleted '
