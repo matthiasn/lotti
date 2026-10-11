@@ -361,6 +361,16 @@ void main() {
       verify(() => roomManager.createRoom(name: any(named: 'name'))).called(1);
     });
 
+    test('findSyncRoom asks the room manager for the existing '
+        'sync room', () async {
+      when(
+        () => roomManager.findSyncRoom(),
+      ).thenAnswer((_) async => '!existing:server');
+
+      expect(await createService().findSyncRoom(), '!existing:server');
+      verify(() => roomManager.findSyncRoom()).called(1);
+    });
+
     test('joinRoom delegates to room manager', () async {
       when(
         () => roomManager.joinRoom(any()),

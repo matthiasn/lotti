@@ -236,6 +236,13 @@ void main() {
     tags: 'glados',
   );
 
+  test('findSyncRoom asks the gateway, and persists nothing', () async {
+    when(() => gateway.findSyncRoom()).thenAnswer((_) async => '!existing');
+
+    expect(await manager.findSyncRoom(), '!existing');
+    verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+  });
+
   test('createRoom creates through the gateway and persists the id', () async {
     when(
       () => gateway.createRoom(name: any(named: 'name')),
