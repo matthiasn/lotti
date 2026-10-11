@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -358,6 +359,16 @@ void main() {
 
       expect(await service.createRoom(), '!created:server');
       verify(() => roomManager.createRoom(name: any(named: 'name'))).called(1);
+    });
+
+    test('findSyncRoom asks the room manager for the existing '
+        'sync room', () async {
+      when(
+        () => roomManager.findSyncRoom(),
+      ).thenAnswer((_) async => '!existing:server');
+
+      expect(await createService().findSyncRoom(), '!existing:server');
+      verify(() => roomManager.findSyncRoom()).called(1);
     });
 
     test('joinRoom delegates to room manager', () async {
@@ -1687,6 +1698,141 @@ void main() {
         await service.dispose();
       },
     );
+  });
+
+  group('MatrixService connect after a start without network', () {
+    test('a failed first connect is retried with a doubling wait, at once '
+        'when connectivity returns, and not after dispose', () {
+      fakeAsync((async) {
+        final connectivity =
+            StreamController<List<ConnectivityResult>>.broadcast();
+        var attempts = 0;
+        var online = false;
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          return online;
+        });
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://matrix.example.com',
+            user: '@user:example.com',
+            password: 'secret',
+          ),
+        );
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        when(() => client.isLogged()).thenReturn(false);
+        when(pipeline.recordConnectivitySignal).thenReturn(null);
+        when(
+          () => pipeline.reportDbApplyDiagnostics(any()),
+        ).thenReturn(null);
+
+        final service = MatrixService(
+          gateway: gateway,
+          loggingService: loggingService,
+          activityGate: activityGate,
+          messageSender: messageSender,
+          settingsDb: settingsDb,
+          eventProcessor: eventProcessor,
+          secureStorage: secureStorage,
+          queueCoordinator: queueCoordinator,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          syncEngine: syncEngine,
+          pipelineOverride: pipeline,
+          connectivityStream: connectivity.stream,
+        );
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 1);
+
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 2);
+        // The wait doubled: nothing more after another initial delay.
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 2);
+
+        // The network comes back before the next attempt is due.
+        online = true;
+        connectivity.add([ConnectivityResult.wifi]);
+        async.flushMicrotasks();
+        expect(attempts, 3);
+        async
+          ..elapse(SyncTuning.matrixReconnectMaxDelay * 2)
+          ..flushMicrotasks();
+        expect(attempts, 3);
+
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+        unawaited(service.dispose());
+        unawaited(connectivity.close());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('dispose stops a scheduled retry', () {
+      fakeAsync((async) {
+        var attempts = 0;
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          return false;
+        });
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://matrix.example.com',
+            user: '@user:example.com',
+            password: 'secret',
+          ),
+        );
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        when(() => client.isLogged()).thenReturn(false);
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+        final service = createService();
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 1);
+
+        unawaited(service.dispose());
+        async
+          ..flushMicrotasks()
+          ..elapse(SyncTuning.matrixReconnectMaxDelay)
+          ..flushMicrotasks();
+        expect(attempts, 1);
+      });
+    });
   });
 
   group('MatrixService default sub-service construction', () {

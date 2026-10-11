@@ -107,6 +107,21 @@ extension QueueLifecycle on QueuePipelineCoordinator {
           subDomain: '$_logSub.resurrectUndecodable',
         );
       }
+      // Likewise an event held because its device was not trusted yet:
+      // the device's keys may have arrived, or it was verified, since.
+      try {
+        final roomId = _roomManager.currentRoomId;
+        await _queue.readmitUntrusted(
+          roomId == null ? null : _sessionManager.client.getRoomById(roomId),
+        );
+      } catch (error, stackTrace) {
+        _logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: '$_logSub.readmitUntrusted',
+        );
+      }
       // Signal-driven resurrection of abandoned ledger rows. These
       // subscriptions convert out-of-band events (attachment JSON
       // landed, journal-db entry updated) into `resurrect*` calls so

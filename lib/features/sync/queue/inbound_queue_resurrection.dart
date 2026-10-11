@@ -94,6 +94,46 @@ class InboundQueueResurrection {
     );
   }
 
+  /// Up to [limit] abandoned rows of [roomId] skipped for [reasonName] whose
+  /// queue id is above [afterQueueId], in queue id order — a page a caller
+  /// walks by passing the last id it saw.
+  Future<List<InboundEventQueueItem>> abandonedWithReason(
+    String reasonName, {
+    required String roomId,
+    int afterQueueId = 0,
+    int limit = 500,
+  }) =>
+      (_db.select(_db.inboundEventQueue)
+            ..where(
+              (t) =>
+                  const CustomExpression<bool>("status = 'abandoned'") &
+                  t.lastErrorReason.equals(reasonName) &
+                  t.roomId.equals(roomId) &
+                  t.queueId.isBiggerThanValue(afterQueueId),
+            )
+            ..orderBy([(t) => OrderingTerm(expression: t.queueId)])
+            ..limit(limit))
+          .get();
+
+  /// Re-arms the rows [queueIds] that are still abandoned for [reasonName].
+  ///
+  /// [stillWanted] is asked inside the update's transaction; when it says no,
+  /// nothing is re-armed. Transactions run one at a time, so a caller whose
+  /// answer changes before another transaction (a room-change prune) gets
+  /// either a skipped update or one that transaction then sees.
+  Future<int> resurrectIds(
+    List<int> queueIds, {
+    required String reasonName,
+    int hardCap = 50,
+    bool Function()? stillWanted,
+  }) => _resurrectWhere(
+    (t) => t.queueId.isIn(queueIds) & t.lastErrorReason.equals(reasonName),
+    hardCap: hardCap,
+    diagnostic: 'reason=$reasonName ids=${queueIds.length}',
+    includeUntrusted: true,
+    stillWanted: stillWanted,
+  );
+
   /// Flips abandoned rows whose most recent retry reason matches
   /// [reasonName] back to `enqueued`. Used by the coordinator's
   /// `UpdateNotifications.updateStream` subscriber: every
@@ -116,11 +156,20 @@ class InboundQueueResurrection {
     );
   }
 
+  /// Re-arms the abandoned rows below [hardCap] that [extraWhere] selects.
+  /// A row held because its device was not trusted yet ([untrustedReason])
+  /// is left out unless [includeUntrusted]: only a fresh trust check may
+  /// re-arm it, never "Retry all" or an attachment landing.
   Future<int> _resurrectWhere(
     Expression<bool> Function(InboundEventQueue t)? extraWhere, {
     required int hardCap,
     required String diagnostic,
+    bool includeUntrusted = false,
+    bool Function()? stillWanted,
   }) async {
+    Expression<bool> notUntrusted(InboundEventQueue t) =>
+        t.lastErrorReason.isNull() |
+        t.lastErrorReason.equals(untrustedReason).not();
     final table = _db.inboundEventQueue;
     final nowMs = clock.now().millisecondsSinceEpoch;
 
@@ -147,6 +196,7 @@ class InboundQueueResurrection {
             const CustomExpression<bool>("status = 'abandoned'") &
             t.resurrectionCount.isSmallerThanValue(hardCap),
       );
+    if (!includeUntrusted) selectQuery.where(notUntrusted);
     if (extraWhere != null) {
       selectQuery.where(extraWhere);
     }
@@ -157,6 +207,7 @@ class InboundQueueResurrection {
 
     final ids = rows.map((r) => r.queueId).toList();
     final updated = await _db.transaction(() async {
+      if (stillWanted != null && !stillWanted()) return 0;
       // A single UPDATE flips every eligible row; looping per-row
       // would pay the round-trip cost N times.
       // Reset `enqueued_at` so any pendingAttachment retries triggered
@@ -182,6 +233,7 @@ class InboundQueueResurrection {
               t.resurrectionCount.isSmallerThanValue(hardCap) &
               t.queueId.isIn(ids),
         );
+      if (!includeUntrusted) update.where(notUntrusted);
       if (extraWhere != null) {
         update.where(extraWhere);
       }

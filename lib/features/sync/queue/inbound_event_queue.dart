@@ -173,6 +173,7 @@ class InboundQueue {
     final nowMs = clock.now().millisecondsSinceEpoch;
 
     final toInsert = <InboundEventQueueCompanion>[];
+    final held = <InboundEventQueueCompanion>[];
     for (final event in events) {
       // F3 must run before F4. A real `m.room.encrypted` event has
       // ciphertext-only content with no visible `msgtype`, so the
@@ -190,10 +191,31 @@ class InboundQueue {
         continue;
       }
       // F8: drop payloads not encrypted by a device this one would share
-      // its own keys with. A dropped event never had a legitimate sender, so
-      // the marker may pass it like any other non-payload event.
-      if (!await _trust.admits(event, subDomain: _logSubEnqueue)) {
+      // its own keys with; the marker may pass them like any other
+      // non-payload event. One from a device that is only not verified yet,
+      // or whose keys have not arrived, is held as an abandoned row instead:
+      // once the device is verified, [readmitUntrusted] applies it.
+      final verdict = await _trust.evaluate(event);
+      if (verdict != SyncEventTrustVerdict.trusted) {
         untrusted++;
+        _trust.logRejection(event, verdict, subDomain: _logSubEnqueue);
+        if (verdict == SyncEventTrustVerdict.untrustedDevice ||
+            verdict == SyncEventTrustVerdict.unknownDevice) {
+          held.add(
+            InboundEventQueueCompanion.insert(
+              eventId: event.eventId,
+              roomId: event.roomId ?? '',
+              originTs: event.originServerTs.millisecondsSinceEpoch,
+              producer: producer.name,
+              rawJson: jsonEncode(event.toJson()),
+              enqueuedAt: nowMs,
+              status: const Value(InboundQueueStatuses.abandoned),
+              abandonedAt: Value(nowMs),
+              lastErrorReason: const Value(untrustedReason),
+              jsonPath: Value(extractJsonPath(event)),
+            ),
+          );
+        }
         continue;
       }
 
@@ -217,8 +239,13 @@ class InboundQueue {
       );
     }
 
-    if (toInsert.isNotEmpty) {
+    if (toInsert.isNotEmpty || held.isNotEmpty) {
       await _db.transaction(() async {
+        for (final row in held) {
+          await _db
+              .into(_db.inboundEventQueue)
+              .insert(row, mode: InsertMode.insertOrIgnore);
+        }
         for (final candidate in toInsert) {
           final inserted = await _db
               .into(_db.inboundEventQueue)
@@ -537,6 +564,59 @@ class InboundQueue {
       _resurrection.resurrectAll(hardCap: hardCap);
 
   /// See [InboundQueueResurrection.resurrectByReason].
+  /// Re-checks the events of the current sync [room] held from a device that
+  /// was not trusted yet ([untrustedReason]) and re-arms those whose device
+  /// this one now shares its keys with, so what such a device sent before
+  /// its verification still applies. Every held row of the room is checked,
+  /// page by page. Rows of another room stay held: the worker applies
+  /// against the current room only, so a room switched away from must not
+  /// feed it. Returns how many were re-armed.
+  ///
+  /// Each page is re-armed on its own, which keeps the id list within
+  /// SQLite's variable limit. A room change during the checks stops the
+  /// pass: the re-arm asks, inside its transaction, whether [room] is still
+  /// the one the last prune named, so a prune either sees the re-armed rows
+  /// or finds none re-armed.
+  Future<int> readmitUntrusted(Room? room) async {
+    if (room == null) return 0;
+    bool stillCurrent() => _currentRoomId == null || _currentRoomId == room.id;
+    var readmitted = 0;
+    var after = 0;
+    while (stillCurrent()) {
+      final page = await _resurrection.abandonedWithReason(
+        untrustedReason,
+        roomId: room.id,
+        afterQueueId: after,
+      );
+      final admitted = <int>[];
+      for (final row in page) {
+        final event = Event.fromJson(
+          jsonDecode(row.rawJson) as Map<String, dynamic>,
+          room,
+        );
+        if (await _trust.evaluate(event) == SyncEventTrustVerdict.trusted) {
+          admitted.add(row.queueId);
+        }
+      }
+      if (admitted.isNotEmpty) {
+        readmitted += await _resurrection.resurrectIds(
+          admitted,
+          reasonName: untrustedReason,
+          stillWanted: stillCurrent,
+        );
+      }
+      if (page.length < _readmitPageSize) break;
+      after = page.last.queueId;
+    }
+    return readmitted;
+  }
+
+  static const _readmitPageSize = 500;
+
+  /// The room the last [pruneStrandedEntries] kept, set before its
+  /// transaction starts; null until the first prune.
+  String? _currentRoomId;
+
   Future<int> resurrectByReason(String reasonName, {int hardCap = 50}) =>
       _resurrection.resurrectByReason(reasonName, hardCap: hardCap);
 
@@ -548,6 +628,7 @@ class InboundQueue {
   /// rows from other rooms stay in place too. Returns the number of
   /// rows transitioned to `abandoned`.
   Future<int> pruneStrandedEntries(String currentRoomId) async {
+    _currentRoomId = currentRoomId;
     final nowMs = clock.now().millisecondsSinceEpoch;
     final moved = await _db.transaction(() async {
       return _db.customUpdate(

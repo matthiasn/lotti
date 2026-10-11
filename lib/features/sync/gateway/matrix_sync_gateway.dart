@@ -33,6 +33,11 @@ abstract class MatrixSyncGateway {
     List<String>? inviteUserIds,
   });
 
+  /// The account's existing sync room: among the joined rooms that carry the
+  /// Lotti sync-room marker, the one whose latest event is newest — the room
+  /// the other devices use. Null when the account has none.
+  Future<String?> findSyncRoom();
+
   /// Joins the room with the given ID.
   Future<void> joinRoom(String roomId);
 

@@ -8,6 +8,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -768,11 +769,11 @@ void main() {
             originTsMs: 5001,
           );
           when(
-            () => trust.admits(forged, subDomain: 'queue.enqueue'),
-          ).thenAnswer((_) async => false);
+            () => trust.evaluate(forged),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.senderMismatch);
           when(
-            () => trust.admits(genuine, subDomain: 'queue.enqueue'),
-          ).thenAnswer((_) async => true);
+            () => trust.evaluate(genuine),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.trusted);
 
           final result = await guarded.enqueueBatch(
             [forged, genuine],
@@ -783,6 +784,154 @@ void main() {
           expect(result.rejectedUntrusted, 1);
           final ready = await guarded.peekBatchReady(maxBatch: 10);
           expect(ready.map((entry) => entry.eventId), [r'$genuine']);
+          // A forgery is not held for later.
+          expect(
+            await guarded.resurrectByReason(untrustedReason),
+            0,
+          );
+          expect(await db.select(db.inboundEventQueue).get(), hasLength(1));
+        },
+      );
+
+      test(
+        'every held row is re-checked, past the first page, so rows that '
+        'stay untrusted never starve later ones',
+        () async {
+          final events = [
+            for (var i = 0; i < 502; i++)
+              _buildSyncEvent(
+                eventId: '\$held-$i',
+                roomId: roomA,
+                originTsMs: 8000 + i,
+              ),
+          ];
+          for (final event in events) {
+            final json = event.toJson();
+            when(event.toJson).thenReturn({...json, 'sender': '@user:server'});
+          }
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.untrustedDevice);
+          await guarded.enqueueBatch(
+            events,
+            producer: InboundEventProducer.bootstrap,
+          );
+
+          // The oldest and the newest become trusted: one on each page, each
+          // page re-armed on its own.
+          when(() => trust.evaluate(any())).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return {r'$held-0', r'$held-501'}.contains(event.eventId)
+                ? SyncEventTrustVerdict.trusted
+                : SyncEventTrustVerdict.untrustedDevice;
+          });
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomA);
+
+          expect(await guarded.readmitUntrusted(room), 2);
+          final ready = await guarded.peekBatchReady(maxBatch: 10);
+          expect(
+            ready.map((entry) => entry.eventId),
+            unorderedEquals([r'$held-0', r'$held-501']),
+          );
+        },
+      );
+
+      test(
+        'one from a device not trusted yet is held, untouched by "Retry '
+        'all", and re-armed once a fresh check trusts its device',
+        () async {
+          final pending = _buildSyncEvent(
+            eventId: r'$pending',
+            roomId: roomA,
+            originTsMs: 7000,
+          );
+          final stranger = _buildSyncEvent(
+            eventId: r'$stranger',
+            roomId: roomA,
+            originTsMs: 7001,
+          );
+          // A real event names its sender, which decoding it again needs.
+          for (final event in [pending, stranger]) {
+            final json = event.toJson();
+            when(event.toJson).thenReturn({...json, 'sender': '@user:server'});
+          }
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return event.eventId == r'$pending'
+                ? SyncEventTrustVerdict.untrustedDevice
+                : SyncEventTrustVerdict.unknownDevice;
+          });
+
+          final result = await guarded.enqueueBatch(
+            [pending, stranger],
+            producer: InboundEventProducer.live,
+          );
+
+          expect(result.accepted, 0);
+          expect(result.rejectedUntrusted, 2);
+          expect(await guarded.peekBatchReady(maxBatch: 10), isEmpty);
+          expect(await guarded.resurrectAll(), 0);
+          expect(await guarded.peekBatchReady(maxBatch: 10), isEmpty);
+
+          // The pending device is verified; the stranger still is not.
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments.single as Event;
+            return event.eventId == r'$pending'
+                ? SyncEventTrustVerdict.trusted
+                : SyncEventTrustVerdict.unknownDevice;
+          });
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomA);
+
+          // Without a current room nothing is re-checked; another room's
+          // rows stay held, since the worker applies against the current
+          // room only.
+          expect(await guarded.readmitUntrusted(null), 0);
+          final otherRoom = MockRoom();
+          when(() => otherRoom.id).thenReturn('!other:server');
+          expect(await guarded.readmitUntrusted(otherRoom), 0);
+          expect(await guarded.readmitUntrusted(room), 1);
+          final ready = await guarded.peekBatchReady(maxBatch: 10);
+          expect(ready.map((entry) => entry.eventId), [r'$pending']);
+          expect(await guarded.readmitUntrusted(room), 0);
+        },
+      );
+
+      test(
+        'a room change during the checks re-arms nothing of the room it '
+        'left',
+        () async {
+          final held = _buildSyncEvent(
+            eventId: r'$held',
+            roomId: roomA,
+            originTsMs: 9000,
+          );
+          final json = held.toJson();
+          when(held.toJson).thenReturn({...json, 'sender': '@user:server'});
+          when(
+            () => trust.evaluate(any()),
+          ).thenAnswer((_) async => SyncEventTrustVerdict.untrustedDevice);
+          await guarded.enqueueBatch(
+            [held],
+            producer: InboundEventProducer.live,
+          );
+
+          // The device turns trusted, but the room changes while the check
+          // runs; the prune for the new room finds nothing to abandon yet.
+          when(() => trust.evaluate(any())).thenAnswer((_) async {
+            await guarded.pruneStrandedEntries('!new-room:server');
+            return SyncEventTrustVerdict.trusted;
+          });
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomA);
+
+          expect(await guarded.readmitUntrusted(room), 0);
+          expect(await guarded.peekBatchReady(maxBatch: 10), isEmpty);
         },
       );
 

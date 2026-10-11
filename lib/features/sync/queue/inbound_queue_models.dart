@@ -3,6 +3,12 @@ import 'dart:convert';
 import 'package:lotti/database/sync_db.dart';
 import 'package:matrix/matrix.dart';
 
+/// The skip reason of an event held because its sending device was not
+/// trusted yet — unverified, or its keys not arrived. Device verification
+/// re-checks these and re-arms the ones now trusted
+/// (`InboundQueue.readmitUntrusted`).
+const untrustedReason = 'untrusted';
+
 /// Public result of a queue-side enqueue call. `accepted + dupes +
 /// filteredOutByType + deferredPendingDecryption + rejectedUntrusted` always
 /// equals the number of events passed in.

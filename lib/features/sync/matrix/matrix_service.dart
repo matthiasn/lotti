@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/secure_storage.dart';
@@ -163,8 +164,9 @@ class MatrixService {
 
     // On connectivity regain, record a signal for metrics/observability.
     // Catch-up itself is driven by the queue coordinator's bridge (the
-    // `limited=true` reconnect trigger), so nothing further is needed
-    // here.
+    // `limited=true` reconnect trigger). A session that never connected —
+    // a start without network — is connected now rather than at its next
+    // scheduled attempt.
     _connectivitySubscription =
         (connectivityStream ?? Connectivity().onConnectivityChanged).listen((
           List<ConnectivityResult> result,
@@ -175,6 +177,11 @@ class MatrixService {
             ConnectivityResult.ethernet,
           }.intersection(result.toSet()).isNotEmpty) {
             _pipeline?.recordConnectivitySignal();
+            if (_reconnectTimer != null) {
+              _reconnectTimer!.cancel();
+              _reconnectTimer = null;
+              _reconnecting = _connectUntilConnected();
+            }
           }
         });
 
@@ -318,7 +325,7 @@ class MatrixService {
       onLogout: _onLifecycleLogout,
     );
     await loadConfig();
-    await connect();
+    await _connectUntilConnected();
 
     await _startQueuePipeline();
 
@@ -477,11 +484,50 @@ class MatrixService {
 
   Future<bool> connect() => _syncEngine.connect(shouldAttemptLogin: false);
 
+  /// The next connect a failed one scheduled, and the attempt it started.
+  Timer? _reconnectTimer;
+  Future<void>? _reconnecting;
+  Duration _reconnectDelay = SyncTuning.matrixReconnectInitialDelay;
+  bool _disposed = false;
+
+  /// Connects the stored session, and until that succeeds tries again with
+  /// a doubling wait (and at once when connectivity returns): a start
+  /// without network used to try once and leave sync off until the next
+  /// launch. Stops once the client is logged in by any path, without a
+  /// configuration, or on [dispose].
+  Future<void> _connectUntilConnected() async {
+    _reconnectTimer = null;
+    if (_disposed) return;
+    if (await connect() || isLoggedIn()) {
+      _reconnectDelay = SyncTuning.matrixReconnectInitialDelay;
+      return;
+    }
+    if (_disposed || _sessionManager.matrixConfig == null) return;
+    final delay = _reconnectDelay;
+    final doubled = delay * 2;
+    _reconnectDelay = doubled > SyncTuning.matrixReconnectMaxDelay
+        ? SyncTuning.matrixReconnectMaxDelay
+        : doubled;
+    _loggingService.log(
+      LogDomain.sync,
+      'connect failed; retrying in ${delay.inSeconds}s',
+      subDomain: 'connect.retry',
+    );
+    _reconnectTimer = Timer(
+      delay,
+      () => _reconnecting = _connectUntilConnected(),
+    );
+  }
+
   Future<void> logout() async {
     await _syncEngine.logout();
   }
 
   Future<void> dispose() async {
+    _disposed = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    await _reconnecting;
     await _keyVerificationRequestSubscription?.cancel();
     _keyVerificationRequestSubscription = null;
     await messageCountsController.close();
@@ -584,6 +630,9 @@ class MatrixService {
   /// Creates the account's encrypted sync room and returns its id, for the
   /// first device signing in with its own credentials rather than a bundle.
   Future<String> createRoom() => _ops.createRoom();
+
+  /// The sync room the signed-in account already belongs to, if any.
+  Future<String?> findSyncRoom() => _ops.findSyncRoom();
 
   Future<void> saveRoom(String roomId) => _ops.saveRoom(roomId);
 

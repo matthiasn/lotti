@@ -265,6 +265,84 @@ void main() {
     );
   });
 
+  test('findSyncRoom picks the joined sync room with the newest event, '
+      'ignoring rooms without the marker, and finds none in an account '
+      'without one', () async {
+    GetRoomEventsResponse latestAt(int? millis) => GetRoomEventsResponse(
+      start: 's',
+      chunk: [
+        if (millis != null)
+          MatrixEvent(
+            type: 'm.room.message',
+            content: const <String, Object?>{},
+            senderId: '@user:server',
+            eventId: '\$e$millis',
+            originServerTs: DateTime.fromMillisecondsSinceEpoch(millis),
+          ),
+      ],
+    );
+    when(() => client.getJoinedRooms()).thenAnswer(
+      (_) async => [
+        '!plain:server',
+        '!old:server',
+        '!new:server',
+        '!empty:server',
+      ],
+    );
+    when(
+      () => client.getRoomStateWithKey(
+        '!plain:server',
+        'm.lotti.sync_room',
+        '',
+      ),
+    ).thenThrow(
+      MatrixException.fromJson(const {
+        'errcode': 'M_NOT_FOUND',
+        'error': 'Event not found.',
+      }),
+    );
+    for (final roomId in ['!old:server', '!new:server', '!empty:server']) {
+      when(
+        () => client.getRoomStateWithKey(roomId, 'm.lotti.sync_room', ''),
+      ).thenAnswer((_) async => const <String, Object?>{'version': 1});
+    }
+    when(
+      () => client.getRoomEvents('!old:server', Direction.b, limit: 1),
+    ).thenAnswer((_) async => latestAt(1000));
+    when(
+      () => client.getRoomEvents('!new:server', Direction.b, limit: 1),
+    ).thenAnswer((_) async => latestAt(5000));
+    when(
+      () => client.getRoomEvents('!empty:server', Direction.b, limit: 1),
+    ).thenAnswer((_) async => latestAt(null));
+
+    expect(await gateway.findSyncRoom(), '!new:server');
+    verifyNever(
+      () => client.getRoomEvents('!plain:server', Direction.b, limit: 1),
+    );
+
+    when(() => client.getJoinedRooms()).thenAnswer((_) async => []);
+    expect(await gateway.findSyncRoom(), isNull);
+
+    // Any other failure fails the lookup rather than passing a room over.
+    when(
+      () => client.getJoinedRooms(),
+    ).thenAnswer((_) async => ['!plain:server']);
+    when(
+      () => client.getRoomStateWithKey(
+        '!plain:server',
+        'm.lotti.sync_room',
+        '',
+      ),
+    ).thenThrow(
+      MatrixException.fromJson(const {
+        'errcode': 'M_LIMIT_EXCEEDED',
+        'error': 'Too many requests',
+      }),
+    );
+    await expectLater(gateway.findSyncRoom(), throwsA(isA<MatrixException>()));
+  });
+
   test('joinRoom delegates to client', () async {
     when(
       () => client.joinRoom('!room:server'),

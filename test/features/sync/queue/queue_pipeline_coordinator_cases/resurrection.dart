@@ -239,6 +239,53 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
       );
 
       test(
+        'starting the pipeline re-checks events held from a device not '
+        'trusted yet, and a failing check is logged without stopping it',
+        () {
+          fakeAsync((async) {
+            when(
+              () => queue.resurrectByReason(any<String>()),
+            ).thenAnswer((_) async => 0);
+            when(
+              () => queue.readmitUntrusted(any()),
+            ).thenThrow(StateError('ledger locked'));
+            final coordinator = QueuePipelineCoordinator(
+              syncEventTrust: AdmittingSyncEventTrust(),
+              syncDb: syncDb,
+              settingsDb: settingsDb,
+              journalDb: journalDb,
+              sessionManager: sessionManager,
+              roomManager: roomManager,
+              eventProcessor: processor,
+              sequenceLogService: sequenceLog,
+              activityGate: null,
+              logging: logging,
+              queueOverride: queue,
+              workerOverride: worker,
+              bridgeOverride: bridge,
+              seederOverride: seeder,
+            );
+            addTearDown(() async => coordinator.stop());
+            unawaited(coordinator.start());
+            async.flushMicrotasks();
+
+            verify(() => queue.readmitUntrusted(any())).called(1);
+            verify(
+              () => logging.error(
+                LogDomain.sync,
+                any<Object>(that: isA<StateError>()),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: any(
+                  named: 'subDomain',
+                  that: endsWith('.readmitUntrusted'),
+                ),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
         'a failed undecodable resurrection is logged and the pipeline '
         'still starts',
         () {

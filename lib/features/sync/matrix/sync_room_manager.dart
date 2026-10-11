@@ -89,6 +89,10 @@ class SyncRoomManager {
     return roomId;
   }
 
+  /// The account's existing sync room, if it is in one
+  /// ([MatrixSyncGateway.findSyncRoom]).
+  Future<String?> findSyncRoom() => _gateway.findSyncRoom();
+
   /// Persistently saves the provided room ID without joining. Useful for manual
   /// entry flows where the join occurs separately.
   Future<void> saveRoomId(String roomId) async {

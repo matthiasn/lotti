@@ -253,12 +253,14 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   /// sync room — the Linux path for an account's first device when no
   /// pairing code exists yet (GitHub #4055).
   ///
-  /// Login, then create the encrypted sync room and persist it, then
-  /// `ready`. The password is the user's own and is **never rotated**:
-  /// rotation exists to spend a one-time CLI bundle, and here there is no
-  /// bundle — only a credential the user manages themselves. No inbound
-  /// preflight either: the room is brand new, so no peer holds history to
-  /// wait for. A failed login restores whatever session was active before.
+  /// Login, then use the account's existing sync room — the one its other
+  /// devices use — or create the encrypted sync room when it has none, and
+  /// persist it, then `ready`. Creating one unconditionally split an account
+  /// whose devices were already syncing into two rooms that never met. The
+  /// password is the user's own and is **never rotated**: rotation exists to
+  /// spend a one-time CLI bundle, and here there is no bundle — only a
+  /// credential the user manages themselves. A failed login restores
+  /// whatever session was active before.
   Future<void> configureFromCredentials(MatrixConfig config) async {
     _lastCredentials = config;
     _lastBundle = null;
@@ -281,7 +283,11 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       }
 
       state = const ProvisioningState.joiningRoom();
-      final roomId = await matrixService.createRoom();
+      final existing = await matrixService.findSyncRoom();
+      // Joining the room found applies what a sync room needs, such as its
+      // retention policy; the account is already a member.
+      if (existing != null) await matrixService.joinRoom(existing);
+      final roomId = existing ?? await matrixService.createRoom();
       await matrixService.saveRoom(roomId);
 
       final handoverBundle = SyncProvisioningBundle(
