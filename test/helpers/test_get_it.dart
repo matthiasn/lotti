@@ -1,3 +1,4 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -132,6 +133,11 @@ void ensureDomainLoggerRegistered() {
 /// Ensures core services required by ThemingController are registered.
 /// Unlike setUpTestGetIt, this does NOT reset GetIt - it only registers
 /// missing services. Safe to call in tests that have their own setup.
+///
+/// What it registers is unregistered again when the calling test (or, from
+/// `setUpAll`, its group) ends. CI bundles every test file of a shard into one
+/// isolate, so a fallback left behind made a later file's unconditional
+/// registration of the same type throw.
 void ensureThemingServicesRegistered() {
   if (!getIt.isRegistered<UpdateNotifications>()) {
     final mockUpdateNotifications = MockUpdateNotifications();
@@ -142,6 +148,7 @@ void ensureThemingServicesRegistered() {
       () => mockUpdateNotifications.localUpdateStream,
     ).thenAnswer((_) => const Stream.empty());
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    _unregisterOnTearDown<UpdateNotifications>(mockUpdateNotifications);
   }
 
   if (!getIt.isRegistered<SettingsDb>()) {
@@ -161,17 +168,30 @@ void ensureThemingServicesRegistered() {
     ).thenAnswer((_) async => <String, String>{});
     _stubLocalSettingsGroup(mockSettingsDb);
     getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+    _unregisterOnTearDown<SettingsDb>(mockSettingsDb);
   }
 
   if (!getIt.isRegistered<LoggingService>()) {
-    getIt.registerSingleton<LoggingService>(LoggingService());
+    final loggingService = LoggingService();
+    getIt.registerSingleton<LoggingService>(loggingService);
+    _unregisterOnTearDown<LoggingService>(loggingService);
   }
 
   if (!getIt.isRegistered<DomainLogger>()) {
-    getIt.registerSingleton<DomainLogger>(
-      DomainLogger(loggingService: getIt<LoggingService>()),
-    );
+    final domainLogger = DomainLogger(loggingService: getIt<LoggingService>());
+    getIt.registerSingleton<DomainLogger>(domainLogger);
+    _unregisterOnTearDown<DomainLogger>(domainLogger);
   }
+}
+
+/// Unregisters [instance] when the current test or group ends, unless a reset
+/// or a popped scope removed it first.
+void _unregisterOnTearDown<T extends Object>(T instance) {
+  addTearDown(() async {
+    if (getIt.isRegistered<T>(instance: instance)) {
+      await getIt.unregister<T>(instance: instance);
+    }
+  });
 }
 
 void _stubLocalSettingsGroup(MockSettingsDb settingsDb) {
