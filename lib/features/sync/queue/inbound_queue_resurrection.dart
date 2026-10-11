@@ -116,15 +116,22 @@ class InboundQueueResurrection {
           .get();
 
   /// Re-arms the rows [queueIds] that are still abandoned for [reasonName].
+  ///
+  /// [stillWanted] is asked inside the update's transaction; when it says no,
+  /// nothing is re-armed. Transactions run one at a time, so a caller whose
+  /// answer changes before another transaction (a room-change prune) gets
+  /// either a skipped update or one that transaction then sees.
   Future<int> resurrectIds(
     List<int> queueIds, {
     required String reasonName,
     int hardCap = 50,
+    bool Function()? stillWanted,
   }) => _resurrectWhere(
     (t) => t.queueId.isIn(queueIds) & t.lastErrorReason.equals(reasonName),
     hardCap: hardCap,
     diagnostic: 'reason=$reasonName ids=${queueIds.length}',
     includeUntrusted: true,
+    stillWanted: stillWanted,
   );
 
   /// Flips abandoned rows whose most recent retry reason matches
@@ -158,6 +165,7 @@ class InboundQueueResurrection {
     required int hardCap,
     required String diagnostic,
     bool includeUntrusted = false,
+    bool Function()? stillWanted,
   }) async {
     Expression<bool> notUntrusted(InboundEventQueue t) =>
         t.lastErrorReason.isNull() |
@@ -199,6 +207,7 @@ class InboundQueueResurrection {
 
     final ids = rows.map((r) => r.queueId).toList();
     final updated = await _db.transaction(() async {
+      if (stillWanted != null && !stillWanted()) return 0;
       // A single UPDATE flips every eligible row; looping per-row
       // would pay the round-trip cost N times.
       // Reset `enqueued_at` so any pendingAttachment retries triggered

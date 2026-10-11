@@ -571,16 +571,24 @@ class InboundQueue {
   /// page by page. Rows of another room stay held: the worker applies
   /// against the current room only, so a room switched away from must not
   /// feed it. Returns how many were re-armed.
+  ///
+  /// Each page is re-armed on its own, which keeps the id list within
+  /// SQLite's variable limit. A room change during the checks stops the
+  /// pass: the re-arm asks, inside its transaction, whether [room] is still
+  /// the one the last prune named, so a prune either sees the re-armed rows
+  /// or finds none re-armed.
   Future<int> readmitUntrusted(Room? room) async {
     if (room == null) return 0;
-    final admitted = <int>[];
+    bool stillCurrent() => _currentRoomId == null || _currentRoomId == room.id;
+    var readmitted = 0;
     var after = 0;
-    while (true) {
+    while (stillCurrent()) {
       final page = await _resurrection.abandonedWithReason(
         untrustedReason,
         roomId: room.id,
         afterQueueId: after,
       );
+      final admitted = <int>[];
       for (final row in page) {
         final event = Event.fromJson(
           jsonDecode(row.rawJson) as Map<String, dynamic>,
@@ -590,14 +598,24 @@ class InboundQueue {
           admitted.add(row.queueId);
         }
       }
+      if (admitted.isNotEmpty) {
+        readmitted += await _resurrection.resurrectIds(
+          admitted,
+          reasonName: untrustedReason,
+          stillWanted: stillCurrent,
+        );
+      }
       if (page.length < _readmitPageSize) break;
       after = page.last.queueId;
     }
-    if (admitted.isEmpty) return 0;
-    return _resurrection.resurrectIds(admitted, reasonName: untrustedReason);
+    return readmitted;
   }
 
   static const _readmitPageSize = 500;
+
+  /// The room the last [pruneStrandedEntries] kept, set before its
+  /// transaction starts; null until the first prune.
+  String? _currentRoomId;
 
   Future<int> resurrectByReason(String reasonName, {int hardCap = 50}) =>
       _resurrection.resurrectByReason(reasonName, hardCap: hardCap);
@@ -610,6 +628,7 @@ class InboundQueue {
   /// rows from other rooms stay in place too. Returns the number of
   /// rows transitioned to `abandoned`.
   Future<int> pruneStrandedEntries(String currentRoomId) async {
+    _currentRoomId = currentRoomId;
     final nowMs = clock.now().millisecondsSinceEpoch;
     final moved = await _db.transaction(() async {
       return _db.customUpdate(

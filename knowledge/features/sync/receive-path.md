@@ -230,9 +230,11 @@ flowchart TD
   `unknownDevice` whose keys have not arrived) is stored as an abandoned row
   under `untrustedReason`. Device verification
   (`MatrixServiceOps.refreshDeviceKeysAndResumeSync`) and every queue start
-  run `InboundQueue.readmitUntrusted`, which checks each held event again and
-  re-arms the ones now trusted, so what a device sent before its verification
-  still applies ([ADR 0134](../../../docs/adr/0134-sessions-rooms-and-trust-recover.md)). No other resurrection — "Retry
+  run `InboundQueue.readmitUntrusted`, which checks each held event of the
+  current room again, page by page, and re-arms the ones now trusted, so what
+  a device sent before its verification still applies. A room change during
+  the checks stops it: each page's re-arm asks, inside its transaction,
+  whether the room is still the one the last prune kept ([ADR 0134](../../../docs/adr/0134-sessions-rooms-and-trust-recover.md)). No other resurrection — "Retry
   all", an attachment landing — touches a held row.
 - **Rows from before the gate are fetched again.** The gate checks at enqueue,
   so rows already queued when an install upgrades past sync DB v34 were never
