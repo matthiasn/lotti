@@ -579,8 +579,42 @@ void main() {
           .toList();
       expect(fills, [
         tokens.colors.alert.error.defaultColor,
-        tokens.colors.text.onInteractiveAlert,
+        dsTokensLight.colors.text.onInteractiveAlert,
       ]);
+    });
+
+    testWidgets('the stop square is white on red in the dark theme too', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          RecordingTransportControls(
+            paused: false,
+            onDiscard: () {},
+            onTogglePause: () {},
+            onStop: () {},
+          ),
+          theme: DesignSystemTheme.dark(),
+        ),
+      );
+      final tokens = tester.element(key('stop_recording')).designTokens;
+      final square = tester
+          .widgetList<Container>(
+            find.descendant(
+              of: key('stop_recording'),
+              matching: find.byType(Container),
+            ),
+          )
+          .last;
+      expect(
+        (square.decoration! as BoxDecoration).color,
+        isNot(tokens.colors.text.onInteractiveAlert),
+        reason: "the dark theme's alert ink is near-black",
+      );
+      expect(
+        (square.decoration! as BoxDecoration).color,
+        dsTokensLight.colors.text.onInteractiveAlert,
+      );
     });
 
     testWidgets('each control is one button by its name; paused, the pause '

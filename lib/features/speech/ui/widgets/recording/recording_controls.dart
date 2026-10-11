@@ -554,8 +554,9 @@ class _RoundControl extends StatelessWidget {
   }
 }
 
-/// The red Stop: a filled 64px disc with the stop square in the ink made
-/// for alert fills.
+/// The red Stop: a filled 64px disc with a white stop square in either
+/// theme — the light theme's ink for alert fills, since the dark theme's
+/// near-black square on its lighter red read as a hole, not a button.
 class _StopDisc extends StatelessWidget {
   const _StopDisc({required this.onTap, super.key});
 
@@ -579,7 +580,7 @@ class _StopDisc extends StatelessWidget {
           width: tokens.spacing.step6,
           height: tokens.spacing.step6,
           decoration: BoxDecoration(
-            color: tokens.colors.text.onInteractiveAlert,
+            color: dsTokensLight.colors.text.onInteractiveAlert,
             borderRadius: BorderRadius.circular(tokens.radii.xs),
           ),
         ),
