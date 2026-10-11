@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -310,9 +311,10 @@ class _VoiceButtonState extends State<VoiceButton>
                       intensity: 0.84,
                       lineDensity: 24,
                       orbitalMix: 0.60,
-                      primaryColor: teal,
-                      secondaryColor: tokens.colors.text.highEmphasis,
-                      backgroundColor: Colors.transparent,
+                      palette: AiVoiceOrbPalette.fromTokens(
+                        tokens,
+                        accent: teal,
+                      ),
                     ),
                   ),
                 ),

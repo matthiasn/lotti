@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
@@ -20,9 +21,12 @@ void main() {
             child: AiVoiceInputShader(
               dbfs: dbfs,
               size: 120,
-              primaryColor: const Color(0xFF00C2A8),
-              secondaryColor: const Color(0xFFFFFFFF),
-              backgroundColor: const Color(0x00000000),
+              palette: const AiVoiceOrbPalette(
+                body: Color(0xFF00C2A8),
+                glint: Color(0xFFFFFFFF),
+                halo: Color(0xFF00C2A8),
+                onLightSurface: false,
+              ),
             ),
           ),
         ),

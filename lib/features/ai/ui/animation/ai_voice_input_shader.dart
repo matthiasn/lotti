@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// GLSL fragment-shader visualization of live microphone input.
@@ -15,9 +16,7 @@ class AiVoiceInputShader extends StatefulWidget {
   const AiVoiceInputShader({
     required this.dbfs,
     required this.size,
-    required this.primaryColor,
-    required this.secondaryColor,
-    required this.backgroundColor,
+    required this.palette,
     this.dbfsFloor = -80,
     this.speed = 2,
     this.intensity = 0.78,
@@ -37,9 +36,10 @@ class AiVoiceInputShader extends StatefulWidget {
   final double intensity;
   final double lineDensity;
   final double orbitalMix;
-  final Color primaryColor;
-  final Color secondaryColor;
-  final Color backgroundColor;
+
+  /// The colours by role for the surface the orb sits on — see
+  /// [AiVoiceOrbPalette.fromTokens].
+  final AiVoiceOrbPalette palette;
   final double? timeOverride;
   final AiShaderProgramLoader? programLoader;
   final String? semanticsLabel;
@@ -163,9 +163,8 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
                               intensity: widget.intensity,
                               lineDensity: widget.lineDensity,
                               orbitalMix: widget.orbitalMix,
-                              primaryColor: widget.primaryColor,
-                              secondaryColor: widget.secondaryColor,
-                              backgroundColor: widget.backgroundColor,
+                              primaryColor: widget.palette.body,
+                              secondaryColor: widget.palette.glint,
                             )
                           : AiVoiceInputShaderPainter(
                               shader: _shaderFor(program),
@@ -175,9 +174,12 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
                               intensity: widget.intensity,
                               lineDensity: widget.lineDensity,
                               orbitalMix: widget.orbitalMix,
-                              primaryColor: widget.primaryColor,
-                              secondaryColor: widget.secondaryColor,
-                              backgroundColor: widget.backgroundColor,
+                              primaryColor: widget.palette.body,
+                              secondaryColor: widget.palette.glint,
+                              haloColor: widget.palette.halo,
+                              lightSurface: widget.palette.onLightSurface
+                                  ? 1
+                                  : 0,
                             ),
                     );
                   },
@@ -204,7 +206,8 @@ class AiVoiceInputShaderPainter extends CustomPainter {
     required this.orbitalMix,
     required this.primaryColor,
     required this.secondaryColor,
-    required this.backgroundColor,
+    required this.haloColor,
+    this.lightSurface = 0,
   });
 
   final ui.FragmentShader shader;
@@ -216,7 +219,10 @@ class AiVoiceInputShaderPainter extends CustomPainter {
   final double orbitalMix;
   final Color primaryColor;
   final Color secondaryColor;
-  final Color backgroundColor;
+  final Color haloColor;
+
+  /// 0 on a dark surface, 1 on a light one (the shader's `uLightSurface`).
+  final double lightSurface;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -233,7 +239,8 @@ class AiVoiceInputShaderPainter extends CustomPainter {
       ..setFloat(7, orbitalMix);
     aiSetShaderColor(shader, 8, primaryColor);
     aiSetShaderColor(shader, 12, secondaryColor);
-    aiSetShaderColor(shader, 16, backgroundColor);
+    aiSetShaderColor(shader, 16, haloColor);
+    shader.setFloat(20, lightSurface);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -252,7 +259,8 @@ class AiVoiceInputShaderPainter extends CustomPainter {
         oldDelegate.orbitalMix != orbitalMix ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.secondaryColor != secondaryColor ||
-        oldDelegate.backgroundColor != backgroundColor;
+        oldDelegate.haloColor != haloColor ||
+        oldDelegate.lightSurface != lightSurface;
   }
 }
 
@@ -269,7 +277,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
     required this.orbitalMix,
     required this.primaryColor,
     required this.secondaryColor,
-    required this.backgroundColor,
   });
 
   final double dbfs;
@@ -280,7 +287,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
   final double orbitalMix;
   final Color primaryColor;
   final Color secondaryColor;
-  final Color backgroundColor;
 
   double get _level {
     final floor = math.min(dbfsFloor, -0.001);
@@ -357,7 +363,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
         oldDelegate.lineDensity != lineDensity ||
         oldDelegate.orbitalMix != orbitalMix ||
         oldDelegate.primaryColor != primaryColor ||
-        oldDelegate.secondaryColor != secondaryColor ||
-        oldDelegate.backgroundColor != backgroundColor;
+        oldDelegate.secondaryColor != secondaryColor;
   }
 }

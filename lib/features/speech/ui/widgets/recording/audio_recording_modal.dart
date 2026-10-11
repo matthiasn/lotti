@@ -11,7 +11,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Entry point for the full-screen audio recording sheet.
@@ -55,9 +54,7 @@ class AudioRecordingModal {
         useRootNavigator: useRootNavigator,
         hasTopBarLayer: false,
         showCloseButton: false,
-        padding: ModalUtils.defaultPadding(
-          context,
-        ).copyWith(bottom: context.designTokens.spacing.step5),
+        padding: ModalUtils.defaultPadding(context),
         builder: (BuildContext _) {
           return AudioRecordingModalContent(
             linkedId: linkedId,
@@ -168,76 +165,49 @@ class _AudioRecordingModalContentState
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
+    final tokens = context.designTokens;
+    return RecordingStage(
+      state: state,
+      levelSemanticsLabel: state.status == AudioRecorderStatus.recording
+          ? context.messages.audioRecordingLive
+          : null,
+      announceLevel: true,
+      notice: _failure == null
+          ? null
+          : Semantics(
               liveRegion: true,
-              label: state.status == AudioRecorderStatus.recording
-                  ? context.messages.audioRecordingLive
-                  : '',
-              child: ExcludeSemantics(
-                child: RecordingLevelVisualizer(state: state),
-              ),
-            ),
-
-            if (_failure != null)
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  _failure!,
-                  style: context.designTokens.typography.styles.body.bodyMedium
-                      .copyWith(
-                        color: context.designTokens.colors.alert.error.ink,
-                      ),
+              child: Text(
+                _failure!,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.alert.error.ink,
                 ),
               ),
-            RecordingClock(progress: state.progress),
-
-            const SizedBox(height: 20),
-
-            // Control buttons in a row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Record/Stop button. No cross-fade here: AnimatedSwitcher
-                // centers and stacks both children for the whole transition,
-                // and the two states have very different footprints (one
-                // button vs. a three-button row) — any nonzero duration
-                // shows the record button overlapping the stop/pause/cancel
-                // row mid-fade, which reads as broken rather than smooth.
-                AnimatedSwitcher(
-                  duration: Duration.zero,
-                  child: _isRecording(state)
-                      ? RecordingTransportControls(
-                          key: const ValueKey('stop_controls'),
-                          paused: state.status == AudioRecorderStatus.paused,
-                          busy: _terminalActionInProgress,
-                          onDiscard: _cancel,
-                          onTogglePause: () =>
-                              state.status == AudioRecorderStatus.paused
-                              ? controller.resume()
-                              : controller.pause(),
-                          onStop: _stop,
-                        )
-                      : _buildRecordButton(context, controller, theme),
-                ),
-              ],
             ),
-
-            // Automatic prompt options (shown when category or linked task
-            // may provide automatic prompts, including profile-driven skills).
-            if (widget.showTranscriptionOptions &&
-                (widget.categoryId != null || widget.linkedId != null)) ...[
-              const SizedBox(height: 10),
-              _buildAutomaticPromptOptions(context, controller, state, theme),
-            ],
-          ],
-        ),
-      ],
+      // No cross-fade between the record button and the transport row:
+      // AnimatedSwitcher stacks both for the whole transition, and their
+      // footprints differ so much that any fade shows the one overlapping
+      // the other, which reads as broken rather than smooth.
+      controls: _isRecording(state)
+          ? RecordingTransportControls(
+              key: const ValueKey('stop_controls'),
+              paused: state.status == AudioRecorderStatus.paused,
+              progress: state.progress,
+              busy: _terminalActionInProgress,
+              onDiscard: _cancel,
+              onTogglePause: () => state.status == AudioRecorderStatus.paused
+                  ? controller.resume()
+                  : controller.pause(),
+              onStop: _stop,
+            )
+          : _buildRecordButton(context, controller, theme),
+      // Automatic prompt options (shown when category or linked task may
+      // provide automatic prompts, including profile-driven skills).
+      footer:
+          widget.showTranscriptionOptions &&
+              (widget.categoryId != null || widget.linkedId != null)
+          ? _speechRecognitionOption(context, controller, state)
+          : null,
     );
   }
 
@@ -328,11 +298,12 @@ class _AudioRecordingModalContentState
     onPressed: _starting || _terminalActionInProgress ? null : _record,
   );
 
-  Widget _buildAutomaticPromptOptions(
+  /// The *Transcribe* toggle for the recorder's footer, or nothing where
+  /// no transcription would run.
+  Widget? _speechRecognitionOption(
     BuildContext context,
     AudioRecorderController controller,
     AudioRecorderState state,
-    ThemeData theme,
   ) {
     // Use the extracted provider to compute visibility
     // This makes the logic testable independently from the widget
@@ -343,25 +314,13 @@ class _AudioRecordingModalContentState
       )),
     );
 
-    if (visibility.none) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        children: [
-          if (visibility.speech)
-            LottiAnimatedCheckbox(
-              key: const Key('speech_recognition_checkbox'),
-              label: context.messages.speechModalTitle,
-              value: state.enableSpeechRecognition ?? true,
-              onChanged: (value) {
-                controller.setEnableSpeechRecognition(enable: value);
-              },
-            ),
-        ],
-      ),
+    if (visibility.none) return null;
+    return RecordingOption(
+      key: const Key('speech_recognition_checkbox'),
+      label: context.messages.audioRecordingTranscribeOption,
+      value: state.enableSpeechRecognition ?? true,
+      onChanged: (value) =>
+          controller.setEnableSpeechRecognition(enable: value),
     );
   }
 }

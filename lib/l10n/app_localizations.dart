@@ -4710,6 +4710,12 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get audioRecordingStop;
 
+  /// Toggle under the recorder: transcribe this recording once it stops.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe'**
+  String get audioRecordingTranscribeOption;
+
   /// No description provided for @avatarCropHint.
   ///
   /// In en, this message translates to:
@@ -5507,12 +5513,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
-
-  /// No description provided for @checkInAudioSavedAsYouGo.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio saved to this device as you go'**
-  String get checkInAudioSavedAsYouGo;
 
   /// No description provided for @checkInAvoidLabel.
   ///
@@ -25733,17 +25733,17 @@ abstract class AppLocalizations {
   /// **'Measurables'**
   String get syncStepMeasurables;
 
-  /// No description provided for @syncStepSavedTaskFilters.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved task filters'**
-  String get syncStepSavedTaskFilters;
-
   /// No description provided for @syncStepPreferences.
   ///
   /// In en, this message translates to:
   /// **'Theme, greeting and flags'**
   String get syncStepPreferences;
+
+  /// No description provided for @syncStepSavedTaskFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved task filters'**
+  String get syncStepSavedTaskFilters;
 
   /// No description provided for @syncStepSpeechDictionary.
   ///

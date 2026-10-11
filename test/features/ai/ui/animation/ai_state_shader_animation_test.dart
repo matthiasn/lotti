@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'ai_state_shader_animation_test_helpers.dart';
@@ -81,9 +82,12 @@ void main() {
       const shader = AiVoiceInputShader(
         dbfs: -24,
         size: 160,
-        primaryColor: Color(0xFF63D7C7),
-        secondaryColor: Color(0xFFE9EEF2),
-        backgroundColor: Color(0x00000000),
+        palette: AiVoiceOrbPalette(
+          body: Color(0xFF63D7C7),
+          glint: Color(0xFFE9EEF2),
+          halo: Color(0xFF63D7C7),
+          onLightSurface: false,
+        ),
       );
 
       expect(shader.speed, 2);
@@ -104,9 +108,12 @@ void main() {
             intensity: 0.9,
             lineDensity: 24,
             orbitalMix: 0.6,
-            primaryColor: const Color(0xFF63D7C7),
-            secondaryColor: const Color(0xFFE9EEF2),
-            backgroundColor: const Color(0x00000000),
+            palette: const AiVoiceOrbPalette(
+              body: Color(0xFF63D7C7),
+              glint: Color(0xFFE9EEF2),
+              halo: Color(0xFF63D7C7),
+              onLightSurface: false,
+            ),
             timeOverride: 1.25,
             programLoader: () async => program,
           ),
@@ -133,9 +140,12 @@ void main() {
         child: AiVoiceInputShader(
           dbfs: dbfs,
           size: 160,
-          primaryColor: const Color(0xFF63D7C7),
-          secondaryColor: const Color(0xFFE9EEF2),
-          backgroundColor: const Color(0x00000000),
+          palette: const AiVoiceOrbPalette(
+            body: Color(0xFF63D7C7),
+            glint: Color(0xFFE9EEF2),
+            halo: Color(0xFF63D7C7),
+            onLightSurface: false,
+          ),
           timeOverride: 1.25,
           programLoader: loadProgram,
         ),
@@ -171,9 +181,12 @@ void main() {
           child: AiVoiceInputShader(
             dbfs: -24,
             size: 160,
-            primaryColor: Color(0xFF63D7C7),
-            secondaryColor: Color(0xFFE9EEF2),
-            backgroundColor: Color(0x00000000),
+            palette: AiVoiceOrbPalette(
+              body: Color(0xFF63D7C7),
+              glint: Color(0xFFE9EEF2),
+              halo: Color(0xFF63D7C7),
+              onLightSurface: false,
+            ),
             timeOverride: 1,
             programLoader: hFailingProgramLoader,
             semanticsLabel: 'Voice level indicator',
@@ -201,9 +214,12 @@ void main() {
             intensity: 0.8,
             lineDensity: 20,
             orbitalMix: 0.5,
-            primaryColor: Color(0xFF63D7C7),
-            secondaryColor: Color(0xFFE9EEF2),
-            backgroundColor: Color(0x22000000),
+            palette: AiVoiceOrbPalette(
+              body: Color(0xFF63D7C7),
+              glint: Color(0xFFE9EEF2),
+              halo: Color(0xFF63D7C7),
+              onLightSurface: false,
+            ),
             timeOverride: 1.5,
             programLoader: hFailingProgramLoader,
           ),
@@ -243,9 +259,12 @@ void main() {
             child: AiVoiceInputShader(
               dbfs: -34,
               size: 120,
-              primaryColor: const Color(0xFF63D7C7),
-              secondaryColor: const Color(0xFFE9EEF2),
-              backgroundColor: const Color(0x00000000),
+              palette: const AiVoiceOrbPalette(
+                body: Color(0xFF63D7C7),
+                glint: Color(0xFFE9EEF2),
+                halo: Color(0xFF63D7C7),
+                onLightSurface: false,
+              ),
               programLoader: firstLoader,
             ),
           ),
@@ -257,9 +276,12 @@ void main() {
             child: AiVoiceInputShader(
               dbfs: -28,
               size: 120,
-              primaryColor: const Color(0xFF63D7C7),
-              secondaryColor: const Color(0xFFE9EEF2),
-              backgroundColor: const Color(0x00000000),
+              palette: const AiVoiceOrbPalette(
+                body: Color(0xFF63D7C7),
+                glint: Color(0xFFE9EEF2),
+                halo: Color(0xFF63D7C7),
+                onLightSurface: false,
+              ),
               timeOverride: 2,
               programLoader: secondLoader,
             ),
@@ -286,9 +308,12 @@ void main() {
           child: AiVoiceInputShader(
             dbfs: dbfs,
             size: 120,
-            primaryColor: const Color(0xFF63D7C7),
-            secondaryColor: const Color(0xFFE9EEF2),
-            backgroundColor: const Color(0x00000000),
+            palette: const AiVoiceOrbPalette(
+              body: Color(0xFF63D7C7),
+              glint: Color(0xFFE9EEF2),
+              halo: Color(0xFF63D7C7),
+              onLightSurface: false,
+            ),
             programLoader: loader,
           ),
         );

@@ -2780,6 +2780,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingStop => 'Stoppa';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transkribera';
+
+  @override
   String get avatarCropHint => 'Dra för att flytta · nyp för att zooma';
 
   @override
@@ -3274,10 +3277,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'Ljudet sparas på den här enheten medan du spelar in';
 
   @override
   String get checkInAvoidLabel => 'Bäst att undvika';
@@ -15533,10 +15532,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncStepMeasurables => 'Mätbara egenskaper';
 
   @override
-  String get syncStepSavedTaskFilters => 'Sparade uppgiftsfilter';
+  String get syncStepPreferences => 'Tema, hälsning och flaggor';
 
   @override
-  String get syncStepPreferences => 'Tema, hälsning och flaggor';
+  String get syncStepSavedTaskFilters => 'Sparade uppgiftsfilter';
 
   @override
   String get syncStepSpeechDictionary => 'Röstordlista';

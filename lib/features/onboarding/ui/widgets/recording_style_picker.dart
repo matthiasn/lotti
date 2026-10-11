@@ -1,8 +1,9 @@
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Resting level for the *unselected* card's preview, so only the chosen style
@@ -247,9 +248,8 @@ class _ModernPair extends StatelessWidget {
         AiVoiceInputShader(
           dbfs: dBFS,
           size: tokens.spacing.step12,
-          primaryColor: accent,
-          secondaryColor: surfaceTokens.colors.text.highEmphasis,
-          backgroundColor: const Color(0x00000000),
+          // The card's own surface decides light or dark, not the app's.
+          palette: AiVoiceOrbPalette.fromTokens(surfaceTokens, accent: accent),
         ),
         SizedBox(height: tokens.spacing.step3),
         LiveWaveform(amplitudes: amplitudes, color: accent),

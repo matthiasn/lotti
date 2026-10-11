@@ -105,30 +105,31 @@ void main() {
     expect(recorder.categoryIds, ['category-7']);
     expect(recorder.modalVisibleLog, [true]);
     expect(failed, isEmpty);
-    expect(find.text('Audio saved to this device as you go'), findsOneWidget);
   });
 
   group("the recording sheet's anatomy", () {
-    testWidgets('the shared visualizer, clock and transport row, in that '
-        'order, with no orb doubling as Stop', (tester) async {
+    testWidgets('the shared visualizer, level line and transport row, in '
+        'that order, with the timed Stop between discard and pause', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       await pump(tester);
 
       expect(find.byType(RecordingLevelVisualizer), findsOneWidget);
       expect(find.byType(RecordingTransportControls), findsOneWidget);
       final visualizer = tester.getRect(find.byType(RecordingLevelVisualizer));
-      final clock = tester.getRect(key('check-in-recorder-clock'));
+      final line = tester.getRect(find.byType(RecordingLevelLine));
       final controls = tester.getRect(find.byType(RecordingTransportControls));
-      expect(visualizer.bottom, lessThanOrEqualTo(clock.top + 0.5));
-      expect(clock.bottom, lessThan(controls.top));
-      // Discard, Pause, Stop: the sheet's order, left to right.
+      expect(visualizer.bottom, lessThanOrEqualTo(line.top + 0.5));
+      expect(line.bottom, lessThan(controls.top));
+      // Discard, Stop, Pause: the sheet's order, left to right.
       final discard = tester.getRect(key('check-in-recorder-discard'));
       final pause = tester.getRect(key('check-in-recorder-pause'));
       final stop = tester.getRect(key('check-in-recorder-stop'));
-      expect(discard.right, lessThan(pause.left));
-      expect(pause.right, lessThan(stop.left));
-      // The Stop pill carries its word; the discard is this surface's own.
-      expect(find.text('Stop'), findsOneWidget);
+      expect(discard.right, lessThan(stop.left));
+      expect(stop.right, lessThan(pause.left));
+      // Stop is named for a reader; the discard is this surface's own.
+      expect(labelOf(tester, 'check-in-recorder-stop'), 'Stop');
       expect(labelOf(tester, 'check-in-recorder-discard'), 'Discard');
       semantics.dispose();
     });
@@ -145,18 +146,22 @@ void main() {
       });
     }
 
-    testWidgets("the clock is the sheet's and reads in words", (
-      tester,
-    ) async {
+    testWidgets("Stop carries the sheet's time, and a reader hears it in "
+        'words', (tester) async {
+      final semantics = tester.ensureSemantics();
       await pump(tester);
       recorder.tick(progress: const Duration(seconds: 83));
       await tester.pump();
-      final clock = tester.widget<RecordingClock>(
-        key('check-in-recorder-clock'),
+      final controls = tester.widget<RecordingTransportControls>(
+        find.byType(RecordingTransportControls),
       );
-      expect(clock.progress, const Duration(seconds: 83));
-      expect(clock.semanticsLabel, '1 minute 23 seconds');
-      expect(find.text('0:01:23'), findsOneWidget);
+      expect(controls.progress, const Duration(seconds: 83));
+      expect(find.text('01:23'), findsOneWidget);
+      expect(
+        tester.getSemantics(key('check-in-recorder-stop')).value,
+        '1 minute 23 seconds',
+      );
+      semantics.dispose();
     });
   });
 
@@ -196,7 +201,7 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 23), dBFS: -20);
     await tester.pump();
-    expect(find.text('0:00:23'), findsOneWidget);
+    expect(find.text('00:23'), findsOneWidget);
 
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
@@ -302,8 +307,18 @@ void main() {
 
     recorder.tick(progress: const Duration(minutes: 59, seconds: 59));
     await tester.pump();
-    expect(find.text('0:59:59'), findsOneWidget);
+    expect(find.text('59:59'), findsOneWidget);
     expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
+
+    // Past the hour the time grows its hour digit; the row stays on its
+    // centre line.
+    recorder.tick(progress: const Duration(hours: 1));
+    await tester.pump();
+    expect(find.text('01:00:00'), findsOneWidget);
+    expect(
+      tester.getRect(key('check-in-recorder-stop')).center,
+      stopBefore.center,
+    );
   });
 
   // The sheet brings the indicator back once it has closed; the recorder

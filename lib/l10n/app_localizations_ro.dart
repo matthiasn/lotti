@@ -2812,6 +2812,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingStop => 'Opriți';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transcriere';
+
+  @override
   String get avatarCropHint =>
       'Trageți pentru a muta · apropiați degetele pentru zoom';
 
@@ -3320,10 +3323,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'Sunetul se salvează pe acest dispozitiv pe măsură ce înregistrați';
 
   @override
   String get checkInAvoidLabel => 'De evitat';
@@ -15825,10 +15824,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepMeasurables => 'Măsurabile';
 
   @override
-  String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
+  String get syncStepPreferences => 'Temă, salut și opțiuni';
 
   @override
-  String get syncStepPreferences => 'Temă, salut și opțiuni';
+  String get syncStepSavedTaskFilters => 'Filtre de sarcini salvate';
 
   @override
   String get syncStepSpeechDictionary => 'Dicționar vocal';

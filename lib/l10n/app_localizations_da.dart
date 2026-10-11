@@ -2771,6 +2771,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transskriber';
+
+  @override
   String get avatarCropHint => 'Træk for at flytte · knib for at zoome';
 
   @override
@@ -3265,9 +3268,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
-
-  @override
-  String get checkInAudioSavedAsYouGo => 'Lyden gemmes løbende på denne enhed';
 
   @override
   String get checkInAvoidLabel => 'Bedst at undgå';
@@ -15516,10 +15516,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncStepMeasurables => 'Målbare ting';
 
   @override
-  String get syncStepSavedTaskFilters => 'Gemte opgavefiltre';
+  String get syncStepPreferences => 'Tema, hilsen og flag';
 
   @override
-  String get syncStepPreferences => 'Tema, hilsen og flag';
+  String get syncStepSavedTaskFilters => 'Gemte opgavefiltre';
 
   @override
   String get syncStepSpeechDictionary => 'Taleordbog';

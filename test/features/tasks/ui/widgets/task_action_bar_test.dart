@@ -541,7 +541,7 @@ void main() {
       );
       expect(icon.icon, LottiIconsFilled.square);
       expect(icon.icon!.fontFamily, 'LottiFilled');
-      expect(icon.size, TaskActionBar.pillStopIconSize);
+      expect(icon.size, IconSizes.m);
       expect(icon.color, Colors.white);
       expect(find.byIcon(LottiIcons.stop), findsNothing);
     },

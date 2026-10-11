@@ -25,6 +25,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -477,6 +478,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'c-1');
+      // The dock is compact — the level line, no orb over the check-in it
+      // adds to.
+      expect(find.byType(RecordingLevelVisualizer), findsNothing);
+      expect(find.byType(RecordingLevelLine), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
       for (var i = 0; i < 4; i++) {

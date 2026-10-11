@@ -2783,6 +2783,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingStop => 'Stoppen';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transcriberen';
+
+  @override
   String get avatarCropHint => 'Sleep om te verplaatsen · knijp om te zoomen';
 
   @override
@@ -3278,10 +3281,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'Audio wordt tijdens de opname op dit apparaat opgeslagen';
 
   @override
   String get checkInAvoidLabel => 'Beter vermijden';
@@ -15567,10 +15566,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncStepMeasurables => 'Meetbare';
 
   @override
-  String get syncStepSavedTaskFilters => 'Opgeslagen taakfilters';
+  String get syncStepPreferences => 'Thema, begroeting en schakelaars';
 
   @override
-  String get syncStepPreferences => 'Thema, begroeting en schakelaars';
+  String get syncStepSavedTaskFilters => 'Opgeslagen taakfilters';
 
   @override
   String get syncStepSpeechDictionary => 'Spraakwoordenboek';

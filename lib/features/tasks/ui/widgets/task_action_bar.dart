@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_timer_pill.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -56,8 +56,8 @@ class TaskActionBar extends ConsumerStatefulWidget {
   static const Key trackTimeKey = ValueKey('task-action-bar-track-time');
 
   /// Key for the inset stop button that appears inside the pill while
-  /// tracking. Tapping it stops the timer. Referenced at runtime by the
-  /// extracted [TrackTimePill] and also used as a stable test key.
+  /// tracking. Tapping it stops the timer. Passed to the pill as its
+  /// `stopKey`, and also used as a stable test key.
   static const Key trackTimeStopKey = ValueKey(
     'task-action-bar-track-time-stop',
   );
@@ -82,23 +82,14 @@ class TaskActionBar extends ConsumerStatefulWidget {
   @visibleForTesting
   static const Key topSlotKey = ValueKey('task-action-bar-top-slot');
 
-  /// Round-button diameter and pill height. The design system has no
-  /// dedicated icon-button-size token; this matches `tokens.spacing.step9`
-  /// (48), the standard hit-target. Referenced at runtime by the extracted
-  /// [TrackTimePill].
+  /// Round-button diameter and the Add pill's height. The design system has
+  /// no dedicated icon-button-size token; this matches `tokens.spacing.step9`
+  /// (48), the standard hit-target the Track time pill is drawn at too.
   static const double buttonSize = 48;
 
-  /// Icon glyph size inside both the pill and round buttons. Referenced at
-  /// runtime by the extracted [TrackTimePill].
+  /// Icon glyph size inside the Add pill and the round buttons, the same as
+  /// `DesignSystemTimerPill.iconSize`.
   static const double iconSize = 20;
-
-  /// Stop control size inside the Track time pill. Referenced at runtime by
-  /// the extracted [TrackTimePill].
-  static const double pillStopButtonSize = 32;
-
-  /// Stop glyph size inside the Track time pill's stop control. Referenced
-  /// at runtime by the extracted [TrackTimePill].
-  static const double pillStopIconSize = 18;
 
   /// Minimum [LayoutBuilder] inner width at which the checklist
   /// affordance is included. Checklist is dropped second (after image)
@@ -247,15 +238,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   /// (e.g. `01:30`) so the pill stays compact for the dominant short-
   /// session case. At one hour and beyond we fall back to the shared
   /// `hh:mm:ss` format used elsewhere (sidebar timer, journal entries).
-  String _formatPillDuration(Duration elapsed) {
-    if (elapsed >= const Duration(hours: 1)) {
-      return formatDuration(elapsed);
-    }
-    final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -264,7 +246,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
 
     final isTracking = _isTrackingThisTask;
     final elapsedLabel = isTracking
-        ? _formatPillDuration(
+        ? DesignSystemTimerPill.formatElapsed(
             _running!.meta.dateTo.difference(_running!.meta.dateFrom),
           )
         : messages.taskActionBarTrackTime;
@@ -318,16 +300,22 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     constraints.maxWidth >=
                     TaskActionBar.minWidthForChecklistButton;
                 final rowChildren = <Widget>[
-                  TrackTimePill(
+                  // Idle it starts a timer; running, its body opens the
+                  // running entry (as the sidebar timer card does) and its
+                  // inset circle stops it.
+                  DesignSystemTimerPill(
                     key: TaskActionBar.trackTimeKey,
-                    isTracking: isTracking,
+                    running: isTracking,
                     label: elapsedLabel,
-                    idleSemanticLabel: messages.taskActionBarTrackTime,
-                    navigateSemanticLabel:
-                        messages.taskActionBarOpenRunningTimer,
+                    widthLabel: messages.taskActionBarTrackTime,
+                    semanticLabel: isTracking
+                        ? messages.taskActionBarOpenRunningTimer
+                        : messages.taskActionBarTrackTime,
                     stopSemanticLabel: messages.taskActionBarStopTracking,
-                    onStartTimer: _onStartTimer,
-                    onNavigateToRunningEntry: _onNavigateToRunningEntry,
+                    stopKey: TaskActionBar.trackTimeStopKey,
+                    onTap: isTracking
+                        ? _onNavigateToRunningEntry
+                        : _onStartTimer,
                     onStop: _onStopTimer,
                   ),
                   // The shared lead-action mic: accent ring and glyph idle

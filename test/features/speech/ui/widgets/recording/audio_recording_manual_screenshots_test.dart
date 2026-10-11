@@ -4,6 +4,8 @@
 /// staging inputs for the manual media manifest and are never committed here.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -14,10 +16,10 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../daily_os_next/screenshot_harness.dart';
@@ -38,6 +40,13 @@ class _FixedAudioRecorderController extends AudioRecorderController {
 
   @override
   AudioRecorderState build() => fixedState;
+
+  /// A new live level, as the recorder reports one every 20 ms.
+  // As the recorder does: every sample advances the take by 20 ms.
+  void tick(double dbfs) => state = state.copyWith(
+    dBFS: dbfs,
+    progress: state.progress + const Duration(milliseconds: 20),
+  );
 }
 
 void main() {
@@ -66,12 +75,12 @@ void main() {
         final messages = _messages(tester);
 
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
-        expect(find.text('0:00:42'), findsOneWidget);
-        expect(find.text(messages.audioRecordingStop), findsOneWidget);
+        expect(find.text('00:42'), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         expect(
           find.widgetWithText(
-            LottiAnimatedCheckbox,
-            messages.speechModalTitle,
+            RecordingOption,
+            messages.audioRecordingTranscribeOption,
           ),
           findsOneWidget,
         );
@@ -91,9 +100,11 @@ Future<void> _pumpActiveRecording(
   required Brightness brightness,
 }) async {
   applyScreenshotDevice(tester, device);
+  late _FixedAudioRecorderController controller;
   final fixedState = AudioRecorderState(
     status: AudioRecorderStatus.recording,
-    progress: const Duration(seconds: 42),
+    // The ticks below bring it to 0:00:42.
+    progress: const Duration(milliseconds: 40400),
     vu: 1.5,
     dBFS: -12,
     showIndicator: false,
@@ -108,7 +119,7 @@ Future<void> _pumpActiveRecording(
       child: ProviderScope(
         overrides: [
           audioRecorderControllerProvider.overrideWith(
-            () => _FixedAudioRecorderController(fixedState),
+            () => controller = _FixedAudioRecorderController(fixedState),
           ),
           recordingStyleAppPrefsProvider.overrideWithValue(
             _modernRecordingStylePreferences,
@@ -168,6 +179,12 @@ Future<void> _pumpActiveRecording(
   await tester.pump();
   await tester.tap(find.byKey(_openRecordingKey));
   await settleFrames(tester, 8);
+  // A few seconds of speech-shaped levels, so the bars show a take in
+  // progress rather than their resting baseline.
+  for (var i = 0; i < 80; i++) {
+    controller.tick(-38 + 26 * math.sin(i / 3).abs());
+    await tester.pump(const Duration(milliseconds: 20));
+  }
 }
 
 const _modernRecordingStylePreferences = AppPrefs(

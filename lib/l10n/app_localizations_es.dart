@@ -2798,6 +2798,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingStop => 'Parar';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transcribir';
+
+  @override
   String get avatarCropHint => 'Arrastra para mover · pellizca para ampliar';
 
   @override
@@ -3307,10 +3310,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'El audio se guarda en este dispositivo sobre la marcha';
 
   @override
   String get checkInAvoidLabel => 'Mejor evitar';
@@ -15717,10 +15716,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepMeasurables => 'Valores medibles';
 
   @override
-  String get syncStepSavedTaskFilters => 'Filtros de tareas guardados';
+  String get syncStepPreferences => 'Tema, saludo e interruptores';
 
   @override
-  String get syncStepPreferences => 'Tema, saludo e interruptores';
+  String get syncStepSavedTaskFilters => 'Filtros de tareas guardados';
 
   @override
   String get syncStepSpeechDictionary => 'Diccionario de voz';

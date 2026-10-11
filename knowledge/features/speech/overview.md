@@ -87,12 +87,13 @@ transcription automation.
 accent card, a pulsing record dot and elapsed time only.
 
 The modal renders either the skeuomorphic VU meter or the energy orb depending on
-`recordingStyleProvider`, from the same dBFS feed. That choice, the running
-clock and the transport row — discard ✕, pause ⏸ / resume ▶, the red Stop —
-live in
-[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart)
-(`RecordingLevelVisualizer`, `RecordingClock`, `RecordingTransportControls`),
-so every surface that records in place — the check-in composer and page
+`recordingStyleProvider`, from the same dBFS feed, with the level line beneath
+either. The whole recorder — that choice, the level line and the transport
+row (discard ✕, the red Stop pill carrying the running time, pause ⏸ /
+resume ▶) —
+is `RecordingStage` in
+[`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart),
+laid out in [Recording UI](recording-ui.md), so every surface that records in place — the check-in composer and page
 (`CheckInInlineRecorder`) as well as this modal — wears one recorder rather
 than drawing its own buttons. The host keeps the meaning of each act (whether
 a discard asks first, where a stopped take goes) and may name the controls'

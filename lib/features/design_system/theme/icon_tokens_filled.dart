@@ -12,10 +12,12 @@
 /// second icon family. Regenerate with `tool/icons/filled_font/build.mjs`; the
 /// source SVGs and the reasoning live beside it.
 ///
-/// Most glyphs here are the on-state of a toggle. The timer's two controls
-/// are the exception: `square` is its stop mark, which outlined read as an
-/// empty checkbox, and `circle` doubles as its continue mark — the full-size
-/// record dot, replacing Lucide's `dot`, a ~4px mark inside a 20px glyph.
+/// Most glyphs here are the on-state of a toggle. The transport controls
+/// are the exception: the recorder's `pause` and `play`, solid beside its
+/// filled Stop, and the timer's two — `square` is its stop mark, which
+/// outlined read as an empty checkbox, and `circle` doubles as its continue
+/// mark — the full-size record dot, replacing Lucide's `dot`, a ~4px mark
+/// inside a 20px glyph.
 ///
 /// Only glyphs whose outline is a single closed silhouette are here. `list`,
 /// `chartColumn` and `users` are built from open strokes and have no meaningful
@@ -55,9 +57,16 @@ abstract final class LottiIconsFilled {
   /// Filled counterpart of `LottiIcons.night` — dark theme selected.
   static const IconData moon = IconData(0xea06, fontFamily: _family);
 
+  /// Filled counterpart of `LottiIcons.pause` — the recorder's pause, as
+  /// solid as its Stop square.
+  static const IconData pause = IconData(0xea07, fontFamily: _family);
+
+  /// Filled counterpart of `LottiIcons.play` — the recorder's resume.
+  static const IconData play = IconData(0xea08, fontFamily: _family);
+
   /// Filled counterpart of `LottiIcons.stop` — stop the running timer.
-  static const IconData square = IconData(0xea07, fontFamily: _family);
+  static const IconData square = IconData(0xea09, fontFamily: _family);
 
   /// Filled counterpart of `LottiIcons.star` — starred.
-  static const IconData star = IconData(0xea08, fontFamily: _family);
+  static const IconData star = IconData(0xea0a, fontFamily: _family);
 }

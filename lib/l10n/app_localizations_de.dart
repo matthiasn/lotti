@@ -2794,6 +2794,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordingStop => 'Stopp';
 
   @override
+  String get audioRecordingTranscribeOption => 'Transkribieren';
+
+  @override
   String get avatarCropHint =>
       'Ziehen zum Verschieben · Zusammenziehen zum Zoomen';
 
@@ -3293,10 +3296,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'Audio wird laufend auf diesem Gerät gespeichert';
 
   @override
   String get checkInAvoidLabel => 'Besser vermeiden';
@@ -15632,10 +15631,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncStepMeasurables => 'Messgrößen';
 
   @override
-  String get syncStepSavedTaskFilters => 'Gespeicherte Aufgabenfilter';
+  String get syncStepPreferences => 'Design, Begrüßung und Schalter';
 
   @override
-  String get syncStepPreferences => 'Design, Begrüßung und Schalter';
+  String get syncStepSavedTaskFilters => 'Gespeicherte Aufgabenfilter';
 
   @override
   String get syncStepSpeechDictionary => 'Sprachwörterbuch';

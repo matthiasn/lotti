@@ -13,6 +13,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -38,7 +40,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
@@ -157,10 +158,10 @@ AppPrefs _neverResolvingRecordingStylePrefs() => AppPrefs(
 );
 
 Finder _speechRecognitionCheckbox(WidgetTester tester) => find.widgetWithText(
-  LottiAnimatedCheckbox,
+  RecordingOption,
   AppLocalizations.of(
     tester.element(find.byType(Scaffold).first),
-  )!.speechModalTitle,
+  )!.audioRecordingTranscribeOption,
 );
 
 void main() {
@@ -429,7 +430,7 @@ void main() {
         find.byKey(const Key('speech_recognition_checkbox')),
         findsNothing,
       );
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
 
     testWidgets('hides when category stream returns null', (tester) async {
@@ -443,7 +444,7 @@ void main() {
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
 
     testWidgets('shows speech recognition checkbox when configured', (
@@ -495,7 +496,7 @@ void main() {
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
   });
 
@@ -684,7 +685,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -821,7 +822,7 @@ void main() {
         await tester.tap(find.text('Show Modal'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(results, isEmpty);
@@ -932,7 +933,7 @@ void main() {
             isEmpty,
           );
 
-          await tester.tap(find.text('Stop'));
+          await tester.tap(find.byKey(const ValueKey('stop_recording')));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
@@ -1153,7 +1154,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
           expect(
             find.descendant(
               of: stopControlsFinder,
@@ -1197,7 +1198,7 @@ void main() {
             const ValueKey('stop_controls'),
           );
           expect(stopControlsFinder, findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         },
       );
     });
@@ -1231,7 +1232,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 250));
 
-        await tester.tap(find.text('Stop'));
+        await tester.tap(find.byKey(const ValueKey('stop_recording')));
         await tester.pump();
 
         final messages = AppLocalizations.of(
@@ -1480,7 +1481,7 @@ void main() {
             findsOneWidget,
           );
           expect(find.byIcon(LottiIcons.close), findsOneWidget);
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         },
       );
 
@@ -1586,7 +1587,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(cancelCalled, isFalse);
-        expect(find.text('Stop'), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
       });
     });
 
@@ -1622,10 +1623,10 @@ void main() {
           findsOneWidget,
         );
         // Recording → shows the pause glyph.
-        expect(find.byIcon(LottiIcons.pause), findsOneWidget);
+        expect(find.byIcon(LottiIconsFilled.pause), findsOneWidget);
         // Cancel and stop stay alongside it.
         expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
-        expect(find.text('Stop'), findsOneWidget);
+        expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
       });
 
       testWidgets(
@@ -1660,8 +1661,8 @@ void main() {
             find.byKey(const ValueKey('pause_resume_button')),
             findsOneWidget,
           );
-          expect(find.byIcon(LottiIcons.play), findsOneWidget);
-          expect(find.byIcon(LottiIcons.pause), findsNothing);
+          expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
+          expect(find.byIcon(LottiIconsFilled.pause), findsNothing);
         },
       );
 
@@ -1695,9 +1696,9 @@ void main() {
             findsOneWidget,
           );
           // Paused → shows the play (resume) glyph.
-          expect(find.byIcon(LottiIcons.play), findsOneWidget);
+          expect(find.byIcon(LottiIconsFilled.play), findsOneWidget);
           // Stop controls remain visible while paused.
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
 
           await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
           await tester.pump();
@@ -1705,8 +1706,8 @@ void main() {
 
           expect(resumeCalled, isTrue);
           // Same button; glyph swaps back to pause.
-          expect(find.byIcon(LottiIcons.pause), findsOneWidget);
-          expect(find.byIcon(LottiIcons.play), findsNothing);
+          expect(find.byIcon(LottiIconsFilled.pause), findsOneWidget);
+          expect(find.byIcon(LottiIconsFilled.play), findsNothing);
         },
       );
     });
@@ -1829,8 +1830,7 @@ void main() {
                 : dsTokensLight);
         expect(shader.dbfs, -7);
         expect(shader.intensity, 1);
-        expect(shader.primaryColor, tokens.colors.interactive.enabled);
-        expect(shader.secondaryColor, tokens.colors.text.highEmphasis);
+        expect(shader.palette, AiVoiceOrbPalette.fromTokens(tokens));
       });
 
       testWidgets(
@@ -1859,10 +1859,14 @@ void main() {
             final shader = tester.widget<AiVoiceInputShader>(
               find.byType(AiVoiceInputShader),
             );
-            expect(shader.primaryColor, scenario.$2.colors.interactive.enabled);
+            // The theme's own palette: on light, a lit-mint glint rather
+            // than the near-black text ink.
+            expect(shader.palette, AiVoiceOrbPalette.fromTokens(scenario.$2));
             expect(
-              shader.secondaryColor,
-              scenario.$2.colors.text.highEmphasis,
+              shader.palette.glint,
+              isNot(scenario.$2.colors.text.highEmphasis),
+              reason: 'only the dark theme glints in the text ink',
+              skip: scenario.$2 == dsTokensDark,
             );
             await tester.pumpWidget(const SizedBox.shrink());
             await tester.pump();

@@ -3,8 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/recording_levels.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:record/record.dart' show Amplitude;
 

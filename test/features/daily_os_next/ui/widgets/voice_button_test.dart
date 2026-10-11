@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -80,7 +81,11 @@ void main() {
     expect(shader.intensity, 0.84);
     expect(shader.lineDensity, 24);
     expect(shader.orbitalMix, 0.60);
-    expect(shader.backgroundColor, Colors.transparent);
+    // The theme's own palette, so a light surface never glints in ink.
+    expect(
+      shader.palette,
+      AiVoiceOrbPalette.fromTokens(tester.element(shaderFinder).designTokens),
+    );
     expect(
       tester
           .widget<ClipPath>(

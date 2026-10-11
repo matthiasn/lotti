@@ -190,7 +190,6 @@
     "lib/features/onboarding/ui/recording_style_settings_page.dart": {"spacing":1},
     "lib/features/onboarding/ui/widgets/crystallize_hero.dart": {"color":1},
     "lib/features/onboarding/ui/widgets/onboarding_connect_panel.dart": {"color":7},
-    "lib/features/onboarding/ui/widgets/recording_style_picker.dart": {"color":1},
     "lib/features/onboarding/ui/widgets/waveform_text_hero.dart": {"spacing":2,"typography":1},
     "lib/features/plaza/scene/plaza_sprites.dart": {"color":9},
     "lib/features/plaza/scene/wall_textures.dart": {"color":26},
@@ -229,7 +228,6 @@
     "lib/features/settings/ui/pages/settings_desktop_page.dart": {"spacing":1},
     "lib/features/speech/ui/widgets/audio_player.dart": {"spacing":1},
     "lib/features/speech/ui/widgets/progress/audio_progress_bar.dart": {"color":5},
-    "lib/features/speech/ui/widgets/recording/audio_recording_modal.dart": {"spacing":3},
     "lib/features/speech/ui/widgets/recording/glass_record_button.dart": {"color":1},
     "lib/features/speech/ui/widgets/recording/vu_meter_painter.dart": {"typography":3,"color":11},
     "lib/features/sync/ui/provisioned/add_device_page.dart": {"color":1},
@@ -247,7 +245,6 @@
     "lib/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart": {"color":2},
     "lib/features/tasks/ui/task_compact_app_bar.dart": {"spacing":1},
     "lib/features/tasks/ui/task_expandable_app_bar.dart": {"spacing":2,"color":2},
-    "lib/features/tasks/ui/widgets/task_action_bar_buttons.dart": {"color":3},
     "lib/features/tasks/ui/widgets/task_browse_list_item_rows.dart": {"spacing":5},
     "lib/features/tasks/ui/widgets/task_detail_back_leading.dart": {"color":1},
     "lib/features/tasks/ui/widgets/task_detail_cards.dart": {"spacing":1,"color":5},
@@ -301,7 +298,6 @@
     "lib/widgets/text/entry_text_widget.dart": {"spacing":1},
     "lib/widgets/ui/empty_state_widget.dart": {"spacing":3},
     "lib/widgets/ui/error_state_widget.dart": {"spacing":5,"typography":1},
-    "lib/widgets/ui/form_bottom_bar.dart": {"spacing":2,"color":1},
-    "lib/widgets/ui/lotti_animated_checkbox.dart": {"spacing":3,"typography":2}
+    "lib/widgets/ui/form_bottom_bar.dart": {"spacing":2,"color":1}
   }
 }

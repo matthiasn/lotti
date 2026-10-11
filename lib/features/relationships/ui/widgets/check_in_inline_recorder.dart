@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -50,6 +49,7 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     required this.onFailed,
     this.categoryId,
     this.adoptRunning = false,
+    this.compact = false,
     super.key,
   });
 
@@ -65,6 +65,10 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
 
   /// Attach to the recording already running rather than starting one.
   final bool adoptRunning;
+
+  /// Whether to leave the orb or meter out, as the check-in page's dock
+  /// does, so dictating never covers the check-in it adds to.
+  final bool compact;
 
   @override
   ConsumerState<CheckInInlineRecorder> createState() =>
@@ -149,78 +153,42 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final messages = context.messages;
     final state = ref.watch(audioRecorderControllerProvider);
     final paused = state.status == AudioRecorderStatus.paused;
     final live = state.status == AudioRecorderStatus.recording;
 
-    return Column(
+    return RecordingStage(
       key: const ValueKey('check-in-inline-recorder'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Named, not live: the header's status line announces recording
-        // and paused, so a reader hears each transition once.
-        Semantics(
-          label: live
-              ? messages.audioRecordingLive
-              : paused
-              ? messages.checkInStatusPaused
-              : '',
-          child: ExcludeSemantics(
-            child: Center(child: RecordingLevelVisualizer(state: state)),
-          ),
+      state: state,
+      compact: widget.compact,
+      // Named, not live: the header's status line announces recording and
+      // paused, so a reader hears each transition once.
+      levelSemanticsLabel: live
+          ? messages.audioRecordingLive
+          : paused
+          ? messages.checkInStatusPaused
+          : null,
+      controls: RecordingTransportControls(
+        paused: paused,
+        progress: state.progress,
+        // In words for a reader: "23 seconds", not "zero colon two three".
+        progressSemanticsLabel: checkInSpokenClockLabel(
+          messages,
+          state.progress,
         ),
-        Center(
-          child: RecordingClock(
-            key: const ValueKey('check-in-recorder-clock'),
-            progress: state.progress,
-            // In words for a reader: "23 seconds", not "zero colon two
-            // three".
-            semanticsLabel: checkInSpokenClockLabel(messages, state.progress),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        Center(
-          child: RecordingTransportControls(
-            paused: paused,
-            // Inert while a stop or discard is in flight, and until the
-            // take is actually running: before `record` lands, or after a
-            // refused start, there is nothing to pause or stop.
-            busy: _busy || !(live || paused),
-            discardLabel: messages.checkInDiscardRecording,
-            discardKey: const ValueKey('check-in-recorder-discard'),
-            pauseKey: const ValueKey('check-in-recorder-pause'),
-            stopKey: const ValueKey('check-in-recorder-stop'),
-            onDiscard: _discard,
-            onTogglePause: () => _togglePause(state.status),
-            onStop: _stop,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        // Where the recording sheet keeps its one option: the reassurance
-        // that nothing is lost if the sheet goes.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              LottiIcons.confirmCircled,
-              size: IconSizes.s,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Flexible(
-              child: Text(
-                messages.checkInAudioSavedAsYouGo,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+        // Inert while a stop or discard is in flight, and until the take is
+        // actually running: before `record` lands, or after a refused
+        // start, there is nothing to pause or stop.
+        busy: _busy || !(live || paused),
+        discardLabel: messages.checkInDiscardRecording,
+        discardKey: const ValueKey('check-in-recorder-discard'),
+        pauseKey: const ValueKey('check-in-recorder-pause'),
+        stopKey: const ValueKey('check-in-recorder-stop'),
+        onDiscard: _discard,
+        onTogglePause: () => _togglePause(state.status),
+        onStop: _stop,
+      ),
     );
   }
 }

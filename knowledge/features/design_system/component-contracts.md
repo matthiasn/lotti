@@ -311,6 +311,33 @@ would announce the same words two or three times over and never say `button` —
 and while busy, when the glyph is gone, that node's label is the only remaining
 statement of which action is running.
 
+## The running clock: `DesignSystemTimerPill`
+
+[`design_system_timer_pill.dart`](../../../lib/features/design_system/components/buttons/design_system_timer_pill.dart)
+is the app's one control for a clock that runs: idle it is the accent pill
+with a glyph and its action's name, running it turns the alert red with a
+white stop square in an inset circle and the elapsed time beside it. A
+task's *Track time* and the voice recorder's Stop are this one element — it
+was promoted out of the task action bar when the recorder needed the same
+control, so the two cannot drift into two looks for one meaning.
+
+**One formatter, one width.** `formatElapsed` is the only way its time is
+written (`mm:ss`, `hh:mm:ss` past the hour), in tabular figures, and the
+pill's width is held to its idle layout around `widthLabel` — the idle
+action's name, so it never shrinks when it starts, or
+`elapsedWidthTemplate` (`00:00`), so it never grows as the minutes tick and
+nothing beside it shifts.
+
+**Running, the circle sits concentric in the round end**: its inset is
+`(step9 - step7) / 2`, the same from the edge as from the top and bottom,
+and the time is centred in the rest.
+
+**Two taps or one.** The body and the stop circle are separate tap zones —
+the task bar opens the running entry from the body and stops from the
+circle, each its own button by name. A host where both stop (the recorder)
+leaves `stopSemanticLabel` null, and the circle becomes part of the one
+button rather than a second one.
+
 ## Below the button tier: `DesignSystemInlineAction`
 
 A caption-tier tappable row for metadata contexts — "skip this one", "change

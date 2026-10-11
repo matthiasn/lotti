@@ -2799,6 +2799,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
+  String get audioRecordingTranscribeOption => 'Přepsat';
+
+  @override
   String get avatarCropHint => 'Tažením posuneš · stažením přiblížíš';
 
   @override
@@ -3308,10 +3311,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get chatInputTranscriptionFailed =>
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
-
-  @override
-  String get checkInAudioSavedAsYouGo =>
-      'Zvuk se průběžně ukládá na toto zařízení';
 
   @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
@@ -15716,10 +15715,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncStepMeasurables => 'Měřitelné hodnoty';
 
   @override
-  String get syncStepSavedTaskFilters => 'Uložené filtry úkolů';
+  String get syncStepPreferences => 'Motiv, oslovení a přepínače';
 
   @override
-  String get syncStepPreferences => 'Motiv, oslovení a přepínače';
+  String get syncStepSavedTaskFilters => 'Uložené filtry úkolů';
 
   @override
   String get syncStepSpeechDictionary => 'Slovník pro přepis řeči';

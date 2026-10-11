@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/live_waveform.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The visible state of the in-panel first-task moment.
