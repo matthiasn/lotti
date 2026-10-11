@@ -15,8 +15,15 @@ void main() {
           SyncSequencePayloadType.notificationStateUpdate,
           SyncSequencePayloadType.consumptionEvent,
           SyncSequencePayloadType.entityDefinition,
+          SyncSequencePayloadType.aiConfig,
         ],
       );
+    });
+
+    test('keeps the ordinals the sequence log persists', () {
+      // Stored by index: a value may only be appended, never moved.
+      expect(SyncSequencePayloadType.entityDefinition.index, 7);
+      expect(SyncSequencePayloadType.aiConfig.index, 8);
     });
   });
 }
