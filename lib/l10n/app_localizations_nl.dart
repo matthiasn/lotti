@@ -2901,10 +2901,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentkoppelingen';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
+  String get backfillRecordsAiConfigs => 'AI-instellingen';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-instellingen';
+  String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
 
   @override
   String get backfillRecordsDefinitions => 'Instellingsdefinities';

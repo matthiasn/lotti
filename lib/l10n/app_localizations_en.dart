@@ -2878,10 +2878,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agent links';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI usage events';
+  String get backfillRecordsAiConfigs => 'AI settings';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI settings';
+  String get backfillRecordsConsumptionEvents => 'AI usage events';
 
   @override
   String get backfillRecordsDefinitions => 'Settings definitions';

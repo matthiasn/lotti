@@ -4866,17 +4866,17 @@ abstract class AppLocalizations {
   /// **'Agent links'**
   String get backfillRecordsAgentLinks;
 
-  /// No description provided for @backfillRecordsConsumptionEvents.
-  ///
-  /// In en, this message translates to:
-  /// **'AI usage events'**
-  String get backfillRecordsConsumptionEvents;
-
   /// No description provided for @backfillRecordsAiConfigs.
   ///
   /// In en, this message translates to:
   /// **'AI settings'**
   String get backfillRecordsAiConfigs;
+
+  /// No description provided for @backfillRecordsConsumptionEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'AI usage events'**
+  String get backfillRecordsConsumptionEvents;
 
   /// No description provided for @backfillRecordsDefinitions.
   ///

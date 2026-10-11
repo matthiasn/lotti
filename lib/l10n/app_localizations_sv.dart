@@ -2898,10 +2898,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentlänkar';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
+  String get backfillRecordsAiConfigs => 'AI-inställningar';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-inställningar';
+  String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
 
   @override
   String get backfillRecordsDefinitions => 'Inställningsdefinitioner';

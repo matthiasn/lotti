@@ -2929,11 +2929,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Liens d\'agents';
 
   @override
-  String get backfillRecordsConsumptionEvents =>
-      'Événements d\'utilisation de l\'IA';
+  String get backfillRecordsAiConfigs => 'Réglages de l’IA';
 
   @override
-  String get backfillRecordsAiConfigs => 'Réglages de l’IA';
+  String get backfillRecordsConsumptionEvents =>
+      'Événements d\'utilisation de l\'IA';
 
   @override
   String get backfillRecordsDefinitions => 'Définitions de réglages';

@@ -2934,10 +2934,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Legături ale agenților';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'Evenimente de utilizare AI';
+  String get backfillRecordsAiConfigs => 'Setări AI';
 
   @override
-  String get backfillRecordsAiConfigs => 'Setări AI';
+  String get backfillRecordsConsumptionEvents => 'Evenimente de utilizare AI';
 
   @override
   String get backfillRecordsDefinitions => 'Definiții de setări';

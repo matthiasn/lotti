@@ -2888,10 +2888,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agentlinks';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
+  String get backfillRecordsAiConfigs => 'AI-indstillinger';
 
   @override
-  String get backfillRecordsAiConfigs => 'AI-indstillinger';
+  String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
 
   @override
   String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';

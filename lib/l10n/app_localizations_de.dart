@@ -2913,10 +2913,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Agenten-Verknüpfungen';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
+  String get backfillRecordsAiConfigs => 'KI-Einstellungen';
 
   @override
-  String get backfillRecordsAiConfigs => 'KI-Einstellungen';
+  String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
 
   @override
   String get backfillRecordsDefinitions => 'Einstellungsdefinitionen';

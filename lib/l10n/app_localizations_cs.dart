@@ -2921,10 +2921,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Odkazy agentů';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'Události využití AI';
+  String get backfillRecordsAiConfigs => 'Nastavení AI';
 
   @override
-  String get backfillRecordsAiConfigs => 'Nastavení AI';
+  String get backfillRecordsConsumptionEvents => 'Události využití AI';
 
   @override
   String get backfillRecordsDefinitions => 'Definice nastavení';

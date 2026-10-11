@@ -2927,10 +2927,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillRecordsAgentLinks => 'Collegamenti degli agenti';
 
   @override
-  String get backfillRecordsConsumptionEvents => 'Eventi di utilizzo dell\'IA';
+  String get backfillRecordsAiConfigs => 'Impostazioni IA';
 
   @override
-  String get backfillRecordsAiConfigs => 'Impostazioni IA';
+  String get backfillRecordsConsumptionEvents => 'Eventi di utilizzo dell\'IA';
 
   @override
   String get backfillRecordsDefinitions => 'Definizioni delle impostazioni';
