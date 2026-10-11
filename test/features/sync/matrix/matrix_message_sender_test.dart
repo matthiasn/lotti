@@ -208,6 +208,12 @@ class _GeneratedBundleChild {
 
   bool get isMissingJournal => kind == _GeneratedBundleChildKind.journalMissing;
 
+  /// A stored row on `host-A` alone never covers the `host-B` covered clock,
+  /// and no open conflict holds it, so the bundle aborts (ADR 0135).
+  bool get isUncoveredJournal =>
+      kind == _GeneratedBundleChildKind.journalPresent &&
+      coveredClockKind == _GeneratedCoveredClockKind.present;
+
   String idAt(int index) => '${kind.name}-$slot-$index';
 
   String jsonPathAt(int index) => '/journal/2026-01-02/${idAt(index)}.json';
@@ -328,7 +334,11 @@ class _GeneratedBundleScenario {
 
   bool get hasMissingJournal => children.any((child) => child.isMissingJournal);
 
-  bool get expectsUpload => children.isNotEmpty && !hasMissingJournal;
+  bool get hasUncoveredJournal =>
+      children.any((child) => child.isUncoveredJournal);
+
+  bool get expectsUpload =>
+      children.isNotEmpty && !hasMissingJournal && !hasUncoveredJournal;
 
   bool get succeeds =>
       expectsUpload && uploadKind == _GeneratedBundleUploadKind.succeeds;
@@ -485,7 +495,7 @@ void main() {
     room = MockRoom();
     uploadStub = MatrixUploadTestStub(room);
     // No entry keeps an open conflict unless a test says so: a queued version
-    // the row does not cover then falls back to the row, as it always did.
+    // the row does not cover then fails the send into the retry path.
     when(
       () => journalDb.openConflictVersion(any(), any()),
     ).thenAnswer((_) async => null);
@@ -3119,13 +3129,8 @@ void main() {
                 journal.coveredVectorClocks,
                 contains(child.dbVectorClockAt(i)),
               );
-              if (child.coveredClockKind ==
-                  _GeneratedCoveredClockKind.present) {
-                expect(
-                  journal.coveredVectorClocks,
-                  contains(child.coveredVectorClockAt(i)),
-                );
-              }
+              // An uncovered child aborts the bundle before upload.
+              expect(child.isUncoveredJournal, isFalse, reason: '$scenario');
               final payload = JournalEntity.fromJson(
                 record['payload'] as Map<String, dynamic>,
               );
