@@ -1161,7 +1161,7 @@ void main() {
 
       expect(take('audio-1'), findsOneWidget);
       expect(
-        find.text('0:23 · Transcribing… · Whisper large v3 · via Groq'),
+        find.text('00:23 · Transcribing… · Whisper large v3 · via Groq'),
         findsOneWidget,
       );
       expect(
@@ -1395,7 +1395,7 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('0:05 · Transcribing…'), findsOneWidget);
+      expect(find.text('00:05 · Transcribing…'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       gate.complete('Landed anyway.');
@@ -1416,11 +1416,11 @@ void main() {
       await stopRecording(tester);
 
       expect(
-        find.textContaining('0:23 · Transcript not received'),
+        find.textContaining('00:23 · Transcript not received'),
         findsOneWidget,
       );
       expect(
-        find.textContaining('Your 0:23 recording is saved in the journal'),
+        find.textContaining('Your 00:23 recording is saved in the journal'),
         findsOneWidget,
       );
       expect(saveEnabled(tester), isTrue);
@@ -1452,7 +1452,7 @@ void main() {
       await type(tester, 'Typed only.');
       await startDictation(tester);
       await stopRecording(tester);
-      expect(find.textContaining('0:00 · Transcribing…'), findsOneWidget);
+      expect(find.textContaining('00:00 · Transcribing…'), findsOneWidget);
 
       ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
           .read(
@@ -1465,7 +1465,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining('0:00 · Transcript not received'),
+        find.textContaining('00:00 · Transcript not received'),
         findsOneWidget,
         reason: 'must not run out the five-minute timeout',
       );
@@ -1501,7 +1501,7 @@ void main() {
       await stopRecording(tester);
 
       expect(
-        find.textContaining('0:00 · Transcript not received'),
+        find.textContaining('00:00 · Transcript not received'),
         findsOneWidget,
       );
       expect(stubTranscription.cancelCount, 1);
@@ -1599,7 +1599,7 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('0:05 · Transcribing…'), findsOneWidget);
+      expect(find.text('00:05 · Transcribing…'), findsOneWidget);
       gate.complete('x');
       await tester.pumpAndSettle();
     });
