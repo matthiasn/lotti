@@ -106,7 +106,8 @@ class RecordingStage extends StatelessWidget {
                   child: RecordingLevelVisualizer(state: state),
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
+              // No step of its own: the orb's canvas already keeps a margin
+              // of glow below its ring, and that margin is the gap.
               ExcludeSemantics(child: RecordingLevelLine(state: state)),
             ],
             if (notice case final notice?) ...[

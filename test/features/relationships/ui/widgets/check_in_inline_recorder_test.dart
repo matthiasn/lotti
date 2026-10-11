@@ -121,7 +121,7 @@ void main() {
       final visualizer = tester.getRect(find.byType(RecordingLevelVisualizer));
       final line = tester.getRect(find.byType(RecordingLevelLine));
       final controls = tester.getRect(find.byType(RecordingTransportControls));
-      expect(visualizer.bottom, lessThan(line.top));
+      expect(visualizer.bottom, lessThanOrEqualTo(line.top + 0.5));
       expect(line.bottom, lessThan(controls.top));
       // Discard, Stop, Pause: the sheet's order, left to right.
       final discard = tester.getRect(key('check-in-recorder-discard'));

@@ -26,39 +26,44 @@ can report a different level than the other.
 
 Every recorder is one studio layout, `RecordingStage` in
 [`recording_controls.dart`](../../../lib/features/speech/ui/widgets/recording/recording_controls.dart):
-one centred column no wider than the level line (`RecordingLevelLine.maxWidth`),
-with two sizes of type — the running time, and one caption voice
-(`recordingCaptionStyle`) for every other word. Top to bottom:
+one centred column no wider than `RecordingLevelLine.maxWidth`, whose parts
+share one measure — the orb's diameter (or the meter's width) is the level
+line's width, and the transport row matches it. Every word on it that is
+not the running time speaks in one caption voice (`recordingCaptionStyle`).
+Top to bottom:
 
 - **The look the user chose** — `RecordingLevelVisualizer`, the orb or the
   meter, left out when the host asks for `compact` (the check-in page's
   dock, so dictating never covers the check-in). On a light surface the orb
   sits on a *lit pool*: a radial gradient from the brightest surface at the
   centre through the orb's glint at the ring to nothing, so its light has
-  something to glow against.
-- **The running time** — `RecordingClock`: `m:ss`, `h:mm:ss` past the hour,
-  a regular heading1 in the UI face with tabular figures, so the digits
-  never shift, in the neutral ink. Before it, where the host has no status
-  of its own (`showStatus`), the live dot `RecordingStatus`: red while
-  recording, at rest while paused, and *Recording* / *Paused* to a screen
-  reader. The dot's run is mirrored after the time, so the digits sit on
-  the axis. The recording sheet and the check-in page's dock show the dot;
-  the check-in composer does not, because its header already says so.
+  something to glow against. The orb's canvas keeps a margin of glow below
+  its ring, and that margin is the whole gap to the line.
 - **The level line** — `RecordingLevelLine`, the level bars from
   [`live_waveform.dart`](../../../lib/features/speech/ui/widgets/recording/live_waveform.dart)
-  across the column, fading out at both ends: accent under the orb, neutral
-  under the meter, the pair the user chose the look from in onboarding.
-  Silence is a hairline baseline (`baselineColor`), not a row of idle dots.
-  It keeps a window of normalised levels (`normaliseDbfs`, in
+  at the look's width (`RecordingLevelLine.widthFor`), fading in at its
+  oldest end only so the newest bars are at full strength: accent under the
+  orb, neutral under the meter, the pair the user chose the look from in
+  onboarding. Silence is a hairline (`baselineColor`) from the oldest
+  sample to now, not a row of idle dots. It keeps a window of normalised
+  levels (`normaliseDbfs`, in
   [`recording_levels.dart`](../../../lib/features/speech/state/recording_levels.dart)),
   one per recorder tick — a steady level too, so silence ages loud bars
   out — draws each bar as the louder of a pair of samples, holds still
   while paused and empties when a take stops. Daily OS Capture and the
   onboarding previews draw the same bars from the same helpers.
 - **The transport row** — `RecordingTransportControls`: discard ✕ and
-  pause ⏸ / resume ▶ as border-only rings either side of one filled red
-  Stop disc, the only colour in the row, its square white in both themes.
-  Before a take starts the sheet puts its record button in this slot.
+  pause ⏸ / resume ▶ (filled glyphs) as 48px border-only rings either side
+  of Stop, which carries the running time. Stop is the app's running-clock
+  control,
+  [`DesignSystemTimerPill`](../../../lib/features/design_system/components/buttons/design_system_timer_pill.dart)
+  — the pill a task's *Track time* wears while it runs: alert red, a white
+  stop square in an inset circle, the elapsed time (`formatElapsed`, `mm:ss`
+  then `hh:mm:ss`) in tabular figures, its width held to `00:00` so the
+  rings never shift mid-take. Here its whole body stops the take, so it is
+  one button named *Stop* whose value is the time. Taps are felt (a firmer
+  one on Stop) when the user's haptics switch is on. Before a take starts
+  the sheet puts its record button in this slot.
 - **A footer** — the sheet's *Transcribe* toggle (`RecordingOption`: the
   caption, then a small design-system toggle), or the check-in's *audio
   saved as you go*.
@@ -90,9 +95,9 @@ The dBFS values come from `AudioRecorderController`, which samples amplitude eve
 
 | Surface | Shows |
 |---------|-------|
-| Recording modal | The whole `RecordingStage`: VU meter or orb, live dot and elapsed time, level line, record / discard–Stop–pause, *Transcribe* |
-| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder`, with its own live dot |
-| Check-in composer | The whole stage without the live dot, which the composer's header carries as its status line |
+| Recording modal | The whole `RecordingStage`: VU meter or orb, level line, record / discard–timed Stop–pause, *Transcribe* |
+| Check-in page dock | The stage `compact` — no orb or meter — embedded in place by `CheckInInlineRecorder` |
+| Check-in composer | The whole stage, under the composer's header and its status line |
 | Mobile recording pill | A compact live indicator |
 | Desktop sidebar row | A red accent card, a pulsing dot and elapsed time — **deliberately no dBFS reaction** |
 | Task, entry and event action bars | `GlassRecordButton`: the accent-ringed mic takes the alert fill while a session linked to *that* task, entry or event is recording or paused — **no level, no time** |
