@@ -3461,6 +3461,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInRemoveTake => 'Opname verwijderen';
 
   @override
+  String get checkInRowDetails => 'Onderwerpen en volgende keer';
+
+  @override
+  String get checkInRowFeeling => 'Hoe het voelde';
+
+  @override
+  String get checkInRowHow => 'Hoe';
+
+  @override
+  String get checkInRowHowLong => 'Hoe lang';
+
+  @override
+  String get checkInRowNotSet => 'Niet ingesteld';
+
+  @override
+  String get checkInRowWhen => 'Wanneer';
+
+  @override
   String get checkInSaveBlockedEmpty =>
       'Voeg een paar woorden toe om op te slaan';
 

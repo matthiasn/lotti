@@ -3433,6 +3433,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInRemoveTake => 'Remove recording';
 
   @override
+  String get checkInRowDetails => 'Topics and next time';
+
+  @override
+  String get checkInRowFeeling => 'How it felt';
+
+  @override
+  String get checkInRowHow => 'How';
+
+  @override
+  String get checkInRowHowLong => 'How long';
+
+  @override
+  String get checkInRowNotSet => 'Not set';
+
+  @override
+  String get checkInRowWhen => 'When';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Add a few words to save';
 
   @override

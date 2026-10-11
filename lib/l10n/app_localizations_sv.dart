@@ -3455,6 +3455,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInRemoveTake => 'Ta bort inspelningen';
 
   @override
+  String get checkInRowDetails => 'Ämnen och nästa gång';
+
+  @override
+  String get checkInRowFeeling => 'Hur det kändes';
+
+  @override
+  String get checkInRowHow => 'Hur';
+
+  @override
+  String get checkInRowHowLong => 'Hur länge';
+
+  @override
+  String get checkInRowNotSet => 'Inte angivet';
+
+  @override
+  String get checkInRowWhen => 'När';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
 
   @override

@@ -235,11 +235,7 @@ class _SentimentFact extends StatelessWidget {
     final tokens = context.designTokens;
     final label = checkInSentimentLabel(context, sentiment);
     final accent = sentimentColor(tokens, sentiment);
-    final glyph = switch (sentiment) {
-      CheckInSentiment.delightful ||
-      CheckInSentiment.good => LottiIcons.moodGood,
-      _ => LottiIcons.moodNeutral,
-    };
+    final glyph = sentimentGlyph(sentiment);
     return _Tappable(
       key: const ValueKey('check-in-sentiment-chip'),
       semanticsLabel: '${context.messages.checkInMoreCaptionFeeling}: $label',

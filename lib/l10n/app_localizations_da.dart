@@ -3446,6 +3446,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInRemoveTake => 'Fjern optagelsen';
 
   @override
+  String get checkInRowDetails => 'Emner og næste gang';
+
+  @override
+  String get checkInRowFeeling => 'Hvordan det føltes';
+
+  @override
+  String get checkInRowHow => 'Hvordan';
+
+  @override
+  String get checkInRowHowLong => 'Hvor længe';
+
+  @override
+  String get checkInRowNotSet => 'Ikke angivet';
+
+  @override
+  String get checkInRowWhen => 'Hvornår';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
 
   @override

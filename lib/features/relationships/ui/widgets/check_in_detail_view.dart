@@ -21,10 +21,10 @@ import 'package:lotti/features/relationships/service/check_in_transcription_serv
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';

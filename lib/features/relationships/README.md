@@ -71,8 +71,11 @@ agent's banner. The deterministic cadence tier does not require an AI model.
 ## Capturing and linking
 
 Check-ins are user-authored. One composer opens on the note, with Dictate
-inside the field; how you connected, when and for how long are one row of
-chips, and optional details fold under More. The recorder and its failure
+inside the field. Under it, the app's settings rows say how you connected,
+when, for how long and how it felt, each opening its picker, and a last row
+folds out the topics and the notes for next time (editing a saved check-in
+shows them at once). While a recording runs the recorder is the sheet. The
+recorder and its failure
 cards render in place of the text. Each recording then sits under the note
 as its own entry-to-be, with its words once they arrive, and is saved as one
 of the check-in's entries — never merged into the note, so nothing typed is
@@ -82,8 +85,8 @@ recording are enough, and words still on their way land on the recording
 after the check-in is saved. A recording whose words never came can be asked
 for again without recording again, or left out. When the words say when it
 happened, for how long or how you connected — "a video call at 3, about 45
-minutes" — those chips fill in from them, read on the device, unless you
-already picked them yourself; a caption says so, and every chip stays
+minutes" — those rows fill in from them, read on the device, unless you
+already picked them yourself; a caption says so, and every row stays
 editable. A missing transcription model is explained before recording. Dictated words are corrected against
 the person's name and nickname, the names that come up with them (set in the
 person editor), the other people in their category and the category's speech

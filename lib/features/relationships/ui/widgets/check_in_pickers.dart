@@ -5,7 +5,6 @@ import 'package:lotti/features/design_system/components/action_modal/ds_action_r
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -15,88 +14,8 @@ import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The composer's type · started · duration as one chip row (design
-/// 2026-09-13): each chip reads its current value and opens the picker for
-/// it — the form's levers, so the fully-rounded pill with a chevron. Wraps,
-/// so large text and a long locale get a second row rather than a truncated
-/// chip. A saved check-in shows the same facts as `CheckInMetaSummaryLine`.
-class CheckInContextChips extends StatelessWidget {
-  const CheckInContextChips({
-    required this.type,
-    required this.startedLabel,
-    required this.durationLabel,
-    required this.onPickType,
-    required this.onPickStart,
-    required this.onPickDuration,
-    this.enabled = true,
-    super.key,
-  });
-
-  final CheckInInteractionType type;
-
-  /// `Now · 14:55`, or the day and the time.
-  final String startedLabel;
-
-  /// `0:23` / `11 min`, or the *Duration* prompt when there is none yet.
-  final String durationLabel;
-  final VoidCallback onPickType;
-  final VoidCallback onPickStart;
-  final VoidCallback onPickDuration;
-
-  /// False while the recorder or the transcript owns the field: the chips
-  /// stay visible so the context is never lost, and go quiet.
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final typeLabel = checkInInteractionLabel(context, type);
-    return Wrap(
-      key: const ValueKey('check-in-context-chips'),
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step3,
-      children: [
-        DesignSystemChip(
-          key: const ValueKey('check-in-type'),
-          label: typeLabel,
-          leadingIcon: checkInInteractionIcon(type),
-          trailing: enabled
-              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
-              : null,
-          // Not `selected`: in the chip grammar that means "chosen among
-          // peers", which the sentiment row uses; here every chip holds a
-          // value, and the glyph says which.
-          size: DesignSystemChipSize.compactPillTouch,
-          semanticsLabel: messages.checkInTypeChipSemantics(typeLabel),
-          onPressed: enabled ? onPickType : null,
-        ),
-        DesignSystemChip(
-          key: const ValueKey('check-in-started'),
-          label: startedLabel,
-          trailing: enabled
-              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
-              : null,
-          size: DesignSystemChipSize.compactPillTouch,
-          semanticsLabel: messages.checkInTimeChipSemantics(startedLabel),
-          onPressed: enabled ? onPickStart : null,
-        ),
-        DesignSystemChip(
-          key: const ValueKey('check-in-duration'),
-          label: durationLabel,
-          trailing: enabled
-              ? const Icon(LottiIcons.chevronDown, size: IconSizes.s)
-              : null,
-          size: DesignSystemChipSize.compactPillTouch,
-          semanticsLabel: messages.checkInDurationChipSemantics(durationLabel),
-          onPressed: enabled ? onPickDuration : null,
-        ),
-      ],
-    );
-  }
-}
-
-/// The interaction-type picker behind the first chip: every kind as an
+/// The interaction-type picker behind the *How* row and the page's type tag:
+/// every kind as an
 /// action row, the current one marked. Resolves to the chosen kind, or
 /// null when dismissed.
 Future<CheckInInteractionType?> showCheckInTypePicker({
@@ -119,7 +38,8 @@ Future<CheckInInteractionType?> showCheckInTypePicker({
   ),
 );
 
-/// The sentiment picker behind the header's feeling chip: every feeling as
+/// The sentiment picker behind the *How it felt* row and the page's feeling
+/// tag: every feeling as
 /// an action row, and *Clear* when one is set — sentiment is optional and
 /// the user's own (ADR 0038). Resolves to the choice as a record, so a
 /// cleared feeling (`(sentiment: null)`) is told apart from a dismissal
@@ -154,8 +74,8 @@ Future<({CheckInSentiment? sentiment})?> showCheckInSentimentPicker({
 );
 
 /// `Now · 14:55` while the start is the current minute, else the day and
-/// the time — the started chip's label, in the composer and on a saved
-/// check-in alike.
+/// the time — the *When* row's value, in the form and on a saved check-in
+/// alike.
 String checkInStartedLabelOf(BuildContext context, DateTime at) {
   final now = clock.now();
   final sameMinute =

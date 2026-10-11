@@ -3490,6 +3490,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInRemoveTake => 'Rimuovi la registrazione';
 
   @override
+  String get checkInRowDetails => 'Argomenti e la prossima volta';
+
+  @override
+  String get checkInRowFeeling => 'Come ti sei sentito';
+
+  @override
+  String get checkInRowHow => 'Come';
+
+  @override
+  String get checkInRowHowLong => 'Quanto è durato';
+
+  @override
+  String get checkInRowNotSet => 'Non impostato';
+
+  @override
+  String get checkInRowWhen => 'Quando';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Aggiungi qualche parola per salvare';
 
   @override

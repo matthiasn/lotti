@@ -11,15 +11,16 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
+import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -119,6 +120,33 @@ void main() {
       testRelationship.copyWith(
         meta: testRelationship.meta.copyWith(categoryId: categoryId),
       );
+
+  /// A settings row's value — the subtitle under its name.
+  String? rowValue(WidgetTester tester, String key) => tester
+      .widget<DesignSystemSelectionRow>(find.byKey(ValueKey(key)))
+      .subtitle;
+
+  /// *How it felt*: opens the row's picker and chooses [sentiment], or
+  /// *Clear* when null.
+  Future<void> pickFeeling(
+    WidgetTester tester,
+    CheckInSentiment? sentiment,
+  ) async {
+    final row = find.byKey(const ValueKey('check-in-sentiment'));
+    await tester.ensureVisible(row);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(
+        ValueKey(
+          sentiment == null
+              ? 'check-in-sentiment-clear'
+              : 'check-in-sentiment-option-${sentiment.name}',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
   /// Opens the folded *More* section so topics, next time and avoid exist.
   Future<void> openMore(WidgetTester tester) async {
@@ -399,58 +427,57 @@ void main() {
   });
 
   group('the composer at rest', () {
-    testWidgets('the folded More row says what is set, not the field names', (
-      tester,
-    ) async {
+    testWidgets('the details row says what is set, never the field names '
+        'its title already says', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      List<String> caption() => tester
-          .widget<DsTieredText>(
-            find.descendant(
-              of: find.byKey(const ValueKey('check-in-more')),
-              matching: find.byType(DsTieredText),
-            ),
-          )
-          .tiers;
-      expect(caption().first, 'Feeling · topics · next time');
+      expect(rowValue(tester, 'check-in-more'), 'Not set');
 
       await openMore(tester);
-      await tester.tap(find.byKey(const ValueKey('check-in-sentiment-good')));
-      await tester.pump();
       await tester.enterText(
         find.byKey(const ValueKey('check-in-topics')),
         'launch window, krill',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
-      await tester.tap(find.byKey(const ValueKey('check-in-more')));
-      await tester.pumpAndSettle();
-      expect(caption().first, 'Good · 2 topics · next time');
+      expect(rowValue(tester, 'check-in-more'), '2 topics');
 
-      await openMore(tester);
       await tester.enterText(
         find.byKey(const ValueKey('check-in-pay-attention')),
         'the freeze',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
-      await tester.tap(find.byKey(const ValueKey('check-in-more')));
-      await tester.pumpAndSettle();
-      expect(caption().first, 'Good · 2 topics · next time noted');
+      expect(rowValue(tester, 'check-in-more'), '2 topics · next time noted');
     });
 
-    testWidgets('the narrative leads, the chips follow, More starts folded, '
-        'and Save waits for words and says so', (tester) async {
+    testWidgets('the note leads, the four facts follow as ruled settings '
+        'rows, the details start folded, and Save waits for words and says '
+        'so', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
+      // The note, then How · When · How long · How it felt · the details,
+      // top to bottom — the app's create-form order.
+      final rows = [
+        'check-in-type',
+        'check-in-started',
+        'check-in-duration',
+        'check-in-sentiment',
+        'check-in-more',
+      ];
+      var above = tester.getBottomLeft(narrative).dy;
+      for (final key in rows) {
+        final top = tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+        expect(top, greaterThan(above), reason: key);
+        above = top;
+      }
+      expect(rowValue(tester, 'check-in-type'), 'In person');
+      expect(rowValue(tester, 'check-in-duration'), 'Not set');
+      // Unset, the feeling says what the row is for.
       expect(
-        tester.getTopLeft(narrative).dy,
-        lessThan(
-          tester.getTopLeft(find.byKey(const ValueKey('check-in-type'))).dy,
-        ),
+        rowValue(tester, 'check-in-sentiment'),
+        'Optional. Never filled in by the agent.',
       );
-      expect(find.text('Delightful'), findsNothing);
+      expect(find.byKey(const ValueKey('check-in-topics')), findsNothing);
       expect(saveEnabled(tester), isFalse);
       expect(saveReason(tester), 'Add a few words to save');
       // The reason is the one save-related line while Save is held: the
@@ -468,8 +495,7 @@ void main() {
       expect(tester.getSemantics(save).hint, isEmpty);
 
       await openMore(tester);
-      expect(find.text('Delightful'), findsOne);
-      expect(find.text('Optional. Never filled in by the agent.'), findsOne);
+      expect(find.byKey(const ValueKey('check-in-topics')), findsOne);
     });
 
     testWidgets('saves type, sentiment, parsed topics and narrative', (
@@ -482,19 +508,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .label,
-        'Call',
-      );
+      expect(rowValue(tester, 'check-in-type'), 'Call');
 
-      await openMore(tester);
-      await tester.ensureVisible(find.text('Good'));
-      await tester.tap(find.text('Good'));
-      await tester.pumpAndSettle();
+      await pickFeeling(tester, CheckInSentiment.good);
+      expect(rowValue(tester, 'check-in-sentiment'), 'Good');
 
       await type(tester, 'Talked about the interview.');
       await openMore(tester);
@@ -529,28 +546,34 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .label,
-        'In person',
-      );
+      expect(rowValue(tester, 'check-in-type'), 'In person');
     });
 
-    testWidgets('sentiment stays unset unless the user picks one, and '
-        'tapping the chosen one clears it again', (tester) async {
+    testWidgets('sentiment stays unset unless the user picks one, and Clear '
+        'takes it back', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       await type(tester, 'Words.');
 
-      await openMore(tester);
-      await tester.ensureVisible(find.text('Good'));
-      await tester.tap(find.text('Good'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Good'));
-      await tester.pumpAndSettle();
+      await pickFeeling(tester, CheckInSentiment.good);
+      final tokens = tester
+          .element(find.byType(CheckInCaptureForm))
+          .designTokens;
+      // The chosen feeling wears its face in its own colour, as the page's
+      // feeling tag does.
+      final glyph = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(const ValueKey('check-in-sentiment')),
+          matching: find.byIcon(LottiIcons.moodGood),
+        ),
+      );
+      expect(glyph.color, sentimentColor(tokens, CheckInSentiment.good));
+
+      await pickFeeling(tester, null);
+      expect(
+        rowValue(tester, 'check-in-sentiment'),
+        'Optional. Never filled in by the agent.',
+      );
       await tapSave(tester);
 
       final saved = capturedSave();
@@ -715,10 +738,7 @@ void main() {
       expect(find.textContaining('10 Aug'), findsOneWidget);
       expect(saveEnabled(tester), isTrue);
 
-      await openMore(tester);
-      await tester.ensureVisible(find.text('Neutral'));
-      await tester.tap(find.text('Neutral'));
-      await tester.pumpAndSettle();
+      await pickFeeling(tester, CheckInSentiment.neutral);
       await tapSave(tester);
 
       final updated =
@@ -736,56 +756,43 @@ void main() {
       expect(updated.entryText?.plainText, 'Planned the trip.');
     });
 
-    testWidgets('lays every section out at once, with no fold, under the '
-        "sheet's own field labels, and no field is a darker well", (
+    testWidgets('lays the text details out at once, with no fold, as the '
+        "design system's own labelled fields, and no field is a darker well", (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // No disclosure over sections that are the reason to open the sheet.
+      // No disclosure over the fields that are the reason to open the sheet.
       expect(find.byKey(const ValueKey('check-in-more')), findsNothing);
-      expect(find.byKey(const ValueKey('check-in-sentiment-good')), findsOne);
+      expect(rowValue(tester, 'check-in-sentiment'), 'Good');
+      for (final (key, label) in [
+        ('check-in-topics', 'Topics'),
+        ('check-in-pay-attention', 'Next time, pay attention to'),
+        ('check-in-avoid', 'Better to avoid'),
+      ]) {
+        final input = tester.widget<DesignSystemTextInput>(
+          find.byKey(ValueKey(key)),
+        );
+        expect(input.label, label, reason: key);
+        expect(input.filled, isFalse, reason: key);
+      }
+      // One `step5` between every field, the first one `step5` under the
+      // last row.
       final tokens = tester
           .element(find.byType(CheckInCaptureForm))
           .designTokens;
-      for (final label in ['How did it feel?', 'Topics']) {
-        expect(
-          tester.widget<Text>(find.text(label)).style?.color,
-          tokens.colors.text.highEmphasis,
-          reason: label,
-        );
-      }
-      // One visible step from every label to what it names: a field's
-      // label carries `step3`, the chips' none — their 48px targets already
-      // hold that air above the pill.
-      EdgeInsets labelGap(String label) =>
-          tester
-                  .widget<Padding>(
-                    find
-                        .ancestor(
-                          of: find.text(label),
-                          matching: find.byType(Padding),
-                        )
-                        .first,
-                  )
-                  .padding
-              as EdgeInsets;
-      expect(labelGap('How did it feel?').bottom, 0);
-      expect(labelGap('Topics').bottom, tokens.spacing.step3);
-      for (final key in [
-        'check-in-topics',
-        'check-in-pay-attention',
-        'check-in-avoid',
-      ]) {
-        expect(
-          tester
-              .widget<DesignSystemTextInput>(find.byKey(ValueKey(key)))
-              .filled,
-          isFalse,
-          reason: key,
-        );
-      }
+      final topics = tester.getRect(
+        find.byKey(const ValueKey('check-in-topics')),
+      );
+      final next = tester.getRect(
+        find.byKey(const ValueKey('check-in-pay-attention')),
+      );
+      final avoid = tester.getRect(
+        find.byKey(const ValueKey('check-in-avoid')),
+      );
+      expect(next.top - topics.bottom, closeTo(tokens.spacing.step5, 0.5));
+      expect(avoid.top - next.bottom, closeTo(tokens.spacing.step5, 0.5));
     });
 
     testWidgets('clearing the narrative holds Save again', (tester) async {
@@ -1085,7 +1092,8 @@ void main() {
     });
 
     testWidgets('Dictate puts the recorder in the field, linked to the '
-        'person and filed under their category, with the chips quiet', (
+        'person and filed under their category, and the recorder is the '
+        'sheet until it stops', (
       tester,
     ) async {
       when(() => mockRepository.getRelationshipById('rel-001')).thenAnswer(
@@ -1101,14 +1109,12 @@ void main() {
         (linkedId: 'rel-001', handledByCaller: true),
       ]);
       expect(recorder.categoryIds, ['category-7']);
-      // One action bar at a time: while the recorder owns the field its
-      // Discard · Pause and the orb are the actions, and the pinned bar
-      // keeps only the line that says what comes after Stop.
+      // One action bar at a time: while the recorder owns the field its own
+      // discard · pause · Stop are the actions.
       expect(save, findsNothing);
       expect(find.byKey(const ValueKey('check-in-cancel')), findsNothing);
-      // No bar at all while recording — not even a reason line: the orb's
-      // caption is the instruction, and a strip holding only words read as
-      // a hollow bar with a second Stop.
+      // No bar at all while recording — not even a reason line: a strip
+      // holding only words read as a hollow bar with a second Stop.
       final recordingBar = find.byKey(
         const ValueKey('check-in-actions-recording'),
       );
@@ -1116,14 +1122,15 @@ void main() {
       expect(tester.getSize(recordingBar), Size.zero);
       expect(saveReason(tester), isNull);
       expect(find.byType(DesignSystemGlassStrip), findsNothing);
-      expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .onPressed,
-        isNull,
-      );
+      // The facts and the details wait under the recorder, as the recording
+      // sheet shows nothing but its take.
+      for (final key in [
+        'check-in-type',
+        'check-in-sentiment',
+        'check-in-more',
+      ]) {
+        expect(find.byKey(ValueKey(key)), findsNothing, reason: key);
+      }
     });
 
     testWidgets('startSpeaking opens the recorder after the first frame '
@@ -1215,9 +1222,9 @@ void main() {
         'She got the job.',
       );
       expect(narrativeText(tester), 'Called on the way home.');
-      // Words that name no start, length or channel move no chip — and the
+      // Words that name no start, length or channel move no fact — and the
       // note's own "Called" is never read.
-      expect(find.text('Duration'), findsOneWidget);
+      expect(rowValue(tester, 'check-in-duration'), 'Not set');
       expect(
         find.byKey(const ValueKey('check-in-dictation-strip')),
         findsNothing,
@@ -1843,21 +1850,14 @@ void main() {
       expect(find.byType(CheckInCaptureForm), findsOneWidget);
     });
 
-    testWidgets('a changed chip alone is a draft: the type picked, the '
+    testWidgets('a changed fact alone is a draft: the type picked, the '
         'close asks', (tester) async {
       await openSheet(tester);
       await tester.tap(find.byKey(const ValueKey('check-in-type')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<DesignSystemChip>(
-              find.byKey(const ValueKey('check-in-type')),
-            )
-            .label,
-        'Call',
-      );
+      expect(rowValue(tester, 'check-in-type'), 'Call');
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
@@ -2317,11 +2317,11 @@ void main() {
       ],
     );
 
-    testWidgets('the Duration chip opens the picker, and a pick sets the '
+    testWidgets('the How long row opens the picker, and a pick sets the '
         'length that is then persisted as the end time', (tester) async {
       await tester.pumpWidget(buildFormWithRanking());
       await tester.pumpAndSettle();
-      expect(find.text('Duration'), findsOneWidget);
+      expect(rowValue(tester, 'check-in-duration'), 'Not set');
 
       await tester.tap(find.byKey(const ValueKey('check-in-duration')));
       await tester.pumpAndSettle();
@@ -2330,8 +2330,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('45 min'), findsOneWidget);
-      expect(find.text('Duration'), findsNothing);
+      expect(rowValue(tester, 'check-in-duration'), '45 min');
 
       await type(tester, 'Words.');
       await tapSave(tester);
@@ -2360,7 +2359,7 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Duration'), findsOneWidget);
+      expect(rowValue(tester, 'check-in-duration'), 'Not set');
     });
 
     testWidgets('a prefilled duration is persisted as the end time, so the '

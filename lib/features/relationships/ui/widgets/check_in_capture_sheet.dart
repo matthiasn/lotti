@@ -12,10 +12,11 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -23,11 +24,12 @@ import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
 import 'package:lotti/features/relationships/model/check_in_dictation_fill.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -36,6 +38,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -385,6 +388,17 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       _duration = picked;
       _hold(CheckInContextField.duration);
     });
+  }
+
+  /// *How it felt*: the page's own sentiment picker, *Clear* included —
+  /// sentiment is optional and the user's alone.
+  Future<void> _pickSentiment() async {
+    final picked = await showCheckInSentimentPicker(
+      context: context,
+      current: _sentiment,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _sentiment = picked.sentiment);
   }
 
   Future<void> _pickType() async {
@@ -761,32 +775,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
     _publish(context, recorderPaused: recorderPaused);
 
-    // Under the composer's fold, one level below its trigger: the same size,
-    // the quieter ink. Editing has no fold, so the labels are the sheet's
-    // field labels — the high ink the app's other form sheets give theirs.
-    //
-    // [gap] is the label's air to its control: `step3` to a field, none to
-    // a row of touch chips, whose 48px targets already hold that much air
-    // above the pill — so every label sits the same visible step above
-    // what it names.
-    Widget sectionLabel(String text, {double? gap}) => Padding(
-      padding: EdgeInsets.only(bottom: gap ?? tokens.spacing.step3),
-      child: Text(
-        text,
-        style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: _isEditing
-              ? tokens.colors.text.highEmphasis
-              : tokens.colors.text.mediumEmphasis,
-        ),
-      ),
-    );
-    Widget caption(String text) => Text(
-      text,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.lowEmphasis,
-      ),
-    );
-
     final prefilledFrom =
         !_isEditing &&
             widget.prefilledInteractionType != null &&
@@ -796,6 +784,50 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         : null;
     final shortcut = _saveShortcut(context);
     final speechIdle = _speechIdle && !_isSaving;
+    final notSet = messages.checkInRowNotSet;
+    final sentiment = _sentiment;
+    final detailsOpen = _isEditing || _moreOpen;
+
+    // The app's create-form grammar (`ProjectCreateForm`): the lead field,
+    // a rule, then one settings row per fact — icon, name, value, chevron —
+    // each opening the same picker the check-in page uses, ruled apart.
+    // Held, not hidden, while the recorder or a save owns the sheet.
+    VoidCallback? live(VoidCallback onTap) => speechIdle ? onTap : null;
+    Widget row({
+      required String key,
+      required IconData icon,
+      required String title,
+      required String value,
+      required VoidCallback onTap,
+      Color? iconColor,
+    }) => DesignSystemSelectionRow(
+      key: ValueKey(key),
+      title: title,
+      subtitle: value,
+      type: DesignSystemSelectionRowType.navigation,
+      leading: Icon(
+        icon,
+        color: iconColor ?? tokens.colors.text.mediumEmphasis,
+      ),
+      onTap: live(onTap),
+    );
+
+    // Each text detail is the design system's own labelled field, unfilled
+    // on the sheet like the note, one `step5` apart.
+    Widget field({
+      required String key,
+      required TextEditingController controller,
+      required String label,
+      String? hint,
+    }) => DesignSystemTextInput(
+      key: ValueKey(key),
+      controller: controller,
+      label: label,
+      semanticsLabel: label,
+      hintText: hint,
+      textCapitalization: TextCapitalization.sentences,
+      filled: false,
+    );
 
     // One scrollable, not two. The modal page already scrolls its child and
     // adds a top bar, padding and the bottom safe area on top of it, so a
@@ -832,127 +864,121 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           onOpenSettings: _openSettings,
           onDismissFailure: _typeInstead,
         ),
-        SizedBox(height: tokens.spacing.step5),
-        CheckInContextChips(
-          type: _interactionType,
-          startedLabel: _startedLabel(context),
-          durationLabel: _duration == Duration.zero
-              ? messages.checkInDurationChip
-              : checkInDurationLabel(context, _duration),
-          enabled: speechIdle,
-          onPickType: _pickType,
-          onPickStart: _pickStart,
-          onPickDuration: _pickDuration,
-        ),
-        // Where the numbers came from (design §5): the offer's channel,
-        // start and elapsed time, and that every one of them is editable.
-        // A composer opened on a call holds all three, so dictation never
-        // fills one beside this strip.
-        if (_dictatedFields.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            messages.checkInSourceDictation,
-            key: const ValueKey('check-in-dictation-strip'),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+        // While a take runs the recorder is the sheet, as the recording
+        // sheet is: the facts and the fold wait under it until it stops,
+        // rather than standing greyed out beneath the one thing in play.
+        if (!recording) ...[
+          // Where the numbers came from (design §5): the offer's channel,
+          // start and elapsed time, and that every one of them is
+          // editable. A composer opened on a call holds all three, so
+          // dictation never fills one beside this strip.
+          if (_dictatedFields.isNotEmpty || prefilledFrom != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              _dictatedFields.isNotEmpty
+                  ? messages.checkInSourceDictation
+                  : prefilledFrom == CheckInInteractionType.call
+                  ? messages.checkInSourceCall
+                  : messages.checkInSourceMessage,
+              key: ValueKey(
+                _dictatedFields.isNotEmpty
+                    ? 'check-in-dictation-strip'
+                    : 'check-in-source-strip',
+              ),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
+          ],
+          SizedBox(height: tokens.spacing.step4),
+          const DesignSystemDivider(),
+          row(
+            key: 'check-in-type',
+            icon: checkInInteractionIcon(_interactionType),
+            title: messages.checkInRowHow,
+            value: checkInInteractionLabel(context, _interactionType),
+            onTap: _pickType,
           ),
-        ],
-        if (prefilledFrom != null) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            prefilledFrom == CheckInInteractionType.call
-                ? messages.checkInSourceCall
-                : messages.checkInSourceMessage,
-            key: const ValueKey('check-in-source-strip'),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          const DesignSystemDivider(),
+          row(
+            key: 'check-in-started',
+            icon: LottiIcons.today,
+            title: messages.checkInRowWhen,
+            value: _startedLabel(context),
+            onTap: _pickStart,
+          ),
+          const DesignSystemDivider(),
+          row(
+            key: 'check-in-duration',
+            icon: LottiIcons.timer,
+            title: messages.checkInRowHowLong,
+            value: _duration == Duration.zero
+                ? notSet
+                : checkInDurationLabel(context, _duration),
+            onTap: _pickDuration,
+          ),
+          const DesignSystemDivider(),
+          // Unset, the value says what the row is for — optional, and never
+          // the agent's — where a caption once floated under a chip row.
+          row(
+            key: 'check-in-sentiment',
+            icon: sentiment == null
+                ? LottiIcons.moodNeutral
+                : sentimentGlyph(sentiment),
+            iconColor: sentiment == null
+                ? null
+                : sentimentColor(tokens, sentiment),
+            title: messages.checkInRowFeeling,
+            value: sentiment == null
+                ? messages.checkInSentimentOptional
+                : checkInSentimentLabel(context, sentiment),
+            onTap: _pickSentiment,
+          ),
+          const DesignSystemDivider(),
+          // A new check-in folds its text details into one more row that
+          // says what it holds; a saved one being edited lays them out, as
+          // they are the reason to open it.
+          if (!_isEditing) ...[
+            DesignSystemSelectionRow(
+              key: const ValueKey('check-in-more'),
+              title: messages.checkInRowDetails,
+              subtitle: _moreCaption(messages),
+              type: DesignSystemSelectionRowType.action,
+              leading: Icon(
+                LottiIcons.label,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              trailing: Icon(
+                _moreOpen ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+                color: tokens.colors.text.mediumEmphasis,
+                size: tokens.spacing.step6,
+              ),
+              semanticLabel: messages.checkInRowDetails,
+              onTap: live(() => setState(() => _moreOpen = !_moreOpen)),
             ),
-          ),
-        ],
-        // Editing a saved check-in lays every section out at once: a
-        // disclosure that opened already, over fields that were the reason
-        // to open the sheet, was a header with nothing to disclose. The
-        // composer keeps the fold, since a new check-in needs none of them.
-        if (!_isEditing) ...[
-          SizedBox(height: tokens.spacing.step3),
-          _MoreHeader(
-            open: _moreOpen,
-            caption: _moreCaption(messages),
-            enabled: speechIdle,
-            onToggle: () => setState(() => _moreOpen = !_moreOpen),
-          ),
-        ],
-        if (_isEditing || _moreOpen) ...[
-          SizedBox(
-            height: _isEditing
-                ? tokens.spacing.sectionGap
-                : tokens.spacing.step4,
-          ),
-          sectionLabel(messages.checkInSentimentLabel, gap: 0),
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
-            children: [
-              for (final sentiment in CheckInSentiment.values)
-                DesignSystemChip(
-                  key: ValueKey('check-in-sentiment-${sentiment.name}'),
-                  label: checkInSentimentLabel(context, sentiment),
-                  // The chosen feeling carries a glyph as well as its fill,
-                  // so the choice reads without colour.
-                  leadingIcon: _sentiment == sentiment
-                      ? LottiIcons.confirm
-                      : null,
-                  selected: _sentiment == sentiment,
-                  // The context row's own chip, so the sheet speaks one chip
-                  // size; the touch variant keeps the full target around it.
-                  size: DesignSystemChipSize.compactPillTouch,
-                  // Tapping the selected sentiment clears it again —
-                  // sentiment is optional, never forced.
-                  onPressed: () => setState(
-                    () =>
-                        _sentiment = _sentiment == sentiment ? null : sentiment,
-                  ),
-                ),
-            ],
-          ),
-          // Tucked under the chips — their targets' air is its gap — so the
-          // line reads as the feeling's own note, not a heading's stray.
-          caption(messages.checkInSentimentOptional),
-          // One section gap between the folded sections, whatever each
-          // holds: the edit sheet opens on all of them at once.
-          SizedBox(height: tokens.spacing.sectionGap),
-
-          // The design system's own input, unfilled like the note above it,
-          // so no field is a darker well punched into the sheet. Every
-          // section wears the same heading, one level under the fold
-          // trigger, so the inputs read as its children.
-          sectionLabel(messages.checkInTopicsLabel),
-          DesignSystemTextInput(
-            key: const ValueKey('check-in-topics'),
-            controller: _topicsController,
-            semanticsLabel: messages.checkInTopicsLabel,
-            hintText: messages.checkInTopicsHint,
-            filled: false,
-          ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          sectionLabel(messages.checkInPayAttentionLabel),
-          DesignSystemTextInput(
-            key: const ValueKey('check-in-pay-attention'),
-            controller: _payAttentionController,
-            semanticsLabel: messages.checkInPayAttentionLabel,
-            textCapitalization: TextCapitalization.sentences,
-            filled: false,
-          ),
-          SizedBox(height: tokens.spacing.sectionGap),
-          sectionLabel(messages.checkInAvoidLabel),
-          DesignSystemTextInput(
-            key: const ValueKey('check-in-avoid'),
-            controller: _avoidController,
-            semanticsLabel: messages.checkInAvoidLabel,
-            textCapitalization: TextCapitalization.sentences,
-            filled: false,
-          ),
+            if (_moreOpen) const DesignSystemDivider(),
+          ],
+          if (detailsOpen) ...[
+            SizedBox(height: tokens.spacing.step5),
+            field(
+              key: 'check-in-topics',
+              controller: _topicsController,
+              label: messages.checkInTopicsLabel,
+              hint: messages.checkInTopicsHint,
+            ),
+            SizedBox(height: tokens.spacing.step5),
+            field(
+              key: 'check-in-pay-attention',
+              controller: _payAttentionController,
+              label: messages.checkInPayAttentionLabel,
+            ),
+            SizedBox(height: tokens.spacing.step5),
+            field(
+              key: 'check-in-avoid',
+              controller: _avoidController,
+              label: messages.checkInAvoidLabel,
+            ),
+          ],
         ],
         _BarSlack(handle: widget.handle),
       ],

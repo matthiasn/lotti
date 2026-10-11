@@ -3490,6 +3490,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInRemoveTake => 'Odebrat nahrávku';
 
   @override
+  String get checkInRowDetails => 'Témata a příště';
+
+  @override
+  String get checkInRowFeeling => 'Jaký to byl pocit';
+
+  @override
+  String get checkInRowHow => 'Jak';
+
+  @override
+  String get checkInRowHowLong => 'Jak dlouho';
+
+  @override
+  String get checkInRowNotSet => 'Nenastaveno';
+
+  @override
+  String get checkInRowWhen => 'Kdy';
+
+  @override
   String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
 
   @override
