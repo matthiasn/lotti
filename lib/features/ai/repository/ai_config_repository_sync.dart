@@ -83,8 +83,6 @@ extension _AiConfigRepositorySync on AiConfigRepository {
       await _sender.owing(
         [model.id],
         () => _counted(() async {
-          // Not newer than the deletion, the model always loses to it here:
-          // the deletion sent is the version held.
           final clock = await _nextClock(model.id);
           if (await _db.applyConfigDeletion(
             model.id,
@@ -92,16 +90,24 @@ extension _AiConfigRepositorySync on AiConfigRepository {
             vectorClock: clock,
           )) {
             _noteHardDeleted(model.id);
+            await _sender.send(
+              model.id,
+              SyncMessage.aiConfigDelete(
+                id: model.id,
+                hardDelete: true,
+                versionStamp: deletion,
+                vectorClock: clock,
+              ),
+            );
+            return;
           }
-          await _sender.send(
-            model.id,
-            SyncMessage.aiConfigDelete(
-              id: model.id,
-              hardDelete: true,
-              versionStamp: deletion,
-              vectorClock: clock,
-            ),
-          );
+          // A newer version of the model landed after the check above. The
+          // deletion lost to it, and its counter joined the held clock, so
+          // the held version is what that counter names: send it, never the
+          // deletion, whose clock would vouch for a version it does not
+          // supersede (ADR 0136).
+          final held = await heldVersion(model.id);
+          if (held != null) await _sender.send(model.id, held.toSyncMessage());
         }),
       );
     }

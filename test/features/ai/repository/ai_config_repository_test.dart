@@ -3566,6 +3566,50 @@ void main() {
       ]);
     });
 
+    test('an orphan deletion that loses to a model edit landing meanwhile '
+        'is not sent; the version held is, with the counter it took', () async {
+      final racing = _RacingAiConfigDb()
+        ..landBeforeDeletion = model.copyWith(name: 'Edited meanwhile');
+      final racingRepository = AiConfigRepository(
+        racing,
+        settingsDb: settings,
+        vectorClockService: clocks,
+      );
+      addTearDown(racingRepository.close);
+      await racingRepository.saveConfig(provider);
+      await racingRepository.saveConfig(model);
+      clearInteractions(mockOutboxService);
+
+      await racingRepository.hardDeleteConfig(
+        'provider-1',
+        fromSync: true,
+        versionStamp: DateTime(2030).millisecondsSinceEpoch,
+        vectorClock: const VectorClock({'peer': 1}),
+      );
+
+      final sent = verify(
+        () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+      ).captured.cast<SyncMessage>().single;
+      expect(
+        sent,
+        isA<SyncAiConfig>()
+            .having(
+              (m) => m.versionStamp,
+              'versionStamp',
+              _RacingAiConfigDb.racerStamp,
+            )
+            .having(
+              (m) => m.vectorClock,
+              'vectorClock',
+              VectorClock({host: 3, 'racer': 1}),
+            ),
+      );
+      expect(
+        await racing.versionStamp('model-1'),
+        _RacingAiConfigDb.racerStamp,
+      );
+    });
+
     test("a received provider deletion sends its orphan model's deletion "
         'under a counter of its own, the version held', () async {
       await repository.saveConfig(provider);
@@ -3589,4 +3633,41 @@ void main() {
       );
     });
   });
+}
+
+/// An [AiConfigDb] where a newer version of a model lands — as a sync apply
+/// would — just before a deletion of it is applied: the race between the
+/// orphan cleanup's check and its write.
+class _RacingAiConfigDb extends AiConfigDb {
+  _RacingAiConfigDb()
+    : super(
+        inMemoryDatabase: true,
+        apiKeyStorage: AiApiKeyStorage.inMemory(),
+      );
+
+  static final int racerStamp = DateTime(2031).millisecondsSinceEpoch;
+
+  AiConfig? landBeforeDeletion;
+
+  @override
+  Future<bool> applyConfigDeletion(
+    String id, {
+    required int stamp,
+    VectorClock? vectorClock,
+  }) async {
+    final newer = landBeforeDeletion;
+    if (newer != null && newer.id == id) {
+      landBeforeDeletion = null;
+      await applyConfigVersion(
+        newer,
+        stamp: racerStamp,
+        vectorClock: const VectorClock({'racer': 1}),
+      );
+    }
+    return super.applyConfigDeletion(
+      id,
+      stamp: stamp,
+      vectorClock: vectorClock,
+    );
+  }
 }
