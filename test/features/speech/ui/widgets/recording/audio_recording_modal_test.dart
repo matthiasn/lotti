@@ -28,6 +28,7 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -39,7 +40,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
@@ -158,7 +158,7 @@ AppPrefs _neverResolvingRecordingStylePrefs() => AppPrefs(
 );
 
 Finder _speechRecognitionCheckbox(WidgetTester tester) => find.widgetWithText(
-  LottiAnimatedCheckbox,
+  RecordingOption,
   AppLocalizations.of(
     tester.element(find.byType(Scaffold).first),
   )!.speechModalTitle,
@@ -430,7 +430,7 @@ void main() {
         find.byKey(const Key('speech_recognition_checkbox')),
         findsNothing,
       );
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
 
     testWidgets('hides when category stream returns null', (tester) async {
@@ -444,7 +444,7 @@ void main() {
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
 
     testWidgets('shows speech recognition checkbox when configured', (
@@ -496,7 +496,7 @@ void main() {
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
-      expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+      expect(find.byType(RecordingOption), findsNothing);
     });
   });
 

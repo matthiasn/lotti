@@ -11,7 +11,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Entry point for the full-screen audio recording sheet.
@@ -205,10 +204,10 @@ class _AudioRecordingModalContentState
           : _buildRecordButton(context, controller, theme),
       // Automatic prompt options (shown when category or linked task may
       // provide automatic prompts, including profile-driven skills).
-      footer:
+      option:
           widget.showTranscriptionOptions &&
               (widget.categoryId != null || widget.linkedId != null)
-          ? _buildAutomaticPromptOptions(context, controller, state, theme)
+          ? _speechRecognitionOption(context, controller, state)
           : null,
     );
   }
@@ -300,11 +299,12 @@ class _AudioRecordingModalContentState
     onPressed: _starting || _terminalActionInProgress ? null : _record,
   );
 
-  Widget _buildAutomaticPromptOptions(
+  /// The speech-recognition toggle for the recorder's header, or nothing
+  /// where no transcription would run.
+  Widget? _speechRecognitionOption(
     BuildContext context,
     AudioRecorderController controller,
     AudioRecorderState state,
-    ThemeData theme,
   ) {
     // Use the extracted provider to compute visibility
     // This makes the logic testable independently from the widget
@@ -315,25 +315,13 @@ class _AudioRecordingModalContentState
       )),
     );
 
-    if (visibility.none) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        children: [
-          if (visibility.speech)
-            LottiAnimatedCheckbox(
-              key: const Key('speech_recognition_checkbox'),
-              label: context.messages.speechModalTitle,
-              value: state.enableSpeechRecognition ?? true,
-              onChanged: (value) {
-                controller.setEnableSpeechRecognition(enable: value);
-              },
-            ),
-        ],
-      ),
+    if (visibility.none) return null;
+    return RecordingOption(
+      key: const Key('speech_recognition_checkbox'),
+      label: context.messages.speechModalTitle,
+      value: state.enableSpeechRecognition ?? true,
+      onChanged: (value) =>
+          controller.setEnableSpeechRecognition(enable: value),
     );
   }
 }

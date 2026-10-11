@@ -200,9 +200,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           Flexible(
             child: Text(
               messages.checkInAudioSavedAsYouGo,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+              style: recordingCaptionStyle(tokens),
             ),
           ),
         ],

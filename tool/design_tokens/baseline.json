@@ -300,7 +300,6 @@
     "lib/widgets/text/entry_text_widget.dart": {"spacing":1},
     "lib/widgets/ui/empty_state_widget.dart": {"spacing":3},
     "lib/widgets/ui/error_state_widget.dart": {"spacing":5,"typography":1},
-    "lib/widgets/ui/form_bottom_bar.dart": {"spacing":2,"color":1},
-    "lib/widgets/ui/lotti_animated_checkbox.dart": {"spacing":3,"typography":2}
+    "lib/widgets/ui/form_bottom_bar.dart": {"spacing":2,"color":1}
   }
 }

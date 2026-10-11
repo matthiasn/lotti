@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -368,12 +369,14 @@ void main() {
       Widget? notice,
       Widget? footer,
       bool announceLevel = false,
+      Widget? option,
     }) => pumpWith(
       tester,
       SingleChildScrollView(
         child: RecordingStage(
           state: _state(status: status),
           showStatus: showStatus,
+          option: option,
           levelSemanticsLabel: 'Recording live',
           announceLevel: announceLevel,
           notice: notice,
@@ -408,6 +411,49 @@ void main() {
       }
     });
 
+    testWidgets('the status and an option share one header line, status at '
+        'its start and the option at its end, in one caption voice', (
+      tester,
+    ) async {
+      await pump(tester, option: const Text('option'));
+      final header = tester.getRect(
+        find.byKey(const ValueKey('recording-stage-header')),
+      );
+      final status = tester.getRect(find.byType(RecordingStatus));
+      final option = tester.getRect(find.text('option'));
+      expect(status.left, closeTo(header.left, 0.5));
+      expect(option.right, closeTo(header.right, 0.5));
+      expect(status.center.dy, closeTo(option.center.dy, 0.5));
+      expect(
+        header.bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byType(RecordingLevelVisualizer)).top + 0.5,
+        ),
+      );
+      final tokens = tester.element(find.text('Recording')).designTokens;
+      expect(
+        tester.widget<Text>(find.text('Recording')).style,
+        recordingCaptionStyle(tokens),
+      );
+    });
+
+    testWidgets('before a take the option keeps the header to itself; with '
+        'neither there is no header', (tester) async {
+      await pump(
+        tester,
+        status: AudioRecorderStatus.stopped,
+        option: const Text('option'),
+      );
+      expect(find.byType(RecordingStatus), findsNothing);
+      expect(find.text('option'), findsOneWidget);
+
+      await pump(tester, status: AudioRecorderStatus.stopped);
+      expect(
+        find.byKey(const ValueKey('recording-stage-header')),
+        findsNothing,
+      );
+    });
+
     testWidgets('says nothing of the take where the host says it, or before '
         'one runs', (tester) async {
       await pump(tester, showStatus: false);
@@ -431,6 +477,45 @@ void main() {
         semantics.dispose();
       });
     }
+  });
+
+  group('RecordingOption', () {
+    testWidgets('a small toggle and its name in the caption voice; the whole '
+        'row flips it, and a reader hears one switch by its name', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final changes = <bool>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          RecordingOption(
+            label: 'Speech recognition',
+            value: true,
+            onChanged: changes.add,
+          ),
+        ),
+      );
+      final toggle = tester.widget<DesignSystemToggle>(
+        find.byType(DesignSystemToggle),
+      );
+      expect(toggle.size, DesignSystemToggleSize.small);
+      expect(toggle.value, isTrue);
+      final tokens = tester.element(find.byType(RecordingOption)).designTokens;
+      expect(
+        tester.widget<Text>(find.text('Speech recognition')).style,
+        recordingCaptionStyle(tokens),
+      );
+
+      await tester.tap(find.text('Speech recognition'));
+      await tester.tap(find.byType(DesignSystemToggle));
+      expect(changes, [false, false]);
+
+      expect(
+        find.bySemanticsLabel('Speech recognition'),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
   });
 
   group('RecordingTransportControls', () {

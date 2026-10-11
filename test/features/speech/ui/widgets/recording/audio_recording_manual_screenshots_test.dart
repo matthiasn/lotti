@@ -16,10 +16,10 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../daily_os_next/screenshot_harness.dart';
@@ -79,7 +79,7 @@ void main() {
         expect(find.byKey(const ValueKey('stop_recording')), findsOneWidget);
         expect(
           find.widgetWithText(
-            LottiAnimatedCheckbox,
+            RecordingOption,
             messages.speechModalTitle,
           ),
           findsOneWidget,

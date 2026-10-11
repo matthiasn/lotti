@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_orb_palette.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/recording_levels.dart';
@@ -21,6 +22,14 @@ import 'package:material_ui/material_ui.dart';
 /// display the user chose on its lit pool, the running time, the level line
 /// under it, and one red Stop between the two quiet controls.
 
+/// The one small voice every line of words on the recorder speaks in —
+/// its status, an option, a reassurance — so the running time is the only
+/// type that stands out.
+TextStyle recordingCaptionStyle(DsTokens tokens) =>
+    tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
 /// The whole recorder, top to bottom: the status line (where the host has
 /// none of its own), the level display, the time, the level line, the
 /// [controls], and an optional [footer] — every gap a design-system step,
@@ -33,6 +42,7 @@ class RecordingStage extends StatelessWidget {
     this.levelSemanticsLabel,
     this.announceLevel = false,
     this.clockSemanticsLabel,
+    this.option,
     this.notice,
     this.footer,
     super.key,
@@ -57,10 +67,14 @@ class RecordingStage extends StatelessWidget {
   final bool announceLevel;
   final String? clockSemanticsLabel;
 
+  /// A setting for the take, such as speech recognition: on the header
+  /// line, across from the status, in the same small voice.
+  final Widget? option;
+
   /// A line under the time, such as a failure the host reports.
   final Widget? notice;
 
-  /// What sits under the controls: an option, or a reassurance.
+  /// What sits under the controls, such as a reassurance.
   final Widget? footer;
 
   @override
@@ -71,12 +85,21 @@ class RecordingStage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showStatus && (live || paused))
-          // Clear of a sheet's drag handle above; the orb's own margin is
-          // the gap below.
+        if ((showStatus && (live || paused)) || option != null)
+          // One header line: the status at its start, the option at its
+          // end, clear of a sheet's drag handle above; the orb's own margin
+          // is the gap below.
           Padding(
             padding: EdgeInsets.only(top: tokens.spacing.step4),
-            child: RecordingStatus(paused: paused),
+            child: Row(
+              key: const ValueKey('recording-stage-header'),
+              children: [
+                if (showStatus && (live || paused))
+                  RecordingStatus(paused: paused),
+                const Spacer(),
+                ?option,
+              ],
+            ),
           ),
         Semantics(
           liveRegion: announceLevel,
@@ -135,9 +158,7 @@ class RecordingStatus extends StatelessWidget {
           paused
               ? messages.audioRecordingStatusPaused
               : messages.sidebarAudioRecordingStatusLabel,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+          style: recordingCaptionStyle(tokens),
         ),
       ],
     );
@@ -342,6 +363,47 @@ class RecordingClock extends StatelessWidget {
         fontWeight: tokens.typography.weight.regular,
         fontFeatures: const [FontFeature.tabularFigures()],
         color: tokens.colors.text.highEmphasis,
+      ),
+    );
+  }
+}
+
+/// An option under the recorder — a small toggle and its name in the
+/// recorder's caption voice, the whole row one tap — quiet enough that it
+/// never competes with the take.
+class RecordingOption extends StatelessWidget {
+  const RecordingOption({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    super.key,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(!value),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DesignSystemToggle(
+            value: value,
+            onChanged: onChanged,
+            semanticsLabel: label,
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: ExcludeSemantics(
+              child: Text(label, style: recordingCaptionStyle(tokens)),
+            ),
+          ),
+        ],
       ),
     );
   }
