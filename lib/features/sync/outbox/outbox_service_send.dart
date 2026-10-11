@@ -8,7 +8,6 @@ mixin _OutboxSend on _OutboxServiceBase {
   // Backoff gate + coalesced-log state — private to the send pipeline.
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
-  DateTime? _failedRecheckAt;
   String? _lastLoggedSendNextState;
   DateTime? _lastLoggedSendNextStateAt;
 
@@ -133,18 +132,13 @@ mixin _OutboxSend on _OutboxServiceBase {
     });
   }
 
-  /// Whether a window has passed since the last drained pass this watchdog
-  /// ran for rows in `error`, and some row still waits there.
+  /// Whether a row that ran out of retries has waited a full window, so a
+  /// drained pass would requeue it. Read from the rows themselves, so each
+  /// is due one window after its own failure.
   Future<bool> _failedRecheckDue() async {
-    final now = clock.now();
-    final last = _failedRecheckAt;
-    if (last != null &&
-        now.difference(last) < SyncTuning.outboxFailedRequeueAfter) {
-      return false;
-    }
-    if (!await _repository.hasFailed()) return false;
-    _failedRecheckAt = now;
-    return true;
+    final oldest = await _repository.oldestRequeueableFailure();
+    return oldest != null &&
+        clock.now().difference(oldest) >= SyncTuning.outboxFailedRequeueAfter;
   }
 
   /// Test seam for [_recordBackoff] — drives the zero/negative

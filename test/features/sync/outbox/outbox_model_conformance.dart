@@ -195,7 +195,8 @@ class _FaultyRepository implements OutboxRepository {
       _inner.requeueFailed(failedBefore: failedBefore);
 
   @override
-  Future<bool> hasFailed() => _inner.hasFailed();
+  Future<DateTime?> oldestRequeueableFailure() =>
+      _inner.oldestRequeueableFailure();
 
   @override
   Future<int> pruneSentOutboxItems({

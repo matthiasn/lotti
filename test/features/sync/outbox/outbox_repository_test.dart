@@ -535,13 +535,31 @@ void main() {
         },
       );
 
-      test('hasFailed reports whether any row waits in error', () async {
+      test('oldestRequeueableFailure is the oldest row at the cap, never a '
+          'row set aside past it', () async {
         await insertRow(status: OutboxStatus.pending);
         await insertRow(status: OutboxStatus.sent);
-        expect(await realRepo.hasFailed(), isFalse);
+        await insertRow(
+          status: OutboxStatus.error,
+          retries: 3,
+          createdAt: DateTime(2023),
+        );
+        expect(await realRepo.oldestRequeueableFailure(), isNull);
 
-        await insertRow(status: OutboxStatus.error, retries: 2);
-        expect(await realRepo.hasFailed(), isTrue);
+        await insertRow(
+          status: OutboxStatus.error,
+          retries: 2,
+          createdAt: DateTime(2024, 2),
+        );
+        await insertRow(
+          status: OutboxStatus.error,
+          retries: 2,
+          createdAt: DateTime(2024, 1, 15),
+        );
+        expect(
+          await realRepo.oldestRequeueableFailure(),
+          DateTime(2024, 1, 15),
+        );
       });
 
       test('releaseOrphanedClaims puts orphaned sending rows back in the '
@@ -766,8 +784,8 @@ void main() {
       });
 
       test(
-        'markFailed flips every row straight to error on its first attempt, '
-        'counting it, and stamps updated_at from clock.now()',
+        'markFailed flips every row straight to error past the retry cap, '
+        'so the requeue leaves it, and stamps updated_at from clock.now()',
         () async {
           final fixedNow = DateTime(2026, 10, 2, 22, 7);
           final freshId = await insertRow(status: OutboxStatus.sending);
@@ -788,11 +806,15 @@ void main() {
 
           final fresh = (await realDb.getOutboxItemById(freshId))!;
           expect(fresh.status, OutboxStatus.error.index);
-          expect(fresh.retries, 1);
+          expect(fresh.retries, 3);
           expect(fresh.updatedAt, fixedNow);
           final retried = (await realDb.getOutboxItemById(retriedId))!;
           expect(retried.status, OutboxStatus.error.index);
-          expect(retried.retries, 2);
+          expect(retried.retries, 3);
+          expect(
+            await realRepo.requeueFailed(failedBefore: DateTime(2100)),
+            0,
+          );
           final untouched = (await realDb.getOutboxItemById(untouchedId))!;
           expect(untouched.status, OutboxStatus.pending.index);
           expect(untouched.retries, 0);

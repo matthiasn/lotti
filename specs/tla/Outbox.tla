@@ -130,7 +130,8 @@ ASSUME Keys \cap SimpleMsgs = {}
 ASSUME RowKeys \subseteq Keys
 ASSUME \A b \in {InOrderEnqueue, UserActions, UserRemoves, NewestByClock,
                  CoverCollapsed, CarryMedia, AbsorbErrorRows,
-                 ReleaseBeforeDrain, QuiesceOnDispose, StampedReceiver} :
+                 ReleaseBeforeDrain, QuiesceOnDispose, StampedReceiver,
+                 RequeueFailed} :
           b \in BOOLEAN
 
 Versions == 1..MaxVersion

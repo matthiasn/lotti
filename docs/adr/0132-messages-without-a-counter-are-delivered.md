@@ -37,12 +37,7 @@ Five paths broke that.
 
 ## Decision
 
-- **`error` is not terminal.** When a drain finds the queue empty, it
-  returns every row that has been in `error` for longer than
-  `SyncTuning.outboxFailedRequeueAfter` (15 minutes) to `pending`, with
-  one attempt left (`OutboxRepository.requeueFailed`). It then drains
-  again at once. While rows wait in `error`, the outbox watchdog runs such
-  a drained pass once per window, so they do not wait for the next write.
+- **`error` is not terminal.** When a drain finds the queue empty, it returns every row that ran out of retries more than `SyncTuning.outboxFailedRequeueAfter` (15 minutes) ago to `pending`, with one attempt left (`OutboxRepository.requeueFailed`). It then drains again at once. The outbox watchdog runs such a drained pass once the oldest of those rows has waited a full window, so they do not wait for the next write. A row refused by size is set aside past the cap and stays failed: the same payload fails the same way every time.
   A row that keeps failing costs one attempt per window, and a bundle that
   failed whole recovers row by row. `Outbox.tla` models this as
   `RequeueFailed`, and `FailedIsRetried` holds in `OutboxRequeue`.

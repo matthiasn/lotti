@@ -422,15 +422,14 @@ void main() {
   });
 
   group('integration: triggers interplay', () {
-    test('with rows in error and nothing pending, the watchdog runs a '
-        'drained pass once per requeue window', () async {
+    test('with nothing pending, the watchdog runs a drained pass once a '
+        'row that ran out of retries has waited a full window', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),
       ).thenAnswer((_) async => true);
       when(
         () => repository.fetchPending(limit: any(named: 'limit')),
       ).thenAnswer((_) async => const <OutboxItem>[]);
-      when(repository.hasFailed).thenAnswer((_) async => true);
       final matrixService = stubMatrixService(loginState: LoginState.loggedIn);
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       when(
@@ -438,6 +437,11 @@ void main() {
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
+        // The row failed as the service started.
+        final failedAt = clock.now();
+        when(
+          repository.oldestRequeueableFailure,
+        ).thenAnswer((_) async => failedAt);
         final svc = MatrixOutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
@@ -453,7 +457,7 @@ void main() {
           matrixService: matrixService,
           postDrainSettle: Duration.zero,
         );
-        void expectRechecks(int n) => verify(
+        void expectRechecks(Matcher n) => verify(
           () => loggingService.log(
             LogDomain.sync,
             'watchdog: failed rows → drained pass',
@@ -462,14 +466,20 @@ void main() {
         ).called(n);
 
         async
-          ..elapse(watchdogInterval * 3)
+          ..elapse(SyncTuning.outboxFailedRequeueAfter - watchdogInterval)
           ..flushMicrotasks();
-        expectRechecks(1);
+        verifyNever(
+          () => loggingService.log(
+            LogDomain.sync,
+            'watchdog: failed rows → drained pass',
+            subDomain: 'watchdog',
+          ),
+        );
 
         async
-          ..elapse(SyncTuning.outboxFailedRequeueAfter)
+          ..elapse(watchdogInterval * 2)
           ..flushMicrotasks();
-        expectRechecks(1);
+        expectRechecks(greaterThan(0));
         verify(() => processor.processQueue()).called(greaterThan(0));
 
         unawaited(svc.dispose());

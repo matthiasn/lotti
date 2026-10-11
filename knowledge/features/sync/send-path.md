@@ -333,7 +333,7 @@ stateDiagram-v2
     sending --> sending: expired lease reclaimed
     error --> sending: collapsed into a newer version's send
         error --> pending: manual Retry / Retry all (re-queue)
-    error --> pending: drained outbox, failed 15 min ago (requeueFailed, one attempt)
+    error --> pending: drained outbox, out of retries 15 min ago (requeueFailed, one attempt)
 
     sent --> [*]: pruned after 7 days
     error --> [*]: Remove (won't sync)
@@ -348,10 +348,7 @@ row can be sent again: a duplicate, never a loss.
 **`error` is not terminal.** Settings, flags, preferences and AI configuration
 carry no sequence counter, so no backfill recovers a row of theirs that ran out
 of retries — a few minutes offline used to strand it until someone tapped
-Retry. Each time the processor finds the queue drained, it hands every `error`
-row last touched more than `SyncTuning.outboxFailedRequeueAfter` (15 minutes)
-ago back to `pending` with one attempt left
-(`OutboxRepository.requeueFailed`), and drains again at once. A row that keeps
+Retry. Each time the processor finds the queue drained, it hands every row that ran out of retries and failed more than `SyncTuning.outboxFailedRequeueAfter` (15 minutes) ago back to `pending` with one attempt left (`OutboxRepository.requeueFailed`), and drains again at once. The watchdog runs such a pass once the oldest of them has waited that long. A row refused by size is set aside past the cap (`markFailed`) and stays failed, since the same payload fails the same way every time. A row that keeps
 failing costs one attempt per window; a bundle that failed whole recovers row
 by row the same way.
 

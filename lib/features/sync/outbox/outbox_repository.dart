@@ -87,10 +87,11 @@ abstract class OutboxRepository {
   /// individual sends).
   Future<void> markRetryBatch(List<OutboxItem> items);
 
-  /// Flip every row in [items] straight to `error`, counting the attempt.
+  /// Flip every row in [items] straight to `error`, past the retry cap.
   /// Used when the transport rejected the send by size: the same payload
   /// fails the same way every time, so retrying it to the cap only delays
-  /// the head of the queue. The rows stay visible in the outbox monitor.
+  /// the head of the queue, and [requeueFailed] leaves it alone. The rows
+  /// stay visible in the outbox monitor.
   Future<void> markFailed(List<OutboxItem> items);
 
   /// Return every row in [items] to the queue without counting an attempt —
@@ -100,16 +101,18 @@ abstract class OutboxRepository {
   /// bundle's failure says nothing about any single row.
   Future<void> releaseClaims(List<OutboxItem> items);
 
-  /// Returns every `error` row last touched before [failedBefore] to the
-  /// queue for one more attempt: a failure sends it straight back to
-  /// `error`. Messages without a sequence counter — settings, flags, AI
-  /// configuration — have no backfill to recover them, so a row that
-  /// failed while the device was offline must not stay failed for good.
-  /// Returns the number of rows requeued.
+  /// Returns every row that ran out of retries — `error` at exactly the
+  /// cap — and was last touched before [failedBefore] to the queue for one
+  /// more attempt: a failure sends it straight back to `error`. Messages
+  /// without a sequence counter — settings, flags, AI configuration — have
+  /// no backfill to recover them, so a row that failed while the device was
+  /// offline must not stay failed for good. A row [markFailed] set aside is
+  /// past the cap and stays. Returns the number of rows requeued.
   Future<int> requeueFailed({required DateTime failedBefore});
 
-  /// Whether any row is in `error`, waiting for [requeueFailed].
-  Future<bool> hasFailed();
+  /// When the longest-waiting row [requeueFailed] would take last failed,
+  /// or null when none waits.
+  Future<DateTime?> oldestRequeueableFailure();
 
   /// Delete rows with `status = sent` older than [retention]. Never
   /// touches `pending`, `sending`, or `error` — error rows are kept
@@ -285,7 +288,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
           _database.outbox,
           OutboxCompanion(
             status: Value(OutboxStatus.error.index),
-            retries: Value(item.retries + 1),
+            retries: Value(maxRetries + 1),
             updatedAt: Value(now),
           ),
           where: (t) => t.id.equals(item.id),
@@ -321,6 +324,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
       (_database.update(_database.outbox)..where(
             (t) =>
                 t.status.equals(OutboxStatus.error.index) &
+                t.retries.equals(maxRetries) &
                 t.updatedAt.isSmallerThanValue(failedBefore),
           ))
           .write(
@@ -332,13 +336,18 @@ class DatabaseOutboxRepository implements OutboxRepository {
           );
 
   @override
-  Future<bool> hasFailed() async {
+  Future<DateTime?> oldestRequeueableFailure() async {
     final row =
         await (_database.select(_database.outbox)
-              ..where((t) => t.status.equals(OutboxStatus.error.index))
+              ..where(
+                (t) =>
+                    t.status.equals(OutboxStatus.error.index) &
+                    t.retries.equals(maxRetries),
+              )
+              ..orderBy([(t) => OrderingTerm(expression: t.updatedAt)])
               ..limit(1))
             .getSingleOrNull();
-    return row != null;
+    return row?.updatedAt;
   }
 
   @override

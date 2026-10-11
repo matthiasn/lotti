@@ -1634,9 +1634,7 @@ drain at a time claims a bundle and collapses each entity's rows into one
 send of its newest version by clock, covering every other counter and
 carrying the attachment if any collapsed row owed it. Every collapsed row is
 then marked sent, or all of them are retried up to `maxRetries`, then
-`error`. A drained queue gives every `error` row one more attempt, and the
-service's watchdog runs such a pass while rows wait there, so no failure is
-final (the 15-minute window between passes is not modelled). A send also
+`error`. A drained queue gives every row that ran out of retries one more attempt, and the service's watchdog runs such a pass while rows wait there, so no failure is final (the 15-minute window between passes is not modelled, nor the size refusal that sets a row aside for good). A send also
 settles the entity's failed rows it supersedes. Sends
 fail, time out and land anyway, marks throw, the process dies between the
 send and the mark, claim leases run out, the same profile is torn down and
