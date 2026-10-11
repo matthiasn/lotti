@@ -2110,7 +2110,6 @@
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
-  "checkInAudioSavedAsYouGo": "Audio saved to this device as you go",
   "checkInAvoidLabel": "Better to avoid",
   "checkInComposerSubtitle": "with {name} · last spoke {day}",
   "@checkInComposerSubtitle": {

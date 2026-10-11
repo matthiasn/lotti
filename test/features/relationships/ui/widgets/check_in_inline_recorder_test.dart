@@ -105,7 +105,6 @@ void main() {
     expect(recorder.categoryIds, ['category-7']);
     expect(recorder.modalVisibleLog, [true]);
     expect(failed, isEmpty);
-    expect(find.text('Audio saved to this device as you go'), findsOneWidget);
   });
 
   group("the recording sheet's anatomy", () {

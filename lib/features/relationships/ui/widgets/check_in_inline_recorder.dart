@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -154,7 +153,6 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final messages = context.messages;
     final state = ref.watch(audioRecorderControllerProvider);
     final paused = state.status == AudioRecorderStatus.paused;
@@ -190,23 +188,6 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
         onDiscard: _discard,
         onTogglePause: () => _togglePause(state.status),
         onStop: _stop,
-      ),
-      footer: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            LottiIcons.confirmCircled,
-            size: IconSizes.s,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Flexible(
-            child: Text(
-              messages.checkInAudioSavedAsYouGo,
-              style: recordingCaptionStyle(tokens),
-            ),
-          ),
-        ],
       ),
     );
   }

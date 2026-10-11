@@ -1407,7 +1407,6 @@
   "chatInputStopRealtime": "Opriți transcrierea în timp real",
   "chatInputStopTranscribe": "Opriți și transcrieți",
   "chatInputTranscriptionFailed": "Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.",
-  "checkInAudioSavedAsYouGo": "Sunetul se salvează pe acest dispozitiv pe măsură ce înregistrați",
   "checkInAvoidLabel": "De evitat",
   "checkInComposerSubtitle": "cu {name} · ultima discuție {day}",
   "checkInComposerSubtitleNoContact": "cu {name} · încă niciun check-in",

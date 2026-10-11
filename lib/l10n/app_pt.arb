@@ -1628,7 +1628,6 @@
   "chatInputStopRealtime": "Interromper a transcrição ao vivo",
   "chatInputStopTranscribe": "Pare e transcreva",
   "chatInputTranscriptionFailed": "A gravação foi captada, mas a transcrição falhou. Tenta de novo.",
-  "checkInAudioSavedAsYouGo": "O áudio fica guardado neste dispositivo à medida que gravas",
   "checkInAvoidLabel": "Melhor evitar",
   "checkInComposerSubtitle": "com {name} · última conversa {day}",
   "checkInComposerSubtitleNoContact": "com {name} · ainda sem check-in",

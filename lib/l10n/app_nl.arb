@@ -1628,7 +1628,6 @@
   "chatInputStopRealtime": "Stop live transcriptie",
   "chatInputStopTranscribe": "Stoppen en transcriberen",
   "chatInputTranscriptionFailed": "De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.",
-  "checkInAudioSavedAsYouGo": "Audio wordt tijdens de opname op dit apparaat opgeslagen",
   "checkInAvoidLabel": "Beter vermijden",
   "checkInComposerSubtitle": "met {name} · laatst gesproken {day}",
   "checkInComposerSubtitleNoContact": "met {name} · nog geen check-in",

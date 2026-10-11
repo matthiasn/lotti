@@ -1407,7 +1407,6 @@
   "chatInputStopRealtime": "Live-Transkription beenden",
   "chatInputStopTranscribe": "Stoppen und transkribieren",
   "chatInputTranscriptionFailed": "Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.",
-  "checkInAudioSavedAsYouGo": "Audio wird laufend auf diesem Gerät gespeichert",
   "checkInAvoidLabel": "Besser vermeiden",
   "checkInComposerSubtitle": "mit {name} · zuletzt gesprochen {day}",
   "checkInComposerSubtitleNoContact": "mit {name} · noch kein Check-in",

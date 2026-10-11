@@ -3279,10 +3279,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'Ljudet sparas på den här enheten medan du spelar in';
-
-  @override
   String get checkInAvoidLabel => 'Bäst att undvika';
 
   @override

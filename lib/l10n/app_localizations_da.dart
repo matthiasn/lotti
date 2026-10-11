@@ -3270,9 +3270,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
-  String get checkInAudioSavedAsYouGo => 'Lyden gemmes løbende på denne enhed';
-
-  @override
   String get checkInAvoidLabel => 'Bedst at undgå';
 
   @override

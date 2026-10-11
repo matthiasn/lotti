@@ -1407,7 +1407,6 @@
   "chatInputStopRealtime": "Detener transcripción en vivo",
   "chatInputStopTranscribe": "Detener y transcribir",
   "chatInputTranscriptionFailed": "La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.",
-  "checkInAudioSavedAsYouGo": "El audio se guarda en este dispositivo sobre la marcha",
   "checkInAvoidLabel": "Mejor evitar",
   "checkInComposerSubtitle": "con {name} · último contacto {day}",
   "checkInComposerSubtitleNoContact": "con {name} · aún sin check-in",

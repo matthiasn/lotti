@@ -3319,10 +3319,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'L’audio est enregistré sur cet appareil au fur et à mesure';
-
-  @override
   String get checkInAvoidLabel => 'À éviter';
 
   @override

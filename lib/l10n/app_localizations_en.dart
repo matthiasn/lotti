@@ -3256,9 +3256,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The recording was captured, but transcribing it failed. Please try again.';
 
   @override
-  String get checkInAudioSavedAsYouGo => 'Audio saved to this device as you go';
-
-  @override
   String get checkInAvoidLabel => 'Better to avoid';
 
   @override

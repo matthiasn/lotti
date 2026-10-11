@@ -3303,10 +3303,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'O áudio fica guardado neste dispositivo à medida que gravas';
-
-  @override
   String get checkInAvoidLabel => 'Melhor evitar';
 
   @override

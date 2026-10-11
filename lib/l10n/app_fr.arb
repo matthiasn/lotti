@@ -1407,7 +1407,6 @@
   "chatInputStopRealtime": "Arrêter la transcription en direct",
   "chatInputStopTranscribe": "Arrêter et transcrire",
   "chatInputTranscriptionFailed": "L'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.",
-  "checkInAudioSavedAsYouGo": "L’audio est enregistré sur cet appareil au fur et à mesure",
   "checkInAvoidLabel": "À éviter",
   "checkInComposerSubtitle": "avec {name} · dernier échange {day}",
   "checkInComposerSubtitleNoContact": "avec {name} · aucun point pour l’instant",

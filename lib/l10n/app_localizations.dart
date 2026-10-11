@@ -5514,12 +5514,6 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
-  /// No description provided for @checkInAudioSavedAsYouGo.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio saved to this device as you go'**
-  String get checkInAudioSavedAsYouGo;
-
   /// No description provided for @checkInAvoidLabel.
   ///
   /// In en, this message translates to:

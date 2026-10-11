@@ -64,9 +64,10 @@ Top to bottom:
   one button named *Stop* whose value is the time. Taps are felt (a firmer
   one on Stop) when the user's haptics switch is on. Before a take starts
   the sheet puts its record button in this slot.
-- **A footer** — the sheet's *Transcribe* toggle (`RecordingOption`: the
-  caption, then a small design-system toggle), or the check-in's *audio
-  saved as you go*.
+- **A footer**, where a host has a setting for the take — the sheet's
+  *Transcribe* toggle (`RecordingOption`: the caption, then a small
+  design-system toggle). The check-in recorder has none: a line reassuring
+  that audio is saved as you go said nothing the user had to act on.
 
 The pictures (orb or meter, and the level line) are one semantics label the
 host names — on the level line when `compact` leaves it the only picture;

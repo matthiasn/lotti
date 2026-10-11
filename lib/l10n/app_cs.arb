@@ -1414,7 +1414,6 @@
   "chatInputStopRealtime": "Zastavit živý přepis",
   "chatInputStopTranscribe": "Zastavit a přepsat",
   "chatInputTranscriptionFailed": "Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.",
-  "checkInAudioSavedAsYouGo": "Zvuk se průběžně ukládá na toto zařízení",
   "checkInAvoidLabel": "Raději se vyhnout",
   "checkInComposerSubtitle": "s {name} · naposledy {day}",
   "checkInComposerSubtitleNoContact": "s {name} · zatím žádný check-in",

@@ -1629,7 +1629,6 @@
   "chatInputStopRealtime": "Stop trascrizione live",
   "chatInputStopTranscribe": "Fermati e trascrivi",
   "chatInputTranscriptionFailed": "La registrazione è stata acquisita, ma la trascrizione non è riuscita. Riprova.",
-  "checkInAudioSavedAsYouGo": "L’audio viene salvato su questo dispositivo man mano",
   "checkInAvoidLabel": "Meglio evitare",
   "checkInComposerSubtitle": "con {name} · ultimo contatto {day}",
   "checkInComposerSubtitleNoContact": "con {name} · ancora nessun check-in",

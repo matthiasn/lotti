@@ -3298,10 +3298,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'Audio wird laufend auf diesem Gerät gespeichert';
-
-  @override
   String get checkInAvoidLabel => 'Besser vermeiden';
 
   @override

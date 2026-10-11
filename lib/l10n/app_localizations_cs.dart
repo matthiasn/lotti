@@ -3313,10 +3313,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'Zvuk se průběžně ukládá na toto zařízení';
-
-  @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
 
   @override

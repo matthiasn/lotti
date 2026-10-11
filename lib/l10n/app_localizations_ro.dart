@@ -3325,10 +3325,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'Sunetul se salvează pe acest dispozitiv pe măsură ce înregistrați';
-
-  @override
   String get checkInAvoidLabel => 'De evitat';
 
   @override

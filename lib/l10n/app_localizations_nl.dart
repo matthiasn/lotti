@@ -3283,10 +3283,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
 
   @override
-  String get checkInAudioSavedAsYouGo =>
-      'Audio wordt tijdens de opname op dit apparaat opgeslagen';
-
-  @override
   String get checkInAvoidLabel => 'Beter vermijden';
 
   @override

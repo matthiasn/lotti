@@ -2030,9 +2030,8 @@ the level visualizer the user chose (`RecordingLevelVisualizer`: the orb, or
 the VU meter — left out in the check-in page's dock, which is `compact`),
 the level line, the transport row (`RecordingTransportControls`: discard ✕
 asking in this surface's words, pause ⏸ / resume ▶, and the red Stop pill
-carrying the running time, read to assistive technology in words), and the
-line saying audio is on disk as it goes, where the sheet keeps its one
-option. Every control is inert — no
+carrying the running time, read to assistive technology in words) — and no
+footer, where the sheet keeps its one option. Every control is inert — no
 tap — before `record` has landed, after a refused start, and while a stop
 or a discard is in flight. A Capture-shaped recorder — the Daily OS orb
 doubling as Stop over Discard · Pause in words — read as a second app's
