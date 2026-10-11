@@ -1660,7 +1660,12 @@ class MockQueueMarkerSeeder extends Mock implements QueueMarkerSeeder {}
 
 class MockBridgeCoordinator extends Mock implements BridgeCoordinator {}
 
-class MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
+class MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {
+  // A mocked event decoded whole; a partly undecodable one is a real
+  // `PreparedSyncEvent.forTesting`.
+  @override
+  bool get hasUndecodableParts => false;
+}
 
 /// Unlike [MockSyncEventProcessor] — whose `prepare`/`apply` are concrete
 /// no-op overrides and therefore NOT interceptable by `when(...)` — this is a

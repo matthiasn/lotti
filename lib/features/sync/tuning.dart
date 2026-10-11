@@ -55,6 +55,10 @@ class SyncTuning {
   static const Duration outboxRetryDelay = Duration(seconds: 5);
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops
+
+  /// How long a row stays in `error` before a drained outbox gives it one
+  /// more attempt (`OutboxRepository.requeueFailed`).
+  static const Duration outboxFailedRequeueAfter = Duration(minutes: 15);
   static const Duration outboxSendTimeout = Duration(seconds: 20); // Matrix RTT
   /// Lease duration for an atomically claimed outbox row. If the claiming
   /// worker crashes mid-send and does not release the row (markSent/markRetry),

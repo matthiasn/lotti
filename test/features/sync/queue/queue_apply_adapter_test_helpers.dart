@@ -19,7 +19,12 @@ import 'package:mocktail/mocktail.dart';
 class AdapterMockSyncEventProcessor extends Mock
     implements SyncEventProcessor {}
 
-class AdapterMockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
+class AdapterMockPreparedSyncEvent extends Mock implements PreparedSyncEvent {
+  // Every mocked event decoded whole; a test of a partly undecodable one
+  // builds a real `PreparedSyncEvent.forTesting`.
+  @override
+  bool get hasUndecodableParts => false;
+}
 
 enum GeneratedAdapterPrepareOutcome {
   ready,
@@ -71,7 +76,7 @@ class GeneratedAdapterScenario {
       case GeneratedAdapterPrepareOutcome.nullPrepared:
         return ApplyOutcome.undecodable;
       case GeneratedAdapterPrepareOutcome.permanentThrow:
-        return ApplyOutcome.permanentSkip;
+        return ApplyOutcome.undecodable;
       case GeneratedAdapterPrepareOutcome.pendingDescriptor:
       case GeneratedAdapterPrepareOutcome.pendingPath:
         return ApplyOutcome.pendingAttachment;

@@ -404,6 +404,7 @@ class PreparedSyncEvent {
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
+    this.hasUndecodableParts = false,
   });
 
   PreparedSyncEvent._({
@@ -418,6 +419,7 @@ class PreparedSyncEvent {
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
+    this.hasUndecodableParts = false,
   });
 
   final Event event;
@@ -475,4 +477,10 @@ class PreparedSyncEvent {
   /// apply can recurse through the existing per-type pipeline. Null means
   /// the bundle payload could not be resolved and apply will skip it.
   final PreparedOutboxSyncBundle? resolvedOutboxBundle;
+
+  /// Whether part of the event — an outbox bundle's manifest, or one of
+  /// its children — did not decode in this build. What did decode is
+  /// applied, and the queue then skips the event as undecodable, so its
+  /// next start applies it whole again (every child tolerates replay).
+  final bool hasUndecodableParts;
 }

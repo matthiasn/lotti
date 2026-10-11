@@ -422,6 +422,71 @@ void main() {
   });
 
   group('integration: triggers interplay', () {
+    test('with nothing pending, the watchdog runs a drained pass once a '
+        'row that ran out of retries has waited a full window', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => const <OutboxItem>[]);
+      final matrixService = stubMatrixService(loginState: LoginState.loggedIn);
+      when(() => matrixService.isLoggedIn()).thenReturn(true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
+
+      fakeAsync((async) {
+        // The row failed as the service started.
+        final failedAt = clock.now();
+        when(
+          repository.oldestRequeueableFailure,
+        ).thenAnswer((_) async => failedAt);
+        final svc = MatrixOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+          matrixService: matrixService,
+          postDrainSettle: Duration.zero,
+        );
+        void expectRechecks(Matcher n) => verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            'watchdog: failed rows → drained pass',
+            subDomain: 'watchdog',
+          ),
+        ).called(n);
+
+        async
+          ..elapse(SyncTuning.outboxFailedRequeueAfter - watchdogInterval)
+          ..flushMicrotasks();
+        verifyNever(
+          () => loggingService.log(
+            LogDomain.sync,
+            'watchdog: failed rows → drained pass',
+            subDomain: 'watchdog',
+          ),
+        );
+
+        async
+          ..elapse(watchdogInterval * 2)
+          ..flushMicrotasks();
+        expectRechecks(greaterThan(0));
+        verify(() => processor.processQueue()).called(greaterThan(0));
+
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
     test('watchdog does not duplicate work when dbNudge already active', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),

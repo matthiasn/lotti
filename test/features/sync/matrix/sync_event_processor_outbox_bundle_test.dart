@@ -1063,6 +1063,20 @@ void main() {
           expect(resolved, isNotNull);
           expect(resolved!.children, hasLength(1));
           expect(resolved.children.single, isA<SyncAiConfigDelete>());
+
+          // The entry that did not decode marks the bundle for another
+          // pass at the next start, after its good child applied.
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              const SyncOutboxBundle(
+                children: [],
+                jsonPath: bundleRelativePath,
+              ),
+            ),
+          );
+          final prepared = await processor.prepare(event: event);
+          expect(prepared!.resolvedOutboxBundle!.children, hasLength(1));
+          expect(prepared.hasUndecodableParts, isTrue);
           // The envelope-parse error path captured an exception under
           // its own subDomain — at least once, exactly for the rotten
           // runtimeType entry above.
@@ -1073,7 +1087,7 @@ void main() {
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
               subDomain: 'processor.resolve.outboxBundle.envelopeParse',
             ),
-          ).called(1);
+          ).called(2);
         },
       );
     });

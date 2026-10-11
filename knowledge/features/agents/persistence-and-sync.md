@@ -523,8 +523,9 @@ in practice, because an unrecognized generation would be rejected as poison
 rather than repaired. This covers both persisted rows and inline or file-backed
 sync payloads without mutating the decoded input map. An absent field paired with any other id throws a bounded
 `FormatException`; `SyncEventProcessor.prepare` treats that payload as
-unrecoverable, and `QueueApplyAdapter` returns a `permanentSkip` instead of
-spending the retry budget on deterministic poison data.
+unrecoverable, and `QueueApplyAdapter` skips it as `undecodable` instead of
+spending the retry budget on deterministic poison data; the queue tries it
+again at its next start, under the resurrection cap.
 
 The public `AgentDomainEntity.fromJson` factory remains expression-bodied and
 delegates those repairs and validations to a private decoder helper. Freezed

@@ -650,7 +650,8 @@ void main() {
   });
 
   test(
-    'generic exception during prepare maps to permanentSkip',
+    'generic exception during prepare maps to undecodable, which the '
+    'queue tries again at its next start',
     () async {
       final entry = hBuildEntry(
         eventId: r'$preparePermanent',
@@ -662,13 +663,65 @@ void main() {
       ).thenThrow(StateError('logic bug'));
 
       final outcome = await build().bind()(entry, room);
-      expect(outcome, ApplyOutcome.permanentSkip);
+      expect(outcome, ApplyOutcome.undecodable);
       verify(
         () => logging.error(
           any<LogDomain>(),
           any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test('a rate limit or server error during prepare is retriable', () async {
+    final entry = hBuildEntry(
+      eventId: r'$prepareRateLimited',
+      roomId: '!r',
+      originTsMs: 1,
+    );
+    when(() => processor.prepare(event: any(named: 'event'))).thenThrow(
+      MatrixException.fromJson(const {
+        'errcode': 'M_LIMIT_EXCEEDED',
+        'error': 'Too many requests',
+      }),
+    );
+
+    expect(await build().bind()(entry, room), ApplyOutcome.retriable);
+  });
+
+  test(
+    'an event with an undecodable part applies what decoded, then is '
+    'skipped as undecodable so the next start applies it whole again',
+    () async {
+      final entry = hBuildEntry(
+        eventId: r'$partlyUndecodable',
+        roomId: '!r',
+        originTsMs: 1,
+      );
+      final prepared = PreparedSyncEvent.forTesting(
+        event: MockEvent(),
+        syncMessage: const SyncMessage.outboxBundle(children: []),
+        hasUndecodableParts: true,
+      );
+      when(
+        () => processor.prepare(event: any(named: 'event')),
+      ).thenAnswer((_) async => prepared);
+      when(
+        () => processor.apply(
+          prepared: any(named: 'prepared'),
+          journalDb: journalDb,
+          afterCommit: any(named: 'afterCommit'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      expect(await build().bind()(entry, room), ApplyOutcome.undecodable);
+      verify(
+        () => processor.apply(
+          prepared: prepared,
+          journalDb: journalDb,
+          afterCommit: any(named: 'afterCommit'),
         ),
       ).called(1);
     },

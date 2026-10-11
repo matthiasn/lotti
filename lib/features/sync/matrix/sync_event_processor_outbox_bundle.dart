@@ -145,6 +145,9 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     // round-trip even at the [SyncTuning.outboxBundleMaxSize] cap.
     final parsedEntries = <_OutboxBundleManifestEntry>[];
     final journalEntityIds = <String>{};
+    // An entry from a newer build is tried again at the next start, once
+    // this build may have learned it, rather than acknowledged unapplied.
+    var incomplete = false;
     for (final raw in rawEntries) {
       if (raw is! Map<String, dynamic>) continue;
       final envelopeJson = raw['envelope'];
@@ -153,6 +156,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       try {
         envelope = SyncMessage.fromJson(envelopeJson);
       } catch (e, st) {
+        incomplete = true;
         _loggingService.error(
           LogDomain.sync,
           e,
@@ -324,6 +328,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     return ResolvedOutboxSyncBundle(
       children: children,
       jsonPath: jp,
+      incomplete: incomplete,
     );
   }
 }

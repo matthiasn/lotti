@@ -108,12 +108,17 @@ mixin _OutboxSend on _OutboxServiceBase {
           limit: 1,
         )).isNotEmpty;
         final idleQueue = _clientRunner.queueSize == 0;
-        if (hasPending && loggedIn && idleQueue) {
-          _loggingService.log(
-            LogDomain.sync,
-            'watchdog: pending+loggedIn idleQueue → enqueue',
-            subDomain: 'watchdog',
-          );
+        // A drained pass gives rows failed a window ago one more attempt
+        // (OutboxProcessor), so failed rows never wait for the next write.
+        final reason = !idleQueue
+            ? null
+            : hasPending
+            ? 'watchdog: pending+loggedIn idleQueue → enqueue'
+            : await _failedRecheckDue()
+            ? 'watchdog: failed rows → drained pass'
+            : null;
+        if (reason != null) {
+          _loggingService.log(LogDomain.sync, reason, subDomain: 'watchdog');
           unawaited(enqueueNextSendRequest(delay: Duration.zero));
         }
       } catch (e, st) {
@@ -125,6 +130,15 @@ mixin _OutboxSend on _OutboxServiceBase {
         );
       }
     });
+  }
+
+  /// Whether a row that ran out of retries has waited a full window, so a
+  /// drained pass would requeue it. Read from the rows themselves, so each
+  /// is due one window after its own failure.
+  Future<bool> _failedRecheckDue() async {
+    final oldest = await _repository.oldestRequeueableFailure();
+    return oldest != null &&
+        clock.now().difference(oldest) >= SyncTuning.outboxFailedRequeueAfter;
   }
 
   /// Test seam for [_recordBackoff] — drives the zero/negative

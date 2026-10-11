@@ -528,7 +528,7 @@ entry rather than the sum. With `inboundWorkerBatchSize = 1` there is nothing to
 parallelise at runtime; the hook remains for batch sizes above 1.
 
 Prepared payloads are cached by `eventId` and consumed one at a time by apply.
-An event that does not decode as a sync message this build knows maps to `undecodable`, skipped under that reason; the queue resurrects those rows each time it starts, so an updated build applies them. Outcomes caught at prepare time (`permanentSkip`, `undecodable`, `pendingAttachment`,
+An event that does not decode as a sync message this build knows maps to `undecodable`, skipped under that reason; the queue resurrects those rows each time it starts, so an updated build applies them. So does any other failure inside prepare that is not an `IOException` — a payload field a newer build added, a logic error — rather than a `permanentSkip`: the resurrection cap (50) bounds one that never applies. A `MatrixException` there (a rate limit, a server error on the download) is `retriable`. An outbox bundle with an undecodable part — a manifest this build cannot read, or a child that failed to decode or prepare — applies the children that did decode and is then skipped as `undecodable` (`PreparedSyncEvent.hasUndecodableParts`), so the next start applies it whole again; every child tolerates the replay. Outcomes caught at prepare time (`permanentSkip`, `undecodable`, `pendingAttachment`,
 `pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 

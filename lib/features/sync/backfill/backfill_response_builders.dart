@@ -7,11 +7,30 @@ part of 'backfill_response_handler.dart';
 /// the handler's private deps and are invoked from its public handle* methods.
 extension _BackfillResponseBuilders on BackfillResponseHandler {
   /// Send a "deleted" backfill response indicating the payload no longer exists.
+  ///
+  /// Only from a device that held it: a relay whose row for the counter is
+  /// still `missing` or `requested` only heard of it, and `deleted` is
+  /// terminal at the requester, so two devices that both lost a payload
+  /// would close each other's gap for good. Such a relay stays silent and
+  /// the requester keeps asking the others.
   Future<void> _sendDeletedResponse({
     required String hostId,
     required int counter,
     required SyncSequencePayloadType payloadType,
   }) async {
+    final row = await _sequenceLogService.getEntryByHostAndCounter(
+      hostId,
+      counter,
+    );
+    if (row != null &&
+        (row.status == SyncSequenceStatus.missing.index ||
+            row.status == SyncSequenceStatus.requested.index)) {
+      _trace(
+        'deleted withheld: never held hostId=$hostId counter=$counter',
+        subDomain: 'backfill.deletedWithheld',
+      );
+      return;
+    }
     await _outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
         hostId: hostId,
