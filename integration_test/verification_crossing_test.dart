@@ -318,15 +318,17 @@ void main() {
         );
         expect(withdrawn[yielder]!.canceled, isTrue);
 
-        // The peer sees the withdrawn request cancelled too, so nothing is
-        // left waiting on it once its sheet would show it.
-        final keptBack = deferred.values.where(
-          (request) =>
-              request.transactionId == withdrawn[yielder]!.transactionId,
-        );
-        for (final request in keptBack) {
-          await waitUntil(() => request.canceled, timeout: timeout);
-        }
+        // The peer kept the withdrawn request back, and sees it cancelled
+        // too, so nothing is left waiting on it once its sheet would show it.
+        // Exactly one such request: an empty match would pass vacuously.
+        final keptBack = deferred.values
+            .where(
+              (request) =>
+                  request.transactionId == withdrawn[yielder]!.transactionId,
+            )
+            .toList();
+        expect(keptBack, hasLength(1));
+        await waitUntil(() => keptBack.single.canceled, timeout: timeout);
       },
       timeout: const Timeout(Duration(minutes: 5)),
       skip: skipReason,
