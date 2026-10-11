@@ -3493,19 +3493,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInRowDetails => 'Témata a příště';
 
   @override
-  String get checkInRowFeeling => 'Jaký to byl pocit';
-
-  @override
-  String get checkInRowHow => 'Jak';
-
-  @override
-  String get checkInRowHowLong => 'Jak dlouho';
-
-  @override
   String get checkInRowNotSet => 'Nenastaveno';
 
   @override
-  String get checkInRowWhen => 'Kdy';
+  String get checkInRowType => 'Typ';
 
   @override
   String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';

@@ -3464,19 +3464,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInRowDetails => 'Onderwerpen en volgende keer';
 
   @override
-  String get checkInRowFeeling => 'Hoe het voelde';
-
-  @override
-  String get checkInRowHow => 'Hoe';
-
-  @override
-  String get checkInRowHowLong => 'Hoe lang';
-
-  @override
   String get checkInRowNotSet => 'Niet ingesteld';
 
   @override
-  String get checkInRowWhen => 'Wanneer';
+  String get checkInRowType => 'Soort';
 
   @override
   String get checkInSaveBlockedEmpty =>

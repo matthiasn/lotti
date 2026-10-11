@@ -624,7 +624,7 @@ every date in Inconsolata; a monospace face spliced into Inter sentences was
 the single most foreign thing on the feature, where the journal and the task
 timer keep the UI face and stabilise digits with `numericBadgeFontFeatures`.
 The dates now do the same, the recorder's running clock included. Time-only
-labels (`relationshipTimeLabel`: the *When* value, the post-call offer)
+labels (`relationshipTimeLabel`: the *Started* value, the post-call offer)
 are the same 24h `HH:mm` every other People timestamp ends in — they used
 to follow the device's clock like the time wheel does, and on a twelve-hour
 device the check-in page read `Sat 1 Aug · 12:44 PM` on the chip over
@@ -1649,7 +1649,7 @@ The composer's parts, top to bottom:
   resting subtitle, which would otherwise be re-read before a landing
   transcript, and never for a failure, which the callout beneath announces
   (its title is the next step), so one region speaks per event. Editing an existing check-in, the ladder starts at `with Pip`:
-  the *When* row is the one source of its date. The close control
+  the *Started* row is the one source of its date. The close control
   is a `DesignSystemIconAction`, as is the edit sheet's delete (in the error
   tone). The
   status line is **tiered**, not truncated: a `DsTieredText` shows the
@@ -1719,11 +1719,14 @@ The composer's parts, top to bottom:
   pass.
 * **The facts as settings rows** — the app's create-form grammar
   (`ProjectCreateForm`): a `DesignSystemDivider`, then one
-  `DesignSystemSelectionRow` (navigation) per fact, ruled apart — *How*
-  (the interaction's icon and kind), *When* (`checkInStartedLabelOf`),
-  *How long* (*Not set* until picked) and *How it felt* (its
-  `sentimentGlyph` in its `sentimentColor`, or, unset, the line that it is
-  optional and never filled in by the agent). Each opens the picker the
+  `DesignSystemSelectionRow` (navigation, the list's `small` size so the
+  facts and the details fit one phone screen) per fact, ruled apart and
+  named with nouns as the create form names its rows — *Type* (the
+  interaction's icon and kind), *Started* (`checkInStartedLabelOf`),
+  *Duration* and *Feeling* (its `sentimentGlyph` in its
+  `sentimentColor`); an unset fact reads *Not set*, alike on every row.
+  That the feeling is optional and never the agent's is said in its picker,
+  under the options, where it is chosen. Each opens the picker the
   check-in page uses
   ([`check_in_pickers.dart`](../../lib/features/relationships/ui/widgets/check_in_pickers.dart):
   `showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
@@ -1731,11 +1734,12 @@ The composer's parts, top to bottom:
   recorder or a save owns the sheet. Opened from the post-call offer the
   rows are prefilled, and a caption over them says where the numbers came
   from.
-* **Topics and next time**: in a new check-in, one more row (an `action`
-  row with its own chevron) whose value says what is set — `2 topics ·
-  next time noted`, or *Not set* (`_moreCaption`), never the field names
-  its title already says — folding out the three text details. Editing a
-  saved check-in has no fold: they are the reason to open the sheet. Each
+* **Topics and next time**: one more row (an `action` row with its own
+  chevron) whose value says what is set — `2 topics · next time noted`, or
+  *Not set* (`_moreCaption`), never the field names its title already says
+  — folding out the three text details. It starts open when editing, or
+  when the draft already holds any, so both sheets keep one structure and
+  the group always has its heading and a way to fold back. Each
   detail is the design system's own labelled field
   (`DesignSystemTextInput(label:, filled: false)`), one `step5` apart.
 * **While a take runs the recorder is the sheet**: the rows and the
@@ -1789,7 +1793,7 @@ The composer's parts, top to bottom:
 
 **Leaving asks only when it would lose something.** Cancel, the header's
 close and the back gesture all go through the form's `_dismiss`: when the
-draft is clean — the narrative, the *How* · *When* · *How long* rows and
+draft is clean — the narrative, the *Type* · *Started* · *Duration* rows and
 every detail match what the composer opened with, and no take is in flight
 — it simply pops; when it is dirty it
 asks first, with a wording that says what happens to the audio: a running
@@ -1825,7 +1829,7 @@ sequenceDiagram
   H->>F: the published callback runs
 ```
 
-The *When* row reads its time through `relationshipTimeLabel`, a pure
+The *Started* row reads its time through `relationshipTimeLabel`, a pure
 function of the time that always emits the feature's 24h `HH:mm` — the
 same clock every other People timestamp ends in, so the row and the note
 stamp under it agree. It used to follow the device's twelve- or
@@ -1843,13 +1847,13 @@ free otherwise. A check-in is user-authored (ADR 0038), and the composer's
 premise is that one line is enough — so a type or a duration alone never
 saves, in create or edit mode.
 
-*When* opens the date picker, then `DesignSystemTimeWheel`, the same control
+*Started* opens the date picker, then `DesignSystemTimeWheel`, the same control
 used by the journal date/time editor. It inherits the device's 12/24-hour
 preference and labels its semantics with the localized Started label. The
 chosen time preserves the selected day and is clamped to the current minute
 on today's date. The row reads
 `Now · HH:mm` while the value is the current minute and the relative day plus
-the time otherwise. *How long* opens `showCheckInDurationPicker`
+the time otherwise. *Duration* opens `showCheckInDurationPicker`
 ([check_in_duration_picker.dart](../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart)):
 ranked quick picks over the shared wheel, *Clear* meaning no duration. The
 ranking ([`checkInDurationSuggestionsControllerProvider`](../../lib/features/relationships/state/check_in_duration_suggestions_controller.dart))
@@ -2146,7 +2150,7 @@ a pure function that reads every take that has words, oldest first, for the
 check-in's start,
 length and channel — each field taking the newest take that names it, so a
 correction in a later take wins whichever transcript arrives first — and sets
-each one into its row — *How* · *When* · *How long* — unless that fact is
+each one into its row — *Type* · *Started* · *Duration* — unless that fact is
 *held*.
 Nothing is read from the typed note, and sentiment is never filled (ADR
 0038).

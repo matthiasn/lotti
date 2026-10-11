@@ -69,12 +69,28 @@ Future<({CheckInSentiment? sentiment})?> showCheckInSentimentPicker({
           icon: LottiIcons.close,
           onTap: () => Navigator.of(sheetContext).pop((sentiment: null)),
         ),
+      // Said where the feeling is chosen, not as a row's value: optional,
+      // and the user's alone (ADR 0038).
+      Padding(
+        key: const ValueKey('check-in-sentiment-note'),
+        padding: EdgeInsets.symmetric(
+          horizontal: sheetContext.designTokens.spacing.step4,
+          vertical: sheetContext.designTokens.spacing.step3,
+        ),
+        child: Text(
+          sheetContext.messages.checkInSentimentOptional,
+          style: sheetContext.designTokens.typography.styles.others.caption
+              .copyWith(
+                color: sheetContext.designTokens.colors.text.mediumEmphasis,
+              ),
+        ),
+      ),
     ],
   ),
 );
 
 /// `Now · 14:55` while the start is the current minute, else the day and
-/// the time — the *When* row's value, in the form and on a saved check-in
+/// the time — the *Started* row's value, in the form and on a saved check-in
 /// alike.
 String checkInStartedLabelOf(BuildContext context, DateTime at) {
   final now = clock.now();

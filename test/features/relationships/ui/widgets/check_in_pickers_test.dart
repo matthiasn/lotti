@@ -115,6 +115,33 @@ void main() {
       expect(result(), (sentiment: CheckInSentiment.strained));
     });
 
+    testWidgets('says, under the feelings, that the choice is optional and '
+        "never the agent's — where it is made, not as a row's value", (
+      tester,
+    ) async {
+      await open(tester, current: null);
+      final note = find.byKey(const ValueKey('check-in-sentiment-note'));
+      expect(
+        find.descendant(
+          of: note,
+          matching: find.text('Optional. Never filled in by the agent.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(note).dy,
+        greaterThanOrEqualTo(
+          tester
+              .getBottomLeft(
+                find.byKey(
+                  const ValueKey('check-in-sentiment-option-difficult'),
+                ),
+              )
+              .dy,
+        ),
+      );
+    });
+
     // A cleared feeling and a dismissed sheet must not look alike.
     testWidgets('Clear resolves to no feeling; dismissing to nothing', (
       tester,

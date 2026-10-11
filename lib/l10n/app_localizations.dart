@@ -5808,35 +5808,17 @@ abstract class AppLocalizations {
   /// **'Topics and next time'**
   String get checkInRowDetails;
 
-  /// Check-in form row label: how the conversation felt.
-  ///
-  /// In en, this message translates to:
-  /// **'How it felt'**
-  String get checkInRowFeeling;
-
-  /// Check-in form row label: how the two people connected (call, message, in person).
-  ///
-  /// In en, this message translates to:
-  /// **'How'**
-  String get checkInRowHow;
-
-  /// Check-in form row label: how long the conversation lasted.
-  ///
-  /// In en, this message translates to:
-  /// **'How long'**
-  String get checkInRowHowLong;
-
   /// Check-in form row value when no length has been picked yet.
   ///
   /// In en, this message translates to:
   /// **'Not set'**
   String get checkInRowNotSet;
 
-  /// Check-in form row label: when the conversation started.
+  /// Check-in form row label: the kind of interaction (call, message, in person).
   ///
   /// In en, this message translates to:
-  /// **'When'**
-  String get checkInRowWhen;
+  /// **'Type'**
+  String get checkInRowType;
 
   /// No description provided for @checkInSaveBlockedEmpty.
   ///

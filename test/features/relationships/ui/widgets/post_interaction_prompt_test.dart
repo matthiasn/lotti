@@ -537,12 +537,8 @@ void main() {
       await tester.tap(find.text('Yes, log it'));
       await tester.pumpAndSettle();
 
-      // The *How it felt* row stays at its unset value: what the row is
-      // for, never a feeling the app chose.
-      expect(
-        rowValue(tester, 'check-in-sentiment'),
-        'Optional. Never filled in by the agent.',
-      );
+      // The *Feeling* row stays unset — never a feeling the app chose.
+      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
     });
   });
 

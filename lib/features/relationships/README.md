@@ -71,10 +71,10 @@ agent's banner. The deterministic cadence tier does not require an AI model.
 ## Capturing and linking
 
 Check-ins are user-authored. One composer opens on the note, with Dictate
-inside the field. Under it, the app's settings rows say how you connected,
-when, for how long and how it felt, each opening its picker, and a last row
-folds out the topics and the notes for next time (editing a saved check-in
-shows them at once). While a recording runs the recorder is the sheet. The
+inside the field. Under it, the app's settings rows give the type, the
+start, the duration and the feeling, each opening its picker, and a last row
+folds out the topics and the notes for next time (already open when editing
+a saved check-in). While a recording runs the recorder is the sheet. The
 recorder and its failure
 cards render in place of the text. Each recording then sits under the note
 as its own entry-to-be, with its words once they arrive, and is saved as one

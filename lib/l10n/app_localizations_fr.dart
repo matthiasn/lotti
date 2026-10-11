@@ -3500,19 +3500,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInRowDetails => 'Sujets et la prochaine fois';
 
   @override
-  String get checkInRowFeeling => 'Ce que tu as ressenti';
-
-  @override
-  String get checkInRowHow => 'Comment';
-
-  @override
-  String get checkInRowHowLong => 'Durée';
-
-  @override
   String get checkInRowNotSet => 'Non défini';
 
   @override
-  String get checkInRowWhen => 'Quand';
+  String get checkInRowType => 'Type';
 
   @override
   String get checkInSaveBlockedEmpty => 'Ajoute quelques mots pour enregistrer';

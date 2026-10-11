@@ -471,12 +471,24 @@ void main() {
         above = top;
       }
       expect(rowValue(tester, 'check-in-type'), 'In person');
+      // Every fact a noun, as the app's create-form rows are named.
+      for (final (key, title) in [
+        ('check-in-type', 'Type'),
+        ('check-in-started', 'Started'),
+        ('check-in-duration', 'Duration'),
+        ('check-in-sentiment', 'Feeling'),
+      ]) {
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(find.byKey(ValueKey(key)))
+              .title,
+          title,
+          reason: key,
+        );
+      }
+      // Unset reads alike on every fact.
       expect(rowValue(tester, 'check-in-duration'), 'Not set');
-      // Unset, the feeling says what the row is for.
-      expect(
-        rowValue(tester, 'check-in-sentiment'),
-        'Optional. Never filled in by the agent.',
-      );
+      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
       expect(find.byKey(const ValueKey('check-in-topics')), findsNothing);
       expect(saveEnabled(tester), isFalse);
       expect(saveReason(tester), 'Add a few words to save');
@@ -570,10 +582,7 @@ void main() {
       expect(glyph.color, sentimentColor(tokens, CheckInSentiment.good));
 
       await pickFeeling(tester, null);
-      expect(
-        rowValue(tester, 'check-in-sentiment'),
-        'Optional. Never filled in by the agent.',
-      );
+      expect(rowValue(tester, 'check-in-sentiment'), 'Not set');
       await tapSave(tester);
 
       final saved = capturedSave();
@@ -756,15 +765,22 @@ void main() {
       expect(updated.entryText?.plainText, 'Planned the trip.');
     });
 
-    testWidgets('lays the text details out at once, with no fold, as the '
-        "design system's own labelled fields, and no field is a darker well", (
-      tester,
-    ) async {
+    testWidgets('opens the text details under their own heading row, '
+        "unfolded, as the design system's own labelled fields — no field a "
+        'darker well — and the row folds them back', (tester) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // No disclosure over the fields that are the reason to open the sheet.
-      expect(find.byKey(const ValueKey('check-in-more')), findsNothing);
+      // The same structure as a new check-in, already open: the group keeps
+      // its heading and says what it holds.
+      expect(rowValue(tester, 'check-in-more'), '2 topics · next time noted');
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('check-in-more')),
+          matching: find.byIcon(LottiIcons.chevronUp),
+        ),
+        findsOneWidget,
+      );
       expect(rowValue(tester, 'check-in-sentiment'), 'Good');
       for (final (key, label) in [
         ('check-in-topics', 'Topics'),
@@ -793,6 +809,10 @@ void main() {
       );
       expect(next.top - topics.bottom, closeTo(tokens.spacing.step5, 0.5));
       expect(avoid.top - next.bottom, closeTo(tokens.spacing.step5, 0.5));
+
+      await tester.tap(find.byKey(const ValueKey('check-in-more')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('check-in-topics')), findsNothing);
     });
 
     testWidgets('clearing the narrative holds Save again', (tester) async {
@@ -874,16 +894,17 @@ void main() {
       expect(capturedSave().dateFrom, fixedNow);
     });
 
-    testWidgets('tapping the Started chip opens the date picker', (
+    testWidgets('tapping the Started row opens the date picker', (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      expect(find.text('Started'), findsNothing);
+      // The row's own name, then the picker's title over it.
+      expect(find.text('Started'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('check-in-started')));
       await tester.pumpAndSettle();
-      expect(find.text('Started'), findsOneWidget);
+      expect(find.text('Started'), findsNWidgets(2));
     });
 
     testWidgets('delete asks for confirmation, then deletes and closes', (

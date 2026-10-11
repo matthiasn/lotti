@@ -3492,19 +3492,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInRowDetails => 'Temas y la próxima vez';
 
   @override
-  String get checkInRowFeeling => 'Cómo te sentiste';
-
-  @override
-  String get checkInRowHow => 'Cómo';
-
-  @override
-  String get checkInRowHowLong => 'Cuánto duró';
-
-  @override
   String get checkInRowNotSet => 'Sin definir';
 
   @override
-  String get checkInRowWhen => 'Cuándo';
+  String get checkInRowType => 'Tipo';
 
   @override
   String get checkInSaveBlockedEmpty => 'Añade unas palabras para guardar';

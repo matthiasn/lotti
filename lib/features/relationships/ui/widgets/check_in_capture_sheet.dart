@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -281,7 +282,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       _heldFields.add(CheckInContextField.duration);
     }
     _moreOpen =
-        _sentiment != null ||
+        _isEditing ||
         _topicsController.text.isNotEmpty ||
         _payAttentionController.text.isNotEmpty ||
         _avoidController.text.isNotEmpty;
@@ -786,12 +787,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final speechIdle = _speechIdle && !_isSaving;
     final notSet = messages.checkInRowNotSet;
     final sentiment = _sentiment;
-    final detailsOpen = _isEditing || _moreOpen;
 
     // The app's create-form grammar (`ProjectCreateForm`): the lead field,
-    // a rule, then one settings row per fact — icon, name, value, chevron —
-    // each opening the same picker the check-in page uses, ruled apart.
-    // Held, not hidden, while the recorder or a save owns the sheet.
+    // a rule, then one settings row per fact — icon, noun, value, chevron —
+    // each opening the same picker the check-in page uses, ruled apart, at
+    // the list's compact size so the facts and the details fit one phone
+    // screen. Held, not hidden, while the recorder or a save owns the sheet.
+    // The note opens unfocused on a phone on purpose: a keyboard raised at
+    // once would cover the rows the user may want first.
     VoidCallback? live(VoidCallback onTap) => speechIdle ? onTap : null;
     Widget row({
       required String key,
@@ -805,6 +808,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       title: title,
       subtitle: value,
       type: DesignSystemSelectionRowType.navigation,
+      size: DesignSystemListItemSize.small,
       leading: Icon(
         icon,
         color: iconColor ?? tokens.colors.text.mediumEmphasis,
@@ -895,7 +899,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           row(
             key: 'check-in-type',
             icon: checkInInteractionIcon(_interactionType),
-            title: messages.checkInRowHow,
+            title: messages.checkInRowType,
             value: checkInInteractionLabel(context, _interactionType),
             onTap: _pickType,
           ),
@@ -903,7 +907,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           row(
             key: 'check-in-started',
             icon: LottiIcons.today,
-            title: messages.checkInRowWhen,
+            title: messages.checkInStartedLabel,
             value: _startedLabel(context),
             onTap: _pickStart,
           ),
@@ -911,15 +915,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           row(
             key: 'check-in-duration',
             icon: LottiIcons.timer,
-            title: messages.checkInRowHowLong,
+            title: messages.checkInDurationChip,
             value: _duration == Duration.zero
                 ? notSet
                 : checkInDurationLabel(context, _duration),
             onTap: _pickDuration,
           ),
           const DesignSystemDivider(),
-          // Unset, the value says what the row is for — optional, and never
-          // the agent's — where a caption once floated under a chip row.
+          // Unset reads *Not set* like every other fact; that the feeling is
+          // optional and never the agent's is said in its picker, where it
+          // is chosen.
           row(
             key: 'check-in-sentiment',
             icon: sentiment == null
@@ -928,37 +933,37 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             iconColor: sentiment == null
                 ? null
                 : sentimentColor(tokens, sentiment),
-            title: messages.checkInRowFeeling,
+            title: messages.checkInMoreCaptionFeeling,
             value: sentiment == null
-                ? messages.checkInSentimentOptional
+                ? notSet
                 : checkInSentimentLabel(context, sentiment),
             onTap: _pickSentiment,
           ),
           const DesignSystemDivider(),
-          // A new check-in folds its text details into one more row that
-          // says what it holds; a saved one being edited lays them out, as
-          // they are the reason to open it.
-          if (!_isEditing) ...[
-            DesignSystemSelectionRow(
-              key: const ValueKey('check-in-more'),
-              title: messages.checkInRowDetails,
-              subtitle: _moreCaption(messages),
-              type: DesignSystemSelectionRowType.action,
-              leading: Icon(
-                LottiIcons.label,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              trailing: Icon(
-                _moreOpen ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-                color: tokens.colors.text.mediumEmphasis,
-                size: tokens.spacing.step6,
-              ),
-              semanticLabel: messages.checkInRowDetails,
-              onTap: live(() => setState(() => _moreOpen = !_moreOpen)),
+          // The text details fold under one more row that says what they
+          // hold — open from the start when editing, or when the draft
+          // already holds any — so both sheets keep one structure and the
+          // group always has its heading and a way to fold back.
+          DesignSystemSelectionRow(
+            key: const ValueKey('check-in-more'),
+            title: messages.checkInRowDetails,
+            subtitle: _moreCaption(messages),
+            type: DesignSystemSelectionRowType.action,
+            size: DesignSystemListItemSize.small,
+            leading: Icon(
+              LottiIcons.label,
+              color: tokens.colors.text.mediumEmphasis,
             ),
-            if (_moreOpen) const DesignSystemDivider(),
-          ],
-          if (detailsOpen) ...[
+            trailing: Icon(
+              _moreOpen ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+              color: tokens.colors.text.mediumEmphasis,
+              size: tokens.spacing.step6,
+            ),
+            semanticLabel: messages.checkInRowDetails,
+            onTap: live(() => setState(() => _moreOpen = !_moreOpen)),
+          ),
+          if (_moreOpen) const DesignSystemDivider(),
+          if (_moreOpen) ...[
             SizedBox(height: tokens.spacing.step5),
             field(
               key: 'check-in-topics',

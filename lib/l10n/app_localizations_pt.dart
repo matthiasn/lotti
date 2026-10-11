@@ -3484,19 +3484,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInRowDetails => 'Temas e a próxima vez';
 
   @override
-  String get checkInRowFeeling => 'Como te sentiste';
-
-  @override
-  String get checkInRowHow => 'Como';
-
-  @override
-  String get checkInRowHowLong => 'Quanto tempo';
-
-  @override
   String get checkInRowNotSet => 'Não definido';
 
   @override
-  String get checkInRowWhen => 'Quando';
+  String get checkInRowType => 'Tipo';
 
   @override
   String get checkInSaveBlockedEmpty =>

@@ -2246,25 +2246,13 @@
   "@checkInRowDetails": {
     "description": "Check-in form row that folds out the topics and the notes for next time."
   },
-  "checkInRowFeeling": "How it felt",
-  "@checkInRowFeeling": {
-    "description": "Check-in form row label: how the conversation felt."
-  },
-  "checkInRowHow": "How",
-  "@checkInRowHow": {
-    "description": "Check-in form row label: how the two people connected (call, message, in person)."
-  },
-  "checkInRowHowLong": "How long",
-  "@checkInRowHowLong": {
-    "description": "Check-in form row label: how long the conversation lasted."
-  },
   "checkInRowNotSet": "Not set",
   "@checkInRowNotSet": {
     "description": "Check-in form row value when no length has been picked yet."
   },
-  "checkInRowWhen": "When",
-  "@checkInRowWhen": {
-    "description": "Check-in form row label: when the conversation started."
+  "checkInRowType": "Type",
+  "@checkInRowType": {
+    "description": "Check-in form row label: the kind of interaction (call, message, in person)."
   },
   "checkInSaveBlockedEmpty": "Add a few words to save",
   "checkInSaveButton": "Save check-in",
