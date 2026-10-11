@@ -214,7 +214,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       vectorClockService: vectorClockService,
       outboxService: outboxService,
     )
-    ..answerWithHeld = outboxService.enqueueMessage
+    ..answerWithHeld = outboxService.enqueueMessageOrThrow
     ..purgedEntryGuard = PurgedEntryGuard(
       syncDatabase: syncDatabase,
       documentsDirectory: documentsDirectory,

@@ -63,6 +63,10 @@ old receiver ignores a pushed copy of a file it already holds.
 
 - A device that sees an old peer sends one more message per stale or
   unstamped flag or AI configuration it receives.
+- A flag answer the outbox refuses is logged, not owed: config flags have
+  no ledger, as their local edits have none either. The next stale or
+  unstamped arrival answers again; a durable retry for flags belongs with
+  the delivery of every payload that carries no sequence counter.
 - The startup sweep reads the journal and links once per device.
 - A device refuses a copy it would have stored before only when it held a
   version at least as new and was never restored; a concurrent edit
@@ -70,6 +74,8 @@ old receiver ignores a pushed copy of a file it already holds.
 - Tombstones already compacted have no file path, so their files on old
   builds stay orphaned; tombstones from now on carry it.
 - Also fixed here, from a review of ADR 0127 and #4760: an AI configuration
-  write is now owed before it commits rather than after, and the startup
+  write is now owed before it commits rather than after (a flush while the
+  write runs leaves the id owed, and the provider cascade owes outside its
+  transaction, which a running flush would deadlock on), and the startup
   counter-0 resend is retried when the agent store it needs is not attached
   yet instead of being recorded as done.

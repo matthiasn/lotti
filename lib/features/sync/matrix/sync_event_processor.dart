@@ -290,7 +290,8 @@ class SyncEventProcessor {
   /// Sends a message this device composes in answer to one it received —
   /// the stamped version it holds, for a peer whose build applies config
   /// flags in arrival order. Injected after construction, once the outbox
-  /// exists; without it nothing is answered.
+  /// exists; without it nothing is answered. Throws when the outbox refuses
+  /// the message, so the refusal is logged rather than lost silently.
   Future<void> Function(SyncMessage message)? answerWithHeld;
 
   /// Refuses a late copy of an entry an older build purged without a

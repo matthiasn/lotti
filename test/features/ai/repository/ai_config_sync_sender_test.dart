@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -158,24 +160,79 @@ void main() {
     subject.dispose();
   });
 
-  test('owing records ids before any send, and a failure to record is '
-      'reported without stopping the write', () async {
+  test('owing records ids before the write runs, returns its result, and '
+      'a failure to record is reported without stopping the write', () async {
     final subject = sender(settings: settingsDb);
-    await subject.owe(['a', 'b']);
-    expect(await owed(), {'a', 'b'});
+    Set<String>? owedDuringWrite;
+    final result = await subject.owing(['a', 'b'], () async {
+      owedDuringWrite = await owed();
+      return 42;
+    });
+    expect(result, 42);
+    expect(owedDuringWrite, {'a', 'b'});
     subject.dispose();
 
     await settingsDb.close();
     final closed = sender(settings: settingsDb);
-    await closed.owe(['c']);
+    expect(await closed.owing(['c'], () async => 'written'), 'written');
     expect(errors.single, startsWith('aiConfig.owe:'));
     closed.dispose();
     settingsDb = SettingsDb(inMemoryDatabase: true);
   });
 
   test('owing without settings storage records nothing', () async {
-    await sender().owe(['a']);
+    await sender().owing(['a'], () async {});
     expect(await owed(), isEmpty);
+  });
+
+  test('a flush while a write is running leaves its id owed and sends '
+      'nothing for it, and the next flush sends what is held then', () async {
+    held['a'] = const AiConfigResend(id: 'a', stamp: 1);
+    final subject = sender(settings: settingsDb);
+
+    await subject.owing(['a'], () async {
+      // The flush would otherwise send stamp 1 and settle the debt this
+      // write still has.
+      await subject.flush();
+      expect(await owed(), {'a'});
+      held['a'] = const AiConfigResend(id: 'a', stamp: 2);
+    });
+    verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+
+    await subject.flush();
+    verify(
+      () => outbox.enqueueMessageOrThrow(
+        const SyncMessage.aiConfigDelete(
+          id: 'a',
+          hardDelete: true,
+          versionStamp: 2,
+        ),
+      ),
+    ).called(1);
+    expect(await owed(), isEmpty);
+    subject.dispose();
+  });
+
+  test('an id two writes hold stays held until both end, and a write that '
+      'throws still lets go of it', () async {
+    held['a'] = const AiConfigResend(id: 'a', stamp: 1);
+    final subject = sender(settings: settingsDb);
+    final release = Completer<void>();
+
+    final first = subject.owing(['a'], () => release.future);
+    await expectLater(
+      subject.owing(['a'], () async => throw StateError('write failed')),
+      throwsStateError,
+    );
+    await subject.flush();
+    verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+
+    release.complete();
+    await first;
+    await subject.flush();
+    verify(() => outbox.enqueueMessageOrThrow(any())).called(1);
+    expect(await owed(), isEmpty);
+    subject.dispose();
   });
 
   test('resendHeld sends what is held for an id, owed, and nothing when '

@@ -9,19 +9,13 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_rules.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
+import 'package:lotti/features/ai/repository/cascade_deletion_result.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
 
-/// Result object for cascade deletion operations
-class CascadeDeletionResult {
-  const CascadeDeletionResult({
-    required this.deletedModels,
-  });
-
-  final List<AiConfigModel> deletedModels;
-}
+export 'package:lotti/features/ai/repository/cascade_deletion_result.dart';
 
 /// The shared [AiConfigRepository]. The app overrides it per service
 /// generation in `buildProviderOverrides`; the getIt fallback below only
@@ -122,7 +116,7 @@ class AiConfigRepository {
   /// its provider's deletion does not outlive it.
   ///
   /// A local write owes its message to the peers from before it commits
-  /// until the outbox accepts it ([AiConfigSyncSender.owe]): a failed enqueue,
+  /// until the outbox accepts it ([AiConfigSyncSender.owing]): a failed enqueue,
   /// or a crash in between, leaves the id in the ledger for [flushPending].
   ///
   /// A model created on this device takes its provider's stamp rather than
@@ -175,10 +169,13 @@ class AiConfigRepository {
             config.apiKey.isNotEmpty
         ? config.copyWith(apiKeyCleared: false)
         : config;
-    if (!fromSync) await _sender.owe([written.id]);
-    final stamp = await _saveLocal(written);
-    _storeConfig(written);
-    if (!fromSync) await _enqueue(written, stamp);
+    Future<void> write() async {
+      final stamp = await _saveLocal(written);
+      _storeConfig(written);
+      if (!fromSync) await _enqueue(written, stamp);
+    }
+
+    await (fromSync ? write() : _sender.owing([written.id], write));
   }
 
   /// Writes a local version of [config] and returns its stamp: a model this
@@ -260,18 +257,19 @@ class AiConfigRepository {
     for (final model in await _liveModelsOf(providerId)) {
       final held = await _db.versionStamp(model.id);
       if (held != null && held > deletion) continue;
-      await _sender.owe([model.id]);
-      if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
-        _noteHardDeleted(model.id);
-      }
-      await _sender.send(
-        model.id,
-        SyncMessage.aiConfigDelete(
-          id: model.id,
-          hardDelete: true,
-          versionStamp: deletion,
-        ),
-      );
+      await _sender.owing([model.id], () async {
+        if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
+          _noteHardDeleted(model.id);
+        }
+        await _sender.send(
+          model.id,
+          SyncMessage.aiConfigDelete(
+            id: model.id,
+            hardDelete: true,
+            versionStamp: deletion,
+          ),
+        );
+      });
     }
   }
 
@@ -424,18 +422,18 @@ class AiConfigRepository {
     int? versionStamp,
   }) async {
     if (!fromSync) {
-      await _sender.owe([id]);
-      final stamp = await _db.deleteConfig(id);
-      _noteHardDeleted(id);
-      await _sender.send(
-        id,
-        SyncMessage.aiConfigDelete(
-          id: id,
-          hardDelete: true,
-          versionStamp: stamp,
-        ),
-      );
-      return;
+      return _sender.owing([id], () async {
+        final stamp = await _db.deleteConfig(id);
+        _noteHardDeleted(id);
+        await _sender.send(
+          id,
+          SyncMessage.aiConfigDelete(
+            id: id,
+            hardDelete: true,
+            versionStamp: stamp,
+          ),
+        );
+      });
     }
     if (versionStamp == null) {
       await _db.forgetConfig(id);
@@ -487,15 +485,17 @@ class AiConfigRepository {
     AiConfigInferenceProvider provider,
     List<AiConfigModel> models,
   ) async {
-    await _sender.owe([provider.id, for (final model in models) model.id]);
-    final providerStamp = await _db.saveConfig(provider);
-    _storeConfig(provider);
-    await _enqueue(provider, providerStamp);
-    for (final model in models) {
-      final stamp = await _db.saveConfig(model, notBefore: providerStamp);
-      _storeConfig(model);
-      await _enqueue(model, stamp);
-    }
+    final ids = [provider.id, for (final model in models) model.id];
+    await _sender.owing(ids, () async {
+      final providerStamp = await _db.saveConfig(provider);
+      _storeConfig(provider);
+      await _enqueue(provider, providerStamp);
+      for (final model in models) {
+        final stamp = await _db.saveConfig(model, notBefore: providerStamp);
+        _storeConfig(model);
+        await _enqueue(model, stamp);
+      }
+    });
   }
 
   /// Whether an incoming synced [incoming] row would resurrect a local
@@ -530,16 +530,20 @@ class AiConfigRepository {
     String providerId, {
     bool fromSync = false,
   }) async {
+    if (fromSync) return _deleteCascade(providerId, fromSync: true);
+    // Owed outside the transaction, which a flush would deadlock on.
+    final models = await _liveModelsOf(providerId);
+    return _sender.owing(
+      [providerId, ...models.map((m) => m.id)],
+      () => _deleteCascade(providerId, fromSync: false),
+    );
+  }
+
+  Future<CascadeDeletionResult> _deleteCascade(
+    String providerId, {
+    required bool fromSync,
+  }) async {
     final deletedIds = <String, int>{};
-
-    // Owed before the deletes commit, outside the transaction: a running
-    // flush holds the sender and reads this database, so would deadlock.
-    // A model added after this read is owed by its send below.
-    if (!fromSync) {
-      final models = await _liveModelsOf(providerId);
-      await _sender.owe([providerId, ...models.map((m) => m.id)]);
-    }
-
     final result = await _db.transaction(() async {
       try {
         final associatedModels = await _liveModelsOf(providerId);

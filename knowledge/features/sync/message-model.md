@@ -241,7 +241,7 @@ the decision is
 [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
 
 Every write owes its message until the outbox accepts it, as saved filters
-do: `AiConfigRepository` records the id in `AiConfigSyncLedger` through `AiConfigSyncSender.owe` before the write commits, sends through `AiConfigSyncSender`, and settles the id once the row is staged, and
+do: `AiConfigRepository` records the id in `AiConfigSyncLedger` through `AiConfigSyncSender.owing` before the write commits (a flush meanwhile leaves the id owed rather than settle it with the version before the write), sends through `AiConfigSyncSender`, and settles the id once the row is staged, and
 `flushPending` sends what the device holds
 for an owed id — the row with its stamp, or the hard deletion the stamp alone
 records — at startup and a minute after a failed enqueue. The maintenance
