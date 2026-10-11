@@ -286,18 +286,28 @@ class _IncomingVerificationWrapperState
           ownDeviceId: service.ownDeviceId,
         )) {
       // The device whose ceremony is being withdrawn was never really offered
-      // one, so it must stay eligible for the launcher.
+      // one, so it must stay eligible for the launcher. The launcher's sheet
+      // now shows the peer's ceremony instead: that peer is the one shown,
+      // and the one "Show the emoji" reopens (`RecordHandedOff`).
+      final handled = ref.read(matrixVerificationHandledProvider.notifier);
       final withdrawn = outgoing.keyVerification;
       final withdrawnDeviceId = withdrawn.deviceId;
       if (withdrawnDeviceId != null) {
-        ref
-            .read(matrixVerificationHandledProvider.notifier)
-            .release(
-              MatrixVerificationHandled.identityOf(
-                userId: withdrawn.userId,
-                deviceId: withdrawnDeviceId,
-              ),
-            );
+        handled.release(
+          MatrixVerificationHandled.identityOf(
+            userId: withdrawn.userId,
+            deviceId: withdrawnDeviceId,
+          ),
+        );
+      }
+      final peerDeviceId = keyVerification.deviceId;
+      if (peerDeviceId != null) {
+        handled.markShown(
+          MatrixVerificationHandled.identityOf(
+            userId: keyVerification.userId,
+            deviceId: peerDeviceId,
+          ),
+        );
       }
       await handOffOutgoingVerification(
         service: service,

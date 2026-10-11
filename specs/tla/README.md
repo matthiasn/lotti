@@ -4597,9 +4597,9 @@ should yield, and is deferred.
 
 | Configuration | Devices | Active | Launchers | Relaunch | Users | Checks | Distinct states |
 |---------------|---------|--------|-----------|----------|-------|--------|-----------------|
-| `VerificationLaunch` | 3 | 2 | 1 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 242,952 |
-| `VerificationLaunchTwoLaunchers` | 2 | 2 | 2 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 153,086 |
-| `VerificationLaunchCrossStart` | 2 | 2 | 2 | 0 | patient | all | 3,519 |
+| `VerificationLaunch` | 3 | 2 | 1 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 166,092 |
+| `VerificationLaunchTwoLaunchers` | 2 | 2 | 2 | 1 | may cancel or abandon | safety, `EventuallyOffered` | 96,287 |
+| `VerificationLaunchCrossStart` | 2 | 2 | 2 | 0 | patient | all | 5,049 |
 
 A three-active-device profile (`Launchers = {1}`, patient users) was checked
 once by hand — 3,240,481 distinct states in eleven minutes on twenty workers —
@@ -4619,7 +4619,8 @@ directory, set it and run TLC against `VerificationLaunch.tla`:
 | `ReleaseOnce = FALSE` (found in review of #4753) | `VerificationLaunchTwoLaunchers` | `NoReoffer`, 6 steps: both launchers' listeners release the last identity on their own; the first reopens it and records it, the second releases it again, and once the reopened sheet closes the refresh offers it a third time unasked |
 | `RecordOnlyShown = FALSE` (fixed in #3634) | `VerificationLaunch` | `HandledWasShown`, 8 steps: a device is recorded while an incoming sheet holds the lock, and is never offered a ceremony |
 | `SharedHandled = FALSE` (fixed in #3634) | `VerificationLaunchTwoLaunchers` | `NoReoffer`, 6 steps: the launcher that lost the lock knew nothing about what the winner had shown and reopened the sheet the user had just dismissed |
-| `ReofferOnRegister = FALSE` (seen in CI) | `VerificationLaunchCrossStart` | `AutoVerifies`, 12 states: both devices show their sheet at each other, and each request lands while the other's runner is not stored yet; neither can tell it should yield, both defer, and the deferred requests wait for a lock that never frees |
+| `ReofferOnRegister = FALSE` (seen in CI) | `VerificationLaunchCrossStart` | `AutoVerifies`, 12 steps: both devices show their sheet at each other, and each request lands while the other's runner is not stored yet; neither can tell it should yield, both defer, and the deferred requests wait for a lock that never frees |
+| `RecordHandedOff = FALSE` (found in review of #4773) | `VerificationLaunch` | `NoReoffer`, 11 steps: a device yields to a peer's request, so its launcher sheet now shows that peer's ceremony, but the handled set and the last-shown identity still name the withdrawn device; once the sheet closes the launcher offers the peer again unasked, and "Show the emoji" would reopen the withdrawn device instead |
 | `ReleaseOne = FALSE` (fixed in #3634) | — | no counterexample of its own any more: it decides what a relaunch releases only while `PreferLastShown = FALSE`, which already fails `RelaunchHonoured` |
 
 The yield rule is the SDK's own rule for a `start` glare, applied one step
@@ -4633,7 +4634,9 @@ the withdrawn target from the handled set: that device was never really
 offered a ceremony. A launcher that finds the target's own request already
 pending answers it instead of starting a second one. A request deferred while
 this device's own request was still "sending" is offered again once its runner
-is stored (`reofferOnOwnRunner`), and yields then if it should.
+is stored (`reofferOnOwnRunner`), and yields then if it should. A handoff
+records the peer it shows as shown and as the one shown last, as the
+launcher does for its own sheet, so "Show the emoji" reopens that peer.
 
 What the model leaves out:
 

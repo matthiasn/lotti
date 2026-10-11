@@ -56,7 +56,9 @@
 (* GlareHandoff, PreferLastShown and ReleaseOnce are the three fixes this *)
 (* model found; FALSE is the code before them. ReofferOnRegister is the  *)
 (* fix for the race a CI run showed once the request's send and its       *)
-(* registration became two steps. DeferIncoming and CancelOnDismiss are    *)
+(* registration became two steps; RecordHandedOff, found in review of     *)
+(* #4773, records the peer a handoff shows as the one shown last.         *)
+(* DeferIncoming and CancelOnDismiss are                                   *)
 (* alternatives TLC rejected, kept so the README's table can be re-run.    *)
 (* Cooperative users confirm, and never cancel or abandon a live ceremony: *)
 (* the automatic flow has to finish on its own.                            *)
@@ -82,6 +84,8 @@ CONSTANTS
     ReleaseOnce,      \* the relaunch request releases once, before any listener
                       \* runs; otherwise each listener releases on its own, and
                       \* the ones after the winner undo the winner's record
+    RecordHandedOff,  \* a handoff records the peer it shows as shown, and as
+                      \* the one shown last, like a launcher's own sheet
     ReofferOnRegister \* a request deferred before the own runner existed is
                       \* offered again once it does
 
@@ -363,10 +367,16 @@ HandOff(r, i) ==
     /\ sheet' = [sheet EXCEPT ![r] = [kind |-> "in", peer |-> i, via |-> @.via]]
     /\ seen' = [seen EXCEPT ![r][i] = TRUE]
     \* The peer whose ceremony was just withdrawn was never really offered
-    \* one: it must stay eligible for the launcher.
-    /\ handled' = [handled EXCEPT ![r] =
-                     [m \in Launchers |-> @[m] \ {sheet[r].peer}]]
-    /\ offered' = [offered EXCEPT ![r][sheet[r].peer] = FALSE]
+    \* one: it must stay eligible for the launcher. The launcher sheet now
+    \* shows i's ceremony, so i was.
+    /\ offered' = [offered EXCEPT ![r][sheet[r].peer] = FALSE, ![r][i] = TRUE]
+    /\ IF RecordHandedOff
+       THEN /\ handled' = [handled EXCEPT ![r] =
+                             [m \in Launchers |-> (@[m] \ {sheet[r].peer}) \cup {i}]]
+            /\ lastSeen' = [lastSeen EXCEPT ![r] = i]
+       ELSE /\ handled' = [handled EXCEPT ![r] =
+                             [m \in Launchers |-> @[m] \ {sheet[r].peer}]]
+            /\ UNCHANGED lastSeen
 
 \* The wrapper receives i's request: the sheet opens if the lock is free;
 \* under GlareHandoff a yielding device cancels its own ceremony and shows
@@ -377,20 +387,21 @@ HandleIncoming(r, i) ==
     /\ i \in inbox[r]
     /\ inbox' = [inbox EXCEPT ![r] = @ \ {i}]
     /\ IF cer[i][r] \notin Live
-       THEN UNCHANGED <<lock, sheet, seen, cer, deferred, handled, offered>>
+       THEN UNCHANGED <<lock, sheet, seen, cer, deferred, handled, offered,
+                        lastSeen>>
        ELSE IF lock[r] = "free"
        THEN /\ OpenIn(r, i)
-            /\ UNCHANGED <<cer, deferred, handled, offered>>
+            /\ UNCHANGED <<cer, deferred, handled, offered, lastSeen>>
        ELSE IF GlareHandoff /\ Yield(r, i)
        THEN /\ HandOff(r, i)
             /\ UNCHANGED <<lock, deferred>>
        ELSE IF DeferIncoming
        THEN /\ deferred' = [deferred EXCEPT ![r] = @ \cup {i}]
-            /\ UNCHANGED <<lock, sheet, seen, cer, handled, offered>>
-       ELSE UNCHANGED <<lock, sheet, seen, cer, deferred, handled, offered>>
+            /\ UNCHANGED <<lock, sheet, seen, cer, handled, offered, lastSeen>>
+       ELSE UNCHANGED <<lock, sheet, seen, cer, deferred, handled, offered,
+                        lastSeen>>
     /\ UNCHANGED <<present, verified, view, lastOffered, clearPending,
-                   sas, relaunches, relaunchSince, lastSeen, reoffer,
-                   relaunchMiss>>
+                   sas, relaunches, relaunchSince, reoffer, relaunchMiss>>
 
 \* verifyMatrixDevice stores the outgoing runner once its request is sent.
 Register(d) ==
@@ -413,7 +424,7 @@ ReofferDeferred(r, i) ==
     /\ HandOff(r, i)
     /\ deferred' = [deferred EXCEPT ![r] = @ \ {i}]
     /\ UNCHANGED <<present, verified, view, lock, lastOffered, clearPending,
-                   sas, inbox, relaunches, relaunchSince, lastSeen, reoffer,
+                   sas, inbox, relaunches, relaunchSince, reoffer,
                    relaunchMiss>>
 
 DeferredOpen(r) ==

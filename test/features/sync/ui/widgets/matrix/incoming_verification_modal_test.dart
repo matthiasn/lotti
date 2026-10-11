@@ -759,6 +759,36 @@ void main() {
           handedOff.stopTimer();
         });
 
+        testWidgets('records the peer it now shows as the one shown last', (
+          tester,
+        ) async {
+          // The launcher's sheet shows the peer's ceremony after the handoff,
+          // so "Show the emoji" must reopen that peer, not the withdrawn one,
+          // and the launcher must not offer it again unasked once the sheet
+          // closes (`RecordHandedOff`).
+          when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
+          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
+          await pumpWrapperBehindLock(tester);
+          final handled = container.read(
+            matrixVerificationHandledProvider.notifier,
+          )..markShown('@alice:example.com/PEER');
+
+          incomingController.add(mockKeyVerification);
+          await tester.pump();
+
+          expect(handled.lastShown, '@alice:example.com/AAA');
+          expect(
+            container.read(matrixVerificationHandledProvider),
+            {'@alice:example.com/AAA'},
+          );
+          (verify(
+                    () =>
+                        mockMatrixService.keyVerificationRunner = captureAny(),
+                  ).captured.single
+                  as KeyVerificationRunner)
+              .stopTimer();
+        });
+
         testWidgets('a request that lands before its own runner is stored '
             'yields once the runner is', (tester) async {
           // verifyMatrixDevice stores the runner only after the send: a

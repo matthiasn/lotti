@@ -724,7 +724,10 @@ reach the wrong device or none at all:
   each other's request for good — a CI run of the crossing integration test
   did exactly that. `reofferOnOwnRunner` watches `keyVerificationStream`, and
   once the device's own runner is stored the wrapper offers its held requests
-  again, yielding if it should (`ReofferOnRegister` in the model).
+  again, yielding if it should (`ReofferOnRegister` in the model). A yield
+  also records the peer as shown, and as the one shown last: the launcher's
+  sheet now shows that peer's ceremony, so "Show the emoji" reopens it and the
+  launcher does not offer it again unasked (`RecordHandedOff`).
 - **Dismissing a live sheet cancels its ceremony.** A backdrop tap used to
   leave the SDK ceremony running: the peer's sheet waited at the emoji step
   for a confirmation that would never come, holding its lock (TLC's
