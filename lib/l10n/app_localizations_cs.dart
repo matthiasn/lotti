@@ -3316,6 +3316,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
+  String get checkInAddNoteHint => 'Přidej poznámku…';
+
+  @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
 
   @override
@@ -3457,9 +3460,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Otevřít nastavení';
 
   @override
-  String get checkInOrTypeHint => 'Nebo to napiš sem…';
-
-  @override
   String get checkInPayAttentionLabel => 'Příště se zaměřit na';
 
   @override
@@ -3568,28 +3568,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInStartedLabel => 'Začátek';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Mikrofon není k dispozici';
-
-  @override
   String get checkInStatusPaused => 'Pozastaveno';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Rekordér je obsazený';
 
   @override
   String get checkInStatusRecording => 'Nahrává se';
 
   @override
-  String get checkInStatusRecordingFailed => 'Nahrávání se nespustilo';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Nahrávka neuložena';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable => 'Žádný model pro přepis';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Přepis nedorazil';
+
+  @override
+  String get checkInTakeRemoved => 'Nahrávka odebrána';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3614,9 +3602,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Není nastavený žádný model pro přepis';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Tvoje nahrávka ($length) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Nahrávka zůstane uložená v deníku, i když tento záznam zahodíš. Zkus to za chvíli znovu.';
 
   @override
   String get checkInTranscriptUnavailable =>

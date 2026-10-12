@@ -240,51 +240,27 @@ String checkInSpokenClockLabel(AppLocalizations messages, Duration length) {
   ].join(' ');
 }
 
-/// What the composer's header says on its second line while speech is in
-/// flight — the recorder's phase first, then the takes' words.
+/// What the composer's header says beside the title: who the check-in is
+/// with at rest, or what the recorder is doing now. Each state has one
+/// owner — a take's words-in-flight belong to its card, a failure to its
+/// callout — so the header never says what the field below already does.
 enum CheckInComposerStatus {
   idle,
   preparing,
   recording,
   paused,
-  transcribing,
-  transcriptMissing,
-  transcriptionUnavailable,
-  microphoneDenied,
-  recordingFailed,
-  recordingNotSaved,
-  recorderBusy,
 }
 
-/// The header status for a [phase] and the [takes] made so far;
-/// [recorderPaused] only matters while recording. The recorder speaks
-/// first — it is what the user is doing now — then a take still waiting
-/// for words, then one whose words never came.
+/// The header status for a [phase]; [recorderPaused] only matters while
+/// recording.
 CheckInComposerStatus checkInComposerStatusOf(
   CheckInSpeechPhase phase, {
   required bool recorderPaused,
-  List<CheckInTake> takes = const [],
 }) => switch (phase) {
   CheckInSpeechPreparing() => CheckInComposerStatus.preparing,
   CheckInSpeechRecording() =>
     recorderPaused
         ? CheckInComposerStatus.paused
         : CheckInComposerStatus.recording,
-  CheckInSpeechFailed(:final failure) => switch (failure.kind) {
-    CheckInSpeechFailureKind.microphoneDenied =>
-      CheckInComposerStatus.microphoneDenied,
-    CheckInSpeechFailureKind.recordingFailed =>
-      CheckInComposerStatus.recordingFailed,
-    CheckInSpeechFailureKind.recordingNotSaved =>
-      CheckInComposerStatus.recordingNotSaved,
-    CheckInSpeechFailureKind.recorderBusy => CheckInComposerStatus.recorderBusy,
-    CheckInSpeechFailureKind.transcriptionUnavailable =>
-      CheckInComposerStatus.transcriptionUnavailable,
-  },
-  CheckInSpeechIdle() =>
-    takes.any((t) => t.words == CheckInTakeWords.transcribing)
-        ? CheckInComposerStatus.transcribing
-        : takes.any((t) => t.words == CheckInTakeWords.missing)
-        ? CheckInComposerStatus.transcriptMissing
-        : CheckInComposerStatus.idle,
+  CheckInSpeechFailed() || CheckInSpeechIdle() => CheckInComposerStatus.idle,
 };

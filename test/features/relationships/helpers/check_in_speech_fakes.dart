@@ -63,15 +63,40 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   }) {
     transcribeCalls.add(audioEntryId);
     transcribePeople.add(relationshipId);
-    final completer =
+    return _wait(audioEntryId);
+  }
+
+  /// The recordings listened to again without a request, in call order.
+  final watchCalls = <String>[];
+
+  @override
+  CheckInTranscriptWait watch({
+    required String audioEntryId,
+    Duration timeout = checkInTranscriptTimeout,
+  }) {
+    watchCalls.add(audioEntryId);
+    return _wait(audioEntryId);
+  }
+
+  /// One wait on the recording's words. Cancelling it ends this wait
+  /// alone, as the real service's does — the words still land for a wait
+  /// opened on them later.
+  CheckInTranscriptWait _wait(String audioEntryId) {
+    final words =
         gatesByAudio[audioEntryId] ??
         gate ??
         (Completer<String?>()..complete(transcript));
+    final mine = Completer<String?>();
+    unawaited(
+      words.future.then((value) {
+        if (!mine.isCompleted) mine.complete(value);
+      }),
+    );
     return CheckInTranscriptWait.forTesting(
-      result: completer.future,
+      result: mine.future,
       onCancel: () {
         cancelCount++;
-        if (!completer.isCompleted) completer.complete(null);
+        if (!mine.isCompleted) mine.complete(null);
       },
     );
   }

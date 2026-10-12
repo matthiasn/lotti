@@ -180,6 +180,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// under the chips can say so. A field the user picks again leaves it.
   final Set<CheckInContextField> _dictatedFields = {};
 
+  /// The take last removed and where it stood — offered back in the field
+  /// until the next removal, the next take or the save; null when there is
+  /// none.
+  ({CheckInTake take, int index})? _removed;
+
   /// Optional sentiment, topics and next-time guidance, folded by default;
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
@@ -525,8 +530,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         ..._takes,
         CheckInTake(audioEntryId: audioEntryId, length: length),
       ];
+      // A new take moves on: the offer to put the last removed one back
+      // goes with it.
+      _removed = null;
     });
-    unawaited(_transcribe(audioEntryId));
+    _askForWords(audioEntryId);
   }
 
   void _onRecordingDiscarded() {
@@ -562,20 +570,66 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   bool _holds(String audioEntryId) =>
       _takes.any((take) => take.audioEntryId == audioEntryId);
 
-  /// *Try again* on a take whose words never came: the same recording,
-  /// asked for once more — never a second recording.
-  void _retryTake(String audioEntryId) => unawaited(_transcribe(audioEntryId));
+  /// Sets `_transcribe` going for [id]: asking for its words, with [retry]
+  /// for *Try again* (the same recording asked once more, never a second
+  /// recording), or with [request] false only listening for a request
+  /// already running. It reports its own failures on the take.
+  void _askForWords(String id, {bool request = true, bool retry = false}) =>
+      unawaited(_transcribe(id, request: request, retry: retry));
 
   /// *Remove recording*: the take stays out of the check-in. Its audio stays
   /// in the journal, linked to the person, as the discard question says.
+  /// What dictation filled is read again from the takes that remain, so a
+  /// fact only this take named goes with it and one another take names
+  /// stays. The field offers it back in its slot until the next removal.
   void _removeTake(String audioEntryId) {
+    final index = _takes.indexWhere((t) => t.audioEntryId == audioEntryId);
+    if (index < 0) return;
+    final removed = _takes[index];
     _closeTranscriptWait(audioEntryId);
-    setState(
-      () => _takes = [
-        for (final take in _takes)
-          if (take.audioEntryId != audioEntryId) take,
-      ],
-    );
+    setState(() {
+      _takes = [..._takes]..removeAt(index);
+      _removed = (take: removed, index: index);
+    });
+    _refillFromTakes();
+  }
+
+  /// *Undo* on a removed take: it goes back where it stood among the takes
+  /// there are **now** — a sibling's words that landed meanwhile stay —
+  /// and what dictation filled is read again with it.
+  void _undoRemove() {
+    final removed = _removed;
+    if (removed == null) return;
+    setState(() {
+      _removed = null;
+      _takes = [..._takes]
+        ..insert(removed.index.clamp(0, _takes.length), removed.take);
+    });
+    _refillFromTakes();
+    // Its words were still on their way when it went: listen for them
+    // again — the request it made is still running.
+    if (removed.take.words == CheckInTakeWords.transcribing) {
+      _askForWords(removed.take.audioEntryId, request: false);
+    }
+  }
+
+  /// Puts every fact dictation filled back to the composer's opening value
+  /// — never one the user chose — and reads the takes there are again.
+  void _refillFromTakes() {
+    setState(() {
+      for (final field in _dictatedFields) {
+        switch (field) {
+          case CheckInContextField.type:
+            _interactionType = _openingType;
+          case CheckInContextField.start:
+            _interactionTime = _openingTime;
+          case CheckInContextField.duration:
+            _duration = _openingDuration;
+        }
+      }
+      _dictatedFields.clear();
+    });
+    _fillFromDictation();
   }
 
   /// *Type instead* on a failure card: the field comes back as plain text.
@@ -814,8 +868,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
               : null,
           takes: _takes,
           onDictate: speechIdle ? _dictate : null,
-          onRetryTake: _isSaving ? null : _retryTake,
+          onRetryTake: _isSaving ? null : (id) => _askForWords(id, retry: true),
           onRemoveTake: _isSaving ? null : _removeTake,
+          onUndoRemove: _isSaving || _removed == null ? null : _undoRemove,
+          removedAt: _removed?.index ?? 0,
           onOpenSettings: _openSettings,
           onDismissFailure: _typeInstead,
         ),
@@ -827,8 +883,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           // start and elapsed time, and that every one of them is
           // editable. A composer opened on a call holds all three, so
           // dictation never fills one beside this strip.
+          // The caption belongs to the lane it explains: a group's gap
+          // above it, and none below — the tags' own touch targets are the
+          // air between them.
+          // The facts are a group of their own: what was said above, the
+          // facts below, a group's gap between — with or without the caption.
+          SizedBox(height: tokens.spacing.sectionGap),
           if (_dictatedFields.isNotEmpty || prefilledFrom != null) ...[
-            SizedBox(height: tokens.spacing.step3),
             Text(
               _dictatedFields.isNotEmpty
                   ? messages.checkInSourceDictation
@@ -845,7 +906,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
               ),
             ),
           ],
-          SizedBox(height: tokens.spacing.step4),
           // The saved check-in page's own fact lane, the task header's
           // grammar: what the form sets is what the page will show, in the
           // same square tags, each opening the same picker. Its closing
@@ -911,7 +971,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ],
           ],
         ],
-        _BarSlack(handle: widget.handle),
+        _BarReserve(handle: widget.handle),
       ],
     );
 

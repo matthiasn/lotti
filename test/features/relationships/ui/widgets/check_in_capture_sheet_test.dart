@@ -1135,9 +1135,18 @@ void main() {
         find.textContaining('Choose a default inference profile'),
         findsOneWidget,
       );
+      // Dictating again would only come back here: the field offers no
+      // Dictate while the card stands.
+      final dictateButton = find.byKey(const ValueKey('check-in-dictate'));
+      expect(dictateButton, findsNothing);
       // The field is still there to type into, and Save follows the words.
       await type(tester, 'Typed instead.');
       expect(saveEnabled(tester), isTrue);
+      // Typing put the card away; Dictate is offered again.
+      expect(
+        tester.widget<DesignSystemButton>(dictateButton).onPressed,
+        isNotNull,
+      );
     });
 
     testWidgets('Type instead on a failure card puts the card away and the '
@@ -1509,7 +1518,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('Your 00:23 recording is saved in the journal'),
+        find.textContaining('Your recording is saved in the journal'),
         findsOneWidget,
       );
       expect(saveEnabled(tester), isTrue);
@@ -1567,6 +1576,38 @@ void main() {
       expect(narrativeText(tester), 'Typed only.');
     });
 
+    // The failure Try again answers is still on record when the retry
+    // opens its watch; the run clears it only after awaits of its own, so
+    // read back at once it ended the retry before it began.
+    testWidgets('Try again after a reported failure waits for the words '
+        'instead of reading the old failure back', (tester) async {
+      final gate = Completer<String?>();
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+      ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
+          .read(
+            inferenceErrorControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )).notifier,
+          )
+          .setError('HTTP 503 · Transcription service unavailable');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Transcript not received'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-retry-transcript')));
+      await tester.pump();
+      expect(find.textContaining('Transcribing…'), findsOneWidget);
+      expect(find.textContaining('Transcript not received'), findsNothing);
+
+      gate.complete('Second time lucky.');
+      await tester.pumpAndSettle();
+      expect(find.text('Second time lucky.'), findsOneWidget);
+    });
+
     // The error is keyed by the newly created audio entry. Automatic
     // inference can fail before the recorder has handed the entry back.
     testWidgets('a failure recorded before the wait opened ends processing', (
@@ -1621,11 +1662,11 @@ void main() {
         'Add a few words to save',
         reason: 'nothing is left to save',
       );
-      // The abandoned wait was completed by its own cancel; whatever the
-      // provider still sends lands nowhere.
+      // Whatever the provider still sends lands nowhere.
+      gate.complete('Late words.');
       await tester.pumpAndSettle();
-      expect(gate.isCompleted, isTrue);
       expect(take('audio-1'), findsNothing);
+      expect(find.text('Late words.'), findsNothing);
 
       await type(tester, 'Typed instead.');
       await tapSave(tester);
@@ -1798,14 +1839,41 @@ void main() {
     testWidgets('the header follows the recorder', (tester) async {
       await openSheet(tester);
       await startDictation(tester);
-      expect(find.text('Recording'), findsOneWidget);
+      expect(find.textContaining('Recording ·'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('check-in-recorder-pause')));
       // By hand: the shared visualizer keeps moving while paused, as the
       // recording sheet's does, so the tree never settles.
       for (var i = 0; i < 4; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(find.text('Paused'), findsOneWidget);
+      expect(find.textContaining('Paused ·'), findsOneWidget);
+    });
+
+    // The empty band: the modal reserved the pinned bar's height under the
+    // form even while a take hid the bar, so the recorder floated above a
+    // bar's height of nothing.
+    testWidgets('the room kept for the action bar goes with the bar while '
+        'a take runs, leaving a group gap under the recorder', (tester) async {
+      await openSheet(tester);
+      final atRest = find.byKey(const ValueKey('check-in-bar-reserve'));
+      final whileRecording = find.byKey(
+        const ValueKey('check-in-bar-reserve-recording'),
+      );
+      final tokens = tester.element(atRest).designTokens;
+      expect(
+        tester.getSize(atRest).height,
+        greaterThan(tokens.spacing.sectionGap),
+        reason: 'the last field scrolls clear of the bar',
+      );
+
+      await startDictation(tester);
+      expect(atRest, findsNothing);
+      expect(tester.getSize(whileRecording).height, tokens.spacing.sectionGap);
+
+      await stopRecording(tester);
+      await tester.pumpAndSettle();
+      expect(whileRecording, findsNothing);
+      expect(atRest, findsOneWidget);
     });
 
     testWidgets("Cancel, and the header's close, dismiss an untouched "
@@ -1850,7 +1918,14 @@ void main() {
       expect(narrativeText(tester), 'Half a thought');
 
       await startDictation(tester);
-      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      // While a take runs the header's ✕ steps aside — the recorder's own
+      // discard is the way out a finger away — and the back gesture still
+      // asks the sheet's question.
+      expect(
+        find.byKey(const ValueKey('check-in-close')).hitTestable(),
+        findsNothing,
+      );
+      await tester.binding.handlePopRoute();
       await pumpRecording(tester);
       expect(
         find.text(
@@ -1878,8 +1953,14 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 23));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('Transcript not received'), findsOneWidget);
-      expect(take('audio-1'), findsOneWidget);
+      // The take says where its words are; the header stays at rest.
+      expect(
+        find.descendant(
+          of: take('audio-1'),
+          matching: find.textContaining('Transcript not received'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
@@ -2043,7 +2124,7 @@ void main() {
       await startDictation(tester);
       expect(recorder.modalVisibleLog, [true]);
 
-      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.binding.handlePopRoute();
       await pumpRecording(tester);
       // A recording is a draft: the guard asks first.
       await tester.tap(find.text('Discard').last);
@@ -2217,6 +2298,181 @@ void main() {
         expect(check.data.interactionType, CheckInInteractionType.videoCall);
         expect(check.from, DateTime(2026, 8, 10, 15));
         expect(check.to, DateTime(2026, 8, 10, 15, 45));
+      });
+    });
+
+    testWidgets('removing the take undoes what it filled; a chip the user '
+        'chose stays, and the takes that remain still speak', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await dictate(
+          tester,
+          'We had a video call at 3 pm and talked for 45 minutes.',
+        );
+        expect(typeChip('Video call'), findsOneWidget);
+        expect(find.text('45 min'), findsOneWidget);
+        // The user settles the length themselves.
+        await pickDuration(tester, 30);
+
+        await tester.tap(
+          find.descendant(
+            of: take('audio-1'),
+            matching: find.byKey(const ValueKey('check-in-take-remove')),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The channel goes back to how the composer opened; the length the
+        // user picked stays; nothing is credited to a recording that is gone.
+        expect(typeChip('Video call'), findsNothing);
+        expect(typeChip('In person'), findsOneWidget);
+        expect(find.text('30 min'), findsOneWidget);
+        expect(strip, findsNothing);
+
+        // A second take that names the channel brings it back.
+        recorder.stopResult = 'audio-2';
+        await dictate(tester, 'It was a video call in the end.');
+        expect(typeChip('Video call'), findsOneWidget);
+        expect(strip, findsOneWidget);
+      });
+    });
+
+    testWidgets('a removed take comes back on Undo, with what it filled', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await dictate(
+          tester,
+          'We had a video call at 3 pm and talked for 45 minutes.',
+        );
+        await tester.tap(
+          find.descendant(
+            of: take('audio-1'),
+            matching: find.byKey(const ValueKey('check-in-take-remove')),
+          ),
+        );
+        await tester.pump();
+        expect(take('audio-1'), findsNothing);
+        expect(
+          find.text('Recording removed'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Undo'));
+        await tester.pumpAndSettle();
+        expect(take('audio-1'), findsOneWidget);
+        expect(typeChip('Video call'), findsOneWidget);
+        expect(find.text('45 min'), findsOneWidget);
+        expect(strip, findsOneWidget);
+      });
+    });
+
+    testWidgets('Undo puts the take back among the takes there are now: '
+        "a sibling's words that landed meanwhile stay", (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        final later = Completer<String?>();
+        stubTranscription.gatesByAudio['audio-2'] = later;
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await dictate(tester, 'We talked for about 45 minutes.');
+        recorder.stopResult = 'audio-2';
+        await startDictation(tester);
+        await stopRecording(tester);
+
+        await tester.tap(
+          find.descendant(
+            of: take('audio-1'),
+            matching: find.byKey(const ValueKey('check-in-take-remove')),
+          ),
+        );
+        await tester.pump();
+        // The offer stands in the slot the take left: above the other one.
+        final slot = find.byKey(const ValueKey('check-in-take-removed'));
+        expect(
+          tester.getTopLeft(slot).dy,
+          lessThan(tester.getTopLeft(take('audio-2')).dy),
+        );
+
+        // The other take's words land while the first is out.
+        later.complete('It was a video call in the end.');
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(typeChip('Video call'), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('check-in-take-undo')));
+        await tester.pump();
+        expect(slot, findsNothing);
+        // Back in its place, first; the sibling keeps the words it got.
+        expect(
+          tester.getTopLeft(take('audio-1')).dy,
+          lessThan(tester.getTopLeft(take('audio-2')).dy),
+        );
+        expect(
+          find.descendant(
+            of: take('audio-2'),
+            matching: find.text('It was a video call in the end.'),
+          ),
+          findsOneWidget,
+        );
+        // And what both said is read again.
+        expect(typeChip('Video call'), findsOneWidget);
+        expect(find.text('45 min'), findsOneWidget);
+      });
+    });
+
+    testWidgets('Undo on a take still waiting for its words listens again '
+        'without asking twice, and the words still land', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        final words = Completer<String?>();
+        stubTranscription.gatesByAudio['audio-1'] = words;
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await startDictation(tester);
+        await stopRecording(tester);
+        expect(stubTranscription.transcribeCalls, ['audio-1']);
+
+        await tester.tap(find.byKey(const ValueKey('check-in-take-remove')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('check-in-take-undo')));
+        await tester.pump();
+        // The request it made is still running: one request, a new watch.
+        expect(stubTranscription.transcribeCalls, ['audio-1']);
+        expect(stubTranscription.watchCalls, ['audio-1']);
+
+        words.complete('We talked for about 45 minutes.');
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(
+          find.descendant(
+            of: take('audio-1'),
+            matching: find.text('We talked for about 45 minutes.'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('45 min'), findsOneWidget);
+      });
+    });
+
+    testWidgets('a new take moves on: the offer to put the removed one back '
+        'goes', (tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(buildRankedForm());
+        await tester.pumpAndSettle();
+        await dictate(tester, 'We talked for about 45 minutes.');
+        await tester.tap(find.byKey(const ValueKey('check-in-take-remove')));
+        await tester.pumpAndSettle();
+        final slot = find.byKey(const ValueKey('check-in-take-removed'));
+        expect(slot, findsOneWidget);
+
+        recorder.stopResult = 'audio-2';
+        await dictate(tester, 'It was a video call.');
+        expect(take('audio-2'), findsOneWidget);
+        expect(slot, findsNothing);
       });
     });
 

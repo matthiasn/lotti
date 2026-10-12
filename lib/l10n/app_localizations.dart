@@ -5520,6 +5520,12 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
+  /// The empty note's placeholder beside a recording in the check-in composer
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note…'**
+  String get checkInAddNoteHint;
+
   /// No description provided for @checkInAvoidLabel.
   ///
   /// In en, this message translates to:
@@ -5742,12 +5748,6 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get checkInOpenSettingsButton;
 
-  /// No description provided for @checkInOrTypeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Or type it here…'**
-  String get checkInOrTypeHint;
-
   /// No description provided for @checkInPayAttentionLabel.
   ///
   /// In en, this message translates to:
@@ -5910,23 +5910,11 @@ abstract class AppLocalizations {
   /// **'Started'**
   String get checkInStartedLabel;
 
-  /// No description provided for @checkInStatusMicrophoneDenied.
-  ///
-  /// In en, this message translates to:
-  /// **'Microphone unavailable'**
-  String get checkInStatusMicrophoneDenied;
-
   /// No description provided for @checkInStatusPaused.
   ///
   /// In en, this message translates to:
   /// **'Paused'**
   String get checkInStatusPaused;
-
-  /// No description provided for @checkInStatusRecorderBusy.
-  ///
-  /// In en, this message translates to:
-  /// **'Recorder busy'**
-  String get checkInStatusRecorderBusy;
 
   /// No description provided for @checkInStatusRecording.
   ///
@@ -5934,29 +5922,17 @@ abstract class AppLocalizations {
   /// **'Recording'**
   String get checkInStatusRecording;
 
-  /// No description provided for @checkInStatusRecordingFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording didn\'t start'**
-  String get checkInStatusRecordingFailed;
-
-  /// No description provided for @checkInStatusRecordingNotSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording not saved'**
-  String get checkInStatusRecordingNotSaved;
-
-  /// No description provided for @checkInStatusTranscriptionUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No transcription model'**
-  String get checkInStatusTranscriptionUnavailable;
-
   /// No description provided for @checkInStatusTranscriptMissing.
   ///
   /// In en, this message translates to:
   /// **'Transcript not received'**
   String get checkInStatusTranscriptMissing;
+
+  /// Toast after removing a recording from a check-in being written; offers Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording removed'**
+  String get checkInTakeRemoved;
 
   /// Under a recording in the check-in composer whose transcript is still on its way: saving does not wait for it.
   ///
@@ -5997,8 +5973,8 @@ abstract class AppLocalizations {
   /// No description provided for @checkInTranscriptMissingBody.
   ///
   /// In en, this message translates to:
-  /// **'Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.'**
-  String checkInTranscriptMissingBody(String length);
+  /// **'Your recording is saved in the journal, even if you cancel this check-in. Try again in a moment.'**
+  String get checkInTranscriptMissingBody;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///

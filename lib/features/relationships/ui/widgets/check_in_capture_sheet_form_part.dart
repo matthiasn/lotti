@@ -74,7 +74,6 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
     final status = checkInComposerStatusOf(
       _phase,
       recorderPaused: recorderPaused,
-      takes: _takes,
     );
     final summary = messages.checkInContextSummary(
       checkInInteractionLabel(context, _interactionType),
@@ -104,33 +103,52 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
   /// capture; the transcription service owns the one explicit request, and
   /// runs on after the sheet closes — the words land on the recording, and
   /// the service tells the saved check-in (ADR 0062).
-  Future<void> _transcribe(String audioEntryId) async {
+  ///
+  /// With [request] false it only listens again, for a take whose request is
+  /// still running (a take put back by *Undo*): asking twice would run
+  /// inference twice. A [retry] answers the failure already on record, so
+  /// that failure is cleared first — the run clears it too, but only after
+  /// awaits of its own, and the watch below would read it back at once and
+  /// end the retry before it began.
+  Future<void> _transcribe(
+    String audioEntryId, {
+    bool request = true,
+    bool retry = false,
+  }) async {
     final transcription = ref.read(checkInTranscriptionServiceProvider);
     final messages = context.messages;
     _updateTake(audioEntryId, (take) => take.transcribing());
     // The route is a courtesy on the take's line: a slow read must never
-    // hold the transcript, and a failed one must never fail it.
-    unawaited(
-      _labelRoute(
-        transcription,
-        audioEntryId: audioEntryId,
-        via: messages.taskAgentRouteVia,
-      ),
-    );
+    // hold the transcript, and a failed one must never fail it. A take
+    // listened to again still carries the one it was given.
+    if (request) {
+      unawaited(
+        _labelRoute(
+          transcription,
+          audioEntryId: audioEntryId,
+          via: messages.taskAgentRouteVia,
+        ),
+      );
+    }
+
+    final failure = inferenceErrorControllerProvider((
+      id: audioEntryId,
+      aiResponseType: AiResponseType.audioTranscription,
+    ));
+    if (retry) ref.read(failure.notifier).setError(null);
 
     _closeTranscriptWait(audioEntryId);
-    final wait = _transcriptWaits[audioEntryId] = transcription.transcribe(
-      audioEntryId: audioEntryId,
-      relationshipId: widget.relationshipId,
-    );
+    final wait = _transcriptWaits[audioEntryId] = request
+        ? transcription.transcribe(
+            audioEntryId: audioEntryId,
+            relationshipId: widget.relationshipId,
+          )
+        : transcription.watch(audioEntryId: audioEntryId);
     // Preserve the provider's error detail for the take, including a
     // failure that arrived before this subscription was attached.
     String? failureDetail;
     _transcriptFailures[audioEntryId] = ref.listenManual<String?>(
-      inferenceErrorControllerProvider((
-        id: audioEntryId,
-        aiResponseType: AiResponseType.audioTranscription,
-      )),
+      failure,
       (previous, next) {
         final detail = next?.trim();
         if (detail == null || detail.isEmpty) return;

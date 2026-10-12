@@ -217,25 +217,17 @@ Future<CheckInEntry?> _showComposer({
   }
 }
 
-/// Air between the pinned header and the field, and room under the form
-/// for the pinned action bar, so the last field can scroll fully above it
-/// with a step of air to spare. The reserve is the bar's predicted height
-/// for this layout, so the desktop dialog — whose bar has no reason line of
-/// its own — carries no blank band above its footer; the form adds any
-/// slack the *measured* bar turns out to need (see [_BarSlack]).
+/// Air between the pinned header and the field, and a step of air under
+/// the form. The room for the pinned action bar is the form's own
+/// ([_BarReserve]), because only the form knows when the bar is gone: while
+/// a take runs the recorder's controls are the actions, and a reserve held
+/// for a bar that is not there left an empty band under the recorder.
 EdgeInsets _formPadding(BuildContext context) {
   final tokens = context.designTokens;
-  final dialog =
-      MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
   return EdgeInsets.fromLTRB(
     tokens.spacing.step5,
     tokens.spacing.step4,
     tokens.spacing.step5,
-    CheckInStickyActions.height(
-          tokens,
-          MediaQuery.textScalerOf(context),
-          dialog: dialog,
-        ) +
-        tokens.spacing.step3,
+    tokens.spacing.step3,
   );
 }

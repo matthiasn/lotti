@@ -3301,6 +3301,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
 
   @override
+  String get checkInAddNoteHint => 'Notiz hinzufügen…';
+
+  @override
   String get checkInAvoidLabel => 'Besser vermeiden';
 
   @override
@@ -3442,9 +3445,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Einstellungen öffnen';
 
   @override
-  String get checkInOrTypeHint => 'Oder tipp es hier ein…';
-
-  @override
   String get checkInPayAttentionLabel => 'Nächstes Mal achten auf';
 
   @override
@@ -3552,29 +3552,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInStartedLabel => 'Begonnen';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Mikrofon nicht verfügbar';
-
-  @override
   String get checkInStatusPaused => 'Pausiert';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Rekorder belegt';
 
   @override
   String get checkInStatusRecording => 'Aufnahme läuft';
 
   @override
-  String get checkInStatusRecordingFailed => 'Aufnahme nicht gestartet';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Aufnahme nicht gespeichert';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Kein Transkriptionsmodell';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Kein Transkript erhalten';
+
+  @override
+  String get checkInTakeRemoved => 'Aufnahme entfernt';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3599,9 +3586,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kein Transkriptionsmodell eingerichtet';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Deine Aufnahme ($length) bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Deine Aufnahme bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.';
 
   @override
   String get checkInTranscriptUnavailable =>

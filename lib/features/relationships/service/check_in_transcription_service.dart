@@ -139,6 +139,14 @@ class CheckInTranscriptionService {
     return wait;
   }
 
+  /// Waits for [audioEntryId]'s transcript **without** asking for one — for
+  /// a recording whose request is already running, such as a take put back
+  /// by *Undo*, where a second request would run inference twice.
+  CheckInTranscriptWait watch({
+    required String audioEntryId,
+    Duration timeout = checkInTranscriptTimeout,
+  }) => _awaitTranscript(audioEntryId, timeout: timeout);
+
   /// The person's known terms, or none when they cannot be read. A missing
   /// list costs only the correction, never the transcript.
   Future<List<String>> _knownTerms(String relationshipId) async {

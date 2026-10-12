@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -50,6 +52,7 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     this.categoryId,
     this.adoptRunning = false,
     this.compact = false,
+    this.showStatus = false,
     super.key,
   });
 
@@ -69,6 +72,11 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
   /// Whether to leave the orb or meter out, as the check-in page's dock
   /// does, so dictating never covers the check-in it adds to.
   final bool compact;
+
+  /// Whether the recorder says *Recording* / *Paused* itself — the page's
+  /// dock, which has no header of its own; the composer's header says it
+  /// there — in the header's own grammar: the red dot, or the pause glyph.
+  final bool showStatus;
 
   @override
   ConsumerState<CheckInInlineRecorder> createState() =>
@@ -153,6 +161,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final messages = context.messages;
     final state = ref.watch(audioRecorderControllerProvider);
     final paused = state.status == AudioRecorderStatus.paused;
@@ -162,6 +171,39 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
       key: const ValueKey('check-in-inline-recorder'),
       state: state,
       compact: widget.compact,
+      notice: widget.showStatus
+          ? Semantics(
+              liveRegion: true,
+              child: Row(
+                key: const ValueKey('check-in-recorder-status'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (paused)
+                    Icon(
+                      LottiIcons.pause,
+                      size: IconSizes.s,
+                      color: tokens.colors.text.mediumEmphasis,
+                    )
+                  else
+                    const DesignSystemBadge.dot(
+                      tone: DesignSystemBadgeTone.danger,
+                      excludeFromSemantics: true,
+                    ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Text(
+                    paused
+                        ? messages.checkInStatusPaused
+                        : messages.checkInStatusRecording,
+                    // The composer header's own tier, so the two status lines
+                    // read alike.
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
       // Named, not live: the header's status line announces recording and
       // paused, so a reader hears each transition once.
       levelSemanticsLabel: live

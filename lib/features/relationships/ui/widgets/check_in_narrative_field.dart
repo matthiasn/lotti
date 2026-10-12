@@ -1,7 +1,9 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -9,10 +11,11 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The composer's one field (design 2026-09-13): the note, with *Dictate*
-/// inside it, and beneath the note the recordings made so far. The
-/// recorder and its failure cards render **in place of the text**, so the
-/// user never leaves the thing they are writing.
+/// The composer's one field (design 2026-09-13): the recordings made so
+/// far, then the note, with *Dictate* in its footer — before any recording
+/// the note alone. The recorder renders **in place of the text**, so the
+/// user never leaves the thing they are writing; a failure's callout sits
+/// above the field.
 ///
 /// A recording is its own entry of the check-in (ADR 0062): its words land
 /// on it, shown as the take's preview, never merged into the note — and
@@ -34,6 +37,8 @@ class CheckInNarrativeField extends StatelessWidget {
     this.takes = const [],
     this.onRetryTake,
     this.onRemoveTake,
+    this.onUndoRemove,
+    this.removedAt = 0,
     this.shortcutHint,
     this.restMinLines = 3,
     this.offersDictation = true,
@@ -68,6 +73,14 @@ class CheckInNarrativeField extends StatelessWidget {
   /// id. The audio stays in the journal.
   final ValueChanged<String>? onRemoveTake;
 
+  /// Puts back the take just removed; while set, the field says so and
+  /// offers it, in the slot the take left.
+  final VoidCallback? onUndoRemove;
+
+  /// Where among [takes] the removed take stood, so the offer to put it
+  /// back sits in its slot; clamped to the takes there are now.
+  final int removedAt;
+
   /// `⌘↩ to save`, on a desktop with a keyboard; null elsewhere.
   final String? shortcutHint;
 
@@ -95,7 +108,11 @@ class CheckInNarrativeField extends StatelessWidget {
         final border = phase is CheckInSpeechRecording
             ? Colors.transparent
             : designSystemFieldBorderColor(tokens, focused: focused);
-        return AnimatedContainer(
+        final failure = switch (phase) {
+          CheckInSpeechFailed(:final failure) => failure,
+          _ => null,
+        };
+        final field = AnimatedContainer(
           key: const ValueKey('check-in-narrative-field'),
           duration: MotionDurations.short4,
           curve: MotionCurves.standard,
@@ -117,9 +134,33 @@ class CheckInNarrativeField extends StatelessWidget {
             CheckInSpeechRecording() => _recording(context),
             CheckInSpeechFailed(:final failure) => _typing(
               context,
-              failure: failure,
+              underCard: true,
+              // The callout owns the retry where it offers one; under a
+              // refused microphone the field's Dictate is the retry, and
+              // with no transcription model there is none to offer.
+              dictates:
+                  failure.kind == CheckInSpeechFailureKind.microphoneDenied,
             ),
           },
+        );
+        if (failure == null) return field;
+        // The callout above the field, not inside its frame: one bordered
+        // object at a time, the field below it the way out.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FailureCard(
+              failure: failure,
+              onOpenSettings: onOpenSettings,
+              onDictate: onDictate,
+              onTypeInstead: onDismissFailure,
+            ),
+            // The field's own inset apart: the card and the field are two
+            // objects, not one stacked list.
+            SizedBox(height: tokens.spacing.step5),
+            field,
+          ],
         );
       },
     );
@@ -131,15 +172,11 @@ class CheckInNarrativeField extends StatelessWidget {
     // Three lines at rest: the box agrees with its own "one line is
     // enough"; five was an empty slab in the sheet.
     int minLines = 3,
-    bool quietHint = false,
   }) {
     final tokens = context.designTokens;
-    // Under a failure card the placeholder steps down a tier: the card's
-    // title is the thing to read, and a bodyLarge hint beneath a bodySmall
-    // card body would invert the field's own ladder.
-    final hintTier = quietHint
-        ? tokens.typography.styles.body.bodyMedium
-        : tokens.typography.styles.body.bodyLarge;
+    // The placeholder in the typed text's own tier, in every state, so it
+    // never changes size when a take lands — the copy changes instead.
+    final text = tokens.typography.styles.body.bodyLarge;
     return TextField(
       key: const ValueKey('check-in-narrative'),
       controller: controller,
@@ -147,16 +184,14 @@ class CheckInNarrativeField extends StatelessWidget {
       minLines: minLines,
       maxLines: null,
       textCapitalization: TextCapitalization.sentences,
-      style: tokens.typography.styles.body.bodyLarge.copyWith(
-        color: tokens.colors.text.highEmphasis,
-      ),
+      style: text.copyWith(color: tokens.colors.text.highEmphasis),
       // The box above draws the field's one frame. `collapsed` only clears
       // `border`: the app's InputDecorationTheme would still fill in its
       // 2.5 px focused outline, a second ring inside the accent hairline.
       decoration:
           InputDecoration.collapsed(
             hintText: hint,
-            hintStyle: hintTier.copyWith(color: tokens.colors.text.lowEmphasis),
+            hintStyle: text.copyWith(color: tokens.colors.text.lowEmphasis),
           ).copyWith(
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -164,19 +199,30 @@ class CheckInNarrativeField extends StatelessWidget {
             errorBorder: InputBorder.none,
             focusedErrorBorder: InputBorder.none,
             filled: false,
+            // The decorator sizes for its hint even when the hint is
+            // hidden: on a phone the two-line hint held a blank second
+            // line under a one-line note. Hidden, it may claim no more
+            // lines than the field asks for; shown, it wraps.
+            hintMaxLines: controller.text.isEmpty ? null : minLines,
           ),
     );
   }
 
-  /// The field as text — plain, while preparing, or under a failure card —
-  /// then the takes, then the word count and *Dictate* in its footer.
+  /// The field as text — plain, while preparing, or under a failure card:
+  /// the takes, then the note, then the word count and *Dictate* in its
+  /// footer.
   Widget _typing(
     BuildContext context, {
     bool preparing = false,
-    CheckInSpeechFailure? failure,
+    bool underCard = false,
+    bool dictates = true,
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // The slot a removed take left counts as a take for the chrome, so
+    // removing one — and putting it back — never reshapes the footer.
+    final hasTakes = takes.isNotEmpty || onUndoRemove != null;
+    final quietDictate = hasTakes && !underCard;
     // The medium tier, like the More row and the footer reason: low
     // emphasis is for placeholders only.
     final caption = tokens.typography.styles.others.caption.copyWith(
@@ -185,14 +231,18 @@ class CheckInNarrativeField extends StatelessWidget {
     // Under a failure card the field is the way out, not the thing to read:
     // it starts short so the chips and More stay on a phone screen, and a
     // "0 words" count says nothing the card and the held Save do not.
-    final underCard = failure != null;
     // What there is, and how to save — a ladder, so a narrow line sheds the
     // count before the shortcut and never wraps on a separator. A zero
     // count adds nothing the empty field does not already say.
-    final count = wordCount > 0 ? messages.checkInWordCount(wordCount) : null;
+    // Beside a take the count would read as the take's; it is the note's.
+    final count = wordCount > 0 && !hasTakes
+        ? messages.checkInWordCount(wordCount)
+        : null;
     // The shortcut only once there is something to save with it: beside a
     // held Save, a working shortcut is a promise the footer contradicts.
     final hint = switch (shortcutHint) {
+      // A real take, not the slot one left: removing the only take leaves
+      // nothing to save.
       final hint? when wordCount > 0 || takes.isNotEmpty =>
         messages.checkInSaveShortcutHint(hint),
       _ => null,
@@ -205,17 +255,26 @@ class CheckInNarrativeField extends StatelessWidget {
         keep.nonNulls.join(' · '),
     }.where((tier) => tier.isNotEmpty).toList();
     final actions = <Widget>[
-      // Under the refused microphone the field's Dictate is the retry, one
-      // tier down: the card's pill is the face's one shape.
-      if (offersDictation)
+      // One shape in every state; once a take is in, a step quieter, so
+      // Save — not another recording — reads as the next thing to do.
+      if (offersDictation && dictates)
         DesignSystemButton(
           key: const ValueKey('check-in-dictate'),
           label: messages.checkInDictateButton,
           leadingIcon: LottiIcons.mic,
-          variant: underCard
+          // Once a take is in, Save leads: Dictate steps down to the
+          // caption-tier text action — still in the action ink, so it never
+          // reads as part of the caption beside it — its label ending on the
+          // field's content edge. Before one, and under a refused
+          // microphone where it is the retry the card names, it keeps its
+          // resting shape.
+          variant: quietDictate
               ? DesignSystemButtonVariant.tertiary
               : DesignSystemButtonVariant.outlined,
-          size: DesignSystemButtonSize.medium,
+          size: quietDictate
+              ? DesignSystemButtonSize.dense
+              : DesignSystemButtonSize.medium,
+          alignsLabelToTrailingEdge: quietDictate,
           isLoading: preparing,
           onPressed: preparing ? null : onDictate,
         ),
@@ -225,43 +284,55 @@ class CheckInNarrativeField extends StatelessWidget {
     // text, where even a lone button can crowd the caption.
     final stacked =
         MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
+    final slots = <Widget>[
+      for (final take in takes)
+        CheckInTakeRow(
+          key: ValueKey('check-in-take-${take.audioEntryId}'),
+          take: take,
+          onRetry: onRetryTake == null
+              ? null
+              : () => onRetryTake!(take.audioEntryId),
+          onRemove: onRemoveTake == null
+              ? null
+              : () => onRemoveTake!(take.audioEntryId),
+        ),
+    ];
+    // The offer to put a removed take back stands where the take stood.
+    if (onUndoRemove case final undo?) {
+      slots.insert(
+        removedAt.clamp(0, slots.length),
+        _RemovedTakeSlot(onUndo: undo),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (failure != null) ...[
-          _FailureCard(
-            failure: failure,
-            onOpenSettings: onOpenSettings,
-            onDictate: onDictate,
-            onTypeInstead: onDismissFailure,
+        // What was said leads, and the note follows it as the user's own
+        // line — beside a take the empty note is an invitation, not the
+        // heading of the words beneath it.
+        // Takes sit step4 apart, and the note a card's own inset below the
+        // last, so it reads as the field's, not as the card's last line.
+        for (final (index, slot) in slots.indexed) ...[
+          slot,
+          SizedBox(
+            height: index == slots.length - 1
+                ? tokens.spacing.step5
+                : tokens.spacing.step4,
           ),
-          SizedBox(height: tokens.spacing.step4),
         ],
         _textField(
           context,
-          hint: underCard
-              ? messages.checkInOrTypeHint
+          // The slot a removed take left counts too: the long hint would
+          // wrap and grow the field until Undo.
+          hint: hasTakes
+              ? messages.checkInAddNoteHint
               : messages.checkInNarrativeHint,
           // "One line is enough": the box says so by not asking for five.
-          // Neither does it beside a recording, which already says it.
-          minLines: underCard || takes.isNotEmpty ? 1 : restMinLines,
-          quietHint: underCard,
+          // Neither does it beside a recording, or the slot one left.
+          minLines: underCard || hasTakes ? 1 : restMinLines,
         ),
-        for (final take in takes) ...[
-          SizedBox(height: tokens.spacing.step4),
-          CheckInTakeRow(
-            key: ValueKey('check-in-take-${take.audioEntryId}'),
-            take: take,
-            onRetry: onRetryTake == null
-                ? null
-                : () => onRetryTake!(take.audioEntryId),
-            onRemove: onRemoveTake == null
-                ? null
-                : () => onRemoveTake!(take.audioEntryId),
-          ),
-        ],
         if (ladder.isNotEmpty || actions.isNotEmpty)
           SizedBox(height: tokens.spacing.step4),
         if (preparing)
@@ -300,10 +371,10 @@ class CheckInNarrativeField extends StatelessWidget {
   );
 }
 
-/// One recording under the note: its length and where its words are on
-/// the first line, then the words themselves, the promise that they
-/// follow, or the way to ask again — and *Remove recording* on the
-/// trailing edge.
+/// One recording above the note: its length and where its words are on
+/// the header line, *Remove recording* at its end, then — at the card's
+/// full width — the words themselves, the promise that they follow, or why
+/// they are missing with the way to ask again.
 class CheckInTakeRow extends StatelessWidget {
   const CheckInTakeRow({
     required this.take,
@@ -321,16 +392,26 @@ class CheckInTakeRow extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final clock = formatElapsed(take.length);
-    final meta = tokens.typography.styles.others.caption.copyWith(
+    // The state and its explanation share one quiet tier — the glyph and
+    // its tone carry the news, not a bigger size.
+    final note = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
+    );
+    final meta = note.copyWith(
+      // A missing take's line is the news, so it outranks the explanation
+      // beneath it; otherwise it stays as quiet as its note.
+      color: take.words == CheckInTakeWords.missing
+          ? tokens.colors.text.highEmphasis
+          : null,
       // The app's own digit features, not a bare tabular flag: the same
       // set every People timestamp carries.
       fontFeatures: numericBadgeFontFeatures,
     );
-    final body = tokens.typography.styles.body.bodyMedium.copyWith(
+    // What was said, in the typed note's own tier: one voice for the
+    // field's text, whoever put it there.
+    final body = tokens.typography.styles.body.bodyLarge.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
-    final quiet = body.copyWith(color: tokens.colors.text.mediumEmphasis);
     // The route is the first thing a narrow row sheds; the length and the
     // state are the facts.
     final state = switch (take.words) {
@@ -345,6 +426,9 @@ class CheckInTakeRow extends StatelessWidget {
       clock,
     ];
 
+    // One header line — the state glyph, the length and state, the remove
+    // action at its end — and the words beneath at the card's full width, so
+    // a take reads as an entry-to-be, not a caption with a hanging indent.
     return DecoratedBox(
       decoration: BoxDecoration(
         // A lift, not a well: the translucent surface reads one step above
@@ -354,95 +438,174 @@ class CheckInTakeRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: Padding(
+        // The header row is the remove action's own 48 px target, so with
+        // no top or trailing inset its glyph sits step5 from the card's top
+        // and trailing edges — the same step5 the leading glyph, the body's
+        // end and the bottom keep: one inset on every side.
         padding: EdgeInsetsDirectional.only(
-          start: tokens.spacing.step4,
-          top: tokens.spacing.step3,
-          bottom: tokens.spacing.step4,
+          start: tokens.spacing.step5,
+          bottom: tokens.spacing.step5,
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: Icon(
-                LottiIcons.mic,
-                size: IconSizes.s,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DsTieredText(
-                    textKey: const ValueKey('check-in-take-meta'),
-                    tiers: tiers,
-                    semanticsLabel: [
-                      checkInSpokenClockLabel(messages, take.length),
-                      ?state,
-                    ].join(' · '),
-                    style: meta,
+            Row(
+              children: [
+                // The glyph says where the words are: on their way, here as
+                // a recording, or missing — the line beside it stays quiet.
+                switch (take.words) {
+                  CheckInTakeWords.transcribing => DesignSystemSpinner(
+                    key: const ValueKey('check-in-take-glyph-transcribing'),
+                    // The default style, on its track: a glyph's whole
+                    // silhouette rather than a stray arc.
+                    size: IconSizes.s,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
-                  SizedBox(height: tokens.spacing.step2),
-                  switch (take.words) {
-                    CheckInTakeWords.transcribing => Text(
-                      messages.checkInTakeWordsFollow,
-                      key: const ValueKey('check-in-take-follows'),
-                      style: quiet,
+                  CheckInTakeWords.heard => Icon(
+                    LottiIcons.waveform,
+                    key: const ValueKey('check-in-take-glyph-heard'),
+                    size: IconSizes.s,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  CheckInTakeWords.missing => Icon(
+                    LottiIcons.warning,
+                    key: const ValueKey('check-in-take-glyph-missing'),
+                    size: IconSizes.s,
+                    color: tokens.colors.alert.warning.defaultColor,
+                  ),
+                },
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  // The take owns where its words are, so its line is the
+                  // live one: the header no longer repeats it.
+                  child: Semantics(
+                    liveRegion: true,
+                    child: DsTieredText(
+                      textKey: const ValueKey('check-in-take-meta'),
+                      tiers: tiers,
+                      semanticsLabel: [
+                        checkInSpokenClockLabel(messages, take.length),
+                        ?state,
+                      ].join(' · '),
+                      style: meta,
                     ),
-                    CheckInTakeWords.heard => Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        take.transcript ?? '',
-                        key: const ValueKey('check-in-take-transcript'),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: body,
+                  ),
+                ),
+                // Not the sheet's ✕: this takes one recording out of the
+                // check-in.
+                DesignSystemIconAction(
+                  key: const ValueKey('check-in-take-remove'),
+                  icon: LottiIcons.removeCircled,
+                  tooltip: messages.checkInRemoveTake,
+                  onPressed: onRemove,
+                ),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: tokens.spacing.step5),
+              child: switch (take.words) {
+                // Status, not words: the small quiet voice, so it can never be
+                // mistaken for what was said.
+                CheckInTakeWords.transcribing => Text(
+                  messages.checkInTakeWordsFollow,
+                  key: const ValueKey('check-in-take-follows'),
+                  style: note,
+                ),
+                CheckInTakeWords.heard => Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    take.transcript ?? '',
+                    key: const ValueKey('check-in-take-transcript'),
+                    style: body,
+                  ),
+                ),
+                CheckInTakeWords.missing => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // The provider's own detail, when it left any — never a
+                    // cause the service cannot tell apart.
+                    Text(
+                      take.detail ?? messages.checkInTranscriptMissingBody,
+                      key: const ValueKey('check-in-take-missing'),
+                      style: note,
+                    ),
+                    SizedBox(height: tokens.spacing.step3),
+                    // The take's own way forward, quiet on its trailing rail
+                    // so the warning line leads — in the header it would
+                    // push the state off a phone's line. Its label ends on
+                    // the body's edge, the remove glyph's.
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: DesignSystemButton(
+                        key: const ValueKey('check-in-retry-transcript'),
+                        label: messages.relationshipAgentTryAgain,
+                        leadingIcon: LottiIcons.refresh,
+                        variant: DesignSystemButtonVariant.tertiary,
+                        // The explanation's own caption tier: the warning
+                        // line leads, not the button under it.
+                        size: DesignSystemButtonSize.dense,
+                        alignsLabelToTrailingEdge: true,
+                        onPressed: onRetry,
                       ),
                     ),
-                    CheckInTakeWords.missing => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // The provider's own detail, when it left any —
-                        // never a cause the service cannot tell apart.
-                        Text(
-                          take.detail ??
-                              messages.checkInTranscriptMissingBody(clock),
-                          key: const ValueKey('check-in-take-missing'),
-                          style: quiet,
-                        ),
-                        SizedBox(height: tokens.spacing.step2),
-                        DesignSystemButton(
-                          key: const ValueKey('check-in-retry-transcript'),
-                          label: messages.relationshipAgentTryAgain,
-                          leadingIcon: LottiIcons.refresh,
-                          variant: DesignSystemButtonVariant.tertiary,
-                          size: DesignSystemButtonSize.medium,
-                          tapTargetSize: MaterialTapTargetSize.padded,
-                          onPressed: onRetry,
-                        ),
-                      ],
-                    ),
-                  },
-                ],
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('check-in-take-remove'),
-              tooltip: messages.checkInRemoveTake,
-              onPressed: onRemove,
-              icon: Icon(
-                LottiIcons.close,
-                size: IconSizes.s,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+                  ],
+                ),
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The slot a removed take left: the take's trace without its card — its
+/// glyph faded, the line saying it went and *Undo* to put it back, where it
+/// stood rather than a toast the sheet would cover. With no card there is
+/// no card inset: it sits on the field's own edges, the glyph on the
+/// note's and *Undo* ending on *Dictate*'s.
+class _RemovedTakeSlot extends StatelessWidget {
+  const _RemovedTakeSlot({required this.onUndo});
+
+  final VoidCallback onUndo;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Row(
+      key: const ValueKey('check-in-take-removed'),
+      children: [
+        Icon(
+          LottiIcons.waveform,
+          size: IconSizes.s,
+          color: tokens.colors.text.lowEmphasis,
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              messages.checkInTakeRemoved,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ),
+        ),
+        DesignSystemButton(
+          key: const ValueKey('check-in-take-undo'),
+          label: messages.designSystemUndoLabel,
+          leadingIcon: LottiIcons.undo,
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.dense,
+          alignsLabelToTrailingEdge: true,
+          tapTargetSize: MaterialTapTargetSize.padded,
+          onPressed: onUndo,
+        ),
+      ],
     );
   }
 }

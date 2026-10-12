@@ -24,6 +24,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(ensureThemingServicesRegistered);
+  // The helper registers into the shared GetIt; leaving it there leaked a
+  // mock UpdateNotifications into whichever file the CI shard ran next.
+  tearDown(tearDownTestGetIt);
 
   /// Pumps a bare host and hands its context to [body]. The catalog resolves
   /// through `context.messages`, so a real `Localizations` ancestor is needed;

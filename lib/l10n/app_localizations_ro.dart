@@ -3328,6 +3328,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
+  String get checkInAddNoteHint => 'Adăugați o notă…';
+
+  @override
   String get checkInAvoidLabel => 'De evitat';
 
   @override
@@ -3471,9 +3474,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Deschideți setările';
 
   @override
-  String get checkInOrTypeHint => 'Sau scrieți aici…';
-
-  @override
   String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
 
   @override
@@ -3584,29 +3584,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInStartedLabel => 'Început';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Microfon indisponibil';
-
-  @override
   String get checkInStatusPaused => 'În pauză';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Reportofon ocupat';
 
   @override
   String get checkInStatusRecording => 'Se înregistrează';
 
   @override
-  String get checkInStatusRecordingFailed => 'Înregistrarea nu a pornit';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Înregistrare nesalvată';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Niciun model de transcriere';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Transcrierea nu a fost primită';
+
+  @override
+  String get checkInTakeRemoved => 'Înregistrarea audio a fost eliminată';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3632,9 +3619,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun model de transcriere configurat';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Înregistrarea dvs. de $length rămâne salvată în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Fișierul audio rămâne salvat în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
 
   @override
   String get checkInTranscriptUnavailable =>

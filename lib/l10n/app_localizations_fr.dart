@@ -3322,6 +3322,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.';
 
   @override
+  String get checkInAddNoteHint => 'Ajoute une note…';
+
+  @override
   String get checkInAvoidLabel => 'À éviter';
 
   @override
@@ -3463,9 +3466,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Ouvrir les réglages';
 
   @override
-  String get checkInOrTypeHint => 'Ou écris-le ici…';
-
-  @override
   String get checkInPayAttentionLabel => 'La prochaine fois, fais attention à';
 
   @override
@@ -3573,29 +3573,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInStartedLabel => 'Commencé';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Micro indisponible';
-
-  @override
   String get checkInStatusPaused => 'En pause';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Enregistreur occupé';
 
   @override
   String get checkInStatusRecording => 'Enregistrement';
 
   @override
-  String get checkInStatusRecordingFailed => 'L’enregistrement n’a pas démarré';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Enregistrement non sauvegardé';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Aucun modèle de transcription';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Transcription non reçue';
+
+  @override
+  String get checkInTakeRemoved => 'Enregistrement retiré';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3621,9 +3608,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun modèle de transcription configuré';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Ton enregistrement de $length reste conservé dans le journal, même si tu abandonnes ce point. Réessaie dans un instant.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Ton enregistrement reste conservé dans le journal, même si tu abandonnes l\'échange. Réessaie dans un instant.';
 
   @override
   String get checkInTranscriptUnavailable =>

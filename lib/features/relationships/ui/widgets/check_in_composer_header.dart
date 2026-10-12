@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
@@ -17,10 +16,12 @@ import 'package:material_ui/material_ui.dart';
 
 /// The composer's heading (design 2026-09-13): the person's avatar, the
 /// title, and **one status line** — `with Pip · last spoke Sat 1 Aug` at
-/// rest, and while speech is in flight what the field is doing, in the
-/// semantic colour of that phase (`● Recording`, `Transcribing…`,
-/// `Transcript not received`). Sits in the sheet's pinned toolbar slot, so
-/// it stays put while the form scrolls.
+/// rest, and while a take runs what the recorder is doing, still with the
+/// person (`● Recording · with Pip`, `Paused · with Pip`) — the glyph
+/// carries the tone, the words stay in the quiet ink. Where a take's words
+/// are is the take's own line to say, and a failure is its callout's. Sits
+/// in the sheet's pinned toolbar slot, so it stays put while the form
+/// scrolls.
 ///
 /// Reads the phase from the form's [CheckInFormHandle], the same channel the
 /// pinned action bar reads Save through, so the header and the field can
@@ -187,11 +188,30 @@ class CheckInComposerHeader extends ConsumerWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step4),
-          DesignSystemIconAction(
-            key: const ValueKey('check-in-close'),
-            icon: LottiIcons.close,
-            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            onPressed: handle.dismiss,
+          // While a take runs the recorder's discard is the way out: a
+          // second ✕ a finger away, with a different fate, would make the
+          // two look alike. Its place is held so the title never moves.
+          ListenableBuilder(
+            listenable: handle,
+            builder: (context, _) {
+              final recording =
+                  handle.status == CheckInComposerStatus.recording ||
+                  handle.status == CheckInComposerStatus.paused;
+              return Visibility(
+                visible: !recording,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: DesignSystemIconAction(
+                  key: const ValueKey('check-in-close'),
+                  icon: LottiIcons.close,
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).closeButtonTooltip,
+                  onPressed: handle.dismiss,
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -219,12 +239,16 @@ class _StatusLine extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final quiet = tokens.colors.text.mediumEmphasis;
+    final person = name;
+    final withName = person == null
+        ? null
+        : messages.checkInComposerWithName(person);
 
     // At rest the line is a ladder of wordings, widest first, so a narrow
     // phone or large text sheds the date before the person: a check-in is
     // *with* someone, and a bare date under "Log check-in" is a check-in
     // with nobody in it.
-    final (Widget? leading, List<String> tiers, Color color) = switch (status) {
+    final (Widget? leading, List<String> tiers) = switch (status) {
       CheckInComposerStatus.idle || CheckInComposerStatus.preparing => (
         null,
         switch ((name, lastSpoke)) {
@@ -243,7 +267,6 @@ class _StatusLine extends StatelessWidget {
             name,
           ],
         },
-        quiet,
       ),
       // The red dot alone says "live": error ink on the word would make a
       // take read as a failure, and red on this surface means only that.
@@ -252,90 +275,30 @@ class _StatusLine extends StatelessWidget {
           tone: DesignSystemBadgeTone.danger,
           excludeFromSemantics: true,
         ),
-        [messages.checkInStatusRecording],
-        quiet,
+        // Still with someone while recording: the name stays, shed first
+        // on a narrow line.
+        [
+          if (withName != null)
+            '${messages.checkInStatusRecording} · $withName',
+          messages.checkInStatusRecording,
+        ],
       ),
       CheckInComposerStatus.paused => (
         Icon(LottiIcons.pause, size: IconSizes.s, color: quiet),
-        [messages.checkInStatusPaused],
-        quiet,
-      ),
-      CheckInComposerStatus.transcribing => (
-        const DesignSystemSpinner(
-          style: DesignSystemSpinnerStyle.plain,
-          size: IconSizes.s,
-        ),
-        // The spinner says busy; the word stays in the quiet ink, so accent
-        // on text means pressable everywhere.
-        [messages.checkInTranscribingLabel],
-        quiet,
-      ),
-      CheckInComposerStatus.transcriptMissing => (
-        Icon(
-          LottiIcons.warning,
-          size: IconSizes.s,
-          color: tokens.colors.alert.warning.defaultColor,
-        ),
-        [messages.checkInStatusTranscriptMissing],
-        tokens.colors.alert.warning.ink,
-      ),
-      CheckInComposerStatus.transcriptionUnavailable => (
-        Icon(
-          LottiIcons.warning,
-          size: IconSizes.s,
-          color: tokens.colors.alert.warning.defaultColor,
-        ),
-        [messages.checkInStatusTranscriptionUnavailable],
-        tokens.colors.alert.warning.ink,
-      ),
-      CheckInComposerStatus.microphoneDenied => (
-        Icon(
-          LottiIcons.micIdle,
-          size: IconSizes.s,
-          color: tokens.colors.alert.error.defaultColor,
-        ),
-        [messages.checkInStatusMicrophoneDenied],
-        tokens.colors.alert.error.ink,
-      ),
-      CheckInComposerStatus.recordingFailed => (
-        Icon(
-          LottiIcons.micIdle,
-          size: IconSizes.s,
-          color: tokens.colors.alert.error.defaultColor,
-        ),
-        [messages.checkInStatusRecordingFailed],
-        tokens.colors.alert.error.ink,
-      ),
-      CheckInComposerStatus.recordingNotSaved => (
-        Icon(
-          LottiIcons.micIdle,
-          size: IconSizes.s,
-          color: tokens.colors.alert.error.defaultColor,
-        ),
-        [messages.checkInStatusRecordingNotSaved],
-        tokens.colors.alert.error.ink,
-      ),
-      CheckInComposerStatus.recorderBusy => (
-        Icon(
-          LottiIcons.mic,
-          size: IconSizes.s,
-          color: tokens.colors.alert.warning.defaultColor,
-        ),
-        [messages.checkInStatusRecorderBusy],
-        tokens.colors.alert.warning.ink,
+        [
+          if (withName != null) '${messages.checkInStatusPaused} · $withName',
+          messages.checkInStatusPaused,
+        ],
       ),
     };
 
-    // Live for the news only: the resting subtitle is not an announcement,
-    // a transcript landing must not re-read it first, and a failure is the
-    // card's to announce — its title is the next step, so one region
-    // speaks per event, not two.
+    // Live for the recorder only: the resting subtitle is not an
+    // announcement, a transcript landing is its take's to say, and a
+    // failure its callout's — one region speaks per event, not two.
     return Semantics(
       liveRegion: switch (status) {
-        CheckInComposerStatus.recording ||
-        CheckInComposerStatus.paused ||
-        CheckInComposerStatus.transcribing => true,
-        _ => false,
+        CheckInComposerStatus.recording || CheckInComposerStatus.paused => true,
+        CheckInComposerStatus.idle || CheckInComposerStatus.preparing => false,
       },
       child: Row(
         children: [
@@ -348,7 +311,7 @@ class _StatusLine extends StatelessWidget {
               textKey: const ValueKey('check-in-composer-status'),
               tiers: tiers,
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: color,
+                color: quiet,
               ),
             ),
           ),

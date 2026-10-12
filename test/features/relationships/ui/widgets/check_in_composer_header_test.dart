@@ -157,57 +157,17 @@ void main() {
 
     publish(CheckInComposerStatus.recording);
     await tester.pump();
-    expect(status(tester), 'Recording');
+    expect(status(tester), 'Recording · with Anna');
     // The red dot says live; the word stays in the quiet ink, so error red
     // on this surface means only a failure.
     expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.paused);
     await tester.pump();
-    expect(status(tester), 'Paused');
+    expect(status(tester), 'Paused · with Anna');
     // A glyph as well as the word: the state reads without its colour.
     expect(find.byIcon(LottiIcons.pause), findsOneWidget);
     expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
-
-    publish(CheckInComposerStatus.transcribing);
-    await tester.pump();
-    expect(status(tester), 'Transcribing…');
-    // The spinner says busy; the words stay quiet, so accent on text means
-    // pressable everywhere.
-    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
-
-    // A failure wears its tone on the word as well as the glyph — the
-    // briefing card's rule for its status line, so the two surfaces read
-    // one way.
-    publish(CheckInComposerStatus.transcriptMissing);
-    await tester.pump();
-    expect(status(tester), 'Transcript not received');
-    expect(statusColor(tester), tokens.colors.alert.warning.ink);
-
-    publish(CheckInComposerStatus.transcriptionUnavailable);
-    await tester.pump();
-    expect(status(tester), 'No transcription model');
-    expect(statusColor(tester), tokens.colors.alert.warning.ink);
-
-    publish(CheckInComposerStatus.microphoneDenied);
-    await tester.pump();
-    expect(status(tester), 'Microphone unavailable');
-    expect(statusColor(tester), tokens.colors.alert.error.ink);
-
-    publish(CheckInComposerStatus.recordingFailed);
-    await tester.pump();
-    expect(status(tester), "Recording didn't start");
-    expect(statusColor(tester), tokens.colors.alert.error.ink);
-
-    publish(CheckInComposerStatus.recordingNotSaved);
-    await tester.pump();
-    expect(status(tester), 'Recording not saved');
-    expect(statusColor(tester), tokens.colors.alert.error.ink);
-
-    publish(CheckInComposerStatus.recorderBusy);
-    await tester.pump();
-    expect(status(tester), 'Recorder busy');
-    expect(statusColor(tester), tokens.colors.alert.warning.ink);
 
     publish(CheckInComposerStatus.idle);
     await tester.pump();
@@ -247,15 +207,11 @@ void main() {
     publish(CheckInComposerStatus.recording);
     await tester.pump();
     expect(node().flagsCollection.isLiveRegion, isTrue);
-    publish(CheckInComposerStatus.transcribing);
+    publish(CheckInComposerStatus.paused);
     await tester.pump();
     expect(node().flagsCollection.isLiveRegion, isTrue);
-    // A failure is the card's to announce — its title is the next step —
-    // so the header goes quiet and one region speaks per event.
-    publish(CheckInComposerStatus.microphoneDenied);
-    await tester.pump();
-    expect(node().flagsCollection.isLiveRegion, isFalse);
-    publish(CheckInComposerStatus.transcriptMissing);
+    // Back at rest the subtitle is no announcement.
+    publish(CheckInComposerStatus.idle);
     await tester.pump();
     expect(node().flagsCollection.isLiveRegion, isFalse);
   });

@@ -91,6 +91,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.d
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1569,9 +1570,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'check-pip-3');
-      for (var i = 0; i < 8; i++) {
+      // A full window of samples, 20 ms apart as the controller ticks, ending
+      // at 0:23: the level line samples on each new tick, so a constant
+      // clock would leave it a single bar.
+      for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
         recorder.tick(
-          progress: const Duration(seconds: 23),
+          progress:
+              const Duration(seconds: 23) -
+              const Duration(milliseconds: 20) *
+                  (RecordingLevelLine.levelWindow - 1 - i),
           dBFS: -48 + 30 * math.sin(i / 3).abs(),
         );
         await tester.pump();
@@ -1940,14 +1947,20 @@ void main() {
           reason: 'the recorder replaces the text, not the sheet',
         );
         // A live level strip and a running clock, the way a real take looks.
-        for (var i = 0; i < 8; i++) {
+        // A full window of samples, 20 ms apart as the controller ticks, ending
+        // at 0:23: the level line samples on each new tick, so a constant
+        // clock would leave it a single bar.
+        for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
           recorder.tick(
-            progress: const Duration(seconds: 23),
+            progress:
+                const Duration(seconds: 23) -
+                const Duration(milliseconds: 20) *
+                    (RecordingLevelLine.levelWindow - 1 - i),
             dBFS: -48 + 30 * math.sin(i / 3).abs(),
           );
           await tester.pump();
         }
-        expect(find.text('Recording'), findsOne);
+        expect(find.textContaining('Recording ·'), findsOne);
         await captureScreenshot(
           tester,
           'check_in_recording_${viewport}_dark',
@@ -1984,17 +1997,27 @@ void main() {
           find.byKey(const ValueKey('check-in-take-transcript')),
           findsOne,
         );
-        // The note stays the user's: the words are the take's, and the
-        // count is the note's alone. The desktop dialog shows the shortcut
-        // it is the one place to use — macOS's, as the theme's platform
-        // now says.
-        expect(find.textContaining('5 words'), findsOne);
+        // The note stays the user's: the words are the take's, and beside
+        // a take the note's count would read as the take's, so it goes.
+        // The desktop dialog shows the shortcut it is the one place to use
+        // — macOS's, as the theme's platform now says.
+        expect(find.textContaining('5 words'), findsNothing);
         if (viewport == 'desktop') {
           expect(find.textContaining('⌘Enter to save'), findsOne);
         }
         await captureScreenshot(
           tester,
           'check_in_transcript_ready_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        // Removed: the offer to put it back stands in the take's slot.
+        await tester.tap(find.byKey(const ValueKey('check-in-take-remove')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('check-in-take-undo')), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_take_removed_${viewport}_dark',
           subdir: _subdir,
         );
       });
@@ -2080,7 +2103,8 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
         await tester.pumpAndSettle();
         expect(find.text('Allow microphone access'), findsOne);
-        expect(find.text('Microphone unavailable'), findsOne);
+        // The callout owns the failure; the header stays at rest.
+        expect(find.text('Microphone unavailable'), findsNothing);
         await captureScreenshot(
           tester,
           'check_in_mic_denied_${viewport}_dark',
@@ -2099,7 +2123,7 @@ void main() {
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
-        expect(find.text('Transcript not received'), findsOneWidget);
+        expect(find.textContaining('Transcript not received'), findsOneWidget);
         expect(
           find.byKey(const ValueKey('check-in-retry-transcript')),
           findsOne,

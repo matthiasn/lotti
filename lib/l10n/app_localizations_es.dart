@@ -3315,6 +3315,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.';
 
   @override
+  String get checkInAddNoteHint => 'Añade una nota…';
+
+  @override
   String get checkInAvoidLabel => 'Mejor evitar';
 
   @override
@@ -3456,9 +3459,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInOpenSettingsButton => 'Abrir ajustes';
 
   @override
-  String get checkInOrTypeHint => 'O escríbelo aquí…';
-
-  @override
   String get checkInPayAttentionLabel => 'La próxima vez, presta atención a';
 
   @override
@@ -3565,29 +3565,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInStartedLabel => 'Empezó';
 
   @override
-  String get checkInStatusMicrophoneDenied => 'Micrófono no disponible';
-
-  @override
   String get checkInStatusPaused => 'En pausa';
-
-  @override
-  String get checkInStatusRecorderBusy => 'Grabadora ocupada';
 
   @override
   String get checkInStatusRecording => 'Grabando';
 
   @override
-  String get checkInStatusRecordingFailed => 'La grabación no se inició';
-
-  @override
-  String get checkInStatusRecordingNotSaved => 'Grabación no guardada';
-
-  @override
-  String get checkInStatusTranscriptionUnavailable =>
-      'Sin modelo de transcripción';
-
-  @override
   String get checkInStatusTranscriptMissing => 'Transcripción no recibida';
+
+  @override
+  String get checkInTakeRemoved => 'Grabación quitada';
 
   @override
   String get checkInTakeWordsFollow =>
@@ -3612,9 +3599,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sin modelo de transcripción configurado';
 
   @override
-  String checkInTranscriptMissingBody(String length) {
-    return 'Tu grabación de $length queda guardada en el diario, aunque descartes este check-in. Inténtalo de nuevo en un momento.';
-  }
+  String get checkInTranscriptMissingBody =>
+      'Tu grabación queda guardada en el diario, aunque descartes este registro. Inténtalo de nuevo en un momento.';
 
   @override
   String get checkInTranscriptUnavailable =>

@@ -206,7 +206,10 @@ void main() {
   });
 
   group('checkInComposerStatusOf', () {
-    test('rest reads as idle; the failures name themselves', () {
+    // The header owns only what the recorder is doing: a take's words in
+    // flight are its card's, a failure its callout's — never said twice.
+    test('rest, a failure and takes in any state all read as idle; '
+        'preparing is preparing', () {
       expect(
         checkInComposerStatusOf(
           const CheckInSpeechIdle(),
@@ -221,60 +224,16 @@ void main() {
         ),
         CheckInComposerStatus.preparing,
       );
-      final byKind = {
-        CheckInSpeechFailureKind.microphoneDenied:
-            CheckInComposerStatus.microphoneDenied,
-        CheckInSpeechFailureKind.recordingFailed:
-            CheckInComposerStatus.recordingFailed,
-        CheckInSpeechFailureKind.recordingNotSaved:
-            CheckInComposerStatus.recordingNotSaved,
-        CheckInSpeechFailureKind.recorderBusy:
-            CheckInComposerStatus.recorderBusy,
-        CheckInSpeechFailureKind.transcriptionUnavailable:
-            CheckInComposerStatus.transcriptionUnavailable,
-      };
-      for (final entry in byKind.entries) {
+      for (final kind in CheckInSpeechFailureKind.values) {
         expect(
           checkInComposerStatusOf(
-            CheckInSpeechFailed(CheckInSpeechFailure(entry.key)),
+            CheckInSpeechFailed(CheckInSpeechFailure(kind)),
             recorderPaused: false,
-            takes: [take],
           ),
-          entry.value,
+          CheckInComposerStatus.idle,
+          reason: kind.name,
         );
       }
-    });
-
-    // At rest the takes speak: one still waiting outranks one whose words
-    // never came, and words that arrived say nothing.
-    test('at rest, the takes say where the words are', () {
-      for (final (takes, status) in [
-        (<CheckInTake>[take.heard('x')], CheckInComposerStatus.idle),
-        ([take], CheckInComposerStatus.transcribing),
-        ([take.missing(null)], CheckInComposerStatus.transcriptMissing),
-        (
-          [take.missing(null), take],
-          CheckInComposerStatus.transcribing,
-        ),
-      ]) {
-        expect(
-          checkInComposerStatusOf(
-            const CheckInSpeechIdle(),
-            recorderPaused: false,
-            takes: takes,
-          ),
-          status,
-        );
-      }
-      // The recorder is what the user is doing now.
-      expect(
-        checkInComposerStatusOf(
-          const CheckInSpeechRecording(),
-          recorderPaused: false,
-          takes: [take],
-        ),
-        CheckInComposerStatus.recording,
-      );
     });
 
     test('recording is paused only while the recorder says so', () {
