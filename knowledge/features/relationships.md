@@ -1821,14 +1821,19 @@ The composer's parts, top to bottom:
   `dialog` flag), so the typed common case is open → type → ⌘↩; a phone
   waits for the first tap rather than raise its keyboard over the sheet. On a
   phone the reason sits under the bar; on the desktop dialog it takes the
-  leading edge with Cancel and Save together on the trailing edge. The form
-  reserves the bar's predicted height for its layout
+  leading edge with Cancel and Save together on the trailing edge. The room
+  under the last field for the bar is the form's own (`_BarReserve`), not
+  the modal page's padding, because only the form knows when the bar is
+  gone: the bar's predicted height for its layout
   (`CheckInStickyActions.height`, the actions row — stacked above
   `TextScales.large` — plus, on the phone, the reason line), so the dialog
-  carries no blank band above its footer; the bar reports its rendered
-  height back through the handle (`reportBarHeight`) and the form adds only
-  the slack a taller-than-predicted bar needs — a long-label locale stacking
-  Cancel and Save on a narrow phone — so the last field always clears it.
+  carries no blank band above its footer; or the rendered height the bar
+  reports through the handle (`reportBarHeight`) when it came out taller —
+  a long-label locale stacking Cancel and Save on a narrow phone — so the
+  last field always clears it. While a take runs the bar is a zero-size box
+  and the reserve is one `sectionGap` under the recorder's controls: a
+  page padding held for the hidden bar once left a bar's height of empty
+  sheet beneath the recorder.
   With the field focused on a phone — the keyboard up; the sheet
   removes the keyboard inset from what the bar can see, so focus is the
   signal — the bar slims to the context summary chip (`Call · Now · no
