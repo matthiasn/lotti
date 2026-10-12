@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.53]
+
+### Changed
+
+- **Dictating a check-in looks calmer.** A recording now shows its full
+  transcript across the whole card, with its length and state on one line
+  above it. The sheet's header says "Recording · with Pip" while you speak.
+- **Removing a recording from a check-in can be undone** from the line that
+  takes its place. Removing it also takes back the type, time and duration
+  that recording filled in, unless you set them yourself.
+
+### Fixed
+
+- **Two devices verifying each other at the same moment no longer both wait
+  forever.** When both sides started the emoji check together, each could
+  hold back the other's request for good; the one that should give way now
+  does.
+- **"Show the emoji" reopens the device you were verifying** after your
+  device gave way to another's request, and that device is no longer
+  offered again without being asked.
+- **A photo or recording that arrived cut short is downloaded again** when
+  its entry is opened, instead of staying cut off until a manual repair.
+- **A missing photo or recording is usually sent by one device, not by every
+  device that has it.** The device that last sent the entry answers; the
+  others step in after a short wait if it doesn't, or if its copy is
+  shorter than theirs.
+
 ## [1.1.52]
 
 ### Changed
