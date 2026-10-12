@@ -68,26 +68,44 @@ fi
   --bundled-foreign-deps "$TOOL_FOREIGN_DEPS/foreign_deps.json" \
   --selection-only
 
-# Clean and create work dir
-rm -rf "$WORK_DIR"
-mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
+# Rebuild the work dir from scratch, so a retry never starts from a
+# half-populated .flatpak-builder tree.
+prepare_work_dir() {
+  rm -rf "$WORK_DIR"
+  mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
 
-# Create manifest with real commit (not placeholder)
-# Using flatpak-flutter compatible manifest (Flutter inside lotti module)
-sed "s/COMMIT_PLACEHOLDER/$COMMIT/" "$SCRIPT_DIR/com.matthiasn.lotti.flatpak-flutter.yml" > "$WORK_DIR/com.matthiasn.lotti.yml"
+  # Create manifest with real commit (not placeholder)
+  # Using flatpak-flutter compatible manifest (Flutter inside lotti module)
+  sed "s/COMMIT_PLACEHOLDER/$COMMIT/" "$SCRIPT_DIR/com.matthiasn.lotti.flatpak-flutter.yml" > "$WORK_DIR/com.matthiasn.lotti.yml"
 
-# Copy foreign.json if present (handles cargokit plugins like flutter_vodozemac)
-if [ -f "$SCRIPT_DIR/foreign.json" ]; then
-  cp "$SCRIPT_DIR/foreign.json" "$WORK_DIR/"
-  echo "Using foreign.json for cargokit dependencies"
-fi
+  # Copy foreign.json if present (handles cargokit plugins like flutter_vodozemac)
+  if [ -f "$SCRIPT_DIR/foreign.json" ]; then
+    cp "$SCRIPT_DIR/foreign.json" "$WORK_DIR/"
+    echo "Using foreign.json for cargokit dependencies"
+  fi
+}
 
-# Run flatpak-flutter
-echo "Running flatpak-flutter..."
+# Run flatpak-flutter. It bootstraps the Flutter SDK, whose Dart SDK
+# download has arrived truncated on CI ("downloaded file is corrupt"), so a
+# transient network failure gets a few fresh attempts before failing.
+FLATPAK_FLUTTER_ATTEMPTS="${FLATPAK_FLUTTER_ATTEMPTS:-3}"
+attempt=1
+while true; do
+  prepare_work_dir
+  echo "Running flatpak-flutter (attempt $attempt/$FLATPAK_FLUTTER_ATTEMPTS)..."
+  if (cd "$WORK_DIR" && PYTHONPATH="$SCRIPT_DIR/flatpak-flutter" "$PYTHON" "$SCRIPT_DIR/flatpak-flutter/flatpak-flutter.py" \
+    --app-module lotti \
+    com.matthiasn.lotti.yml); then
+    break
+  fi
+  if [ "$attempt" -ge "$FLATPAK_FLUTTER_ATTEMPTS" ]; then
+    echo "flatpak-flutter failed after $attempt attempts" >&2
+    exit 1
+  fi
+  attempt=$((attempt + 1))
+  sleep 10
+done
 cd "$WORK_DIR"
-PYTHONPATH="$SCRIPT_DIR/flatpak-flutter" "$PYTHON" "$SCRIPT_DIR/flatpak-flutter/flatpak-flutter.py" \
-  --app-module lotti \
-  com.matthiasn.lotti.yml
 
 # Copy output
 echo "Copying output..."
