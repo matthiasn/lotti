@@ -91,6 +91,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.d
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/recording_controls.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1569,9 +1570,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(recorder.recordCalls.single.linkedId, 'check-pip-3');
-      for (var i = 0; i < 8; i++) {
+      // A full window of samples, 20 ms apart as the controller ticks, ending
+      // at 0:23: the level line samples on each new tick, so a constant
+      // clock would leave it a single bar.
+      for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
         recorder.tick(
-          progress: const Duration(seconds: 23),
+          progress:
+              const Duration(seconds: 23) -
+              const Duration(milliseconds: 20) *
+                  (RecordingLevelLine.levelWindow - 1 - i),
           dBFS: -48 + 30 * math.sin(i / 3).abs(),
         );
         await tester.pump();
@@ -1940,9 +1947,15 @@ void main() {
           reason: 'the recorder replaces the text, not the sheet',
         );
         // A live level strip and a running clock, the way a real take looks.
-        for (var i = 0; i < 8; i++) {
+        // A full window of samples, 20 ms apart as the controller ticks, ending
+        // at 0:23: the level line samples on each new tick, so a constant
+        // clock would leave it a single bar.
+        for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
           recorder.tick(
-            progress: const Duration(seconds: 23),
+            progress:
+                const Duration(seconds: 23) -
+                const Duration(milliseconds: 20) *
+                    (RecordingLevelLine.levelWindow - 1 - i),
             dBFS: -48 + 30 * math.sin(i / 3).abs(),
           );
           await tester.pump();
