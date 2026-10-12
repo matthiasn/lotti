@@ -40,6 +40,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.53" date="2026-10-12">
+      <description>
+        <p>Changed: dictating a check-in looks calmer. A recording now shows its full transcript across the whole card, with its length and state on one line above it. The sheet's header says "Recording · with Pip" while you speak.</p>
+        <p>Changed: removing a recording from a check-in can be undone from the line that takes its place. Removing it also takes back the type, time and duration that recording filled in, unless you set them yourself.</p>
+        <p>Fixed: two devices verifying each other at the same moment no longer both wait forever. When both sides started the emoji check together, each could hold back the other's request for good; the one that should give way now does.</p>
+        <p>Fixed: "Show the emoji" reopens the device you were verifying after your device gave way to another's request, and that device is no longer offered again without being asked.</p>
+        <p>Fixed: a photo or recording that arrived cut short is downloaded again when its entry is opened, instead of staying cut off until a manual repair.</p>
+        <p>Fixed: a missing photo or recording is usually sent by one device, not by every device that has it. The device that last sent the entry answers; the others step in after a short wait if it doesn't, or if its copy is shorter than theirs.</p>
+      </description>
+    </release>
     <release version="1.1.52" date="2026-10-11">
       <description>
         <p>Changed: a check-in's page now looks like a task's. It opens under the person's category and name, as a task opens under its category and project, with the same large title and the same square tags for when, how, how long and how it felt - each still a tap away from changing, and the feeling now shown with a face in its colour. A length or feeling not yet set is offered as a soft round pill, the topics share one tag, and "Edit check-in" now sits at the end of that row, where a task keeps "Details", instead of in the far corner. The words the check-in was logged with sit on the page under a faint rule, where a task keeps its notes, instead of in a box of their own.</p>
