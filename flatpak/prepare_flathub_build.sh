@@ -88,7 +88,7 @@ prepare_work_dir() {
 # Run flatpak-flutter. It bootstraps the Flutter SDK, whose Dart SDK
 # download has arrived truncated on CI ("downloaded file is corrupt"), so a
 # transient network failure gets a few fresh attempts before failing.
-FLATPAK_FLUTTER_ATTEMPTS="${FLATPAK_FLUTTER_ATTEMPTS:-3}"
+FLATPAK_FLUTTER_ATTEMPTS=3
 attempt=1
 while true; do
   prepare_work_dir
