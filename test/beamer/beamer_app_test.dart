@@ -475,6 +475,9 @@ Future<void> _pumpAppScreen(
   when(
     () => mockMatrix.incomingKeyVerificationRunnerStream,
   ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+  when(
+    () => mockMatrix.keyVerificationStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
   final mockOutboxService = MockOutboxService();
   when(
@@ -578,6 +581,9 @@ Future<void> _pumpAppScreenCustomProviders(
   ).thenAnswer((_) => const Stream<KeyVerification>.empty());
   when(
     () => mockMatrix.incomingKeyVerificationRunnerStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+  when(
+    () => mockMatrix.keyVerificationStream,
   ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
   final mockOutboxService = MockOutboxService();
@@ -703,6 +709,9 @@ Future<void> _pumpReadyMyBeamerApp(
   ).thenAnswer((_) => const Stream<KeyVerification>.empty());
   when(
     () => mockMatrix.incomingKeyVerificationRunnerStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+  when(
+    () => mockMatrix.keyVerificationStream,
   ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
   final mockOutboxService = MockOutboxService();
@@ -5456,6 +5465,9 @@ void main() {
         ).thenAnswer((_) => const Stream<KeyVerification>.empty());
         when(
           () => mockMatrix.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        when(
+          () => mockMatrix.keyVerificationStream,
         ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
         final mockJournalDb = MockJournalDb();

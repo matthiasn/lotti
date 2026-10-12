@@ -530,6 +530,10 @@ class MatrixService {
     await _reconnecting;
     await _keyVerificationRequestSubscription?.cancel();
     _keyVerificationRequestSubscription = null;
+    // Live ceremonies poll every 100 ms and publish into the controllers
+    // closed below.
+    keyVerificationRunner?.stopTimer();
+    incomingKeyVerificationRunner?.stopTimer();
     await messageCountsController.close();
     await keyVerificationController.close();
     await incomingKeyVerificationRunnerController.close();

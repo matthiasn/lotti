@@ -336,9 +336,23 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // Centralized resolution + sandbox enforcement (rejects path traversal).
     final f = _resolveCandidateFile(rp);
     final fp = f.path;
+    final descriptorKey = _buildIndexKey(rp);
+    final ev = _attachmentIndex.find(descriptorKey);
     try {
       if (f.existsSync()) {
-        if (f.lengthSync() > 0) return; // present
+        final length = f.lengthSync();
+        final declared = ev == null ? null : declaredMediaSize(ev, rp);
+        // A file shorter than its attachment declared is a truncated copy —
+        // an interrupted write, or one an older build kept — and is fetched
+        // again rather than shown cut off.
+        if (length > 0 && (declared == null || length >= declared)) return;
+        if (length > 0) {
+          _logging.log(
+            LogDomain.sync,
+            'smart.media.truncated path=$rp length=$length declared=$declared',
+            subDomain: 'SmartLoader.fetchMedia',
+          );
+        }
       }
     } catch (e, st) {
       _logging.error(
@@ -349,8 +363,6 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       );
     }
 
-    final descriptorKey = _buildIndexKey(rp);
-    final ev = _attachmentIndex.find(descriptorKey);
     if (ev == null) {
       _logging.log(
         LogDomain.sync,

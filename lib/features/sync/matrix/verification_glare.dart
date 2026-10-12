@@ -50,6 +50,30 @@ bool shouldYieldTo({
   return theirs.compareTo(ours) < 0;
 }
 
+/// Calls [reoffer] once for each outgoing runner [service] stores.
+///
+/// `verifyMatrixDevice` stores the runner only after the request has been
+/// sent, so a peer's request that lands while the send is in flight finds no
+/// outgoing runner and [shouldYieldTo] says no: the device holds it back.
+/// When both devices do that, neither ceremony moves
+/// (`specs/tla/VerificationLaunch.tla`, `ReofferOnRegister`). Offering the
+/// held-back request again once the runner exists lets the device that
+/// should yield do so.
+StreamSubscription<KeyVerificationRunner> reofferOnOwnRunner(
+  MatrixService service,
+  void Function() reoffer,
+) {
+  KeyVerificationRunner? last;
+  return service.keyVerificationStream.listen((runner) {
+    if (identical(runner, last) ||
+        !identical(runner, service.keyVerificationRunner)) {
+      return;
+    }
+    last = runner;
+    reoffer();
+  });
+}
+
 /// Hands the open outgoing sheet over to [incoming]: cancels the ceremony this
 /// device started, wraps the peer's in a runner published on the **outgoing**
 /// stream — the one `VerificationModal` renders — and accepts it, so the

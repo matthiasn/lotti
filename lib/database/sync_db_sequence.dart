@@ -94,6 +94,30 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     });
   }
 
+  /// The host that most recently sent this device a version of journal entry
+  /// [entryId], other than [excludingHost]: the likeliest holder of its
+  /// media. Null when no other host has sent one.
+  Future<String?> latestSenderOfEntry(
+    String entryId, {
+    required String excludingHost,
+  }) async {
+    final row = await customSelect(
+      'SELECT originating_host_id FROM sync_sequence_log '
+      'WHERE entry_id = ? AND payload_type = ? AND status IN (?, ?) '
+      'AND originating_host_id IS NOT NULL AND originating_host_id != ? '
+      'ORDER BY updated_at DESC LIMIT 1',
+      variables: [
+        Variable.withString(entryId),
+        Variable.withInt(SyncSequencePayloadType.journalEntity.index),
+        Variable.withInt(SyncSequenceStatus.received.index),
+        Variable.withInt(SyncSequenceStatus.backfilled.index),
+        Variable.withString(excludingHost),
+      ],
+      readsFrom: {syncSequenceLog},
+    ).getSingleOrNull();
+    return row?.read<String>('originating_host_id');
+  }
+
   /// The highest counter of [hostId] the sequence log records, in any
   /// status, or null when it records none.
   Future<int?> highestRecordedCounterForHost(String hostId) async {

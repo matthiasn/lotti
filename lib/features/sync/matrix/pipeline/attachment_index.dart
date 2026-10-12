@@ -1,7 +1,12 @@
 import 'dart:async';
 
+import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
+
+/// An attachment event seen in the room: its media path and the plaintext
+/// size it declares, when it declares one.
+typedef ObservedAttachment = ({String relativePath, int? declaredSize});
 
 /// Lightweight, in-memory index mapping both relative paths and exact Matrix
 /// event ids to attachment events.
@@ -45,6 +50,18 @@ class AttachmentIndex {
   /// Subscribers use this to wake queue rows that were abandoned
   /// waiting for this particular attachment's JSON to land.
   Stream<String> get pathRecorded => _pathCtl.stream;
+
+  /// [pathRecorded] with the size each recorded attachment declares
+  /// (`declaredMediaSize`): what a media answer held back for another holder
+  /// compares against its own copy.
+  Stream<ObservedAttachment> get attachmentsObserved =>
+      pathRecorded.map((path) {
+        final event = find(path);
+        return (
+          relativePath: path,
+          declaredSize: event == null ? null : declaredMediaSize(event, path),
+        );
+      });
 
   /// Releases the underlying broadcast controller. Call from the owner
   /// (`MatrixService.dispose`) so test teardown or app shutdown does

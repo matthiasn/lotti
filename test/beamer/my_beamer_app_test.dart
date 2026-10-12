@@ -336,6 +336,9 @@ void main() {
       when(
         () => mockMatrix.incomingKeyVerificationRunnerStream,
       ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+      when(
+        () => mockMatrix.keyVerificationStream,
+      ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
       final mockOutboxService = MockOutboxService();
       when(
         () => mockOutboxService.notLoggedInGateStream,

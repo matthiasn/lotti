@@ -792,6 +792,9 @@ class TutorialAppHarness {
     when(
       () => matrixService.incomingKeyVerificationRunnerStream,
     ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    when(
+      () => matrixService.keyVerificationStream,
+    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
     when(() => matrixService.client).thenReturn(client);
     return matrixService;
   }

@@ -159,6 +159,13 @@ class SyncTuning {
   /// tens of thousands of blobs cannot grow the set without limit.
   static const int mediaRepairMaxTrackedEntries = 2000;
 
+  /// How long a holder the media request did not name waits before
+  /// answering. The named holder answers at once; its attachment arriving
+  /// in that time, at least as large as this device's copy, makes this
+  /// device's answer unnecessary. Long enough for an upload, short enough
+  /// that an offline named holder delays the repair only briefly.
+  static const Duration mediaAnswerGrace = Duration(minutes: 2);
+
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;

@@ -365,6 +365,48 @@ void main() {
   );
 
   test(
+    'attachmentsObserved carries the size each media attachment declares',
+    () async {
+      final index = AttachmentIndex(verboseLogging: false);
+      addTearDown(index.dispose);
+      final seen = <ObservedAttachment>[];
+      final sub = index.attachmentsObserved.listen(seen.add);
+      addTearDown(sub.cancel);
+
+      MockEvent event(String id, Map<String, Object?> content) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => e.content).thenReturn(content);
+        return e;
+      }
+
+      index
+        ..record(
+          event('ev1', {
+            'relativePath': 'images/a.jpg',
+            'info': {'size': 1234},
+          }),
+        )
+        // No declared size, and a JSON payload, whose size is the gzip's.
+        ..record(event('ev2', {'relativePath': '/images/b.jpg'}))
+        ..record(
+          event('ev3', {
+            'relativePath': '/text_entries/c.json',
+            'info': {'size': 99},
+          }),
+        );
+      await pumpEventQueue();
+
+      expect(seen, [
+        (relativePath: '/images/a.jpg', declaredSize: 1234),
+        (relativePath: '/images/b.jpg', declaredSize: null),
+        (relativePath: '/text_entries/c.json', declaredSize: null),
+      ]);
+    },
+  );
+
+  test(
     'dispose closes the pathRecorded stream so app shutdown / test '
     'teardown does not leak the broadcast controller',
     () async {

@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-from specs.tla.shards import EXTENDED_CONFIGURATIONS, plan
+from specs.tla.shards import SECONDS, SHARD_BUDGET_SECONDS, plan
 
 
 class ShardPlanTest(unittest.TestCase):
@@ -15,26 +15,47 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(len(assigned), len(set(assigned)))
         self.assertEqual([shard['shard'] for shard in planned], list(range(1, len(planned) + 1)))
 
-    def test_long_profile_cannot_consume_a_regular_shards_deadline(self):
-        planned = plan(
-            ['SyncPipeline', 'SyncPipelineForkSuccessor', 'SyncPipelineMixedPeers'],
-            shards=1,
-        )
-        long = next(shard for shard in planned if 'SyncPipelineForkSuccessor' in shard['configurations'])
-        self.assertEqual(long['configurations'], 'SyncPipelineForkSuccessor')
-        self.assertEqual(long['timeout_minutes'], 360)
-        self.assertEqual(long['java_options'], '-Xmx12g')
-        for shard in planned:
-            if shard is not long:
-                self.assertEqual(shard['timeout_minutes'], 60)
-                self.assertEqual(shard['java_options'], '')
+    def test_no_regular_shard_is_planned_past_its_budget(self):
+        # Packed to its 60-minute timeout, every shard of the nightly run timed
+        # out; the plan adds shards instead. A single configuration larger than
+        # the budget still gets a shard of its own.
+        configurations = sorted(path.stem for path in Path(__file__).parent.glob('*.cfg'))
+        for shard in plan(configurations):
+            names = shard['configurations'].split()
+            if len(names) == 1:
+                continue
+            self.assertLessEqual(shard['estimate'], SHARD_BUDGET_SECONDS, names)
 
-    def test_extended_only_plan_still_runs_every_profile(self):
-        planned = plan(sorted(EXTENDED_CONFIGURATIONS))
-        self.assertCountEqual(
-            [shard['configurations'] for shard in planned], EXTENDED_CONFIGURATIONS,
-        )
-        self.assertTrue(all(shard['timeout_minutes'] == 360 for shard in planned))
+    def test_more_work_gets_more_shards(self):
+        heavy = [f'Heavy{i}' for i in range(40)]
+        budget_each = SHARD_BUDGET_SECONDS // 2
+        SECONDS.update({name: budget_each for name in heavy})
+        try:
+            planned = plan(heavy)
+        finally:
+            for name in heavy:
+                SECONDS.pop(name)
+        self.assertEqual(len(planned), 20)
+        self.assertTrue(all(shard['estimate'] <= SHARD_BUDGET_SECONDS for shard in planned))
+
+    def test_uneven_weights_get_shards_until_they_fit(self):
+        # Nine at two thirds of the budget: the total asks for eight shards,
+        # and eight would pack two of them, past the budget, into one.
+        uneven = [f'Uneven{i}' for i in range(9)]
+        SECONDS.update({name: SHARD_BUDGET_SECONDS * 2 // 3 for name in uneven})
+        try:
+            planned = plan(uneven)
+        finally:
+            for name in uneven:
+                SECONDS.pop(name)
+        self.assertEqual(len(planned), 9)
+        self.assertTrue(all(shard['estimate'] <= SHARD_BUDGET_SECONDS for shard in planned))
+
+    def test_manual_configurations_are_not_planned(self):
+        # Too long for any CI job; run by hand (manual/).
+        configurations = sorted(path.stem for path in Path(__file__).parent.glob('*.cfg'))
+        self.assertNotIn('SyncPipelineForkSuccessor', configurations)
+        self.assertTrue((Path(__file__).parent / 'manual' / 'SyncPipelineForkSuccessor.cfg').exists())
 
 
 if __name__ == '__main__':

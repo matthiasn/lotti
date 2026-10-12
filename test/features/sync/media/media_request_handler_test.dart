@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +23,7 @@ void main() {
   late MockDomainLogger loggingService;
   late Directory documentsDirectory;
   late List<SyncJournalEntity> answers;
+  late StreamController<ObservedAttachment> observed;
   late MediaRequestHandler handler;
 
   final sampleDate = DateTime.utc(2024);
@@ -109,16 +112,20 @@ void main() {
       ),
     ).thenAnswer((_) {});
 
+    observed = StreamController<ObservedAttachment>.broadcast();
     handler = MediaRequestHandler(
       journalDb: journalDb,
       outboxService: outboxService,
       vectorClockService: vectorClockService,
       documentsDirectory: documentsDirectory,
       loggingService: loggingService,
+      observedAttachments: observed.stream,
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await handler.dispose();
+    await observed.close();
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
     }
@@ -146,6 +153,120 @@ void main() {
       reason: 'the answer must force the blob onto an update send',
     );
     expect(answers.first.status, SyncEntryStatus.update);
+  });
+
+  group('an entry the request addresses to another holder', () {
+    SyncMediaRequest addressedToHostC() =>
+        const SyncMessage.mediaRequest(
+              entryIds: ['img-1', 'aud-1'],
+              requesterId: 'host-a',
+              // img-1 is host-c's to answer; aud-1 names this device.
+              holders: {'img-1': 'host-c', 'aud-1': 'host-b'},
+            )
+            as SyncMediaRequest;
+
+    setUp(() {
+      haveEntities({
+        'img-1': imageEntry('img-1'),
+        'aud-1': audioEntry('aud-1'),
+      });
+      writeBlob('/images/img-1.jpg');
+      writeBlob('/audio/2024-01-01/aud-1.aac');
+    });
+
+    test(
+      'is held back, while one addressed to this device is answered',
+      () async {
+        await handler.handleMediaRequest(addressedToHostC());
+
+        expect(answers.map((a) => a.id), ['aud-1']);
+        expect(handler.debugDeferredPaths, {'/images/img-1.jpg'});
+      },
+    );
+
+    test('is answered once the grace ends with no answer from the holder '
+        '(it may be offline)', () async {
+      await handler.handleMediaRequest(addressedToHostC());
+      await handler.expireGraceForTesting();
+
+      expect(answers.map((a) => a.id), ['aud-1', 'img-1']);
+      expect(answers.last.includeAttachments, isTrue);
+      expect(handler.debugDeferredPaths, isEmpty);
+    });
+
+    test("is dropped once the holder's answer is at least as large", () async {
+      await handler.handleMediaRequest(addressedToHostC());
+
+      // The path as the attachment index emits it; the file holds 12 bytes.
+      observed.add((relativePath: 'images/img-1.jpg', declaredSize: 12));
+      await pumpEventQueue();
+      await handler.expireGraceForTesting();
+
+      expect(answers.map((a) => a.id), ['aud-1']);
+    });
+
+    test(
+      "is still answered when the holder's answer is shorter, or unsized",
+      () async {
+        // A short copy from an old build must not stand in for this one.
+        await handler.handleMediaRequest(addressedToHostC());
+
+        observed
+          ..add((relativePath: '/images/img-1.jpg', declaredSize: 5))
+          ..add((relativePath: '/images/img-1.jpg', declaredSize: null));
+        await pumpEventQueue();
+        expect(handler.debugDeferredPaths, {'/images/img-1.jpg'});
+        await handler.expireGraceForTesting();
+
+        expect(answers.map((a) => a.id), ['aud-1', 'img-1']);
+      },
+    );
+
+    test('nothing is sent for a file deleted during the grace', () async {
+      await handler.handleMediaRequest(addressedToHostC());
+      File('${documentsDirectory.path}/images/img-1.jpg').deleteSync();
+      await handler.expireGraceForTesting();
+
+      expect(answers.map((a) => a.id), ['aud-1']);
+    });
+
+    test('a failed answer after the grace is logged, not thrown', () async {
+      when(
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+      await handler.handleMediaRequest(addressedToHostC());
+      when(
+        () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+      ).thenThrow(StateError('db closed'));
+
+      await handler.expireGraceForTesting();
+
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'mediaRequest.answeredAfterGrace',
+        ),
+      ).called(1);
+      expect(handler.debugDeferredPaths, isEmpty);
+    });
+
+    test('the observed stream ending drops held-back answers', () async {
+      await handler.handleMediaRequest(addressedToHostC());
+
+      await observed.close();
+      await pumpEventQueue();
+
+      expect(handler.debugDeferredPaths, isEmpty);
+      await handler.expireGraceForTesting();
+      expect(answers.map((a) => a.id), ['aud-1']);
+    });
   });
 
   test("ignores this device's own broadcast", () async {

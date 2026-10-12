@@ -81,7 +81,10 @@ for config in "${configs[@]}"; do
   spec="$(spec_for "$config")"
   echo "== $config ($spec.tla)"
   # TLC writes its state files next to the spec; keep them out of the tree.
-  cp "$here/$spec.tla" "$here/$config.cfg" "$work/"
+  # A configuration too long for CI lives in manual/: run by name only.
+  cfg_file="$here/$config.cfg"
+  [[ -f "$cfg_file" ]] || cfg_file="$here/manual/$config.cfg"
+  cp "$here/$spec.tla" "$cfg_file" "$work/"
   (
     cd "$work"
     "$java_bin" -XX:+UseParallelGC -cp "$jar" tlc2.TLC \

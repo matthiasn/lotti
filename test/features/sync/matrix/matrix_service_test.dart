@@ -350,6 +350,29 @@ void main() {
       verify(() => roomManager.dispose()).called(1);
     });
 
+    test(
+      'dispose stops live ceremonies before closing their streams',
+      () async {
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+        final service = createService();
+        final outgoing = MockKeyVerificationRunner();
+        final incoming = MockKeyVerificationRunner();
+        when(outgoing.stopTimer).thenReturn(null);
+        when(incoming.stopTimer).thenReturn(null);
+        service
+          ..keyVerificationRunner = outgoing
+          ..incomingKeyVerificationRunner = incoming;
+
+        await service.dispose();
+
+        // Their 100 ms polls publish into the controllers dispose closes.
+        verify(outgoing.stopTimer).called(1);
+        verify(incoming.stopTimer).called(1);
+      },
+    );
+
     test('createRoom delegates to room manager and returns the id', () async {
       when(
         () => roomManager.createRoom(name: any(named: 'name')),

@@ -4,271 +4,287 @@
     python3 specs/tla/shards.py            # JSON matrix for GitHub Actions
     python3 specs/tla/shards.py --table    # the plan, for reading
 
-Every checked-in `*.cfg` is assigned to exactly one shard; SECONDS only decides
-the balance, never whether a configuration runs. A configuration missing from
+Every `*.cfg` in this directory is assigned to exactly one shard; SECONDS only
+decides the balance, never whether a configuration runs. A configuration that
+cannot finish within a CI job lives in `manual/` and is run by hand. A configuration missing from
 SECONDS is assumed to take DEFAULT_SECONDS until it is measured and added.
 """
 
 import argparse
 import json
+import math
 from pathlib import Path
 
+# The fewest regular shards a plan uses.
 SHARDS = 8
 
-# Keep measured multi-hour profiles out of the one-hour regular shards. They
-# run in the same nightly or manual workflow and feed the same TLC check.
-EXTENDED_CONFIGURATIONS = {"SyncPipelineForkSuccessor"}
+# Estimated seconds a shard may hold. Its job times out at 60
+# minutes, and a configuration can take half as long again on another runner
+# (see SECONDS), so a shard planned to the minute is planned to time out:
+# every regular shard of the nightly runs from 30 Sep to 11 Oct 2026 was
+# cancelled at 60 minutes after being packed to about 61, and a first plan
+# at 40 minutes still lost four of 13 shards to the limit (run 38173436229),
+# its estimates a quarter short on average. Half as long again as this
+# budget still fits the hour. The plan adds shards until none is estimated
+# past it.
+SHARD_BUDGET_SECONDS = 2000
 
-# Seconds TLC spent on each configuration in CI runs 36198815983 and
-# 36217391296, retaining
-# larger historic budgets from runs 36106366560 and 36109959497. The
-# same configuration can take half as long again on another runner, so refresh
-# when a configuration is added or its state space changes by an order of
-# magnitude, not for run-to-run noise.
+# Seconds TLC spent on each configuration in CI run 38173436229 (13 shards on
+# four-core runners at once), keeping the older figure where it was larger.
+# A configuration still running when its shard was cancelled is budgeted at
+# half as long again as it had run, or eight times its local twenty-worker
+# time, whichever is more; one the run never reached keeps its older figure
+# with 30% added, the run's average overrun. The same configuration can take
+# half as long again on another runner, so refresh when a configuration is
+# added or its state space changes by an order of magnitude, not for
+# run-to-run noise.
 SECONDS = {
-    # Pipeline profiles measured in CI run 36198815983. HeadsCrash uses the
-    # slower 36198563598 measurement: the old 300s estimate overloaded a shard
-    # past its 45-minute deadline even though the profile itself passed.
-    "SyncPipeline": 685,
-    # Local exhaustive runs with six workers; refresh from CI measurements.
-    "SyncPipelineForkSuccessor": 9860,
-    "SyncPipelineMixedPeers": 1078,
-    "SyncPipelineJournal": 646,
-    "SyncPipelineAgentEntity": 6,
-    "SyncPipelineAgentLink": 1,
-    "SyncPipelineNotification": 1515,
-    "SyncPipelineConsumption": 339,
-    "SyncPipelineLossy": 369,
-    "SyncPipelineBurn": 5,
-    "SyncPipelineHeads": 988,
-    "SyncPipelineHeadsBurn": 15,
-    "SyncPipelineHeadsCrash": 1750,
-    "AgentReplicationIntent": 847,
-    "AgentReplicationLegacyCounter": 841,
-    "SyncSequence": 831,
+    "AgentLinks": 7,
+    "AgentLinksLossy": 435,
+    "AgentLinksSlot": 10,
+    "AgentLinksSlotLossy": 349,
+    "AgentMessageLog": 575,
     "AgentMessageLogLiveness": 627,
-    "AgentReplication": 594,
-    "AgentMessageLog": 574,
-    "SyncSequenceCrash": 552,
+    "AgentMessageLogStale": 10,
+    "AgentReplication": 858,
+    "AgentReplicationIntent": 885,
     "AgentReplicationIntentTerminal": 627,
-    "DayProcessingJobDraft": 358,
-    "AgentLinksLossy": 323,
-    # Local runs with twenty workers; refresh from CI measurements.
-    "ProjectWakeGovernor": 2,
-    "ProjectWakeGovernorBacklog": 2,
-    "ProjectWakeGovernorBudget": 30,
-    "ProjectWakeGovernorPause": 10,
-    "ProjectWakeGovernorThree": 25,
-    # Local runs, a few seconds each; refresh from CI measurements.
-    "EntryLinkIdentity": 10,
-    "EntryLinkIdentityLegacy": 10,
-    "EntryLinkIdentityLegacyReceiver": 5,
-    # Local runs (TaskLinkGraph 63s, 9.2M states); refresh from CI.
-    "TaskLinkGraph": 90,
-    "TaskLinkGraphProjects": 5,
-    "TaskLinkGraphProjectsThree": 15,
-    "AgentLinksSlotLossy": 240,
-    "DayProcessingJob": 379,
-    "AgentReplicationTerminal": 409,
-    "VersionHeadsSoul": 277,
+    "AgentReplicationLegacyCounter": 884,
     "AgentReplicationLegacyReceiver": 452,
-    "InboundQueue": 523,
-    "InboundQueueSlice": 5,
-    # Local exhaustive run (15.4M states, five minutes); refresh from CI.
-    "InboundQueueSameMs": 300,
-    "SyncSequenceCrashFault": 78,
-    "ScheduledWakeLeaseThree": 74,
-    "WakeRuntimeCrash": 66,
-    "ScheduledWakeLease": 58,
-    "SyncSequenceFaults": 58,
-    "ScheduledWakeLeaseCrashRearm": 61,
-    "SyncSequenceCrashUnnamed": 48,
-    "OutboxGhost": 178,
-    # Local exhaustive run; refresh from CI measurements.
-    "OutboxGhostRows": 242,
-    "LogCompaction": 30,
-    "InboundQueueLiveness": 124,
-    "VersionHeadsGoal": 26,
-    "OutboxOperator": 223,
-    "OutboxRequeue": 400,
-    "ChangeSetLifecycleRaceSet": 20,
-    "ChangeSetLifecycleRaceRestore": 25,
-    "OutboxConcurrentLive": 119,
-    "ScheduledWakeLeaseCrash": 16,
-    "ChangeSetLifecycleSync": 18,
-    "ChangeSetLifecycleRace": 13,
-    "AgentMessageLogStale": 8,
-    "InboundQueueCrash": 42,
-    "GoalChatReplyThree": 8,
-    "HabitDaySettlementThree": 8,
-    "WakeRuntime": 8,
-    "AgentLinks": 6,
-    "AgentLinksSlot": 8,
-    "ChangeSetLifecycleConsolidateSync": 6,
-    "EvolutionSession": 6,
-    "ChangeSetLifecycleSyncSplit": 4,
-    "InboundQueueCipher": 17,
-    "HabitDaySettlement": 4,
-    # Local measurements; refresh from CI.
-    "ChecklistMembership": 60,
-    "ChecklistMembershipCrash": 20,
-    "ChecklistMembershipThree": 10,
-    "ChecklistMembershipFailure": 10,
-    "RunningTimer": 10,
-    "EntryLinkIdentityEdits": 10,
-    "TaskFieldWrites": 20,
-    "TaskFieldWritesAgents": 60,
-    "TaskFieldWritesResolve": 25,
-    "TaskCategoryMove": 2,
-    "TaskLabels": 2,
-    "TaskFieldWritesStale": 60,
-    # Local runs with 20 workers took 222s, 225s and 6s; budgeted for a
-    # runner with fewer cores. Refresh from CI.
-    "ChecklistReplication": 600,
-    "ChecklistReplicationAdds": 600,
-    "ChecklistReplicationCrash": 20,
-    "AgentWakeCoordination": 15,
-    "AgentWakeCoordinationFailure": 75,
-    "AgentWakeCoordinationCrash": 110,
-    "AgentWakeCoordinationLossy": 60,
-    # Local runs (20 workers: 7s, 28s and under 1s), scaled for a CI runner;
-    # refresh from CI.
-    "TaskAgentAssignment": 45,
-    "TaskAgentAssignmentSkew": 180,
-    "TaskAgentAssignmentLegacy": 2,
-    "ChangeSetLifecycleRaceUndo": 40,
-    "ChangeSetLifecycleRaceAdd": 5,
-    "ChangeSetLifecycleUndo": 1,
-    "ChangeSetLifecycleUndoRetry": 1,
-    "Outbox": 40,
-    "ChangeSetLifecycle": 2,
-    "OutboxConcurrent": 3,
+    "AgentReplicationRemoval": 634,
+    "AgentReplicationRemovalLossy": 65,
+    "AgentReplicationSeed": 60,
+    "AgentReplicationSeedLossy": 11,
+    "AgentReplicationTerminal": 409,
     "AgentStateWrites": 1,
+    "AgentWakeCoordination": 60,
+    "AgentWakeCoordinationCrash": 634,
+    "AgentWakeCoordinationFailure": 359,
+    "AgentWakeCoordinationLossy": 288,
     "AgentWakeOutcome": 2,
-    "AgentWakeOutcomeSkew": 2,
+    "AgentWakeOutcomeSkew": 3,
+    "AiConfigClocks": 1730,
+    "AiConfigReplication": 11,
+    "AiConfigReplicationCascade": 13,
+    "AiConfigReplicationInterrupted": 20,
+    "AiConfigReplicationOwed": 894,
+    "AiConfigReplicationUndo": 20,
+    "ChangeDispatchRecovery": 2,
     "ChangeSetConfirm": 1,
     "ChangeSetConfirmFaults": 1,
-    "ChangeDispatchRecovery": 2,
     "ChangeSetDependency": 1,
+    "ChangeSetLifecycle": 2,
     "ChangeSetLifecycleConsolidate": 1,
+    "ChangeSetLifecycleConsolidateSync": 6,
+    "ChangeSetLifecycleRace": 13,
+    "ChangeSetLifecycleRaceAdd": 7,
     "ChangeSetLifecycleRaceLink": 1,
+    "ChangeSetLifecycleRaceRestore": 25,
+    "ChangeSetLifecycleRaceSet": 26,
+    "ChangeSetLifecycleRaceUndo": 66,
     "ChangeSetLifecycleReopen": 1,
-    "DayJobPreparation": 1,
-    "DigestRecovery": 1,
-    "DigestRecoveryCrash": 1,
-    "GoalChatReply": 1,
-    "OwnCounterSettlement": 1,
-    "NotificationReplication": 15,
-    "SyncPreferenceEdits": 2,
-    "SyncPreferenceEditsFlags": 2,
-    "SyncSettings": 1,
-    "SyncSettingsEqualStamps": 1,
-    "SyncSettingsNameEqualStamps": 1,
-    "SyncSettingsName": 1,
-    "SyncSettingsFlags": 1,
-    "SavedTaskFilterSyncThree": 200,
-    "SavedTaskFilterSync": 35,
-    "SpeechDictionarySync": 5,
-    # Measured locally (20 workers) when added; refresh from CI.
-    "DefinitionClocks": 2,
-    "DefinitionClocksThree": 20,
-    "DefinitionClocksLossy": 300,
-    # CI run 38165560771: 1,610 s (27 min; 11 min locally on 4 workers).
-    "AiConfigClocks": 1650,
-    "SyncPipelineDefinition": 2,
-    "SyncSettingsFailure": 1,
-    "SyncSettingsNameFailure": 1,
-    # Measured locally (4 shared cores) when added; refresh from CI.
-    "AiConfigReplication": 11,
-    "AiConfigReplicationCascade": 10,
-    "AiConfigReplicationUndo": 20,
-    "AiConfigReplicationInterrupted": 15,
-    "OutboxCausality": 20,
-    # Measured locally (20 workers) when added; refresh from CI.
-    "JournalReplication": 33,
-    "JournalReplicationLabels": 6,
-    "JournalReplicationLossy": 3,
-    "JournalReplicationLegacy": 2,
-    # Measured locally when added; refresh from CI.
-    "EnvelopeChain": 2,
-    "EnvelopeChainRevocation": 15,
-    # Local exhaustive runs with twenty workers; refresh from CI measurements.
-    "PullRequestSnapshot": 5,
-    "PullRequestSnapshotSync": 8,
-    "PullRequestSnapshotCoarse": 15,
-    "PullRequestSnapshotNoToken": 2,
-    "PullRequestSnapshotLiveness": 30,
-    "PullRequestAssignment": 2,
-    "PullRequestAssignmentSync": 6,
-    "GitHubAccountSync": 40,
-    "AgentReplicationRemoval": 596,
-    "AgentReplicationRemovalLossy": 61,
-    "AgentReplicationSeed": 60,
-    "AgentReplicationSeedLossy": 10,
-    "GoalRegister": 3,
-    "GoalRegisterCrash": 23,
-    "GoalRegisterDeath": 4,
-    "GoalRegisterDivergent": 1,
-    # Three times a local run with twenty workers, since a CI runner has
-    # fewer; refresh from CI measurements.
-    "DeepBackfill": 612,
-    "DeepBackfillPaged": 627,
-    "DeepBackfillBatch": 39,
-    "DeepBackfillOneSided": 6,
-    "DeepBackfillFaults": 30,
-    "DeepBackfillIncremental": 219,
-    "DeepBackfillMerge": 831,
-    "DeepBackfillThree": 60,
-    # Local exhaustive runs, half as long again for a CI runner; refresh from
-    # CI measurements.
-    "RelationshipAgentLifecycle": 2,
-    "RelationshipAgentLifecycleCrash": 3,
-    "RelationshipAgentLifecycleConflict": 45,
-    "RelationshipAgentLifecycleHardDelete": 280,
-    "RelationshipAgentLifecyclePause": 15,
-    "RelationshipAgentLifecycleStop": 250,
-    # Measured locally (4 shared cores) when added; refresh from CI.
-    "TranscriptionRun": 12,
-    "TranscriptionRunExhaust": 44,
-    "TranscriptionRunHeld": 20,
-    # Measured locally (two workers, 2 GB heap) when added; refresh from CI.
-    "EmbeddingFreshness": 30,
-    "EmbeddingFreshnessTwo": 65,
+    "ChangeSetLifecycleSync": 26,
+    "ChangeSetLifecycleSyncSplit": 4,
+    "ChangeSetLifecycleUndo": 1,
+    "ChangeSetLifecycleUndoRetry": 1,
+    "ChecklistMembership": 71,
+    "ChecklistMembershipCrash": 26,
+    "ChecklistMembershipFailure": 10,
+    "ChecklistMembershipThree": 13,
+    "ChecklistReplication": 1495,
+    "ChecklistReplicationAdds": 1257,
+    "ChecklistReplicationCrash": 50,
     "ConversationLoop": 10,
-    "ConversationLoopConcurrent": 11,
-    # Local runs on ten workers (base 100 s, 10.2M states); refresh from CI.
-    "RelationshipCadence": 100,
-    "RelationshipCadenceEnroll": 2,
-    # Six times a local run with twenty workers (11 s, 5 s, 2 s and 25 s),
-    # since a CI runner has fewer cores; refresh from CI.
-    "VerificationLaunch": 66,
-    "VerificationLaunchTwoLaunchers": 30,
-    "VerificationLaunchCrossStart": 12,
+    "ConversationLoopConcurrent": 14,
+    "DayJobPreparation": 1,
+    "DayProcessingJob": 379,
+    "DayProcessingJobDraft": 383,
+    "DeepBackfill": 612,
+    "DeepBackfillBatch": 60,
+    "DeepBackfillFaults": 30,
+    "DeepBackfillIncremental": 514,
+    "DeepBackfillMedia": 300,
+    "DeepBackfillMediaFaults": 300,
+    "DeepBackfillMediaOneSided": 300,
+    "DeepBackfillMediaPaged": 300,
+    "DeepBackfillMediaResend": 300,
+    "DeepBackfillMediaThree": 300,
+    "DeepBackfillMerge": 1421,
+    "DeepBackfillOneSided": 6,
+    "DeepBackfillPaged": 627,
+    "DeepBackfillThree": 60,
+    "DefinitionClocks": 2,
+    "DefinitionClocksLossy": 300,
+    "DefinitionClocksThree": 20,
     "DevicePairing": 150,
+    "DigestRecovery": 1,
+    "DigestRecoveryCrash": 2,
+    "EmbeddingFreshness": 39,
+    "EmbeddingFreshnessTwo": 65,
+    "EntryLinkIdentity": 10,
+    "EntryLinkIdentityEdits": 10,
+    "EntryLinkIdentityLegacy": 10,
+    "EntryLinkIdentityLegacyReceiver": 5,
+    "EnvelopeChain": 3,
+    "EnvelopeChainRevocation": 49,
+    "EvolutionSession": 6,
+    "GitHubAccountSync": 127,
+    "GoalChatReply": 513,
+    "GoalChatReplyThree": 8,
+    "GoalRegister": 3,
+    "GoalRegisterCrash": 29,
+    "GoalRegisterDeath": 5,
+    "GoalRegisterDivergent": 2,
+    "HabitDaySettlement": 4,
+    "HabitDaySettlementThree": 10,
+    "InboundQueue": 523,
+    "InboundQueueCipher": 22,
+    "InboundQueueCrash": 42,
+    "InboundQueueLiveness": 124,
+    "InboundQueueSameMs": 300,
+    "InboundQueueSlice": 5,
+    "JournalReplication": 257,
+    "JournalReplicationLabels": 21,
+    "JournalReplicationLegacy": 6,
+    "JournalReplicationLossy": 20,
+    "LogCompaction": 50,
+    "NotificationReplication": 16,
+    "Outbox": 60,
+    "OutboxCausality": 20,
+    "OutboxConcurrent": 5,
+    "OutboxConcurrentLive": 218,
+    "OutboxGhost": 961,
+    "OutboxGhostRows": 682,
+    "OutboxOperator": 529,
+    "OutboxRequeue": 745,
+    "OwnCounterSettlement": 1,
+    "ProjectWakeGovernor": 6,
+    "ProjectWakeGovernorBacklog": 5,
+    "ProjectWakeGovernorBudget": 132,
+    "ProjectWakeGovernorPause": 26,
+    "ProjectWakeGovernorThree": 65,
+    "PullRequestAssignment": 3,
+    "PullRequestAssignmentSync": 9,
+    "PullRequestSnapshot": 9,
+    "PullRequestSnapshotCoarse": 37,
+    "PullRequestSnapshotLiveness": 31,
+    "PullRequestSnapshotNoToken": 5,
+    "PullRequestSnapshotSync": 15,
+    "RelationshipAgentLifecycle": 3,
+    "RelationshipAgentLifecycleConflict": 86,
+    "RelationshipAgentLifecycleCrash": 3,
+    "RelationshipAgentLifecycleHardDelete": 581,
+    "RelationshipAgentLifecyclePause": 16,
+    "RelationshipAgentLifecycleStop": 515,
+    "RelationshipCadence": 379,
+    "RelationshipCadenceEnroll": 5,
+    "RunningTimer": 10,
+    "SavedTaskFilterSync": 92,
+    "SavedTaskFilterSyncThree": 557,
+    "ScheduledWakeLease": 58,
+    "ScheduledWakeLeaseCrash": 21,
+    "ScheduledWakeLeaseCrashRearm": 79,
+    "ScheduledWakeLeaseThree": 75,
+    "SpeechDictionarySync": 14,
+    "SyncPipeline": 721,
+    "SyncPipelineAgentEntity": 7,
+    "SyncPipelineAgentLink": 1,
+    "SyncPipelineBurn": 5,
+    "SyncPipelineConsumption": 359,
+    "SyncPipelineDefinition": 2,
+    "SyncPipelineHeads": 988,
+    "SyncPipelineHeadsBurn": 15,
+    "SyncPipelineHeadsCrash": 1950,
+    "SyncPipelineJournal": 693,
+    "SyncPipelineLossy": 371,
+    "SyncPipelineMixedPeers": 1863,
+    "SyncPipelineNotification": 1593,
+    "SyncPreferenceEdits": 5,
+    "SyncPreferenceEditsFlags": 2,
+    "SyncSequence": 840,
+    "SyncSequenceCrash": 639,
+    "SyncSequenceCrashFault": 83,
+    "SyncSequenceCrashUnnamed": 62,
+    "SyncSequenceFaults": 59,
+    "SyncSettings": 2,
+    "SyncSettingsEqualStamps": 2,
+    "SyncSettingsFailure": 2,
+    "SyncSettingsFlags": 1,
+    "SyncSettingsName": 2,
+    "SyncSettingsNameEqualStamps": 2,
+    "SyncSettingsNameFailure": 1,
+    "TaskAgentAssignment": 60,
+    "TaskAgentAssignmentLegacy": 2,
+    "TaskAgentAssignmentSkew": 199,
+    "TaskCategoryMove": 2,
+    "TaskFieldWrites": 33,
+    "TaskFieldWritesAgents": 195,
+    "TaskFieldWritesResolve": 193,
+    "TaskFieldWritesStale": 422,
+    "TaskLabels": 2,
+    "TaskLinkGraph": 304,
+    "TaskLinkGraphProjects": 6,
+    "TaskLinkGraphProjectsThree": 25,
+    "TranscriptionRun": 12,
+    "TranscriptionRunExhaust": 57,
+    "TranscriptionRunHeld": 20,
+    "VerificationLaunch": 166,
+    "VerificationLaunchCrossStart": 15,
+    "VerificationLaunchTwoLaunchers": 81,
+    "VersionHeadsGoal": 27,
+    "VersionHeadsSoul": 277,
+    "WakeRuntime": 8,
+    "WakeRuntimeCrash": 66,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
 DEFAULT_SECONDS = 300
 
 
-def plan(configurations, shards=SHARDS):
+def shard_count(configurations):
+    """The fewest shards that could hold the configurations within
+    SHARD_BUDGET_SECONDS each — at least SHARDS, and never more than there are
+    configurations. A lower bound: `plan` adds shards until the packing fits."""
+    total = sum(SECONDS.get(c, DEFAULT_SECONDS) for c in configurations)
+    return min(len(configurations), max(SHARDS, math.ceil(total / SHARD_BUDGET_SECONDS)))
+
+
+def _pack(configurations, count):
     """Longest-first greedy packing: each configuration goes to the lightest shard."""
-    regular = [c for c in configurations if c not in EXTENDED_CONFIGURATIONS]
-    bins = [{"seconds": 0, "configurations": []} for _ in range(min(shards, len(regular)))]
-    ordered = sorted(regular, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
+    bins = [{"seconds": 0, "configurations": []} for _ in range(count)]
+    ordered = sorted(configurations, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
     for configuration in ordered:
         lightest = min(bins, key=lambda b: b["seconds"])
         lightest["configurations"].append(configuration)
         lightest["seconds"] += SECONDS.get(configuration, DEFAULT_SECONDS)
-    for configuration in sorted(set(configurations) & EXTENDED_CONFIGURATIONS):
-        bins.append({"seconds": SECONDS[configuration], "configurations": [configuration]})
+    return bins
+
+
+def _overflows(bins):
+    """A shard of several configurations past the budget. One configuration
+    over the budget alone cannot be split, so it does not count."""
+    return any(len(b["configurations"]) > 1 and b["seconds"] > SHARD_BUDGET_SECONDS
+               for b in bins)
+
+
+def plan(configurations, shards=None):
+    """Packs the configurations into shards. Unless [shards] fixes the count,
+    shards are added until every shard of several configurations fits the
+    budget: the total over the budget is only a lower bound when weights are
+    uneven."""
+    if shards is not None:
+        bins = _pack(configurations, min(shards, len(configurations)))
+    else:
+        count = shard_count(configurations)
+        bins = _pack(configurations, count)
+        while _overflows(bins) and count < len(configurations):
+            count += 1
+            bins = _pack(configurations, count)
     assigned = sorted(c for b in bins for c in b["configurations"])
     assert assigned == sorted(configurations), "every configuration runs exactly once"
     return [
         {"shard": index + 1, "estimate": b["seconds"],
-         "configurations": " ".join(b["configurations"]),
-         "timeout_minutes": 360 if b["configurations"][0] in EXTENDED_CONFIGURATIONS else 60,
-         "java_options": "-Xmx12g" if b["configurations"][0] in EXTENDED_CONFIGURATIONS else ""}
+         "configurations": " ".join(b["configurations"])}
         for index, b in enumerate(bins)
     ]
 
@@ -284,8 +300,7 @@ def main():
     shards = plan(configurations)
     if args.table:
         for shard in shards:
-            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  "
-                  f"limit={shard['timeout_minutes']}m  {shard['configurations']}")
+            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  {shard['configurations']}")
     else:
         print(json.dumps(shards))
 

@@ -141,19 +141,25 @@ def check_preference_edits():
 
 def check_definition_clocks():
     # Each rule of the definition gate against the property it protects, in
-    # the smallest profile that shows it (specs/tla/README.md).
-    for switch, profile, assertion, kind in (
-            ("JoinOnResolve", "DefinitionClocksLossy", "GapsHeal", "temporal"),
-            ("ContentTieBreak", "DefinitionClocks", "EqualClocksAgree", "invariant"),
-            ("NullFallsBack", "DefinitionClocks", "LegacyNeverRegresses", "action"),
+    # the smallest profile that shows it (specs/tla/README.md). StampsBeaten
+    # is checked without the startup repair, which converges on its own: with
+    # it on, dropping the self-stamp breaks nothing.
+    for switch, profile, assertion, kind, alongside in (
+            ("JoinOnResolve", "DefinitionClocksLossy", "GapsHeal", "temporal", {}),
+            ("ContentTieBreak", "DefinitionClocks", "EqualClocksAgree", "invariant",
+             {}),
+            ("NullFallsBack", "DefinitionClocks", "LegacyNeverRegresses", "action",
+             {}),
             ("MonotoneEditStamp", "DefinitionClocksThree", "CausalWriteWins",
-             "invariant"),
-            ("StampsBeaten", "DefinitionClocks", "EventuallyConverged", "temporal")):
+             "invariant", {}),
+            ("StampsBeaten", "DefinitionClocks", "EventuallyConverged", "temporal",
+             {"RepairAtStartup": "FALSE"})):
         for guarded, fails in (("TRUE", False), ("FALSE", True)):
             # The lossy profile's guarded run is the checked-in configuration.
             if profile == "DefinitionClocksLossy" and not fails:
                 continue
-            check("definition-" + switch + "-" + guarded, {switch: guarded},
+            check("definition-" + switch + "-" + guarded,
+                  {**alongside, switch: guarded},
                   assertion, module="DefinitionClocks", profile=profile,
                   fails=fails, temporal=kind == "temporal",
                   action=kind == "action")

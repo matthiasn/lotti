@@ -209,15 +209,14 @@ void main() {
         final emojis = <String, String>{};
         final withdrawn = <String, KeyVerification>{};
         final deferred = <String, KeyVerification>{};
+        final confirms = <Future<void>>[];
         final logger = getIt<DomainLogger>();
 
         // The app's rules, one device at a time.
         void follow(String name, MatrixService me) {
           // IncomingVerificationWrapper while the launcher's sheet holds the
           // lock: yield to a smaller identity, else keep the request.
-          final incoming = me.getIncomingKeyVerificationStream().listen((
-            request,
-          ) async {
+          Future<void> offer(KeyVerification request) async {
             final outgoing = me.keyVerificationRunner;
             final yields = shouldYieldTo(
               incoming: request,
@@ -232,6 +231,7 @@ void main() {
             );
             if (yields) {
               withdrawn[name] = outgoing!.keyVerification;
+              deferred.remove(name);
               await handOffOutgoingVerification(
                 service: me,
                 incoming: request,
@@ -240,8 +240,17 @@ void main() {
             } else {
               deferred[name] = request;
             }
-          });
+          }
+
+          final incoming = me.getIncomingKeyVerificationStream().listen(offer);
           addTearDown(incoming.cancel);
+          // A request held back before this side's own runner existed is
+          // offered again once it does, as the wrapper does.
+          final ownRunner = reofferOnOwnRunner(me, () {
+            final held = deferred[name];
+            if (held != null && !held.isDone) unawaited(offer(held));
+          });
+          addTearDown(ownRunner.cancel);
 
           // Both sheets confirm the emoji once both users have seen them,
           // as people comparing two screens do: the outgoing sheet (own
@@ -256,10 +265,14 @@ void main() {
             await runner.acceptEmojiVerification();
           }
 
-          final outgoingSheet = me.keyVerificationStream.listen(confirm);
+          // Awaited before the body ends, so no confirmation is still in
+          // flight when the tear-downs close the clients.
+          void confirming(KeyVerificationRunner runner) =>
+              confirms.add(confirm(runner));
+          final outgoingSheet = me.keyVerificationStream.listen(confirming);
           addTearDown(outgoingSheet.cancel);
           final incomingSheet = me.incomingKeyVerificationRunnerStream.listen(
-            confirm,
+            confirming,
           );
           addTearDown(incomingSheet.cancel);
         }
@@ -292,6 +305,7 @@ void main() {
           timeout: timeout,
           message: 'the crossing ceremony never finished',
         );
+        await Future.wait(confirms);
 
         expect(emojis.keys, unorderedEquals(['alice', 'bob']));
         expect(emojis['alice'], isNotEmpty);

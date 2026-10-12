@@ -360,6 +360,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4768](https://github.com/matthiasn/lotti/pull/4768) | pending | sync | — | 0 | 3 (0) | P1×3 | [0134](../../docs/adr/0134-sessions-rooms-and-trust-recover.md) | Three places where starting or setting up sync left a device out of step for good. An event from a device not trusted yet (unverified, or keys not arrived) is held as an abandoned queue row and re-checked when a verification completes or the queue starts, instead of dropped while the marker passed it; a start without network keeps connecting with a doubling wait and at once when connectivity returns; and signing in with credentials joins the account's existing sync room instead of always creating one. No spec changed |
 | [#4769](https://github.com/matthiasn/lotti/pull/4769) | pending | sync | — | 0 | 6 (0) | P1 P2×4 P3 | [0135](../../docs/adr/0135-ordering-and-restores-hold.md) | Ordering and counter uniqueness weaker than the protocol assumes. A bundled journal child fails the bundle into retry when its stored row is missing, or when the row does not cover its queued version and every covered clock and no open conflict covering all of them exists; such a conflict is sent instead of the row, and a single send applies the same rule; definitions own their commit, so the receipt follows it; notification content is the maximum of one total order (a content-clock rank, then updatedAt), so it converges in any order of arrival; the next counter starts above the highest recorded one, and a restored sync database is repopulated from every stored payload type while reservations wait; the media repair cap is persisted once a request is queued. DefinitionClocks.tla models the startup repair (RepairAtStartup, ConvergesWithoutUser) instead of a manual one-host migration, and the Outbox README names the size paths it leaves out |
 | [#4770](https://github.com/matthiasn/lotti/pull/4770) | pending | ai, sync | `AiConfigClocks` | 1 | 2 (1) | P2 P3 | [0136](../../docs/adr/0136-ai-configurations-carry-vector-clocks.md) | AI configurations carried no sequence counter, so a message lost after it left was repaired only by the next change or "Send settings". Every sent write now spends a vector clock counter on top of the clock held for the id (`SyncSequencePayloadType.aiConfig`); the stamp still orders versions, the held clock is the join of every copy met, and backfill and deep backfill answer with the version held now. TLC found, before the code shipped, that a derived write sent while losing locally carries a clock covering a newer version it does not supersede, so a peer answering from it closes a third device's gap with an older version (`SendHeld = FALSE`: `CoverageSound` in 4 states); only the version held is sent |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | pending | sync | — | 0 | 5 (0) | P1 P2×3 P3 | [0137](../../docs/adr/0137-a-short-media-copy-is-fetched-again.md) | A crossing verification request that landed before the own runner was stored was deferred and never revisited, so two devices verifying each other could wait forever; CI caught it, and `VerificationLaunch` now models the send-then-register window (`ReofferOnRegister = FALSE`: `AutoVerifies` in 12 steps); review then found that a handoff left the withdrawn device as the one shown last (`RecordHandedOff = FALSE`: `NoReoffer` in 11 steps). The loader fetches a copy shorter than its attachment declares. A media request names the likely holder, and every other holder waits and answers unless a complete answer arrives first, so a blob is usually uploaded once without an offline holder stalling the repair or an old peer's short copy standing. The nightly TLA+ run, cancelled every night since 30 Sep, plans shards inside a 33-minute budget from CI-measured times; `SyncPipelineForkSuccessor` (about 8 h on CI) moved to `specs/tla/manual` |
 | pending | pending | speech, ai | `TranscriptionRun` | 0 | 0 (–) | — | [0126](../../docs/adr/0126-post-processing-follows-every-speech-to-text-transcription.md) | No model change: post-processing now follows every speech-to-text transcription, so a check-in's transcript is held like any other. `TranscriptionRunHeld` already pairs `Held` with the check-in `Waiter`, and re-checked: `WaiterResolves` and `HeldTextLands` hold through the fill. 90,328 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -589,7 +590,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 182 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 187 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -775,6 +776,11 @@ The P0 and P1 bugs:
 | [#4769](https://github.com/matthiasn/lotti/pull/4769) | P3 | no | DefinitionClocks.tla still modelled a manual one-host migration after every device repaired clockless rows at startup |
 | [#4770](https://github.com/matthiasn/lotti/pull/4770) | P2 | no | A lost change to an AI configuration — a provider, model, prompt, profile or skill, or its deletion — was never repaired: no counter showed the gap, so the device kept the old version until the row changed again or "Send settings" ran |
 | [#4770](https://github.com/matthiasn/lotti/pull/4770) | P3 | yes | The first design sent a derived write that lost locally, whose clock covered a newer version than it carried, so a backfill answer from it could close another device's gap with an older version; found by TLC before it shipped |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | P1 | no | A photo or recording that arrived cut short stayed cut short: the loader kept any non-empty file, so only a manual deep-backfill round fetched it again |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | P2 | no | Every device holding a missing photo or recording uploaded it in answer to the same request |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | P2 | no | Two devices that started the emoji verification at each other could both wait forever: a request that landed before the own runner was stored was deferred and never offered again |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | P2 | no | After a device yielded to a peer's verification request, the peer was not recorded as shown: once its sheet closed the launcher offered it again unasked, and "Show the emoji" reopened the withdrawn device instead |
+| [#4773](https://github.com/matthiasn/lotti/pull/4773) | P3 | no | Disposing the Matrix service left live verification timers running, and a late state update wrote to a closed stream |
 
 </details>
 
@@ -808,9 +814,11 @@ The P0 and P1 bugs:
 
 ## How the specs earn their keep
 
-- **Every configuration runs in CI.** The workflow finds every checked-in
-  `.cfg`; #4448 gave each its own job, and #4474 packs them into eight shards
-  balanced by measured runtime (see [README.md](README.md#running)). An
+- **Every configuration but one runs in CI.** The workflow finds every
+  `.cfg` in `specs/tla`; #4448 gave each its own job, and #4474 packs them into eight shards
+  balanced by measured runtime (see [README.md](README.md#running)); #4773
+  adds shards as the work grows, and moves a profile no CI job can finish
+  (`SyncPipelineForkSuccessor`) to `manual/`, checked by hand. An
   aggregate `TLC` check requires all of them to pass. The workflow runs
   nightly against `main` and on demand for a branch.
 - **Every fix is pinned by a switch.** Each fix gets a boolean switch in its

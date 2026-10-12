@@ -400,16 +400,22 @@ void main() {
 
   group('IncomingVerificationWrapper', () {
     late StreamController<KeyVerification> incomingController;
+    late StreamController<KeyVerificationRunner> ownRunnerController;
 
     setUp(() {
       incomingController = StreamController<KeyVerification>.broadcast();
+      ownRunnerController = StreamController<KeyVerificationRunner>.broadcast();
       when(
         () => mockMatrixService.getIncomingKeyVerificationStream(),
       ).thenAnswer((_) => incomingController.stream);
+      when(
+        () => mockMatrixService.keyVerificationStream,
+      ).thenAnswer((_) => ownRunnerController.stream);
     });
 
     tearDown(() async {
       await incomingController.close();
+      await ownRunnerController.close();
     });
 
     testWidgets(
@@ -751,6 +757,73 @@ void main() {
                   as KeyVerificationRunner;
           expect(handedOff.keyVerification, same(mockKeyVerification));
           handedOff.stopTimer();
+        });
+
+        testWidgets('records the peer it now shows as the one shown last', (
+          tester,
+        ) async {
+          // The launcher's sheet shows the peer's ceremony after the handoff,
+          // so "Show the emoji" must reopen that peer, not the withdrawn one,
+          // and the launcher must not offer it again unasked once the sheet
+          // closes (`RecordHandedOff`).
+          when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
+          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
+          await pumpWrapperBehindLock(tester);
+          final handled = container.read(
+            matrixVerificationHandledProvider.notifier,
+          )..markShown('@alice:example.com/PEER');
+
+          incomingController.add(mockKeyVerification);
+          await tester.pump();
+
+          expect(handled.lastShown, '@alice:example.com/AAA');
+          expect(
+            container.read(matrixVerificationHandledProvider),
+            {'@alice:example.com/AAA'},
+          );
+          (verify(
+                    () =>
+                        mockMatrixService.keyVerificationRunner = captureAny(),
+                  ).captured.single
+                  as KeyVerificationRunner)
+              .stopTimer();
+        });
+
+        testWidgets('a request that lands before its own runner is stored '
+            'yields once the runner is', (tester) async {
+          // verifyMatrixDevice stores the runner only after the send: a
+          // request crossing it finds no own ceremony and is held. Offered
+          // again when the runner appears, the larger identity yields; held
+          // for good, neither device ever moved
+          // (VerificationLaunch.tla, ReofferOnRegister).
+          KeyVerificationRunner? stored;
+          when(
+            () => mockMatrixService.keyVerificationRunner,
+          ).thenAnswer((_) => stored);
+          when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
+          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
+          when(() => mockKeyVerification.isDone).thenReturn(false);
+          await pumpWrapperBehindLock(tester);
+
+          incomingController.add(mockKeyVerification);
+          await tester.pump();
+          verifyNever(mockKeyVerification.acceptVerification);
+
+          stored = outgoing;
+          ownRunnerController.add(outgoing);
+          await tester.pump();
+
+          verifyInOrder([
+            outgoing.stopTimer,
+            () => outgoingKeyVerification.cancel(),
+          ]);
+          verify(mockKeyVerification.acceptVerification).called(1);
+          (verify(
+                    () =>
+                        mockMatrixService.keyVerificationRunner = captureAny(),
+                  ).captured.single
+                  as KeyVerificationRunner)
+              .stopTimer();
         });
 
         testWidgets('keeps it against a larger identity and holds theirs', (

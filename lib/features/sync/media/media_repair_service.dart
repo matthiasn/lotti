@@ -49,6 +49,7 @@ class MediaRepairService {
     int? maxBatchSize,
     int? maxAttemptsPerEntry,
     int? maxTrackedEntries,
+    this._likelyHolder,
   }) : _outbox = outboxService,
        _vectorClock = vectorClockService,
        _logging = loggingService,
@@ -66,6 +67,12 @@ class MediaRepairService {
   final VectorClockService _vectorClock;
   final DomainLogger _logging;
   final SettingsDb? _settings;
+
+  /// The host likeliest to hold an entry's blob, other than this one; null
+  /// when none is known. A first request for an entry is addressed to it, so
+  /// one device answers instead of every holder. Without it every request is
+  /// broadcast.
+  final Future<String?> Function(String entryId, String ownHost)? _likelyHolder;
 
   /// The [SettingsDb] key holding the attempt counts, as a JSON object.
   static const attemptsSettingsKey = 'mediaRepairAttempts';
@@ -183,6 +190,29 @@ class MediaRepairService {
       return;
     }
 
+    // A first attempt is addressed to the likely holder; a retry asks
+    // everyone, in case that guess was wrong or its device is away. A guess
+    // that fails is no guess: the entry is broadcast.
+    final holders = <String, String>{};
+    final guess = _likelyHolder;
+    if (guess != null) {
+      for (final id in batch) {
+        if ((_attempts[id] ?? 0) > 0) continue;
+        try {
+          final holder = await guess(id, requesterId);
+          if (holder != null) holders[id] = holder;
+        } catch (error, stackTrace) {
+          _logging.error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'mediaRepair.holder',
+          );
+        }
+      }
+      if (_disposed) return;
+    }
+
     _pending.removeAll(batch);
     for (final id in batch) {
       _attempts[id] = (_attempts[id] ?? 0) + 1;
@@ -197,7 +227,11 @@ class MediaRepairService {
 
     try {
       await _outbox.enqueueMessage(
-        SyncMessage.mediaRequest(entryIds: batch, requesterId: requesterId),
+        SyncMessage.mediaRequest(
+          entryIds: batch,
+          requesterId: requesterId,
+          holders: holders.isEmpty ? null : holders,
+        ),
       );
       await _saveAttempts(sentAttempts);
       _logging.log(
