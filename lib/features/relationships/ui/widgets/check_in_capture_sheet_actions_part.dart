@@ -285,12 +285,14 @@ class _BarHeightReporterState extends State<_BarHeightReporter> {
   }
 }
 
-/// The air the form adds under its last field when the pinned bar measured
-/// taller than [CheckInStickyActions.height] predicted — nothing in the
-/// common case, so the reserve never jumps, and exactly the difference when
-/// the bar stacked its actions on a narrow phone.
-class _BarSlack extends StatelessWidget {
-  const _BarSlack({required this.handle});
+/// The room the form keeps under its last field for the pinned action bar,
+/// so the last field can scroll fully above it: the bar's predicted height
+/// for this layout — so the desktop dialog, whose bar has no reason line of
+/// its own, carries no blank band above its footer — or the *measured* bar
+/// when it stacked taller on a narrow phone. While a take runs the bar is
+/// gone, so the reserve is only a group's gap under the recorder.
+class _BarReserve extends StatelessWidget {
+  const _BarReserve({required this.handle});
 
   final CheckInFormHandle handle;
 
@@ -307,13 +309,20 @@ class _BarSlack extends StatelessWidget {
     return ListenableBuilder(
       listenable: handle,
       builder: (context, _) {
-        final measured = handle.barHeight;
-        if (measured == null || measured <= predicted) {
-          return const SizedBox.shrink();
+        // While a take runs the bar is gone: a group's gap under the
+        // recorder's controls, not the bar's height of nothing.
+        if (handle.block == CheckInSaveBlock.recording) {
+          return SizedBox(
+            key: const ValueKey('check-in-bar-reserve-recording'),
+            height: tokens.spacing.sectionGap,
+          );
         }
+        final measured = handle.barHeight;
         return SizedBox(
-          key: const ValueKey('check-in-bar-slack'),
-          height: measured - predicted,
+          key: const ValueKey('check-in-bar-reserve'),
+          height: measured == null || measured <= predicted
+              ? predicted
+              : measured,
         );
       },
     );

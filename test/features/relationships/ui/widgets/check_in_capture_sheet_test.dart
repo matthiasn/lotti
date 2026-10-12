@@ -1849,6 +1849,33 @@ void main() {
       expect(find.textContaining('Paused ·'), findsOneWidget);
     });
 
+    // The empty band: the modal reserved the pinned bar's height under the
+    // form even while a take hid the bar, so the recorder floated above a
+    // bar's height of nothing.
+    testWidgets('the room kept for the action bar goes with the bar while '
+        'a take runs, leaving a group gap under the recorder', (tester) async {
+      await openSheet(tester);
+      final atRest = find.byKey(const ValueKey('check-in-bar-reserve'));
+      final whileRecording = find.byKey(
+        const ValueKey('check-in-bar-reserve-recording'),
+      );
+      final tokens = tester.element(atRest).designTokens;
+      expect(
+        tester.getSize(atRest).height,
+        greaterThan(tokens.spacing.sectionGap),
+        reason: 'the last field scrolls clear of the bar',
+      );
+
+      await startDictation(tester);
+      expect(atRest, findsNothing);
+      expect(tester.getSize(whileRecording).height, tokens.spacing.sectionGap);
+
+      await stopRecording(tester);
+      await tester.pumpAndSettle();
+      expect(whileRecording, findsNothing);
+      expect(atRest, findsOneWidget);
+    });
+
     testWidgets("Cancel, and the header's close, dismiss an untouched "
         'composer without saving or asking', (tester) async {
       await openSheet(tester);

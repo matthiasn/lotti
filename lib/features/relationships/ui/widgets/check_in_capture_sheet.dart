@@ -971,7 +971,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ],
           ],
         ],
-        _BarSlack(handle: widget.handle),
+        _BarReserve(handle: widget.handle),
       ],
     );
 
