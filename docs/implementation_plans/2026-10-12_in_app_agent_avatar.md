@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proposal — nothing built yet
+Status: proof of concept built (2026-10-13), shown in the widgetbook only — see "Proof of concept"
 Branch: `feat/onboarding-guided-first-task`
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -260,6 +260,28 @@ baselined.
 
 Phases 0–2 are the proof of concept: one character, talking, in one place.
 That is enough to judge whether it is worth the rest, and enough to film.
+
+## Proof of concept (2026-10-13)
+
+A first cut of phases 1 and 2 exists in `lib/features/companion/`, behind no
+flag and in no screen: it is shown in the widgetbook only (**Companion →
+Lotti (grandma)**). It takes a shorter road than the phases above:
+
+- **It ports the video rig, not `dancing_cats`.** The Python/cairo
+  grandmother of the pitch videos was ported to Dart module by module. It
+  already has the ribbon arms, the constrained elbow solver, the gestures and
+  the looks, so she is the same character as in the videos, and it needs no
+  engine brought back first (phase 0). Bringing the `dancing_cats` engine
+  back stays the road for skinned outfits and other species.
+- **The mouth has three sources** behind one `MouthTrack`: a WAV's loudness
+  (`SpeechEnvelope`, as planned), the words alone (`TextLipSync`, a pure-Dart
+  letter-to-viseme pass), and both together (`VoicedTextTrack`).
+- **Moods are chosen by hand.** `CompanionMood` has the five proposed states'
+  expressions; nothing derives them from the record yet (phase 4).
+- **Not yet wired:** `TtsPlaybackController`, the query chat, Daily OS,
+  `CompanionScript`, the settings choice, and any localized line.
+
+The feature's README has the map of the code.
 
 ## Testing
 

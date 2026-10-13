@@ -1,5 +1,6 @@
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/features/ai/widgetbook/ai_shader_animations_widgetbook.dart';
+import 'package:lotti/features/companion/widgetbook/companion_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
@@ -13,9 +14,12 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgetbook/zoom_pan_wrapper.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 void main() {
+  // The companion's voice preview plays WAVs through media_kit.
+  MediaKit.ensureInitialized();
   getIt.registerSingleton<UpdateNotifications>(UpdateNotifications());
 
   runApp(const WidgetbookApp());
@@ -71,6 +75,7 @@ class WidgetbookApp extends StatelessWidget {
       ),
       directories: [
         buildAiWidgetbookFolder(),
+        buildCompanionWidgetbookFolder(),
         buildDesignSystemWidgetbookFolder(),
         buildProjectsWidgetbookFolder(),
         buildSettingsWidgetbookFolder(),
