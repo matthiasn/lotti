@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,7 +20,9 @@ import 'package:material_ui/material_ui.dart';
 /// tracking.
 ///
 /// `linkedFromId`/`categoryId` are threaded into each action so created
-/// entities are linked to and categorized like the host. Visibility is
+/// entities are linked to and categorized like the host; an
+/// `imageAnalysisTrigger`, when given, replaces the automatic image analysis
+/// in the image rows. Visibility is
 /// resolved *before* the list is assembled — platform gating, config flags,
 /// clipboard state, task-host checks all happen in [_CreateEntryMenuList] —
 /// so the sheet's rhythm can never be spent on a row that declined to render.
@@ -34,6 +37,7 @@ class CreateEntryModal {
     required BuildContext context,
     required String? linkedFromId,
     required String? categoryId,
+    ImageAnalysisTrigger? imageAnalysisTrigger,
   }) async {
     await DsActionModal.show<void>(
       context: context,
@@ -41,6 +45,7 @@ class CreateEntryModal {
       builder: (modalContext) => _CreateEntryMenuList(
         linkedFromId: linkedFromId,
         categoryId: categoryId,
+        imageAnalysisTrigger: imageAnalysisTrigger,
       ),
     );
   }
@@ -51,10 +56,12 @@ class _CreateEntryMenuList extends ConsumerWidget {
   const _CreateEntryMenuList({
     required this.linkedFromId,
     required this.categoryId,
+    this.imageAnalysisTrigger,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+  final ImageAnalysisTrigger? imageAnalysisTrigger;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -105,10 +112,23 @@ class _CreateEntryMenuList extends ConsumerWidget {
         // synonym.
         if (linkedFromId != null && !hostIsTask) CreateTimerItem(linkedFromId),
         if (isMacOS || isMobile || isLinux || isWindows)
-          ImportImageItem(linkedFromId, categoryId: categoryId),
+          ImportImageItem(
+            linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: imageAnalysisTrigger,
+          ),
         if (isMacOS || isLinux)
-          CreateScreenshotItem(linkedFromId, categoryId: categoryId),
-        if (canPasteImage) PasteImageItem(linkedFromId, categoryId: categoryId),
+          CreateScreenshotItem(
+            linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: imageAnalysisTrigger,
+          ),
+        if (canPasteImage)
+          PasteImageItem(
+            linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: imageAnalysisTrigger,
+          ),
         ?taskAction,
       ],
     );

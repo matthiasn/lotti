@@ -28,6 +28,7 @@ import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/checklist_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -83,13 +84,14 @@ class _TestEntryController extends EntryController {
 /// calls [onPaste] when [paste] is invoked (for tap verification).
 class _TrackingCanPasteController extends ImagePasteController {
   _TrackingCanPasteController({required this.onPaste});
-  final void Function() onPaste;
+  final void Function(ImageAnalysisTrigger? analysisTrigger) onPaste;
 
   @override
   Future<bool> build() async => true;
 
   @override
-  Future<void> paste() async => onPaste();
+  Future<void> paste({ImageAnalysisTrigger? analysisTrigger}) async =>
+      onPaste(analysisTrigger);
 }
 
 // ---------------------------------------------------------------------------
@@ -390,6 +392,8 @@ void main() {
         const linkedId = 'linked-paste-tap-id';
         const categoryId = 'cat-id';
         var pasteCalled = false;
+        ImageAnalysisTrigger? pastedWith;
+        final hostTrigger = MockAutomaticImageAnalysisTrigger();
 
         // Use a custom notifier that tracks paste() calls.
         // We embed it inline to avoid issues with modal context inheritance.
@@ -401,7 +405,10 @@ void main() {
                 categoryId: categoryId,
               )).overrideWith(
                 () => _TrackingCanPasteController(
-                  onPaste: () => pasteCalled = true,
+                  onPaste: (trigger) {
+                    pasteCalled = true;
+                    pastedWith = trigger;
+                  },
                 ),
               ),
             ]),
@@ -412,9 +419,10 @@ void main() {
                     onPressed: () {
                       showModalBottomSheet<void>(
                         context: ctx,
-                        builder: (_) => const PasteImageItem(
+                        builder: (_) => PasteImageItem(
                           linkedId,
                           categoryId: categoryId,
+                          analysisTrigger: hostTrigger,
                         ),
                       );
                     },
@@ -436,8 +444,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // After tap, paste() should have been called.
+        // After tap, paste() should have been called, with the host's
+        // trigger rather than the automatic one.
         expect(pasteCalled, isTrue);
+        expect(pastedWith, same(hostTrigger));
         // The sheet should be dismissed after pop.
         expect(find.byType(DsActionRow), findsNothing);
       },

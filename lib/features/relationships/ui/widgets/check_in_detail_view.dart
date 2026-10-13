@@ -188,18 +188,36 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   void initState() {
     super.initState();
     _repository = ref.read(relationshipRepositoryProvider);
-    ref.listenManual(
-      relationshipDetailControllerProvider(widget.relationshipId),
-      (_, next) => _touchIfEntriesChanged(next.value),
-      fireImmediately: true,
-    );
+    // The entries and the links that attach them reload on their own
+    // notifications, in either order: each re-checks against the other's
+    // latest.
+    ref
+      ..listenManual(
+        relationshipDetailControllerProvider(widget.relationshipId),
+        (_, _) => _touchIfEntriesChanged(),
+        fireImmediately: true,
+      )
+      ..listenManual(
+        sortedLinkedEntriesProvider(widget.checkInId),
+        (_, _) => _touchIfEntriesChanged(),
+      );
   }
 
-  /// Saves the check-in again when an entry changed after it. An empty
-  /// comment is not evidence yet — only its words are.
-  void _touchIfEntriesChanged(RelationshipDetail? detail) {
+  /// Saves the check-in again when an entry changed, or was attached, after
+  /// it. An entry counts from the later of its own last change and its link's
+  /// creation, so a picture imported long ago and attached now — its entity
+  /// reused, its date old — is new evidence all the same. An empty comment
+  /// is not evidence yet — only its words are.
+  void _touchIfEntriesChanged() {
+    final detail = ref
+        .read(relationshipDetailControllerProvider(widget.relationshipId))
+        .value;
     final checkIn = _checkInOf(detail);
     if (checkIn == null) return;
+    final attachedAt = {
+      for (final link in ref.read(sortedLinkedEntriesProvider(checkIn.id)))
+        link.toId: link.createdAt,
+    };
     DateTime? newest;
     for (final entry
         in detail!.checkInEntries[checkIn.id] ?? const <JournalEntity>[]) {
@@ -207,7 +225,11 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
           (entry.entryText?.plainText.trim() ?? '').isEmpty) {
         continue;
       }
-      final at = entry.meta.updatedAt;
+      final updated = entry.meta.updatedAt;
+      final attached = attachedAt[entry.id];
+      final at = attached != null && attached.isAfter(updated)
+          ? attached
+          : updated;
       if (newest == null || at.isAfter(newest)) newest = at;
     }
     if (newest == null ||
@@ -303,13 +325,16 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   /// a task holds (a checklist, pull request tracking). What it creates is
   /// linked from the check-in; the detail controller reloads on that link,
   /// and [_touchIfEntriesChanged] saves the check-in once it holds
-  /// something new.
+  /// something new. Its images go through the check-in's own analysis.
   Future<void> _openAddSheet(CheckInEntry checkIn) => ref
       .read(entryCreationServiceProvider)
       .showCreateEntryModal(
         context,
         linkedFromId: checkIn.id,
         categoryId: checkIn.meta.categoryId,
+        // Its images are analysed as the bar's own photos are: on the
+        // person's terms, the check-in saved again once a description lands.
+        imageAnalysisTrigger: ref.read(checkInPhotoAnalysisTriggerProvider),
       );
 
   void _onRecorded(CheckInEntry checkIn, String audioEntryId) {

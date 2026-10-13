@@ -381,15 +381,20 @@ width, and reads top to bottom:
   the long tail — a note, a voice note, a linked task, a timer, an image
   imported, captured or pasted from the clipboard. The sheet decides its rows
   by host type, so the task-only ones (a checklist, pull request tracking)
-  stay out. The bar wraps rather than overflows at large text on a narrow
+  stay out; its image rows take the check-in's own
+  `CheckInPhotoAnalysisTrigger` (`imageAnalysisTrigger`), so a picture added
+  there is analysed exactly like one from *Photo*. The bar wraps rather than overflows at large text on a narrow
   phone.
 
 Each change to what the check-in holds touches it, so the briefing catches
 up: a recording at once; a comment once it has words (an empty one is no
 evidence); photos only when the picker actually added one, since a cancelled
 picker changed no evidence. What the Add sheet creates is caught by the
-view instead (`_touchIfEntriesChanged`): the detail reloads on the link, and
-a held entry newer than the check-in saves it once. A note, a timer, a
+view instead (`_touchIfEntriesChanged`): the detail and the link list reload
+on the link, and a held entry newer than the check-in saves it once. An entry
+counts from the later of its own last change and its link's creation, so a
+picture imported long ago — its entity reused, its date old — is new evidence
+when it is attached now. A note, a timer, a
 voice note or an image from the sheet is a `JournalEntry`, `JournalAudio` or
 `JournalImage` and so is held like the bar's own; a task started from the
 sheet is not (`isCheckInEntryKind`): it is linked from the check-in and

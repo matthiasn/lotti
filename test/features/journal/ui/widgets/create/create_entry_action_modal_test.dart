@@ -18,8 +18,10 @@ import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -93,6 +95,7 @@ void main() {
       String? linkedFromId = 'test-linked-id',
       String? categoryId = 'test-category-id',
       List<Override> extraOverrides = const [],
+      ImageAnalysisTrigger? imageAnalysisTrigger,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -110,6 +113,7 @@ void main() {
                     context: context,
                     linkedFromId: linkedFromId,
                     categoryId: categoryId,
+                    imageAnalysisTrigger: imageAnalysisTrigger,
                   ),
                   child: const Text('Open Modal'),
                 ),
@@ -256,8 +260,9 @@ void main() {
     // opens it, and it must carry the full long tail — a timer, a linked
     // task, the clipboard's image — and nothing that only a task holds.
     testWidgets(
-      'a CHECK-IN host keeps the Timer, Task and Paste rows and has no '
-      'checklist or pull request row',
+      'a CHECK-IN host keeps the Timer, Task and Paste rows, has no '
+      'checklist or pull request row, and its image rows use its own '
+      'analysis',
       (tester) async {
         final now = DateTime(2026, 8, 4);
         final hostCheckIn = CheckInEntry(
@@ -280,9 +285,11 @@ void main() {
         ).thenAnswer((_) => const Stream<Set<String>>.empty());
         getIt.registerSingleton<UpdateNotifications>(updates);
 
+        final hostTrigger = MockAutomaticImageAnalysisTrigger();
         await pumpAndOpenModal(
           tester,
           linkedFromId: 'host-check-in',
+          imageAnalysisTrigger: hostTrigger,
           extraOverrides: [
             entryControllerProvider(
               'host-check-in',
@@ -306,6 +313,24 @@ void main() {
         );
         expect(find.text(messages.taskFirstRunAddChecklist), findsNothing);
         expect(find.text(messages.githubTrackPullRequests), findsNothing);
+        expect(
+          tester
+              .widget<PasteImageItem>(find.byType(PasteImageItem))
+              .analysisTrigger,
+          same(hostTrigger),
+        );
+        expect(
+          tester
+              .widget<ImportImageItem>(find.byType(ImportImageItem))
+              .analysisTrigger,
+          same(hostTrigger),
+        );
+        expect(
+          tester
+              .widget<CreateScreenshotItem>(find.byType(CreateScreenshotItem))
+              .analysisTrigger,
+          same(hostTrigger),
+        );
       },
     );
 

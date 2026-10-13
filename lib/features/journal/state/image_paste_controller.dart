@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart';
 
 final AsyncNotifierProviderFamily<
@@ -32,7 +33,10 @@ class ImagePasteController extends AsyncNotifier<bool> {
   @override
   Future<bool> build() => ref.watch(clipboardHasImageProvider.future);
 
-  Future<void> paste() async {
+  /// Imports every image on the clipboard, linked to [linkedFromId]. Each is
+  /// handed to [analysisTrigger], or to the automatic image analysis when
+  /// none is given.
+  Future<void> paste({ImageAnalysisTrigger? analysisTrigger}) async {
     final clipboard = ref.read(clipboardRepositoryProvider);
     if (clipboard == null) {
       return;
@@ -40,7 +44,8 @@ class ImagePasteController extends AsyncNotifier<bool> {
     final reader = await clipboard.read();
 
     // Process all clipboard items (supports multiple photos)
-    final analysisTrigger = ref.read(automaticImageAnalysisTriggerProvider);
+    final trigger =
+        analysisTrigger ?? ref.read(automaticImageAnalysisTriggerProvider);
     final futures = <Future<void>>[];
     for (final item in reader.items) {
       final format = clipboardImageFormatOf(item);
@@ -53,7 +58,7 @@ class ImagePasteController extends AsyncNotifier<bool> {
           fileExtension: format.extension,
           linkedId: linkedFromId,
           categoryId: categoryId,
-          analysisTrigger: analysisTrigger,
+          analysisTrigger: trigger,
         );
       }());
     }

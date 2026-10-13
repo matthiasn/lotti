@@ -344,6 +344,59 @@ void main() {
       verify(() => mockFile.readAll()).called(1);
     });
 
+    // A host whose pictures are analysed on another subject's terms — a
+    // check-in, on its person's — hands its own trigger to the paste.
+    test('paste hands each image to the given trigger instead of the '
+        'automatic one', () async {
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
+      when(
+        () => mockItem.getFile(
+          Formats.png,
+          any(),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((invocation) {
+        final callback =
+            invocation.positionalArguments[1] as void Function(DataReaderFile);
+        callback(mockFile);
+        return null;
+      });
+      when(
+        () => mockFile.readAll(),
+      ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      final hostTrigger = MockAutomaticImageAnalysisTrigger();
+      when(
+        () => hostTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await container
+          .read(
+            imagePasteControllerProvider((
+              linkedFromId: 'testLink',
+              categoryId: 'testCategory',
+            )).notifier,
+          )
+          .paste(analysisTrigger: hostTrigger);
+      await pumpEventQueue();
+
+      verify(
+        () => hostTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          linkedTaskId: 'testLink',
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockImageAnalysisTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      );
+    });
+
     test('paste handles JPEG data correctly', () async {
       when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
       when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);

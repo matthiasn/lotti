@@ -20,6 +20,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -486,6 +487,7 @@ void main() {
           any(),
           linkedFromId: any(named: 'linkedFromId'),
           categoryId: any(named: 'categoryId'),
+          imageAnalysisTrigger: any(named: 'imageAnalysisTrigger'),
         ),
       ).thenAnswer((_) async {});
       overrides = [entryCreationServiceProvider.overrideWithValue(creation)];
@@ -495,14 +497,58 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-detail-add')));
       await tester.pumpAndSettle();
 
-      verify(
+      // Its images are analysed as the bar's own photos are — on the
+      // person's terms, the check-in saved once a description lands.
+      final trigger = verify(
         () => creation.showCreateEntryModal(
           any(),
           linkedFromId: 'c-1',
           categoryId: 'crew',
+          imageAnalysisTrigger: captureAny(named: 'imageAnalysisTrigger'),
         ),
-      ).called(1);
+      ).captured.single;
+      expect(trigger, isA<CheckInPhotoAnalysisTrigger>());
     });
+
+    // Codex review on #4778: a picture imported before keeps its entity —
+    // and its old date — when attached again, so the link's creation is
+    // what says the check-in gained evidence.
+    for (final (label, attachedAfterSave, touches) in [
+      ('attached after the check-in was saved touches it', true, true),
+      ('attached before the check-in was saved leaves it', false, false),
+    ]) {
+      testWidgets('a reused older picture $label', (tester) async {
+        final old = testImageEntry.copyWith(
+          meta: testImageEntry.meta.copyWith(
+            updatedAt: DateTime(2026, 1, 2),
+          ),
+        );
+        stubDetail(checkIn(), entries: [old]);
+        when(
+          () => getIt<JournalDb>().journalEntityById(any()),
+        ).thenAnswer((_) async => null);
+        final attachedAt = attachedAfterSave
+            ? at.add(const Duration(minutes: 5))
+            : at.subtract(const Duration(minutes: 5));
+        links = [
+          EntryLink.basic(
+            id: 'c-1->${old.meta.id}',
+            fromId: 'c-1',
+            toId: old.meta.id,
+            createdAt: attachedAt,
+            updatedAt: attachedAt,
+            vectorClock: null,
+          ),
+        ];
+        await pump(tester);
+
+        if (touches) {
+          verify(() => repository.touchCheckIn('c-1')).called(1);
+        } else {
+          verifyNever(() => repository.touchCheckIn(any()));
+        }
+      });
+    }
 
     // Codex review on #4348: the check-in's updatedAt is the agent's
     // "evidence changed" signal, and a cancelled picker changed nothing.
