@@ -29,6 +29,27 @@ void main() {
     expect(r.centroid(look.palette.shoe)!.dy, greaterThan(440));
   });
 
+  test("an animal stands on paws, in its limbs' colour, without shoes", () {
+    return Future.wait([
+      for (final look in [CompanionLook.cat, CompanionLook.redPanda])
+        _body((c, f) => drawLegs(c, f, look)).then((r) {
+          final p = look.palette;
+          expect(r.count(p.shoe), 0, reason: look.id);
+          expect(r.count(p.pawColor), greaterThan(100), reason: look.id);
+          expect(r.centroid(p.pawColor)!.dy, greaterThan(410), reason: look.id);
+        }),
+    ]);
+  });
+
+  test("an animal's arms are its limbs and its hands its paws", () async {
+    const look = CompanionLook.redPanda;
+    final r = await _body(
+      (c, f) => drawArm(c, f, look, const CompanionPose().right, 1),
+    );
+    expect(r.count(look.palette.limbColor), greaterThan(200));
+    expect(r.count(look.palette.skin), 0);
+  });
+
   test('the neck joins the head to the body', () async {
     const look = CompanionLook.grandma;
     final r = await _body((c, f) => drawNeck(c, f, look));

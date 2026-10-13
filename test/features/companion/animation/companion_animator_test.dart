@@ -169,4 +169,46 @@ void main() {
     final poses = _run(a, 0.12);
     expect(poses.any((p) => p.blink > 0.95), isTrue);
   });
+
+  test('the tail swings both ways and stays in range', () {
+    final poses = _run(CompanionAnimator(), 6);
+    final tails = poses.map((p) => p.tail);
+    expect(tails.any((t) => t > 0.4), isTrue);
+    expect(tails.any((t) => t < -0.4), isTrue);
+    expect(tails.every((t) => t.abs() <= 1), isTrue);
+  });
+
+  test('a frazzled tail swishes quicker than a sleepy one', () {
+    int crossings(CompanionMood mood) {
+      final tails = _run(
+        CompanionAnimator(),
+        12,
+        mood: mood,
+      ).map((p) => p.tail).toList();
+      var n = 0;
+      for (var i = 1; i < tails.length; i++) {
+        if (tails[i - 1].sign != tails[i].sign) n++;
+      }
+      return n;
+    }
+
+    expect(
+      crossings(CompanionMood.frazzled),
+      greaterThan(crossings(CompanionMood.sleepy)),
+    );
+  });
+
+  test('an ear flicks now and then, and settles back', () {
+    final poses = _run(CompanionAnimator(), 8);
+    final peak = poses
+        .map((p) => p.earFlick.abs())
+        .reduce((x, y) => x > y ? x : y);
+    expect(peak, greaterThan(0.9));
+    expect(peak, lessThanOrEqualTo(1));
+    // Most of the time the ears are still.
+    expect(
+      poses.where((p) => p.earFlick == 0).length,
+      greaterThan(poses.length * 0.8),
+    );
+  });
 }

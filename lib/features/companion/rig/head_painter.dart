@@ -2,25 +2,36 @@ import 'dart:ui' as ui;
 import 'dart:ui';
 
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/rig/animal_head_painter.dart';
 import 'package:lotti/features/companion/rig/face_painter.dart';
 import 'package:lotti/features/companion/rig/hair_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
 /// The head, in its own frame: the face and its shading, the features, the
-/// glasses, the earrings, the hair over it and what she wears on top.
+/// glasses, the earrings, the hair over it and what she wears on top. An
+/// animal's face comes from `animal_head_painter.dart`; what is worn on it is
+/// shared.
 
-void _enterHead(Canvas canvas, RigFrame f) {
+void _enterHead(Canvas canvas, RigFrame f, CompanionLook look) {
+  final k = look.species.headScale;
   canvas
     ..save()
     ..translate(f.head.origin.dx, f.head.origin.dy)
-    ..rotate(f.head.angle);
+    ..rotate(f.head.angle)
+    ..scale(k);
 }
 
-/// The bun and the cap of hair, drawn behind everything.
+/// What sits behind the head and everything else: her bun and the cap of
+/// hair, or an animal's ears.
 void drawBackOfHead(Canvas canvas, RigFrame f, CompanionLook look) {
-  _enterHead(canvas, f);
-  drawBackHair(canvas, look.palette, f.pose.hairLag);
+  _enterHead(canvas, f, look);
+  if (look.species.isAnimal) {
+    drawEars(canvas, look, f.pose);
+  } else {
+    drawBackHair(canvas, look.palette, f.pose.hairLag);
+  }
   canvas.restore();
 }
 
@@ -38,7 +49,34 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
   final p = f.pose;
   final yaw = p.headYaw;
   final pitch = p.headPitch;
-  _enterHead(canvas, f);
+  _enterHead(canvas, f, look);
+  final fx = yaw * 6.5;
+  final fy = pitch * 3.5;
+  if (look.species.isAnimal) {
+    drawAnimalFace(canvas, look, p);
+  } else {
+    _humanFace(canvas, look, p);
+  }
+  if (look.sunglasses) {
+    _sunglasses(canvas, c, fx, fy, yaw);
+  } else if (look.glasses) {
+    _glasses(canvas, c, fx, fy, yaw);
+  }
+  if (look.earring != EarringKind.none) {
+    for (final s in [-1, 1]) {
+      _earring(canvas, c, Offset(s * (44 - yaw * 2 * s), 15), look.earring);
+    }
+  }
+  if (!look.species.isAnimal) drawFrontHair(canvas, c, p.hairLag, yaw);
+  if (look.beret) _beret(canvas, c, yaw);
+  canvas.restore();
+}
+
+/// The grandmother's face: its shading, the features and her laugh lines.
+void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
+  final c = look.palette;
+  final yaw = p.headYaw;
+  final pitch = p.headPitch;
   for (final s in [-1, 1]) {
     fillPath(
       canvas,
@@ -93,17 +131,6 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
   drawMouth(canvas, c, 0, 0, p.mouth, p.smile);
-  canvas.restore();
-  if (look.sunglasses) {
-    _sunglasses(canvas, c, fx, fy, yaw);
-  } else if (look.glasses) {
-    _glasses(canvas, c, fx, fy, yaw);
-  }
-  for (final s in [-1, 1]) {
-    _earring(canvas, c, Offset(s * (44 - yaw * 2 * s), 15), look.earring);
-  }
-  drawFrontHair(canvas, c, p.hairLag, yaw);
-  if (look.beret) _beret(canvas, c, yaw);
   canvas.restore();
 }
 

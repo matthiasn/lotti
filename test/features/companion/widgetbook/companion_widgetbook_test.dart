@@ -40,36 +40,50 @@ const _playground = CompanionPlayground(
 );
 
 void main() {
-  test('the folder lists the companion use cases', () {
+  List<WidgetbookComponent> components() =>
+      buildCompanionWidgetbookFolder().children!.cast<WidgetbookComponent>();
+
+  test('the folder has one component per character, each with every use '
+      'case', () {
     final folder = buildCompanionWidgetbookFolder();
     expect(folder.name, 'Companion');
-    final component = folder.children!.single as WidgetbookComponent;
-    expect(component.name, 'Lotti (grandma)');
-    expect(component.useCases.map((u) => u.name), [
-      'Playground',
-      'Talking with a voice (WAV)',
-      'Looks',
-      'Moods',
-      'Chat avatar sizes',
+    expect(components().map((c) => c.name), [
+      'Lotti (grandma)',
+      'Cat',
+      'Red panda',
     ]);
-  });
-
-  testWidgets('the Looks use case shows every look side by side', (
-    tester,
-  ) async {
-    final component =
-        buildCompanionWidgetbookFolder().children!.single
-            as WidgetbookComponent;
-    final looks = component.useCases.firstWhere((u) => u.name == 'Looks');
-    setTestSurfaceSize(tester, const Size(1400, 900));
-    await tester.pumpWidget(_host(Builder(builder: looks.builder)));
-    await tester.pump(const Duration(milliseconds: 16));
-    final views = tester.widgetList<CompanionView>(find.byType(CompanionView));
-    expect(views.map((v) => v.look), CompanionLook.all);
-    for (final look in CompanionLook.all) {
-      expect(find.text(look.id), findsOneWidget);
+    for (final component in components()) {
+      expect(component.useCases.map((u) => u.name), [
+        'Playground',
+        'Talking with a voice (WAV)',
+        'Looks',
+        'Moods',
+        'Chat avatar sizes',
+      ]);
     }
   });
+
+  for (final species in CompanionSpecies.values) {
+    testWidgets("${species.name}'s Looks use case shows its own looks only", (
+      tester,
+    ) async {
+      final component = components().firstWhere(
+        (c) => c.name == companionCharacterName(species),
+      );
+      final looks = component.useCases.firstWhere((u) => u.name == 'Looks');
+      setTestSurfaceSize(tester, const Size(1400, 900));
+      await tester.pumpWidget(_host(Builder(builder: looks.builder)));
+      await tester.pump(const Duration(milliseconds: 16));
+      final views = tester.widgetList<CompanionView>(
+        find.byType(CompanionView),
+      );
+      expect(views.map((v) => v.look), CompanionLook.of(species));
+      expect(views.every((v) => v.look.species == species), isTrue);
+      for (final look in CompanionLook.of(species)) {
+        expect(find.text(look.id), findsOneWidget);
+      }
+    });
+  }
 
   group('CompanionPlayground', () {
     testWidgets('has a button per gesture, each one plays it', (tester) async {

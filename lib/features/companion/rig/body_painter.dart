@@ -10,8 +10,9 @@ import 'package:lotti/features/companion/rig/ribbon.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/rig_math.dart';
 
-/// The body below the head: legs and shoes, the neck, the dress with its
-/// cardigan and scarf, and the arms with their sleeves and hands.
+/// The body below the head: legs and shoes (an animal's paws), the neck, the
+/// dress with its cardigan and scarf, and the arms with their sleeves and
+/// hands.
 
 const handScale = 1.45;
 
@@ -24,11 +25,53 @@ void drawLegs(Canvas canvas, RigFrame f, CompanionLook look) {
     final hip = Offset(f.pelvis.dx + s * 15, f.pelvis.dy + 12);
     final ankle = f.ankle(s);
     final knee = twoBoneIk(hip, ankle, thigh, shin, -s.toDouble()).elbow;
-    fillPath(canvas, tapered(hip, knee, 17, 14), c.skinShade);
-    fillPath(canvas, tapered(knee, ankle, 14, 11), c.skin);
-    fillCircle(canvas, knee, 6.8, c.skin);
-    _shoe(canvas, c, ankle, s);
+    if (look.species.isAnimal) {
+      fillPath(canvas, tapered(hip, knee, 19, 16), c.limbDeepColor);
+      fillPath(canvas, tapered(knee, ankle, 16, 13), c.limbColor);
+      fillCircle(canvas, knee, 7.8, c.limbColor);
+      _paw(canvas, c, ankle, s);
+    } else {
+      fillPath(canvas, tapered(hip, knee, 17, 14), c.skinShade);
+      fillPath(canvas, tapered(knee, ankle, 14, 11), c.skin);
+      fillCircle(canvas, knee, 6.8, c.skin);
+      _shoe(canvas, c, ankle, s);
+    }
   }
+}
+
+/// An animal's foot: a soft round paw, toes marked by two short creases.
+void _paw(Canvas canvas, CompanionPalette c, Offset ankle, int s) {
+  canvas
+    ..save()
+    ..translate(ankle.dx + s * 4, ankle.dy + 7)
+    ..scale(s.toDouble(), 1);
+  final paw = Path()
+    ..moveTo(-11, 9)
+    ..cubicTo(-14, -2, -6, -9, 4, -7)
+    ..cubicTo(14, -6, 21, 2, 19, 9)
+    ..cubicTo(10, 12, -2, 12, -11, 9)
+    ..close();
+  fillPath(canvas, paw, c.pawColor);
+  canvas
+    ..save()
+    ..clipPath(paw);
+  fillPath(
+    canvas,
+    ellipse(const Offset(2, 13), 22, 6),
+    c.limbDeepColor.withValues(alpha: 0.3),
+  );
+  canvas.restore();
+  for (final x in [7.0, 13.0]) {
+    strokePath(
+      canvas,
+      Path()
+        ..moveTo(x, 3)
+        ..lineTo(x + 0.6, 9),
+      c.limbDeepColor.withValues(alpha: 0.55),
+      1.1,
+    );
+  }
+  canvas.restore();
 }
 
 /// A Mary Jane: a strap over the instep, a low block heel.
@@ -89,6 +132,9 @@ void _shoe(Canvas canvas, CompanionPalette c, Offset ankle, int s) {
 
 void drawNeck(Canvas canvas, RigFrame f, CompanionLook look) {
   final c = look.palette;
+  // An animal's neck is fur, and its chin sits a little lower on a bigger
+  // head.
+  final chin = 36 * look.species.headScale;
   fillPath(
     canvas,
     tapered(
@@ -103,7 +149,7 @@ void drawNeck(Canvas canvas, RigFrame f, CompanionLook look) {
   // The chin's shadow.
   fillPath(
     canvas,
-    ellipse(f.head(0, 36) + const Offset(0, 4), 11, 4.5),
+    ellipse(f.head(0, chin) + const Offset(0, 4), 11, 4.5),
     c.skinDeep.withValues(alpha: 0.35),
   );
 }
@@ -301,15 +347,18 @@ void drawArm(
   final spine = f.armSpine(arm, side);
   final elbow = spine[2];
   final wrist = spine[3];
+  final fur = look.species.isAnimal;
+  final limb = fur ? c.limbColor : c.skin;
+  final deep = fur ? c.limbDeepColor : c.skinDeep;
   fillPath(
     canvas,
     ribbonPath(spine, [8.7, 8.3, 7.4, 6.3], 1, 3, tension: armTension),
-    c.skinDeep.withValues(alpha: 0.55),
+    deep.withValues(alpha: 0.55),
   );
   fillPath(
     canvas,
     ribbonPath(spine, [8.0, 7.6, 6.7, 5.6], 1, 3, tension: armTension),
-    c.skin,
+    limb,
   );
   // A forearm drawn short points at the camera, so its hand is that much
   // nearer and a little bigger.
@@ -324,8 +373,8 @@ void drawArm(
   drawHand(
     canvas,
     arm.hand,
-    skin: gloved ? c.glove : c.skin,
-    deep: gloved ? c.gloveDeep : c.skinDeep,
+    skin: gloved ? c.glove : (fur ? c.pawColor : c.skin),
+    deep: gloved ? c.gloveDeep : deep,
   );
   canvas.restore();
   _sleeve(canvas, spine, side, c);

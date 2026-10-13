@@ -40,6 +40,7 @@ class CompanionAnimator {
   CompanionAnimator({int seed = 11}) : _rng = math.Random(seed) {
     _nextBlink = 0.8;
     _nextGlance = 0;
+    _nextFlick = 2.5;
   }
 
   final math.Random _rng;
@@ -66,6 +67,10 @@ class CompanionAnimator {
 
   double _t = 0;
   double _breathPhase = 0;
+  double _tailPhase = 0;
+  late double _nextFlick;
+  double? _flickStart;
+  int _flickSide = 1;
   late double _nextBlink;
   double? _blinkStart;
   late double _nextGlance;
@@ -104,6 +109,19 @@ class CompanionAnimator {
       if (since >= delay) phase = next;
     }
     return (g, phase);
+  }
+
+  /// The ear flick now: a quick twitch out and a slower settle, signed by
+  /// the ear.
+  double _flickAmount() {
+    final start = _flickStart;
+    if (start == null) return 0;
+    final d = _t - start;
+    if (d < 0 || d >= 0.35) return 0;
+    final up = d < 0.08
+        ? smoothstep(d / 0.08)
+        : 1 - smoothstep((d - 0.08) / 0.27);
+    return _flickSide * up;
   }
 
   double _blinkAmount() {
@@ -181,6 +199,13 @@ class CompanionAnimator {
     final bounceEnv = s['bounce']!.step(g.bounce + mood.bounce, dt);
     final bounce = -bounceEnv * math.sin(2 * math.pi * 1.6 * t).abs();
     _breathPhase += dt * 2 * math.pi / 4 * mood.breathRate;
+    if (t >= _nextFlick) {
+      _flickStart = t;
+      _flickSide = _rng.nextBool() ? 1 : -1;
+      _nextFlick = t + (3 + _rng.nextDouble() * 4) / mood.glanceRate;
+    }
+    // A slow swing, quicker when the breath is: a frazzled tail swishes.
+    _tailPhase += dt * 2 * math.pi * 0.3 * mood.breathRate;
     final pelvisX = 3.2 * noise1(t * 0.35, 1);
     final baseSmile = (speaking ? 0.3 : 0.5) + mood.smile;
     final lids = s['lids']!.step(mood.lids, dt);
@@ -220,6 +245,8 @@ class CompanionAnimator {
         beatKick: g.right == null ? kick : 0,
       ),
       handInFrontOfFace: g.faceHand,
+      tail: 0.75 * math.sin(_tailPhase) + 0.25 * noise1(t * 0.5, 6),
+      earFlick: _flickAmount(),
     );
 
     // Secondary motion: the hair and the hem trail the body.
@@ -251,6 +278,8 @@ CompanionPose _withTrail(CompanionPose p, Offset hairLag, double hemLag) =>
       headOffset: p.headOffset,
       hairLag: hairLag,
       hemLag: hemLag,
+      tail: p.tail,
+      earFlick: p.earFlick,
       left: p.left,
       right: p.right,
       gaze: p.gaze,

@@ -15,6 +15,8 @@ void main() {
     expect(p.right.wrist.dx, greaterThan(0));
     expect(p.left.elbow, isNull);
     expect(p.mouth.open, const MouthShape().open);
+    expect(p.tail, 0);
+    expect(p.earFlick, 0);
   });
 
   test('the default hands point down and inward, mirrored', () {

@@ -46,6 +46,8 @@ class CompanionPose {
     this.headOffset = Offset.zero,
     this.hairLag = Offset.zero,
     this.hemLag = 0,
+    this.tail = 0,
+    this.earFlick = 0,
     this.left = const ArmPose(
       wrist: Offset(-28, -40),
       handAngle: 60 * math.pi / 180,
@@ -79,6 +81,13 @@ class CompanionPose {
 
   /// How far the hem trails the hips' sway.
   final double hemLag;
+
+  /// An animal's tail swing, about -1..1; the grandmother has none.
+  final double tail;
+
+  /// An animal's ear flick: the left ear for a negative value, the right for
+  /// a positive one, 0 at rest and ±1 at the flick's height.
+  final double earFlick;
   final ArmPose left;
   final ArmPose right;
 

@@ -56,6 +56,16 @@ class CompanionPalette {
     this.glove = const Color(0xFFD8322C),
     this.gloveDeep = const Color(0xFF8F1A18),
     this.earring = const Color(0xFFD8322C),
+    this.muzzle,
+    this.earInner,
+    this.furMark,
+    this.limb,
+    this.limbDeep,
+    this.paw,
+    this.nose,
+    this.whisker,
+    this.tail,
+    this.tailRing,
   });
 
   final Color hair;
@@ -101,10 +111,60 @@ class CompanionPalette {
   final Color glove;
   final Color gloveDeep;
   final Color earring;
+
+  // An animal's own colours. Each is null on the grandmother, whose skin
+  // stands in for the ones she has a counterpart of.
+
+  /// The pale fur round the mouth and chin.
+  final Color? muzzle;
+  final Color? earInner;
+
+  /// Stripes, tear marks and the tail's rings.
+  final Color? furMark;
+
+  /// Arms and legs, where they differ from the face's fur.
+  final Color? limb;
+  final Color? limbDeep;
+
+  /// The hands and the feet.
+  final Color? paw;
+  final Color? nose;
+  final Color? whisker;
+  final Color? tail;
+  final Color? tailRing;
+
+  Color get limbColor => limb ?? skin;
+  Color get limbDeepColor => limbDeep ?? skinDeep;
+  Color get pawColor => paw ?? limbColor;
+  Color get muzzleColor => muzzle ?? skinLight;
+  Color get furMarkColor => furMark ?? skinDeep;
+  Color get tailColor => tail ?? skin;
+  Color get tailRingColor => tailRing ?? furMarkColor;
+}
+
+/// Who the companion is: each species is its own rig on the same skeleton.
+/// The animals have ears, a muzzle and a tail where she has hair, a bun and
+/// shoes.
+enum CompanionSpecies {
+  grandma(headScale: 1),
+
+  /// Plain proportions, tall pointed ears and a thin tail.
+  cat(headScale: 1.02),
+
+  /// The cat rig with new proportions: a bigger, rounder head, big rimmed
+  /// ears and a thick ringed tail.
+  redPanda(headScale: 1.08);
+
+  const CompanionSpecies({required this.headScale});
+
+  /// The head's size relative to the grandmother's.
+  final double headScale;
+
+  bool get isAnimal => this != grandma;
 }
 
 /// What sits on her ears.
-enum EarringKind { pearl, disc }
+enum EarringKind { none, pearl, disc }
 
 /// A named outfit: a palette plus the shapes that come and go with it.
 @immutable
@@ -112,6 +172,7 @@ class CompanionLook {
   const CompanionLook({
     required this.id,
     required this.palette,
+    this.species = CompanionSpecies.grandma,
     this.glasses = true,
     this.sunglasses = false,
     this.beret = false,
@@ -124,6 +185,7 @@ class CompanionLook {
   /// Stable identifier, as stored when the look becomes a setting.
   final String id;
   final CompanionPalette palette;
+  final CompanionSpecies species;
 
   /// Round tortoiseshell frames.
   final bool glasses;
@@ -196,5 +258,198 @@ class CompanionLook {
     blush: 0.3,
   );
 
-  static const List<CompanionLook> all = [grandma, grandmaStage, grandmaRock];
+  /// A silver tabby: green eyes, a white muzzle and white socks, in a navy
+  /// dress under a coral cardigan with a mint scarf.
+  static const cat = CompanionLook(
+    id: 'cat',
+    species: CompanionSpecies.cat,
+    palette: _catPalette,
+    glasses: false,
+    earring: EarringKind.none,
+    blush: 0.3,
+  );
+
+  /// The tabby at the rock finale: beret, red-framed sunglasses, beads and a
+  /// red glove over a black outfit.
+  static const catRock = CompanionLook(
+    id: 'cat_rock',
+    species: CompanionSpecies.cat,
+    palette: CompanionPalette(
+      skin: Color(0xFFA7A9AC),
+      skinShade: Color(0xFF8A8C90),
+      skinDeep: Color(0xFF66686D),
+      skinLight: Color(0xFFC6C8CA),
+      brow: Color(0xFF55575C),
+      iris: Color(0xFF5E9A3E),
+      irisLight: Color(0xFFB4D86A),
+      pupil: Color(0xFF101410),
+      eyeWhite: Color(0xFFF2F4E8),
+      lips: Color(0xFFF5F2EC),
+      lipsUpper: Color(0xFFF5F2EC),
+      lipsLight: Color(0xFFF5F2EC),
+      mouthIn: Color(0xFF5A2228),
+      tongue: Color(0xFFE07C88),
+      dress: Color(0xFF2A2A30),
+      dressShade: Color(0xFF1A1A1F),
+      dressLight: Color(0xFF3E3E46),
+      cardigan: Color(0xFF3A3A42),
+      cardiganShade: Color(0xFF24242A),
+      cardiganLight: Color(0xFF55555F),
+      scarf: Color(0xFFD8322C),
+      scarfDot: Color(0xFFD8322C),
+      glasses: Color(0xFFD8322C),
+      glassesLight: Color(0xFFEE6A62),
+      ink: Color(0xFF26282C),
+      muzzle: Color(0xFFF5F2EC),
+      earInner: Color(0xFFE8A9B0),
+      furMark: Color(0xFF5B5D62),
+      paw: Color(0xFFF5F2EC),
+      nose: Color(0xFFD98C95),
+      whisker: Color(0xFFF8F6F2),
+      tailRing: Color(0xFF6A6C71),
+    ),
+    glasses: false,
+    sunglasses: true,
+    beret: true,
+    beads: true,
+    glove: true,
+    earring: EarringKind.none,
+    blush: 0.25,
+  );
+
+  /// A red panda: rust fur, a white mask with dark tear marks, dark legs
+  /// and arms, in a cream dress under a forest-green cardigan.
+  static const redPanda = CompanionLook(
+    id: 'red_panda',
+    species: CompanionSpecies.redPanda,
+    palette: _redPandaPalette,
+    glasses: false,
+    earring: EarringKind.none,
+    blush: 0.22,
+  );
+
+  /// The red panda with a book under its arm, so to speak: round glasses, a
+  /// teal dress under an ivory cardigan and a raspberry scarf.
+  static const redPandaBookish = CompanionLook(
+    id: 'red_panda_bookish',
+    species: CompanionSpecies.redPanda,
+    palette: CompanionPalette(
+      skin: Color(0xFFC4562A),
+      skinShade: Color(0xFFA4441F),
+      skinDeep: Color(0xFF7E3215),
+      skinLight: Color(0xFFDB7A48),
+      brow: Color(0xFFF7F0E4),
+      iris: Color(0xFF3A2216),
+      irisLight: Color(0xFF7A4A30),
+      pupil: Color(0xFF0E0806),
+      eyeWhite: Color(0xFFF4EEE4),
+      lips: Color(0xFFF7F0E4),
+      lipsUpper: Color(0xFFF7F0E4),
+      lipsLight: Color(0xFFF7F0E4),
+      mouthIn: Color(0xFF4A1A12),
+      tongue: Color(0xFFD86A6E),
+      cardigan: Color(0xFFEFE6D6),
+      cardiganShade: Color(0xFFCDBFA8),
+      cardiganLight: Color(0xFFFAF5EA),
+      scarf: Color(0xFFB8336A),
+      ink: Color(0xFF241510),
+      muzzle: Color(0xFFF7F0E4),
+      earInner: Color(0xFF5A2A18),
+      furMark: Color(0xFF6E2814),
+      limb: Color(0xFF3A1F16),
+      limbDeep: Color(0xFF22120C),
+      nose: Color(0xFF231511),
+      whisker: Color(0xFFF7F0E4),
+      tail: Color(0xFFC4562A),
+      tailRing: Color(0xFF8A3418),
+    ),
+    earring: EarringKind.none,
+    blush: 0.22,
+  );
+
+  static const List<CompanionLook> all = [
+    grandma,
+    grandmaStage,
+    grandmaRock,
+    cat,
+    catRock,
+    redPanda,
+    redPandaBookish,
+  ];
+
+  /// The looks of [species], in the order of [all].
+  static List<CompanionLook> of(CompanionSpecies species) => [
+    for (final look in all)
+      if (look.species == species) look,
+  ];
 }
+
+/// The silver tabby. The lips take the muzzle's colour, so only the mouth's
+/// opening and seam show, the way a cat's mouth does.
+const _catPalette = CompanionPalette(
+  skin: Color(0xFFA7A9AC),
+  skinShade: Color(0xFF8A8C90),
+  skinDeep: Color(0xFF66686D),
+  skinLight: Color(0xFFC6C8CA),
+  brow: Color(0xFF55575C),
+  iris: Color(0xFF5E9A3E),
+  irisLight: Color(0xFFB4D86A),
+  pupil: Color(0xFF101410),
+  eyeWhite: Color(0xFFF2F4E8),
+  lips: Color(0xFFF5F2EC),
+  lipsUpper: Color(0xFFF5F2EC),
+  lipsLight: Color(0xFFF5F2EC),
+  mouthIn: Color(0xFF5A2228),
+  tongue: Color(0xFFE07C88),
+  dress: Color(0xFF2E3F66),
+  dressShade: Color(0xFF22304F),
+  dressLight: Color(0xFF41568A),
+  cardigan: Color(0xFFE07A5F),
+  cardiganShade: Color(0xFFC15E45),
+  cardiganLight: Color(0xFFF09A80),
+  scarf: Color(0xFF7CC6B0),
+  scarfDot: Color(0xFFF6F2E8),
+  ink: Color(0xFF26282C),
+  muzzle: Color(0xFFF5F2EC),
+  earInner: Color(0xFFE8A9B0),
+  furMark: Color(0xFF5B5D62),
+  paw: Color(0xFFF5F2EC),
+  nose: Color(0xFFD98C95),
+  whisker: Color(0xFFF8F6F2),
+  tailRing: Color(0xFF6A6C71),
+);
+
+/// The red panda. Its brows are the white spots above its eyes.
+const _redPandaPalette = CompanionPalette(
+  skin: Color(0xFFC4562A),
+  skinShade: Color(0xFFA4441F),
+  skinDeep: Color(0xFF7E3215),
+  skinLight: Color(0xFFDB7A48),
+  brow: Color(0xFFF7F0E4),
+  iris: Color(0xFF3A2216),
+  irisLight: Color(0xFF7A4A30),
+  pupil: Color(0xFF0E0806),
+  eyeWhite: Color(0xFFF4EEE4),
+  lips: Color(0xFFF7F0E4),
+  lipsUpper: Color(0xFFF7F0E4),
+  lipsLight: Color(0xFFF7F0E4),
+  mouthIn: Color(0xFF4A1A12),
+  tongue: Color(0xFFD86A6E),
+  dress: Color(0xFFEDE3CF),
+  dressShade: Color(0xFFD3C6AC),
+  dressLight: Color(0xFFF8F1E2),
+  cardigan: Color(0xFF2F6B4F),
+  cardiganShade: Color(0xFF22513B),
+  cardiganLight: Color(0xFF468A69),
+  scarf: Color(0xFFE0A526),
+  ink: Color(0xFF241510),
+  muzzle: Color(0xFFF7F0E4),
+  earInner: Color(0xFF5A2A18),
+  furMark: Color(0xFF6E2814),
+  limb: Color(0xFF3A1F16),
+  limbDeep: Color(0xFF22120C),
+  nose: Color(0xFF231511),
+  whisker: Color(0xFFF7F0E4),
+  tail: Color(0xFFC4562A),
+  tailRing: Color(0xFF8A3418),
+);

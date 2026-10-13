@@ -46,6 +46,17 @@ void main() {
     expect(r.count(look.palette.hair, tolerance: 12), greaterThan(100));
   });
 
+  test('paints an animal with its tail, behind the dress', () async {
+    const look = CompanionLook.redPanda;
+    final r = await _paint(
+      CompanionPainter(pose: const CompanionPose(), look: look),
+      const Size(160, 240),
+    );
+    expect(r.count(look.palette.tailRingColor, tolerance: 12), greaterThan(40));
+    expect(r.count(look.palette.dress), greaterThan(500));
+    expect(r.count(look.palette.shoe), 0);
+  });
+
   test('the bust shows the face larger and leaves the shoes out', () async {
     const look = CompanionLook.grandma;
     const size = Size(200, 200);

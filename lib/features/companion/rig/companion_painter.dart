@@ -7,6 +7,7 @@ import 'package:lotti/features/companion/rig/body_painter.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 import 'package:lotti/features/companion/rig/stage_painter.dart';
+import 'package:lotti/features/companion/rig/tail_painter.dart';
 
 /// How much of her the view shows.
 enum CompanionFraming {
@@ -70,6 +71,7 @@ class CompanionPainter extends CustomPainter {
     final f = RigFrame(pose);
     if (stage) CompanionStage.paintFloorShadow(canvas);
     drawBackOfHead(canvas, f, look);
+    drawTail(canvas, f, look);
     drawLegs(canvas, f, look);
     drawNeck(canvas, f, look);
     drawDress(canvas, f, look);

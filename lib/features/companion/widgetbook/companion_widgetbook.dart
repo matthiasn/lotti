@@ -16,101 +16,113 @@ const defaultCompanionLine =
     'And you have a walk planned, which I fully support.';
 
 /// Widgetbook folder for the in-app companion: Lotti, the grandmother of the
-/// pitch videos, drawn live in Flutter.
+/// pitch videos, and the animals a person may pick instead, drawn live in
+/// Flutter. One component per character, each with the same use cases.
 WidgetbookFolder buildCompanionWidgetbookFolder() {
   return WidgetbookFolder(
     name: 'Companion',
     children: [
-      WidgetbookComponent(
-        name: 'Lotti (grandma)',
-        useCases: [
-          WidgetbookUseCase(
-            name: 'Playground',
-            builder: (context) => CompanionPlayground(
-              look: _lookKnob(context),
-              mood: _moodKnob(context),
-              framing: context.knobs.object.segmented(
-                label: 'Framing',
-                options: CompanionFraming.values,
-                labelBuilder: (f) => f.name,
-              ),
-              stage: _stageKnob(context),
-              supersample: _smoothingKnob(context),
-              line: context.knobs.string(
-                label: 'Line',
-                initialValue: defaultCompanionLine,
-                maxLines: 4,
-              ),
-              rate: context.knobs.double.slider(
-                label: 'Speaking rate',
-                initialValue: 1,
-                min: 0.6,
-                max: 1.6,
-                divisions: 10,
-              ),
-              autoGestures: context.knobs.boolean(
-                label: 'Gestures while talking',
-                initialValue: true,
-              ),
-            ),
-          ),
-          WidgetbookUseCase(
-            name: 'Talking with a voice (WAV)',
-            builder: (context) => CompanionVoicePreview(
-              look: _lookKnob(context),
-              mood: _moodKnob(context),
-              framing: context.knobs.object.segmented(
-                label: 'Framing',
-                options: CompanionFraming.values,
-                initialOption: CompanionFraming.bust,
-                labelBuilder: (f) => f.name,
-              ),
-              stage: _stageKnob(context),
-              supersample: _smoothingKnob(context),
-              wavPath: context.knobs.string(
-                label: 'WAV file (16-bit PCM)',
-              ),
-              text: context.knobs.string(
-                label: 'Its words (optional, for mouth shapes)',
-                maxLines: 4,
-              ),
-            ),
-          ),
-          WidgetbookUseCase(
-            name: 'Looks',
-            builder: (context) => _Lineup(
-              framing: CompanionFraming.full,
-              entries: [
-                for (final look in CompanionLook.all)
-                  (look.id, look, CompanionMood.calm),
-              ],
-            ),
-          ),
-          WidgetbookUseCase(
-            name: 'Moods',
-            builder: (context) => _Lineup(
-              framing: CompanionFraming.bust,
-              entries: [
-                for (final mood in CompanionMood.values)
-                  (mood.name, _lookKnob(context), mood),
-              ],
-            ),
-          ),
-          WidgetbookUseCase(
-            name: 'Chat avatar sizes',
-            builder: (context) => _AvatarSizes(look: _lookKnob(context)),
-          ),
-        ],
-      ),
+      for (final species in CompanionSpecies.values)
+        _characterComponent(species),
     ],
   );
 }
 
-CompanionLook _lookKnob(BuildContext context) => context.knobs.object.dropdown(
-  label: 'Look',
-  options: CompanionLook.all,
-  labelBuilder: (l) => l.id,
-);
+/// The component's name for [species].
+String companionCharacterName(CompanionSpecies species) => switch (species) {
+  CompanionSpecies.grandma => 'Lotti (grandma)',
+  CompanionSpecies.cat => 'Cat',
+  CompanionSpecies.redPanda => 'Red panda',
+};
+
+WidgetbookComponent _characterComponent(CompanionSpecies species) {
+  final looks = CompanionLook.of(species);
+  CompanionLook lookKnob(BuildContext context) => context.knobs.object.dropdown(
+    label: 'Look',
+    options: looks,
+    labelBuilder: (l) => l.id,
+  );
+  return WidgetbookComponent(
+    name: companionCharacterName(species),
+    useCases: [
+      WidgetbookUseCase(
+        name: 'Playground',
+        builder: (context) => CompanionPlayground(
+          look: lookKnob(context),
+          mood: _moodKnob(context),
+          framing: context.knobs.object.segmented(
+            label: 'Framing',
+            options: CompanionFraming.values,
+            labelBuilder: (f) => f.name,
+          ),
+          stage: _stageKnob(context),
+          supersample: _smoothingKnob(context),
+          line: context.knobs.string(
+            label: 'Line',
+            initialValue: defaultCompanionLine,
+            maxLines: 4,
+          ),
+          rate: context.knobs.double.slider(
+            label: 'Speaking rate',
+            initialValue: 1,
+            min: 0.6,
+            max: 1.6,
+            divisions: 10,
+          ),
+          autoGestures: context.knobs.boolean(
+            label: 'Gestures while talking',
+            initialValue: true,
+          ),
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Talking with a voice (WAV)',
+        builder: (context) => CompanionVoicePreview(
+          look: lookKnob(context),
+          mood: _moodKnob(context),
+          framing: context.knobs.object.segmented(
+            label: 'Framing',
+            options: CompanionFraming.values,
+            initialOption: CompanionFraming.bust,
+            labelBuilder: (f) => f.name,
+          ),
+          stage: _stageKnob(context),
+          supersample: _smoothingKnob(context),
+          wavPath: context.knobs.string(
+            label: 'WAV file (16-bit PCM)',
+          ),
+          text: context.knobs.string(
+            label: 'Its words (optional, for mouth shapes)',
+            maxLines: 4,
+          ),
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Looks',
+        builder: (context) => _Lineup(
+          framing: CompanionFraming.full,
+          entries: [
+            for (final look in looks) (look.id, look, CompanionMood.calm),
+          ],
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Moods',
+        builder: (context) => _Lineup(
+          framing: CompanionFraming.bust,
+          entries: [
+            for (final mood in CompanionMood.values)
+              (mood.name, lookKnob(context), mood),
+          ],
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Chat avatar sizes',
+        builder: (context) => _AvatarSizes(look: lookKnob(context)),
+      ),
+    ],
+  );
+}
 
 bool _stageKnob(BuildContext context) =>
     context.knobs.boolean(label: 'Stage backdrop', initialValue: true);

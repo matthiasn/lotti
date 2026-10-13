@@ -95,6 +95,51 @@ void main() {
       expect(shut.count(_c.eyeWhite), 0);
       expect(shut.count(_c.ink), greaterThan(10));
     });
+
+    test("an animal's eye: a bigger iris, a cat's slit pupil", () async {
+      final human = await _draw(
+        (c) => drawEye(c, _c, Offset.zero, 1, 0, 0, Offset.zero),
+      );
+      final round = await _draw(
+        (c) => drawEye(
+          c,
+          _c,
+          Offset.zero,
+          1,
+          0,
+          0,
+          Offset.zero,
+          irisRadius: 8.6,
+        ),
+      );
+      final slit = await _draw(
+        (c) => drawEye(
+          c,
+          _c,
+          Offset.zero,
+          1,
+          0,
+          0,
+          Offset.zero,
+          irisRadius: 8.6,
+          slit: true,
+        ),
+      );
+      expect(round.count(_c.pupil), greaterThan(human.count(_c.pupil)));
+      expect(slit.count(_c.pupil), lessThan(round.count(_c.pupil) * 0.75));
+      expect(slit.count(_c.pupil), greaterThan(10));
+    });
+
+    test('without lashes, less ink at the outer corner', () async {
+      final lashed = await _draw(
+        (c) => drawEye(c, _c, Offset.zero, 1, 1, 0, Offset.zero),
+      );
+      final bare = await _draw(
+        (c) => drawEye(c, _c, Offset.zero, 1, 1, 0, Offset.zero, lashes: false),
+      );
+      expect(bare.count(_c.ink), lessThan(lashed.count(_c.ink)));
+      expect(bare.count(_c.ink), greaterThan(10));
+    });
   });
 
   test('drawBrow rises with raise', () async {

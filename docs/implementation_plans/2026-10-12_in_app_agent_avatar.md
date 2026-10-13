@@ -265,21 +265,33 @@ That is enough to judge whether it is worth the rest, and enough to film.
 
 A first cut of phases 1 and 2 exists in `lib/features/companion/`, behind no
 flag and in no screen: it is shown in the widgetbook only (**Companion →
-Lotti (grandma)**). It takes a shorter road than the phases above:
+Lotti (grandma)**, **Cat** and **Red panda**). It takes a shorter road than
+the phases above:
 
 - **It ports the video rig, not `dancing_cats`.** The Python/cairo
   grandmother of the pitch videos was ported to Dart module by module. It
   already has the ribbon arms, the constrained elbow solver, the gestures and
   the looks, so she is the same character as in the videos, and it needs no
   engine brought back first (phase 0). Bringing the `dancing_cats` engine
-  back stays the road for skinned outfits and other species.
+  back stays the road for skinned outfits.
+- **The cat and the red panda are species of the same rig** (2026-10-14),
+  not engines of their own. A look names its `CompanionSpecies`; on an
+  animal, the ears replace the bun, a furred head with a muzzle, nose and
+  whiskers replaces her face (the eyes, brows and mouth are hers, so every
+  mood, gesture and mouth shape works unchanged), paws replace the shoes, and
+  a tail grows from behind the hip. The tail swings and an ear flicks now and
+  then, both from the animator, quicker when the mood is. The red panda is
+  the cat with a bigger head, rimmed ears, a white mask with tear marks, dark
+  limbs and a thick ringed tail. Two looks each: `cat`, `cat_rock`,
+  `red_panda`, `red_panda_bookish`.
 - **The mouth has three sources** behind one `MouthTrack`: a WAV's loudness
   (`SpeechEnvelope`, as planned), the words alone (`TextLipSync`, a pure-Dart
   letter-to-viseme pass), and both together (`VoicedTextTrack`).
 - **Moods are chosen by hand.** `CompanionMood` has the five proposed states'
   expressions; nothing derives them from the record yet (phase 4).
 - **Not yet wired:** `TtsPlaybackController`, the query chat, Daily OS,
-  `CompanionScript`, the settings choice, and any localized line.
+  `CompanionScript`, the settings choice (phase 5: the species exist, the
+  setting does not), and any localized line.
 
 The feature's README has the map of the code.
 

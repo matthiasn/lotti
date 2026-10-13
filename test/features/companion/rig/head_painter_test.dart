@@ -73,4 +73,41 @@ void main() {
       greaterThan(ahead.centroid(look.palette.eyeWhite)!.dx + 3),
     );
   });
+
+  test('an animal has ears and fur where she has hair', () async {
+    final hair = (await _head(
+      CompanionLook.grandma,
+    )).count(CompanionLook.grandma.palette.hair);
+    for (final look in [CompanionLook.cat, CompanionLook.redPanda]) {
+      final r = await _head(look);
+      final p = look.palette;
+      expect(r.count(p.skin), greaterThan(4000), reason: look.id);
+      expect(r.count(p.earInner!), greaterThan(300), reason: look.id);
+      // Only stray anti-aliased pixels land on the hair's colour.
+      expect(r.count(p.hair), lessThan(hair ~/ 20), reason: look.id);
+    }
+  });
+
+  test('glasses and the beret sit on an animal too', () async {
+    final bookish = await _head(CompanionLook.redPandaBookish);
+    expect(
+      bookish.count(CompanionLook.redPandaBookish.palette.glasses),
+      greaterThan(100),
+    );
+    final rock = await _head(CompanionLook.catRock);
+    expect(rock.count(CompanionLook.catRock.palette.hat), greaterThan(500));
+  });
+
+  test("the red panda's head is drawn bigger", () async {
+    final cat = await _head(CompanionLook.cat);
+    final panda = await _head(CompanionLook.redPanda);
+    expect(
+      panda.count(CompanionLook.redPanda.palette.skin) +
+          panda.count(CompanionLook.redPanda.palette.muzzleColor),
+      greaterThan(
+        cat.count(CompanionLook.cat.palette.skin) +
+            cat.count(CompanionLook.cat.palette.muzzleColor),
+      ),
+    );
+  });
 }

@@ -2,7 +2,8 @@
 
 Lotti, the grandmother who presents the app in the pitch videos, drawn live in
 Flutter: a character who can sit in the app and talk, instead of only
-appearing in a video.
+appearing in a video. A cat and a red panda can stand in for her: the same
+rig, another species.
 
 **Status: proof of concept, shown in the widgetbook only.** Nothing in the app
 shows her yet. The plan she comes from, and the phases still ahead (the chat,
@@ -28,13 +29,20 @@ the Daily OS briefing, a mood read from the record, character choice), is
 - **She has looks**: everyday (teal dress, mustard cardigan), stage (raspberry
   dress, ivory cardigan) and rock (beret, yellow sunglasses, beads, a red
   glove). A look is data: a palette and a few switches.
+- **She can be an animal.** A look names its species (`CompanionSpecies`):
+  the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda
+  (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,
+  moods and mouth, and swaps the hair for ears, the face for a furred head
+  with a muzzle and whiskers, the shoes for paws, and gains a tail that
+  swings while an ear flicks now and then. The red panda's head is drawn
+  bigger.
 
 ## Where the code sits
 
 | Directory | What |
 |---|---|
 | `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods |
-| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter` |
+| `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController` |
 | `widgetbook/` | The widgetbook folder "Companion" |
@@ -63,7 +71,8 @@ come from the design system's tokens.
 ## Trying her out
 
 Run the widgetbook (`fvm flutter run -d <device> -t lib/widgetbook.dart`) and
-open **Companion → Lotti (grandma)**:
+open **Companion → Lotti (grandma)**, **Cat** or **Red panda**; each has the
+same use cases, its look knob limited to its own looks:
 
 - **Playground**: the look, mood, framing, stage and smoothing as knobs, a
   line to say, and a button per gesture;

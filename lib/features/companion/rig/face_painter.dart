@@ -186,7 +186,8 @@ void drawMouth(
 
 /// Draws one eye centred on [centre]; [side] is -1 for the left, +1 for the
 /// right. [blink] 1 shuts it, [squint] lifts the lower lid, [gaze] moves the
-/// iris.
+/// iris. An animal's eye takes a bigger [irisRadius], a cat's a [slit] pupil,
+/// and neither has the [lashes] at the outer corner.
 void drawEye(
   Canvas canvas,
   CompanionPalette c,
@@ -194,8 +195,11 @@ void drawEye(
   int side,
   double blink,
   double squint,
-  Offset gaze,
-) {
+  Offset gaze, {
+  double irisRadius = 7.6,
+  bool slit = false,
+  bool lashes = true,
+}) {
   final cx = centre.dx;
   final cy = centre.dy;
   final s = side.toDouble();
@@ -238,16 +242,30 @@ void drawEye(
     final iris = Offset(cx + gaze.dx * 3.2 + s * 0.6, cy - 0.5 + gaze.dy * 2.2);
     canvas.drawCircle(
       iris,
-      7.6,
+      irisRadius,
       Paint()
         ..shader = ui.Gradient.radial(
           iris + const Offset(-1.5, -2.5),
-          8.2,
+          irisRadius + 0.6,
           [c.irisLight, c.iris],
           [0.06, 1],
         ),
     );
-    fillCircle(canvas, iris + const Offset(0, 0.3), 3.6, c.pupil);
+    if (slit) {
+      // Narrow in the light, a little rounder as the eye narrows.
+      fillPath(
+        canvas,
+        ellipse(iris + const Offset(0, 0.3), 1.5 + squint, irisRadius * 0.82),
+        c.pupil,
+      );
+    } else {
+      fillCircle(
+        canvas,
+        iris + const Offset(0, 0.3),
+        irisRadius * 0.47,
+        c.pupil,
+      );
+    }
     fillCircle(
       canvas,
       iris + const Offset(-2.6, -2.8),
@@ -290,6 +308,7 @@ void drawEye(
     c.ink,
     2.1,
   );
+  if (!lashes) return;
   for (final (k, d) in [
     (0, const Offset(2.6, -2.2)),
     (1, const Offset(3.4, 0.2)),
