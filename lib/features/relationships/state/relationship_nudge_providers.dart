@@ -16,8 +16,35 @@ import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
-import 'package:lotti/services/db_notification.dart' show agentNotification;
+import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
+
+/// The id every relationship agent's id starts with (`relationshipAgentIdFor`).
+final String _relationshipAgentIdPrefix = relationshipAgentIdFor('');
+
+/// Whether a notification batch can change a relationship banner: a write
+/// by or synced for a relationship agent (its id rides along with every
+/// one — wake output, lifecycle, nudge rows, the agent→person link), a
+/// person renamed, deleted or made private, or the private-entries flag
+/// flipping (person reads are private-filtered).
+@visibleForTesting
+bool touchesRelationshipBanners(Set<String> affectedIds) => affectedIds.any(
+  (id) =>
+      id.startsWith(_relationshipAgentIdPrefix) ||
+      id == relationshipNotification ||
+      id == privateToggleNotification,
+);
+
+/// The notification batches [touchesRelationshipBanners] lets through.
+final StreamProvider<Set<String>> relationshipBannerUpdatesProvider =
+    StreamProvider.autoDispose<Set<String>>(
+      (ref) => ref
+          .watch(updateNotificationsProvider)
+          .updateStream
+          .where(touchesRelationshipBanners),
+      name: 'relationshipBannerUpdatesProvider',
+    );
 
 /// The ACTIVE relationship banners across all active relationship agents,
 /// newest first — the relationship kind's registered source for the shared
@@ -37,9 +64,12 @@ final FutureProvider<List<NudgeBannerEntry>> activeRelationshipNudgesProvider =
       final lifecycleListener = AppLifecycleListener(
         onResume: ref.invalidateSelf,
       );
+      // Not the global agent token: that rides along with every task,
+      // goal and day agent write too, and each re-run here reads every
+      // relationship agent's link, person and nudges.
       ref
         ..onDispose(lifecycleListener.dispose)
-        ..watch(agentUpdateStreamProvider(agentNotification));
+        ..watch(relationshipBannerUpdatesProvider);
       final agents = await ref
           .watch(agentServiceProvider)
           .listAgents(lifecycle: AgentLifecycle.active);
@@ -57,7 +87,6 @@ final FutureProvider<List<NudgeBannerEntry>> activeRelationshipNudgesProvider =
 
       for (final identity in agents) {
         if (identity.kind != AgentKinds.relationshipAgent) continue;
-        ref.watch(agentUpdateStreamProvider(identity.agentId));
         final links = await repository.getLinksFrom(
           identity.agentId,
           type: AgentLinkTypes.agentRelationship,
@@ -104,7 +133,9 @@ final FutureProvider<List<NudgeBannerEntry>> activeRelationshipNudgesProvider =
           a.nudge.activatedAt ?? a.nudge.createdAt,
         ),
       );
-      if (nextDeadline != null) {
+      // A provider disposed during the reads above never runs onDispose
+      // again: a timer registered now would invalidate a dead ref.
+      if (nextDeadline != null && ref.mounted) {
         final timer = Timer(nextDeadline!.difference(now), ref.invalidateSelf);
         ref.onDispose(timer.cancel);
       }
@@ -152,8 +183,10 @@ pausedRelationshipReminderProvider = FutureProvider.autoDispose
             NudgeSnoozeReason.opened) {
           continue;
         }
-        final timer = Timer(until.difference(now), ref.invalidateSelf);
-        ref.onDispose(timer.cancel);
+        if (ref.mounted) {
+          final timer = Timer(until.difference(now), ref.invalidateSelf);
+          ref.onDispose(timer.cancel);
+        }
         return (
           entry: (
             nudge: view,

@@ -2557,6 +2557,55 @@ void main() {
     ).called(1);
   });
 
+  test('another kind of agent writing re-lists the goal agents but does not '
+      're-read every goal for its banners', () async {
+    final updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    when(
+      () => updateNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
+    var displayName = 'goal-a';
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a').copyWith(
+          displayName: displayName,
+        ),
+      ],
+    );
+    final flag = container.listen(
+      configFlagProvider(enableUnifiedGoalsFlag),
+      (_, _) {},
+    );
+    addTearDown(flag.close);
+    await container.read(configFlagProvider(enableUnifiedGoalsFlag).future);
+    final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+    addTearDown(sub.close);
+    await container.read(activeGoalNudgesProvider.future);
+    verify(() => repository.getEntity(goalSpecHeadId('goal-a'))).called(1);
+
+    Future<void> send(Set<String> ids) async {
+      updates.add(ids);
+      await pumpEventQueue();
+      await container.read(activeGoalNudgesProvider.future);
+    }
+
+    // A task agent's wake: the goal agents are re-listed, unchanged.
+    await send({'task-agent-7', agentNotification});
+    verify(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).called(2);
+    verifyNever(() => repository.getEntity(goalSpecHeadId('goal-a')));
+
+    // The goal's own write, and a rename seen through the re-list, do.
+    await send({'goal-a', agentNotification});
+    verify(() => repository.getEntity(goalSpecHeadId('goal-a'))).called(1);
+    displayName = 'Run more';
+    await send({'other-device-agent', agentNotification});
+    verify(() => repository.getEntity(goalSpecHeadId('goal-a'))).called(1);
+  });
+
   test('goalReportWakeOutcomeProvider surfaces only report-producing wakes — '
       'a failed chat stays off the read card and the constant subscription '
       'ticks cannot clear a refresh failure', () async {

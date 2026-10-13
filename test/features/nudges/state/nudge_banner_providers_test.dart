@@ -22,6 +22,7 @@ NudgeBannerEntry _entry(
   String id, {
   NudgeBannerKind kind = NudgeBannerKind.goal,
   DateTime? activatedAt,
+  String headline = 'h',
 }) => (
   nudge: NudgeEntityView.of(
     kind == NudgeBannerKind.goal
@@ -29,8 +30,8 @@ NudgeBannerEntry _entry(
             id: id,
             agentId: 'goal-$id',
             status: NudgeStatus.active,
-            brief: const NudgeBrief(
-              headline: 'h',
+            brief: NudgeBrief(
+              headline: headline,
               tone: NudgeTone.nudge,
               animation: NudgeBannerAnimation.steady,
             ),
@@ -134,6 +135,47 @@ void main() {
         container.read(activeNudgeBannersProvider).map((e) => e.nudge.id),
         ['relationship-new', 'goal-old'],
       );
+    });
+
+    test('a source refresh with the same banners does not notify the dock; '
+        'a changed banner does', () async {
+      var headline = 'h';
+      final source = FutureProvider<List<NudgeBannerEntry>>(
+        (ref) async => [_entry('a', headline: headline)],
+      );
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          nudgeBannerSourcesProvider.overrideWithValue([source]),
+        ]),
+      );
+      addTearDown(container.dispose);
+      final emitted = <List<String>>[];
+      final sub = container.listen(
+        activeNudgeBannersProvider,
+        (_, next) =>
+            emitted.add([for (final e in next) e.nudge.brief.headline]),
+      );
+      addTearDown(sub.close);
+      await container.read(source.future);
+      await pumpEventQueue();
+      expect(emitted, [
+        ['h'],
+      ]);
+
+      // A background refresh: a fresh list holding equal entries.
+      container.invalidate(source);
+      await container.read(source.future);
+      await pumpEventQueue();
+      expect(emitted, hasLength(1));
+
+      headline = 'h2';
+      container.invalidate(source);
+      await container.read(source.future);
+      await pumpEventQueue();
+      expect(emitted, [
+        ['h'],
+        ['h2'],
+      ]);
     });
 
     test(

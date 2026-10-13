@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -16,6 +19,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -296,6 +300,90 @@ void main() {
     final c = container();
     await warmFlag(c);
     expect(await c.read(activeRelationshipNudgesProvider.future), isEmpty);
+  });
+
+  test('only a relationship agent, person or private-flag write re-reads the '
+      'banners — not every agent write in the app', () async {
+    final updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    when(
+      () => updateNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
+    final c = container();
+    await warmFlag(c);
+    final sub = c.listen(activeRelationshipNudgesProvider, (_, _) {});
+    addTearDown(sub.close);
+    await c.read(activeRelationshipNudgesProvider.future);
+    verify(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).called(1);
+
+    Future<void> send(Set<String> ids) async {
+      updates.add(ids);
+      await pumpEventQueue();
+      await c.read(activeRelationshipNudgesProvider.future);
+    }
+
+    // A task agent's wake: the global agent token rides along.
+    await send({'task-agent-7', agentNotification});
+    verifyNever(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    );
+
+    for (final ids in [
+      {agentId, agentNotification},
+      {relationshipId, relationshipNotification},
+      {privateToggleNotification},
+    ]) {
+      await send(ids);
+      verify(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).called(1);
+    }
+  });
+
+  test('a source disposed while it reads never arms its deadline timer', () {
+    fakeAsync((async) {
+      withClock(async.getClock(now), () {
+        final nudges = Completer<List<AgentDomainEntity>>();
+        when(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.relationshipNudge,
+          ),
+        ).thenAnswer((_) => nudges.future);
+        final c = container();
+        final flag = c.listen(
+          configFlagProvider(enableRelationshipsFlag),
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        final sub = c.listen(activeRelationshipNudgesProvider, (_, _) {});
+        async.flushMicrotasks();
+        verify(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.relationshipNudge,
+          ),
+        ).called(1);
+
+        sub.close();
+        // Riverpod disposes an unlistened autoDispose provider on its
+        // scheduler's zero-length timer, not in a microtask.
+        async.elapse(Duration.zero);
+        nudges.complete([
+          nudge('ad-1', staleAt: now.add(const Duration(hours: 1))),
+        ]);
+        async
+          ..flushMicrotasks()
+          // Past the stale deadline: a timer armed for the disposed
+          // generation would invalidate a dead ref here and throw.
+          ..elapse(const Duration(hours: 2));
+
+        expect(async.pendingTimers, isEmpty);
+        flag.close();
+      });
+    });
   });
 
   // ADR 0063: the person page says a tapped reminder is paused, and until
