@@ -39,10 +39,16 @@ mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
         // Only shortening is possible. Find the first unresolved row rather
         // than rebuilding the whole historical resolved prefix with a CTE.
         // A cold watermark remains cold and is rebuilt on its next read.
+        // Pinned to the (host_id, status) index: left alone, the planner
+        // walks the (host_id, counter) primary key and fetches every row of
+        // the host to test `status`, which held the sync.sqlite writer for
+        // 2–3.5 s per call on a phone with ~379k counters and stalled every
+        // local save queued behind it.
         await customUpdate(
           'UPDATE sync_sequence_watermarks '
           'SET last_counter = MIN(last_counter, COALESCE(( '
           'SELECT MIN(counter) - 1 FROM sync_sequence_log '
+          'INDEXED BY idx_sync_sequence_log_host_status '
           'WHERE host_id = ? AND counter >= 1 AND status IN (1, 2) '
           '), last_counter)), updated_at = ? WHERE host_id = ?',
           variables: [
