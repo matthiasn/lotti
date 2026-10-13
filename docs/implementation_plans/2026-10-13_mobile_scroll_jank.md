@@ -151,3 +151,34 @@ Do this before or alongside Fix 1–3 to know which one actually matters:
 
 Fix 4 (smallest, certain) → Fix 1 → Fix 3 → Fix 2. One PR each; Fix 4 and
 Fix 1 are independent of the trace result.
+
+## Outcome
+
+All four fixes are on `fix/mobile-scroll-jank`, one commit each. Where the
+implementation departs from the plan above:
+
+- **Fix 1** offloads `decryptFile` only from 64 KiB of ciphertext
+  (`MatrixNativeImplementations`). Nearly every synced entry is a few-KB JSON
+  attachment, and an isolate spawn plus a vodozemac load costs more than
+  decrypting it inline. Each spawned isolate runs `vod.init`, because the
+  bindings are per isolate. Sending is unchanged: `Room.sendFileEvent` calls
+  `encryptFile` directly, not through `nativeImplementations`, so outbound
+  attachments still encrypt on the UI isolate.
+- **Fix 2** gates only queued downloads, which every production caller uses.
+  It sets no ceiling, matching the inbound worker. `BackfillRequestService`
+  stays ungated: after Fix 4 its UI-isolate work is small, its requests leave
+  through the gated outbox, and a wait would hold `_isProcessing` and swallow
+  drain nudges.
+- **Fix 3** does not look for a narrower lifecycle notification, because none
+  exists. Relationship agent ids are deterministic (`relationship_agent:<id>`),
+  so the relationship source filters the update stream by that prefix plus
+  `RELATIONSHIP` and `PRIVATE_FLAG_TOGGLED`. An audit of every local and
+  inbound write path found no change that goes unnotified under the filter
+  and was notified before. Goal agent ids are random, so the goal source
+  selects a value-equal (id, display name) view of `activeGoalAgentsProvider`
+  instead. The merged provider became a Notifier with element-wise
+  `updateShouldNotify`. The disposed-timer bug was real: `ref.onDispose`
+  throws on an unmounted ref only after the `Timer` exists.
+- The verification trace (A/B with sync off, a DevTools profile on the
+  device) has not been run. It is still the way to confirm on a phone which
+  fix mattered.

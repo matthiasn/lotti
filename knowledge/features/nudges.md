@@ -108,7 +108,31 @@ The merge preserves a single source's order untouched and only re-sorts when
 more than one kind contributes — with goals and relationships both registered,
 the multi-kind re-sort is the live path. Each source's retained value survives its
 own background refresh (`.value` on a reloading `FutureProvider`), so the dock
-never flashes empty on sync.
+never flashes empty on sync. A refresh that yields the same entries does not
+notify at all: `ActiveNudgeBanners.updateShouldNotify` compares the merged list
+element by element (entries are records over freezed entities), so a background
+sync write mid-scroll does not rebuild the dock and the top lane around every
+shell page.
+
+**Each source refreshes only on writes that can change its banners.** The
+global `agentNotification` token rides along with every agent write in the app,
+so neither source re-reads its rows on it:
+
+- **Relationships** watch `relationshipBannerUpdatesProvider`, the update stream
+  filtered to a `relationship_agent:` id (its deterministic id is in every
+  write by or synced for the agent), `relationshipNotification` (a person
+  renamed or deleted) and `privateToggleNotification` (person reads are
+  private-filtered).
+- **Goals** have random agent ids, so the source still learns about new goal
+  agents from `activeGoalAgentsProvider`, which re-lists on the global token.
+  It selects only each agent's id and display name from that list, so the
+  per-goal reads re-run only when a goal agent appears, goes or is renamed, or
+  on the agent's own token.
+
+Interaction writes notify nothing. The dock invalidates the sources itself
+(`invalidateNudgeBannerSources`), and the timed boundaries (stale, snoozed,
+dismissed for the day) re-run a source from its own deadline timer. A source
+generation that was disposed while it read arms no timer.
 
 # Visibility is one function, used twice
 
