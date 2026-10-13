@@ -28,6 +28,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -325,12 +326,17 @@ void main() {
               .analysisTrigger,
           same(hostTrigger),
         );
-        expect(
-          tester
-              .widget<CreateScreenshotItem>(find.byType(CreateScreenshotItem))
-              .analysisTrigger,
-          same(hostTrigger),
-        );
+        // The screenshot row is listed only where capture is supported.
+        if (platform.isMacOS || platform.isLinux) {
+          expect(
+            tester
+                .widget<CreateScreenshotItem>(
+                  find.byType(CreateScreenshotItem),
+                )
+                .analysisTrigger,
+            same(hostTrigger),
+          );
+        }
       },
     );
 
