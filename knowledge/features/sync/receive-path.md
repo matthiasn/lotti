@@ -247,6 +247,16 @@ flowchart TD
   isolate run one after another, so that limit also bounds the inflated output
   held at once. Small inputs decode inline and synchronously, so they never
   overlap.
+- **Attachment downloads yield to the user and decrypt off the UI isolate.**
+  `AttachmentIngestor` waits on the `UserActivityGate` before each queued
+  download starts, like the worker. The Matrix client is built with
+  `MatrixNativeImplementations`
+  (`lib/features/sync/matrix/matrix_native_implementations.dart`), so the
+  SDK's SHA-256 check and AES-CTR pass over a ciphertext of 64 KiB or more run
+  on a spawned isolate that loads vodozemac for itself. Smaller files, which
+  covers nearly every synced JSON entry, decrypt inline because spawning an
+  isolate would cost more than the decryption. The SDK default runs every
+  decryption on the calling isolate.
 - **Trust outlives a logout.** The SDK forgets a logged-out device's keys.
   `trusted_sync_senders` (sync DB v34, device-local, never written by sync)
   keeps senders found trusted, and is consulted only for a sender the SDK no

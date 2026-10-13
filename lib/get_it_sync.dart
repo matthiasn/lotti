@@ -134,6 +134,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     documentsDirectory: documentsDirectory,
     verboseLogging: false,
     localVcDominates: localVcDominanceCheck.check,
+    activityGate: userActivityGate,
   );
   final queuePipelineCoordinator = QueuePipelineCoordinator(
     syncDb: syncDatabase,

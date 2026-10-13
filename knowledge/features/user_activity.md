@@ -59,7 +59,15 @@ Every consumer today is in [sync](sync/):
 |----------|-----------|
 | [Outbox send passes](sync/send-path.md) | Wait for idle before draining, so a send burst does not compete with typing |
 | [The inbound queue worker](sync/receive-path.md) | Calls `activityGate.waitUntilIdle` at the top of every tick |
+| [Queued attachment downloads](sync/receive-path.md) | `AttachmentIngestor` waits for idle before each queued download starts — never inside one, so the wait does not count against the download timeout |
 | `MatrixService`, `QueuePipelineCoordinator` | Hold the gate for their own scheduling |
+
+None of these waits has a ceiling: a gesture that never pauses for the
+threshold holds them all back until it does.
+
+Automatic backfill passes (`BackfillRequestService`) do not wait. Their
+reads and writes run on the background database isolate, and the requests
+they produce leave through the gated outbox.
 
 **Daily OS processing does *not* use this gate.** `DayProcessingRuntime` drains
 on startup, outbox changes, retries and connectivity events without waiting for

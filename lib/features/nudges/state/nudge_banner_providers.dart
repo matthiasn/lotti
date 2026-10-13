@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -37,21 +38,41 @@ nudgeBannerSourcesProvider =
 /// per-source contract. Each source's retained value survives its own background
 /// refresh (`.value` on a reloading FutureProvider), so the dock never
 /// flashes empty on sync.
-final Provider<List<NudgeBannerEntry>> activeNudgeBannersProvider =
-    Provider.autoDispose<List<NudgeBannerEntry>>((ref) {
-      final sources = ref.watch(nudgeBannerSourcesProvider);
-      final entries = [
-        for (final source in sources) ...?ref.watch(source).value,
-      ];
-      if (sources.length > 1) {
-        entries.sort(
-          (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
-            a.nudge.activatedAt ?? a.nudge.createdAt,
-          ),
-        );
-      }
-      return entries;
-    }, name: 'activeNudgeBannersProvider');
+///
+/// A source refresh that yields the same banners does not notify: the dock
+/// it feeds sits in the chrome around every shell page, and sources refresh
+/// on background sync writes, mid-scroll included.
+final NotifierProvider<ActiveNudgeBanners, List<NudgeBannerEntry>>
+activeNudgeBannersProvider =
+    NotifierProvider.autoDispose<ActiveNudgeBanners, List<NudgeBannerEntry>>(
+      ActiveNudgeBanners.new,
+      name: 'activeNudgeBannersProvider',
+    );
+
+/// The merge behind [activeNudgeBannersProvider].
+class ActiveNudgeBanners extends Notifier<List<NudgeBannerEntry>> {
+  @override
+  List<NudgeBannerEntry> build() {
+    final sources = ref.watch(nudgeBannerSourcesProvider);
+    final entries = [
+      for (final source in sources) ...?ref.watch(source).value,
+    ];
+    if (sources.length > 1) {
+      entries.sort(
+        (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
+          a.nudge.activatedAt ?? a.nudge.createdAt,
+        ),
+      );
+    }
+    return entries;
+  }
+
+  @override
+  bool updateShouldNotify(
+    List<NudgeBannerEntry> previous,
+    List<NudgeBannerEntry> next,
+  ) => !const ListEquality<NudgeBannerEntry>().equals(previous, next);
+}
 
 /// Invalidates every registered banner source — the post-interaction
 /// refresh. Interaction writes go through the sync service (which

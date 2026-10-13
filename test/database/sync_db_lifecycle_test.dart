@@ -6,6 +6,8 @@ import 'package:glados/glados.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/sync_db.dart';
 
+import 'sync_db_test_utils.dart';
+
 enum _GeneratedSequenceLifecycleOperation {
   resetKnown,
   resetAll,
@@ -426,6 +428,57 @@ void main() {
       expect(await database.getEntryByHostAndCounter('origin', 10), isNull);
       await database.markAnnouncedHeadRequests([]);
       expect(await database.getLastCounterForHost('origin'), 1);
+    },
+  );
+
+  test(
+    'announced head requests lower the watermark through the host/status '
+    'index instead of walking every counter of the host',
+    () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+      final at = DateTime.utc(2024);
+      // The steady state the phone was in: a long resolved history and only
+      // a handful of unresolved rows, so a counter-ordered walk reads all of
+      // it while the status partition holds almost nothing.
+      for (var counter = 1; counter <= 300; counter++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('origin'),
+            counter: Value(counter),
+            status: Value(
+              counter == 250
+                  ? SyncSequenceStatus.missing.index
+                  : SyncSequenceStatus.received.index,
+            ),
+            createdAt: Value(at),
+            updatedAt: Value(at),
+          ),
+        );
+      }
+      expect(await database.getLastCounterForHost('origin'), 249);
+      // Planner stats as a long-lived database has them.
+      await database.customStatement('ANALYZE');
+
+      final capture = UpdatePlanCapture('sync_sequence_watermarks');
+      await database.runWithInterceptor(
+        () => database.markAnnouncedHeadRequests([
+          (hostId: 'origin', counter: 120),
+          (hostId: 'origin', counter: 250),
+        ]),
+        interceptor: capture,
+      );
+
+      expect(await database.getLastCounterForHost('origin'), 249);
+      expect(capture.formattedPlans, hasLength(1));
+      expect(
+        capture.formattedPlans.single,
+        contains('idx_sync_sequence_log_host_status'),
+      );
+      expect(
+        capture.formattedPlans.single,
+        isNot(contains('sqlite_autoindex_sync_sequence_log')),
+      );
     },
   );
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -444,11 +445,31 @@ final goalChangeSetConfirmationServiceProvider =
       name: 'goalChangeSetConfirmationServiceProvider',
     );
 
+/// The active goal agents as [activeGoalNudgesProvider] reads them — id and
+/// name, value-equal. [activeGoalAgentsProvider] re-lists on every agent
+/// write in the app (task, day and relationship agents included); selecting
+/// this keeps such a write from re-running the per-goal reads unless a goal
+/// agent came, went or was renamed. A goal agent's own writes still reach
+/// the source through its per-agent watch.
+class _GoalBannerAgents extends Equatable {
+  _GoalBannerAgents(List<AgentIdentityEntity> agents)
+    : agents = [
+        for (final agent in agents)
+          (agentId: agent.agentId, displayName: agent.displayName),
+      ];
+
+  final List<({String agentId, String displayName})> agents;
+
+  @override
+  List<Object?> get props => [agents];
+}
+
 /// The ACTIVE goal banners across all active goal agents, newest first —
 /// the goal kind's registered source for the shared banner dock
 /// (`nudgeBannerSourcesProvider`, merged in `app_bootstrap.dart`).
 ///
-/// Watches the agent-level notification token so wake writes refresh it;
+/// Watches each goal agent's own notification token so its wake writes
+/// refresh it, and the set of goal agents through [_GoalBannerAgents];
 /// interaction writes go through the sync service (which deliberately
 /// does not notify), so the UI handlers invalidate this provider after
 /// visibility/rating actions.
@@ -475,7 +496,9 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
         },
       );
       ref.onDispose(lifecycleListener.dispose);
-      final agents = await ref.watch(activeGoalAgentsProvider.future);
+      final agents = (await ref.watch(
+        activeGoalAgentsProvider.selectAsync(_GoalBannerAgents.new),
+      )).agents;
       if (disposed) return const [];
       final repository = ref.watch(agentRepositoryProvider);
       final entries = <NudgeBannerEntry>[];
@@ -553,8 +576,9 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
       // `now` was sampled once above, so a banner served before its
       // `staleAt` would otherwise keep rendering until some unrelated
       // event recomputed this provider. Re-evaluate at the earliest
-      // deadline still ahead of us.
-      if (nextDeadline != null) {
+      // deadline still ahead of us. A provider disposed during the reads
+      // above never runs onDispose again, so no timer for a dead ref.
+      if (nextDeadline != null && ref.mounted) {
         final timer = Timer(
           nextDeadline!.difference(now),
           ref.invalidateSelf,

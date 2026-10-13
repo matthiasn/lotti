@@ -116,3 +116,33 @@ class SelectPlanCapture extends QueryInterceptor {
     return executor.runSelect(statement, args);
   }
 }
+
+/// Records the `EXPLAIN QUERY PLAN` of every update it intercepts whose SQL
+/// contains [statementPattern], then runs the update itself. The counterpart
+/// of [SelectPlanCapture] for `UPDATE … (SELECT …)` statements, whose
+/// subquery plan a select interceptor never sees.
+class UpdatePlanCapture extends QueryInterceptor {
+  UpdatePlanCapture(this.statementPattern);
+
+  final Pattern statementPattern;
+  final List<String> _plans = [];
+
+  /// One formatted plan per matching statement, in execution order.
+  List<String> get formattedPlans => List.unmodifiable(_plans);
+
+  @override
+  Future<int> runUpdate(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    if (statement.contains(statementPattern)) {
+      final plan = await executor.runSelect(
+        'EXPLAIN QUERY PLAN $statement',
+        args,
+      );
+      _plans.add(plan.map((row) => row.toString()).join('\n'));
+    }
+    return executor.runUpdate(statement, args);
+  }
+}
