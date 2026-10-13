@@ -5,17 +5,17 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-10-13T12:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-09-10
+    last_modified: 2026-10-04
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
-    last_modified: 2026-09-10
+    last_modified: 2026-10-04
 ---
 
 # Ownership and consumers
@@ -23,7 +23,9 @@ sources:
 `AgentChatView` supplies the shared conversation surface used by goal and
 relationship agents and [scoped queries](query-chat.md). Query hosts supply
 their own projected history and conversation ID, activity and footer slots,
-and disable reply-driven scrolling while older evidence is being inspected.
+and turn off scrolling on new replies (`scrollOnReplies: false`) so a reader
+stays on earlier evidence; a new user turn, or the start of sending, still
+scrolls to the latest message.
 `groupAttachmentsWithReply` places a consumer's supporting widgets inside the
 reply surface and its reading width, under a transparent Material ancestor for
 interactive disclosures. `composerShape` selects the input shell; pill composers
