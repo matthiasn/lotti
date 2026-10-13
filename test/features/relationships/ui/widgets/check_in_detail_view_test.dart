@@ -48,6 +48,23 @@ import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 
+/// What the timeline's link list holds, changeable mid-test so a link can
+/// land after the detail it belongs to.
+class _Links extends Notifier<List<EntryLink>> {
+  _Links(this._initial);
+  final List<EntryLink> _initial;
+
+  @override
+  List<EntryLink> build() => _initial;
+
+  // ignore: avoid_setters_without_getters
+  set links(List<EntryLink> next) => state = next;
+}
+
+final _linksProvider = NotifierProvider<_Links, List<EntryLink>>(
+  () => _Links(const []),
+);
+
 class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
   _FixedDurationSuggestions(this.values);
   final List<Duration> values;
@@ -160,7 +177,10 @@ void main() {
               transcription,
             ),
             audioRecorderControllerProvider.overrideWith(() => recorder),
-            sortedLinkedEntriesProvider('c-1').overrideWith((ref) => links),
+            _linksProvider.overrideWith(() => _Links(links)),
+            sortedLinkedEntriesProvider(
+              'c-1',
+            ).overrideWith((ref) => ref.watch(_linksProvider)),
             checkInDurationSuggestionsControllerProvider.overrideWith(
               () => _FixedDurationSuggestions(const [Duration(minutes: 45)]),
             ),
@@ -549,6 +569,40 @@ void main() {
         }
       });
     }
+
+    // The entries and their links reload on their own notifications: when
+    // the link lands after the detail, the link list's change alone must
+    // bring the check-in up to date.
+    testWidgets('a link landing after the detail touches the check-in', (
+      tester,
+    ) async {
+      final old = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(updatedAt: DateTime(2026, 1, 2)),
+      );
+      stubDetail(checkIn(), entries: [old]);
+      when(
+        () => getIt<JournalDb>().journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      await pump(tester);
+      verifyNever(() => repository.touchCheckIn(any()));
+
+      final attachedAt = at.add(const Duration(minutes: 5));
+      ProviderScope.containerOf(
+        tester.element(find.byType(CheckInDetailView)),
+      ).read(_linksProvider.notifier).links = [
+        EntryLink.basic(
+          id: 'c-1->${old.meta.id}',
+          fromId: 'c-1',
+          toId: old.meta.id,
+          createdAt: attachedAt,
+          updatedAt: attachedAt,
+          vectorClock: null,
+        ),
+      ];
+      await tester.pumpAndSettle();
+
+      verify(() => repository.touchCheckIn('c-1')).called(1);
+    });
 
     // Codex review on #4348: the check-in's updatedAt is the agent's
     // "evidence changed" signal, and a cancelled picker changed nothing.
