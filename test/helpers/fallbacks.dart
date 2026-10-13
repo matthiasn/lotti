@@ -297,6 +297,9 @@ void registerAllFallbackValues() {
   registerFallbackValue(Future<void>.value());
   registerFallbackValue(Uint8List(0));
   registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));
+  // Services taking a `BuildContext` (EntryCreationService's sheets) are
+  // verified with `any()` for it.
+  registerFallbackValue(MockBuildContext());
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);

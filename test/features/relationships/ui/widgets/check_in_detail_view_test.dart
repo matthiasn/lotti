@@ -17,8 +17,10 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -45,6 +47,23 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+
+/// What the timeline's link list holds, changeable mid-test so a link can
+/// land after the detail it belongs to.
+class _Links extends Notifier<List<EntryLink>> {
+  _Links(this._initial);
+  final List<EntryLink> _initial;
+
+  @override
+  List<EntryLink> build() => _initial;
+
+  // ignore: avoid_setters_without_getters
+  set links(List<EntryLink> next) => state = next;
+}
+
+final _linksProvider = NotifierProvider<_Links, List<EntryLink>>(
+  () => _Links(const []),
+);
 
 class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
   _FixedDurationSuggestions(this.values);
@@ -158,7 +177,10 @@ void main() {
               transcription,
             ),
             audioRecorderControllerProvider.overrideWith(() => recorder),
-            sortedLinkedEntriesProvider('c-1').overrideWith((ref) => links),
+            _linksProvider.overrideWith(() => _Links(links)),
+            sortedLinkedEntriesProvider(
+              'c-1',
+            ).overrideWith((ref) => ref.watch(_linksProvider)),
             checkInDurationSuggestionsControllerProvider.overrideWith(
               () => _FixedDurationSuggestions(const [Duration(minutes: 45)]),
             ),
@@ -237,6 +259,31 @@ void main() {
 
     expect(find.byKey(const ValueKey('check-in-detail-empty')), findsOneWidget);
     expect(find.byType(LinkedEntriesWidget), findsNothing);
+  });
+
+  // A task started from the Add sheet is linked from the check-in but is
+  // not something it holds as evidence; the timeline still lists it, so
+  // the page must not claim nothing was added.
+  testWidgets('a check-in with only a linked task shows its timeline, not '
+      'the empty invitation', (tester) async {
+    stubDetail(checkIn());
+    when(
+      () => getIt<JournalDb>().journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    links = [
+      EntryLink.basic(
+        id: 'c-1->task-1',
+        fromId: 'c-1',
+        toId: 'task-1',
+        createdAt: at,
+        updatedAt: at,
+        vectorClock: null,
+      ),
+    ];
+    await pump(tester);
+
+    expect(find.byType(LinkedEntriesWidget), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);
   });
 
   // A short timeline has nothing to filter: the Timer/Audio/Images pills
@@ -445,6 +492,115 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(photoImports, ['c-1 in crew']);
+      verify(() => repository.touchCheckIn('c-1')).called(1);
+    });
+
+    // The long tail — a timer, a linked task, a pasted image — is the
+    // logbook's own Add sheet, hosted by the check-in like any entry; the
+    // sheet itself leaves out what only a task holds.
+    testWidgets("the plus opens the logbook's Add sheet on the check-in", (
+      tester,
+    ) async {
+      final creation = MockEntryCreationService();
+      when(
+        () => creation.showCreateEntryModal(
+          any(),
+          linkedFromId: any(named: 'linkedFromId'),
+          categoryId: any(named: 'categoryId'),
+          imageAnalysisTrigger: any(named: 'imageAnalysisTrigger'),
+        ),
+      ).thenAnswer((_) async {});
+      overrides = [entryCreationServiceProvider.overrideWithValue(creation)];
+      stubDetail(checkIn());
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-add')));
+      await tester.pumpAndSettle();
+
+      // Its images are analysed as the bar's own photos are — on the
+      // person's terms, the check-in saved once a description lands.
+      final trigger = verify(
+        () => creation.showCreateEntryModal(
+          any(),
+          linkedFromId: 'c-1',
+          categoryId: 'crew',
+          imageAnalysisTrigger: captureAny(named: 'imageAnalysisTrigger'),
+        ),
+      ).captured.single;
+      expect(trigger, isA<CheckInPhotoAnalysisTrigger>());
+    });
+
+    // Codex review on #4778: a picture imported before keeps its entity —
+    // and its old date — when attached again, so the link's creation is
+    // what says the check-in gained evidence.
+    for (final (label, attachedAfterSave, touches) in [
+      ('attached after the check-in was saved touches it', true, true),
+      ('attached before the check-in was saved leaves it', false, false),
+    ]) {
+      testWidgets('a reused older picture $label', (tester) async {
+        final old = testImageEntry.copyWith(
+          meta: testImageEntry.meta.copyWith(
+            updatedAt: DateTime(2026, 1, 2),
+          ),
+        );
+        stubDetail(checkIn(), entries: [old]);
+        when(
+          () => getIt<JournalDb>().journalEntityById(any()),
+        ).thenAnswer((_) async => null);
+        final attachedAt = attachedAfterSave
+            ? at.add(const Duration(minutes: 5))
+            : at.subtract(const Duration(minutes: 5));
+        links = [
+          EntryLink.basic(
+            id: 'c-1->${old.meta.id}',
+            fromId: 'c-1',
+            toId: old.meta.id,
+            createdAt: attachedAt,
+            updatedAt: attachedAt,
+            vectorClock: null,
+          ),
+        ];
+        await pump(tester);
+
+        if (touches) {
+          verify(() => repository.touchCheckIn('c-1')).called(1);
+        } else {
+          verifyNever(() => repository.touchCheckIn(any()));
+        }
+      });
+    }
+
+    // The entries and their links reload on their own notifications: when
+    // the link lands after the detail, the link list's change alone must
+    // bring the check-in up to date.
+    testWidgets('a link landing after the detail touches the check-in', (
+      tester,
+    ) async {
+      final old = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(updatedAt: DateTime(2026, 1, 2)),
+      );
+      stubDetail(checkIn(), entries: [old]);
+      when(
+        () => getIt<JournalDb>().journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      await pump(tester);
+      verifyNever(() => repository.touchCheckIn(any()));
+
+      final attachedAt = at.add(const Duration(minutes: 5));
+      ProviderScope.containerOf(
+        tester.element(find.byType(CheckInDetailView)),
+      ).read(_linksProvider.notifier).links = [
+        EntryLink.basic(
+          id: 'c-1->${old.meta.id}',
+          fromId: 'c-1',
+          toId: old.meta.id,
+          createdAt: attachedAt,
+          updatedAt: attachedAt,
+          vectorClock: null,
+        ),
+      ];
+      await tester.pumpAndSettle();
+
       verify(() => repository.touchCheckIn('c-1')).called(1);
     });
 

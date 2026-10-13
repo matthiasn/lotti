@@ -149,15 +149,22 @@ class EntryCreationService {
 
   /// Opens the "create entry" menu modal — the long-tail items the task
   /// action bar's primary affordances do not expose.
+  ///
+  /// [imageAnalysisTrigger] replaces the automatic image analysis for the
+  /// sheet's image rows (import, screenshot, paste) — for a host whose images
+  /// are analysed on another subject's terms, as a check-in's are on its
+  /// person's.
   Future<void> showCreateEntryModal(
     BuildContext context, {
     String? linkedFromId,
     String? categoryId,
+    ImageAnalysisTrigger? imageAnalysisTrigger,
   }) {
     return CreateEntryModal.show(
       context: context,
       linkedFromId: linkedFromId,
       categoryId: categoryId,
+      imageAnalysisTrigger: imageAnalysisTrigger,
     );
   }
 }

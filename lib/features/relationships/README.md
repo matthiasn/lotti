@@ -133,7 +133,9 @@ person's category and name above the title, its when, how, how long and how
 it felt as the task's read-out tags that edit in place, its topics as one
 tag, and *Edit check-in* where a task keeps *Details*; the words it was
 logged with under a faint rule, then its timeline, with a floating bar
-that adds a dictation, a comment or photos; its row in the log says what it
+that adds a dictation, a comment or photos — and, behind its plus, the
+logbook's Add sheet for a timer, a linked task or a pasted image; its row in
+the log says what it
 holds. Adding
 to a check-in, or a recording's transcript arriving later, brings the
 briefing up to date, and everything a check-in holds is part of what the

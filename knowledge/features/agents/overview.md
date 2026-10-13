@@ -5,33 +5,33 @@ description: The persisted agent runtime — agent kinds, their startup wiring, 
 resource: ../../../lib/features/agents
 tags: [agents, runtime, wake, ai]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-10-13T12:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-08-01
+    last_modified: 2026-10-11
   - id: constants
     resource: ../../../lib/classes/agents/agent_constants.dart
     title: AgentKinds and AgentLinkTypes
-    last_modified: 2026-07-24
+    last_modified: 2026-10-04
   - id: runtime-registry
     resource: ../../../lib/features/agents/state/agent_runtime_registry.dart
     title: AgentWakeRunner, AgentRuntimeMaintenance and the setup-sheet launcher
-    last_modified: 2026-08-06
+    last_modified: 2026-10-04
   - id: wake-executor
     resource: ../../../lib/features/agents/state/agent_wiring.dart
     title: wireWakeExecutor — kind routing and the registry lookup
-    last_modified: 2026-08-06
+    last_modified: 2026-10-06
   - id: import-guard
     resource: ../../../test/architecture/feature_import_direction_test.dart
     title: The enforced import direction between agents and daily_os_next
-    last_modified: 2026-08-07
+    last_modified: 2026-10-04
   - id: enums
     resource: ../../../lib/classes/agents/agent_enums.dart
     title: WakeReason and AgentLifecycle
-    last_modified: 2026-07-13
+    last_modified: 2026-10-04
   - id: adr-0001
     resource: ../../../docs/adr/0001-agent-capabilities-runtime-model.md
     title: ADR 0001 — Agent capabilities runtime model
@@ -59,8 +59,8 @@ verifiable saved quotations, gated by the source's current privacy metadata.
 | Kind | Slot | Workflow | Trigger shape |
 |------|------|----------|---------------|
 | `task_agent` | `activeTaskId` | `TaskAgentWorkflow` | task notifications, creation, reanalysis, transcription-complete |
-| `project_agent` | `activeProjectId` | `ProjectAgentWorkflow` | creation, direct project edits, daily scheduled digest |
-| `event_agent` | `activeEventId` | `EventAgentWorkflow` | creation (content-gated), direct event edits |
+| `project_agent` | `activeProjectId` | `ProjectAgentWorkflow` | creation, manual reanalysis, update slots while the report is stale (synced and leased, every 1–24 h from 06:00; a direct project edit only marks the report stale) |
+| `event_agent` | `activeEventId` | `EventAgentWorkflow` | creation (content-gated), reanalysis, direct event edits (subscribed at creation only — see below) |
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 | `day_agent` | day workspace (`day:<dayId>`), no single slot | `DayAgentWorkflow` | day-scoped pre-warms and capture wakes |
 | `goal_agent` | goal spec head (no single slot) | `GoalAgentWorkflow` | deterministic cadence, signal subscriptions, escalation wakes |
@@ -72,15 +72,21 @@ and service live in [`daily_os_next`](../daily_os_next/), not here — and
 **nothing in `features/agents` imports them.** The goal agent is the
 deterministic-first goal coach (ADRs 0053–0054); its workflow, evaluation and
 service live in [`goals`](../goals.md), also outside this tree, and it plugs in
-through the same registry mechanism as the day agent.
+through the same registry mechanism as the day agent. So does the relationship
+agent, whose workflow lives in
+[`relationships`](../../../lib/features/relationships/workflow/relationship_agent_workflow.dart).
 
 ## How an owning feature plugs a kind in
 
 The first four kinds above are wired directly in `wireWakeExecutor`, because this
-feature owns their workflows. `day_agent` is not: it is contributed through the
-registries in `agent_runtime_registry.dart`, which default to empty and are
-overridden in the composition root (`appFeatureWiringOverrides`) — the one place
-allowed to see both features.
+feature owns their workflows: the improver, project and event agents inline, the
+task agent as the fallback after the registry lookup. `day_agent`, `goal_agent`
+and `relationship_agent` are not: they are contributed through the registries in
+`agent_runtime_registry.dart`, which default to empty and are overridden in the
+composition root (`buildProviderOverrides`, which spreads
+`appFeatureWiringOverrides`; the sync attachment is added there only when
+`SyncEventProcessor` is registered) — the one place allowed to see both
+features.
 
 | Registry | Contributes | Consumed by |
 |----------|-------------|-------------|
@@ -167,7 +173,12 @@ stateDiagram-v2
   Active --> Destroyed: destroyAgent()
   Dormant --> Destroyed: destroyAgent()
   Destroyed --> [*]: optional local-only deleteAgent()
+  Active --> [*]: deleteAgent() — destroys first
+  Dormant --> [*]: deleteAgent() — destroys first
 ```
+
+`pauseAgent()` also halts the agent in the orchestrator: a running wake is
+aborted and queued wakes are dropped.
 
 Resuming from `AgentControls` re-reads the persisted identity after
 `resumeAgent()` and restores only what that row says: an agent that is still
@@ -189,26 +200,36 @@ service path reaching it.
 ```mermaid
 flowchart TD
   Init["agentInitializationProvider"]
-  Init --> Abandon["AgentRepository.abandonOrphanedWakeRuns()<br/>stale `running` rows → `abandoned`"]
-  Init --> Wire["Assign WakeOrchestrator.wakeExecutor per agent kind"]
+  Init --> Sync["agentSyncAttachmentProvider: attachRepository, then attachRuntime<br/>(only if SyncEventProcessor is registered)"]
+  Sync --> Abandon["AgentRepository.abandonOrphanedWakeRuns()<br/>stale `running` rows → `abandoned`"]
+  Init --> Wire["Assign one WakeOrchestrator.wakeExecutor<br/>that routes by agent kind"]
   Init --> Start["WakeOrchestrator.start(localUpdateStream)"]
   Init --> Sched["ScheduledWakeManager.start() — hourly poll"]
   Init --> Activity["ProjectActivityMonitor.start()"]
   Init --> Seed["Seed templates, profiles, souls<br/>(skills are built-in code, not seeded)"]
   Init --> Restore["Bulk-restore subscriptions and deferred wakes"]
   Restore -->|service snapshot failure| Abort["Fail initialization for retry<br/>one agentRuntime diagnostic"]
-  Init --> Sync["Wire SyncEventProcessor (if registered in GetIt)"]
+  Restore --> Intents["WakeOrchestrator.restoreWakeIntents()"]
+  Init --> Resume["Resume interrupted change-set confirmations<br/>(task, project, event; failures contained)"]
+  Init --> Sweep["AgentRetentionService.sweep() — not awaited"]
 ```
+
+The diagram keeps to the steps a reader needs; `agent_providers.dart` also
+wires project-slot refusals and the wake coordinator, and runs the seed
+tombstone migration before seeding.
 
 `ScheduledWakeManager` polls hourly for **both** due `scheduledWakeAt` state
 values and due `ScheduledWakeEntity` records — the Daily OS planner's day-scoped
-pre-warms (ADR 0022).
+pre-warms (ADR 0022) and digest, project update slots, goal and relationship
+escalations, and goal chat recovery. A project agent's legacy state-level
+`scheduledWakeAt` is retired without firing.
 
 Hourly is the coarse net, not the resolution. Both queries filter to what is
 *already* due, so every pass ends by arming a one-shot re-check for the
-nearest pending record still in the future (`_armNextDeadlineRecheck`),
-capped at the poll interval — beyond that the tick is fine enough, and it
-re-arms as the deadline comes closer. Without it a record due two minutes
+nearest pending `ScheduledWakeEntity` due within the poll interval
+(`_armNextDeadlineRecheck`) — one due later is left to the hourly tick, which
+re-arms as the deadline comes closer, and a state-level `scheduledWakeAt` gets
+no re-check. Without it a record due two minutes
 from now waited up to an hour for the next tick, which is what a relationship
 briefing's settle window does: it defers the refresh by two minutes on
 purpose. The one timer serves every caller, so the **earliest** target wins —
@@ -231,19 +252,25 @@ immediately and clear the persisted marker. A completed subscription wake only
 writes a new `nextWakeAt` when follow-up work is still queued, so the wake
 surfaces show pending work rather than a cooldown with nothing left to run.
 
-The startup coordinator invokes task, day and project restoration in parallel.
-Each service bulk-loads its own inputs before entering its own per-agent loop:
-task and project services load states and typed links, while the day service
-loads states after discarding identities with no valid day context. Event
-restoration follows the same per-service bulk boundary when invoked. There is no
+The startup coordinator invokes task restoration, every
+`AgentRuntimeMaintenance` contributor's restoration (day, goal, relationship)
+and project restoration in parallel, then `restoreWakeIntents()`. Each service
+bulk-loads its own inputs before entering its own per-agent loop: task and
+project services load states and typed links, while the day service loads
+states after discarding identities with no valid day context. **Event agents
+have no startup restoration:** their direct-edit subscription is registered only
+when the agent is created, and resuming one from `AgentControls` does not
+re-register it either, so after a restart an event agent wakes only on
+reanalysis. There is no
 cross-service snapshot barrier, so one service may already have restored agents
 when another service's preload fails. The coordinator records one
 `agentRuntime` error and rethrows, keeping initialization failed and eligible
 for retry instead of treating partial restoration as success. Re-running the
 pass is safe because runtime subscription registration is idempotent. Failures
 in in-memory subscription or wake registration after a successful service
-snapshot remain isolated to the affected agent, because the database is no
-longer queried inside that loop.
+snapshot remain isolated to the affected agent by a per-agent try/catch; the
+project loop still re-reads each identity, retires legacy deadlines and arms
+its update slot inside it.
 
 Remote `agent_project` links are reconciled live as well as at startup. The
 sync processor installs or removes the direct-project subscription when the
@@ -264,6 +291,7 @@ arrives, so either sync ordering closes the snapshot-to-live-update gap.
 * [Persistence and sync](persistence-and-sync.md) - the `agent.sqlite` entity and link model, plus what syncs and what stays local.
 * [Projection kernel](projection.md) - the pure fold under the agent log, and the permutation-invariance proof that makes replay order irrelevant.
 * [Scoped query conversations](query-chat.md) - isolated discovery, quotes, multi-chat persistence and privacy.
+* [Chat input and reasoning](chat-input-and-reasoning.md) - the shared voice recorder, waveform and reasoning disclosure.
 * [UI surfaces](ui-surfaces.md) - the AI summary card, internals panel, settings tabs and sidebar.
 
 # Code reading guide
@@ -289,5 +317,5 @@ call.
 
 **Profile-aware compaction watermarks.** Trigger and retain thresholds are
 global 50k/20k defaults rather than derived from the resolved model's context
-window and local-versus-hosted inference. `AgentWakeMemory`'s constructor
-parameters are the seam.
+window and local-versus-hosted inference. The `budget` and `retainTokens`
+parameters of `AgentWakeMemory.compactAndAssemble` are the seam.

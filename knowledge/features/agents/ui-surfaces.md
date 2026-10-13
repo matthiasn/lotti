@@ -5,13 +5,13 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-14T12:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5.5, at: 2026-10-13T12:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
-    last_modified: 2026-08-13
+    last_modified: 2026-10-07
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
@@ -27,11 +27,11 @@ sources:
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
-    last_modified: 2026-06-20
+    last_modified: 2026-09-16
   - id: sidebar
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue
-    last_modified: 2026-07-25
+    last_modified: 2026-09-05
 ---
 
 None of these widgets owns business logic. They read from the providers in
@@ -54,8 +54,9 @@ What's New keeps loading images: they are the project's own release art.
 # `AiSummaryCard` — the task-details AI surface
 
 The single AI surface on the task detail page, replacing the earlier
-`AgentSuggestionsPanel` + `TaskAgentReportSection` split. It renders **below**
-the task's checklists so the user's own work comes first.
+`AgentSuggestionsPanel` + `TaskAgentReportSection` split. It renders **above**
+the task's checklists and linked tasks, right under the task header (and any
+legacy body).
 
 ```mermaid
 flowchart LR
@@ -70,9 +71,10 @@ flowchart LR
 
 Contents:
 
-- **TLDR header** (`AgentReportEntity.tldr`, falling back to the report's first
-  paragraph) plus an inline expandable Goal / Achieved / Next / Learnings block
-  under a *Read more / Show less* pill. *Chat* (`QueryAskButton(disc: true)`,
+- **TLDR header** (`AgentReportEntity.tldr`, falling back to the report's full
+  content when there is no separate TLDR — `resolveReportTldr`) plus an inline
+  expandable Goal / Achieved / Next / Learnings block under a quiet *Read more /
+  Show less* text link. *Chat* (`QueryAskButton(disc: true)`,
   a glyph-only `DsAiDiscButton` announced as *Ask about this task*) leads the
   header's trailing rail, left of the read-aloud `TtsPlayButton`, which wears
   the same disc. It stands there whether or not a summary exists, and is
@@ -82,14 +84,17 @@ Contents:
   name; it is never the task title.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
-  confirm, `< -70px` → reject; in between snaps back). All confirms route
-  through `ChangeSetConfirmationService`. *Confirm all* batches `confirmAll` over
+  confirm, `< -70px` → reject; in between snaps back). Change-set confirms
+  route through `ChangeSetConfirmationService`; backfill rows go to
+  `confirmBackfillSuggestion` / `dismissBackfillSuggestion`, and a host may
+  supply its own `onConfirm` / `onReject`. *Confirm all* batches `confirmAll` over
   distinct change sets. The list ends with the task's
   [inference backfill suggestions](../ai/inference-backfill.md) — mechanical
   rows with no change set behind them, which confirm into the backfill queue,
   reject into a device-local dismissal, and are all queued by *Confirm all*.
 - **`History · N`** — lazily expands resolved ledger entries with
-  `Confirmed` / `Dismissed` tags and a strikethrough. It is a section of its
+  `Confirmed` / `Dismissed` tags; dismissed and retracted entries are struck
+  through and dimmed, confirmed ones are not. It is a section of its
   own (`ProposalHistorySection`), not a rail inside *Proposed changes*, and it
   rides with the expanded report: collapsed, the card shows the summary and the
   decisions still open and nothing else. A report with no *Read more* — no
@@ -110,13 +115,13 @@ the widget owns only the presentation and countdown expiry callback.
 ## Reading column and information grouping
 
 Report reading and agent controls sit in separate information groups. The report
-is the hero: header, TLDR (reading measure capped at ~75 characters even when the
-card is wider, rendered with the editor-aligned `body.bodySmall` token),
+is the hero: header, TLDR (reading measure capped at `TldrBody.maxReadingWidth`,
+900 logical px, even when the card is wider, rendered with the editor-aligned `body.bodySmall` token),
 disclosure and proposals form one linear reading column at every width. With no
 open proposals there is no *Proposed changes* section at all — the header, its
 divider and its padding go with the rows, because an empty band said nothing the
 missing rows had not already said. The disclosure row carries the summary's
-trailing gap inside its own 40-high tap target, so the card adds no bottom inset
+trailing gap inside its own 48-high (`TapTargets.minimum`) tap target, so the card adds no bottom inset
 under the report body. Proposal prose uses the same unmodified `body.bodySmall` metrics as the
 report rather than a separate line height.
 
@@ -126,7 +131,8 @@ body's own size. Colour alone separates it — **taxonomy never gets a chip or t
 accent family**. One anatomy at every width: text leads, verdict actions trail
 vertically centred, capped at the summary's reading measure. The per-row ✕
 (neutral wash) and ✓ (accent wash) are matched in weight and asymmetric in hue,
-each in a 40×40 hit zone with a `step2` dead band between them.
+each in a 48×48 hit zone (`RowActions.buttonSize`) around a `step7` disc, with a
+`step2` dead band between them.
 
 ## What the card says about freshness
 
@@ -255,15 +261,19 @@ The band pays `spacing.step4` horizontally and each row adds `spacing.step2`, so
 every glyph lands on `spacing.cardPadding`, while interactive rows still get ink
 that breathes around their content.
 
-**Vertically the band declares no gaps at all, and that is the contract.** Its
-*interactive* rows — the trigger, the switch row, the identity rows — are
-touch-target boxes taller than the ink inside them, on one `spacing.step8`
-minimum, so each contributes ~10 logical px of air above and below the text a
-reader sees. The schedule line is the exception and stays a bare text row
-(`_ScheduleLabel` reserves width, never height); it needs no target of its own,
-and the boxes above and below it space it. Declared gaps stack on top of all
-that and the band pays twice: `step5` between two stacked rows rendered as
-~34px of visible space. Space the row boxes, not the text inside them.
+**Vertically the band spaces its row boxes, not the text inside them.** The
+band itself pays `spacing.step2` vertical padding, and the cadence, budget and
+interval rows each add `step2`. Its *interactive* rows are touch-target boxes
+taller than the ink inside them, at their own minimums: the switch row and
+*Skip once* at `spacing.step7`, the identity rows at `step6`; the trigger is a
+dense 24-high button. Within the automation row the only declared gaps are the
+`DesignSystemDivider` rule (with `step1` vertical padding) between the state
+group and the schedule group when the row stacks, and a `step3` gap inside the
+stacked state pair. The schedule line stays a bare text row (`_ScheduleLabel`
+reserves width, never height); it needs no target of its own, and the boxes
+above and below it space it. Extra declared gaps stack on top of those boxes and
+the band pays twice — an earlier `step5` between two stacked rows rendered as
+~34px of visible space.
 
 The switch row earns its height rather than reserving it. An earlier revision
 wrapped the 40×24 switch in a `step9` box "for a full-size interaction target",
@@ -301,9 +311,10 @@ work", and nothing in the maintenance band shares a type tier with
 
 `Skip once` is the trigger's opposite and is inked at `aiCard.bodyText`: the
 same register as the countdown it acts on. An action rendered *fainter* than the
-static text beside it inverts the two. It carries no underline — the shared
-hover fill is the affordance, and a decorated cancel out-decorated the value it
-cancels while giving the band a third dialect for "this is tappable".
+static text beside it inverts the two. It carries no underline and no hover
+fill — the word's own ink lifts a step (`bodyText` → `titleText`) on hover,
+focus and press; a decorated cancel out-decorated the value it cancels while
+giving the band a third dialect for "this is tappable".
 
 **The alert tint is spent on the freshness glyph alone.** The word stays
 `aiCard.bodyText` in both states. Tinting it too made the quiet maintenance
@@ -312,11 +323,12 @@ actually changes the task — and in dark it read at *lower* contrast than the
 plain ink it replaced. The state is already said twice, in the glyph and in the
 word, so colour is not carrying it alone.
 
-Both `Skip once` and the model-identity row are `DesignSystemInlineAction`s
-rather than open-coded `Material`/`InkWell` scaffolds, so they share one radius,
-target, inset and state-layer behaviour — and one accessibility fix, since both
-predecessors excluded semantics *above* their `InkWell` and so published a
-button with no tap action.
+Both `Skip once` (`_SkipAction`) and the model-identity row
+(`_SetupIdentityRow`) are `DsQuietInk` quiet links — no hover fill — with an
+explicit `Semantics(button: true, label:)` above the ink and `ExcludeSemantics`
+below it. That ordering is the accessibility fix: both predecessors excluded
+semantics *above* their `InkWell` and so published a button with no tap
+action.
 
 One layout detail is easy to get wrong: **`DesignSystemButton` pays its own
 content inset**, so a button box on the leading edge puts its *glyph* inside the
@@ -338,7 +350,7 @@ flowchart TD
   T1 -->|yes| W1["one line, short sentence"]
   T1 -->|no| T2{"...with '1:30'?"}
   T2 -->|yes| W2["one line, value only"]
-  T2 -->|no| S["stack: state / schedule / switch<br/>(no declared gaps; the step8 target<br/>boxes space themselves)"]
+  T2 -->|no| S["stack: state / rule / schedule / switch<br/>(the divider rule is the one<br/>declared gap)"]
   S --> S1{"freshness + trigger<br/>fit one line?"}
   S1 -->|no| S2["freshness above the trigger"]
   S --> S3{"countdown + 'Skip once'<br/>fit one line?"}
@@ -373,9 +385,10 @@ to date" only after the run has ended, and a failed run leaves it reading
 whatever the watermark says. The band hides the countdown while a run is in
 flight, which is exactly when the caller's flag is most likely still `false`:
 without the running term, that frame read "Up to date" with the spinner beside
-it. The same flag is what decides whether the summary card's strip speaks at
-all, so a card that says nothing is a card whose summary is genuinely current
-— never one that has simply not caught up. Which runs count is the caller's to say: `isRunning` (agent-wide, and what
+it. On the **project** card, which passes `showsFreshConfirmation: false`, the
+same flag decides whether the strip speaks at all, so a card that says nothing
+is a card whose summary is genuinely current — never one that has simply not
+caught up; the task card's compact strip always speaks. Which runs count is the caller's to say: `isRunning` (agent-wide, and what
 keeps the trigger busy) is the default, right for task agents whose every
 completed wake advances the watermark; the goal page passes
 `goalReportWakeInFlightProvider` as `isRefreshingReport`, because a goal
@@ -384,7 +397,7 @@ touching the read, and must not declare a fresh one out of date. With
 automation on and nothing pending
 the line reads "Updates on changes", so flipping the switch never leaves a
 hole that resizes the panel. The whole switch row is the interaction target — tapping the label
-toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
+toggles the setting — on a `spacing.step7` minimum; the switch's
 own 40×24 track is too short in one dimension to be the target by itself. When
 setup is missing, the disabled toggle explains itself via an info tooltip and
 the trigger is disabled rather than hidden.
@@ -392,8 +405,11 @@ the trigger is disabled rather than hidden.
 ## The setup region
 
 It compares the live route fingerprint with the immutable final-author route on
-the visible report. Equal routes collapse to one editable identity line;
-different routes render separate *Current setup* and *This report* lines.
+the visible report. Equal routes collapse to one editable identity line (*Current setup* appears
+only in its semantics label); different routes add a separate *This report*
+attribution line, the one visible label. Above `TextScales.large` the
+attribution row stops shedding segments: its route moves to its own line under
+the label and wraps.
 
 Both rows **shrink-wrap** — a stretching `Column` hands its children a *tight*
 width, which silently defeats the `MainAxisSize.min` they declare and inflates
@@ -408,13 +424,13 @@ fixed `This report` label never gives ground; its route does. The full route sta
 in the semantics label, and the setup row's tooltip **names its action**
 (`Change AI setup`) rather than repeating a route that is usually fully visible.
 
-**Both rows are the same row box**, sharing a horizontal inset and a `step8`
-minimum height. That is what keeps the card's bottom margin constant whether or
-not the attribution line exists. Padding alone could not: the tappable row's ink
-box centres a `step5` glyph in `step8` and so contributes optical air below its
-text that a bare text row does not, so a revision that equalised the *declared*
-padding still shifted the card's bottom edge on screen as a report aged into a
-different route. Space row boxes, not text.
+**Both rows are the same row box**, sharing a horizontal inset and a `step6`
+minimum height (the setup row's glyph is `IconSizes.s`). That is what keeps the
+card's bottom margin constant whether or not the attribution line exists.
+Padding alone could not: the tappable row's ink box contributes optical air
+below its text that a bare text row does not, so a revision that equalised the
+*declared* padding still shifted the card's bottom edge on screen as a report
+aged into a different route. Space row boxes, not text.
 
 ## Proposal accept/reject motion
 
@@ -473,8 +489,9 @@ Invariants:
   `onResolveEnd(removed:)` prunes on animation complete — or keeps the row on a
   failed write.
 - **Confirm-all** is a staggered resolve→collapse sweep (per-row
-  `ProposalMotion.staggerStep * cascadeIndex`) with **one** light haptic for the
-  whole gesture. At gesture time the shell synchronously adds every batch
+  `ProposalMotion.staggerStep * min(cascadeIndex, 8)`) with **one**
+  `selectionClick` haptic for the whole gesture (a single row's commit uses
+  `lightImpact`). At gesture time the shell synchronously adds every batch
   fingerprint to `_exitingFingerprints` *before* either persistence or the
   stagger timers begin, so a provider re-query that resolves proposals
   immediately cannot unmount a row mid-animation. This matters most for
@@ -491,11 +508,11 @@ Invariants:
   speaks the verdict plus remaining count; the committed row is
   `ExcludeSemantics`'d immediately so there is no ghost focus; action buttons
   carry explicit `Semantics(button:)` roles and labels.
-- **Entrance reveal** — the dual of the exit. Sections the agent produces *live
-  during a wake* reveal their height open from zero with a fade via
-  `EnterTransition`, so linked entries below ease down instead of being shoved in
-  one frame. It is gated on the agent's `isRunning` flag, so statically loaded
-  content stays instant. `EnterTransition` is one-shot and built on
+- **Entrance reveal** — the dual of the exit. Proposal rows that arrive *after
+  the first seeded batch* reveal their height open from zero with a fade via
+  `SizeFadeEntrance`, so content below eases down instead of being shoved in one
+  frame; the first batch is seeded without animation, so statically loaded
+  content stays instant. `SizeFadeEntrance` is one-shot and built on
   `SizeTransition` rather than `AnimatedSize` on purpose: it reveals once then
   sits inert, leaving a proposal row collapsing *inside* it entirely to that
   row's own choreography — an enclosing `AnimatedSize` would try to re-drive and
@@ -549,16 +566,18 @@ coupling the setup flow to their modal wrappers.
 The overview is a **settings summary, not another picker page**: a grouped
 *Current setup* card exposes the active profile and effective thinking route as
 noun-labelled navigation rows. Automation is intentionally absent because the
-card owns that task-level control. The destructive *Turn off AI for this agent*
-action is isolated below the setup group and expands its confirmation in place.
-"No AI setup" is deliberately not another page — tapping it reveals a compact
-inline explanation with Cancel/confirm directly under the originating row.
+maintenance band in the agent internals panel owns it. The destructive *Turn
+off AI for this agent* action is isolated below the setup group and swaps in
+place for its own explanation with Cancel/confirm — not another page. The model
+row, *Use profile default*, *Copy category default* and *Turn off AI* appear only
+when the sheet is opened for an entity (`entityId`); goal and other
+profile-only opens show the profile row alone.
 
 ```mermaid
 sequenceDiagram
   participant User
   participant Sheet as AgentModelSheet
-  participant Controller as AgentInstanceController
+  participant Controller as _AgentSetupFlowController
   participant TaskUI as Task-column ScaffoldMessenger
 
   User->>Sheet: open profile / provider / model page
@@ -571,17 +590,19 @@ sequenceDiagram
     Sheet->>TaskUI: show scoped confirmation
   else write fails
     Controller-->>Sheet: false / throws
-    Sheet->>Sheet: remain open and show error
+    Sheet->>TaskUI: remain open, show error toast
   end
 ```
 
-Profile and model rows are **terminal choices**: the flow controller persists the
-new `AgentInferenceSetup` first, then closes the whole route and shows the
+Profile and model rows are **terminal choices**: the flow controller
+(`_AgentSetupFlowController`, persisting through `TaskAgentService` —
+`updateAgentProfile`, `updateAgentThinkingModelOverride`,
+`updateAgentInferenceSetup`) persists the new `AgentInferenceSetup` first, then closes the whole route and shows the
 localized confirmation through the `ScaffoldMessenger` captured from the
 task-details column. Model rows optimistically move the selection marker as soon
 as a tap is accepted while a busy guard prevents a second write; a failed write
 restores the persisted selection, leaves the route open, and reports the error
-there.
+through the same captured task-column messenger.
 
 Navigation and toast delivery use the **stable** navigator and messenger captured
 when the sheet opens, so a database-driven Wolt page rebuild cannot misclassify a
@@ -606,12 +627,15 @@ future planner creation.
 
 # `AgentInternalsPanel` and `AgentInternalsBody`
 
-The panel is a dismissable right-side overlay (clamped 600–800 px) reachable from
-two affordances inside the AI card: the agent name link in the header, and the
-*Open agent internals* pill under the expanded report. Both affordances come
-from the shared `TldrHeader` / `TldrBody` pair, so every surface wearing the AI
-card — the task agent section, the goal agent's read, and the relationship
-briefing — reaches the panel the same two ways. It is a thin shell —
+On screens at least 600 px wide the panel is a dismissable right-side overlay
+(clamped 600–800 px); narrower screens get a full-screen modal sliding up from
+the bottom. On the task and project cards it is reachable two ways: the header
+(its whole badge, title and name block is the tap target, from the shared
+`TldrHeader`) and the quiet *Open agent internals* text link under the report,
+which `TldrBody` shows whenever the host passes `onOpenInternals` — not only
+when the report is expanded. The goal agent's read uses `TldrHeader` plus an
+overflow-menu item; the relationship briefing deliberately omits the link and
+offers its own *See activity* button. It is a thin shell —
 header, close button, scrim — hosting the host's optional
 `AgentMaintenanceSection` and then `AgentInternalsBody`, once
 `agentIdentityProvider` resolves. The band sits *above* the tabs because it is
@@ -643,10 +667,12 @@ thinking-model overrides remain hidden on that profile-only path. Because goal
 agents have no template assignment, their Stats row resolves the persisted
 identity profile directly through `goalAgentResolvedSetupProvider`; saving a
 profile invalidates that resolver together with the identity so the effective
-route is shown immediately. With no profile override, or when the selected
-profile can no longer resolve, the same resolver shows the built-in GLM 5.2
-fallback used by `GoalAgentWorkflow` rather than describing a runnable goal
-agent as having broken or missing AI setup. For legacy goal identities that
+route is shown immediately. The resolver (`resolveStandalone`) tries, in
+order: a typed `inferenceSetup`, which resolves strictly — broken or disabled
+never falls through; then the legacy `profileId`; then the Settings default
+profile; and only when **no** default profile is selected, the built-in GLM 5.2
+fallback used by `GoalAgentWorkflow`. A selected default that cannot resolve is
+reported as broken. For legacy goal identities that
 still carry only `AgentConfig.profileId`, the profile-only sheet uses that value
 as its selected base profile until the next save writes the typed setup.
 
@@ -665,24 +691,28 @@ flowchart LR
   Pending --> Throttle["nextWakeAt<br/>deferred wake"]
   Pending --> Schedule["scheduledWakeAt<br/>scheduled wake"]
 
+  Pending --> Record["ScheduledWakeEntity<br/>scheduled record"]
+
   Throttle --> CancelPending["AgentService.cancelPendingWake()"]
   Schedule --> ClearScheduled["AgentService.clearScheduledWake()"]
+  Record --> DismissRecord["AgentService.dismissScheduledWakeRecord()"]
 ```
 
 The **pending-wakes dashboard is intentionally narrower than the full message
 log** — it shows only wake records that can still fire: `nextWakeAt` (the
-per-device deferred subscription deadline), `scheduledWakeAt` (used by project
-agents and template improvers), and pending `ScheduledWakeEntity` records (the
-Daily OS day pre-warms, whose subject is the day id derived from the
-`day:<dayId>` `workspaceKey`).
+per-device deferred subscription deadline), `scheduledWakeAt` (written now only
+by template improvers; a project agent's is a retired legacy field), and pending
+`ScheduledWakeEntity` records — among them the Daily OS day pre-warms, whose
+subject is the day id derived from the `day:<dayId>` `workspaceKey`, and project
+update slots under `ProjectUpdateSlots.workspacePrefix`.
 
-Each pending-wake card owns its own one-second timer and recomputes remaining
-time from `clock.now()` on every tick, so the page does not rebuild the whole
-list every second and the timer does not drift when frames arrive late. Deleting
-a card clears only the represented marker.
+Cards read the page-scoped 1 Hz `wakeCountdownTickerProvider` rather than each
+spawning a `Timer`, and recompute remaining time from `clock.now()` on every
+tick, so the countdown does not drift when frames arrive late. Deleting a card
+clears only the represented marker.
 
 The **instances dashboard stays deliberately lightweight**: it drives the shared
-`AgentListingShell` with kind and lifecycle/status filter axes, showing a single
+`AgentListingShell` with type, lifecycle/status and soul filter axes, showing a single
 result count and a per-group active-count badge when grouped by status. There is
 no aggregate total/active/dormant/destroyed breakdown line.
 
@@ -701,14 +731,16 @@ Five list sections on the template and soul detail pages read a
 | Soul → Info → Soul Evolution History | `soulEvolutionSessionHistoryProvider` | yes — every soul write |
 | Template → Reports tab | `templateRecentReportsProvider` | yes, but only on some events |
 | Template → Stats → Version History | `templateVersionHistoryProvider` | no |
-| Template → Instances | `templateInstanceOverviewProvider` | yes — on the shared agent-update topic |
+| Template → Instances | `templateInstanceOverviewProvider` | yes, but only on template-scoped events (via `templateInstanceTokenBreakdownProvider` → `templateTokenUsageRecordsProvider`), the same gap as Reports |
 
-The Template Instances section (added in #3855) renders one row per running
-agent created from the template, with its task title, status, and the latest
-report one-liner. It is wired into the template detail page through
-`agent_template_detail_sections.dart` and backed by the
-`TemplateInstanceOverview` model and `templateInstanceOverviewProvider` in
-`state/template_query_providers.dart`.
+The Template Instances section (added in #3855) renders one row per instance
+created from the template, whatever its lifecycle: the task title (or the
+agent's display name), a lifecycle pill, *Started · Last active*, the token
+total, a tap that opens the instance and a button that opens its task. It is
+wired into the template detail page through `agent_template_detail_sections.dart`
+and backed by the `TemplateInstanceOverview` model
+(`model/template_instance_overview.dart`) and `templateInstanceOverviewProvider`
+in `state/template_query_providers.dart`.
 
 `agentUpdateStreamProvider(id)` filters `UpdateNotifications.updateStream` down
 to sets *containing* `id`. Soul sections are well served: soul entities carry
@@ -734,7 +766,9 @@ flowchart LR
   Reload -. first load only .-> Shell[spinner / error]
 ```
 
-Each `when` passes `skipLoadingOnReload: true` **and** `skipError: true`. The
+The four soul and template history sections each pass
+`skipLoadingOnReload: true` **and** `skipError: true` to `when`; the Instances
+sliver does not yet, and still swaps to a spinner on reload. The
 distinction matters: `AsyncValue.when` already defaults `skipLoadingOnRefresh` to
 true, so an explicit `invalidate` was never the risk — a *reload* from a watched
 dependency is, and it defaults to showing the spinner. `skipError` covers the
@@ -746,10 +780,11 @@ neither has a previous value to keep.
 
 # Sidebar wake queue
 
-`SidebarActivitySummary` owns the persistent desktop-sidebar representation. It
-watches `ongoingWakeRecordsProvider` and `pendingWakeRecordsProvider`, counts
-scheduled wakes inside a **one-hour lookahead**, and contributes one compact
-`auto_awesome + total` metric beside recording and timer activity.
+`SidebarActivitySummary` owns the persistent representation, on the desktop
+rail and in the mobile drawer. It watches `ongoingWakeRecordsProvider` and
+`pendingWakeRecordsProvider`, counts scheduled wakes inside a **one-hour
+lookahead**, and contributes one compact sparkle (`LottiIcons.aiSpark`) + total
+metric beside recording and timer activity.
 
 ```mermaid
 flowchart LR

@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
@@ -313,11 +314,15 @@ class ImportImageItem extends ConsumerWidget {
   const ImportImageItem(
     this.linkedFromId, {
     this.categoryId,
+    this.analysisTrigger,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+
+  /// Replaces the automatic image analysis when given.
+  final ImageAnalysisTrigger? analysisTrigger;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -336,7 +341,9 @@ class ImportImageItem extends ConsumerWidget {
           context,
           linkedId: linkedFromId,
           categoryId: categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
+          analysisTrigger:
+              analysisTrigger ??
+              ref.read(automaticImageAnalysisTriggerProvider),
         );
         if (context.mounted) {
           Navigator.of(context).pop();
@@ -353,11 +360,15 @@ class CreateScreenshotItem extends ConsumerWidget {
   const CreateScreenshotItem(
     this.linkedFromId, {
     this.categoryId,
+    this.analysisTrigger,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+
+  /// Replaces the automatic image analysis when given.
+  final ImageAnalysisTrigger? analysisTrigger;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -373,7 +384,8 @@ class CreateScreenshotItem extends ConsumerWidget {
         // Pop FIRST, then capture: the subtitle promises exactly this order,
         // and capturing with the sheet still up would put the sheet itself
         // in the shot. Values are read before the pop disposes this ref.
-        final trigger = ref.read(automaticImageAnalysisTriggerProvider);
+        final trigger =
+            analysisTrigger ?? ref.read(automaticImageAnalysisTriggerProvider);
         Navigator.of(context).pop();
         unawaited(
           createScreenshot(
@@ -395,11 +407,15 @@ class PasteImageItem extends ConsumerWidget {
   const PasteImageItem(
     this.linkedFromId, {
     this.categoryId,
+    this.analysisTrigger,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+
+  /// Replaces the automatic image analysis when given.
+  final ImageAnalysisTrigger? analysisTrigger;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -414,9 +430,11 @@ class PasteImageItem extends ConsumerWidget {
       title: context.messages.addActionAddImageFromClipboard,
       subtitle: context.messages.addActionAddImageFromClipboardHint,
       trailing: DsActionRowTrailing.add,
-      onTap: () {
+      onTap: () async {
+        // Read before the pop disposes this ref.
+        final notifier = ref.read(provider.notifier);
         Navigator.of(context).pop();
-        ref.read(provider.notifier).paste();
+        await notifier.paste(analysisTrigger: analysisTrigger);
       },
     );
   }
