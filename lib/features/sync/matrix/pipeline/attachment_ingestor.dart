@@ -10,6 +10,7 @@ import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/atomic_write.dart';
 import 'package:lotti/utils/fd_limits.dart';
@@ -48,6 +49,7 @@ class AttachmentIngestor {
     int? handledEventCapacity,
     this.verboseLogging = true,
     this.localVcDominates,
+    this.activityGate,
   }) : _maxConcurrentDownloads = maxConcurrentDownloads < 0
            ? 0
            : maxConcurrentDownloads,
@@ -61,6 +63,14 @@ class AttachmentIngestor {
   /// downloaded — the check is an optimization, not a correctness
   /// primitive.
   final LocalVectorClockDominanceCheck? localVcDominates;
+
+  /// Holds each queued download until the user stops interacting, so the
+  /// download, the decode and the file write it triggers never land on the
+  /// UI isolate mid-scroll. Awaited before a download starts, never inside
+  /// one: an in-flight download is not held open across a long interaction,
+  /// and the wait does not count against its timeout. When null, downloads
+  /// start as soon as a slot is free.
+  final UserActivityGate? activityGate;
 
   static const int _defaultMaxConcurrentDownloads = 2;
   static const int _defaultHandledAttachmentEventCapacity =
@@ -269,6 +279,8 @@ class AttachmentIngestor {
 
   Future<void> _runDownload(String key, _DownloadRequest request) async {
     try {
+      await activityGate?.waitUntilIdle();
+      if (_disposed) return;
       await _saveAttachment(
         event: request.event,
         relativePath: request.relativePath,

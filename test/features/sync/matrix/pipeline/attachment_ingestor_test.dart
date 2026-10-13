@@ -1084,6 +1084,74 @@ void main() {
     );
   });
 
+  group('AttachmentIngestor — user activity gate', () {
+    const relativePath = 'attachments/gated.json';
+    late MockUserActivityGate gate;
+    late Completer<void> idle;
+    late int downloads;
+
+    setUp(() {
+      gate = MockUserActivityGate();
+      idle = Completer<void>();
+      downloads = 0;
+      when(gate.waitUntilIdle).thenAnswer((_) => idle.future);
+    });
+
+    Future<AttachmentIngestor> schedule() async {
+      final ingestor = AttachmentIngestor(
+        documentsDirectory: tempDir,
+        verboseLogging: false,
+        activityGate: gate,
+      );
+      await ingestor.process(
+        event: _makeEvent(
+          eventId: 'ev-gated',
+          relativePath: relativePath,
+          mime: 'application/json',
+          downloadBytes: utf8.encode('{"gated":true}'),
+          onDownload: () => downloads++,
+        ),
+        logging: logging,
+        attachmentIndex: index,
+        scheduleDownload: true,
+      );
+      return ingestor;
+    }
+
+    test(
+      'a queued download waits for the user to go idle before it starts',
+      () async {
+        final ingestor = await schedule();
+        await pumpEventQueue();
+
+        expect(downloads, 0);
+        expect(File('${tempDir.path}/$relativePath').existsSync(), isFalse);
+
+        idle.complete();
+        await ingestor.whenIdle().timeout(const Duration(seconds: 2));
+
+        expect(downloads, 1);
+        expect(
+          File('${tempDir.path}/$relativePath').readAsStringSync(),
+          '{"gated":true}',
+        );
+        verify(gate.waitUntilIdle).called(1);
+      },
+    );
+
+    test('an ingestor disposed while waiting never downloads', () async {
+      final ingestor = await schedule();
+      await pumpEventQueue();
+
+      ingestor.dispose();
+      idle.complete();
+      await pumpEventQueue();
+
+      expect(downloads, 0);
+      expect(File('${tempDir.path}/$relativePath').existsSync(), isFalse);
+    });
+  });
+
   group('AttachmentIngestor.scheduleDownload — queued download paths', () {
     // These tests exercise _scheduleDownload, _drainQueue, _runDownload,
     // _maybeCompleteIdle (lines 237-292) and the _DownloadRequest constructor
