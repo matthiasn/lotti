@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/sync/matrix/matrix_native_implementations.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -62,6 +63,9 @@ Future<Client> createMatrixClient({
     shareKeysWith: ShareKeysWith.directlyVerifiedOnly,
     sendTimelineEventTimeout: const Duration(minutes: 2),
     database: database,
+    // Attachment decryption and key derivation run on background isolates;
+    // the SDK default runs them on the UI isolate and drops frames.
+    nativeImplementations: MatrixNativeImplementations(),
   );
 }
 

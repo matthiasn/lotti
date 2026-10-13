@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
+import 'package:lotti/features/sync/matrix/matrix_native_implementations.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart' show ShareKeysWith;
 import 'package:mocktail/mocktail.dart';
@@ -44,6 +45,12 @@ void main() {
         // ADR 0045: megolm keys go only to directly verified devices — an
         // unverified device is excluded instead of halting all sends.
         expect(client.shareKeysWith, ShareKeysWith.directlyVerifiedOnly);
+        // Attachment decryption must not run on the UI isolate, which the
+        // SDK's default `NativeImplementations.dummy` does.
+        expect(
+          client.nativeImplementations,
+          isA<MatrixNativeImplementations>(),
+        );
 
         final dbFile = File(
           '${tempDir.path}/$matrixDatabaseDirectoryName/custom_db.db',
