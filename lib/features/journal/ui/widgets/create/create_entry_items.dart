@@ -430,11 +430,11 @@ class PasteImageItem extends ConsumerWidget {
       title: context.messages.addActionAddImageFromClipboard,
       subtitle: context.messages.addActionAddImageFromClipboardHint,
       trailing: DsActionRowTrailing.add,
-      onTap: () {
+      onTap: () async {
         // Read before the pop disposes this ref.
         final notifier = ref.read(provider.notifier);
         Navigator.of(context).pop();
-        unawaited(notifier.paste(analysisTrigger: analysisTrigger));
+        await notifier.paste(analysisTrigger: analysisTrigger);
       },
     );
   }
