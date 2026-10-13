@@ -277,10 +277,14 @@ class AttachmentIngestor {
     _maybeCompleteIdle();
   }
 
-  Future<void> _runDownload(String key, _DownloadRequest request) async {
+  Future<void> _runDownload(String key, _DownloadRequest started) async {
+    var request = started;
     try {
       await activityGate?.waitUntilIdle();
       if (_disposed) return;
+      // A newer event for the path may have arrived during the wait; fetch
+      // that one rather than the stale bytes followed by a re-queue.
+      request = _pendingDownloads[key] ?? request;
       await _saveAttachment(
         event: request.event,
         relativePath: request.relativePath,

@@ -1139,6 +1139,35 @@ void main() {
       },
     );
 
+    test('a newer event for the path that arrives during the wait is the only '
+        'one downloaded', () async {
+      final ingestor = await schedule();
+      await pumpEventQueue();
+      var newerDownloads = 0;
+      await ingestor.process(
+        event: _makeEvent(
+          eventId: 'ev-gated-newer',
+          relativePath: relativePath,
+          mime: 'application/json',
+          downloadBytes: utf8.encode('{"gated":"newer"}'),
+          onDownload: () => newerDownloads++,
+        ),
+        logging: logging,
+        attachmentIndex: index,
+        scheduleDownload: true,
+      );
+
+      idle.complete();
+      await ingestor.whenIdle().timeout(const Duration(seconds: 2));
+
+      expect(downloads, 0);
+      expect(newerDownloads, 1);
+      expect(
+        File('${tempDir.path}/$relativePath').readAsStringSync(),
+        '{"gated":"newer"}',
+      );
+    });
+
     test('an ingestor disposed while waiting never downloads', () async {
       final ingestor = await schedule();
       await pumpEventQueue();
