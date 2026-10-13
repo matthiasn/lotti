@@ -127,6 +127,12 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   /// landing on a recording refreshes the row that shows it.
   var _checkInEntryIds = const <String>{};
 
+  /// Ids of the check-ins the last build saw. A link written from one of
+  /// them — an entry added through the logbook's Add sheet, which knows
+  /// nothing of check-ins — notifies the check-in's id but not the
+  /// person's, so without this the new entry would not show.
+  var _checkInIds = const <String>{};
+
   @override
   Future<RelationshipDetail?> build() async {
     ref
@@ -154,6 +160,7 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
               relationshipEntityUpdateNotification(_relationshipId),
             ) ||
             affectedIds.any(_linkedTaskIds.contains) ||
+            affectedIds.any(_checkInIds.contains) ||
             affectedIds.any(_checkInEntryIds.contains)) {
           ref.invalidateSelf();
         }
@@ -166,9 +173,10 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
     final checkIns = await repository.getCheckInsForRelationship(
       _relationshipId,
     );
-    final checkInEntries = await repository.getEntriesForCheckIns({
-      for (final checkIn in checkIns) checkIn.id,
-    });
+    _checkInIds = {for (final checkIn in checkIns) checkIn.id};
+    final checkInEntries = await repository.getEntriesForCheckIns(
+      _checkInIds,
+    );
     _checkInEntryIds = {
       for (final entries in checkInEntries.values)
         for (final entry in entries) entry.id,

@@ -508,6 +508,48 @@ void main() {
       },
     );
 
+    // An entry added through the logbook's Add sheet is linked by the
+    // generic link write, which notifies the check-in's id and the new
+    // entry's — never the person's — so the check-in's id must refresh it.
+    test('refetches when an entry is linked from one of its check-ins, and '
+        'carries the new entry', () async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship('rel-1'),
+      );
+      when(() => mockRepository.getCheckInsForRelationship('rel-1')).thenAnswer(
+        (_) async => [checkIn('check-1', 'rel-1')],
+      );
+      var held = <JournalEntity>[];
+      when(() => mockRepository.getEntriesForCheckIns({'check-1'})).thenAnswer(
+        (_) async => {'check-1': held},
+      );
+
+      final subscription = container.listen(
+        relationshipDetailControllerProvider('rel-1'),
+        (_, _) {},
+      );
+      final before = await container.read(
+        relationshipDetailControllerProvider('rel-1').future,
+      );
+      expect(before!.checkInEntries['check-1'], isEmpty);
+
+      held = [testImageEntry];
+      updateStreamController.add({
+        'check-1',
+        testImageEntry.id,
+        linkNotification,
+      });
+      final after = await container.read(
+        relationshipDetailControllerProvider('rel-1').future,
+      );
+
+      expect(
+        after!.checkInEntries['check-1']!.map((e) => e.id),
+        [testImageEntry.id],
+      );
+      subscription.close();
+    });
+
     test('refetches when a currently linked task changes', () async {
       var calls = 0;
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((

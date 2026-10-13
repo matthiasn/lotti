@@ -374,14 +374,28 @@ width, and reads top to bottom:
   empty comment card the way a task's text entry starts
   (`startCommentOnCheckIn`) and brings it into view with its editor focused
   — one left blank is removed when the view closes
-  (`discardCommentIfBlank`), and never counted as a comment — and *Photo*
-  through `importImagesForPlatform`. The bar wraps rather than overflows at
-  large text on a narrow phone.
+  (`discardCommentIfBlank`), and never counted as a comment — *Photo*
+  through `importImagesForPlatform`, and last the *Add* plus a logbook
+  entry's bar carries: the shared `CreateEntryModal`, opened through
+  `EntryCreationService.showCreateEntryModal` with the check-in as host, for
+  the long tail — a note, a voice note, a linked task, a timer, an image
+  imported, captured or pasted from the clipboard. The sheet decides its rows
+  by host type, so the task-only ones (a checklist, pull request tracking)
+  stay out. The bar wraps rather than overflows at large text on a narrow
+  phone.
 
 Each change to what the check-in holds touches it, so the briefing catches
 up: a recording at once; a comment once it has words (an empty one is no
 evidence); photos only when the picker actually added one, since a cancelled
-picker changed no evidence. On phones the route hides the bottom navigation
+picker changed no evidence. What the Add sheet creates is caught by the
+view instead (`_touchIfEntriesChanged`): the detail reloads on the link, and
+a held entry newer than the check-in saves it once. A note, a timer, a
+voice note or an image from the sheet is a `JournalEntry`, `JournalAudio` or
+`JournalImage` and so is held like the bar's own; a task started from the
+sheet is not (`isCheckInEntryKind`): it is linked from the check-in and
+listed in its timeline — which shows whenever anything is linked, not only
+when something is held — but the agent does not read it and the delete
+cascade leaves it alone. On phones the route hides the bottom navigation
 (`peopleRouteHidesBottomNav`), as the chat does, so the bar is not covered.
 The row in the log says what the check-in holds on its meta line
 (`checkInHoldsLabelOf`: *1 recording · 1 comment*), fed by `RelationshipDetail.checkInEntries`, the
@@ -844,13 +858,17 @@ already carries **the entity's own id** plus a per-kind constant, and
 | relationship create/edit/delete | `{relationshipId, RELATIONSHIP}` | list via `RELATIONSHIP`, detail via the id |
 | check-in create/edit/delete | `{checkInId, relationshipId, CHECK_IN}` | list via `CHECK_IN`, detail via the relationship id |
 | link/unlink task | `{relationshipId, taskId, LINK}` | detail via the relationship id |
+| entry linked from a check-in | `{checkInId, entryId, LINK_CHANGED}` | detail via the check-in id |
 
 That holds for synced writes too, which is the reason it is worth stating: a
 manual notification emitted next to the repository call would be redundant on
 the local device and absent on the remote one. `RelationshipDetailController`
 additionally remembers the ids of the tasks its last build saw, so a title or
 status edit **on the task side** refreshes the section without a relationship
-write.
+write; the ids of its check-ins' entries, so a transcript landing on one
+refreshes the row; and the ids of its check-ins, because the generic link
+write — an entry added through the logbook's Add sheet, which knows nothing of
+check-ins — notifies the check-in and the entry but never the person.
 
 `unlinkTask` removes every live `RelationshipLink` between the person and the
 task, in either direction, as a synced tombstone through

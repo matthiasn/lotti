@@ -14,6 +14,8 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
@@ -295,6 +297,21 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     await repository.touchCheckIn(checkIn.id);
   }
 
+  /// *Add*: the logbook's Add sheet with the check-in as its host — the
+  /// long tail a regular entry's bar offers: a timer, a linked task, a
+  /// pasted or captured image and the rest. The sheet leaves out what only
+  /// a task holds (a checklist, pull request tracking). What it creates is
+  /// linked from the check-in; the detail controller reloads on that link,
+  /// and [_touchIfEntriesChanged] saves the check-in once it holds
+  /// something new.
+  Future<void> _openAddSheet(CheckInEntry checkIn) => ref
+      .read(entryCreationServiceProvider)
+      .showCreateEntryModal(
+        context,
+        linkedFromId: checkIn.id,
+        categoryId: checkIn.meta.categoryId,
+      );
+
   void _onRecorded(CheckInEntry checkIn, String audioEntryId) {
     setState(() => _recording = false);
     final repository = ref.read(relationshipRepositoryProvider);
@@ -452,6 +469,9 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                     category: _categoryOf(detail.relationship),
                     onPersonTap: widget.onBack == null ? null : _back,
                     entries: detail.checkInEntries[checkIn.id] ?? const [],
+                    hasLinks: ref
+                        .watch(sortedLinkedEntriesProvider(checkIn.id))
+                        .isNotEmpty,
                     entryKeyBuilder: _keyFor,
                     onPickType: () => _pickType(checkIn),
                     onPickStart: () => _pickStart(checkIn),
@@ -491,6 +511,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
               }),
               onComment: () => _startComment(checkIn),
               onPhoto: () => _addPhotos(checkIn),
+              onAdd: () => _openAddSheet(checkIn),
             ),
         ],
       ),
@@ -578,6 +599,7 @@ class _Body extends StatelessWidget {
     required this.personName,
     required this.personFullName,
     required this.entries,
+    required this.hasLinks,
     required this.entryKeyBuilder,
     required this.onPickType,
     required this.onPickStart,
@@ -603,6 +625,11 @@ class _Body extends StatelessWidget {
 
   /// What the check-in holds, oldest first.
   final List<JournalEntity> entries;
+
+  /// Whether anything is linked from the check-in — beyond [entries], a
+  /// task or the like added through the Add sheet, which the timeline lists
+  /// although the check-in does not hold it as evidence.
+  final bool hasLinks;
   final GlobalKey Function(String entryId) entryKeyBuilder;
   final VoidCallback onPickType;
   final VoidCallback onPickStart;
@@ -612,6 +639,8 @@ class _Body extends StatelessWidget {
 
   /// Whether the header's read-outs take a tap — not while a take is live.
   final bool chipsEnabled;
+
+  bool get _showsTimeline => entries.isNotEmpty || hasLinks;
 
   @override
   Widget build(BuildContext context) {
@@ -710,7 +739,7 @@ class _Body extends StatelessWidget {
                         color: tokens.colors.text.highEmphasis,
                       ),
                     )
-                  else if (entries.isEmpty)
+                  else if (!_showsTimeline)
                     Text(
                       messages.relationshipCheckInEmpty,
                       key: const ValueKey('check-in-detail-empty'),
@@ -721,10 +750,10 @@ class _Body extends StatelessWidget {
                 ],
               ),
             ),
-            if (note.isNotEmpty || entries.isEmpty)
+            if (note.isNotEmpty || !_showsTimeline)
               SizedBox(height: tokens.spacing.step5),
             if (guidance.isNotEmpty) _NextTimeCard(guidance: guidance),
-            if (entries.isNotEmpty)
+            if (_showsTimeline)
               LinkedEntriesWidget(
                 checkIn,
                 entryKeyBuilder: entryKeyBuilder,
@@ -779,20 +808,23 @@ class _NextTimeCard extends StatelessWidget {
 
 /// The floating glass bar that adds to the check-in's timeline — the task
 /// page's action bar, carrying what a check-in holds: *Dictate* as the
-/// primary pill, then a comment and photos. While [recorder] is set the
-/// bar is the recorder.
+/// primary pill, then a comment and photos, and last the plus that opens
+/// the Add sheet for the long tail, as on a logbook entry's bar. While
+/// [recorder] is set the bar is the recorder.
 class _CheckInActionBar extends StatelessWidget {
   const _CheckInActionBar({
     required this.recorder,
     required this.onDictate,
     required this.onComment,
     required this.onPhoto,
+    required this.onAdd,
   });
 
   final Widget? recorder;
   final VoidCallback onDictate;
   final VoidCallback onComment;
   final VoidCallback onPhoto;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -850,6 +882,12 @@ class _CheckInActionBar extends StatelessWidget {
                       icon: LottiIcons.image,
                       semanticLabel: messages.relationshipCheckInAddPhoto,
                       onPressed: onPhoto,
+                    ),
+                    DsGlassRoundButton(
+                      key: const ValueKey('check-in-detail-add'),
+                      icon: LottiIcons.add,
+                      semanticLabel: messages.addLinkedEntryLabel,
+                      onPressed: onAdd,
                     ),
                   ],
                 ),

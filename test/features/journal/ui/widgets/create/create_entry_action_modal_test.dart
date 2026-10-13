@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -34,17 +35,18 @@ import '../../../../../widget_test_utils.dart';
 import '../../../../github/github_token_status.dart';
 import '../../../../github/pull_request_fixtures.dart';
 
-/// Resolves the host id to a Task so the sheet's task-host rows render.
-class _TaskEntryController extends EntryController {
-  _TaskEntryController(this._task);
+/// Resolves the host id to [_host], so the sheet's host-type rows render as
+/// they would for that entity.
+class _HostEntryController extends EntryController {
+  _HostEntryController(this._host);
 
-  final Task _task;
+  final JournalEntity _host;
 
   @override
   Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
-      entry: _task,
+      entry: _host,
       showMap: false,
       isFocused: false,
       shouldShowEditorToolBar: false,
@@ -234,7 +236,7 @@ void main() {
           extraOverrides: [
             entryControllerProvider(
               'host-task',
-            ).overrideWith(() => _TaskEntryController(hostTask)),
+            ).overrideWith(() => _HostEntryController(hostTask)),
           ],
         );
 
@@ -247,6 +249,63 @@ void main() {
           findsOneWidget,
         );
         expect(find.byIcon(LottiIcons.timer), findsNothing);
+      },
+    );
+
+    // A check-in is a standard entry for this sheet: its detail page's bar
+    // opens it, and it must carry the full long tail — a timer, a linked
+    // task, the clipboard's image — and nothing that only a task holds.
+    testWidgets(
+      'a CHECK-IN host keeps the Timer, Task and Paste rows and has no '
+      'checklist or pull request row',
+      (tester) async {
+        final now = DateTime(2026, 8, 4);
+        final hostCheckIn = CheckInEntry(
+          meta: Metadata(
+            id: 'host-check-in',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: const CheckInData(
+            relationshipId: 'rel-1',
+            interactionType: CheckInInteractionType.call,
+          ),
+        );
+        getIt.registerSingleton<EditorStateService>(MockEditorStateService());
+        final updates = MockUpdateNotifications();
+        when(
+          () => updates.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        getIt.registerSingleton<UpdateNotifications>(updates);
+
+        await pumpAndOpenModal(
+          tester,
+          linkedFromId: 'host-check-in',
+          extraOverrides: [
+            entryControllerProvider(
+              'host-check-in',
+            ).overrideWith(() => _HostEntryController(hostCheckIn)),
+            gitHubTokenStatusOverride(GitHubTokenStatus.valid),
+            imagePasteControllerProvider((
+              linkedFromId: 'host-check-in',
+              categoryId: 'test-category-id',
+            )).overrideWithBuild((ref, notifier) async => true),
+          ],
+        );
+
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DsActionRow).first),
+        )!;
+        expect(find.text(messages.addActionStartTimer), findsOneWidget);
+        expect(find.text(messages.addActionCreateLinkedTask), findsOneWidget);
+        expect(
+          find.text(messages.addActionAddImageFromClipboard),
+          findsOneWidget,
+        );
+        expect(find.text(messages.taskFirstRunAddChecklist), findsNothing);
+        expect(find.text(messages.githubTrackPullRequests), findsNothing);
       },
     );
 
@@ -294,7 +353,7 @@ void main() {
           extraOverrides: [
             entryControllerProvider(
               task.meta.id,
-            ).overrideWith(() => _TaskEntryController(task)),
+            ).overrideWith(() => _HostEntryController(task)),
             resolvedOutgoingLinkedEntriesProvider.overrideWith(
               (ref, taskId) => linked,
             ),

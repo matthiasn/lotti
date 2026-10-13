@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/create/entry_creation_service.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
@@ -239,6 +240,31 @@ void main() {
     expect(find.byType(LinkedEntriesWidget), findsNothing);
   });
 
+  // A task started from the Add sheet is linked from the check-in but is
+  // not something it holds as evidence; the timeline still lists it, so
+  // the page must not claim nothing was added.
+  testWidgets('a check-in with only a linked task shows its timeline, not '
+      'the empty invitation', (tester) async {
+    stubDetail(checkIn());
+    when(
+      () => getIt<JournalDb>().journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    links = [
+      EntryLink.basic(
+        id: 'c-1->task-1',
+        fromId: 'c-1',
+        toId: 'task-1',
+        createdAt: at,
+        updatedAt: at,
+        vectorClock: null,
+      ),
+    ];
+    await pump(tester);
+
+    expect(find.byType(LinkedEntriesWidget), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-in-detail-empty')), findsNothing);
+  });
+
   // A short timeline has nothing to filter: the Timer/Audio/Images pills
   // come with the fifth entry.
   for (final (count, filters) in [(1, false), (5, true)]) {
@@ -446,6 +472,36 @@ void main() {
 
       expect(photoImports, ['c-1 in crew']);
       verify(() => repository.touchCheckIn('c-1')).called(1);
+    });
+
+    // The long tail — a timer, a linked task, a pasted image — is the
+    // logbook's own Add sheet, hosted by the check-in like any entry; the
+    // sheet itself leaves out what only a task holds.
+    testWidgets("the plus opens the logbook's Add sheet on the check-in", (
+      tester,
+    ) async {
+      final creation = MockEntryCreationService();
+      when(
+        () => creation.showCreateEntryModal(
+          any(),
+          linkedFromId: any(named: 'linkedFromId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async {});
+      overrides = [entryCreationServiceProvider.overrideWithValue(creation)];
+      stubDetail(checkIn());
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-detail-add')));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => creation.showCreateEntryModal(
+          any(),
+          linkedFromId: 'c-1',
+          categoryId: 'crew',
+        ),
+      ).called(1);
     });
 
     // Codex review on #4348: the check-in's updatedAt is the agent's
