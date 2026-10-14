@@ -371,6 +371,25 @@ void main() {
       expect(saved.single.timeSpent, const Duration(minutes: 5));
     });
 
+    testWidgets('a time set to zero by hand reads as zero minutes', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(
+          tester,
+          clockOverride: movable,
+          pickedDuration: Duration.zero,
+        );
+        await startWriting(tester);
+        await tester.tap(find.text('Edit time'));
+        await tester.pump();
+        expect(sessionLabel(tester), 'Time spent · 0 min');
+        await saveText(tester, 'Walked.');
+      });
+
+      expect(saved.single.timeSpent, Duration.zero);
+    });
+
     testWidgets('backing out of the picker keeps the clock running', (
       tester,
     ) async {

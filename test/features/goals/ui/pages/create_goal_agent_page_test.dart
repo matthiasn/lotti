@@ -960,6 +960,21 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
     await tester.pumpAndSettle();
 
+    // The row itself toggles it, like every signal row: off, then on again.
+    // (Its title: the row's centre is the minutes input on its second line.)
+    Finder rowTitle() => find.descendant(
+      of: find.byKey(const ValueKey('goal-form-check-in-time-row')),
+      matching: find.text('Check-in time'),
+    );
+    await tester.tap(rowTitle());
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('goal-form-check-in-time-target')),
+      findsNothing,
+    );
+    await tester.tap(rowTitle());
+    await tester.pumpAndSettle();
+
     await tester.enterText(
       find.byKey(const ValueKey('goal-form-check-in-time-target')),
       '0',

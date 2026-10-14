@@ -1266,6 +1266,21 @@ void main() {
     expect(json['evidence'], contains('userVoice'));
   });
 
+  test('a check-in time goal renders its leaf and asks for no health '
+      'logging', () {
+    final json = renderedJson(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      ),
+    );
+
+    expect(jsonEncode(json), contains('"checkInTime":true'));
+    expect(jsonEncode(json), contains('"healthLoggingNeededCriterionIds":[]'));
+  });
+
   test('label-time facts retain a bounded recent markdown sample', () {
     final entries = [
       for (var index = 0; index < 205; index++)

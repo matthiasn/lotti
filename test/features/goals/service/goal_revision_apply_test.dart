@@ -377,6 +377,31 @@ void main() {
     expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
   });
 
+  test('a check-in time sibling does not make habit cadence ambiguous', () {
+    const composite = GoalCriterion.allOf(
+      criterionId: 'mindful-week',
+      criteria: [
+        gym,
+        GoalCriterion.checkInTime(
+          criterionId: 'reflect',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetMinutes: 3,
+        ),
+      ],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {'cadence': 4},
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+    expect((revised.criteria.first as GoalCriterionHabit).targetCount, 4);
+    expect(revised.criteria.last, isA<GoalCriterionCheckInTime>());
+  });
+
   test('a label-time sibling does not make habit cadence ambiguous', () {
     const labelTime = GoalCriterion.labelTime(
       criterionId: 'daily-content',

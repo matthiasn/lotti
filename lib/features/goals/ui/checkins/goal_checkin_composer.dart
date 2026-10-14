@@ -398,9 +398,11 @@ class _SessionRow extends StatelessWidget {
     final messages = context.messages;
     final clockText = _clockText(timeSpent);
     final label = edited
+        // A time set by hand is the user's answer, zero included — so it
+        // reads "0 min", not an offer to add time.
         ? messages.goalCheckInTimeSpentValue(
             goalCheckInDurationLabel(context, timeSpent) ??
-                messages.goalCheckInAddTime,
+                messages.goalCheckInMinutes(0),
           )
         : running
         ? messages.goalCheckInSessionRunning(clockText)

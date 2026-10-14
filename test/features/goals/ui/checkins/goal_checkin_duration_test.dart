@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -185,5 +186,62 @@ void main() {
 
       expect(result, const Duration(minutes: 5));
     });
+  });
+
+  testWidgets('a picker opened on a check-in with no time announces that it '
+      'has none yet', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showGoalCheckInDurationPicker(
+              context: context,
+              initialDuration: Duration.zero,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Time spent: Add time'), findsWidgets);
+    semantics.dispose();
+  });
+
+  testWidgets("without an injected writer the chip writes through the app's "
+      'journal repository', (tester) async {
+    registerFallbackValue(DateTime(2026));
+    final repository = MockJournalRepository();
+    when(
+      () => repository.updateJournalEntityDate(
+        any(),
+        dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
+      ),
+    ).thenAnswer((_) async => true);
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        GoalCheckInTimeChip(
+          checkIn: GoalTextCheckIn(note(const Duration(minutes: 1))),
+          pickDuration: ({required context, required initialDuration}) async =>
+              const Duration(minutes: 6),
+        ),
+        overrides: [journalRepositoryProvider.overrideWithValue(repository)],
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-time-note-1')));
+    await tester.pump();
+
+    verify(
+      () => repository.updateJournalEntityDate(
+        'note-1',
+        dateFrom: start,
+        dateTo: start.add(const Duration(minutes: 6)),
+      ),
+    ).called(1);
   });
 }

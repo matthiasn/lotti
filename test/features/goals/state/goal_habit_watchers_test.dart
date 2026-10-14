@@ -135,6 +135,12 @@ void main() {
           aggregation: GoalAggregation.sum,
           targetHours: 2,
         ),
+        GoalCriterion.checkInTime(
+          criterionId: 'reflect',
+          window: window,
+          aggregation: GoalAggregation.sum,
+          targetMinutes: 3,
+        ),
       ];
       for (final leaf in leaves) {
         expect(goalCriterionIdForHabit(leaf, 'floss'), isNull, reason: '$leaf');

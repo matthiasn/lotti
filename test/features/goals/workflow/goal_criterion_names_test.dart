@@ -82,4 +82,28 @@ void main() {
     expect(ids.habitIds, isEmpty);
     expect(ids.dataTypeIds, isEmpty);
   });
+
+  test('a check-in time leaf names no habit or measurable', () {
+    final ids = goalCriterionEntityIds(
+      const GoalCriterion.allOf(
+        criterionId: 'mindful',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'walk',
+            habitId: 'walk-habit',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.checkInTime(
+            criterionId: 'reflect',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            targetMinutes: 3,
+          ),
+        ],
+      ),
+    );
+    expect(ids.habitIds, {'walk-habit'});
+    expect(ids.dataTypeIds, isEmpty);
+  });
 }
