@@ -5,17 +5,16 @@ import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/side_sheet.dart';
+import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Surfaces the agent internals view.
 ///
-/// On wide screens (≥ [mobileBreakpoint]) it slides in from the right
-/// as a comfortable-width panel (clamped to
-/// [minPanelWidth]–[maxPanelWidth]) over a darkened scrim. On narrow
-/// screens — phones in portrait, slim split-view windows — it snaps to
-/// a full-screen modal that slides in from the bottom, so the header
-/// stays on-screen and the body is comfortable to read on small
-/// devices. Either way the body hosts the same five-tab
+/// Opened with [show], in the app's shared side sheet: on a wide window it
+/// slides in from the right as a comfortable-width panel (clamped to
+/// [minPanelWidth]–[maxPanelWidth]) over the shared scrim; on a phone it is
+/// a full-height bottom sheet. Either way the body hosts the same five-tab
 /// `AgentInternalsBody` used by the standalone `AgentDetailPage`
 /// (Stats / Reports / Conversations / Observations / Activity); this
 /// is purely a re-housing of existing content, no functionality is
@@ -35,17 +34,12 @@ class AgentInternalsPanel extends ConsumerWidget {
     super.key,
   });
 
-  /// Minimum width before falling back to a full-screen modal layout.
-  /// Below this the side-panel chrome no longer fits without truncating
-  /// the header.
+  /// Narrowest the side panel gets on a wide window; below it the header
+  /// would truncate. The sheet still never exceeds the window itself.
   static const double minPanelWidth = 600;
 
-  /// Maximum width of the side-panel layout on very wide screens.
+  /// Maximum width of the side panel on very wide screens.
   static const double maxPanelWidth = 800;
-
-  /// Screen-width threshold under which the panel renders as a
-  /// full-screen modal instead of a right-aligned side panel.
-  static const double mobileBreakpoint = minPanelWidth;
 
   final String agentId;
   final String? agentName;
@@ -56,69 +50,33 @@ class AgentInternalsPanel extends ConsumerWidget {
   /// govern from here.
   final AgentMaintenanceScope? maintenance;
 
-  /// Builds a [PageRoute] that fades the scrim in and slides the panel
-  /// in from the right on wide screens, or up from the bottom on
-  /// narrow screens. Use via `Navigator.of(context).push(...)`.
-  ///
-  /// Takes [context] so the route can resolve a localized
-  /// `barrierLabel` for the dismissible scrim — assistive tech reads
-  /// it aloud when announcing the modal barrier.
-  static PageRoute<void> route({
+  /// Opens the internals for [agentId] in the shared side sheet — the same
+  /// host the agent conversations use, so every panel beside a page dims the
+  /// page and slides in the same way.
+  static Future<void> show({
     required BuildContext context,
     required String agentId,
     required String? agentName,
     AgentMaintenanceScope? maintenance,
-  }) {
-    return PageRouteBuilder<void>(
-      opaque: false,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      transitionDuration: const Duration(milliseconds: 220),
-      reverseTransitionDuration: const Duration(milliseconds: 180),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return AgentInternalsPanel(
-          agentId: agentId,
-          agentName: agentName,
-          maintenance: maintenance,
-        );
-      },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        );
-        // Pick the slide direction based on the layout the panel will
-        // render in for this screen size.
-        final isMobile = MediaQuery.sizeOf(context).width < mobileBreakpoint;
-        return FadeTransition(
-          opacity: curved,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: isMobile ? const Offset(0, 1) : const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(curved),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
+  }) => showSideSheetPane<void>(
+    context: context,
+    sideSheet: const SizedWoltSideSheetType(
+      widthFraction: 0.5,
+      minWidth: minPanelWidth,
+      maxWidth: maxPanelWidth,
+    ),
+    builder: (_) => AgentInternalsPanel(
+      agentId: agentId,
+      agentName: agentName,
+      maintenance: maintenance,
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    final size = MediaQuery.sizeOf(context);
-    final isMobile = size.width < mobileBreakpoint;
-    // On wide screens the panel takes a comfortable reading width
-    // clamped between [minPanelWidth] and [maxPanelWidth]. On narrow
-    // screens it renders as a full-screen modal at the device width.
-    final width = isMobile
-        ? size.width
-        : size.width.clamp(minPanelWidth, maxPanelWidth);
 
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final stateAsync = ref.watch(agentStateProvider(agentId));
@@ -138,90 +96,60 @@ class AgentInternalsPanel extends ConsumerWidget {
         ? messages.agentDetailNotFound
         : null;
 
-    final panelBody = SizedBox(
-      width: width,
-      height: double.infinity,
-      // The panel itself owns the ink surface for the tab bodies' ListTiles.
-      // A colored DecoratedBox between those tiles and Material hides their ink.
-      child: Material(
-        color: ai.background,
-        shape: isMobile ? null : Border(left: BorderSide(color: ai.border)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Header(
-              title: messages.aiInternalsTitle,
-              subtitle: headerSubtitle,
-              onClose: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: showLoading
-                  ? const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    )
-                  : identityErrorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          identityErrorMessage,
-                          textAlign: TextAlign.center,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(color: ai.metaText),
-                        ),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (maintenance != null)
-                            AgentMaintenanceSection(
-                              agentId: agentId,
-                              scope: maintenance!,
-                            ),
-                          AgentInternalsBody(
-                            agentId: agentId,
-                            lifecycle: identity!.lifecycle,
-                            stateAsync: stateAsync,
-                          ),
-                        ],
+    // The side sheet owns the panel's width, edge and scrim. The panel owns
+    // the ink surface for the tab bodies' ListTiles: a colored DecoratedBox
+    // between those tiles and Material hides their ink.
+    return Material(
+      color: ai.background,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Header(
+            title: messages.aiInternalsTitle,
+            subtitle: headerSubtitle,
+            onClose: () => Navigator.of(context).maybePop(),
+          ),
+          Expanded(
+            child: showLoading
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
                       ),
                     ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
-            ),
-          ),
-          Align(
-            // Mobile: full-screen modal. Wide screens: right-aligned
-            // panel that vacates the left side for the underlying page.
-            alignment: isMobile ? Alignment.center : Alignment.centerRight,
-            child: SafeArea(
-              // Cover the left inset on mobile (modal occupies the full
-              // width so the system gesture / notch needs padding).
-              // Skip it on wide screens — the panel is right-aligned and
-              // never overlaps the left inset.
-              left: isMobile,
-              child: panelBody,
-            ),
+                  )
+                : identityErrorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        identityErrorMessage,
+                        textAlign: TextAlign.center,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: ai.metaText,
+                        ),
+                      ),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (maintenance != null)
+                          AgentMaintenanceSection(
+                            agentId: agentId,
+                            scope: maintenance!,
+                          ),
+                        AgentInternalsBody(
+                          agentId: agentId,
+                          lifecycle: identity!.lifecycle,
+                          stateAsync: stateAsync,
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -268,8 +196,10 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  // The AI card's own title ink: a fixed white vanished on
+                  // the light theme's pale panel.
                   style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: Colors.white,
+                    color: ai.titleText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

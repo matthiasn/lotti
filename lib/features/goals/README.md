@@ -91,7 +91,7 @@ the goal-owned surface — and the unified Goals tab (`ui/pages/`,
 route root `/goals`)
 with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
-pushed phone page or a non-modal desktop overlay drawer (the §4b detail
+pushed phone page or the shared desktop side sheet over the page (the §4b detail
 dashboard: full-width hero stack of This-week + timestamped Agent's read —
 the read carrying the cost pills and automation controls — Habits and
 Signals sections, and a goal-scoped completion-rate chart). Agent replies retain their Markdown

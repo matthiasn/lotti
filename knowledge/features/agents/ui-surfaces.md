@@ -627,22 +627,26 @@ future planner creation.
 
 # `AgentInternalsPanel` and `AgentInternalsBody`
 
-On screens at least 600 px wide the panel is a dismissable right-side overlay
-(clamped 600–800 px); narrower screens get a full-screen modal sliding up from
-the bottom. On the task and project cards it is reachable two ways: the header
+`AgentInternalsPanel.show` opens the panel in the app's shared side sheet
+([`side_sheet.dart`](../../../lib/widgets/modal/side_sheet.dart)): on a wide
+window a right-anchored panel over the shared scrim (half the window, clamped
+600–800 px); on a phone a full-height bottom sheet. Every host opens it the same
+way — task and project cards, the goal page, the person page's menu and chat
+header, and the sidebar's wake rows for agents whose wake has no subject page of
+its own (a goal's or a person's), which used to jump to the Settings instance
+page instead. On the task and project cards it is reachable two ways: the header
 (its whole badge, title and name block is the tap target, from the shared
 `TldrHeader`) and the quiet *Open agent internals* text link under the report,
 which `TldrBody` shows whenever the host passes `onOpenInternals` — not only
 when the report is expanded. The goal agent's read uses `TldrHeader` plus an
 overflow-menu item; the relationship briefing deliberately omits the link and
 offers its own *See activity* button. It is a thin shell —
-header, close button, scrim — hosting the host's optional
+header and close button; the sheet owns width, edge and scrim — hosting the host's optional
 `AgentMaintenanceSection` and then `AgentInternalsBody`, once
 `agentIdentityProvider` resolves. The band sits *above* the tabs because it is
 the one thing here the reader changes rather than reads, and because it belongs
-to the agent as a whole rather than to any one tab's log. A `barrierDismissible: true` route plus an
-explicit full-screen `GestureDetector` cover both pop paths. The panel's colored
-background and side border are painted by its own `Material`, so conversation
+to the agent as a whole rather than to any one tab's log. A tap on the scrim, Esc and the close
+button all pop the sheet. The panel's colored background is painted by its own `Material`, so conversation
 and report expansion tiles paint their ink on that surface. An opaque decorated
 box between those tiles and Material would trigger a framework assertion.
 
@@ -651,7 +655,11 @@ Conversations / Observations / Activity** — used both inside the panel and as 
 body of the standalone `AgentDetailPage`. Each tab is owned by an existing
 component plus a Stats card wrapping the agent's template, profile, controls and
 current `AgentStateEntity`. There is no panel-specific logic; both consumers see
-the same tabs and behaviour. The Stats setup row opens the shared inference
+the same tabs and behaviour. The Stats tab's token-usage heading carries the
+agent's lifetime cost — the `ConsumptionSummaryPill` over
+`agentConsumptionTotalsProvider` — so every agent's internals attribute what it
+has cost, whatever its kind; per-report attribution stays on the report and
+conversation cards. The Stats setup row opens the shared inference
 setup sheet for agent kinds that can persist instance profiles even when they do
 not own a task, such as goal agents. Kinds on none of those paths omit the row
 entirely rather than reporting a route they cannot resolve: a relationship agent

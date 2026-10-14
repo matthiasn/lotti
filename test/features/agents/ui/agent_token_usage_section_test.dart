@@ -5,22 +5,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 const _testAgentId = 'test-agent-id';
 
 Widget _buildSubject({
   FutureOr<List<AgentTokenUsageSummary>> Function(Ref, String)?
   summariesOverride,
+  ConsumptionTotals totals = ConsumptionTotals.empty,
 }) {
   return makeTestableWidget(
     const AgentTokenUsageSection(agentId: _testAgentId),
     overrides: [
       agentTokenUsageSummariesProvider.overrideWith(
         summariesOverride ?? (ref, agentId) async => <AgentTokenUsageSummary>[],
+      ),
+      agentConsumptionTotalsProvider.overrideWith(
+        (ref, agentId) => Stream.value(totals),
       ),
     ],
   );
@@ -57,6 +64,44 @@ const _multiModelSummaries = [
 ];
 
 void main() {
+  group('AgentTokenUsageSection – cost attribution', () {
+    testWidgets("the heading carries the agent's lifetime cost", (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          totals: makeConsumptionTotals(
+            callCount: 3,
+            impactCallCount: 2,
+            inputTokens: 1200,
+            outputTokens: 800,
+            totalTokens: 2000,
+            credits: 0.42,
+            energyKwh: 0.012,
+            carbonGCo2: 3.4,
+            waterLiters: 0.012,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final pill = find.byKey(const ValueKey('agent-consumption-totals'));
+      expect(
+        find.descendant(of: pill, matching: find.text('€0.42 · 12 Wh · 3.4 g')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an agent that has made no calls shows no cost', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildSubject());
+      await tester.pump();
+
+      expect(find.textContaining('€'), findsNothing);
+    });
+  });
+
   group('AgentTokenUsageSection', () {
     testWidgets('shows heading text', (tester) async {
       await tester.pumpWidget(_buildSubject());

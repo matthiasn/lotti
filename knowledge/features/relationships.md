@@ -2034,29 +2034,39 @@ stateDiagram-v2
     [*] --> Pane: /people/<id> on desktop
     Page --> ChatPage: /people/<id>/chat — RelationshipChatPage stacks
     ChatPage --> Page: back beams to the person
-    Pane --> ChatSidebar: /people/<id>/chat — the chat opens beside the page
-    ChatSidebar --> Pane: close beams to the person
-    note right of ChatSidebar
-      The person page stays, keyed and mounted:
-      list · page · chat, the chat as wide as
-      the list pane (defaultListPaneWidth).
+    Pane --> ChatSheet: Talk to agent — showRelationshipChatSheet
+    Pane --> ChatSheet: a /chat address — the pane beams back to the person and opens the sheet
+    ChatSheet --> Pane: close, Esc or a tap on the scrim pops the sheet
+    note right of ChatSheet
+      The shared side sheet over the dimmed page:
+      list and page keep their room, keyed and
+      mounted; the sheet is kAgentChatSheetWidth wide.
     end note
 ```
 
-`RelationshipsLocation` writes `NavService.desktopRelationshipChatOpen` from
-the URL's `/chat` segment and pushes the page only on phones, so the address
-bar stays the single source of truth for both layouts and the desktop pane
-never disagrees with it. On desktop the chat is a sidebar beside the person
-page rather than a replacement for it (design panel 2026-09-19), so what the
-agent is asked about stays in view; the phone route offers *Back*
-(`onBack`), the sidebar *Close* (`onClose`). The page needs room of its own:
-the sidebar docks only in a detail pane at least `chatSidebarMinDetailWidth`
-wide (the sidebar plus as much again for the page). While the chat is open
-and the People list would squeeze the page below that, the list steps aside,
-without touching its stored preference. Where even the whole pane is
-narrower, the chat takes the pane with *Back*, as on a phone. The pane carries no `Scaffold`
-of its own — the phone route and the sidebar each supply one, which the
+On a phone the chat is a route: `RelationshipsLocation` pushes
+`RelationshipChatPage` for `/people/<id>/chat`, which offers *Back*
+(`onBack`). On desktop it is the shared side sheet
+([`showRelationshipChatSheet`](../../lib/features/relationships/ui/widgets/relationship_chat_sheet.dart),
+over `showSideSheetPane` in
+[`side_sheet.dart`](../../lib/widgets/modal/side_sheet.dart)) — the same
+panel a goal's conversation opens in. It slides in over the dimmed person
+page, so what the agent is asked about stays in view without either being
+squeezed: the earlier docked sidebar shrank the page to a strip on a laptop
+and had to push the People list aside to make room. The hero's *Talk to agent*
+opens the sheet directly. A `/chat` address on desktop — a deep link or a
+restored route — still lands in it: `RelationshipsLocation` mirrors the
+segment into `NavService.desktopRelationshipChatOpen`, and the detail pane
+answers by beaming back to `/people/<id>` and opening the sheet, so the
+address never claims a chat the screen is not showing. The sheet offers
+*Close* (`onClose`) and the internals action. The pane carries no `Scaffold`
+of its own — the phone route and the sheet each supply one, which the
 composer's field needs.
+
+The person hero's overflow menu offers *Agent internals* whenever the person
+has an agent, opening `AgentInternalsPanel` in the same side sheet — reports,
+conversations, activity and the agent's lifetime cost, without a trip to
+Settings.
 
 # Voice check-ins (plan v2 phase 6)
 

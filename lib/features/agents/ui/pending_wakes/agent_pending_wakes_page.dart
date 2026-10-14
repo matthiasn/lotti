@@ -3,12 +3,11 @@ import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_listing_shell.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/pending_wake_view_model.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
-import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart'
-    show agentInstanceRoute;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';

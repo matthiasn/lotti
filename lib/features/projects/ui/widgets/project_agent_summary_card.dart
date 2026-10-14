@@ -151,15 +151,13 @@ class _ProjectAgentSummaryCardState
         widget.record.reportContent.trim().isNotEmpty;
 
     void openInternals() {
-      Navigator.of(context).push(
-        AgentInternalsPanel.route(
-          context: context,
-          agentId: agentId,
-          agentName: agentName,
-          maintenance: AgentMaintenanceScope(
-            kind: AgentMaintenanceKind.project,
-            entityId: widget.projectId,
-          ),
+      AgentInternalsPanel.show(
+        context: context,
+        agentId: agentId,
+        agentName: agentName,
+        maintenance: AgentMaintenanceScope(
+          kind: AgentMaintenanceKind.project,
+          entityId: widget.projectId,
         ),
       );
     }

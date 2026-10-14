@@ -26,7 +26,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
+import 'package:lotti/widgets/modal/side_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -112,20 +112,16 @@ Future<DayPlanningResult?> showDayPlanningModal({
 /// full-height bottom sheet so it reads as a near-full layer; the Adapt
 /// (Refine) flow is a compact, content-sized panel that shouldn't stretch
 /// to fill the screen for its sparse voice content. On desktop both run in
-/// a right-anchored [SizedWoltSideSheetType]: full height suits the
+/// the shared [sideSheetModalType] side sheet: full height suits the
 /// conversational back-and-forth far better than a height-capped dialog,
 /// and the day surface stays visible beside it.
 WoltModalType _dayPlanningModalType(
   BuildContext context,
   DayPlanningIntent intent,
 ) {
-  final width = MediaQuery.of(context).size.width;
-  if (width < WoltModalConfig.pageBreakpoint) {
-    // Both intents run full height: the anchored voice template pins the
-    // orb above the action bar and lets the middle zone breathe.
-    return const WoltBottomSheetType(forceMaxHeight: true);
-  }
-  return const SizedWoltSideSheetType();
+  // Both intents run full height on a phone: the anchored voice template
+  // pins the orb above the action bar and lets the middle zone breathe.
+  return sideSheetModalType(context, fullHeightOnPhone: true);
 }
 
 /// Bottom padding reserved under scrolling step content so the last rows

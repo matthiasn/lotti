@@ -230,12 +230,10 @@ class _GoalActionsMenuButton extends ConsumerWidget {
               }
             }
           case _GoalDetailMenuAction.internals:
-            Navigator.of(context).push(
-              AgentInternalsPanel.route(
-                context: context,
-                agentId: agentId,
-                agentName: agentName,
-              ),
+            await AgentInternalsPanel.show(
+              context: context,
+              agentId: agentId,
+              agentName: agentName,
             );
           case _GoalDetailMenuAction.delete:
             await _confirmAndDelete(context, ref);

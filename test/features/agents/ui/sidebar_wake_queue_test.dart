@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -52,6 +54,7 @@ void main() {
     List<PendingWakeRecord> records, {
     MockAgentService? agentService,
     List<OngoingWakeRecord> ongoing = const [],
+    List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetWithScaffold(
       const SidebarWakeQueue(),
@@ -61,16 +64,19 @@ void main() {
         ongoingWakeRecordsProvider.overrideWith((ref) async => ongoing),
         if (agentService != null)
           agentServiceProvider.overrideWith((ref) => agentService),
+        ...extraOverrides,
       ],
     );
   }
 
   setUp(() {
     SidebarWakeQueueTestHooks.navigatorOverride = null;
+    SidebarWakeQueueTestHooks.internalsOverride = null;
   });
 
   tearDown(() {
     SidebarWakeQueueTestHooks.navigatorOverride = null;
+    SidebarWakeQueueTestHooks.internalsOverride = null;
   });
 
   testWidgets(
@@ -282,11 +288,13 @@ void main() {
   // for the in-window range is exercised by the "renders header count"
   // test above.
 
-  testWidgets('tapping a row navigates to the agent instance route', (
+  testWidgets("tapping a row opens that agent's internals, not Settings", (
     tester,
   ) async {
-    String? captured;
-    SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+    String? navigated;
+    String? opened;
+    SidebarWakeQueueTestHooks.navigatorOverride = (path) => navigated = path;
+    SidebarWakeQueueTestHooks.internalsOverride = (id) => opened = id;
 
     await withClock(Clock.fixed(fixedNow), () async {
       await tester.pumpWidget(
@@ -306,7 +314,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(captured, '/settings/agents/instances/agent-xyz');
+    // A wake with no subject of its own — a goal's or a person's agent —
+    // opens the agent's internals over the current page instead of jumping
+    // to the Settings instance page.
+    expect(opened, 'agent-xyz');
+    expect(navigated, isNull);
   });
 
   testWidgets('tapping a linked-task row navigates directly to the task', (
@@ -635,22 +647,12 @@ void main() {
   );
 
   testWidgets(
-    'tapping a row with no test override beams the Settings delegate to the '
-    'agent instance route via the real NavService — covers the production '
-    'path of `_navigateToAgentRoute` when `navigatorOverride` is null',
+    'tapping a row with no test override opens the internals side sheet over '
+    'the page and never switches to the Settings tab',
     (tester) async {
-      SidebarWakeQueueTestHooks.navigatorOverride = null;
-
       final mockNav = MockNavService();
-      final mockDelegate = _RecordingBeamerDelegate();
-      when(() => mockNav.index).thenReturn(0); // not on Settings
+      when(() => mockNav.index).thenReturn(0);
       when(() => mockNav.settingsIndex).thenReturn(6);
-      when(() => mockNav.setIndex(any())).thenReturn(null);
-      when(() => mockNav.settingsDelegate).thenReturn(mockDelegate);
-      when(
-        () => mockNav.persistNamedRoute(any()),
-      ).thenAnswer((_) async {});
-
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
@@ -663,37 +665,41 @@ void main() {
 
       await withClock(Clock.fixed(fixedNow), () async {
         await tester.pumpWidget(
-          buildSubject([
-            makeWake(
-              agentId: 'agent-prod',
-              displayName: 'Laura',
-              eta: const Duration(seconds: 30),
-            ),
-          ]),
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'agent-prod',
+                displayName: 'Laura',
+                eta: const Duration(seconds: 30),
+              ),
+            ],
+            extraOverrides: [
+              agentIdentityProvider.overrideWith(
+                (ref, agentId) async => null,
+              ),
+              agentStateProvider.overrideWith((ref, agentId) async => null),
+            ],
+          ),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.text('Laura'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-      verify(() => mockNav.setIndex(6)).called(1);
-      verify(
-        () =>
-            mockNav.persistNamedRoute('/settings/agents/instances/agent-prod'),
-      ).called(1);
-      expect(mockDelegate.beamed, ['/settings/agents/instances/agent-prod']);
+      final panel = tester.widget<AgentInternalsPanel>(
+        find.byType(AgentInternalsPanel),
+      );
+      expect(panel.agentId, 'agent-prod');
+      verifyNever(() => mockNav.setIndex(any()));
     },
   );
 
   testWidgets(
-    'tapping a row when already on the Settings tab skips the setIndex '
-    'call so in-tab Beamer history is preserved',
+    'the header link, already on the Settings tab, skips the setIndex call '
+    'so in-tab Beamer history is preserved',
     (tester) async {
-      SidebarWakeQueueTestHooks.navigatorOverride = null;
-
       final mockNav = MockNavService();
       final mockDelegate = _RecordingBeamerDelegate();
       when(() => mockNav.index).thenReturn(6); // already on Settings
@@ -727,12 +733,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       });
 
-      await tester.tap(find.text('Kit'));
+      await tester.tap(find.byIcon(LottiIcons.openExternal));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(() => mockNav.setIndex(any()));
-      expect(mockDelegate.beamed, ['/settings/agents/instances/agent-stay']);
+      expect(mockDelegate.beamed, [kSidebarWakeQueueListRoute]);
     },
   );
 
@@ -1210,10 +1216,12 @@ void main() {
   );
 
   testWidgets(
-    "tapping an ongoing wake routes to that agent's instance page",
+    "tapping an ongoing wake opens that agent's internals",
     (tester) async {
-      String? captured;
-      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+      String? navigated;
+      String? opened;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => navigated = path;
+      SidebarWakeQueueTestHooks.internalsOverride = (id) => opened = id;
 
       await withClock(Clock.fixed(fixedNow), () async {
         await tester.pumpWidget(
@@ -1236,7 +1244,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(captured, '/settings/agents/instances/agent-running');
+      expect(opened, 'agent-running');
+      expect(navigated, isNull);
     },
   );
 

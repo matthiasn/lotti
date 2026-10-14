@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
@@ -37,6 +38,10 @@ abstract final class SidebarWakeQueueTestHooks {
   // Assigned by widget tests outside DCM's `lib`-only usage graph.
   // ignore: unused-code
   static void Function(String path)? navigatorOverride;
+
+  /// Replaces opening an agent's internals sheet, by agent id.
+  // ignore: unused-code
+  static void Function(String agentId)? internalsOverride;
 }
 
 /// Detailed Wake Queue surfaced from `SidebarActivitySummary`. When at least
@@ -314,8 +319,10 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
                     ? title
                     : '$openTaskLabel: $title',
                 child: InkWell(
-                  onTap: () => _navigateToSidebarRoute(
-                    record.subjectRoute ?? agentInstanceRoute(record.agentId),
+                  onTap: () => _openWake(
+                    context,
+                    route: record.subjectRoute,
+                    agentId: record.agentId,
                   ),
                   borderRadius: BorderRadius.circular(tokens.radii.xs),
                   child: Row(
@@ -483,8 +490,10 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
                     ? '$title · $eta'
                     : '$openTaskLabel: $title · $eta',
                 child: InkWell(
-                  onTap: () => _navigateToSidebarRoute(
-                    taskRoute ?? agentInstanceRoute(record.agent.agentId),
+                  onTap: () => _openWake(
+                    context,
+                    route: taskRoute,
+                    agentId: record.agent.agentId,
                   ),
                   borderRadius: BorderRadius.circular(tokens.radii.xs),
                   child: Row(
@@ -648,9 +657,26 @@ class _CancelWakeButton extends StatelessWidget {
   }
 }
 
-/// Settings sub-route for a single agent's instance detail page.
-String agentInstanceRoute(String agentId) =>
-    '/settings/agents/instances/$agentId';
+/// Opens what a wake row stands for: its subject (a task) when it has one,
+/// otherwise the agent's internals in the side sheet over the current page —
+/// a goal's or a person's agent has no page of its own to send the user to,
+/// and jumping to the Settings instance page took them away from their work.
+void _openWake(
+  BuildContext context, {
+  required String? route,
+  required String agentId,
+}) {
+  if (route != null) {
+    _navigateToSidebarRoute(route);
+    return;
+  }
+  final override = SidebarWakeQueueTestHooks.internalsOverride;
+  if (override != null) {
+    override(agentId);
+    return;
+  }
+  AgentInternalsPanel.show(context: context, agentId: agentId, agentName: null);
+}
 
 void _openWakesList() => _navigateToAgentRoute(kSidebarWakeQueueListRoute);
 

@@ -50,10 +50,10 @@ const kUnifiedGoalsContentMaxWidth = 760.0;
 /// habits-header breakpoint, shared by the unified Goals header.
 const kPageHeaderFoldWidth = 520.0;
 
-/// The goal detail chat drawer's width (design handover §4b: "~400px right
-/// overlay") — a non-modal peer surface, not a column the dashboard reflows
-/// around.
-const kGoalChatDrawerWidth = 400.0;
+/// The width of an agent conversation in the side sheet — a goal's or a
+/// person's (design handover §4b: "~400px right overlay"). It slides in over
+/// the page, never a column the page reflows around.
+const kAgentChatSheetWidth = 400.0;
 
 /// The narrowest window that hosts the docked day-view column (and its
 /// collapsed rail). Below this, sidebar + content + column would starve the
@@ -78,6 +78,6 @@ const kInlineTargetInputWidth = 320.0;
 
 /// The habit editor's desktop side panel: two phone-width columns
 /// (`kActionListContentMaxWidth` each, less the gutter between them) so the
-/// whole form is on screen without scrolling. Like [kGoalChatDrawerWidth], a
+/// whole form is on screen without scrolling. Like [kAgentChatSheetWidth], a
 /// reviewed layout width rather than a token — a panel is not a component.
 const kHabitEditorPanelWidth = 800.0;

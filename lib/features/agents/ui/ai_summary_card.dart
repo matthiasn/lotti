@@ -348,15 +348,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   }
 
   void _openInternals({required String agentName}) {
-    Navigator.of(context).push(
-      AgentInternalsPanel.route(
-        context: context,
-        agentId: widget.identity.agentId,
-        agentName: agentName,
-        maintenance: AgentMaintenanceScope(
-          kind: AgentMaintenanceKind.task,
-          entityId: widget.taskId,
-        ),
+    AgentInternalsPanel.show(
+      context: context,
+      agentId: widget.identity.agentId,
+      agentName: agentName,
+      maintenance: AgentMaintenanceScope(
+        kind: AgentMaintenanceKind.task,
+        entityId: widget.taskId,
       ),
     );
   }

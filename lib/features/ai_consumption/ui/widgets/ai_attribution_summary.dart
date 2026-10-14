@@ -8,11 +8,9 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_datetime.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
+import 'package:lotti/widgets/modal/side_sheet.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class AiAttributionSummary extends ConsumerWidget {
   const AiAttributionSummary({
@@ -322,12 +320,7 @@ Future<void> _showDetails(
 ) => ModalUtils.showSinglePageModal<void>(
   context: context,
   title: context.messages.aiAttributionTitle,
-  modalTypeBuilderOverride: (modalContext) {
-    final width = MediaQuery.sizeOf(modalContext).width;
-    return width < WoltModalConfig.pageBreakpoint
-        ? WoltModalType.bottomSheet()
-        : const SizedWoltSideSheetType();
-  },
+  modalTypeBuilderOverride: sideSheetModalType,
   builder: (modalContext) => Consumer(
     builder: (context, ref, child) {
       final live = ref.watch(aiAttributionDetailsProvider(attribution.id));
@@ -352,12 +345,7 @@ Future<void> _showGroupDetails(
 ) => ModalUtils.showSinglePageModal<void>(
   context: context,
   title: context.messages.aiAttributionTitle,
-  modalTypeBuilderOverride: (modalContext) {
-    final width = MediaQuery.sizeOf(modalContext).width;
-    return width < WoltModalConfig.pageBreakpoint
-        ? WoltModalType.bottomSheet()
-        : const SizedWoltSideSheetType();
-  },
+  modalTypeBuilderOverride: sideSheetModalType,
   builder: (modalContext) => _AttributionGroupDetailsBody(
     label: label,
     details: details,

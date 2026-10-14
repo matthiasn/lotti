@@ -58,6 +58,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -2782,98 +2783,56 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // §4b: the permanent chat column is gone. The pane stays MOUNTED inside
-    // the slid-out drawer (so a draft survives closing), but takes no
-    // pointer traffic and no layout column — the dashboard owns the width,
-    // capped at the unified-Goals measure.
-    expect(find.byType(GoalAgentChatPane), findsOneWidget);
+    // §4b: no permanent chat column — a closed conversation is not on the
+    // page at all; the dashboard owns the width, capped at the unified-Goals
+    // measure.
+    expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.byType(VerticalDivider), findsNothing);
-    expect(
-      tester
-          .widget<IgnorePointer>(
-            find
-                .ancestor(
-                  of: find.byType(GoalAgentChatPane),
-                  matching: find.byType(IgnorePointer),
-                )
-                .first,
-          )
-          .ignoring,
-      isTrue,
-      reason: 'a closed drawer must not swallow clicks along the right edge',
-    );
-    // Off-screen means out of the semantics tree too: a screen reader must
-    // not traverse the slid-away drawer's composer and close button.
-    expect(
-      tester
-          .widget<ExcludeSemantics>(
-            find
-                .ancestor(
-                  of: find.byType(GoalAgentChatPane),
-                  matching: find.byType(ExcludeSemantics),
-                )
-                .first,
-          )
-          .excluding,
-      isTrue,
-    );
     expect(
       tester.getSize(find.byType(GoalProgressCard)).width,
       lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
     );
-    // Closed drawer: the column centers in what the check-in rail leaves —
-    // a fixed left-aligned measure left the right half of wide windows dead,
-    // and centering in the whole window would now slide the cards under the
-    // rail.
+    // The column centers in what the check-in rail leaves — a fixed
+    // left-aligned measure left the right half of wide windows dead, and
+    // centering in the whole window would slide the cards under the rail.
+    final closedCenter = tester.getCenter(find.byType(GoalProgressCard)).dx;
     expect(
-      tester.getCenter(find.byType(GoalProgressCard)).dx,
+      closedCenter,
       moreOrLessEquals(
         (desktopSize.width - kGoalTimelineRailWidth) / 2,
         epsilon: 1,
       ),
     );
+    final closedCardWidth = tester.getSize(find.byType(GoalProgressCard)).width;
 
-    // The drawer opens from the named app-bar doorway and closes from its
-    // own × — non-modal, the dashboard stays interactive throughout.
+    // The conversation opens from the named app-bar doorway in the shared
+    // side sheet: it slides in over the page and never reflows it —
+    // reserving its span beside the cards squeezed the column into what was
+    // left of the window.
     await tester.tap(find.text('Talk to agent'));
     await tester.pumpAndSettle();
-    // Open drawer: the column glides to the center of what the drawer
-    // leaves free instead of hiding under it.
+    expect(find.byType(GoalAgentChatPane), findsOneWidget);
+    expect(tester.getCenter(find.byType(GoalProgressCard)).dx, closedCenter);
     expect(
-      tester.getCenter(find.byType(GoalProgressCard)).dx,
-      moreOrLessEquals(
-        (desktopSize.width - kGoalChatDrawerWidth - kGoalTimelineRailWidth) / 2,
-        epsilon: 1,
-      ),
+      tester.getSize(find.byType(GoalProgressCard)).width,
+      closedCardWidth,
     );
     expect(
-      tester
-          .widget<IgnorePointer>(
-            find
-                .ancestor(
-                  of: find.byType(GoalAgentChatPane),
-                  matching: find.byType(IgnorePointer),
-                )
-                .first,
-          )
-          .ignoring,
-      isFalse,
+      tester.getTopLeft(find.byType(GoalAgentChatPane)).dx,
+      moreOrLessEquals(desktopSize.width - kAgentChatSheetWidth, epsilon: 1),
+      reason: 'the sheet docks at the window edge at the drawer width',
+    );
+    // The page behind dims under the app's one modal scrim.
+    final pageContext = tester.element(find.byType(GoalProgressCard));
+    final scrim = ModalUtils.getModalBarrierColor(
+      isDark: Theme.of(pageContext).brightness == Brightness.dark,
+      context: pageContext,
     );
     expect(
-      tester
-          .widget<ExcludeSemantics>(
-            find
-                .ancestor(
-                  of: find.byType(GoalAgentChatPane),
-                  matching: find.byType(ExcludeSemantics),
-                )
-                .first,
-          )
-          .excluding,
-      isFalse,
-      reason: 'the open drawer is part of the accessible page',
+      find.byWidgetPredicate((w) => w is ModalBarrier && w.color == scrim),
+      findsOneWidget,
     );
-    // The drawer header carries the same computed pill as the page: the
+    // The sheet header carries the same computed pill as the page: the
     // same widget fed the same status, twice on screen, never disagreeing.
     expect(find.byType(UnifiedGoalStatusPill), findsNWidgets(2));
     expect(
@@ -2885,19 +2844,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('goal-chat-drawer-close')));
     await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<IgnorePointer>(
-            find
-                .ancestor(
-                  of: find.byType(GoalAgentChatPane),
-                  matching: find.byType(IgnorePointer),
-                )
-                .first,
-          )
-          .ignoring,
-      isTrue,
-    );
+    expect(find.byType(GoalAgentChatPane), findsNothing);
 
     // The evidence sections: Habits heading over the habit cards, Signals
     // over the data dimensions (this goal has none), the old Watching list
@@ -4277,8 +4224,8 @@ void main() {
     );
   });
 
-  testWidgets('the desktop chat drawer closes on Escape and on a tap '
-      'outside it', (tester) async {
+  testWidgets('the desktop chat sheet closes on Escape and on a tap on the '
+      'scrim', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
     await tester.pumpWidget(
@@ -4321,32 +4268,22 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    Offset drawerSlide() => tester
-        .widget<AnimatedSlide>(
-          find.ancestor(
-            of: find.byType(GoalAgentChatPane),
-            matching: find.byType(AnimatedSlide),
-          ),
-        )
-        .offset;
-    Future<void> openDrawer() async {
+    Future<void> openSheet() async {
       await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
       await tester.pumpAndSettle();
-      expect(drawerSlide(), Offset.zero);
+      expect(find.byType(GoalAgentChatPane), findsOneWidget);
     }
 
-    expect(drawerSlide(), const Offset(1, 0));
-
-    await openDrawer();
+    await openSheet();
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    expect(drawerSlide(), const Offset(1, 0));
+    expect(find.byType(GoalAgentChatPane), findsNothing);
 
-    await openDrawer();
-    // A tap on the dashboard, left of the drawer, counts as outside it.
+    await openSheet();
+    // A tap on the dimmed dashboard, left of the sheet, dismisses it.
     await tester.tapAt(const Offset(40, 500));
     await tester.pumpAndSettle();
-    expect(drawerSlide(), const Offset(1, 0));
+    expect(find.byType(GoalAgentChatPane), findsNothing);
   });
 
   testWidgets('on a dormant goal with nothing to tick off, the banner CTA '
