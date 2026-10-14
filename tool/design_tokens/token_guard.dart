@@ -20,6 +20,18 @@ import 'package:path/path.dart' as p;
 /// Where raw values are the point: the token definitions themselves.
 const tokenSource = 'lib/features/design_system/theme/';
 
+/// Where raw colours are the drawing itself: the companion's skin, hair,
+/// clothes and stage are illustration colours, like a picture's pixels, with
+/// no interface meaning a token could carry. Only colour is exempt here;
+/// spacing and typography stay guarded, as does the rest of the feature.
+const illustrationSources = [
+  'lib/features/companion/model/companion_look.dart',
+  'lib/features/companion/rig/',
+];
+
+/// Whether [path] is one of the [illustrationSources].
+bool isIllustration(String path) => illustrationSources.any(path.startsWith);
+
 /// The categories counted, in baseline order.
 enum TokenCategory { spacing, typography, color }
 
@@ -217,7 +229,8 @@ class GuardResult {
 }
 
 /// Counts raw visual values in every Dart file under [root] outside
-/// [tokenSource], and compares each category against [baseline].
+/// [tokenSource] (colours outside [illustrationSources] too), and compares
+/// each category against [baseline].
 GuardResult scan({
   required Directory root,
   required Map<String, Map<TokenCategory, int>> baseline,
@@ -239,6 +252,7 @@ GuardResult scan({
     );
     if (isGenerated(rel) || rel.startsWith(tokenSource)) continue;
     final found = countRawValues(file.readAsStringSync());
+    if (isIllustration(rel)) found[TokenCategory.color] = 0;
     if (found.values.every((n) => n == 0)) continue;
     counts[rel] = found;
     final allowed = baseline[rel] ?? const {};
