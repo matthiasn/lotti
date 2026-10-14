@@ -2833,18 +2833,45 @@ void main() {
       ),
     );
 
+    final closedCardWidth = tester.getSize(find.byType(GoalProgressCard)).width;
+
     // The drawer opens from the named app-bar doorway and closes from its
     // own × — non-modal, the dashboard stays interactive throughout.
     await tester.tap(find.text('Talk to agent'));
     await tester.pumpAndSettle();
-    // Open drawer: the column glides to the center of what the drawer
-    // leaves free instead of hiding under it.
+    // Open drawer: a true overlay. The dashboard keeps its width and
+    // position — reserving the drawer's span beside it squeezed the column
+    // into what was left of the window — and the drawer floats over the
+    // rail side of the page instead.
     expect(
       tester.getCenter(find.byType(GoalProgressCard)).dx,
       moreOrLessEquals(
-        (desktopSize.width - kGoalChatDrawerWidth - kGoalTimelineRailWidth) / 2,
+        (desktopSize.width - kGoalTimelineRailWidth) / 2,
         epsilon: 1,
       ),
+    );
+    expect(
+      tester.getSize(find.byType(GoalProgressCard)).width,
+      closedCardWidth,
+    );
+    expect(
+      tester.getTopLeft(find.byType(GoalAgentChatPane)).dx,
+      greaterThanOrEqualTo(desktopSize.width - kGoalChatDrawerWidth),
+      reason: 'the open drawer docks at the window edge',
+    );
+    // Floating over the page, it wears the shared floating-surface shadow.
+    expect(
+      tester
+          .widgetList<DecoratedBox>(
+            find.ancestor(
+              of: find.byType(GoalAgentChatPane),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .any((d) => d.boxShadow == DsShadows.floatingSurface),
+      isTrue,
     );
     expect(
       tester

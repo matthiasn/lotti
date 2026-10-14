@@ -1390,7 +1390,9 @@ handler would retract it; that wiring is a follow-up.
   aspiration statement. Mobile opens durable conversation
   at `/goals/details/:agentId/chat`; desktop hosts the same
   `GoalAgentChatPane` in a ~400px **non-modal overlay drawer**
-  (`kGoalChatDrawerWidth`): it slides over the dashboard without reflow,
+  (`kGoalChatDrawerWidth`): it slides over the dashboard without reflow —
+  the dashboard keeps its width and position, the drawer covers the
+  check-ins rail and wears `DsShadows.floatingSurface` — and it
   stays mounted while closed so the draft survives, closes on Esc, ×, or an
   outside tap (a shared `TapRegion` group keeps the Talk-to and Ask-why
   openers from counting as outside), and its header carries the same

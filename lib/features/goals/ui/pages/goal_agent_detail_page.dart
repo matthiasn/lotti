@@ -530,6 +530,38 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
 
     final desktop = isDesktopLayout(context);
     final chatAvailable = isActive;
+
+    // The dashboard never reflows around the desktop chat drawer: the
+    // drawer is a true overlay (see the Stack below), so the chat and
+    // no-chat paths build the very same columns for a given pane width.
+    Widget dashboard(double paneWidth) {
+      return railFits(paneWidth)
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _detailList(
+                    context,
+                    inputs,
+                    showChatAction: false,
+                    contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                    showRail: true,
+                  ),
+                ),
+                SizedBox(
+                  width: kGoalTimelineRailWidth,
+                  child: _CheckInRail(card: checkInsCard()),
+                ),
+              ],
+            )
+          : _detailList(
+              context,
+              inputs,
+              showChatAction: !desktop && chatAvailable,
+              contentMaxWidth: desktop ? kUnifiedGoalsContentMaxWidth : null,
+            );
+    }
+
     return popSafe(
       Scaffold(
         appBar: AppBar(
@@ -649,33 +681,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                       paneWidth: constraints.maxWidth,
                       railShown: railFits(constraints.maxWidth),
                     );
-                    return railFits(constraints.maxWidth)
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: _detailList(
-                                  context,
-                                  inputs,
-                                  showChatAction: false,
-                                  contentMaxWidth: kUnifiedGoalsContentMaxWidth,
-                                  showRail: true,
-                                ),
-                              ),
-                              SizedBox(
-                                width: kGoalTimelineRailWidth,
-                                child: _CheckInRail(card: checkInsCard()),
-                              ),
-                            ],
-                          )
-                        : _detailList(
-                            context,
-                            inputs,
-                            showChatAction: !desktop && chatAvailable,
-                            contentMaxWidth: desktop
-                                ? kUnifiedGoalsContentMaxWidth
-                                : null,
-                          );
+                    return dashboard(constraints.maxWidth);
                   },
                 )
               : CallbackShortcuts(
@@ -698,64 +704,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                       );
                       return Stack(
                         children: [
-                          // The drawer overlays without reflowing the cards, but
-                          // the COLUMN glides: closed, it centers in the window
-                          // (a fixed left-aligned measure left the right half of
-                          // wide windows dead); open, it centers in what the
-                          // drawer leaves free. Clamped to the PANE's real
-                          // constraints: with a wide navigation sidebar the pane
-                          // can be barely wider than the drawer, and always
-                          // subtracting the drawer span would squeeze the
-                          // dashboard into an unusable sliver — below the fold
-                          // width the drawer stays a true overlay instead.
-                          AnimatedPadding(
-                            duration: MotionDurations.medium2,
-                            curve: MotionCurves.emphasizedDecelerate,
-                            padding: EdgeInsetsDirectional.only(
-                              end:
-                                  _chatOpen &&
-                                      constraints.maxWidth -
-                                              kGoalChatDrawerWidth >=
-                                          kPageHeaderFoldWidth
-                                  ? kGoalChatDrawerWidth
-                                  : 0,
-                            ),
-                            // Two columns, and the drawer still overlays rather
-                            // than becoming a third: a conversation is transient
-                            // and already owns correct focus, escape and
-                            // semantics behaviour as an overlay. The glide moves
-                            // BOTH columns.
-                            child: railFits(constraints.maxWidth)
-                                ? Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: _detailList(
-                                          context,
-                                          inputs,
-                                          showChatAction: false,
-                                          contentMaxWidth:
-                                              kUnifiedGoalsContentMaxWidth,
-                                          showRail: true,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: kGoalTimelineRailWidth,
-                                        child: _CheckInRail(
-                                          card: checkInsCard(),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : _detailList(
-                                    context,
-                                    inputs,
-                                    showChatAction: false,
-                                    contentMaxWidth:
-                                        kUnifiedGoalsContentMaxWidth,
-                                  ),
-                          ),
+                          // The drawer is a true overlay: opening it never
+                          // reflows the dashboard. Reserving its width beside
+                          // the cards squeezed both columns into what was left
+                          // of the window; a conversation is transient, so it
+                          // slides over the page (rail included) instead.
+                          dashboard(constraints.maxWidth),
                           PositionedDirectional(
                             top: 0,
                             bottom: 0,
