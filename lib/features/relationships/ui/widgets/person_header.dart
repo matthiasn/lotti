@@ -4,8 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/agents/ui/agent_menu_items.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -185,12 +186,8 @@ class PersonHeroAppBar extends StatelessWidget {
         // with something that does not exist.
         if (hasAgent) ...[
           if (desktop)
-            DesignSystemButton(
+            AgentChatButton(
               key: const ValueKey('person-talk-to-agent'),
-              label: messages.goalChatTalkToAgent,
-              leadingIcon: LottiIcons.aiSpark,
-              variant: DesignSystemButtonVariant.secondary,
-              size: DesignSystemButtonSize.dense,
               onPressed: onTalkToAgent,
             )
           else
@@ -536,7 +533,6 @@ class PersonMenuButton extends ConsumerWidget {
     // rows sit on the popup's own surface and keep the theme's ink — the
     // neutral white glyph would vanish on a light popup.
     final triggerInk = glyphColor ?? tokens.colors.text.highEmphasis;
-    final ink = tokens.colors.text.highEmphasis;
     final contactsSupported = ref.read(contactsServiceProvider).isSupported;
     final linked =
         contactsSupported &&
@@ -544,22 +540,6 @@ class PersonMenuButton extends ConsumerWidget {
           relationship,
           ref.watch(contactRefKeyProvider).value,
         );
-
-    Widget item(IconData icon, String label, {Color? color}) => Row(
-      children: [
-        Icon(icon, color: color ?? ink),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: color ?? ink,
-            ),
-          ),
-        ),
-      ],
-    );
 
     return PopupMenuButton<PersonMenuAction>(
       key: const ValueKey('person-menu'),
@@ -587,44 +567,46 @@ class PersonMenuButton extends ConsumerWidget {
         ),
         PersonMenuAction.delete => onDelete(),
       }),
+      // The shared agent-surface menu: the person's own actions, then the
+      // agent's, delete at the bottom — the same order and rows as the goal
+      // page's menu.
       itemBuilder: (context) => [
-        if (hasAgent)
-          PopupMenuItem(
-            key: const ValueKey('person-menu-internals'),
-            value: PersonMenuAction.internals,
-            child: item(LottiIcons.tune, messages.aiInternalsTitle),
-          ),
         if (contactsSupported && !linked)
-          PopupMenuItem(
+          agentMenuItem(
+            context: context,
             value: PersonMenuAction.linkContact,
-            child: item(
-              LottiIcons.findPerson,
-              messages.relationshipLinkContact,
-            ),
+            icon: LottiIcons.findPerson,
+            label: messages.relationshipLinkContact,
           ),
         if (linked) ...[
-          PopupMenuItem(
+          agentMenuItem(
+            context: context,
             value: PersonMenuAction.refreshContact,
-            child: item(
-              LottiIcons.contactCard,
-              messages.relationshipUpdateFromContact,
-            ),
+            icon: LottiIcons.contactCard,
+            label: messages.relationshipUpdateFromContact,
           ),
-          PopupMenuItem(
+          agentMenuItem(
+            context: context,
             value: PersonMenuAction.relinkContact,
-            child: item(
-              LottiIcons.findPerson,
-              messages.relationshipRelinkContact,
-            ),
+            icon: LottiIcons.findPerson,
+            label: messages.relationshipRelinkContact,
           ),
         ],
-        PopupMenuItem(
-          value: PersonMenuAction.delete,
-          child: item(
-            LottiIcons.delete,
-            messages.deleteButton,
-            color: tokens.colors.alert.error.ink,
+        if (contactsSupported) const PopupMenuDivider(),
+        if (hasAgent) ...[
+          agentInternalsMenuItem(
+            context: context,
+            value: PersonMenuAction.internals,
+            key: const ValueKey('person-menu-internals'),
           ),
+          const PopupMenuDivider(),
+        ],
+        agentMenuItem(
+          context: context,
+          value: PersonMenuAction.delete,
+          icon: LottiIcons.delete,
+          label: messages.deleteButton,
+          destructive: true,
         ),
       ],
     );

@@ -1,0 +1,99 @@
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// The one way into a conversation with an agent from the page it serves —
+/// a goal's, a person's.
+///
+/// It wears the AI card's own pair (`accentSoft` fill, `accent` border, glyph
+/// and label) and the sparkle that means "the agent" everywhere else in the
+/// app, so it reads as the agent's doorway rather than as one more grey
+/// toolbar pill beside the page's own actions. The goal page and the person
+/// page used to offer two different buttons — a speech bubble on one, a
+/// sparkle on the other, both dense secondary pills — for the same act.
+///
+/// [label] defaults to *Talk to agent*; it ellipsizes inside the pill, with
+/// the full label kept in the tooltip and for screen readers.
+class AgentChatButton extends StatelessWidget {
+  const AgentChatButton({
+    required this.onPressed,
+    this.label,
+    super.key,
+  });
+
+  final VoidCallback onPressed;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final text = label ?? context.messages.goalChatTalkToAgent;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+    );
+    return Semantics(
+      button: true,
+      label: text,
+      // One announcement: the visible label and the tooltip repeat what the
+      // button's own label already says.
+      child: Tooltip(
+        message: text,
+        excludeFromSemantics: true,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: TapTargets.compact),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: DsQuietInk(
+              customBorder: shape,
+              onTap: onPressed,
+              focusRing: true,
+              builder: (context, highlighted) => DecoratedBox(
+                decoration: ShapeDecoration(
+                  color: ai.accentSoft,
+                  shape: shape.copyWith(
+                    side: BorderSide(
+                      // The border firms to the full accent on hover and
+                      // focus, the way the AI card's header disc answers.
+                      color: highlighted ? ai.accent : ai.border,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step4,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: ExcludeSemantics(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          LottiIcons.aiSpark,
+                          size: IconSizes.s,
+                          color: ai.accent,
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                        Flexible(
+                          child: Text(
+                            text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.subtitle.subtitle2
+                                .copyWith(color: ai.accent),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

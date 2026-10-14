@@ -3280,9 +3280,15 @@ void main() {
 
     await tester.tap(find.byIcon(LottiIcons.moreVertical));
     await tester.pumpAndSettle();
-    expect(find.text('Open agent internals'), findsOneWidget);
+    // The same entry, in the same words, as the person page's menu — and
+    // the title of the panel it opens.
+    final entry = find.byKey(const ValueKey('goal-menu-internals'));
+    expect(
+      find.descendant(of: entry, matching: find.text('Agent internals')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.text('Open agent internals'));
+    await tester.tap(entry);
     await tester.pumpAndSettle();
 
     expect(find.byType(AgentInternalsPanel), findsOneWidget);

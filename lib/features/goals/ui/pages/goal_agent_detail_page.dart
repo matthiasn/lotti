@@ -8,7 +8,9 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
+import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_menu_items.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
@@ -624,7 +626,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             if (!desktop && chatAvailable)
               IconButton(
                 key: const ValueKey('goal-detail-chat-action'),
-                icon: const Icon(LottiIcons.chat),
+                // The sparkle, as on the desktop button and the person
+                // page: it means "the agent" everywhere in the app.
+                icon: const Icon(LottiIcons.aiSpark),
                 tooltip: context.messages.goalChatTalkToAgent,
                 onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
@@ -642,16 +646,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                   constraints: BoxConstraints(
                     maxWidth: tokens.spacing.step13,
                   ),
-                  child: Tooltip(
-                    message: context.messages.goalChatTalkToAgent,
-                    child: DesignSystemButton(
-                      key: const ValueKey('goal-detail-talk-to'),
-                      label: context.messages.goalChatTalkToAgent,
-                      leadingIcon: LottiIcons.chat,
-                      variant: DesignSystemButtonVariant.secondary,
-                      size: DesignSystemButtonSize.dense,
-                      onPressed: _openChat,
-                    ),
+                  child: AgentChatButton(
+                    key: const ValueKey('goal-detail-talk-to'),
+                    onPressed: _openChat,
                   ),
                 ),
               ),

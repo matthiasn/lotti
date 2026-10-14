@@ -9,7 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/agents/agent_database.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
@@ -309,11 +309,13 @@ void main() {
     ) async {
       await pump(tester, size: const Size(1280, 800));
 
-      final button = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('person-talk-to-agent')),
+      // The shared agent doorway — the same button the goal page offers.
+      final button = find.byKey(const ValueKey('person-talk-to-agent'));
+      expect(tester.widget(button), isA<AgentChatButton>());
+      expect(
+        find.descendant(of: button, matching: find.text('Talk to agent')),
+        findsOneWidget,
       );
-      expect(button.label, 'Talk to agent');
-      expect(button.variant, DesignSystemButtonVariant.secondary);
     });
 
     testWidgets('names the person in the bar only once the band has folded, '

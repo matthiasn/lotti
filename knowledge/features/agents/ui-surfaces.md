@@ -625,6 +625,21 @@ choice retains that profile as its base. The general default stays on the
 day-agent template, so the instance sheet cannot silently change the default for
 future planner creation.
 
+# The doorway and the menu on an agent's page
+
+A page an agent serves — a goal's, a person's — reaches that agent the same
+way. On desktop the conversation opens from
+[`AgentChatButton`](../../../lib/features/agents/ui/agent_chat_button.dart):
+the AI card's accent pair and the sparkle, at the compact touch target, one
+announcement for screen readers. The page's overflow menu is built from
+[`agent_menu_items.dart`](../../../lib/features/agents/ui/agent_menu_items.dart):
+one row style (`agentMenuItem`, with a destructive variant in the error ink),
+a switch row that keeps the same icon slot (`agentToggleMenuItem`) instead of
+Material's differently indented checked tile, and `agentInternalsMenuItem` —
+*Agent internals*, the panel's own title, under the tune glyph. Both menus
+order themselves the same way: the page's own actions, a divider, the agent's
+actions ending in the internals, a divider, delete.
+
 # `AgentInternalsPanel` and `AgentInternalsBody`
 
 `AgentInternalsPanel.show` opens the panel in the app's shared side sheet
