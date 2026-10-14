@@ -53,12 +53,13 @@ import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'goal_agent_detail_page_cards_part.dart';
-part 'goal_agent_detail_page_report_part.dart';
 part 'goal_agent_detail_page_detail_list_part.dart';
+part 'goal_agent_detail_page_report_part.dart';
 
 /// One goal — the §4b dashboard: header (name · unified status pill ·
 /// trend), the hero stack (the timestamped Agent's-read card above the
@@ -710,6 +711,32 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                           // of the window; a conversation is transient, so it
                           // slides over the page (rail included) instead.
                           dashboard(constraints.maxWidth),
+                          // The app's one modal scrim, fading with the
+                          // slide, so the open drawer reads as the surface
+                          // in front. Purely visual: pointers pass through,
+                          // so the drawer stays non-modal — a tap on the
+                          // dimmed page still closes it via the tap region
+                          // below and still reaches what it landed on.
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: AnimatedOpacity(
+                                opacity: _chatOpen ? 1 : 0,
+                                duration: MotionDurations.medium2,
+                                curve: MotionCurves.emphasizedDecelerate,
+                                child: ColoredBox(
+                                  key: const ValueKey(
+                                    'goal-chat-drawer-scrim',
+                                  ),
+                                  color: ModalUtils.getModalBarrierColor(
+                                    isDark:
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark,
+                                    context: context,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                           PositionedDirectional(
                             top: 0,
                             bottom: 0,

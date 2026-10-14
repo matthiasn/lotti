@@ -2833,6 +2833,16 @@ void main() {
       ),
     );
 
+    double scrimOpacity() => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('goal-chat-drawer-scrim')),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+    // Closed: no dimming at all.
+    expect(scrimOpacity(), 0);
     final closedCardWidth = tester.getSize(find.byType(GoalProgressCard)).width;
 
     // The drawer opens from the named app-bar doorway and closes from its
@@ -2858,6 +2868,22 @@ void main() {
       tester.getTopLeft(find.byType(GoalAgentChatPane)).dx,
       greaterThanOrEqualTo(desktopSize.width - kGoalChatDrawerWidth),
       reason: 'the open drawer docks at the window edge',
+    );
+    // Open: the page behind dims so the drawer reads as the front surface —
+    // but the scrim never takes a pointer, so the drawer stays non-modal.
+    expect(scrimOpacity(), 1);
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byKey(const ValueKey('goal-chat-drawer-scrim')),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring,
+      isTrue,
     );
     // Floating over the page, it wears the shared floating-surface shadow.
     expect(
