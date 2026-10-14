@@ -119,6 +119,22 @@ void main() {
       expect(find.text('Test Agent'), findsOneWidget);
     });
 
+    testWidgets("the title wears the AI card's title ink, not a fixed white", (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+
+      final title = tester.widget<Text>(find.text('Agent internals'));
+      final tokens = tester.element(find.text('Agent internals')).designTokens;
+      // A fixed white vanished on the light theme's pale panel.
+      expect(title.style?.color, tokens.colors.aiCard.titleText);
+    });
+
     testWidgets('hosts the AgentInternalsBody once identity resolves', (
       tester,
     ) async {

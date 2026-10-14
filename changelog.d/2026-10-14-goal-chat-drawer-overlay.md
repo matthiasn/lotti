@@ -7,6 +7,8 @@
 - **Agent internals open where you are.** A goal's or a person's agent in the
   sidebar's wake list used to jump to its Settings page; it now opens the
   agent's internals in the same side panel over what you were doing.
+- **The Agent internals title is readable in the light theme.** It was drawn
+  in white on the panel's pale background.
 
 ### Added
 - **Agent internals for people.** A person's page offers *Agent internals* in

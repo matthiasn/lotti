@@ -196,8 +196,10 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  // The AI card's own title ink: a fixed white vanished on
+                  // the light theme's pale panel.
                   style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: Colors.white,
+                    color: ai.titleText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
