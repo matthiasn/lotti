@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
@@ -44,7 +45,7 @@ class CompanionView extends StatefulWidget {
     this.mood = CompanionMood.calm,
     this.framing = CompanionFraming.full,
     this.stage = false,
-    this.supersample = 4,
+    this.supersample,
     this.track,
     this.playhead,
     this.lookAt,
@@ -63,8 +64,16 @@ class CompanionView extends StatefulWidget {
 
   /// Samples per pixel along each axis (1, 2, 4 or 8), so her edges stay
   /// smooth on a renderer that does not anti-alias paths; see
-  /// [SupersampledPainter].
-  final int supersample;
+  /// [SupersampledPainter]. Null takes [platformSupersample].
+  final int? supersample;
+
+  /// The smoothing this platform needs: 4 samples per pixel on Linux, where
+  /// Impeller on a GL driver without multisampling (a VM, a bare desktop)
+  /// draws paths without anti-aliasing, and 1 — none — everywhere else,
+  /// where the renderer anti-aliases and the extra passes would cost a large
+  /// texture per frame for nothing.
+  static int get platformSupersample =>
+      defaultTargetPlatform == TargetPlatform.linux ? 4 : 1;
 
   /// What she says; she talks while [playhead] reads a position inside it.
   final MouthTrack? track;
@@ -144,11 +153,14 @@ class _CompanionViewState extends State<CompanionView>
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
+    // Only she is supersampled; the stage is gradients with no edges to
+    // alias, painted once at device resolution behind and over her own
+    // layer, which is all that repaints each frame.
+    final figure = RepaintBoundary(
       child: CustomPaint(
         painter: SupersampledPainter(
           devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-          factor: widget.supersample,
+          factor: widget.supersample ?? CompanionView.platformSupersample,
           inner: CompanionPainter(
             pose: _pose,
             look: widget.look,
@@ -158,6 +170,12 @@ class _CompanionViewState extends State<CompanionView>
         ),
         child: const SizedBox.expand(),
       ),
+    );
+    if (!widget.stage) return figure;
+    return CustomPaint(
+      painter: CompanionStageGround(framing: widget.framing),
+      foregroundPainter: const CompanionStageVignette(),
+      child: figure,
     );
   }
 }

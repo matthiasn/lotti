@@ -25,6 +25,11 @@ enum CompanionFraming {
 
 /// Paints one [pose] of the companion in [look], fitting [framing]'s window
 /// into the canvas.
+///
+/// Only her: the stage she stands on is [CompanionStageGround] behind her and
+/// [CompanionStageVignette] over her, painted separately so that a
+/// `SupersampledPainter` wrapping this one draws only edges that can alias,
+/// never the full-view gradients.
 class CompanionPainter extends CustomPainter {
   CompanionPainter({
     required this.pose,
@@ -37,7 +42,8 @@ class CompanionPainter extends CustomPainter {
   final CompanionLook look;
   final CompanionFraming framing;
 
-  /// Stands her on the videos' dark stage instead of a clear background.
+  /// Casts her shadow on the stage's floor; set it when she stands on
+  /// [CompanionStageGround].
   final bool stage;
 
   /// The scale and offset that fit [framing]'s window into [size], centred.
@@ -55,14 +61,6 @@ class CompanionPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final (scale, offset) = fit(size, framing);
-    if (stage) {
-      CompanionStage.paintGround(
-        canvas,
-        size,
-        const Offset(0, -250) * scale + offset,
-        380 * scale,
-      );
-    }
     canvas
       ..save()
       ..clipRect(Offset.zero & size)
@@ -84,7 +82,6 @@ class CompanionPainter extends CustomPainter {
       drawArm(canvas, f, look, pose.right, 1);
     }
     canvas.restore();
-    if (stage) CompanionStage.paintVignette(canvas, size);
   }
 
   @override
@@ -93,4 +90,42 @@ class CompanionPainter extends CustomPainter {
       oldDelegate.look != look ||
       oldDelegate.framing != framing ||
       oldDelegate.stage != stage;
+}
+
+/// The videos' dark stage behind her: the ground and the light centred on
+/// her, fitted to [framing] the way [CompanionPainter] fits her.
+class CompanionStageGround extends CustomPainter {
+  const CompanionStageGround({this.framing = CompanionFraming.full});
+
+  final CompanionFraming framing;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final (scale, offset) = CompanionPainter.fit(size, framing);
+    CompanionStage.paintGround(
+      canvas,
+      size,
+      const Offset(0, -250) * scale + offset,
+      380 * scale,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CompanionStageGround oldDelegate) =>
+      oldDelegate.framing != framing;
+}
+
+/// The stage's vignette, darkening the edges of the view over her.
+class CompanionStageVignette extends CustomPainter {
+  const CompanionStageVignette();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    CompanionStage.paintVignette(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(CompanionStageVignette oldDelegate) => false;
 }

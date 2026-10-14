@@ -75,4 +75,25 @@ void main() {
       isNull,
     );
   });
+
+  testWidgets('leaving the page while the file is read is not an error', (
+    tester,
+  ) async {
+    setTestSurfaceSize(tester, const Size(600, 800));
+    await tester.pumpWidget(_preview('/no/such/clip.wav'));
+    await tester.tap(find.text('Play'));
+    // Leave before the read fails, then let it fail: the preview must not
+    // set state on, or make a player for, a page that is gone.
+    await tester.pumpWidget(const SizedBox());
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(
+        () => File(
+          '/no/such/clip.wav',
+        ).readAsBytes().then((_) {}, onError: (Object _) {}),
+      );
+      await tester.pump();
+    }
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CompanionVoicePreview), findsNothing);
+  });
 }

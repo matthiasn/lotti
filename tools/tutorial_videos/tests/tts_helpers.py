@@ -33,6 +33,12 @@ def fail_with(code: int, body: bytes):
     return mock.patch.object(urllib.request, "urlopen", side_effect=raise_error)
 
 
+def fail_unreachable(error: Exception):
+    """Patches ``urllib.request.urlopen`` to raise ``error`` before any
+    response arrives (DNS, a refused or dropped connection, the timeout)."""
+    return mock.patch.object(urllib.request, "urlopen", side_effect=error)
+
+
 def wav_info(data: bytes) -> tuple[int, int, int, bytes]:
     """(channels, sample width, frame rate, frames) of WAV bytes."""
     with wave.open(io.BytesIO(data), "rb") as wav:

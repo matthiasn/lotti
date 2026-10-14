@@ -33,6 +33,14 @@ void main() {
     expect(track.mouthAt(_ms(1350)).open, lessThan(0.5));
   });
 
+  test('the last word reaches the end of the voice', () {
+    // The text's closing rest is not stretched over the voice: an open
+    // vowel ending the line is still open just before the voice stops,
+    // rather than the lips closing early on a rest the voice does not have.
+    final track = VoicedTextTrack(envelope, 'mmmmmmmm aaaaaaaa');
+    expect(track.mouthAt(_ms(1450)).open, greaterThan(5));
+  });
+
   test('a clip with no voice at all never opens the mouth', () {
     final silent = SpeechEnvelope(List.filled(30, 0));
     final track = VoicedTextTrack(silent, 'hello');

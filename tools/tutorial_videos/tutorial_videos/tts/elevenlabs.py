@@ -15,18 +15,13 @@ so the same voice narrates every locale.
 from __future__ import annotations
 
 import json
-import urllib.error
 import urllib.parse
 import urllib.request
 
-from .base import TtsError, pcm_to_wav
+from .base import TtsError, pcm_to_wav, send_request
 
 API_BASE = "https://api.elevenlabs.io/v1/text-to-speech"
 SAMPLE_RATE = 24_000
-
-# How much of an error response to quote: enough for ElevenLabs' validation
-# detail, short of dumping an HTML error page.
-_ERROR_DETAIL_CHARS = 500
 
 
 class ElevenLabsTts:
@@ -49,14 +44,7 @@ class ElevenLabsTts:
             headers={"Content-Type": "application/json", "xi-api-key": self._api_key},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=120) as response:
-                pcm = response.read()
-        except urllib.error.HTTPError as error:
-            detail = error.read().decode("utf-8", "replace")[:_ERROR_DETAIL_CHARS]
-            raise TtsError(
-                f"ElevenLabs TTS failed for voice {voice!r}: HTTP {error.code} {detail}"
-            ) from None
+        pcm = send_request(request, engine="ElevenLabs", voice=voice)
         if not pcm:
             raise TtsError(f"ElevenLabs TTS returned no audio for voice {voice!r}")
         return pcm_to_wav(pcm, SAMPLE_RATE)

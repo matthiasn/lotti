@@ -130,7 +130,7 @@ bool _stageKnob(BuildContext context) =>
 int _smoothingKnob(BuildContext context) => context.knobs.object.segmented(
   label: 'Smoothing (samples per pixel)',
   options: const [1, 2, 4],
-  initialOption: 4,
+  initialOption: CompanionView.platformSupersample,
   labelBuilder: (f) => '$f×',
 );
 
@@ -153,7 +153,7 @@ class CompanionPlayground extends StatefulWidget {
     required this.rate,
     required this.autoGestures,
     this.stage = true,
-    this.supersample = 4,
+    this.supersample,
     super.key,
   });
 
@@ -164,7 +164,7 @@ class CompanionPlayground extends StatefulWidget {
   final double rate;
   final bool autoGestures;
   final bool stage;
-  final int supersample;
+  final int? supersample;
 
   @override
   State<CompanionPlayground> createState() => _CompanionPlaygroundState();

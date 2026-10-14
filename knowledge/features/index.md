@@ -61,6 +61,7 @@ what it does for a user; these describe how it runs.
 
 # Exploratory
 
+* [Companion](companion.md) - the animated character rig, widgetbook only: a spring-driven animator, playhead-timed mouth tracks, supersampling only where the renderer needs it.
 * [Knowledge-graph explorer](knowledge_graph.md) - a walkable ego-centric graph view.
 * [Project plaza](plaza.md) - the 3D walkable-project prototype: merge-stable street, facade LOD over live widgets, dev harness only.
 

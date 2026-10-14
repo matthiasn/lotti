@@ -57,7 +57,12 @@ def check_capture_length(
 
 
 def probe_duration(path: Path) -> float:
-    """Seconds of media in ``path``, by ffprobe."""
+    """Seconds of media in ``path``, by ffprobe.
+
+    A recording that was killed rather than stopped cleanly may carry no
+    duration (ffprobe prints ``N/A``); that raises ``ComposeError`` too,
+    since the length check above cannot vouch for a capture it cannot
+    measure."""
     result = subprocess.run(
         [
             "ffprobe", "-v", "error", "-show_entries", "format=duration",
@@ -69,7 +74,14 @@ def probe_duration(path: Path) -> float:
     )
     if result.returncode != 0:
         raise ComposeError(f"ffprobe failed on {path}: {result.stderr.strip()}")
-    return float(result.stdout.strip())
+    reported = result.stdout.strip()
+    try:
+        return float(reported)
+    except ValueError:
+        raise ComposeError(
+            f"ffprobe reports no duration for {path} ({reported or 'empty'}): "
+            "the recording was probably not finalised — rebuild this video"
+        ) from None
 
 
 def openmontage_root(repo_root: Path) -> Path:

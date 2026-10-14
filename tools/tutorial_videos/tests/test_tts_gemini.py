@@ -6,10 +6,12 @@ import base64
 import json
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 
-from tts_helpers import respond_with, wav_info
+from tts_helpers import fail_unreachable, fail_with, respond_with, wav_info
 
+from tutorial_videos.tts.base import TtsError
 from tutorial_videos.tts.gemini import GeminiTts, read_env_key
 
 PCM = b"\x01\x00\x02\x00" * 50
@@ -57,8 +59,24 @@ class GeminiTtsTest(unittest.TestCase):
             self.assertEqual(wav_info(_synthesize()), (1, 2, 24_000, PCM))
 
     def test_a_reply_without_audio_is_an_error(self):
-        with respond_with(b'{"candidates": []}'), self.assertRaises(RuntimeError):
+        with respond_with(b'{"candidates": []}'), self.assertRaises(TtsError) as raised:
             _synthesize()
+        self.assertIn("Algieba", str(raised.exception))
+
+    def test_an_http_error_names_the_status_and_never_the_key(self):
+        with fail_with(429, b"quota exceeded"), self.assertRaises(TtsError) as raised:
+            _synthesize()
+        message = str(raised.exception)
+        self.assertIn("HTTP 429", message)
+        self.assertIn("quota exceeded", message)
+        self.assertNotIn("secret-key", message)
+
+    def test_an_unreachable_api_is_an_error_naming_the_reason(self):
+        failure = urllib.error.URLError("Connection refused")
+        with fail_unreachable(failure), self.assertRaises(TtsError) as raised:
+            _synthesize()
+        self.assertIn("unreachable", str(raised.exception))
+        self.assertIn("Connection refused", str(raised.exception))
 
 
 class ReadEnvKeyTest(unittest.TestCase):

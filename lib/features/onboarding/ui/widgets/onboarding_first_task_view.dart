@@ -32,9 +32,10 @@ enum OnboardingFirstTaskPhase {
 /// the onboarding panel (unlike the pre-FTUE full-screen capture page).
 ///
 /// The composing/thinking frames share one composition: a per-phase headline,
-/// then a **fixed-height active band** rendering the recording visual the user
-/// picked one step earlier ([RecordingStyle.modern] orb or
-/// [RecordingStyle.analogue] VU meter), then per-phase support: guidance +
+/// then a **fixed-height active band** rendering the recording-style
+/// preference ([RecordingStyle.modern] orb by default, or the
+/// [RecordingStyle.analogue] VU meter when chosen under Settings → Recording
+/// Style), then per-phase support: guidance +
 /// tappable starter-task suggestions while idle, a live caption while
 /// listening, and the thinking cluster while structuring. A quiet "Rather
 /// type?" escape hatch stays pinned under the composing frames. The created

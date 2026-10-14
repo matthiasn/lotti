@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart';
 /// Who the companion is dressed as: her colours, and the few switches that
 /// differ between outfits.
 ///
-/// These are the looks of the pitch videos' grandmother
-/// (`tools/tutorial_videos/presenter/narrator/looks.py`), carried over as
-/// data. They are illustration colours — the character's skin, hair and
+/// These are the looks of the pitch videos' grandmother (their rig's
+/// `looks.py`; see the feature README for where that rig lives), carried
+/// over as data. They are illustration colours — the character's skin, hair and
 /// clothes, like the pixels of a drawing — not interface colours, so they do
 /// not come from the design system's tokens.
 @immutable

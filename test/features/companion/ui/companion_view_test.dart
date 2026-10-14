@@ -14,16 +14,27 @@ Widget _host(Widget view) => makeTestableWidgetNoScroll(
   Center(child: SizedBox(width: 200, height: 300, child: view)),
 );
 
+/// The layer she is painted on, the stage aside.
 SupersampledPainter _outer(WidgetTester tester) =>
     tester
             .widget<CustomPaint>(
               find.descendant(
                 of: find.byType(CompanionView),
-                matching: find.byType(CustomPaint),
+                matching: find.byWidgetPredicate(
+                  (w) => w is CustomPaint && w.painter is SupersampledPainter,
+                ),
               ),
             )
             .painter!
         as SupersampledPainter;
+
+/// The stage's layer around hers, if any.
+Finder _stage() => find.descendant(
+  of: find.byType(CompanionView),
+  matching: find.byWidgetPredicate(
+    (w) => w is CustomPaint && w.painter is CompanionStageGround,
+  ),
+);
 
 CompanionPainter _painter(WidgetTester tester) =>
     _outer(tester).inner as CompanionPainter;
@@ -61,6 +72,75 @@ void main() {
     await tester.pump(const Duration(milliseconds: 16));
     expect(_painter(tester).look, CompanionLook.grandmaRock);
     expect(_painter(tester).framing, CompanionFraming.bust);
+  });
+
+  group('smoothing', () {
+    testWidgets(
+      'none by default where the renderer anti-aliases',
+      (tester) async {
+        await tester.pumpWidget(_host(const CompanionView()));
+        expect(_outer(tester).factor, 1);
+      },
+      variant: const TargetPlatformVariant({
+        TargetPlatform.macOS,
+        TargetPlatform.iOS,
+        TargetPlatform.android,
+        TargetPlatform.windows,
+      }),
+    );
+
+    testWidgets(
+      '4 samples per pixel by default on Linux',
+      (tester) async {
+        await tester.pumpWidget(_host(const CompanionView()));
+        expect(_outer(tester).factor, 4);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
+
+    testWidgets(
+      'an explicit factor wins over the platform default',
+      (tester) async {
+        await tester.pumpWidget(_host(const CompanionView(supersample: 2)));
+        expect(_outer(tester).factor, 2);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
+  });
+
+  group('the stage', () {
+    testWidgets('is painted around her layer, not in the supersampled pass', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const CompanionView(stage: true, framing: CompanionFraming.bust),
+        ),
+      );
+      final stage = tester.widget<CustomPaint>(_stage());
+      expect(
+        (stage.painter! as CompanionStageGround).framing,
+        CompanionFraming.bust,
+      );
+      expect(stage.foregroundPainter, isA<CompanionStageVignette>());
+      // Her own layer sits inside the stage's, and only casts the shadow.
+      expect(
+        find.descendant(
+          of: _stage(),
+          matching: find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is SupersampledPainter,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(_painter(tester).stage, isTrue);
+    });
+
+    testWidgets('is left out without one', (tester) async {
+      await tester.pumpWidget(_host(const CompanionView()));
+      expect(_stage(), findsNothing);
+      expect(_painter(tester).stage, isFalse);
+    });
   });
 
   testWidgets('talks while the playhead is inside the track', (tester) async {

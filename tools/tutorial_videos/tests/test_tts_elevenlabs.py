@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import unittest
+import urllib.error
 
-from tts_helpers import fail_with, respond_with, wav_info
+from tts_helpers import fail_unreachable, fail_with, respond_with, wav_info
 
 from tutorial_videos.tts.base import TtsError
 from tutorial_videos.tts.elevenlabs import ElevenLabsTts
@@ -89,6 +90,29 @@ class ResponseTest(unittest.TestCase):
         with fail_with(500, b"x" * 5000), self.assertRaises(TtsError) as raised:
             _synthesize()
         self.assertEqual(str(raised.exception).count("x"), 500)
+
+    def test_an_unreachable_api_is_an_error_naming_the_reason(self):
+        failure = urllib.error.URLError("Name or service not known")
+        with fail_unreachable(failure), self.assertRaises(TtsError) as raised:
+            _synthesize()
+        message = str(raised.exception)
+        self.assertIn("unreachable", message)
+        self.assertIn("Name or service not known", message)
+        self.assertIn("voice-1", message)
+
+    def test_a_timeout_is_an_error(self):
+        with fail_unreachable(TimeoutError("timed out")), self.assertRaises(
+            TtsError
+        ) as raised:
+            _synthesize()
+        self.assertIn("timed out", str(raised.exception))
+
+    def test_a_dropped_connection_is_an_error(self):
+        with fail_unreachable(ConnectionResetError("reset by peer")), self.assertRaises(
+            TtsError
+        ) as raised:
+            _synthesize()
+        self.assertIn("reset by peer", str(raised.exception))
 
 
 if __name__ == "__main__":

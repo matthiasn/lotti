@@ -109,32 +109,79 @@ void main() {
     );
   });
 
-  test(
-    'the stage paints her ground; without it the view stays clear',
-    () async {
-      const size = Size(160, 240);
-      final bare = await _paint(
-        CompanionPainter(
+  group('the stage', () {
+    const size = Size(160, 240);
+    const grey = Color(0xFF808080);
+
+    test('she alone leaves the view clear, and casts her floor shadow on '
+        'the stage', () async {
+      Future<Raster> paint({required bool stage}) => Raster.of(
+        160,
+        240,
+        background: grey,
+        (canvas) => CompanionPainter(
           pose: const CompanionPose(),
           look: CompanionLook.grandma,
-        ),
-        size,
+          stage: stage,
+        ).paint(canvas, size),
       );
-      final staged = await _paint(
-        CompanionPainter(
-          pose: const CompanionPose(),
-          look: CompanionLook.grandma,
-          stage: true,
-        ),
-        size,
+      final bare = await paint(stage: false);
+      final staged = await paint(stage: true);
+      // No ground and no vignette: those are the stage painters' job.
+      expect(staged.at(3, 3), grey);
+      expect(staged.at(156, 236), grey);
+      // Beside her feet (the floor is at y ≈ 233 here, her centre x = 80).
+      expect(bare.at(115, 234), grey);
+      expect(staged.at(115, 234).r, lessThan(grey.r));
+    });
+
+    test('the ground fills the view, navy, behind her', () async {
+      final r = await Raster.of(
+        160,
+        240,
+        (canvas) => const CompanionStageGround().paint(canvas, size),
       );
-      expect(bare.at(3, 3), const Color(0xFF000000));
-      expect(staged.at(3, 3), isNot(const Color(0xFF000000)));
-      // The navy ground: more blue than red.
-      final c = staged.at(4, 120);
+      expect(r.at(3, 3), isNot(const Color(0xFF000000)));
+      final c = r.at(4, 120);
       expect(c.b, greaterThan(c.r));
-    },
-  );
+    });
+
+    test('the vignette darkens the edges, never the centre', () async {
+      final r = await Raster.of(
+        160,
+        240,
+        background: grey,
+        (canvas) => const CompanionStageVignette().paint(canvas, size),
+      );
+      expect(r.at(80, 120), grey);
+      expect(r.at(1, 1).r, lessThan(grey.r));
+    });
+
+    test('an empty size paints no stage', () async {
+      final r = await Raster.of(4, 4, (canvas) {
+        const CompanionStageGround().paint(canvas, Size.zero);
+        const CompanionStageVignette().paint(canvas, Size.zero);
+      });
+      expect(r.at(1, 1), const Color(0xFF000000));
+    });
+
+    test('the ground repaints only for a new framing; the vignette never', () {
+      const ground = CompanionStageGround();
+      expect(ground.shouldRepaint(const CompanionStageGround()), isFalse);
+      expect(
+        ground.shouldRepaint(
+          const CompanionStageGround(framing: CompanionFraming.bust),
+        ),
+        isTrue,
+      );
+      expect(
+        const CompanionStageVignette().shouldRepaint(
+          const CompanionStageVignette(),
+        ),
+        isFalse,
+      );
+    });
+  });
 
   test('an empty size paints nothing and does not throw', () async {
     final r = await Raster.of(4, 4, (canvas) {

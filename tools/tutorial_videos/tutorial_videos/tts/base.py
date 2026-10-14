@@ -12,6 +12,8 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
+import urllib.error
+import urllib.request
 import wave
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -21,7 +23,38 @@ from ..scenario import Scenario
 
 
 class TtsError(Exception):
-    """A TTS engine is misconfigured or its API refused a request."""
+    """A TTS engine is misconfigured, its API refused a request, or the API
+    could not be reached."""
+
+
+# How much of an error response to quote: enough for an API's validation
+# detail, short of dumping an HTML error page.
+_ERROR_DETAIL_CHARS = 500
+
+# One clip is a few seconds of speech; two minutes is a stuck request.
+REQUEST_TIMEOUT_SECONDS = 120
+
+
+def send_request(request: urllib.request.Request, *, engine: str, voice: str) -> bytes:
+    """The response body of ``request``, with every way the call can fail —
+    an HTTP error status, DNS, a dropped connection, the timeout — raised
+    as a ``TtsError`` naming ``engine`` and ``voice``.
+
+    The API key travels in a header, so neither message can reveal it."""
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.read()
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")[:_ERROR_DETAIL_CHARS]
+        raise TtsError(
+            f"{engine} TTS failed for voice {voice!r}: HTTP {error.code} {detail}"
+        ) from None
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        # HTTPError is a URLError too, which is why it is caught first.
+        reason = getattr(error, "reason", error)
+        raise TtsError(
+            f"{engine} TTS unreachable for voice {voice!r}: {reason}"
+        ) from None
 
 
 class TtsEngine(Protocol):

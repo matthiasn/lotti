@@ -63,6 +63,13 @@ class TextLipSync implements MouthTrack {
   @override
   Duration get length => Duration(microseconds: (_end * 1e6).round());
 
+  /// When the last word ends: the start of the closed-mouth rest every line
+  /// ends on, a trailing full stop's pause included. A track timing these
+  /// shapes to a real voice stretches this span, not [length], over the
+  /// voice — the rest is silence the voice does not have.
+  Duration get spokenLength =>
+      Duration(microseconds: (cues.last.start * 1e6).round());
+
   @override
   MouthShape mouthAt(Duration position) {
     final t = position.inMicroseconds / 1e6;

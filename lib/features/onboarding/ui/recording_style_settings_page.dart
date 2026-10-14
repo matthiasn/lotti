@@ -26,19 +26,16 @@ class RecordingStyleSettingsPage extends StatelessWidget {
   }
 }
 
-/// The Recording Style settings: the same live-previewed [RecordingStylePicker]
-/// shown during onboarding, backed directly by [recordingStyleProvider] — a
-/// tap on a card persists the choice immediately, there is no "Continue"
-/// step. [RecordingStyleLivePreview] supplies the same simulated / live-mic
-/// preview driving as onboarding.
+/// The Recording Style settings — the one place the recording style is
+/// chosen: the live-previewed [RecordingStylePicker], backed directly by
+/// [recordingStyleProvider], so a tap on a card persists the choice
+/// immediately. [RecordingStyleLivePreview] drives the previews with a
+/// simulated or live-mic level.
 ///
-/// Unlike onboarding — which always sits over its own dark
-/// `OnboardingBackdrop` and can safely force [RecordingStylePicker]'s cards
-/// to `dsTokensDark` — this page has no such backdrop and follows the
-/// ambient Settings theme (light or dark), so the picker is handed the
-/// ambient `context.designTokens`/`Theme.of(context).colorScheme` instead.
-/// Forcing the dark card styling here would render low-contrast text over
-/// a light page background.
+/// The page follows the ambient Settings theme (light or dark), so the
+/// picker is handed the ambient
+/// `context.designTokens`/`Theme.of(context).colorScheme`; forcing dark card
+/// styling would render low-contrast text over a light page background.
 class RecordingStyleSettingsBody extends ConsumerWidget {
   const RecordingStyleSettingsBody({super.key});
 

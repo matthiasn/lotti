@@ -59,9 +59,10 @@ crawl as she moves. `stage: true` stands her on the pitch videos' dark stage
 
 ## Where she comes from
 
-The pitch videos draw her with a Python/cairo rig
-(`tools/tutorial_videos/presenter/narrator/`). This feature is a port of that
-rig's design and motion to Dart, one module to one file: `character.py` →
+The pitch videos draw her with a Python/cairo rig, the presenter engine. It
+is not part of this repository: the module names below are that engine's,
+for orientation, not paths here. This feature is a port of that rig's design
+and motion to Dart, one module to one file: `character.py` →
 `rig/body_painter.dart` and `rig/head_painter.dart`, `face.py` →
 `rig/face_painter.dart`, `arm.py` → `rig/arm_solver.dart`, `motion.py` →
 `animation/companion_animator.dart`, and so on. The colours are illustration
@@ -79,3 +80,6 @@ same use cases, its look knob limited to its own looks:
 - **Talking with a voice (WAV)**: give it a 16-bit PCM WAV path (and, for
   better mouth shapes, its words), press Play, and she says it out loud;
 - **Looks**, **Moods** and **Chat avatar sizes** side by side.
+
+How a frame of her is made, the animator's states and the mouth tracks:
+[knowledge/features/companion.md](../../../knowledge/features/companion.md).

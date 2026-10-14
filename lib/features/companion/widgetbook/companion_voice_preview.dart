@@ -25,7 +25,7 @@ class CompanionVoicePreview extends StatefulWidget {
     required this.wavPath,
     required this.text,
     this.stage = true,
-    this.supersample = 4,
+    this.supersample,
     super.key,
   });
 
@@ -35,7 +35,7 @@ class CompanionVoicePreview extends StatefulWidget {
   final String wavPath;
   final String text;
   final bool stage;
-  final int supersample;
+  final int? supersample;
 
   @override
   State<CompanionVoicePreview> createState() => _CompanionVoicePreviewState();
@@ -51,7 +51,11 @@ class _CompanionVoicePreviewState extends State<CompanionVoicePreview> {
   Future<void> _play() async {
     final path = widget.wavPath.trim();
     try {
-      final envelope = SpeechEnvelope.fromWav(await File(path).readAsBytes());
+      final bytes = await File(path).readAsBytes();
+      // The page may have been left while the file was read: a player made
+      // now would never be disposed.
+      if (!mounted) return;
+      final envelope = SpeechEnvelope.fromWav(bytes);
       final text = widget.text.trim();
       final player = _player ??= _listen(Player());
       setState(() {
@@ -61,6 +65,7 @@ class _CompanionVoicePreviewState extends State<CompanionVoicePreview> {
       });
       await player.open(Media(path));
     } on Object catch (e) {
+      if (!mounted) return;
       setState(() => _error = '$e');
     }
   }

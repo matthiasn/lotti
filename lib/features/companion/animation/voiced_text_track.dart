@@ -7,7 +7,8 @@ import 'package:lotti/features/companion/rig/rig_math.dart';
 /// A recorded voice with its words: the words give the mouth its shapes, the
 /// voice gives the timing and how far it opens.
 ///
-/// The text's shapes are stretched over the voiced part of the clip (from the
+/// The text's spoken shapes (up to [TextLipSync.spokenLength], without the
+/// closing rest) are stretched over the voiced part of the clip (from the
 /// first sound to the last), and the voice's loudness gates them: silent, the
 /// lips close; loud, the shape opens fully. This is what the on-device voice
 /// can feed, since it knows the text it spoke.
@@ -38,7 +39,7 @@ class VoicedTextTrack implements MouthTrack {
     final l = envelope.loudnessAt(position);
     if (l < _quiet || _to <= _from) return Viseme.x.shape;
     final t = position.inMicroseconds / 1e6;
-    final spoken = words.length.inMicroseconds / 1e6;
+    final spoken = words.spokenLength.inMicroseconds / 1e6;
     final u = clampUnit((t - _from) / (_to - _from));
     final shape = words.mouthAt(
       Duration(microseconds: (u * spoken * 1e6).round()),

@@ -62,6 +62,23 @@ class ProbeDurationTest(unittest.TestCase):
         ), self.assertRaises(ComposeError):
             probe_duration(Path("missing.mkv"))
 
+    def test_an_unfinalised_capture_without_a_duration_raises(self):
+        # A grabber killed instead of stopped leaves an MKV ffprobe cannot
+        # time: it succeeds but prints N/A.
+        with mock.patch.object(
+            subprocess, "run", return_value=mock.Mock(returncode=0, stdout="N/A\n")
+        ), self.assertRaises(ComposeError) as raised:
+            probe_duration(Path("c.mkv"))
+        self.assertIn("N/A", str(raised.exception))
+        self.assertIn("c.mkv", str(raised.exception))
+
+    def test_an_empty_probe_output_raises(self):
+        with mock.patch.object(
+            subprocess, "run", return_value=mock.Mock(returncode=0, stdout="")
+        ), self.assertRaises(ComposeError) as raised:
+            probe_duration(Path("c.mkv"))
+        self.assertIn("empty", str(raised.exception))
+
 
 class ComposeVideoGuardTest(unittest.TestCase):
     def setUp(self):

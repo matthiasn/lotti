@@ -42,6 +42,21 @@ void main() {
     expect(opens.where((o) => o < 0.5), isNotEmpty);
   });
 
+  test('the spoken span ends where the closing rest begins', () {
+    // "ma": 0.055 s of m, 0.085 s of a, then the 0.2 s closing rest.
+    final track = TextLipSync('ma');
+    expect(track.spokenLength.inMicroseconds, closeTo(140000, 1));
+    expect(
+      (track.length - track.spokenLength).inMicroseconds,
+      closeTo(200000, 1),
+    );
+    // A trailing full stop's pause is rest too, not speech.
+    final stopped = TextLipSync('ma.');
+    expect(stopped.spokenLength, track.spokenLength);
+    expect(stopped.length, greaterThan(track.length));
+    expect(TextLipSync('').spokenLength, Duration.zero);
+  });
+
   test('a new shape is blended in, not snapped', () {
     final track = TextLipSync('ma');
     final second = track.cues[1];

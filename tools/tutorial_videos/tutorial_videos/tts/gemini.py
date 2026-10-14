@@ -14,7 +14,7 @@ import json
 import urllib.request
 from pathlib import Path
 
-from .base import pcm_to_wav
+from .base import TtsError, pcm_to_wav, send_request
 
 SAMPLE_RATE = 24_000
 
@@ -56,11 +56,10 @@ class GeminiTts:
                 "x-goog-api-key": self._api_key,
             },
         )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            payload = json.load(resp)
+        payload = json.loads(send_request(req, engine="Gemini", voice=voice))
         candidates = payload.get("candidates") or []
         if not candidates or not candidates[0].get("content", {}).get("parts"):
-            raise RuntimeError(
+            raise TtsError(
                 f"Gemini TTS returned no audio for voice {voice!r}: {payload}"
             )
         part = candidates[0]["content"]["parts"][0]
