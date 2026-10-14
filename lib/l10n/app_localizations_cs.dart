@@ -7270,7 +7270,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalCheckInTimeQuickPickHint =>
-      'Jak dlouho ti tenhle check-in trval?';
+      'Jak dlouho ti tohle hlášení trvalo?';
 
   @override
   String goalCheckInTimeSemanticsLabel(String label) {
@@ -7444,7 +7444,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
 
   @override
-  String get goalDimensionCheckInTimeSource => 'Čas strávený check-iny';
+  String get goalDimensionCheckInTimeSource => 'Čas strávený hlášeními';
 
   @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
@@ -7583,15 +7583,15 @@ class AppLocalizationsCs extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String minutesString = minutesNumberFormat.format(minutes);
 
-    return '$minutesString min check-inů denně';
+    return '$minutesString min hlášení denně';
   }
 
   @override
   String get goalFormCheckInTimeSignal =>
-      'minuty strávené check-iny k tomuto cíli';
+      'minuty strávené hlášeními k tomuto cíli';
 
   @override
-  String get goalFormCheckInTimeTitle => 'Čas na check-in';
+  String get goalFormCheckInTimeTitle => 'Čas na hlášení';
 
   @override
   String get goalFormChooseHabit => 'Vyber existující návyk';

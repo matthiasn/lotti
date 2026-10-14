@@ -19,9 +19,10 @@ bool goalDailyBriefingDue(GoalWakeFacts facts, {required bool interactive}) =>
 
 /// What the previous briefing said, for continuity: its summary and the next
 /// steps it showed the user, so today's can follow up on them instead of
-/// starting cold. Null when there is no earlier report, or the latest one
-/// already covers [periodKey] (then it is today's, not the previous one), or
-/// it said neither.
+/// starting cold. Null when the latest report is not from a period BEFORE
+/// [periodKey] (it is today's — or, for an overdue escalation evaluating an
+/// older day, written after it), when it was written for a spec other than
+/// [specVersionId] (the goal was revised since), or when it said neither.
 ///
 /// Read from the report as STORED: the summary is the report's own `tldr`,
 /// and the persisted sections carry `nextActions` as the one list of steps
@@ -29,16 +30,22 @@ bool goalDailyBriefingDue(GoalWakeFacts facts, {required bool interactive}) =>
 Map<String, Object?>? goalPreviousBriefingFacts(
   AgentReportEntity? report, {
   required String periodKey,
+  required String specVersionId,
 }) {
   if (report == null) return null;
   final reportPeriod = report.provenance['periodKey'];
-  if (reportPeriod == periodKey) return null;
+  // Period keys are ISO dates, so string order is day order.
+  if (reportPeriod is! String || reportPeriod.compareTo(periodKey) >= 0) {
+    return null;
+  }
+  final reportSpec = report.provenance['specVersionId'];
+  if (reportSpec is String && reportSpec != specVersionId) return null;
   final tldr = report.tldr?.trim();
   final nextSteps = goalReportNextSteps(report);
   final hasTldr = tldr != null && tldr.isNotEmpty;
   if (!hasTldr && nextSteps.isEmpty) return null;
   return {
-    'periodKey': ?reportPeriod,
+    'periodKey': reportPeriod,
     if (hasTldr) 'tldr': tldr,
     if (nextSteps.isNotEmpty) 'nextSteps': nextSteps,
   };

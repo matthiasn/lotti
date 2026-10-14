@@ -49,25 +49,36 @@ typedef GoalTodayBriefingSource = ({
   String title,
   GoalTrackStatus? status,
   String? specVersionId,
+  DateTime? specCreatedAt,
   AgentReportEntity? report,
 });
 
-/// The Today card's lines: every goal whose standing report belongs to its
-/// current spec, the goals that need attention first.
+/// The Today card's lines: every goal whose standing report is today's — the
+/// period [todayPeriodKey] — for its current spec, the goals that need
+/// attention first.
 ///
 /// A deterministic roll-up of what each goal's agent already wrote — no
-/// inference of its own. A report for a superseded spec is left out rather
-/// than captioning the revised goal with the old one's verdict (the health
-/// projection's rule), and a goal without any report has nothing to say yet.
+/// inference of its own. An older report is left out rather than pairing
+/// today's status with yesterday's read and steps; a report for a superseded
+/// spec is left out rather than captioning the revised goal with the old
+/// one's verdict (the health projection's rule, including its fallback to the
+/// report's age for reports minted before they named their spec); and a goal
+/// without today's report has nothing to say yet.
 List<GoalTodayBriefingItem> goalTodayBriefingItems(
-  List<GoalTodayBriefingSource> goals,
-) {
+  List<GoalTodayBriefingSource> goals, {
+  required String todayPeriodKey,
+}) {
   final items = <GoalTodayBriefingItem>[];
   for (final goal in goals) {
     final report = goal.report;
     if (report == null || report.deletedAt != null) continue;
+    if (report.provenance['periodKey'] != todayPeriodKey) continue;
     final reportSpec = report.provenance['specVersionId'];
-    if (reportSpec is String && reportSpec != goal.specVersionId) continue;
+    final specCreatedAt = goal.specCreatedAt;
+    final forCurrentSpec = reportSpec is String
+        ? reportSpec == goal.specVersionId
+        : specCreatedAt == null || !report.createdAt.isBefore(specCreatedAt);
+    if (!forCurrentSpec) continue;
     final read = [report.oneLiner, report.tldr]
         .map((text) => text?.trim())
         .firstWhere(

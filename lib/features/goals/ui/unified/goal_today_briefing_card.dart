@@ -1,5 +1,7 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -27,23 +29,27 @@ class GoalTodayBriefingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = goalTodayBriefingItems([
-      for (final identity in identities)
-        if (ref.watch(goalAgentHealthProvider(identity.agentId)).value
-            case final health?)
-          (
-            agentId: identity.agentId,
-            title: health.spec?.title ?? identity.displayName,
-            status: health.trackStatus,
-            specVersionId: health.spec?.id,
-            report: switch (ref
-                .watch(agentReportProvider(identity.agentId))
-                .value) {
-              final AgentReportEntity report => report,
-              _ => null,
-            },
-          ),
-    ]);
+    final items = goalTodayBriefingItems(
+      todayPeriodKey: const GoalWindow.day().periodKey(clock.now()),
+      [
+        for (final identity in identities)
+          if (ref.watch(goalAgentHealthProvider(identity.agentId)).value
+              case final health?)
+            (
+              agentId: identity.agentId,
+              title: health.spec?.title ?? identity.displayName,
+              status: health.trackStatus,
+              specVersionId: health.spec?.id,
+              specCreatedAt: health.spec?.createdAt,
+              report: switch (ref
+                  .watch(agentReportProvider(identity.agentId))
+                  .value) {
+                final AgentReportEntity report => report,
+                _ => null,
+              },
+            ),
+      ],
+    );
     if (items.isEmpty) return const SizedBox.shrink();
 
     final tokens = context.designTokens;

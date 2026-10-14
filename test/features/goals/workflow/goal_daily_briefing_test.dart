@@ -52,6 +52,7 @@ void main() {
       tldr: 'Two walks this week; one more keeps pace.',
       provenance: {
         'periodKey': '2026-08-07',
+        'specVersionId': 'spec-v1',
         GoalReportProvenanceKeys.sections: {
           GoalReportSectionKeys.currentPeriod: 'One walk today.',
           GoalReportSectionKeys.nextActions: [
@@ -63,26 +64,71 @@ void main() {
     );
 
     test("carries yesterday's summary and next steps into today's wake", () {
-      expect(goalPreviousBriefingFacts(yesterday, periodKey: '2026-08-08'), {
-        'periodKey': '2026-08-07',
-        'tldr': 'Two walks this week; one more keeps pace.',
-        'nextSteps': ['Log the evening walk.', 'Walk after lunch on Thursday.'],
-      });
+      expect(
+        goalPreviousBriefingFacts(
+          yesterday,
+          periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
+        ),
+        {
+          'periodKey': '2026-08-07',
+          'tldr': 'Two walks this week; one more keeps pace.',
+          'nextSteps': [
+            'Log the evening walk.',
+            'Walk after lunch on Thursday.',
+          ],
+        },
+      );
     });
 
     test("today's own report is not the previous briefing", () {
       expect(
-        goalPreviousBriefingFacts(yesterday, periodKey: '2026-08-07'),
+        goalPreviousBriefingFacts(
+          yesterday,
+          periodKey: '2026-08-07',
+          specVersionId: 'spec-v1',
+        ),
         isNull,
       );
     });
 
     test('a report that said nothing to follow up carries nothing', () {
-      expect(goalPreviousBriefingFacts(null, periodKey: '2026-08-08'), isNull);
+      expect(
+        goalPreviousBriefingFacts(
+          null,
+          periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
+        ),
+        isNull,
+      );
       expect(
         goalPreviousBriefingFacts(
           makeTestReport(provenance: {'periodKey': '2026-08-07'}),
           periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
+        ),
+        isNull,
+      );
+    });
+
+    test('a report from after the evaluated day is not its previous '
+        'briefing — an overdue wake must not read the future', () {
+      expect(
+        goalPreviousBriefingFacts(
+          yesterday,
+          periodKey: '2026-08-06',
+          specVersionId: 'spec-v1',
+        ),
+        isNull,
+      );
+    });
+
+    test('a report written for a superseded spec is not followed up', () {
+      expect(
+        goalPreviousBriefingFacts(
+          yesterday,
+          periodKey: '2026-08-08',
+          specVersionId: 'spec-v2',
         ),
         isNull,
       );
@@ -96,6 +142,7 @@ void main() {
             provenance: {'periodKey': '2026-08-07'},
           ),
           periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
         ),
         {'periodKey': '2026-08-07', 'tldr': 'Held the line.'},
       );

@@ -7,9 +7,11 @@
   editor's signal picker to aim for at least a few minutes of checking in a
   day; it is tracked like any other part of the goal, and a check-in moves
   the progress card straight away.
-- **A daily briefing for every goal.** Each morning the goal's agent writes a
-  short read of where things stand and what to do next — concrete steps drawn
-  from your data and your check-ins, following up on yesterday's. The goal
-  page leads its summary with *What's next*.
-- **A Today card on the Goals page.** One card gathers every goal's one-line
-  read and next step, the goals that need attention first.
+- **A daily briefing for every goal.** Each morning, for a goal with automatic
+  updates on, the goal's agent writes a short read of where things stand and
+  what to do next — concrete steps drawn from your data and your check-ins,
+  following up on yesterday's — unless the day already has its report. The
+  goal page leads its summary with *What's next*.
+- **A Today card on the Goals page.** One card gathers each goal's one-line
+  read and next step from that day's briefing, the goals that need attention
+  first.

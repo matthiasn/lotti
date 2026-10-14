@@ -7262,8 +7262,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInTimeQuickPickHint =>
-      'Quanto tempo levou este check-in?';
+  String get goalCheckInTimeQuickPickHint => 'Quanto tempo levou este registo?';
 
   @override
   String goalCheckInTimeSemanticsLabel(String label) {
@@ -7442,7 +7441,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Tempo da categoria rastreada';
 
   @override
-  String get goalDimensionCheckInTimeSource => 'Tempo dedicado aos check-ins';
+  String get goalDimensionCheckInTimeSource => 'Tempo dedicado aos registos';
 
   @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
@@ -7578,15 +7577,15 @@ class AppLocalizationsPt extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String minutesString = minutesNumberFormat.format(minutes);
 
-    return '$minutesString min de check-ins por dia';
+    return '$minutesString min de registos por dia';
   }
 
   @override
   String get goalFormCheckInTimeSignal =>
-      'minutos dedicados aos check-ins desta meta';
+      'minutos dedicados aos registos desta meta';
 
   @override
-  String get goalFormCheckInTimeTitle => 'Tempo de check-in';
+  String get goalFormCheckInTimeTitle => 'Tempo de registo';
 
   @override
   String get goalFormChooseHabit => 'Escolher um hábito existente';

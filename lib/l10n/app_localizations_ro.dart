@@ -7296,7 +7296,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalCheckInSessionRunning(String elapsed) {
-    return 'Reflectați · $elapsed';
+    return 'Reflecție · $elapsed';
   }
 
   @override
@@ -7311,7 +7311,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInTimeQuickPickHint => 'Cât a durat acest check-in?';
+  String get goalCheckInTimeQuickPickHint => 'Cât a durat această raportare?';
 
   @override
   String goalCheckInTimeSemanticsLabel(String label) {
@@ -7502,8 +7502,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Timp de categorie urmărit';
 
   @override
-  String get goalDimensionCheckInTimeSource =>
-      'Timp petrecut cu check-in-urile';
+  String get goalDimensionCheckInTimeSource => 'Timp petrecut cu raportările';
 
   @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
@@ -7639,15 +7638,15 @@ class AppLocalizationsRo extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String minutesString = minutesNumberFormat.format(minutes);
 
-    return '$minutesString min de check-in-uri pe zi';
+    return '$minutesString min de raportări pe zi';
   }
 
   @override
   String get goalFormCheckInTimeSignal =>
-      'minute petrecute cu check-in-urile pentru acest obiectiv';
+      'minute petrecute cu raportările pentru acest obiectiv';
 
   @override
-  String get goalFormCheckInTimeTitle => 'Timp de check-in';
+  String get goalFormCheckInTimeTitle => 'Timp de raportare';
 
   @override
   String get goalFormChooseHabit => 'Alegeți un obicei existent';

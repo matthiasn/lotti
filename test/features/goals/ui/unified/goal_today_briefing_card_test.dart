@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -15,6 +16,9 @@ import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
 void main() {
+  // The card shows today's briefings; the clock says which day that is.
+  final fixedClock = Clock.fixed(DateTime(2026, 8, 15, 9));
+
   AgentIdentityEntity identity(String id) => makeTestIdentity(
     id: id,
     agentId: id,
@@ -37,6 +41,7 @@ void main() {
       makeTestReport(
         oneLiner: oneLiner,
         provenance: {
+          'periodKey': '2026-08-15',
           GoalReportProvenanceKeys.sections: {
             GoalReportSectionKeys.nextActions: steps,
           },
@@ -60,26 +65,29 @@ void main() {
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        SingleChildScrollView(
-          child: GoalTodayBriefingCard(
-            identities: [identity('walk'), identity('sleep')],
+    await withClock(
+      fixedClock,
+      () => tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: GoalTodayBriefingCard(
+              identities: [identity('walk'), identity('sleep')],
+            ),
           ),
-        ),
-        overrides: overrides(
-          statuses: {
-            'walk': GoalTrackStatus.onTrack,
-            'sleep': GoalTrackStatus.offTrack,
-          },
-          reports: {
-            'walk': report('Two walks this week.', ['Walk after lunch.']),
-            'sleep': report('Three late nights.', ['Lights out by 23:00.']),
-          },
+          overrides: overrides(
+            statuses: {
+              'walk': GoalTrackStatus.onTrack,
+              'sleep': GoalTrackStatus.offTrack,
+            },
+            reports: {
+              'walk': report('Two walks this week.', ['Walk after lunch.']),
+              'sleep': report('Three late nights.', ['Lights out by 23:00.']),
+            },
+          ),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await withClock(fixedClock, tester.pumpAndSettle);
 
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Next: Walk after lunch.'), findsOneWidget);

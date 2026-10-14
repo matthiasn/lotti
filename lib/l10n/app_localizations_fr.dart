@@ -7300,7 +7300,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalCheckInTimeQuickPickHint =>
-      'Combien de temps t\'a pris ce point d\'étape ?';
+      'Combien de temps t\'a pris ce point ?';
 
   @override
   String goalCheckInTimeSemanticsLabel(String label) {
@@ -7481,8 +7481,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Temps de catégorie suivi';
 
   @override
-  String get goalDimensionCheckInTimeSource =>
-      'Temps passé aux points d\'étape';
+  String get goalDimensionCheckInTimeSource => 'Temps passé sur les points';
 
   @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
@@ -7618,15 +7617,15 @@ class AppLocalizationsFr extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String minutesString = minutesNumberFormat.format(minutes);
 
-    return '$minutesString min de points d\'étape par jour';
+    return '$minutesString min de points par jour';
   }
 
   @override
   String get goalFormCheckInTimeSignal =>
-      'minutes passées aux points d\'étape sur cet objectif';
+      'minutes passées sur les points de cet objectif';
 
   @override
-  String get goalFormCheckInTimeTitle => 'Temps de point d\'étape';
+  String get goalFormCheckInTimeTitle => 'Temps des points';
 
   @override
   String get goalFormChooseHabit => 'Choisir une habitude existante';

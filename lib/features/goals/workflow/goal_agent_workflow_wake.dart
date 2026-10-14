@@ -151,6 +151,9 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         labelTimeEvidenceEnd: derivation.facts.labelTimeEvidenceEnd,
         hasActiveCategoryTimer: derivation.facts.hasActiveCategoryTimer,
         hasActiveLabelTimer: derivation.facts.hasActiveLabelTimer,
+        // Whether today already has its report decides the daily briefing;
+        // dropping it here made every wake look like the morning's first.
+        periodReported: derivation.facts.periodReported,
       ),
     );
   }

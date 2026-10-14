@@ -2924,6 +2924,54 @@ void main() {
     expect(calls, 2, reason: 'primary turn plus one forced briefing turn');
   });
 
+  test('a wake on a day that already has its report is not the briefing — '
+      'Phase B keeps what Phase A derived', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getLatestReport(agentId, AgentReportScopes.current),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'report-today',
+                agentId: agentId,
+                scope: AgentReportScopes.current,
+                createdAt: now,
+                vectorClock: null,
+                content: 'Today.',
+                provenance: {
+                  'periodKey': '2026-08-09',
+                  'specVersionId': '$agentId:spec-v1',
+                  'trackStatus': GoalTrackStatus.insufficientData.name,
+                },
+              )
+              as AgentReportEntity,
+    );
+    final messages = <String>[];
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          messages.add(message);
+          return null;
+        };
+
+    await run();
+
+    for (final message in messages) {
+      expect(message, isNot(contains(goalDailyBriefingInstruction)));
+      expect(message, isNot(contains(goalDailyBriefingReportInstruction)));
+    }
+  });
+
   test('a chat turn is never the briefing, even before the day has its '
       'report', () async {
     stubSpec();

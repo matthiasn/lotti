@@ -7203,7 +7203,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalCheckInTimeQuickPickHint =>
-      'Hur lång tid tog den här incheckningen?';
+      'Hur lång tid tog den här avstämningen?';
 
   @override
   String goalCheckInTimeSemanticsLabel(String label) {
@@ -7375,7 +7375,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Spårad kategoritid';
 
   @override
-  String get goalDimensionCheckInTimeSource => 'Tid för incheckningar';
+  String get goalDimensionCheckInTimeSource => 'Tid för avstämningar';
 
   @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
@@ -7511,15 +7511,15 @@ class AppLocalizationsSv extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String minutesString = minutesNumberFormat.format(minutes);
 
-    return '$minutesString min incheckningar per dag';
+    return '$minutesString min avstämningar per dag';
   }
 
   @override
   String get goalFormCheckInTimeSignal =>
-      'minuter du lägger på incheckningar för det här målet';
+      'minuter du lägger på avstämningar för det här målet';
 
   @override
-  String get goalFormCheckInTimeTitle => 'Incheckningstid';
+  String get goalFormCheckInTimeTitle => 'Avstämningstid';
 
   @override
   String get goalFormChooseHabit => 'Välj en befintlig vana';

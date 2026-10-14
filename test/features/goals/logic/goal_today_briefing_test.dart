@@ -6,19 +6,25 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 import '../../agents/test_data/entity_factories.dart';
 
+const today = '2026-08-15';
+
 void main() {
   AgentReportEntity report({
     String? oneLiner,
     String? tldr,
     List<Object?>? steps,
-    String specVersionId = 'spec-v1',
+    String? specVersionId = 'spec-v1',
+    String periodKey = today,
+    DateTime? createdAt,
     DateTime? deletedAt,
   }) {
     final base = makeTestReport(
       oneLiner: oneLiner,
       tldr: tldr,
+      createdAt: createdAt,
       provenance: {
-        'specVersionId': specVersionId,
+        'periodKey': periodKey,
+        'specVersionId': ?specVersionId,
         GoalReportProvenanceKeys.sections: {
           GoalReportSectionKeys.nextActions: ?steps,
         },
@@ -36,6 +42,7 @@ void main() {
     title: 'Goal $id',
     status: status,
     specVersionId: 'spec-v1',
+    specCreatedAt: DateTime(2026, 8, 10),
     report: standing,
   );
 
@@ -57,7 +64,7 @@ void main() {
 
   group('goalTodayBriefingItems', () {
     test("quotes each goal's one-liner and its first next step", () {
-      final items = goalTodayBriefingItems([
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
         goal(
           'walk',
           standing: report(
@@ -76,7 +83,7 @@ void main() {
     });
 
     test('falls back to the summary when the report has no one-liner', () {
-      final items = goalTodayBriefingItems([
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
         goal('walk', standing: report(tldr: 'On pace.')),
       ]);
       expect(items.single.read, 'On pace.');
@@ -85,7 +92,7 @@ void main() {
 
     test('leaves out goals with nothing to say: no report, a deleted one, '
         'one for a superseded spec, or one that is empty', () {
-      final items = goalTodayBriefingItems([
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
         goal('none'),
         goal(
           'deleted',
@@ -102,10 +109,43 @@ void main() {
       expect([for (final item in items) item.agentId], ['kept']);
     });
 
+    test("yesterday's report is not today's line", () {
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
+        goal(
+          'stale',
+          standing: report(oneLiner: 'x', periodKey: '2026-08-14'),
+        ),
+      ]);
+      expect(items, isEmpty);
+    });
+
+    test('a report that names no spec counts for the current one only when '
+        'it was written after the spec', () {
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
+        goal(
+          'before-revision',
+          standing: report(
+            oneLiner: 'x',
+            specVersionId: null,
+            createdAt: DateTime(2026, 8, 9),
+          ),
+        ),
+        goal(
+          'after-revision',
+          standing: report(
+            oneLiner: 'Kept.',
+            specVersionId: null,
+            createdAt: DateTime(2026, 8, 15, 6),
+          ),
+        ),
+      ]);
+      expect([for (final item in items) item.agentId], ['after-revision']);
+    });
+
     test('the goals that need attention come first; equals keep their '
         'order', () {
       AgentReportEntity said(String text) => report(oneLiner: text);
-      final items = goalTodayBriefingItems([
+      final items = goalTodayBriefingItems(todayPeriodKey: today, [
         goal('fine', standing: said('a')),
         goal('fine-too', standing: said('b')),
         goal('unknown', status: null, standing: said('c')),
