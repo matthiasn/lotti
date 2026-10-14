@@ -314,12 +314,10 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
   }
 
   void _openInternals() {
-    Navigator.of(context).push(
-      AgentInternalsPanel.route(
-        context: context,
-        agentId: widget.agentId,
-        agentName: widget.identity.displayName,
-      ),
+    AgentInternalsPanel.show(
+      context: context,
+      agentId: widget.agentId,
+      agentName: widget.identity.displayName,
     );
   }
 

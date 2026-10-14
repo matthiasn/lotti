@@ -221,12 +221,10 @@ class _RelationshipBriefingCardState
   }
 
   void _openInternals(String? agentName) {
-    Navigator.of(context).push(
-      AgentInternalsPanel.route(
-        context: context,
-        agentId: _agentId,
-        agentName: agentName,
-      ),
+    AgentInternalsPanel.show(
+      context: context,
+      agentId: _agentId,
+      agentName: agentName,
     );
   }
 

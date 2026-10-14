@@ -15,8 +15,10 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -29,6 +31,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -892,7 +895,9 @@ void main() {
     expect(form.prefilledTime, isNull);
   });
 
-  testWidgets("Talk to agent beams to the person's chat", (tester) async {
+  testWidgets("on a phone, Talk to agent beams to the person's chat page", (
+    tester,
+  ) async {
     // Enrolled: the hero offers the agent only where there is one.
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
       (_) async => relationship(important: true),
@@ -903,12 +908,79 @@ void main() {
     final beamedTo = <String>[];
     beamToNamedOverride = beamedTo.add;
     addTearDown(() => beamToNamedOverride = null);
+    const phone = Size(390, 844);
+    setTestSurfaceSize(tester, phone);
 
-    await pumpPage(tester);
+    await pumpPage(tester, mediaQueryData: const MediaQueryData(size: phone));
     await tester.tap(find.byKey(const ValueKey('person-talk-to-agent')));
     await tester.pump();
 
     expect(beamedTo, ['/people/rel-1/chat']);
+  });
+
+  testWidgets(
+    'on desktop, Talk to agent opens the chat in the side sheet over the '
+    'page instead of navigating',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(important: true),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+      const desktop = Size(1400, 900);
+      setTestSurfaceSize(tester, desktop);
+
+      await pumpPage(
+        tester,
+        mediaQueryData: const MediaQueryData(size: desktop),
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+      await tester.tap(find.byKey(const ValueKey('person-talk-to-agent')));
+      await withClock(Clock.fixed(now), tester.pumpAndSettle);
+
+      final pane = find.byType(RelationshipChatPane);
+      expect(pane, findsOneWidget);
+      expect(
+        tester.getSize(pane).width,
+        moreOrLessEquals(kAgentChatSheetWidth, epsilon: 1),
+      );
+      expect(tester.getTopRight(pane).dx, moreOrLessEquals(desktop.width));
+      expect(beamedTo, isEmpty);
+    },
+  );
+
+  testWidgets("the hero menu opens the person's agent internals", (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await pumpPage(
+      tester,
+      overrides: [
+        agentIdentityProvider.overrideWith((ref, agentId) async => null),
+        agentStateProvider.overrideWith((ref, agentId) async => null),
+      ],
+    );
+    await tester.tap(find.byKey(const ValueKey('person-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('person-menu-internals')));
+    await withClock(Clock.fixed(now), tester.pumpAndSettle);
+
+    final panel = tester.widget<AgentInternalsPanel>(
+      find.byType(AgentInternalsPanel),
+    );
+    expect(panel.agentId, relationshipAgentIdFor('rel-1'));
   });
 
   AgentIdentityEntity relationshipAgentIdentity(AgentLifecycle lifecycle) =>

@@ -42,7 +42,7 @@ class QueryCompanion extends ConsumerStatefulWidget {
       context.designTokens.spacing.step2;
 
   static double minimumChatWidth(BuildContext context) =>
-      kGoalChatDrawerWidth * _textScale(context);
+      kAgentChatSheetWidth * _textScale(context);
 
   static double _textScale(BuildContext context) {
     final size =
@@ -61,7 +61,7 @@ class _QueryCompanionState extends ConsumerState<QueryCompanion> {
   final _sheet = DraggableScrollableController();
   FocusNode? _returnFocus;
   ChatRecorderController? _recorder;
-  double _preferredWidth = kGoalChatDrawerWidth;
+  double _preferredWidth = kAgentChatSheetWidth;
 
   @override
   void dispose() {

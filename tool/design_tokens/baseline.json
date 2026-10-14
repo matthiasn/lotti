@@ -18,7 +18,7 @@
     "lib/features/agents/ui/agent_creation_modal.dart": {"spacing":2},
     "lib/features/agents/ui/agent_detail_page.dart": {"spacing":1},
     "lib/features/agents/ui/agent_internals_body.dart": {"spacing":1},
-    "lib/features/agents/ui/agent_internals_panel.dart": {"spacing":5,"color":2},
+    "lib/features/agents/ui/agent_internals_panel.dart": {"spacing":5,"color":1},
     "lib/features/agents/ui/agent_palette.dart": {"color":7},
     "lib/features/agents/ui/agent_report_section.dart": {"spacing":3},
     "lib/features/agents/ui/agent_soul_detail_info_tab.dart": {"spacing":6,"typography":1},

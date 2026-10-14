@@ -2819,7 +2819,7 @@ void main() {
     );
     expect(
       tester.getTopLeft(find.byType(GoalAgentChatPane)).dx,
-      moreOrLessEquals(desktopSize.width - kGoalChatDrawerWidth, epsilon: 1),
+      moreOrLessEquals(desktopSize.width - kAgentChatSheetWidth, epsilon: 1),
       reason: 'the sheet docks at the window edge at the drawer width',
     );
     // The page behind dims under the app's one modal scrim.

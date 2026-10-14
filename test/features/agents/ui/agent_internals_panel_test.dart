@@ -10,11 +10,11 @@ import '../../../test_helper.dart';
 import '../test_data/entity_factories.dart';
 
 /// The `AgentInternalsPanel` is a thin re-housing of `AgentInternalsBody`
-/// inside a right-side overlay. The body itself is exercised by the
+/// inside the shared side sheet. The body itself is exercised by the
 /// existing `AgentDetailPage` test suite — these tests focus on the
 /// panel's chrome and lifecycle:
 ///
-/// * scrim dismissal and the close icon both pop the route
+/// * a tap on the scrim and the close icon both dismiss it
 /// * the body switches in once the identity provider resolves
 /// * width is clamped between `minPanelWidth` and `maxPanelWidth`.
 
@@ -28,6 +28,10 @@ void main() {
     bool passAgentName = true,
   }) async {
     final identity = makeTestIdentity();
+    tester.view
+      ..physicalSize = screenSize
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
         mediaQueryData: MediaQueryData(size: screenSize),
@@ -40,12 +44,10 @@ void main() {
         child: Builder(
           builder: (context) => Center(
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).push(
-                AgentInternalsPanel.route(
-                  context: context,
-                  agentId: identity.agentId,
-                  agentName: passAgentName ? identity.displayName : null,
-                ),
+              onPressed: () => AgentInternalsPanel.show(
+                context: context,
+                agentId: identity.agentId,
+                agentName: passAgentName ? identity.displayName : null,
               ),
               child: const Text('open'),
             ),
@@ -152,33 +154,20 @@ void main() {
       expect(find.text('open'), findsOneWidget);
     });
 
-    testWidgets('the scrim GestureDetector wires onTap to maybePop', (
+    testWidgets('a tap on the scrim beside the panel dismisses it', (
       tester,
     ) async {
       await pumpPanel(
         tester,
+        screenSize: const Size(1600, 900),
         overrides: [
           agentStateProvider.overrideWith((ref, agentId) async => null),
         ],
       );
+      expect(find.text('Agent internals'), findsOneWidget);
 
-      // The panel installs a full-screen GestureDetector behind the
-      // panel as the dismissal scrim. We assert the wiring directly:
-      // the first descendant `GestureDetector` carries an `onTap` that
-      // pops via `Navigator.maybePop`. Invoking the callback directly keeps
-      // this test deterministic regardless of hit-testing intricacies
-      // inside the test harness.
-      final scrimGesture = tester.widget<GestureDetector>(
-        find
-            .descendant(
-              of: find.byType(AgentInternalsPanel),
-              matching: find.byType(GestureDetector),
-            )
-            .first,
-      );
-      expect(scrimGesture.behavior, HitTestBehavior.opaque);
-
-      scrimGesture.onTap!();
+      // Left of the panel: the dimmed page.
+      await tester.tapAt(const Offset(40, 450));
       await tester.pumpAndSettle();
 
       expect(find.text('Agent internals'), findsNothing);
@@ -201,59 +190,47 @@ void main() {
     testWidgets('panel width is clamped to the configured range', (
       tester,
     ) async {
-      // Wide screen → clamped to maxPanelWidth.
+      // Half of a very wide window is more than the panel needs.
       await pumpPanel(
         tester,
-        screenSize: const Size(1600, 900),
+        screenSize: const Size(2000, 900),
         overrides: [
           agentStateProvider.overrideWith((ref, agentId) async => null),
         ],
       );
-
-      final wide = tester
-          .widgetList<SizedBox>(
-            find.descendant(
-              of: find.byType(AgentInternalsPanel),
-              matching: find.byType(SizedBox),
-            ),
-          )
-          .firstWhere(
-            (s) => s.width == AgentInternalsPanel.maxPanelWidth,
-            orElse: () =>
-                throw StateError('no SizedBox at maxPanelWidth was found'),
-          );
-      expect(wide.width, AgentInternalsPanel.maxPanelWidth);
+      final panel = tester.getRect(find.byType(AgentInternalsPanel));
+      expect(panel.width, AgentInternalsPanel.maxPanelWidth);
+      expect(panel.right, 2000);
     });
 
-    testWidgets(
-      'narrow screens render the panel as a full-screen modal',
-      (tester) async {
-        // Phone-sized screen below the mobile breakpoint.
-        await pumpPanel(
-          tester,
-          screenSize: const Size(390, 844),
-          overrides: [
-            agentStateProvider.overrideWith((ref, agentId) async => null),
-          ],
-        );
+    testWidgets('a narrow desktop window still gets the minimum width', (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        screenSize: const Size(1000, 800),
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+      expect(
+        tester.getSize(find.byType(AgentInternalsPanel)).width,
+        AgentInternalsPanel.minPanelWidth,
+      );
+    });
 
-        // The panel takes the full viewport width instead of clamping.
-        final modal = tester
-            .widgetList<SizedBox>(
-              find.descendant(
-                of: find.byType(AgentInternalsPanel),
-                matching: find.byType(SizedBox),
-              ),
-            )
-            .firstWhere(
-              (s) => s.width == 390,
-              orElse: () => throw StateError(
-                'no SizedBox at the device width was found',
-              ),
-            );
-        expect(modal.width, 390);
-      },
-    );
+    testWidgets('a phone gets the panel as a full-width bottom sheet', (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        screenSize: const Size(390, 844),
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+      expect(tester.getSize(find.byType(AgentInternalsPanel)).width, 390);
+    });
   });
 
   group('AgentInternalsPanel – identity fallbacks', () {
@@ -270,12 +247,10 @@ void main() {
           child: Builder(
             builder: (context) => Center(
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).push(
-                  AgentInternalsPanel.route(
-                    context: context,
-                    agentId: 'agent-001',
-                    agentName: null,
-                  ),
+                onPressed: () => AgentInternalsPanel.show(
+                  context: context,
+                  agentId: 'agent-001',
+                  agentName: null,
                 ),
                 child: const Text('open'),
               ),
@@ -308,12 +283,10 @@ void main() {
           child: Builder(
             builder: (context) => Center(
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).push(
-                  AgentInternalsPanel.route(
-                    context: context,
-                    agentId: 'agent-001',
-                    agentName: 'Task Laura',
-                  ),
+                onPressed: () => AgentInternalsPanel.show(
+                  context: context,
+                  agentId: 'agent-001',
+                  agentName: 'Task Laura',
                 ),
                 child: const Text('open'),
               ),

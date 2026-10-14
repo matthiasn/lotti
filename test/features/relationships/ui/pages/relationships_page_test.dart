@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
@@ -1101,31 +1102,33 @@ void main() {
 
     final rowBen = find.byKey(const ValueKey('people-row-rel-ben'));
 
-    // Design panel 2026-09-19: the chat sits beside the person's page, so
-    // what the agent is asked about stays in view.
-    testWidgets('on a wide window the chat opens as a sidebar beside the '
-        'person page and the list, and the page stays mounted', (tester) async {
+    // The chat is the shared side sheet over the person's page: the page
+    // and the list keep their room, and the URL never claims a chat the
+    // screen is not showing.
+    testWidgets('a /chat address opens the chat in the side sheet over the '
+        'page, hands the address back to the person, and closing it keeps '
+        'the page mounted', (tester) async {
       stubAnna();
-      await pumpDesktop(tester, width: 1600);
-
-      expect(find.byType(RelationshipChatPane), findsOneWidget);
-      final page = tester.getRect(find.byType(RelationshipDetailsPage));
-      final chat = tester.getRect(find.byType(RelationshipChatPane));
-      expect(chat.left, greaterThanOrEqualTo(page.right));
-      expect(chat.width, defaultListPaneWidth);
-      expect(rowBen, findsOneWidget, reason: 'room for all three');
-      final pageState = tester.state(find.byType(RelationshipDetailsPage));
-
-      // Close routes to the person, so the URL and the pane stay in step.
       final navigated = <String>[];
       beamToNamedOverride = navigated.add;
       addTearDown(() => beamToNamedOverride = null);
+
+      await pumpDesktop(tester, width: 1600);
+
+      expect(navigated, ['/people/rel-anna']);
+      final chat = find.byType(RelationshipChatPane);
+      expect(chat, findsOneWidget);
+      expect(
+        tester.getSize(chat).width,
+        moreOrLessEquals(kAgentChatSheetWidth, epsilon: 1),
+      );
+      // Over the page, not beside it: the page and the list keep their room.
+      expect(find.byType(RelationshipDetailsPage), findsOneWidget);
+      expect(rowBen, findsOneWidget);
+      final pageState = tester.state(find.byType(RelationshipDetailsPage));
+
       expect(find.byKey(const ValueKey('person-chat-back')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('person-chat-close')));
-      await tester.pump();
-      expect(navigated, ['/people/rel-anna']);
-
-      chatOpen.value = false;
       await tester.pumpAndSettle();
       expect(find.byType(RelationshipChatPane), findsNothing);
       expect(
@@ -1135,41 +1138,17 @@ void main() {
       );
     });
 
-    // Codex review on #4357: beside the list, a laptop window would squeeze
-    // the page to a strip; the list steps aside while the chat is open.
-    testWidgets('where the list would squeeze the page, the list steps aside '
-        'for the chat and returns when it closes', (tester) async {
+    testWidgets('the list never steps aside for the chat, even where the '
+        'pane is narrow', (tester) async {
       stubAnna();
+      beamToNamedOverride = (_) {};
+      addTearDown(() => beamToNamedOverride = null);
+
       await pumpDesktop(tester);
 
-      expect(find.byType(RelationshipDetailsPage), findsOneWidget);
       expect(find.byType(RelationshipChatPane), findsOneWidget);
-      expect(rowBen, findsNothing);
-      expect(
-        tester.getSize(find.byType(RelationshipDetailsPage)).width,
-        greaterThanOrEqualTo(defaultListPaneWidth),
-      );
-
-      chatOpen.value = false;
-      await tester.pumpAndSettle();
-      expect(rowBen, findsOneWidget, reason: 'the preference was untouched');
-    });
-
-    testWidgets('where even the pane alone cannot hold both, the chat takes '
-        'the pane and leads back to the person', (tester) async {
-      stubAnna();
-      await pumpDesktop(tester, paneWidth: 800);
-
-      expect(find.byType(RelationshipChatPane), findsOneWidget);
-      expect(find.byType(RelationshipDetailsPage), findsNothing);
+      expect(rowBen, findsOneWidget);
       expect(tester.takeException(), isNull);
-
-      final navigated = <String>[];
-      beamToNamedOverride = navigated.add;
-      addTearDown(() => beamToNamedOverride = null);
-      await tester.tap(find.byKey(const ValueKey('person-chat-back')));
-      await tester.pump();
-      expect(navigated, ['/people/rel-anna']);
     });
   });
 }

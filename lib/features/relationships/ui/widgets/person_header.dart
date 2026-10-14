@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -217,6 +219,7 @@ class PersonHeroAppBar extends StatelessWidget {
         PersonMenuButton(
           relationship: relationship,
           onDelete: onDelete,
+          hasAgent: hasAgent,
           glyphColor: ink,
           // The same disc the back, chat and edit buttons wear. Without it
           // the kebab — which holds delete — was a bare white glyph on a
@@ -492,13 +495,20 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
 /// What the hero's kebab offers: the contact-link intents where there is an
 /// address book (ADR 0041), and delete — which says it takes the check-ins
 /// with it.
-enum PersonMenuAction { linkContact, refreshContact, relinkContact, delete }
+enum PersonMenuAction {
+  internals,
+  linkContact,
+  refreshContact,
+  relinkContact,
+  delete,
+}
 
 /// The hero's overflow menu.
 class PersonMenuButton extends ConsumerWidget {
   const PersonMenuButton({
     required this.relationship,
     required this.onDelete,
+    this.hasAgent = false,
     this.glyphColor,
     this.fill,
     super.key,
@@ -506,6 +516,9 @@ class PersonMenuButton extends ConsumerWidget {
 
   final RelationshipEntry relationship;
   final Future<void> Function() onDelete;
+
+  /// Whether this person has an agent, whose internals the menu then offers.
+  final bool hasAgent;
 
   /// The kebab's glyph. Null is the theme's ink; the hero passes the
   /// photo-neutral glyph while it sits on a banner.
@@ -554,6 +567,13 @@ class PersonMenuButton extends ConsumerWidget {
       style: fill == null ? null : IconButton.styleFrom(backgroundColor: fill),
       icon: Icon(LottiIcons.moreVertical, color: triggerInk),
       onSelected: (action) => unawaited(switch (action) {
+        // The person's agent, in the side sheet over this page: its reports,
+        // conversations and what it has cost — never a trip to Settings.
+        PersonMenuAction.internals => AgentInternalsPanel.show(
+          context: context,
+          agentId: relationshipAgentIdFor(relationship.id),
+          agentName: null,
+        ),
         PersonMenuAction.linkContact ||
         PersonMenuAction.relinkContact => runContactLinkAction(
           context,
@@ -568,6 +588,12 @@ class PersonMenuButton extends ConsumerWidget {
         PersonMenuAction.delete => onDelete(),
       }),
       itemBuilder: (context) => [
+        if (hasAgent)
+          PopupMenuItem(
+            key: const ValueKey('person-menu-internals'),
+            value: PersonMenuAction.internals,
+            child: item(LottiIcons.tune, messages.aiInternalsTitle),
+          ),
         if (contactsSupported && !linked)
           PopupMenuItem(
             value: PersonMenuAction.linkContact,

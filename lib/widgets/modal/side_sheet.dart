@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -65,3 +66,11 @@ Future<T?> showSideSheetPane<T>({
     ],
   );
 }
+
+/// The side sheet an agent conversation opens in: a fixed reading width, so
+/// a goal's chat and a person's chat are the same panel.
+const kAgentChatSideSheet = SizedWoltSideSheetType(
+  widthFraction: 1,
+  minWidth: kAgentChatSheetWidth,
+  maxWidth: kAgentChatSheetWidth,
+);

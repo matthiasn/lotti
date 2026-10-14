@@ -1389,14 +1389,17 @@ handler would retract it; that wiring is a follow-up.
   subtitle is the coarse-health label, current state rather than the
   aspiration statement. Mobile opens durable conversation
   at `/goals/details/:agentId/chat`; desktop hosts the same
-  `GoalAgentChatPane` in a ~400px **non-modal overlay drawer**
-  (`kGoalChatDrawerWidth`): it slides over the dashboard without reflow —
-  the dashboard keeps its width and position, the drawer covers the
-  check-ins rail and wears `DsShadows.floatingSurface` — and it
-  stays mounted while closed so the draft survives, closes on Esc, ×, or an
-  outside tap (a shared `TapRegion` group keeps the Talk-to and Ask-why
-  openers from counting as outside), and its header carries the same
-  `UnifiedGoalStatusPill` as the page so the two can never disagree. The
+  `GoalAgentChatPane` in the shared **side sheet** (`showSideSheetPane`,
+  `kAgentChatSideSheet`, `kAgentChatSheetWidth` wide — the panel the Daily OS
+  check-in and a person's conversation open in): it slides over the dimmed
+  dashboard without reflow — the dashboard keeps its width and position —
+  and closes on Esc, ×, or a tap on the scrim. The draft lives in the
+  keep-alive `goalChatControllerProvider`, so closing the sheet loses
+  nothing. The sheet header carries the same `UnifiedGoalStatusPill` as the
+  page so the two can never disagree: the sheet is its own route and does
+  not rebuild with the page, so the page republishes the header (status,
+  standing-assessment flag, recovery hint) through a `ValueNotifier` the
+  sheet listens to, after each frame in which it changed. The
   Agent's-read card's Ask-why link opens that conversation pre-filled with
   the computed status (never clobbering an existing draft); the card also
   carries the read's "as of" age, self-demoting to the out-of-date notice

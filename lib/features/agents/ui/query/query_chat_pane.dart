@@ -900,7 +900,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       width:
           (MediaQuery.sizeOf(context).width -
                   context.designTokens.spacing.step7)
-              .clamp(0, kGoalChatDrawerWidth),
+              .clamp(0, kAgentChatSheetWidth),
       semanticsLabel: messages.queryChats,
       builder: (context, {required toggle, required isOpen}) {
         _toggleMenu = toggle;

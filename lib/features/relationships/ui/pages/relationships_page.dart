@@ -22,7 +22,7 @@ import 'package:lotti/features/relationships/ui/pages/relationship_details_page.
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -74,26 +74,13 @@ class RelationshipsPage extends ConsumerWidget {
     return ColoredBox(
       color: tokens.colors.background.level01,
       child: ListenableBuilder(
-        listenable: Listenable.merge([
-          navService.desktopSelectedRelationshipId,
-          navService.desktopRelationshipChatOpen,
-        ]),
+        listenable: navService.desktopSelectedRelationshipId,
         builder: (context, _) => LayoutBuilder(
           builder: (context, constraints) {
             final selectedId = navService.desktopSelectedRelationshipId.value;
             final canHideListPane = selectedId != null;
-            // The chat docks beside the person page, which needs room of its
-            // own: while the chat is open and the list would squeeze the page
-            // below a pane's width, the list steps aside for now — the
-            // stored preference is untouched, and the page's own control
-            // brings the list back.
-            final makeRoomForChat =
-                navService.desktopRelationshipChatOpen.value &&
-                constraints.maxWidth - listPaneWidth <
-                    chatSidebarMinDetailWidth;
             final listPaneVisible =
-                (!paneWidths.listPaneCollapsed && !makeRoomForChat) ||
-                !canHideListPane;
+                !paneWidths.listPaneCollapsed || !canHideListPane;
             return ListDetailFocusTraversal(
               debugLabel: 'people-split',
               listPaneVisible: listPaneVisible,
@@ -131,30 +118,51 @@ class RelationshipsPage extends ConsumerWidget {
   }
 }
 
-/// The narrowest detail pane that holds the person page and the chat
-/// sidebar side by side: the sidebar's width, and at least as much again
-/// for the page.
-const double chatSidebarMinDetailWidth = 2 * defaultListPaneWidth;
-
-/// The desktop detail pane: the person's page — with their chat as a
-/// sidebar beside it while it is open — or one of their check-ins.
+/// The desktop detail pane: the person's page, or one of their check-ins.
 ///
-/// The chat sits beside the page rather than replacing it (design panel
-/// 2026-09-19): what the agent is asked about stays in view. The pane
-/// follows `NavService.desktopRelationshipChatOpen`, which the location
-/// writes from the URL's `/chat` segment, keeping the address bar and the
-/// pane in step; the page keeps its key, so opening and closing the chat
-/// never rebuilds it.
-class _PersonDetailPane extends StatelessWidget {
+/// The person's agent conversation never takes a column here: it opens in the
+/// shared side sheet over the page (see [showRelationshipChatSheet]). A
+/// `/people/<id>/chat` address — a deep link, a restored route — still lands
+/// in it: the pane hands the address back to the person and opens the sheet,
+/// so the URL never claims a chat the screen is not showing.
+class _PersonDetailPane extends StatefulWidget {
   const _PersonDetailPane({required this.relationshipId});
 
   final String relationshipId;
 
   @override
+  State<_PersonDetailPane> createState() => _PersonDetailPaneState();
+}
+
+class _PersonDetailPaneState extends State<_PersonDetailPane> {
+  final NavService _navService = getIt<NavService>();
+
+  @override
+  void initState() {
+    super.initState();
+    _navService.desktopRelationshipChatOpen.addListener(_onChatAddress);
+    // An address that already asks for the chat when the pane appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onChatAddress());
+  }
+
+  @override
+  void dispose() {
+    _navService.desktopRelationshipChatOpen.removeListener(_onChatAddress);
+    super.dispose();
+  }
+
+  void _onChatAddress() {
+    if (!mounted || !_navService.desktopRelationshipChatOpen.value) return;
+    final relationshipId = widget.relationshipId;
+    beamToNamed('/people/$relationshipId');
+    showRelationshipChatSheet(context, relationshipId: relationshipId);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final navService = getIt<NavService>();
+    final relationshipId = widget.relationshipId;
     return ValueListenableBuilder<String?>(
-      valueListenable: navService.desktopRelationshipCheckInId,
+      valueListenable: _navService.desktopRelationshipCheckInId,
       builder: (context, checkInId, _) => checkInId != null
           ? Scaffold(
               key: ValueKey('people-check-in-$checkInId'),
@@ -164,65 +172,10 @@ class _PersonDetailPane extends StatelessWidget {
                 onBack: () => beamToNamed('/people/$relationshipId'),
               ),
             )
-          : _personOrChat(navService),
-    );
-  }
-
-  Widget _personOrChat(NavService navService) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: navService.desktopRelationshipChatOpen,
-      builder: (context, chatOpen, _) => LayoutBuilder(
-        builder: (context, constraints) {
-          final page = RelationshipDetailsPage(
-            key: ValueKey(relationshipId),
-            relationshipId: relationshipId,
-          );
-          // The chat docks beside the page only while the page keeps at
-          // least a list pane's width of its own; a narrower pane — a
-          // window near the desktop breakpoint, the sidebar expanded —
-          // gives the chat the whole pane instead of squeezing both.
-          if (chatOpen && constraints.maxWidth < chatSidebarMinDetailWidth) {
-            return Scaffold(
-              key: ValueKey('people-chat-$relationshipId'),
-              body: RelationshipChatPane(
-                relationshipId: relationshipId,
-                onBack: () => beamToNamed('/people/$relationshipId'),
-                showInternalsAction: true,
-              ),
-            );
-          }
-          // The page sits in the same Row whether or not the chat is
-          // docked, so opening and closing it never remounts the page.
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: page),
-              if (chatOpen) ...[
-                VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: context.designTokens.colors.decorative.level01,
-                ),
-                // As wide as the list pane on the other side of the page. The
-                // sidebar is raw content, unlike the person page, which
-                // brings its own Scaffold — and the composer's field needs a
-                // Material ancestor.
-                SizedBox(
-                  key: ValueKey('people-chat-sidebar-$relationshipId'),
-                  width: defaultListPaneWidth,
-                  child: Scaffold(
-                    body: RelationshipChatPane(
-                      relationshipId: relationshipId,
-                      onClose: () => beamToNamed('/people/$relationshipId'),
-                      showInternalsAction: true,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
+          : RelationshipDetailsPage(
+              key: ValueKey(relationshipId),
+              relationshipId: relationshipId,
+            ),
     );
   }
 }

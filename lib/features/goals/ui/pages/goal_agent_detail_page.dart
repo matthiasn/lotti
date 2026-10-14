@@ -53,7 +53,6 @@ import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/modal/side_sheet.dart';
-import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -155,24 +154,18 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// Desktop's conversation: the shared side sheet, sliding in over the
   /// dimmed dashboard (which never reflows around it). The draft lives in the
   /// keep-alive chat controller, so closing the sheet loses nothing.
-  void _openChat() => unawaited(
-    showSideSheetPane<void>(
-      context: context,
-      sideSheet: const SizedWoltSideSheetType(
-        widthFraction: 1,
-        minWidth: kGoalChatDrawerWidth,
-        maxWidth: kGoalChatDrawerWidth,
-      ),
-      builder: (sheetContext) => ValueListenableBuilder<_GoalChatHeader?>(
-        valueListenable: _chatHeader,
-        builder: (context, header, _) => header == null
-            ? const SizedBox.shrink()
-            : _GoalChatDrawer(
-                agentId: agentId,
-                header: header,
-                onClose: () => Navigator.of(sheetContext).pop(),
-              ),
-      ),
+  void _openChat() => showSideSheetPane<void>(
+    context: context,
+    sideSheet: kAgentChatSideSheet,
+    builder: (sheetContext) => ValueListenableBuilder<_GoalChatHeader?>(
+      valueListenable: _chatHeader,
+      builder: (context, header, _) => header == null
+          ? const SizedBox.shrink()
+          : _GoalChatDrawer(
+              agentId: agentId,
+              header: header,
+              onClose: () => Navigator.of(sheetContext).pop(),
+            ),
     ),
   );
 

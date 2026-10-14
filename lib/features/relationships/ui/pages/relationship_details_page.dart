@@ -23,6 +23,7 @@ import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -273,8 +274,14 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 relationship: relationship,
                 contentInset: insets.left,
                 onBack: () => _back(context),
-                onTalkToAgent: () =>
-                    beamToNamed('/people/$relationshipId/chat'),
+                // Desktop: the side sheet over this page. A phone pushes
+                // the conversation as its own page.
+                onTalkToAgent: () => isDesktopLayout(context)
+                    ? showRelationshipChatSheet(
+                        context,
+                        relationshipId: relationshipId,
+                      )
+                    : beamToNamed('/people/$relationshipId/chat'),
                 onDelete: () => _handleDelete(context, ref, relationship),
                 hasAgent: hasAgent,
                 onAvatarTap: () => showPersonAvatarSheet(

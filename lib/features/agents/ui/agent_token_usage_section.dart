@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -22,6 +25,10 @@ class AgentTokenUsageSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summariesAsync = ref.watch(agentTokenUsageSummariesProvider(agentId));
+    // What this agent has cost over its lifetime, beside the per-model token
+    // breakdown it is made of — the attribution every agent's internals
+    // carry, whatever kind of agent it is.
+    final totals = ref.watch(agentConsumptionTotalsProvider(agentId)).value;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -31,11 +38,24 @@ class AgentTokenUsageSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.messages.agentTokenUsageHeading,
-            style: context.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.messages.agentTokenUsageHeading,
+                  style: context.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (totals != null)
+                ConsumptionSummaryPill(
+                  key: const ValueKey('agent-consumption-totals'),
+                  totals: totals,
+                  foregroundColor:
+                      context.designTokens.colors.text.mediumEmphasis,
+                ),
+            ],
           ),
           const SizedBox(height: AppTheme.spacingSmall),
           summariesAsync.when(

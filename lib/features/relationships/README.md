@@ -61,8 +61,9 @@ confirmed together. Call scheduling and task-note suggestions are not
 implemented yet.
 
 The conversation uses the shared agent chat surface under an identity header.
-Phones open `/people/<id>/chat`; on desktop the chat opens as a sidebar beside
-the person's page, which stays in view.
+Phones open `/people/<id>/chat`; on desktop the chat opens in the shared side
+sheet over the person's page, which stays in view behind the scrim. The hero's
+menu opens the agent's internals in the same sheet.
 Check-in banners use the shared nudge system and open the person page.
 Cadence reminders also have an OS-notification projection for when the app
 is closed; with the wording switch on, that reminder takes the words of the

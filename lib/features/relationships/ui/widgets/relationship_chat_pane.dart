@@ -293,12 +293,10 @@ class _InternalsAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    void open() => Navigator.of(context).push(
-      AgentInternalsPanel.route(
-        context: context,
-        agentId: agentId,
-        agentName: agentName,
-      ),
+    void open() => AgentInternalsPanel.show(
+      context: context,
+      agentId: agentId,
+      agentName: agentName,
     );
 
     return headerWidth >= kPageHeaderFoldWidth
