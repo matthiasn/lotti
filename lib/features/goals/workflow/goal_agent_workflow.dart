@@ -359,6 +359,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             ),
             periodKey: derivation.periodKey,
             specVersionId: version.id,
+            specCreatedAt: version.createdAt,
           )
         : null;
     final factsBlock = await _composeFactsBlock(

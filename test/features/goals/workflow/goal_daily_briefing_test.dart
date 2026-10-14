@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
@@ -46,6 +47,7 @@ void main() {
   });
 
   group('goalPreviousBriefingFacts', () {
+    final specCreated = DateTime(2026, 8);
     // The stored shape: the summary on the report, the steps the user saw as
     // one list in the persisted sections.
     final yesterday = makeTestReport(
@@ -69,6 +71,7 @@ void main() {
           yesterday,
           periodKey: '2026-08-08',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         {
           'periodKey': '2026-08-07',
@@ -87,6 +90,7 @@ void main() {
           yesterday,
           periodKey: '2026-08-07',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         isNull,
       );
@@ -98,6 +102,7 @@ void main() {
           null,
           periodKey: '2026-08-08',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         isNull,
       );
@@ -106,6 +111,7 @@ void main() {
           makeTestReport(provenance: {'periodKey': '2026-08-07'}),
           periodKey: '2026-08-08',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         isNull,
       );
@@ -118,6 +124,7 @@ void main() {
           yesterday,
           periodKey: '2026-08-06',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         isNull,
       );
@@ -129,8 +136,37 @@ void main() {
           yesterday,
           periodKey: '2026-08-08',
           specVersionId: 'spec-v2',
+          specCreatedAt: specCreated,
         ),
         isNull,
+      );
+    });
+
+    test('a report that names no spec is followed up only when it was written '
+        'after the spec', () {
+      AgentReportEntity legacy(DateTime createdAt) => makeTestReport(
+        tldr: 'Held the line.',
+        createdAt: createdAt,
+        provenance: {'periodKey': '2026-08-07'},
+      );
+      expect(
+        goalPreviousBriefingFacts(
+          legacy(DateTime(2026, 7, 20)),
+          periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
+        ),
+        isNull,
+        reason: 'written for the goal before its revision',
+      );
+      expect(
+        goalPreviousBriefingFacts(
+          legacy(DateTime(2026, 8, 7, 6)),
+          periodKey: '2026-08-08',
+          specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
+        ),
+        {'periodKey': '2026-08-07', 'tldr': 'Held the line.'},
       );
     });
 
@@ -139,10 +175,14 @@ void main() {
         goalPreviousBriefingFacts(
           makeTestReport(
             tldr: 'Held the line.',
-            provenance: {'periodKey': '2026-08-07'},
+            provenance: {
+              'periodKey': '2026-08-07',
+              'specVersionId': 'spec-v1',
+            },
           ),
           periodKey: '2026-08-08',
           specVersionId: 'spec-v1',
+          specCreatedAt: specCreated,
         ),
         {'periodKey': '2026-08-07', 'tldr': 'Held the line.'},
       );

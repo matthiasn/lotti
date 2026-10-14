@@ -20,6 +20,21 @@ List<String> goalReportNextSteps(AgentReportEntity report) {
   ];
 }
 
+/// Whether [report] was written for the spec [specVersionId]: by the spec it
+/// names, or — for a report minted before reports named their spec — by being
+/// no older than the spec ([specCreatedAt]). The health projection's rule, so
+/// a revised goal is never captioned, or followed up, with its old self's
+/// words.
+bool goalReportBelongsToSpec(
+  AgentReportEntity report, {
+  required String? specVersionId,
+  required DateTime? specCreatedAt,
+}) {
+  final reportSpec = report.provenance['specVersionId'];
+  if (reportSpec is String) return reportSpec == specVersionId;
+  return specCreatedAt == null || !report.createdAt.isBefore(specCreatedAt);
+}
+
 /// One goal's line in the Today card: where it stands, in the agent's own
 /// one-liner, and the first thing to do next.
 @immutable
@@ -73,12 +88,13 @@ List<GoalTodayBriefingItem> goalTodayBriefingItems(
     final report = goal.report;
     if (report == null || report.deletedAt != null) continue;
     if (report.provenance['periodKey'] != todayPeriodKey) continue;
-    final reportSpec = report.provenance['specVersionId'];
-    final specCreatedAt = goal.specCreatedAt;
-    final forCurrentSpec = reportSpec is String
-        ? reportSpec == goal.specVersionId
-        : specCreatedAt == null || !report.createdAt.isBefore(specCreatedAt);
-    if (!forCurrentSpec) continue;
+    if (!goalReportBelongsToSpec(
+      report,
+      specVersionId: goal.specVersionId,
+      specCreatedAt: goal.specCreatedAt,
+    )) {
+      continue;
+    }
     final read = [report.oneLiner, report.tldr]
         .map((text) => text?.trim())
         .firstWhere(
