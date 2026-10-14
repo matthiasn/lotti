@@ -630,7 +630,7 @@ future planner creation.
 A page an agent serves — a goal's, a person's — reaches that agent the same
 way. On desktop the conversation opens from
 [`AgentChatButton`](../../../lib/features/agents/ui/agent_chat_button.dart):
-the AI card's accent pair and the sparkle, at the compact touch target, one
+the AI card's accent pair and the sparkle, the whole recommended touch target answering, one
 announcement for screen readers. The page's overflow menu is built from
 [`agent_menu_items.dart`](../../../lib/features/agents/ui/agent_menu_items.dart):
 one row style (`agentMenuItem`, with a destructive variant in the error ink),

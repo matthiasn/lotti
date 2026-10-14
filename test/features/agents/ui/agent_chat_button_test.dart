@@ -12,7 +12,9 @@ void main() {
     String? label,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
-      Center(child: AgentChatButton(onPressed: onPressed, label: label)),
+      Center(
+        child: AgentChatButton(onPressed: onPressed, label: label),
+      ),
     ),
   );
 
@@ -71,13 +73,26 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('keeps the compact touch target however short the label', (
+  testWidgets('the whole recommended target answers, not only the pill', (
     tester,
   ) async {
-    await pump(tester, onPressed: () {}, label: 'Chat');
-    expect(
-      tester.getSize(find.byType(AgentChatButton)).height,
-      greaterThanOrEqualTo(TapTargets.compact),
+    var pressed = 0;
+    await pump(tester, onPressed: () => pressed++, label: 'Chat');
+
+    final target = tester.getRect(find.byType(AgentChatButton));
+    expect(target.height, greaterThanOrEqualTo(TapTargets.minimum));
+    // The visible pill is shorter than the target; a tap in the margin
+    // above it must still open the conversation.
+    final pill = tester.getRect(
+      find
+          .descendant(
+            of: find.byType(AgentChatButton),
+            matching: find.byType(DecoratedBox),
+          )
+          .last,
     );
+    expect(pill.height, lessThan(target.height));
+    await tester.tapAt(Offset(target.center.dx, target.top + 2));
+    expect(pressed, 1);
   });
 }

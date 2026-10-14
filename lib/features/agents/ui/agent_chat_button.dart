@@ -41,16 +41,20 @@ class AgentChatButton extends StatelessWidget {
       child: Tooltip(
         message: text,
         excludeFromSemantics: true,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: TapTargets.compact),
-          child: Center(
-            widthFactor: 1,
-            heightFactor: 1,
-            child: DsQuietInk(
-              customBorder: shape,
-              onTap: onPressed,
-              focusRing: true,
-              builder: (context, highlighted) => DecoratedBox(
+        // The ink IS the touch target, at the full recommended height the
+        // toolbar has room for; the pill is drawn centred inside it. Putting
+        // the minimum on a box around a smaller ink left taps on the target's
+        // upper and lower margin hitting nothing.
+        child: DsQuietInk(
+          customBorder: shape,
+          onTap: onPressed,
+          focusRing: true,
+          builder: (context, highlighted) => ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: DecoratedBox(
                 decoration: ShapeDecoration(
                   color: ai.accentSoft,
                   shape: shape.copyWith(
