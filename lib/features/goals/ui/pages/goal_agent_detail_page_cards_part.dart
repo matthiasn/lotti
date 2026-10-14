@@ -1,122 +1,109 @@
 part of 'goal_agent_detail_page.dart';
 
-/// The §4b chat drawer: a ~400px non-modal overlay hosting the goal's
-/// durable conversation. Its header carries the SAME computed pill as the
-/// page — one status vocabulary, one source, so the two can never disagree.
+/// What the chat sheet's header shows. A record, so the page can tell
+/// whether anything changed before republishing it.
+typedef _GoalChatHeader = ({
+  AgentIdentityEntity identity,
+  UnifiedGoalStatus? status,
+  bool hasStandingAssessment,
+  String? recoveryHint,
+});
+
+/// The §4b conversation panel, hosted in the shared side sheet on desktop.
+/// Its header carries the SAME computed pill as the page — one status
+/// vocabulary, one source, so the two can never disagree.
 class _GoalChatDrawer extends StatelessWidget {
   const _GoalChatDrawer({
     required this.agentId,
-    required this.identity,
-    required this.status,
-    required this.hasStandingAssessment,
-    required this.recoveryHint,
+    required this.header,
     required this.onClose,
   });
 
   final String agentId;
-  final AgentIdentityEntity identity;
-  final UnifiedGoalStatus? status;
-  final bool hasStandingAssessment;
-  final String? recoveryHint;
+  final _GoalChatHeader header;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final status = this.status;
+    final status = header.status;
+    final identity = header.identity;
+    final hasStandingAssessment = header.hasStandingAssessment;
+    final recoveryHint = header.recoveryHint;
     final showPill =
         status != null &&
         !(status == UnifiedGoalStatus.noData && hasStandingAssessment);
     final color = status == null
         ? tokens.colors.text.lowEmphasis
         : unifiedGoalStatusColor(status, tokens.colors);
-    // A floating surface: the drawer slides over the dashboard rather than
-    // beside it, so it wears the shared floating shadow as well as the
-    // decorative hairline that marks its edge. The shadow sits BENEATH the
-    // opaque Material — painted above it, it would grey the whole panel.
-    return DecoratedBox(
-      decoration: const BoxDecoration(boxShadow: DsShadows.floatingSurface),
-      child: Material(
-        color: dsCardSurface(context),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: BorderDirectional(
-              start: BorderSide(color: tokens.colors.decorative.level01),
+    // The side sheet owns the panel's edge, width and the scrim behind it;
+    // this is only the surface and its column.
+    return Material(
+      color: dsCardSurface(context),
+      child: Column(
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: tokens.colors.decorative.level01,
+                ),
+              ),
             ),
-          ),
-          child: SizedBox(
-            width: kGoalChatDrawerWidth,
-            child: Column(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: tokens.colors.decorative.level01,
-                      ),
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step3),
+              child: Row(
+                children: [
+                  NudgeBannerPersonaChip(
+                    monogram: NudgeBannerPersonaChip.monogramFor(
+                      identity.displayName,
                     ),
+                    fill: color.withValues(alpha: SurfaceAlphas.washChip),
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step3),
-                    child: Row(
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Wrap(
+                      spacing: tokens.spacing.step3,
+                      runSpacing: tokens.spacing.step1,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        NudgeBannerPersonaChip(
-                          monogram: NudgeBannerPersonaChip.monogramFor(
-                            identity.displayName,
-                          ),
-                          fill: color.withValues(alpha: SurfaceAlphas.washChip),
-                        ),
-                        SizedBox(width: tokens.spacing.step3),
-                        Expanded(
-                          child: Wrap(
-                            spacing: tokens.spacing.step3,
-                            runSpacing: tokens.spacing.step1,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                identity.displayName,
-                                // User-authored and unbounded; above an
-                                // Expanded chat pane a many-line name would
-                                // overflow the drawer's column, so two lines
-                                // is the ceiling (the page app bar's rule).
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens
-                                    .typography
-                                    .styles
-                                    .subtitle
-                                    .subtitle2
-                                    .copyWith(
-                                      color: tokens.colors.text.highEmphasis,
-                                    ),
+                        Text(
+                          identity.displayName,
+                          // User-authored and unbounded; above an
+                          // Expanded chat pane a many-line name would
+                          // overflow the drawer's column, so two lines
+                          // is the ceiling (the page app bar's rule).
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
                               ),
-                              if (showPill)
-                                UnifiedGoalStatusPill(
-                                  status: status,
-                                  recoveryHint: recoveryHint,
-                                ),
-                            ],
+                        ),
+                        if (showPill)
+                          UnifiedGoalStatusPill(
+                            status: status,
+                            recoveryHint: recoveryHint,
                           ),
-                        ),
-                        IconButton(
-                          key: const ValueKey('goal-chat-drawer-close'),
-                          icon: const Icon(LottiIcons.close),
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).closeButtonTooltip,
-                          onPressed: onClose,
-                        ),
                       ],
                     ),
                   ),
-                ),
-                Expanded(
-                  child: GoalAgentChatPane(agentId: agentId, showHeader: false),
-                ),
-              ],
+                  IconButton(
+                    key: const ValueKey('goal-chat-drawer-close'),
+                    icon: const Icon(LottiIcons.close),
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    onPressed: onClose,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          Expanded(
+            child: GoalAgentChatPane(agentId: agentId, showHeader: false),
+          ),
+        ],
       ),
     );
   }

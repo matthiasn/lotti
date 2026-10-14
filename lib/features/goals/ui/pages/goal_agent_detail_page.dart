@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -53,7 +52,8 @@ import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/side_sheet.dart';
+import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -141,39 +141,40 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     });
   }
 
-  /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
-  /// either way (a slid-out overlay, not a conditional subtree), so the
-  /// composer draft survives closing it.
-  bool _chatOpen = false;
+  /// What the desktop chat sheet's header shows, published by every build of
+  /// this page. The sheet lives on its own route and does not rebuild with
+  /// the page, so it listens here — its status pill and the page's can never
+  /// disagree, even when a report lands while the conversation is open.
+  final ValueNotifier<_GoalChatHeader?> _chatHeader = ValueNotifier(null);
 
   /// One scroll group for every extended day track — goal strip, habit
   /// rows, signal bars — so a span longer than the viewport scrolls in
   /// unison and the same date stays aligned down the page.
   final LinkedScrollGroup _trackScrollGroup = LinkedScrollGroup();
 
-  /// Focused when the drawer opens, so the Esc shortcut has a focus path
-  /// even before the user clicks into the composer — CallbackShortcuts only
-  /// sees keys travelling up from a focused descendant.
-  final FocusNode _drawerFocusNode = FocusNode(
-    debugLabel: 'goal-chat-drawer',
-    skipTraversal: true,
+  /// Desktop's conversation: the shared side sheet, sliding in over the
+  /// dimmed dashboard (which never reflows around it). The draft lives in the
+  /// keep-alive chat controller, so closing the sheet loses nothing.
+  void _openChat() => unawaited(
+    showSideSheetPane<void>(
+      context: context,
+      sideSheet: const SizedWoltSideSheetType(
+        widthFraction: 1,
+        minWidth: kGoalChatDrawerWidth,
+        maxWidth: kGoalChatDrawerWidth,
+      ),
+      builder: (sheetContext) => ValueListenableBuilder<_GoalChatHeader?>(
+        valueListenable: _chatHeader,
+        builder: (context, header, _) => header == null
+            ? const SizedBox.shrink()
+            : _GoalChatDrawer(
+                agentId: agentId,
+                header: header,
+                onClose: () => Navigator.of(sheetContext).pop(),
+              ),
+      ),
+    ),
   );
-
-  void _setChatOpen({required bool open}) {
-    setState(() => _chatOpen = open);
-    if (open) {
-      // Post-frame: while closed the node sits inside ExcludeFocus, and a
-      // same-tick request is denied before the rebuild lifts the exclusion.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _chatOpen) _drawerFocusNode.requestFocus();
-      });
-    }
-  }
-
-  /// One tap-region group for the drawer and every control that opens it:
-  /// a tap on the Talk-to button or the Ask-why link must not first count
-  /// as "outside the drawer" and close what it is about to open.
-  static const Object _chatRegionGroup = 'goal-detail-chat-drawer';
 
   String get agentId => widget.agentId;
 
@@ -189,7 +190,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
       ..removeListener(_syncAppBarTitle)
       ..dispose();
     _appBarTitleVisible.dispose();
-    _drawerFocusNode.dispose();
+    _chatHeader.dispose();
     _trackScrollGroup.dispose();
     super.dispose();
   }
@@ -532,9 +533,26 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final desktop = isDesktopLayout(context);
     final chatAvailable = isActive;
 
-    // The dashboard never reflows around the desktop chat drawer: the
-    // drawer is a true overlay (see the Stack below), so the chat and
-    // no-chat paths build the very same columns for a given pane width.
+    final chatHeader = (
+      identity: goalIdentity,
+      status: unifiedStatus,
+      hasStandingAssessment: hasStandingAssessment,
+      recoveryHint: switch (health?.deficit) {
+        final int deficit when deficit > 0 =>
+          context.messages.goalDaysToRecover(
+            deficit,
+          ),
+        _ => null,
+      },
+    );
+    if (_chatHeader.value != chatHeader) {
+      // After the frame: the sheet listening to it is another route, and
+      // notifying it mid-build would rebuild it during this build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _chatHeader.value = chatHeader;
+      });
+    }
+
     Widget dashboard(double paneWidth) {
       return railFits(paneWidth)
           ? Row(
@@ -617,34 +635,29 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                 tooltip: context.messages.goalChatTalkToAgent,
                 onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
-            // Desktop: the drawer's named doorway (§4b header). In the
-            // drawer's tap-region group so opening it never first registers
-            // as an outside tap that closes it.
+            // Desktop: the conversation's named doorway (§4b header).
             if (desktop && chatAvailable)
-              TapRegion(
-                groupId: _chatRegionGroup,
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    end: tokens.spacing.step2,
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  end: tokens.spacing.step2,
+                ),
+                // Goal names are user-written and unbounded; capped so a
+                // long persona name ellipsizes inside the button instead
+                // of overflowing the toolbar. The tooltip keeps the full
+                // name reachable.
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: tokens.spacing.step13,
                   ),
-                  // Goal names are user-written and unbounded; capped so a
-                  // long persona name ellipsizes inside the button instead
-                  // of overflowing the toolbar. The tooltip keeps the full
-                  // name reachable.
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: tokens.spacing.step13,
-                    ),
-                    child: Tooltip(
-                      message: context.messages.goalChatTalkToAgent,
-                      child: DesignSystemButton(
-                        key: const ValueKey('goal-detail-talk-to'),
-                        label: context.messages.goalChatTalkToAgent,
-                        leadingIcon: LottiIcons.chat,
-                        variant: DesignSystemButtonVariant.secondary,
-                        size: DesignSystemButtonSize.dense,
-                        onPressed: () => _setChatOpen(open: !_chatOpen),
-                      ),
+                  child: Tooltip(
+                    message: context.messages.goalChatTalkToAgent,
+                    child: DesignSystemButton(
+                      key: const ValueKey('goal-detail-talk-to'),
+                      label: context.messages.goalChatTalkToAgent,
+                      leadingIcon: LottiIcons.chat,
+                      variant: DesignSystemButtonVariant.secondary,
+                      size: DesignSystemButtonSize.dense,
+                      onPressed: _openChat,
                     ),
                   ),
                 ),
@@ -668,135 +681,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
           ],
         ),
         body: SafeArea(
-          child: !desktop || !chatAvailable
-              // The desktop reading measure is a property of the pane, not of
-              // chat: a dormant goal (no chat) must not stretch its cards
-              // across the whole window.
-              // The no-chat path measures its pane too: a dormant goal on a
-              // wide desktop still earns the rail, and a narrow pane behind a
-              // wide sidebar still must not get one.
-              ? LayoutBuilder(
-                  builder: (context, constraints) {
-                    _scheduleAutoSpan(
-                      context,
-                      paneWidth: constraints.maxWidth,
-                      railShown: railFits(constraints.maxWidth),
-                    );
-                    return dashboard(constraints.maxWidth);
-                  },
-                )
-              : CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(LogicalKeyboardKey.escape): () {
-                      if (_chatOpen) setState(() => _chatOpen = false);
-                    },
-                  },
-                  // §4b: the dashboard is the page; conversation is a
-                  // non-modal overlay drawer that slides over it without
-                  // reflow. The drawer stays mounted while closed so its
-                  // draft survives, and it takes no pointer/focus traffic
-                  // off-screen.
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      _scheduleAutoSpan(
-                        context,
-                        paneWidth: constraints.maxWidth,
-                        railShown: railFits(constraints.maxWidth),
-                      );
-                      return Stack(
-                        children: [
-                          // The drawer is a true overlay: opening it never
-                          // reflows the dashboard. Reserving its width beside
-                          // the cards squeezed both columns into what was left
-                          // of the window; a conversation is transient, so it
-                          // slides over the page (rail included) instead.
-                          dashboard(constraints.maxWidth),
-                          // The app's one modal scrim, fading with the
-                          // slide, so the open drawer reads as the surface
-                          // in front. Purely visual: pointers pass through,
-                          // so the drawer stays non-modal — a tap on the
-                          // dimmed page still closes it via the tap region
-                          // below and still reaches what it landed on.
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: AnimatedOpacity(
-                                opacity: _chatOpen ? 1 : 0,
-                                duration: MotionDurations.medium2,
-                                curve: MotionCurves.emphasizedDecelerate,
-                                child: ColoredBox(
-                                  key: const ValueKey(
-                                    'goal-chat-drawer-scrim',
-                                  ),
-                                  color: ModalUtils.getModalBarrierColor(
-                                    isDark:
-                                        Theme.of(context).brightness ==
-                                        Brightness.dark,
-                                    context: context,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          PositionedDirectional(
-                            top: 0,
-                            bottom: 0,
-                            end: 0,
-                            child: TapRegion(
-                              groupId: _chatRegionGroup,
-                              onTapOutside: (_) {
-                                if (_chatOpen) {
-                                  setState(() => _chatOpen = false);
-                                }
-                              },
-                              child: AnimatedSlide(
-                                offset: _chatOpen
-                                    ? Offset.zero
-                                    : const Offset(1, 0),
-                                duration: MotionDurations.medium2,
-                                curve: MotionCurves.emphasizedDecelerate,
-                                child: IgnorePointer(
-                                  ignoring: !_chatOpen,
-                                  // Off-screen means out of the semantics tree
-                                  // too: without this a screen reader traverses
-                                  // the slid-away drawer's composer and close
-                                  // button.
-                                  child: ExcludeSemantics(
-                                    excluding: !_chatOpen,
-                                    child: ExcludeFocus(
-                                      excluding: !_chatOpen,
-                                      child: Focus(
-                                        focusNode: _drawerFocusNode,
-                                        child: _GoalChatDrawer(
-                                          agentId: agentId,
-                                          identity: goalIdentity,
-                                          status: unifiedStatus,
-                                          hasStandingAssessment:
-                                              hasStandingAssessment,
-                                          recoveryHint:
-                                              switch (health?.deficit) {
-                                                final int deficit
-                                                    when deficit > 0 =>
-                                                  context.messages
-                                                      .goalDaysToRecover(
-                                                        deficit,
-                                                      ),
-                                                _ => null,
-                                              },
-                                          onClose: () =>
-                                              setState(() => _chatOpen = false),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
+          // The desktop reading measure is a property of the pane, not of
+          // chat: a dormant goal must not stretch its cards across the whole
+          // window, and a narrow pane behind a wide sidebar must not get the
+          // rail. The conversation never takes a column of its own — it
+          // slides in over the page as a side sheet.
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              _scheduleAutoSpan(
+                context,
+                paneWidth: constraints.maxWidth,
+                railShown: railFits(constraints.maxWidth),
+              );
+              return dashboard(constraints.maxWidth);
+            },
+          ),
         ),
       ),
     );
