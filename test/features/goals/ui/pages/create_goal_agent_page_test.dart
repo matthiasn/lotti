@@ -134,7 +134,8 @@ Iterable<GoalCriterion> _criterionLeaves(GoalCriterion criterion) sync* {
         GoalCriterionHabit() ||
         GoalCriterionMeasurable() ||
         GoalCriterionCategoryTime() ||
-        GoalCriterionLabelTime():
+        GoalCriterionLabelTime() ||
+        GoalCriterionCheckInTime():
       yield criterion;
     case GoalCriterionAllOf(criteria: final children) ||
         GoalCriterionAnyOf(criteria: final children) ||
@@ -847,6 +848,141 @@ void main() {
         direction: GoalDirection.atLeast,
       ),
     );
+  });
+
+  testWidgets('picks check-in time from the signal picker and saves a daily '
+      'minute target', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Reflect on the day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    // Not offered until asked for: a goal that does not reflect shows no
+    // check-in row and no Suggested caption on its account.
+    expect(
+      find.byKey(const ValueKey('goal-form-check-in-time-row')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-picker-check-in-time')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(const ValueKey('goal-form-check-in-time-target'));
+    expect(target, findsOneWidget);
+    // A short reflection is the default: three minutes, not an empty field.
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '3',
+    );
+    await tester.enterText(target, '5');
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('5 min of check-ins a day'), findsOneWidget);
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final saved = verify(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(
+      saved,
+      const GoalCriterion.checkInTime(
+        criterionId: 'check-in-time',
+        title: 'Check-in time',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 5,
+      ),
+    );
+  });
+
+  testWidgets('a check-in time target must be a positive number of minutes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Reflect on the day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-picker-check-in-time')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-check-in-time-target')),
+      '0',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Stays on the mapping step, the error on the row's own input.
+    expect(
+      find.byKey(const ValueKey('goal-form-check-in-time-target')),
+      findsOneWidget,
+    );
+    expect(find.text('Create agent'), findsNothing);
+
+    // Typing a valid number clears the error again.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-check-in-time-target')),
+      '4',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('4 min of check-ins a day'), findsOneWidget);
   });
 
   testWidgets('selects label time and saves a daily cross-category target', (

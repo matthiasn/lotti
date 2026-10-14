@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -24,11 +25,14 @@ import 'package:material_ui/material_ui.dart';
 /// The agent's prepared line is read from what the last wake already authored,
 /// so opening this costs no inference — it is a casual surface and must stay
 /// free to open.
-/// Saves a written check-in. Returns whether it landed.
+/// Saves a written check-in spanning `started` plus `timeSpent`. Returns
+/// whether it landed.
 typedef GoalCheckInTextSaver =
     Future<bool> Function({
       required String text,
       required String goalEntryId,
+      required DateTime started,
+      required Duration timeSpent,
       String? categoryId,
     });
 
@@ -50,6 +54,7 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     this.categoryId,
     this.saveText = saveCheckInText,
     this.openRecorder = openCheckInRecorder,
+    this.pickDuration = showGoalCheckInDurationPicker,
     super.key,
   });
 
@@ -58,6 +63,11 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
   /// testable without standing up the journal and audio stacks.
   final GoalCheckInTextSaver saveText;
   final GoalCheckInRecorderOpener openRecorder;
+  final Future<Duration?> Function({
+    required BuildContext context,
+    required Duration initialDuration,
+  })
+  pickDuration;
 
   final String agentId;
   final String goalTitle;
@@ -99,8 +109,66 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   var _writing = false;
   var _saving = false;
 
+  /// The writing session: when it began, the time counted before the current
+  /// run, and when the current run started (null while paused). A check-in is
+  /// a measurable activity, so the time the user spends writing it is what
+  /// the entry stores — not the moment the sheet happened to open.
+  DateTime? _sessionStart;
+  Duration _counted = Duration.zero;
+  DateTime? _runningSince;
+
+  /// A time the user set by hand. It replaces the counted time outright: the
+  /// user knows better than the clock how long they were really reflecting.
+  Duration? _override;
+
+  /// Repaints the running clock. It drives nothing else.
+  Timer? _ticker;
+
+  Duration get _timeSpent {
+    if (_override case final override?) return override;
+    final since = _runningSince;
+    return since == null ? _counted : _counted + clock.now().difference(since);
+  }
+
+  bool get _running => _override == null && _runningSince != null;
+
+  void _startWriting() {
+    final now = clock.now();
+    _sessionStart ??= now;
+    if (_override == null && _runningSince == null) _resume(now);
+  }
+
+  void _resume([DateTime? at]) {
+    _runningSince = at ?? clock.now();
+    _ticker ??= Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => setState(() {}),
+    );
+  }
+
+  void _pause() {
+    final since = _runningSince;
+    if (since != null) _counted += clock.now().difference(since);
+    _runningSince = null;
+    _ticker?.cancel();
+    _ticker = null;
+  }
+
+  Future<void> _editTime() async {
+    final chosen = await widget.pickDuration(
+      context: context,
+      initialDuration: _timeSpent,
+    );
+    if (chosen == null || !mounted) return;
+    setState(() {
+      _pause();
+      _override = chosen;
+    });
+  }
+
   @override
   void dispose() {
+    _ticker?.cancel();
     _text.dispose();
     super.dispose();
   }
@@ -136,6 +204,8 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
       final created = await widget.saveText(
         text: text,
         goalEntryId: goalEntryId,
+        started: _sessionStart ?? clock.now(),
+        timeSpent: _timeSpent,
         categoryId: widget.categoryId,
       );
       if (created && mounted) Navigator.of(context).pop();
@@ -186,13 +256,22 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                 _PreparedCard(line: line, personaName: widget.personaName),
               ],
               SizedBox(height: tokens.spacing.step5),
-              if (_writing)
+              if (_writing) ...[
+                _SessionRow(
+                  timeSpent: _timeSpent,
+                  running: _running,
+                  edited: _override != null,
+                  onPause: () => setState(_pause),
+                  onResume: () => setState(_resume),
+                  onEdit: _editTime,
+                ),
+                SizedBox(height: tokens.spacing.step3),
                 DesignSystemTextarea(
                   controller: _text,
                   label: context.messages.goalCheckInWritePlaceholder,
                   growWithContent: true,
-                )
-              else
+                ),
+              ] else
                 _RecordButton(
                   onPressed: goalEntryId == null
                       ? null
@@ -208,7 +287,14 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                           : context.messages.goalCheckInWriteInstead,
                       leadingIcon: _writing ? LottiIcons.mic : LottiIcons.edit,
                       variant: DesignSystemButtonVariant.secondary,
-                      onPressed: () => setState(() => _writing = !_writing),
+                      onPressed: () => setState(() {
+                        _writing = !_writing;
+                        // Recording is its own session — the recorder's span
+                        // is the voice check-in's time — so leaving write
+                        // mode stops the writing clock rather than letting
+                        // it count time spent recording.
+                        _writing ? _startWriting() : _pause();
+                      }),
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step3),
@@ -287,6 +373,81 @@ class _PreparedCard extends StatelessWidget {
   }
 }
 
+/// The writing session's read-out: the time this check-in will count for,
+/// running or paused, with the controls to pause it or set it by hand.
+class _SessionRow extends StatelessWidget {
+  const _SessionRow({
+    required this.timeSpent,
+    required this.running,
+    required this.edited,
+    required this.onPause,
+    required this.onResume,
+    required this.onEdit,
+  });
+
+  final Duration timeSpent;
+  final bool running;
+  final bool edited;
+  final VoidCallback onPause;
+  final VoidCallback onResume;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final clockText = _clockText(timeSpent);
+    final label = edited
+        ? messages.goalCheckInTimeSpentValue(
+            goalCheckInDurationLabel(context, timeSpent) ??
+                messages.goalCheckInAddTime,
+          )
+        : running
+        ? messages.goalCheckInSessionRunning(clockText)
+        : messages.goalCheckInSessionPaused(clockText);
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            key: const ValueKey('goal-checkin-session-label'),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+        if (!edited)
+          DesignSystemButton(
+            key: const ValueKey('goal-checkin-session-toggle'),
+            label: running
+                ? messages.goalCheckInSessionPause
+                : messages.goalCheckInSessionResume,
+            leadingIcon: running ? LottiIcons.pause : LottiIcons.play,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            onPressed: running ? onPause : onResume,
+          ),
+        DesignSystemButton(
+          key: const ValueKey('goal-checkin-session-edit'),
+          label: messages.goalCheckInSessionEdit,
+          leadingIcon: LottiIcons.timer,
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.dense,
+          onPressed: onEdit,
+        ),
+      ],
+    );
+  }
+
+  /// `m:ss` — digits only, so it needs no translation.
+  static String _clockText(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+}
+
 /// The composer's primary action.
 ///
 /// The design canvas draws a 68px orb here, but the recorder this opens is the
@@ -321,11 +482,14 @@ class _RecordButton extends StatelessWidget {
 Future<bool> saveCheckInText({
   required String text,
   required String goalEntryId,
+  required DateTime started,
+  required Duration timeSpent,
   String? categoryId,
 }) async {
   final created = await JournalRepository.createTextEntry(
     EntryText(plainText: text),
-    started: clock.now(),
+    started: started,
+    ended: started.add(timeSpent),
     linkedId: goalEntryId,
     categoryId: categoryId,
   );

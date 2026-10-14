@@ -580,6 +580,27 @@ void main() {
       await syncDb.close();
     });
 
+    test(
+      'a text entry given an end spans from its start to that end',
+      () async {
+        final started = DateTime(2024, 3, 15, 10, 30);
+        final ended = started.add(const Duration(minutes: 3, seconds: 20));
+
+        final entry = await JournalRepository.createTextEntry(
+          const EntryText(plainText: 'Reflected on the walk.'),
+          started: started,
+          ended: ended,
+        );
+
+        final stored = await getIt<JournalDb>().journalEntityById(
+          entry!.meta.id,
+        );
+        expect(stored?.meta.dateFrom, started);
+        expect(stored?.meta.dateTo, ended);
+        _verifyAndResetBadge(mockNotificationService);
+      },
+    );
+
     test('create and retrieve text entry', () async {
       final testDate = DateTime(2024, 3, 15, 10, 30);
       const testText = 'test text';

@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1496,6 +1497,179 @@ void main() {
     expect(
       goalStaleSignalTriggerTokens(criterion),
       {GoalHealthDataTypes.weight},
+    );
+  });
+
+  group('check-in time', () {
+    const goalId = 'goal-entry-1';
+    const criterion = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+    );
+
+    LinkedDbEntry link(String toId) => LinkedDbEntry(
+      id: 'link-$toId',
+      fromId: goalId,
+      toId: toId,
+      serialized: '{}',
+      type: 'BasicLink',
+      hidden: false,
+    );
+
+    JournalEntity note(
+      String id,
+      DateTime from,
+      Duration spent, {
+      String text = 'Walked after lunch.',
+      DateTime? deletedAt,
+    }) => JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: from,
+        updatedAt: from,
+        dateFrom: from,
+        dateTo: from.add(spent),
+        deletedAt: deletedAt,
+      ),
+      entryText: EntryText(plainText: text),
+    );
+
+    JournalEntity recording(String id, DateTime from, Duration spent) =>
+        JournalEntity.journalAudio(
+          meta: Metadata(
+            id: id,
+            createdAt: from,
+            updatedAt: from,
+            dateFrom: from,
+            dateTo: from.add(spent),
+          ),
+          data: AudioData(
+            dateFrom: from,
+            dateTo: from.add(spent),
+            audioFile: '$id.m4a',
+            audioDirectory: '/audio/',
+            duration: spent,
+          ),
+        );
+
+    test("sums each day's check-ins into minutes, counting only what the "
+        'rail shows as a check-in', () async {
+      final today = DateTime(2026, 8, 8, 9);
+      final yesterday = DateTime(2026, 8, 7, 20);
+      final entities = <JournalEntity>[
+        note('today-note', today, const Duration(minutes: 2)),
+        recording(
+          'today-voice',
+          today.add(const Duration(hours: 1)),
+          const Duration(seconds: 90),
+        ),
+        note('yesterday-note', yesterday, const Duration(minutes: 4)),
+        // Not counted: deleted, wordless, after the reference instant.
+        note(
+          'deleted',
+          today,
+          const Duration(minutes: 30),
+          deletedAt: today,
+        ),
+        note('wordless', today, const Duration(minutes: 30), text: '  '),
+        note(
+          'later-today',
+          reference.add(const Duration(hours: 1)),
+          const Duration(minutes: 30),
+        ),
+        steps(today, 5000),
+      ];
+      when(() => journalDb.linksFromIds([goalId])).thenReturn(
+        MockSelectable<LinkedDbEntry>([
+          for (final entity in entities) link(entity.meta.id),
+        ]),
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => entities);
+
+      final window = await reader.read(
+        criteria: criterion,
+        reference: reference,
+        goalEntryId: goalId,
+      );
+
+      expect(window.checkInDailyMinutes, {
+        GoalWindow.dayUtc(today): 3.5,
+        GoalWindow.dayUtc(yesterday): 4,
+      });
+      expect(
+        window.checkInTimeInRange(
+          GoalWindow.dayUtc(today),
+          GoalWindow.dayUtc(today),
+        ),
+        {GoalWindow.dayUtc(today): 3.5},
+      );
+    });
+
+    test('without the goal row there is nothing to read', () async {
+      final window = await reader.read(
+        criteria: criterion,
+        reference: reference,
+      );
+
+      expect(window.checkInDailyMinutes, isEmpty);
+      verifyNever(() => journalDb.linksFromIds(any()));
+    });
+
+    test(
+      'a goal that does not measure check-in time never reads them',
+      () async {
+        await reader.read(
+          criteria: const GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: 'gym-habit',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          reference: reference,
+          goalEntryId: goalId,
+        );
+
+        verifyNever(() => journalDb.linksFromIds(any()));
+      },
+    );
+
+    test(
+      'goalCriteriaMeasureCheckInTime finds the leaf inside a composite',
+      () {
+        expect(goalCriteriaMeasureCheckInTime(criterion), isTrue);
+        expect(
+          goalCriteriaMeasureCheckInTime(
+            const GoalCriterion.allOf(
+              criterionId: 'routine',
+              criteria: [
+                GoalCriterion.habit(
+                  criterionId: 'gym',
+                  habitId: 'gym-habit',
+                  window: GoalWindow.rollingDays(count: 7),
+                  targetCount: 3,
+                ),
+                criterion,
+              ],
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          goalCriteriaMeasureCheckInTime(
+            const GoalCriterion.habit(
+              criterionId: 'gym',
+              habitId: 'gym-habit',
+              window: GoalWindow.rollingDays(count: 7),
+              targetCount: 3,
+            ),
+          ),
+          isFalse,
+        );
+      },
     );
   });
 }

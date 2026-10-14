@@ -368,11 +368,15 @@ class JournalRepository {
   /// `linkedId` and tagged with `categoryId`. Returns the created entity, or
   /// null on a logged failure.
   ///
+  /// The entry spans `started` to `ended`; without `ended` it runs until
+  /// the moment it is created.
+  ///
   /// The entry's id is minted with its metadata, where its vector clock is
   /// reserved naming that id; callers read it from the returned entity.
   static Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
+    DateTime? ended,
     String? linkedId,
     String? categoryId,
   }) async {
@@ -383,6 +387,7 @@ class JournalRepository {
         entryText: entryText,
         meta: await persistenceLogic.createMetadata(
           dateFrom: started,
+          dateTo: ended,
           categoryId: categoryId,
         ),
       );

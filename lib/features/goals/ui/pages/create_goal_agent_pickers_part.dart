@@ -14,6 +14,8 @@ class _DimensionSourcePicker extends StatefulWidget {
     required this.selectedLabelIds,
     required this.watchesSteps,
     required this.onStepsChanged,
+    required this.watchesCheckInTime,
+    required this.onCheckInTimeChanged,
     required this.onHabitChanged,
     required this.onMeasurableChanged,
     required this.onHealthSelected,
@@ -36,6 +38,8 @@ class _DimensionSourcePicker extends StatefulWidget {
   final Set<String> selectedLabelIds;
   final bool watchesSteps;
   final ValueChanged<bool> onStepsChanged;
+  final bool watchesCheckInTime;
+  final ValueChanged<bool> onCheckInTimeChanged;
   final void Function({required String habitId, required bool selected})
   onHabitChanged;
   final void Function({required String measurableId, required bool selected})
@@ -68,6 +72,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   late final Set<String> _categoryIds = {...widget.selectedCategoryIds};
   late final Set<String> _labelIds = {...widget.selectedLabelIds};
   late bool _watchesSteps = widget.watchesSteps;
+  late bool _watchesCheckInTime = widget.watchesCheckInTime;
 
   @override
   void dispose() {
@@ -98,6 +103,10 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
         query.isEmpty ||
         messages.goalCreateStepsTargetLabel.toLowerCase().contains(query) ||
         messages.goalFormStepsSignal.toLowerCase().contains(query);
+    final checkInMatches =
+        query.isEmpty ||
+        messages.goalFormCheckInTimeTitle.toLowerCase().contains(query) ||
+        messages.goalFormCheckInTimeSignal.toLowerCase().contains(query);
     final weightMatches =
         query.isEmpty ||
         messages.goalFormHealthWeight.toLowerCase().contains(query) ||
@@ -199,6 +208,23 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         fullWidth: true,
                       ),
                     ],
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
+                  // The goal's own check-ins, as a signal: the time spent
+                  // reflecting on it.
+                  if (checkInMatches) ...[
+                    DesignSystemSelectionRow(
+                      key: const ValueKey('goal-form-picker-check-in-time'),
+                      title: messages.goalFormCheckInTimeTitle,
+                      subtitle: messages.goalFormCheckInTimeSignal,
+                      selected: _watchesCheckInTime,
+                      type: DesignSystemSelectionRowType.multiSelect,
+                      onTap: () {
+                        final selected = !_watchesCheckInTime;
+                        setState(() => _watchesCheckInTime = selected);
+                        widget.onCheckInTimeChanged(selected);
+                      },
+                    ),
                     SizedBox(height: tokens.spacing.step4),
                   ],
                   if (stepsMatches || showsHealth) ...[

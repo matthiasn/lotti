@@ -345,6 +345,38 @@ void main() {
     expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
   });
 
+  test('check-in time takes a new minute target and period by its id', () {
+    const reflect = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'mindful-day',
+      criteria: [steps, reflect],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {
+          'metric': 'reflect',
+          'targetValue': 5,
+          'period': 'rolling 7 days',
+        },
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+    final time = revised.criteria.last as GoalCriterionCheckInTime;
+
+    expect(time.targetMinutes, 5);
+    expect(time.window, const GoalWindow.rollingDays(count: 7));
+    expect(result.changeSummaries, contains('target: 3 → 5'));
+    // The sibling is untouched.
+    expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
+  });
+
   test('a label-time sibling does not make habit cadence ambiguous', () {
     const labelTime = GoalCriterion.labelTime(
       criterionId: 'daily-content',

@@ -34,7 +34,14 @@ class GoalAgentService {
     this.goalMirrorService,
     this.checkInNotifier,
     this.offTrackAlerts,
+    this.goalEntryIdFor,
   });
+
+  /// The journal row of the goal coached by an agent. A goal that measures
+  /// its check-in time watches that row, so every check-in linked to it runs
+  /// the deterministic evaluator. Optional for the same reason as
+  /// [goalMirrorService].
+  final String Function(String agentId)? goalEntryIdFor;
 
   /// The alert leg of the deletion cascade. Deletion cannot wait for the
   /// next tick to retract an armed alert — destroying the agent is what
@@ -334,7 +341,15 @@ class GoalAgentService {
   /// daily cadence or Update now consumes category changes.
   void registerSignalSubscription(String agentId, GoalCriterion criteria) {
     _orchestrator.removeSubscriptions(agentId);
-    final immediateTokens = goalImmediateSignalTriggerTokens(criteria);
+    final goalEntryId = goalEntryIdFor?.call(agentId);
+    final immediateTokens = {
+      ...goalImmediateSignalTriggerTokens(criteria),
+      // A check-in write notifies the goal's own row (the two are linked),
+      // and it is a bounded observation like a habit check-off: evaluating
+      // it is free, and the card should move the moment the user is done.
+      if (goalEntryId != null && goalCriteriaMeasureCheckInTime(criteria))
+        goalEntryId,
+    };
     if (immediateTokens.isNotEmpty) {
       _orchestrator.addSubscription(
         AgentSubscription(

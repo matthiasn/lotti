@@ -95,6 +95,44 @@ void main() {
     },
   );
 
+  testWidgets('a check-in beat carries the time it counts for', (
+    tester,
+  ) async {
+    final spoken = audio('a1', today, transcript: 'Walked after lunch.');
+    final timed = spoken.copyWith(
+      meta: spoken.meta.copyWith(
+        dateTo: today.add(const Duration(minutes: 3, seconds: 10)),
+      ),
+    );
+    await pump(tester, [GoalAudioCheckIn(timed)]);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-checkin-time-a1')),
+        matching: find.text('3 min'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a check-in with no time on it offers to add some', (
+    tester,
+  ) async {
+    final written = JournalEntry(
+      meta: meta('n1', today),
+      entryText: const EntryText(plainText: 'Packed the gym bag.'),
+    );
+    await pump(tester, [GoalTextCheckIn(written)]);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-checkin-time-n1')),
+        matching: find.text('Add time'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('an empty rail invites rather than apologises', (tester) async {
     await pump(tester, const []);
 

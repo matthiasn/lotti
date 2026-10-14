@@ -190,6 +190,8 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required bool reportRefresh,
     required bool userRequestedReport,
     required bool userRequestedAd,
+    bool dailyBriefing = false,
+    Map<String, Object?>? previousBriefing,
   }) async {
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -205,10 +207,15 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       ],
       userVoice: userVoice,
       criterionNames: await _criterionNames(version.criteria),
+      dailyBriefing: dailyBriefing,
+      previousBriefing: previousBriefing,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
         : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
+    if (dailyBriefing) {
+      factsBlock = '$factsBlock\n\n$goalDailyBriefingInstruction';
+    }
     if (reportRefresh) {
       factsBlock =
           '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER WATCHED '

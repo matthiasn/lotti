@@ -103,6 +103,7 @@ extension _GoalFormHelpers on _CreateGoalAgentPageState {
   void _revealFirstTargetError() {
     final orderedKeys = [
       'steps',
+      'check-in-time',
       for (final dataType in _healthTargets.keys) 'health:$dataType',
       for (final id in _measurableTargets.keys) 'measurable:$id',
       for (final id in _categoryTimeTargets.keys) 'category:$id',
@@ -129,6 +130,14 @@ extension _GoalFormHelpers on _CreateGoalAgentPageState {
     });
   }
 
+  /// Whether the check-in time signal is watched without a positive number
+  /// of daily minutes.
+  bool get _checkInMinutesInvalid {
+    if (!_watchesCheckInTime) return false;
+    final minutes = _parseLocalizedTarget(_checkInMinutes.text);
+    return minutes == null || minutes <= 0;
+  }
+
   /// The goal's criteria from the confirmed form, or null when steps are
   /// watched without a positive target. [confirmedCategories] are the
   /// categories the save just reconciled, named alongside the known ones.
@@ -137,7 +146,8 @@ extension _GoalFormHelpers on _CreateGoalAgentPageState {
   ) {
     final messages = context.messages;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
-    return _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
+    return (_watchesSteps && (stepsTarget == null || stepsTarget <= 0)) ||
+            _checkInMinutesInvalid
         ? null
         : _mapping.buildCriteria(
             stepsTitle: messages.goalCreateStepsTargetLabel,
@@ -181,6 +191,9 @@ extension _GoalFormHelpers on _CreateGoalAgentPageState {
             labelTimeCategoryIds: _labelTimeCategoryIds,
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
+            checkInTitle: messages.goalFormCheckInTimeTitle,
+            watchesCheckInTime: _watchesCheckInTime,
+            checkInMinutesTarget: _parseLocalizedTarget(_checkInMinutes.text),
             compositeRule: _compositeRule,
             requiredSuccesses: _requiredSuccesses,
           );

@@ -13,6 +13,7 @@ import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -243,6 +244,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           kindLabel: context.messages.goalCheckInKindVoice,
           glyph: LottiIcons.mic,
           accent: tokens.colors.interactive.enabled,
+          // The time this check-in counts for, correctable in place — the
+          // recording's own length until the user says otherwise.
+          trailing: GoalCheckInTimeChip(checkIn: checkIn),
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
             transcript: checkIn.transcript,
@@ -266,6 +270,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           kindLabel: context.messages.goalCheckInKindNote,
           glyph: LottiIcons.editNote,
           accent: tokens.colors.text.mediumEmphasis,
+          trailing: GoalCheckInTimeChip(checkIn: checkIn),
           content: TimelineBeatContent.text(checkIn.text),
         );
 

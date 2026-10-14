@@ -50,6 +50,7 @@ import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
+import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
@@ -59,11 +60,11 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+part 'goal_agent_workflow_helpers_part.dart';
+part 'goal_agent_workflow_persistence.dart';
+part 'goal_agent_workflow_requests.dart';
 part 'goal_agent_workflow_turns.dart';
 part 'goal_agent_workflow_wake.dart';
-part 'goal_agent_workflow_requests.dart';
-part 'goal_agent_workflow_persistence.dart';
-part 'goal_agent_workflow_helpers_part.dart';
 
 /// Backward-compatible name used throughout the workflow and its tests.
 const Duration goalAdLifetime = nudgeBannerLifetime;
@@ -344,9 +345,26 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reference: reference,
     );
 
+    // The day's first report is its briefing; it reads yesterday's to
+    // follow up on what it recommended.
+    final dailyBriefing = goalDailyBriefingDue(
+      facts,
+      interactive: pendingUserMessage != null,
+    );
+    final previousBriefing = dailyBriefing
+        ? goalPreviousBriefingFacts(
+            await _repository.getLatestReport(
+              agentId,
+              AgentReportScopes.current,
+            ),
+            periodKey: derivation.periodKey,
+          )
+        : null;
     final factsBlock = await _composeFactsBlock(
       version: version,
       facts: facts,
+      dailyBriefing: dailyBriefing,
+      previousBriefing: previousBriefing,
       derivation: derivation,
       nudges: nudges,
       reference: reference,
@@ -445,7 +463,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // A transition or explicit detail-page refresh requires a report — one
       // pinned retry, then accept the partial wake. Ordinary automatic no-ops
       // remain legal and free of forced output.
-      if ((facts.statusTransitioned || reportRefresh || userRequestedReport) &&
+      if ((facts.statusTransitioned ||
+              reportRefresh ||
+              userRequestedReport ||
+              dailyBriefing) &&
           !strategy.hasReport) {
         final retryUsage = await _forceReport(
           conversationId: conversationId,
@@ -468,7 +489,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
                     'after editing a habit day. Call update_goal_report now '
                     'with the status and current evidence from the FACTS '
                     'block.'
-              : goalStatusTransitionReportInstruction,
+              : facts.statusTransitioned
+              ? goalStatusTransitionReportInstruction
+              : goalDailyBriefingReportInstruction,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);

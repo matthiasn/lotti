@@ -47,6 +47,7 @@ GoalProgressView buildGoalProgressView({
   final measurableLeaves = <GoalCriterionMeasurable>[];
   final categoryTimeLeaves = <GoalCriterionCategoryTime>[];
   final labelTimeLeaves = <GoalCriterionLabelTime>[];
+  final checkInTimeLeaves = <GoalCriterionCheckInTime>[];
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
@@ -60,6 +61,8 @@ GoalProgressView buildGoalProgressView({
         categoryTimeLeaves.add(categoryTime);
       case final GoalCriterionLabelTime labelTime:
         labelTimeLeaves.add(labelTime);
+      case final GoalCriterionCheckInTime checkInTime:
+        checkInTimeLeaves.add(checkInTime);
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(visit);
       case GoalCriterionAnyOf(criteria: final children):
@@ -142,6 +145,13 @@ GoalProgressView buildGoalProgressView({
         categoryName: labelTime.categoryId == null
             ? null
             : categoryNames[labelTime.categoryId],
+      ),
+    for (final checkInTime in checkInTimeLeaves)
+      _checkInTimeProgressView(
+        checkInTime: checkInTime,
+        signals: signals,
+        reference: reference,
+        historyDays: historyDays,
       ),
   ];
   return GoalProgressView(

@@ -41,6 +41,96 @@ void main() {
     );
   });
 
+  test('round-trips a daily check-in time criterion, keeping its id and '
+      'title', () {
+    const criteria = GoalCriterion.checkInTime(
+      criterionId: 'reflect-v2',
+      title: 'Reflection',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isTrue);
+    expect(draft.watchesCheckInTime, isTrue);
+    expect(draft.checkInMinutesTarget, 3);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        checkInTitle: 'Check-in time',
+        habitTargets: const {},
+        checkInMinutesTarget: 5,
+      ),
+      const GoalCriterion.checkInTime(
+        criterionId: 'reflect-v2',
+        title: 'Reflection',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 5,
+      ),
+    );
+  });
+
+  test('a newly picked check-in time joins a routine with its own id and '
+      'the given title', () {
+    const habit = GoalCriterion.habit(
+      criterionId: 'check-in-time',
+      habitId: 'walk',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 3,
+    );
+    final draft = GoalFormMapping.fromCriteria(habit);
+
+    final built = draft.buildCriteria(
+      stepsTitle: 'Average steps per day',
+      checkInTitle: 'Check-in time',
+      habitTargets: const {'walk': 3},
+      watchesCheckInTime: true,
+      checkInMinutesTarget: 3,
+    );
+
+    final routine = built! as GoalCriterionAllOf;
+    final checkIn = routine.criteria
+        .whereType<GoalCriterionCheckInTime>()
+        .single;
+    // The habit already holds the preferred id, so the new leaf gets another.
+    expect(checkIn.criterionId, isNot('check-in-time'));
+    expect(checkIn.title, 'Check-in time');
+    expect(checkIn.targetMinutes, 3);
+  });
+
+  test('check-in time without a positive minute target builds nothing', () {
+    const draft = GoalFormMapping.empty();
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+        watchesCheckInTime: true,
+        checkInMinutesTarget: 0,
+      ),
+      isNull,
+    );
+  });
+
+  test('a check-in time shape the form cannot explain stays read-only', () {
+    const weekly = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.calendarWeek(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 20,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(weekly);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(stepsTitle: 'Steps', habitTargets: const {}),
+      weekly,
+    );
+  });
+
   test('new label time defaults cross-category but can be scoped', () {
     const draft = GoalFormMapping.empty();
 

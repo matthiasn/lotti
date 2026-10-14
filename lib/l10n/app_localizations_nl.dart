@@ -7134,6 +7134,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalChatYou => 'Jij';
 
   @override
+  String get goalCheckInAddTime => 'Tijd toevoegen';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Spraaknotitie toevoegen';
 
   @override
@@ -7163,6 +7166,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalCheckInKindVoice => 'SPRAAK-CHECK-IN';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate =>
       'Los van je getypte notitie bewaard';
 
@@ -7182,6 +7190,25 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vertel je agent wat er echt speelt — dertig seconden, in je eigen woorden, wanneer het de moeite waard is.';
 
   @override
+  String get goalCheckInSessionEdit => 'Tijd aanpassen';
+
+  @override
+  String get goalCheckInSessionPause => 'Pauzeren';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'Gepauzeerd · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Hervatten';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Aan het reflecteren · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'Alle check-ins bekijken';
 
   @override
@@ -7193,8 +7220,27 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint => 'Hoe lang duurde deze check-in?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Bestede tijd: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Bestede tijd';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Bestede tijd · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Automatische updates staan uit voor dit doel, dus je check-in is niet getranscribeerd. Tik op Opnieuw om het nu te transcriberen.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Schrijf in plaats daarvan';
@@ -7349,6 +7395,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Bijgehouden categorietijd';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Tijd besteed aan check-ins';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount van $targetCount in dit venster';
   }
@@ -7465,6 +7514,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Uren per voortschrijdende 7 dagen';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minuten per dag';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min check-ins per dag';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minuten besteed aan check-ins over dit doel';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Check-in-tijd';
 
   @override
   String get goalFormChooseHabit => 'Kies een bestaande gewoonte';
@@ -7942,10 +8010,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalReportSectionCoverage => 'Datadekking';
 
   @override
+  String get goalReportSectionNext => 'Wat nu';
+
+  @override
   String get goalReportSectionStanding => 'Hoe het ervoor staat';
 
   @override
   String get goalReportSectionWindow => 'Het bredere venster';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Volgende: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'Vandaag';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

@@ -1,6 +1,15 @@
 part of 'goal_progress_view.dart';
 
-enum GoalDimensionKind { habit, health, measurable, categoryTime, labelTime }
+enum GoalDimensionKind {
+  habit,
+  health,
+  measurable,
+  categoryTime,
+  labelTime,
+
+  /// Minutes spent checking in on the goal itself.
+  checkInTime,
+}
 
 enum GoalCompositeRuleKind { all, any, atLeast }
 
@@ -440,7 +449,8 @@ bool _criterionCompletedOnDay(
   GoalCriterionMetric() ||
   GoalCriterionMeasurable() ||
   GoalCriterionCategoryTime() ||
-  GoalCriterionLabelTime() =>
+  GoalCriterionLabelTime() ||
+  GoalCriterionCheckInTime() =>
     const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
   GoalCriterionAllOf(criteria: final children) => children.every(
     (child) => _criterionCompletedOnDay(child, signals, day),
@@ -586,6 +596,36 @@ GoalMetricProgressView _labelTimeProgressView({
   direction: labelTime.direction,
   aggregation: labelTime.aggregation,
   dailyValues: signals.labelTimeDailyHours[labelTime.criterionId],
+  signals: signals,
+  reference: reference,
+  zeroIsObserved: true,
+);
+
+/// The check-in time dimension: minutes spent checking in, per day.
+///
+/// Named by the criterion's title, which the goal editor writes in the
+/// author's language; a criterion without one (an agent revision that kept
+/// none) falls back to its id rather than inventing an English label here,
+/// where there is no locale to render one in.
+GoalMetricProgressView _checkInTimeProgressView({
+  required GoalCriterionCheckInTime checkInTime,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+  int? historyDays,
+}) => _numericProgressView(
+  historyDays: historyDays,
+  criterion: checkInTime,
+  criterionId: checkInTime.criterionId,
+  sourceId: checkInTime.criterionId,
+  kind: GoalDimensionKind.checkInTime,
+  name: checkInTime.title?.trim().isNotEmpty == true
+      ? checkInTime.title!.trim()
+      : checkInTime.criterionId,
+  target: checkInTime.targetMinutes,
+  window: checkInTime.window,
+  direction: checkInTime.direction,
+  aggregation: checkInTime.aggregation,
+  dailyValues: signals.checkInDailyMinutes,
   signals: signals,
   reference: reference,
   zeroIsObserved: true,

@@ -95,6 +95,16 @@ class _GoalReportCardState extends State<_GoalReportCard>
         // something of you, gated behind the part that only informs.
         if (_actionsOf(sections) case final actions?) ...[
           SizedBox(height: tokens.spacing.step3),
+          // Named, so the briefing's weight reads at a glance: what stands
+          // is a sentence above; what comes next is this list.
+          Text(
+            context.messages.goalReportSectionNext,
+            key: const ValueKey('goal-report-next-heading'),
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
           SelectionArea(
             child: AgentMarkdownView(
               [for (final action in actions) '- $action'].join('\n'),

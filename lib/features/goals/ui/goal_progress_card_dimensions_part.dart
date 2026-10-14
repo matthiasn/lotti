@@ -478,7 +478,7 @@ class _MetricDimensionCard extends StatelessWidget {
     final summary = _metricSummary(metric, today: today);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
-    final unit = metric.unitName?.trim();
+    final unit = _metricUnit(context, metric);
     final displayValue = _metricDisplayValue(metric, summary);
     // A card that plots a 7-day average also draws the target as a keyed
     // legend entry ("Goal ≤ 88"), so the corner states the LATEST reading
@@ -624,6 +624,9 @@ class _DimensionHeader extends StatelessWidget {
       GoalDimensionKind.categoryTime =>
         tokens.colors.alert.warning.defaultColor,
       GoalDimensionKind.labelTime => tokens.colors.alert.warning.defaultColor,
+      // The check-in rail's own accent, so the dimension and the beats it
+      // counts read as one thing.
+      GoalDimensionKind.checkInTime => tokens.colors.interactive.enabled,
     };
     final icon = switch (kind) {
       GoalDimensionKind.habit => LottiIcons.confirmCircled,
@@ -631,6 +634,7 @@ class _DimensionHeader extends StatelessWidget {
       GoalDimensionKind.measurable => LottiIcons.measure,
       GoalDimensionKind.categoryTime => LottiIcons.schedule,
       GoalDimensionKind.labelTime => LottiIcons.label,
+      GoalDimensionKind.checkInTime => LottiIcons.mic,
     };
     final glyph = DecoratedBox(
       decoration: BoxDecoration(
@@ -853,3 +857,12 @@ class _DimensionHeader extends StatelessWidget {
     );
   }
 }
+
+/// The unit a dimension's values are read in. Check-in time is counted in
+/// minutes, and the word is the reader's language — the state layer has no
+/// locale to write it in. Every other dimension carries its own unit (or, for
+/// tracked hours, none).
+String? _metricUnit(BuildContext context, GoalMetricProgressView metric) =>
+    metric.kind == GoalDimensionKind.checkInTime
+    ? context.messages.goalUnitMinutes
+    : metric.unitName?.trim();

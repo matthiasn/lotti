@@ -14,6 +14,7 @@ import 'package:lotti/features/goals/service/goal_habit_completion_service.dart'
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/unified/goal_today_briefing_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -321,6 +322,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                             .setDisplayFilter,
                       ),
                       SizedBox(height: tokens.spacing.sectionGap),
+                      // The day's briefing across goals, above the habits
+                      // to tick off: what each goal's agent says to do next.
+                      GoalTodayBriefingCard(identities: identities),
                       HabitsSummaryCard(
                         visibleHabitIds: recordableIds,
                         doneHabitIds: summaryDoneIds,

@@ -115,6 +115,25 @@ sealed class GoalCriterion with _$GoalCriterion {
     String? title,
   }) = GoalCriterionLabelTime;
 
+  /// Time the user spends checking in on this goal, in minutes — the
+  /// reflection itself as a measurable activity: "at least 3 minutes a day".
+  ///
+  /// Measured over the goal's own linked check-ins, spoken and written, each
+  /// counting the span stored on its journal entry: the recording's length,
+  /// the counted writing session, or whatever the user corrected it to. Days
+  /// without a check-in count as zero minutes, like the other time leaves.
+  ///
+  /// [aggregation] is minute-valued: `sum`, `dailySumThenAverage`, and `max`
+  /// are valid; `count` is rejected for the same reason as on the hour leaves.
+  const factory GoalCriterion.checkInTime({
+    required String criterionId,
+    required GoalWindow window,
+    required GoalAggregation aggregation,
+    required num targetMinutes,
+    @Default(GoalDirection.atLeast) GoalDirection direction,
+    String? title,
+  }) = GoalCriterionCheckInTime;
+
   /// All children must be satisfied; attainment is their mean.
   const factory GoalCriterion.allOf({
     required String criterionId,
@@ -160,7 +179,8 @@ Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
       GoalCriterionMetric() ||
       GoalCriterionMeasurable() ||
       GoalCriterionCategoryTime() ||
-      GoalCriterionLabelTime() => const {},
+      GoalCriterionLabelTime() ||
+      GoalCriterionCheckInTime() => const {},
     };
 
 /// Every quantitative data type referenced anywhere in [criterion]'s tree.
@@ -180,5 +200,6 @@ Set<String> goalCriterionMetricDataTypes(GoalCriterion criterion) =>
       GoalCriterionHabit() ||
       GoalCriterionMeasurable() ||
       GoalCriterionCategoryTime() ||
-      GoalCriterionLabelTime() => const {},
+      GoalCriterionLabelTime() ||
+      GoalCriterionCheckInTime() => const {},
     };

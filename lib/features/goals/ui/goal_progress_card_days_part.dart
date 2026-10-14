@@ -72,6 +72,8 @@ String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
         context.messages.goalDimensionCategoryTimeSource,
       GoalDimensionKind.labelTime =>
         context.messages.goalDimensionLabelTimeSource,
+      GoalDimensionKind.checkInTime =>
+        context.messages.goalDimensionCheckInTimeSource,
     };
 
 /// Index of the authored rolling window's first day inside [activeDays] —

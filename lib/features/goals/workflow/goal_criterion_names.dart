@@ -34,7 +34,8 @@ GoalCriterionEntityIds goalCriterionEntityIds(GoalCriterion criterion) {
         criteria.forEach(visit);
       case GoalCriterionMetric() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         break;
     }
   }

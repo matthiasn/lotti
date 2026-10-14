@@ -9,6 +9,12 @@ library;
 /// every run (recurrence by re-arm; no schema change).
 const goalCadenceWorkspaceKey = 'goal-cadence';
 
+/// Whether a wake is the daily cadence tick. The cadence record carries its
+/// workspace key as a trigger token (the escalation precedent below), since
+/// the wake runner sees tokens, not workspaces.
+bool goalCadenceTickRequested(Set<String> triggerTokens) =>
+    triggerTokens.contains(goalCadenceWorkspaceKey);
+
 /// User-initiated report refresh after an exact-day habit edit.
 ///
 /// This routes the wake through the fact-grounded LLM tier so the standing

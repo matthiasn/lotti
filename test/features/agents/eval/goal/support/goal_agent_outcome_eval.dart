@@ -603,6 +603,7 @@ class GoalOutcomeEvalSignalReader extends GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
+    String? goalEntryId,
   }) async => window;
 }
 

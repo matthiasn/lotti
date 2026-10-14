@@ -87,6 +87,29 @@ void main() {
     expect(goalCriterionHabitIds(criterion), isEmpty);
   });
 
+  test('check-in time round trips and claims no habit or health type', () {
+    const criterion = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+      title: 'Check-in time',
+    );
+
+    final decoded = GoalCriterion.fromJson(
+      jsonDecode(jsonEncode(criterion)) as Map<String, dynamic>,
+    );
+
+    expect(decoded, criterion);
+    // A reflection target defaults to a floor, not a ceiling.
+    expect(
+      (decoded as GoalCriterionCheckInTime).direction,
+      GoalDirection.atLeast,
+    );
+    expect(goalCriterionHabitIds(criterion), isEmpty);
+    expect(goalCriterionMetricDataTypes(criterion), isEmpty);
+  });
+
   test('goalCriterionMetricDataTypes collects the quantitative leaves and '
       'nothing else', () {
     const criterion = GoalCriterion.allOf(

@@ -7105,6 +7105,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalChatYou => 'Dig';
 
   @override
+  String get goalCheckInAddTime => 'Tilføj tid';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Tilføj en stemmenote';
 
   @override
@@ -7134,6 +7137,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCheckInKindVoice => 'STEMME-CHECK-IN';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate =>
       'Holdes adskilt fra din skrevne note';
 
@@ -7153,6 +7161,25 @@ class AppLocalizationsDa extends AppLocalizations {
       'Fortæl din agent, hvad der faktisk sker — tredive sekunder, med dine egne ord, når det er værd at sige.';
 
   @override
+  String get goalCheckInSessionEdit => 'Rediger tid';
+
+  @override
+  String get goalCheckInSessionPause => 'Pause';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'Sat på pause · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Fortsæt';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Reflekterer · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'Se alle check-ins';
 
   @override
@@ -7164,8 +7191,28 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint =>
+      'Hvor lang tid tog denne check-in?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Brugt tid: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Brugt tid';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Brugt tid · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Automatiske opdateringer er slået fra for dette mål, så dit tjek-ind blev ikke transskriberet. Tryk på Prøv igen for at transskribere det nu.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Skriv i stedet';
@@ -7317,6 +7364,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Sporet kategoritid';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Tid brugt på check-ins';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount af $targetCount dette vindue';
   }
@@ -7440,6 +7490,25 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Timer pr. rullende 7 dage';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minutter om dagen';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min check-ins om dagen';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minutter brugt på check-ins om dette mål';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Tid til check-in';
 
   @override
   String get goalFormChooseHabit => 'Vælg en eksisterende vane';
@@ -7919,10 +7988,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalReportSectionCoverage => 'Datadækning';
 
   @override
+  String get goalReportSectionNext => 'Hvad nu';
+
+  @override
   String get goalReportSectionStanding => 'Sådan står det';
 
   @override
   String get goalReportSectionWindow => 'Det bredere vindue';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Næste: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'I dag';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

@@ -12035,6 +12035,12 @@ abstract class AppLocalizations {
   /// **'You'**
   String get goalChatYou;
 
+  /// Action on a goal check-in that has no time recorded yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add time'**
+  String get goalCheckInAddTime;
+
   /// No description provided for @goalCheckInAddVoiceNote.
   ///
   /// In en, this message translates to:
@@ -12077,6 +12083,12 @@ abstract class AppLocalizations {
   /// **'VOICE CHECK-IN'**
   String get goalCheckInKindVoice;
 
+  /// A goal check-in's time spent, in whole minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String goalCheckInMinutes(int count);
+
   /// No description provided for @goalCheckInNoteKeptSeparate.
   ///
   /// In en, this message translates to:
@@ -12107,6 +12119,36 @@ abstract class AppLocalizations {
   /// **'Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.'**
   String get goalCheckInsEmptyInvitation;
 
+  /// Sets the check-in's time by hand in the composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit time'**
+  String get goalCheckInSessionEdit;
+
+  /// Pauses the writing session's clock in the check-in composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get goalCheckInSessionPause;
+
+  /// Composer read-out while the writing session is paused; elapsed is m:ss.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · {elapsed}'**
+  String goalCheckInSessionPaused(String elapsed);
+
+  /// Resumes the writing session's clock in the check-in composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get goalCheckInSessionResume;
+
+  /// Composer read-out while the writing session counts; elapsed is m:ss.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflecting · {elapsed}'**
+  String goalCheckInSessionRunning(String elapsed);
+
   /// No description provided for @goalCheckInsSeeAll.
   ///
   /// In en, this message translates to:
@@ -12125,11 +12167,41 @@ abstract class AppLocalizations {
   /// **'Check-ins · {count}'**
   String goalCheckInsTitleWithCount(int count);
 
+  /// Hint above the quick-pick durations for a goal check-in.
+  ///
+  /// In en, this message translates to:
+  /// **'How long did this check-in take?'**
+  String get goalCheckInTimeQuickPickHint;
+
+  /// Screen-reader label for a goal check-in's time.
+  ///
+  /// In en, this message translates to:
+  /// **'Time spent: {label}'**
+  String goalCheckInTimeSemanticsLabel(String label);
+
+  /// Title of the picker that sets how long a goal check-in took.
+  ///
+  /// In en, this message translates to:
+  /// **'Time spent'**
+  String get goalCheckInTimeSpentTitle;
+
+  /// Composer read-out once the user set a check-in's time by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Time spent · {label}'**
+  String goalCheckInTimeSpentValue(String label);
+
   /// Shown when a goal check-in is not transcribed because the goal's automatic updates are switched off
   ///
   /// In en, this message translates to:
   /// **'Automatic updates are off for this goal, so your check-in was not transcribed. Tap Retry to transcribe it now.'**
   String get goalCheckInTranscriptionOff;
+
+  /// A goal check-in that took only a few seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'< 1 min'**
+  String get goalCheckInUnderAMinute;
 
   /// No description provided for @goalCheckInWriteInstead.
   ///
@@ -12381,6 +12453,12 @@ abstract class AppLocalizations {
   /// **'Tracked category time'**
   String get goalDimensionCategoryTimeSource;
 
+  /// Source caption of a goal dimension that counts the time spent checking in on the goal.
+  ///
+  /// In en, this message translates to:
+  /// **'Time spent checking in'**
+  String get goalDimensionCheckInTimeSource;
+
   /// No description provided for @goalDimensionHabitReading.
   ///
   /// In en, this message translates to:
@@ -12543,6 +12621,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hours per rolling 7 days'**
   String get goalFormCategoryTimeTarget;
+
+  /// Label of the daily minutes input of the check-in time signal.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes per day'**
+  String get goalFormCheckInMinutesPerDay;
+
+  /// Goal confirmation prose for the check-in time signal.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min of check-ins a day'**
+  String goalFormCheckInTimeCadence(num minutes);
+
+  /// Subtitle of the check-in time signal row in the goal editor.
+  ///
+  /// In en, this message translates to:
+  /// **'minutes spent checking in on this goal'**
+  String get goalFormCheckInTimeSignal;
+
+  /// Goal editor signal row: the time spent checking in on the goal.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in time'**
+  String get goalFormCheckInTimeTitle;
 
   /// No description provided for @goalFormChooseHabit.
   ///
@@ -13266,6 +13368,12 @@ abstract class AppLocalizations {
   /// **'Data coverage'**
   String get goalReportSectionCoverage;
 
+  /// Heading above the goal report's next steps, which lead the briefing.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s next'**
+  String get goalReportSectionNext;
+
   /// No description provided for @goalReportSectionStanding.
   ///
   /// In en, this message translates to:
@@ -13277,6 +13385,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The wider window'**
   String get goalReportSectionWindow;
+
+  /// A goal's first next step in the Today card.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {step}'**
+  String goalTodayBriefingNext(String step);
+
+  /// Title of the Goals page card that rolls up each goal's daily briefing.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get goalTodayBriefingTitle;
+
+  /// Short unit for minutes beside a goal dimension's value.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get goalUnitMinutes;
 
   /// No description provided for @goalWatchingMetric.
   ///

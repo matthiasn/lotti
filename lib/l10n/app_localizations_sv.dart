@@ -7116,6 +7116,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalChatYou => 'Du';
 
   @override
+  String get goalCheckInAddTime => 'Lägg till tid';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Lägg till en röstanteckning';
 
   @override
@@ -7145,6 +7148,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCheckInKindVoice => 'RÖSTAVSTÄMNING';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate =>
       'Hålls skild från din skrivna anteckning';
 
@@ -7164,6 +7172,25 @@ class AppLocalizationsSv extends AppLocalizations {
       'Berätta för din agent vad som faktiskt pågår — trettio sekunder, med dina egna ord, när det känns värt det.';
 
   @override
+  String get goalCheckInSessionEdit => 'Ändra tid';
+
+  @override
+  String get goalCheckInSessionPause => 'Pausa';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'Pausad · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Fortsätt';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Reflekterar · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'Visa alla avstämningar';
 
   @override
@@ -7175,8 +7202,28 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint =>
+      'Hur lång tid tog den här incheckningen?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Tid som lagts: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Tid som lagts';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Tid som lagts · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Automatiska uppdateringar är av för det här målet, så din avstämning transkriberades inte. Tryck på Försök igen för att transkribera den nu.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Skriv i stället';
@@ -7328,6 +7375,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Spårad kategoritid';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Tid för incheckningar';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount av $targetCount detta fönster';
   }
@@ -7451,6 +7501,25 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Timmar per rullande 7 dagar';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minuter per dag';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min incheckningar per dag';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minuter du lägger på incheckningar för det här målet';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Incheckningstid';
 
   @override
   String get goalFormChooseHabit => 'Välj en befintlig vana';
@@ -7932,10 +8001,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalReportSectionCoverage => 'Datatäckning';
 
   @override
+  String get goalReportSectionNext => 'Nästa steg';
+
+  @override
   String get goalReportSectionStanding => 'Hur det ligger till';
 
   @override
   String get goalReportSectionWindow => 'Det bredare fönstret';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Nästa: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'Idag';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

@@ -39,7 +39,7 @@ class _MetricTrendSeries extends StatelessWidget {
                   lineColor: averageColor,
                   barLabel: actualLabel,
                   lineLabel: context.messages.goalChartSevenDayAverage,
-                  unit: metric.unitName ?? '',
+                  unit: _metricUnit(context, metric) ?? '',
                   dateOnly: true,
                   horizontalLines: [
                     _targetLine(metric.target, targetColor),
@@ -55,7 +55,7 @@ class _MetricTrendSeries extends StatelessWidget {
                   rangeEnd: range.end,
                   minVal: yValues.reduce(math.min),
                   maxVal: yValues.reduce(math.max),
-                  unit: metric.unitName ?? '',
+                  unit: _metricUnit(context, metric) ?? '',
                   dateOnly: true,
                   seriesLabels: [
                     actualLabel,
@@ -146,7 +146,7 @@ class _MetricHealthSeries extends StatelessWidget {
             data: goalMetricObservations(metric),
             rangeStart: range.start,
             rangeEnd: range.end,
-            unit: metric.unitName ?? '',
+            unit: _metricUnit(context, metric) ?? '',
             dateOnly: true,
             horizontalLines: [
               _targetLine(
@@ -317,7 +317,7 @@ class _MetricProgressSeries extends StatelessWidget {
       dateFormat: DateFormat.MMMd(locale),
       number: NumberFormat.decimalPattern(locale),
       tooltip: chartTooltipDecoration(context),
-      unit: metric.unitName?.trim() ?? '',
+      unit: _metricUnit(context, metric) ?? '',
     );
     return DayTrack(
       height: height,
