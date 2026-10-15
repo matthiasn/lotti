@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/secure_storage.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../helpers/package_info.dart';
+import '../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -142,6 +147,21 @@ void main() {
       expect(result, isNull);
     });
 
+    test(
+      'a read issued after a delete waits for it and finds nothing',
+      () async {
+        FlutterSecureStorage.setMockInitialValues({'del_key': 'to_delete'});
+        final storage = SecureStorage();
+
+        final deleted = storage.delete(key: 'del_key');
+        final read = storage.read(key: 'del_key');
+        await deleted;
+
+        expect(await read, isNull);
+        expect(await storage.read(key: 'del_key'), isNull);
+      },
+    );
+
     test('deleting a non-existent key does not throw', () async {
       final storage = SecureStorage();
 
@@ -160,6 +180,141 @@ void main() {
       await storage.write(key: 'seq_key', value: 'new');
 
       expect(await storage.read(key: 'seq_key'), 'new');
+    });
+  });
+
+  group('SecureStorage on a single-bundle keystore (#4789)', () {
+    late Map<String, String> bundle;
+    late MockDomainLogger logging;
+
+    const matrixConfig = '{"homeServer":"https://example.org","user":"@a:b"}';
+
+    setUp(() {
+      bundle = <String, String>{};
+      FlutterSecureStorage.setMockInitialValues(bundle);
+      logging = MockDomainLogger();
+    });
+
+    SecureStorage bundled() =>
+        SecureStorage(singleBundle: true, logging: logging);
+
+    test('stores a value the bundle JSON would escape encoded, so the bundle '
+        'holds no backslash, and reads it back intact', () async {
+      const withControl = 'line one\nline two\\ "quoted"';
+      await bundled().write(key: 'matrix', value: matrixConfig);
+      await bundled().write(key: 'other', value: withControl);
+
+      expect(bundle['matrix'], startsWith(SecureStorage.encodedPrefix));
+      expect(jsonEncode(bundle), isNot(contains(r'\')));
+
+      // A fresh instance has an empty cache, so this decodes the store.
+      final fresh = bundled();
+      expect(await fresh.read(key: 'matrix'), matrixConfig);
+      expect(await fresh.read(key: 'other'), withControl);
+    });
+
+    test('stores a plain API key unchanged', () async {
+      await bundled().write(key: 'api_key', value: 'sk-abc_123.XYZ');
+
+      expect(bundle['api_key'], 'sk-abc_123.XYZ');
+    });
+
+    test('rewrites a value an earlier version stored raw the first time it '
+        'is read', () async {
+      bundle['github_account:p'] = matrixConfig;
+
+      expect(await bundled().read(key: 'github_account:p'), matrixConfig);
+      expect(
+        bundle['github_account:p'],
+        startsWith(SecureStorage.encodedPrefix),
+      );
+      expect(jsonEncode(bundle), isNot(contains(r'\')));
+    });
+
+    test('writes back the keys a blanked bundle lost before writing the new '
+        'one, and logs the repair', () async {
+      bundle.addAll({'key_a': 'value_a', 'matrix': matrixConfig});
+      final storage = bundled();
+      expect(await storage.read(key: 'key_a'), 'value_a');
+      expect(await storage.read(key: 'matrix'), matrixConfig);
+
+      // The keyring reloaded and came back blank, so the plugin reads `{}`.
+      bundle.clear();
+      await storage.write(key: 'github', value: 'ghp_token');
+
+      expect(bundle.keys, unorderedEquals(['key_a', 'matrix', 'github']));
+      expect(bundle['key_a'], 'value_a');
+      expect(await bundled().read(key: 'matrix'), matrixConfig);
+      final logged = verify(
+        () => logging.error(
+          LogDomain.persistence,
+          captureAny(),
+          subDomain: 'secureStorage.repair',
+          message: captureAny(named: 'message'),
+        ),
+      ).captured;
+      expect(logged[0], isA<StateError>());
+      expect(logged[1], 'Restored 2 of 2 cached keys');
+    });
+
+    test(
+      'repairs before a delete too, without restoring the deleted key',
+      () async {
+        bundle.addAll({'key_a': 'value_a', 'key_b': 'value_b'});
+        final storage = bundled();
+        await storage.read(key: 'key_a');
+        await storage.read(key: 'key_b');
+
+        bundle.clear();
+        await storage.delete(key: 'key_b');
+
+        expect(bundle, {'key_a': 'value_a'});
+      },
+    );
+
+    test('never restores a key deleted earlier', () async {
+      final storage = bundled();
+      await storage.write(key: 'key_a', value: 'value_a');
+      await storage.write(key: 'gone', value: 'old');
+      await storage.delete(key: 'gone');
+
+      bundle.clear();
+      await storage.write(key: 'key_b', value: 'value_b');
+
+      expect(bundle, {'key_a': 'value_a', 'key_b': 'value_b'});
+    });
+
+    test('leaves an intact bundle alone and logs nothing', () async {
+      final storage = bundled();
+      await storage.write(key: 'key_a', value: 'value_a');
+      await storage.write(key: 'key_b', value: 'value_b');
+
+      expect(bundle, {'key_a': 'value_a', 'key_b': 'value_b'});
+      verifyZeroInteractions(logging);
+    });
+
+    test('a keystore with one item per key stores values raw and does not '
+        'read the bundle back', () async {
+      final storage = SecureStorage(singleBundle: false, logging: logging);
+      await storage.write(key: 'matrix', value: matrixConfig);
+      await storage.write(key: 'key_a', value: 'value_a');
+      expect(bundle['matrix'], matrixConfig);
+
+      bundle.clear();
+      await storage.write(key: 'key_b', value: 'value_b');
+
+      expect(bundle, {'key_b': 'value_b'});
+      verifyZeroInteractions(logging);
+    });
+
+    test('a raw value stays raw on a keystore with one item per key', () async {
+      bundle['matrix'] = matrixConfig;
+
+      expect(
+        await SecureStorage(singleBundle: false).read(key: 'matrix'),
+        matrixConfig,
+      );
+      expect(bundle['matrix'], matrixConfig);
     });
   });
 }
