@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
@@ -42,6 +43,26 @@ Future<Set<String>> personTimelineLinkTargets(
           link.hidden != true)
         link.toId,
   };
+}
+
+/// Every live note, voice note, photo and meeting on [personId]'s timeline,
+/// private ones included — the agent's and the delete cascade's read, which
+/// a display preference must never scope (the reason
+/// `getAllCheckInsForRelationship` is unfiltered).
+Future<List<JournalEntity>> allPersonTimelineEntries(
+  JournalDb journalDb,
+  String personId,
+) async {
+  final ids = await personTimelineLinkTargets(journalDb, personId);
+  if (ids.isEmpty) return const [];
+  final rows = await journalDb
+      .journalEntitiesByIdsUnorderedAllPrivate(ids.toList(growable: false))
+      .get();
+  return [
+    for (final row in rows)
+      if (personTimelineEntryTypes.contains(row.type) && !row.deleted)
+        fromDbEntity(row),
+  ];
 }
 
 /// Soft-deletes every live [RelationshipLink] between [personId] and

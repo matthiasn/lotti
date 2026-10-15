@@ -296,6 +296,9 @@ void main() {
     () async {
       final agentRepository = MockAgentRepository();
       final relationshipRepository = MockRelationshipRepository();
+      when(
+        () => relationshipRepository.getAllTimelineEntries(any()),
+      ).thenAnswer((_) async => []);
       final wakeManager = MockScheduledWakeManager();
       when(
         () => agentRepository.getEntity(any()),
@@ -538,6 +541,9 @@ void main() {
     setUp(() {
       aiConfigRepository = MockAiConfigRepository();
       relationshipRepository = MockRelationshipRepository();
+      when(
+        () => relationshipRepository.getAllTimelineEntries(any()),
+      ).thenAnswer((_) async => []);
       agentRepository = MockAgentRepository();
       when(
         () => aiConfigRepository.getConfigsByType(any()),

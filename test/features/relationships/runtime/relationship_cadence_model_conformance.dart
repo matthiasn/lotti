@@ -218,6 +218,9 @@ class _CadenceDevice {
     when(
       () => people.getAllEntriesForCheckIns(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => people.getAllTimelineEntries(any()),
+    ).thenAnswer((_) async => const []);
   }
 
   final String host;

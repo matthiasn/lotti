@@ -572,6 +572,13 @@ class RelationshipRepository implements RelationshipCascade {
     }
   }
 
+  /// Every live note, voice note, photo and meeting on the person's timeline
+  /// (ADR 0138), private ones included — what the agent reads and Phase A
+  /// counts as evidence, unscoped by the display preference for the reason
+  /// [getAllCheckInsForRelationship] is.
+  Future<List<JournalEntity>> getAllTimelineEntries(String relationshipId) =>
+      allPersonTimelineEntries(_journalDb, relationshipId);
+
   // ── Task links ─────────────────────────────────────────────────────────────
 
   /// Links [taskId] to the relationship with a [RelationshipLink]
@@ -786,13 +793,7 @@ class RelationshipRepository implements RelationshipCascade {
     final entries = {
       ...(await getAllEntriesForCheckIns(checkInIds)).values.expand((e) => e),
       if (includeTimeline)
-        ...(await _journalDb
-                .journalEntitiesByIdsUnorderedAllPrivate(
-                  timelineIds.toList(growable: false),
-                )
-                .get())
-            .map(fromDbEntity)
-            .where((e) => !e.isDeleted && isCheckInEntryKind(e)),
+        ...(await getAllTimelineEntries(personId)).where(isCheckInEntryKind),
     };
     for (final entry in entries) {
       if (!includeTimeline && timelineIds.contains(entry.id)) continue;

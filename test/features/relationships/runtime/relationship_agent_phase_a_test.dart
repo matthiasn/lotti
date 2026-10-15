@@ -154,6 +154,9 @@ void main() {
     events = [];
     syncService = _TransactionRecordingSyncService(events);
     relationshipRepository = MockRelationshipRepository();
+    when(
+      () => relationshipRepository.getAllTimelineEntries(any()),
+    ).thenAnswer((_) async => []);
     reminders = _RecordingReminderSink(events);
     phaseA = RelationshipAgentPhaseA(
       repository: repository,
@@ -509,6 +512,40 @@ void main() {
       );
       expect(none.lastCheckInDay, isNull);
       expect(none.lastCheckInAt, isNull);
+    });
+
+    // ADR 0138 decision 6: a note on the person's timeline is evidence the
+    // briefing reads, so writing one makes the briefing out of date — but it
+    // is not contact, so the cadence still counts from the last check-in.
+    test('a timeline note newer than every check-in moves the evidence, not '
+        'the cadence', () async {
+      final call = DateTime.utc(2026, 8, 10, 9);
+      final noted = DateTime.utc(2026, 8, 18, 20);
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => [checkIn('c-1', call)]);
+      when(
+        () => relationshipRepository.getAllTimelineEntries(relationshipId),
+      ).thenAnswer(
+        (_) async => [
+          JournalEntity.journalEntry(
+            meta: meta('note-1', dateFrom: noted, updatedAt: noted),
+            entryText: const EntryText(plainText: 'Gift: a scarf.'),
+          ),
+        ],
+      );
+
+      final derivation = await phaseA.deriveCadenceFacts(
+        agentId: agentId,
+        relationship: relationship(),
+        now: DateTime.utc(2026, 8, 20, 12),
+      );
+
+      expect(derivation.lastEvidenceAt, noted);
+      expect(derivation.lastCheckInAt, call);
+      expect(derivation.lastCheckInDay, DateTime.utc(2026, 8, 10));
     });
 
     test('the escalation workspace key and its deadline are minted from the '

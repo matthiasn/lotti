@@ -68,14 +68,15 @@ typedef RelationshipCadenceDerivation = ({
   DateTime? lastCheckInDay,
 
   /// When the evidence last changed, as a UTC instant: the newest
-  /// `updatedAt` among the person's check-ins, reconstructed from its stored
-  /// wall-clock value and the check-in's own `utcOffset`
+  /// `updatedAt` among the person's check-ins and the rest of their timeline
+  /// (ADR 0138), reconstructed from its stored
+  /// wall-clock value and the entry's own `utcOffset`
   /// ([relationshipStoredInstant]) so every device derives the same instant.
-  /// Null when there is no check-in. A check-in is saved again whenever it gains an
+  /// Null when there is no evidence. A check-in is saved again whenever it gains an
   /// entry or one of its recordings or photos is described, so this moves
   /// for a backdated check-in, a second one on the same day, and a
   /// transcript arriving after the check-in was saved — none of which move
-  /// [lastCheckInAt]. Null when there is no check-in.
+  /// [lastCheckInAt].
   DateTime? lastEvidenceAt,
 
   /// [lastEvidenceAt]'s identity for the refresh episode: its stored date and
@@ -401,6 +402,22 @@ class RelationshipAgentPhaseA {
       if (lastEvidenceAt == null || changed.isAfter(lastEvidenceAt)) {
         lastEvidenceAt = changed;
         lastEvidenceKey = relationshipEvidenceKey(checkIn.meta.updatedAt);
+      }
+    }
+    // A note, voice note, photo or meeting on the person's timeline is
+    // evidence the briefing reads too (ADR 0138 decision 6): writing or
+    // editing one moves the watermark exactly as a touched check-in does.
+    // It does not move the cadence — only a check-in is contact.
+    for (final entry in await _relationshipRepository.getAllTimelineEntries(
+      relationship.meta.id,
+    )) {
+      final changed = relationshipStoredInstant(
+        entry.meta.updatedAt,
+        entry.meta.utcOffset,
+      );
+      if (lastEvidenceAt == null || changed.isAfter(lastEvidenceAt)) {
+        lastEvidenceAt = changed;
+        lastEvidenceKey = relationshipEvidenceKey(entry.meta.updatedAt);
       }
     }
     // Baseline: the newest check-in, or tracking start (ADR 0039 — the

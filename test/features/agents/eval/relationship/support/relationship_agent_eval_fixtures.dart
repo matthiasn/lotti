@@ -387,6 +387,9 @@ Future<RelationshipCadenceDerivation> deriveEvalCadence(
   final agentRepository = MockAgentRepository();
   final relationshipRepository = MockRelationshipRepository();
   when(
+    () => relationshipRepository.getAllTimelineEntries(any()),
+  ).thenAnswer((_) async => []);
+  when(
     () => agentRepository.getEntity(any()),
   ).thenAnswer((_) async => null);
   when(

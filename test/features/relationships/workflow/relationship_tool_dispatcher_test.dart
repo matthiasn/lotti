@@ -49,6 +49,9 @@ void main() {
   late RelationshipToolDispatcher dispatcher;
   setUp(() {
     relationships = MockRelationshipRepository();
+    when(
+      () => relationships.getAllTimelineEntries(any()),
+    ).thenAnswer((_) async => []);
     persistence = MockPersistenceLogic();
     cache = MockEntitiesCacheService();
     agents = MockTaskAgentService();

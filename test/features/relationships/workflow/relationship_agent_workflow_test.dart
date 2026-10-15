@@ -182,6 +182,9 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     relationshipRepository = MockRelationshipRepository();
+    when(
+      () => relationshipRepository.getAllTimelineEntries(any()),
+    ).thenAnswer((_) async => []);
     aiConfigRepository = MockAiConfigRepository();
     conversationManager = MockConversationManager();
     conversationRepository = MockConversationRepository(conversationManager);
