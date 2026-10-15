@@ -77,6 +77,16 @@ class _RelationshipDetailsPageState
 
   String get relationshipId => widget.relationshipId;
 
+  @override
+  void didUpdateWidget(RelationshipDetailsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The desktop split keeps this state when another person is picked: a
+    // filter chosen for one person's history is not a choice about theirs.
+    if (oldWidget.relationshipId != relationshipId) {
+      _filter = PersonTimelineFilter.all;
+    }
+  }
+
   Future<void> _handleDelete(
     BuildContext context,
     RelationshipEntry relationship,

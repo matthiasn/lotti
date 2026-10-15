@@ -253,8 +253,14 @@ PersonTimeline buildPersonTimeline({
   final today = relationshipCalendarDay(now);
   final upcoming = <PersonTimelineItem>[];
   final past = <PersonTimelineItem>[];
+  // A filter holds only while the pills that set it are offered: a history
+  // that shrank below them, or a person picked with a filter carried over,
+  // would otherwise show one kind with no way back to all.
+  final applied = rows.length >= personTimelineFiltersFrom
+      ? filter
+      : PersonTimelineFilter.all;
   for (final row in rows) {
-    if (!filter.admits(row)) continue;
+    if (!applied.admits(row)) continue;
     (_isUpcoming(row, now) ? upcoming : past).add(row);
   }
   upcoming.sort((a, b) => a.at.compareTo(b.at));

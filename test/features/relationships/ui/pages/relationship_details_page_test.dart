@@ -210,8 +210,9 @@ void main() {
     List<Override> overrides = const [],
     MediaQueryData? mediaQueryData,
     List<JournalEntity> timelineEntries = const [],
+    String relationshipId = 'rel-1',
   }) => makeTestableWidgetNoScroll(
-    const RelationshipDetailsPage(relationshipId: 'rel-1'),
+    RelationshipDetailsPage(relationshipId: relationshipId),
     mediaQueryData: mediaQueryData,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
@@ -969,6 +970,49 @@ void main() {
       expect(
         find.byKey(const ValueKey('person-timeline-row-meeting-1')),
         findsNothing,
+      );
+    });
+
+    testWidgets('the desktop split keeps the page when another person is '
+        "picked: the filter chosen for one person's history does not follow "
+        'to the next', (tester) async {
+      await pumpTimeline(tester, more: 4);
+      await tester.ensureVisible(find.text('Notes'));
+      await tester.tap(find.text('Notes'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-check-1')),
+        findsNothing,
+      );
+
+      // Another person, the same eight rows: the page state survives.
+      when(
+        () => mockRepository.getRelationshipById('rel-2'),
+      ).thenAnswer((_) async => relationship());
+      when(() => mockRepository.getCheckInsForRelationship('rel-2')).thenAnswer(
+        (_) async => [
+          checkIn('check-1', narrative: 'Planned the summer trip.'),
+          checkIn('check-2', narrative: 'Quick hello.'),
+          for (var i = 0; i < 4; i++) checkIn('more-$i'),
+        ],
+      );
+      when(
+        () => mockRepository.getLinkedTasks('rel-2'),
+      ).thenAnswer((_) async => []);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          buildPage(
+            relationshipId: 'rel-2',
+            timelineEntries: [coffee, note, pinned],
+            mediaQueryData: const MediaQueryData(size: phone),
+          ),
+        );
+        await tester.pumpAndSettle();
+      });
+
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-check-1')),
+        findsOneWidget,
       );
     });
 

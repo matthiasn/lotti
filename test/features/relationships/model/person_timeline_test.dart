@@ -289,8 +289,13 @@ void main() {
   });
 
   group('filters', () {
+    // Enough rows that the filters are offered, and so apply.
     final rows = (
-      checkIns: [checkIn('call', DateTime(2026, 10, 14))],
+      checkIns: [
+        checkIn('call', DateTime(2026, 10, 14)),
+        checkIn('call-2', DateTime(2026, 9, 2)),
+        checkIn('call-3', DateTime(2026, 8, 3)),
+      ],
       entries: <JournalEntity>[
         note('note', DateTime(2026, 10, 13)),
         voice('voice', DateTime(2026, 10, 12)),
@@ -303,13 +308,15 @@ void main() {
     final cases = {
       PersonTimelineFilter.all: {
         'call',
+        'call-2',
+        'call-3',
         'note',
         'voice',
         'photo',
         'coffee',
         'task',
       },
-      PersonTimelineFilter.checkIns: {'call'},
+      PersonTimelineFilter.checkIns: {'call', 'call-2', 'call-3'},
       PersonTimelineFilter.notes: {'note', 'voice'},
       PersonTimelineFilter.tasks: {'task'},
       PersonTimelineFilter.photos: {'photo'},
@@ -332,8 +339,22 @@ void main() {
         }, expected);
         // The count is the unfiltered timeline's, so the filter bar does not
         // vanish under the user once a narrow filter is on.
-        expect(timeline.itemCount, 6);
+        expect(timeline.itemCount, 8);
       });
     }
+  });
+
+  test('a filter holds only while there is enough to filter: below that the '
+      'whole history shows, so no hidden filter can strand the reader', () {
+    final timeline = buildPersonTimeline(
+      now: now,
+      checkIns: [checkIn('call', DateTime(2026, 10, 14))],
+      entries: [note('note', DateTime(2026, 10, 13))],
+      tasks: const [],
+      filter: PersonTimelineFilter.photos,
+    );
+
+    expect(timeline.itemCount, lessThan(personTimelineFiltersFrom));
+    expect(shape(timeline), ['thisWeek: call, note']);
   });
 }
