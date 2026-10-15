@@ -249,27 +249,17 @@ void main() {
     });
 
     test('a meeting is placed by the instant its stored offset names: one '
-        'written three hours east, an hour ahead on its own clock, has '
-        'already begun here', () {
-      final here = now.toUtc();
-      // The writer's wall clock: an hour after this moment's UTC reading,
-      // three hours east of UTC — two hours ago as an instant.
-      final stored = DateTime(
-        here.year,
-        here.month,
-        here.day,
-        here.hour + 1,
-        here.minute,
-      );
+        'an hour ahead on a clock three hours east of this one has already '
+        'begun here', () {
+      // The writer's wall clock reads an hour later than this device's,
+      // and the writer sat three hours east of it: the instant it names is
+      // two hours ago, in whatever zone the test runs.
+      final stored = now.add(const Duration(hours: 1));
       final east = JournalEntity.event(
-        meta:
-            meta(
-              'east',
-              dateFrom: stored,
-            ).copyWith(
-              dateTo: stored.add(const Duration(hours: 1)),
-              utcOffset: 180,
-            ),
+        meta: meta('east', dateFrom: stored).copyWith(
+          dateTo: stored.add(const Duration(hours: 1)),
+          utcOffset: now.timeZoneOffset.inMinutes + 180,
+        ),
         data: const EventData(
           title: 'Coffee east',
           stars: 0,
