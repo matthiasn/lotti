@@ -7,7 +7,9 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
@@ -227,16 +229,46 @@ void main() {
       expect(find.byIcon(LottiIcons.chat), findsOneWidget);
     });
 
-    testWidgets('wears the interactive wash, not a plain card', (
+    testWidgets("is the page's own card: the section surface, the "
+        "timeline's tile, a heading-tier title and caption meta", (
       tester,
     ) async {
       await pump(tester, pending: marker(), resolves: person());
 
+      expect(tester.widget(offer), isA<DesignSystemSectionCard>());
       final tokens = tester.element(offer).designTokens;
-      final decoration =
-          tester.widget<Container>(offer).decoration! as BoxDecoration;
-      expect(decoration.color, PostInteractionPrompt.washColor(tokens));
+      expect(
+        find.descendant(
+          of: offer,
+          matching: find.byType(DesignSystemTimelineTile),
+        ),
+        findsOneWidget,
+      );
+      final title = tester.widget<Text>(
+        find.byKey(const ValueKey('person-post-call-title')),
+      );
+      expect(
+        title.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
       expect(find.byType(Card), findsNothing);
+    });
+
+    testWidgets('on a narrow phone the answer takes a line of its own '
+        'instead of running off the card', (tester) async {
+      setTestSurfaceSize(tester, const Size(320, 900));
+      await pump(tester, pending: marker(), resolves: person());
+
+      expect(tester.takeException(), isNull);
+      final no = tester.getRect(
+        find.byKey(const ValueKey('person-post-call-no')),
+      );
+      final yes = tester.getRect(
+        find.byKey(const ValueKey('person-post-call-yes')),
+      );
+      final card = tester.getRect(offer);
+      expect(no.right, lessThanOrEqualTo(card.right));
+      expect(yes.right, lessThanOrEqualTo(card.right));
     });
 
     testWidgets('offers logging as the one primary action and declining as '

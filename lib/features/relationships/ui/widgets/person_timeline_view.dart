@@ -310,7 +310,11 @@ class PersonTimelineRow extends StatelessWidget {
           _ => day(row.at),
         },
         tail: const <String>[],
-        text: row.task.data.title,
+        // An untitled task still says it is one — the words the unlink
+        // question uses — rather than a row with nothing to read.
+        text: row.task.data.title.trim().isEmpty
+            ? messages.taskUntitled
+            : row.task.data.title,
         pending: false,
         footer: null,
         onTap: () => actions.openTask(row.task),
