@@ -51,16 +51,21 @@ void main() {
     data: EventData(title: 'Coffee', stars: 0, status: status),
   );
 
-  Task task(String id, DateTime at, {DateTime? due, bool done = false}) =>
-      testTask.copyWith(
-        meta: meta(id, at),
-        data: testTask.data.copyWith(
-          due: due,
-          status: done
-              ? TaskStatus.done(id: 's', createdAt: at, utcOffset: 0)
-              : TaskStatus.open(id: 's', createdAt: at, utcOffset: 0),
-        ),
-      );
+  Task task(
+    String id,
+    DateTime at, {
+    DateTime? due,
+    bool done = false,
+    DateTime? closedAt,
+  }) => testTask.copyWith(
+    meta: meta(id, at),
+    data: testTask.data.copyWith(
+      due: due,
+      status: done
+          ? TaskStatus.done(id: 's', createdAt: closedAt ?? at, utcOffset: 0)
+          : TaskStatus.open(id: 's', createdAt: at, utcOffset: 0),
+    ),
+  );
 
   /// Each section as `kind month: ids`, so a whole timeline compares as
   /// strings — records holding lists compare those lists by identity.
@@ -172,12 +177,46 @@ void main() {
     },
   );
 
-  test('a done task sits at when it was written, an open one at its due '
-      'date', () {
+  test('a done task sits at when it was closed — the moment its row reports '
+      '— an open one at its due date, or when it was written', () {
     final written = DateTime(2026, 10);
     final due = DateTime(2026, 10, 30);
+    final closed = DateTime(2026, 10, 14, 11, 20);
     expect(TimelineTask(task('t', written, due: due)).at, due);
-    expect(TimelineTask(task('t', written, due: due, done: true)).at, written);
+    expect(TimelineTask(task('t', written)).at, written);
+    expect(
+      TimelineTask(
+        task('t', written, due: due, done: true, closedAt: closed),
+      ).at,
+      closed,
+    );
+  });
+
+  test('a meeting called off before it came sits under its own month, not '
+      'under Today — Today is only today', () {
+    final timeline = buildPersonTimeline(
+      now: now,
+      checkIns: [checkIn('today-call', DateTime(2026, 10, 15, 9))],
+      entries: [
+        meeting(
+          'off-next-week',
+          DateTime(2026, 10, 22, 15),
+          status: EventStatus.cancelled,
+        ),
+        meeting(
+          'off-next-month',
+          DateTime(2026, 11, 5, 15),
+          status: EventStatus.cancelled,
+        ),
+      ],
+      tasks: const [],
+    );
+
+    expect(shape(timeline), [
+      'month 2026-11: off-next-month',
+      'month 2026-10: off-next-week',
+      'today: today-call',
+    ]);
   });
 
   test("photos taken on one day become one row, newest first; another day's "

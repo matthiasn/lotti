@@ -301,7 +301,8 @@ Iterable<TimelinePhotos> _photosByDay(List<JournalImage> photos) {
 }
 
 /// [past] (newest first) cut into *Today*, *This week* and one section per
-/// calendar month.
+/// calendar month. A row dated after today — a meeting called off before it
+/// came — takes its month's section: *Today* is only today.
 List<PersonTimelineSection> _pastSections(
   List<PersonTimelineItem> past,
   DateTime today,
@@ -310,9 +311,9 @@ List<PersonTimelineSection> _pastSections(
   for (final row in past) {
     final day = relationshipCalendarDay(row.at);
     final daysAgo = today.difference(day).inDays;
-    final kind = daysAgo <= 0
+    final kind = daysAgo == 0
         ? PersonTimelineSectionKind.today
-        : daysAgo < 7
+        : daysAgo > 0 && daysAgo < 7
         ? PersonTimelineSectionKind.thisWeek
         : PersonTimelineSectionKind.month;
     final month = kind == PersonTimelineSectionKind.month
