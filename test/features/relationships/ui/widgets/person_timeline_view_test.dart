@@ -12,6 +12,9 @@ import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_data/test_data.dart';
@@ -250,6 +253,174 @@ void main() {
     );
   });
 
+  group('rows say what each kind is', () {
+    /// The widest form of a row's meta line.
+    DsTieredText metaOf(WidgetTester tester, String id) =>
+        tester.widget<DsTieredText>(
+          find.descendant(
+            of: find.byKey(ValueKey('person-timeline-row-$id')),
+            matching: find.byType(DsTieredText),
+          ),
+        );
+
+    JournalAudio audio(String id, DateTime at, {String? words}) =>
+        testAudioEntry.copyWith(
+          meta: meta(id, at),
+          entryText: words == null ? null : EntryText(plainText: words),
+          data: testAudioEntry.data.copyWith(
+            duration: const Duration(minutes: 1),
+          ),
+        );
+
+    Task task(
+      String id, {
+      String title = 'A task',
+      DateTime? due,
+      bool done = false,
+    }) => testTask.copyWith(
+      meta: meta(id, DateTime(2026, 8, 1)),
+      data: testTask.data.copyWith(
+        title: title,
+        due: due,
+        status: done
+            ? TaskStatus.done(
+                id: 'done-$id',
+                createdAt: DateTime(2026, 8, 12, 10),
+                utcOffset: 0,
+              )
+            : testTask.data.status,
+      ),
+    );
+
+    testWidgets('a voice note says how long it ran and what was said, or '
+        'that its words are still coming, in the quiet ink', (tester) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [
+            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
+            audio('waiting', DateTime(2026, 8, 11, 9)),
+          ],
+        ),
+      );
+
+      expect(
+        metaOf(tester, 'spoken').tiers.first,
+        'Yesterday 19:10 · Voice note · 1 min',
+      );
+      expect(find.text('Send-off.'), findsOneWidget);
+      final waiting = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-waiting')),
+          matching: find.text('Transcribing…'),
+        ),
+      );
+      final tokens = tester
+          .element(find.byType(PersonTimelineRow).first)
+          .designTokens;
+      expect(waiting.style?.color, tokens.colors.text.lowEmphasis);
+
+      await tester.tap(find.text('Send-off.'));
+      expect(opened, ['entry spoken']);
+    });
+
+    testWidgets('an overdue task says since when in the warning ink, a done '
+        'one when it was done, and an untitled one that it is untitled', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          entries: [],
+          tasks: [
+            task('late', title: 'Return the sled', due: DateTime(2026, 8, 10)),
+            task('finished', title: 'Book the walkthrough', done: true),
+            task('nameless', title: ''),
+          ],
+        ),
+      );
+      final tokens = tester
+          .element(find.byType(PersonTimelineRow).first)
+          .designTokens;
+
+      final late = metaOf(tester, 'late');
+      expect(late.tiers.first, 'Overdue since Mon 10 Aug · Task');
+      expect(late.style.color, tokens.colors.alert.warning.ink);
+      expect(
+        metaOf(tester, 'finished').tiers.first,
+        'Done Yesterday 10:00 · Task',
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-nameless')),
+          matching: find.text('(untitled)'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("a check-in saved without words reads its entries' words, and "
+        'says the words are coming while only a recording holds them', (
+      tester,
+    ) async {
+      final bare = CheckInEntry(
+        meta: meta('bare', DateTime(2026, 8, 12, 9)),
+        data: const CheckInData(
+          relationshipId: 'pip',
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
+      final pending = CheckInEntry(
+        meta: meta('pending', DateTime(2026, 8, 11, 9)),
+        data: const CheckInData(
+          relationshipId: 'pip',
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
+      final photo = testImageEntry.copyWith(
+        meta: meta('photo', DateTime(2026, 8, 12, 9)),
+      );
+      final comment =
+          JournalEntity.journalEntry(
+                meta: meta('comment', DateTime(2026, 8, 12, 9)),
+                entryText: const EntryText(plainText: 'Talked logistics.'),
+              )
+              as JournalEntry;
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [bare, pending],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            // A photo has no words to offer; the comment after it does.
+            'bare': [photo, comment],
+            'pending': [audio('take', DateTime(2026, 8, 11, 9))],
+          },
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-bare')),
+          matching: find.text('Talked logistics.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-pending')),
+          matching: find.text('Transcribing…'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('the photo strip', () {
     // The thumbnails resolve their files under the documents directory,
     // which the image fixtures expect registered (journal_image_fixtures).
@@ -279,6 +450,16 @@ void main() {
         find.byKey(const ValueKey('person-timeline-photo-photo-4')),
       );
       expect(opened, ['entry photo-4']);
+    });
+
+    testWidgets('the row itself opens the photo its strip starts with', (
+      tester,
+    ) async {
+      await pump(tester, timeline(checkIns: [], tasks: [], entries: photos(2)));
+
+      await tester.tap(find.textContaining('2 photos'));
+      // Newest first, as the strip shows them.
+      expect(opened, ['entry photo-1']);
     });
 
     testWidgets('three photos need no count', (tester) async {

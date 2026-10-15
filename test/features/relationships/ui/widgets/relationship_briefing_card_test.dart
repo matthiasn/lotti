@@ -1528,6 +1528,26 @@ void main() {
       );
     });
 
+    testWidgets('an out-of-date face carries the cost on its model row', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
+        totalTokens: 38200,
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(TaskAgentIdentityRegion),
+          matching: find.textContaining('38.2K tokens', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('no cost on the model row without usage', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 

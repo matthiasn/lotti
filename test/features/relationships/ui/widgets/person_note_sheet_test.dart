@@ -7,6 +7,9 @@ import 'package:lotti/features/relationships/repository/person_timeline_reposito
 import 'package:lotti/features/relationships/ui/widgets/person_note_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -15,6 +18,7 @@ import '../../../../widget_test_utils.dart';
 void main() {
   final at = DateTime(2026, 8, 13, 10);
   late MockPersonTimelineRepository repository;
+  late MockDomainLogger logger;
 
   Metadata meta(String id, {bool? starred}) => Metadata(
     id: id,
@@ -45,6 +49,16 @@ void main() {
 
   setUp(() {
     repository = MockPersonTimelineRepository();
+    logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+        message: any<String>(named: 'message'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   Future<void> open(WidgetTester tester, {JournalEntry? note}) async {
@@ -60,6 +74,7 @@ void main() {
         ),
         overrides: [
           personTimelineRepositoryProvider.overrideWithValue(repository),
+          domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
     );
@@ -168,6 +183,74 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => repository.deleteNote(existing)).called(1);
+    expect(find.text('Note about Pip'), findsNothing);
+  });
+
+  testWidgets('a write that throws is logged and said, never lost: the '
+      'sheet stays open on the words', (tester) async {
+    when(
+      () => repository.createNote(
+        person: any(named: 'person'),
+        text: any(named: 'text'),
+        pinned: any(named: 'pinned'),
+      ),
+    ).thenThrow(Exception('database locked'));
+    await open(tester);
+
+    await tester.enterText(field(), 'Prefers mornings.');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('person-note-save')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not save the note.'), findsOneWidget);
+    expect(find.text('Prefers mornings.'), findsOneWidget);
+    verify(
+      () => logger.error(
+        LogDomain.general,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'PersonNoteSheet',
+        message: any<String>(named: 'message'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a delete that fails says so under the words, and the sheet '
+      'stays', (tester) async {
+    when(() => repository.deleteNote(any())).thenAnswer((_) async => false);
+    await open(tester, note: existing);
+
+    await tester.tap(find.byKey(const ValueKey('person-note-delete')));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't delete the entry — try again"), findsOneWidget);
+    expect(find.text('Note about Pip'), findsOneWidget);
+  });
+
+  testWidgets('Ctrl+Enter saves, as in the check-in composer', (tester) async {
+    when(
+      () => repository.createNote(
+        person: any(named: 'person'),
+        text: any(named: 'text'),
+        pinned: any(named: 'pinned'),
+      ),
+    ).thenAnswer((_) async => existing);
+    await open(tester);
+
+    await tester.enterText(field(), 'Prefers mornings.');
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.createNote(
+        person: pip,
+        text: 'Prefers mornings.',
+        pinned: false,
+      ),
+    ).called(1);
     expect(find.text('Note about Pip'), findsNothing);
   });
 

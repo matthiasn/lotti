@@ -9,6 +9,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -207,12 +209,13 @@ void main() {
   Widget buildPage({
     List<Override> overrides = const [],
     MediaQueryData? mediaQueryData,
+    List<JournalEntity> timelineEntries = const [],
   }) => makeTestableWidgetNoScroll(
     const RelationshipDetailsPage(relationshipId: 'rel-1'),
     mediaQueryData: mediaQueryData,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
-      personTimelineOverride(),
+      personTimelineOverride(entries: timelineEntries),
       // The action bar's record button watches the app-wide recorder.
       audioRecorderControllerProvider.overrideWith(
         FakeAudioRecorderController.new,
@@ -228,11 +231,13 @@ void main() {
     WidgetTester tester, {
     List<Override> overrides = const [],
     MediaQueryData? mediaQueryData,
+    List<JournalEntity> timelineEntries = const [],
   }) => withClock(Clock.fixed(now), () async {
     await tester.pumpWidget(
       buildPage(
         overrides: withServiceOverrides(overrides),
         mediaQueryData: mediaQueryData,
+        timelineEntries: timelineEntries,
       ),
     );
     await tester.pumpAndSettle();
@@ -826,6 +831,169 @@ void main() {
     );
     expect(form.startSpeaking, isTrue);
     expect(form.relationshipId, 'rel-1');
+  });
+
+  group('a person with a whole timeline, on a phone', () {
+    const phone = Size(390, 2400);
+    Metadata at(String id, DateTime from, {DateTime? to, bool? starred}) =>
+        Metadata(
+          id: id,
+          createdAt: from,
+          updatedAt: from,
+          dateFrom: from,
+          dateTo: to ?? from,
+          starred: starred,
+        );
+    final coffee = JournalEntity.event(
+      meta: at(
+        'meeting-1',
+        DateTime(2026, 8, 16, 15),
+        to: DateTime(2026, 8, 16, 17),
+      ),
+      data: const EventData(
+        title: 'Coffee at the ice garden',
+        stars: 0,
+        status: EventStatus.planned,
+      ),
+    );
+    final note = JournalEntity.journalEntry(
+      meta: at('note-1', DateTime(2026, 8, 13, 9)),
+      entryText: const EntryText(plainText: 'Ask about the sled race.'),
+    );
+    final pinned = JournalEntity.journalEntry(
+      meta: at('pinned-1', DateTime(2026, 3, 2), starred: true),
+      entryText: const EntryText(plainText: 'Met at the ice summit.'),
+    );
+
+    late List<String> beamed;
+
+    Future<void> pumpTimeline(WidgetTester tester, {int more = 0}) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer(
+        (_) async => [
+          checkIn('check-1', narrative: 'Planned the summer trip.'),
+          checkIn('check-2', narrative: 'Quick hello.'),
+          for (var i = 0; i < more; i++) checkIn('more-$i'),
+        ],
+      );
+      beamed = [];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      setTestSurfaceSize(tester, phone);
+      await pumpPage(
+        tester,
+        timelineEntries: [coffee, note, pinned],
+        mediaQueryData: const MediaQueryData(size: phone),
+      );
+    }
+
+    testWidgets('Before you talk leads with the next meeting, which opens '
+        'the meeting', (tester) async {
+      await pumpTimeline(tester);
+
+      final meeting = find.byKey(const ValueKey('person-next-meeting'));
+      expect(
+        find.descendant(of: meeting, matching: find.text('Next meeting')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<DsTieredText>(
+              find.descendant(of: meeting, matching: find.byType(DsTieredText)),
+            )
+            .tiers
+            .first,
+        'Coffee at the ice garden · Sun 16 Aug 15:00',
+      );
+      expect(
+        tester.getTopLeft(meeting).dy,
+        lessThan(
+          tester
+              .getTopLeft(
+                find.byKey(const ValueKey('relationship-briefing-card')),
+              )
+              .dy,
+        ),
+      );
+
+      await tester.tap(meeting);
+      await tester.pump();
+      expect(beamed, ['/journal/meeting-1']);
+    });
+
+    testWidgets('a pinned note sits in About, out of the timeline, and opens '
+        'in its sheet', (tester) async {
+      await pumpTimeline(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-about')),
+          matching: find.text('Met at the ice summit.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-pinned-1')),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Met at the ice summit.'));
+      await tester.pumpAndSettle();
+      expect(find.text('Note about Sis'), findsOneWidget);
+    });
+
+    testWidgets('a filter narrows the timeline to its kind', (tester) async {
+      // Enough history for the filters to be worth their row.
+      await pumpTimeline(tester, more: 4);
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-check-1')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(find.text('Notes'));
+      await tester.tap(find.text('Notes'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-note-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-check-1')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('person-timeline-row-meeting-1')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a note on the timeline opens in its sheet, and + Add opens '
+        'a blank one about the person', (tester) async {
+      await pumpTimeline(tester);
+
+      await tester.ensureVisible(find.text('Ask about the sled race.'));
+      await tester.tap(find.text('Ask about the sled race.'));
+      await tester.pumpAndSettle();
+      expect(find.text('Note about Sis'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextField, 'Ask about the sled race.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('person-note-cancel')));
+      await tester.pumpAndSettle();
+
+      await addFromMenu(tester, 'note');
+      expect(find.text('Note about Sis'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextField, 'Ask about the sled race.'),
+        findsNothing,
+      );
+    });
   });
 
   group('a call just placed from this page', () {

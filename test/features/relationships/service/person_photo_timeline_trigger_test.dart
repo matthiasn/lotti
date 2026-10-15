@@ -7,6 +7,8 @@ import 'package:lotti/features/relationships/service/person_photo_timeline_trigg
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
@@ -89,6 +91,30 @@ void main() {
       () => timeline.addToTimeline(personId: 'pip', entryId: 'photo-1'),
     ).called(1);
     verify(() => automation.tryAnalyzeImage(subjectId: 'pip')).called(1);
+  });
+
+  test("the page's trigger puts photos on the timeline its repository "
+      'keeps', () async {
+    final wired = ProviderContainer(
+      overrides: withServiceOverrides([
+        profileAutomationServiceProvider.overrideWithValue(automation),
+        skillInferenceRunnerProvider.overrideWithValue(runner),
+        personTimelineRepositoryProvider.overrideWithValue(timeline),
+        domainLoggerProvider.overrideWithValue(logger),
+      ]),
+    );
+    addTearDown(wired.dispose);
+
+    await wired
+        .read(personPhotoTimelineTriggerProvider)
+        .triggerAutomaticImageAnalysis(
+          imageEntryId: 'photo-9',
+          linkedTaskId: 'pip',
+        );
+
+    verify(
+      () => timeline.addToTimeline(personId: 'pip', entryId: 'photo-9'),
+    ).called(1);
   });
 
   test('does nothing for an import that names no person', () async {
