@@ -1,6 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -175,22 +174,13 @@ class _NextTimeLeadState extends State<NextTimeLead> {
         ),
     ];
     final folded = widget.compact && !_expanded && facts.length > 1;
-    final provenance = NextTimeLead.provenanceOf(context, from);
     final open = widget.onOpenSource;
+    final day = relationshipDayLabelOf(context, from.meta.dateFrom);
     return Column(
       key: const ValueKey('person-next-time'),
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (open == null)
-          provenance
-        else
-          DsQuietInk(
-            key: const ValueKey('person-next-time-open'),
-            onTap: open,
-            builder: (context, highlighted) => provenance,
-          ),
-        SizedBox(height: context.designTokens.spacing.step2),
         NextTimeFacts(facts: folded ? facts.take(1).toList() : facts),
         if (widget.compact && facts.length > 1)
           personDisclosure(
@@ -201,6 +191,21 @@ class _NextTimeLeadState extends State<NextTimeLead> {
                 ? messages.relationshipNextTimeShowAvoid
                 : messages.relationshipAboutShowLess,
             onPressed: () => setState(() => _expanded = !_expanded),
+          ),
+        // Where the notes came from, after them and as a way into that
+        // check-in: a quiet link with its chevron, never a third grey label
+        // stacked on the notes' own.
+        if (open == null)
+          NextTimeLead.provenanceOf(context, from)
+        else
+          DesignSystemButton(
+            key: const ValueKey('person-next-time-open'),
+            label: messages.relationshipNextTimeFromEarlier(day),
+            trailingIcon: LottiIcons.chevronRight,
+            variant: DesignSystemButtonVariant.quiet,
+            size: DesignSystemButtonSize.dense,
+            alignsLabelToLeadingEdge: true,
+            onPressed: open,
           ),
       ],
     );

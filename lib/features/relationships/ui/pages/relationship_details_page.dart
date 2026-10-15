@@ -313,7 +313,15 @@ class _RelationshipDetailsPageState
         item: item,
         categoryName: categoryName,
         nextMeetingAt: nextMeeting?.event.meta.dateFrom,
-        actions: PersonContactRow(relationship: relationship),
+        // The verbs first, then the reminders control, as one row.
+        actions: PersonContactRow(
+          relationship: relationship,
+          trailing: personHeaderPills(
+            context,
+            item,
+            nextMeetingAt: nextMeeting?.event.meta.dateFrom,
+          ),
+        ),
       ),
       gap,
       // Under the person's name: the reminder the user just tapped says it
@@ -348,7 +356,9 @@ class _RelationshipDetailsPageState
         ),
         SizedBox(height: tokens.spacing.step3),
       ],
-      if (nextMeeting != null) ...[
+      // On a phone the meeting leads; on a wide pane the timeline's own
+      // Upcoming row sits right beside this rail and says it already.
+      if (nextMeeting != null && compact) ...[
         _NextMeetingLine(meeting: nextMeeting, now: now),
         SizedBox(height: tokens.spacing.step4),
       ],

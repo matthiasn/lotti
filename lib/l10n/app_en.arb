@@ -8026,7 +8026,7 @@
       }
     }
   },
-  "relationshipPostCallDismiss": "Dismiss",
+  "relationshipPostCallDismiss": "Not this time",
   "@relationshipPostCallDismiss": {
     "description": "Button that dismisses the post-call prompt without a trace"
   },

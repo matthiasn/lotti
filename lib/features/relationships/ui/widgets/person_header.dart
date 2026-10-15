@@ -654,8 +654,9 @@ class PersonHeaderBlock extends StatelessWidget {
   final RelationshipListItem item;
   final String? categoryName;
 
-  /// The person's contact actions, set in the pills' row so the block
-  /// spends one line on them rather than two.
+  /// The row of actions under the name — the contact verbs with the
+  /// header's pills flowing on after them ([personHeaderPills]) — in place
+  /// of the pills alone.
   final Widget? actions;
 
   /// When the next meeting with the person starts, if one is booked.
@@ -666,6 +667,11 @@ class PersonHeaderBlock extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final data = item.relationship.data;
+    final pills = personHeaderPills(
+      context,
+      item,
+      nextMeetingAt: nextMeetingAt,
+    );
 
     // The category alone: that reminders are on, and how often, is the
     // reminders pill's to say — it says it in every state and can change it.
@@ -730,20 +736,18 @@ class PersonHeaderBlock extends StatelessWidget {
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
-        SizedBox(height: tokens.spacing.step4),
-        Wrap(
-          spacing: tokens.spacing.step2,
-          runSpacing: tokens.spacing.step2,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            ...personHeaderPills(
-              context,
-              item,
-              nextMeetingAt: nextMeetingAt,
-            ),
-            ?actions,
-          ],
-        ),
+        if (actions case final actions?) ...[
+          SizedBox(height: tokens.spacing.step4),
+          actions,
+        ] else if (pills.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step4),
+          Wrap(
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: pills,
+          ),
+        ],
       ],
     );
   }

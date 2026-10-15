@@ -52,6 +52,7 @@ class PersonRemindersPill extends StatelessWidget {
         leadingIcon: LottiIcons.notification,
         trailingIcon: LottiIcons.chevronDown,
         variant: DesignSystemButtonVariant.secondary,
+        size: DesignSystemButtonSize.dense,
         onPressed: () => showPersonRemindersSheet(
           context: context,
           relationship: relationship,

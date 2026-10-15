@@ -12996,7 +12996,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallDismiss => 'Dismiss';
+  String get relationshipPostCallDismiss => 'Not this time';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {

@@ -679,7 +679,7 @@ class _StatusLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final style = tokens.typography.styles.body.bodySmall.copyWith(
+    final style = tokens.typography.styles.others.caption.copyWith(
       color: color,
     );
     final glyphSize = icon == null ? leadingSize : IconSizes.s;

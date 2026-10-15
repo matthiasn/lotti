@@ -32,9 +32,18 @@ import 'package:material_ui/material_ui.dart';
 /// marker as everywhere else ([launchContactAction]), so coming back offers
 /// to log what happened.
 class PersonContactRow extends ConsumerStatefulWidget {
-  const PersonContactRow({required this.relationship, super.key});
+  const PersonContactRow({
+    required this.relationship,
+    this.trailing = const [],
+    super.key,
+  });
 
   final RelationshipEntry relationship;
+
+  /// Controls that flow on after the contact verbs in the same row — the
+  /// header's reminders control — so a phone gets one row of actions, not
+  /// an orphaned second line.
+  final List<Widget> trailing;
 
   @override
   ConsumerState<PersonContactRow> createState() => _PersonContactRowState();
@@ -126,13 +135,15 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
 
   @override
   Widget build(BuildContext context) {
-    final reachable = _reachable;
-    if (reachable == null || reachable.isEmpty) return const SizedBox.shrink();
+    final reachable = _reachable ?? const {};
+    final trailing = widget.trailing;
+    if (reachable.isEmpty && trailing.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     return Wrap(
       key: const ValueKey('person-contact-row'),
       spacing: tokens.spacing.step2,
       runSpacing: tokens.spacing.step2,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Declaration order, so the buttons never reshuffle between people.
         for (final action in ContactAction.values)
@@ -142,8 +153,12 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
               label: contactActionLabel(context, action),
               leadingIcon: contactActionIcon(action),
               variant: DesignSystemButtonVariant.secondary,
+              // Dense: the header's actions sit under the name in one row on
+              // a phone, and must not outrank the section headings below.
+              size: DesignSystemButtonSize.dense,
               onPressed: () => unawaited(_pressed(action, channels)),
             ),
+        ...trailing,
       ],
     );
   }

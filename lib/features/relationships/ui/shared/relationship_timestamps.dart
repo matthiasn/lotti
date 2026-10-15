@@ -19,9 +19,9 @@ import 'package:material_ui/material_ui.dart';
 
 /// The [TextStyle] for a relationship timestamp: [base], or the
 /// design-system caption token when the caller has no host line to match,
-/// with tabular figures (`dateFigureFontFeatures`) so a column of dates
-/// lines up digit for digit — without the badges' slashed zero, which made a
-/// date in a line of prose read as a code.
+/// with the open digits of `dateFigureFontFeatures` — no slashed zero, which
+/// made a date in a line of prose read as a code, and no tabular spacing,
+/// which set `11` as `1 1`.
 ///
 /// [base] matters wherever a date sits *inside* a line of prose. The style
 /// changes figures and colour and nothing else, so a timestamp in a 16pt

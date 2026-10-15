@@ -399,22 +399,22 @@ void main() {
   group('relationshipTimestampStyle', () {
     const tokens = dsTokensDark;
 
-    test('is the caption token with tabular figures and the low-emphasis '
-        'ink when the caller has no host line — and no monospace face', () {
+    test('is the caption token with open digits and the low-emphasis ink '
+        'when the caller has no host line — and no monospace face', () {
       final style = relationshipTimestampStyle(tokens);
       expect(style.fontSize, tokens.typography.styles.others.caption.fontSize);
       expect(style.color, tokens.colors.text.lowEmphasis);
-      expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
+      expect(style.fontFeatures, contains(const FontFeature('cv02')));
       expect(style.fontFamily, isNot('Inconsolata'));
     });
 
     // Design panel 2026-10-15: the badges' slashed zero made `10:05` in a
     // row's meta line read as a code rather than a time.
-    test('sets dates without the slashed zero badges use', () {
-      expect(
-        relationshipTimestampStyle(tokens).fontFeatures,
-        isNot(contains(const FontFeature.slashedZero())),
-      );
+    test('sets dates without the slashed zero badges use, and without '
+        "tabular spacing — a date in a line is read, not compared", () {
+      final features = relationshipTimestampStyle(tokens).fontFeatures;
+      expect(features, isNot(contains(const FontFeature.slashedZero())));
+      expect(features, isNot(contains(const FontFeature.tabularFigures())));
     });
 
     test('inside a line of prose it keeps the host size and takes the '
@@ -428,7 +428,7 @@ void main() {
       expect(style.fontSize, host.fontSize);
       expect(style.fontWeight, host.fontWeight);
       expect(style.color, tokens.colors.text.highEmphasis);
-      expect(style.fontFeatures, contains(const FontFeature.tabularFigures()));
+      expect(style.fontFeatures, contains(const FontFeature('cv02')));
     });
   });
 
