@@ -11,6 +11,7 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -95,14 +96,11 @@ void main() {
     // (`Call`, `Weekly`) keeps the line's own style. No monospace face
     // anywhere: the date is Inter like the sentence it sits in.
     final spans = _spanStyles(tester);
-    expect(
-      spans['Today 09:05']?.fontFeatures,
-      contains(const FontFeature.tabularFigures()),
-    );
+    expect(spans['Today 09:05']?.fontFeatures, dateFigureFontFeatures);
     expect(spans['Today 09:05']?.fontFamily, isNot('Inconsolata'));
     expect(
       spans['Call · ']?.fontFeatures ?? const <FontFeature>[],
-      isNot(contains(const FontFeature.tabularFigures())),
+      isNot(contains(const FontFeature('cv02'))),
       reason: 'the prose around the date is left alone',
     );
     expect(spans[' · Weekly']?.fontFamily, isNot('Inconsolata'));
@@ -154,7 +152,7 @@ void main() {
       );
       expect(
         _spanStyles(tester)['Today 09:05']?.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
+        dateFigureFontFeatures,
       );
       expect(find.textContaining('No cadence'), findsNothing);
     });

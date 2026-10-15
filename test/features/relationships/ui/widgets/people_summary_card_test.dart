@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -193,9 +194,9 @@ void main() {
     final day = tester
         .widget<Text>(find.byKey(const ValueKey('people-summary-next-due-day')))
         .style;
-    // The feature's date style: tabular figures in the UI face, not a
+    // The feature's date style: open digits in the UI face, not a
     // monospace face of its own.
-    expect(day?.fontFeatures, contains(const FontFeature.tabularFigures()));
+    expect(day?.fontFeatures, dateFigureFontFeatures);
     expect(day?.fontFamily, isNot('Inconsolata'));
     expect(find.text('1 person without reminders'), findsOneWidget);
     // The card hugs its two facts: the divider runs the taller half's
