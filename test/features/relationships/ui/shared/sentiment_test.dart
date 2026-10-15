@@ -24,13 +24,21 @@ void main() {
         ),
       );
 
+      // The good end of the scale is one hue family, never the interactive
+      // teal: Delightful at full strength, Good a step quieter.
       expect(
         sentimentColor(tokens, CheckInSentiment.delightful),
-        tokens.colors.interactive.enabled,
+        tokens.colors.alert.success.defaultColor,
       );
       expect(
         sentimentColor(tokens, CheckInSentiment.good),
-        tokens.colors.alert.success.defaultColor,
+        tokens.colors.alert.success.defaultColor.withValues(
+          alpha: SurfaceAlphas.linework,
+        ),
+      );
+      expect(
+        sentimentColor(tokens, CheckInSentiment.delightful),
+        isNot(tokens.colors.interactive.enabled),
       );
       expect(
         sentimentColor(tokens, CheckInSentiment.strained),

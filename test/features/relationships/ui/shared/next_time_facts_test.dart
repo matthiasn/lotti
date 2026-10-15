@@ -16,7 +16,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('each fact is a low-emphasis caption over a body line, the '
+  testWidgets('each fact is a medium-emphasis caption over a body line, the '
       'words carrying the key', (tester) async {
     await pump(tester, const [
       (
@@ -30,7 +30,7 @@ void main() {
     final caption = tester.widget<Text>(find.text('Pay attention to'));
     final body = tester.widget<Text>(find.byKey(attention));
     expect(body.data, 'The krill deadline.');
-    expect(caption.style?.color, tokens.colors.text.lowEmphasis);
+    expect(caption.style?.color, tokens.colors.text.mediumEmphasis);
     expect(
       caption.style?.fontSize,
       tokens.typography.styles.others.caption.fontSize,
@@ -50,7 +50,7 @@ void main() {
     );
   });
 
-  testWidgets('facts stack `step1` inside a pair and `step3` between pairs, '
+  testWidgets('facts stack `step1` inside a pair and `step4` between pairs, '
       'with nothing above the first', (tester) async {
     await pump(tester, const [
       (
@@ -74,7 +74,7 @@ void main() {
     );
     expect(
       secondCaption.top - firstBody.bottom,
-      closeTo(tokens.spacing.step3, 0.5),
+      closeTo(tokens.spacing.step4, 0.5),
     );
   });
 

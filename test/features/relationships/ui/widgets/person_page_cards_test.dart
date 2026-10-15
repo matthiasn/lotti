@@ -74,21 +74,61 @@ void main() {
       expect(NextTimeLead.sourceOf(const []), isNull);
     });
 
-    // Inside the agent's card, undated and unattributed notes would read as
-    // the agent's: the caption says whose they are and from which day.
-    testWidgets("says the notes are the user's own and which day they are "
-        'from, the date in the timestamp style', (tester) async {
+    // On the page, undated notes would read as written after a conversation
+    // they predate: the heading's caption says which check-in they are from.
+    testWidgets('provenanceOf names the check-in the notes are from, the date '
+        'in the timestamp style', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          NextTimeLead(source: checkIn(attention: 'The move')),
+          Builder(
+            builder: (context) => NextTimeLead.provenanceOf(
+              context,
+              checkIn(attention: 'The move'),
+            ),
+          ),
         ),
       );
 
       final line = tester.widget<RelationshipLineWithDate>(
         find.byKey(const ValueKey('person-next-time-from')),
       );
-      expect(line.text, 'Your notes · Thu 13 Aug');
+      expect(line.text, 'From your check-in on Thu 13 Aug');
       expect(line.date, 'Thu 13 Aug');
+    });
+
+    testWidgets('compact shows the first note and folds the second behind '
+        'a disclosure that opens it', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          NextTimeLead(
+            source: checkIn(attention: 'The move', avoid: 'Politics.'),
+            compact: true,
+          ),
+        ),
+      );
+
+      expect(find.text('The move'), findsOneWidget);
+      expect(find.text('Politics.'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('person-next-time-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Politics.'), findsOneWidget);
+    });
+
+    testWidgets('compact with a single note offers nothing to open', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          NextTimeLead(source: checkIn(attention: 'The move'), compact: true),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('person-next-time-toggle')),
+        findsNothing,
+      );
     });
 
     testWidgets('renders nothing when the source carries no guidance', (
