@@ -219,16 +219,34 @@ void main() {
       expect(bundle['api_key'], 'sk-abc_123.XYZ');
     });
 
-    test('rewrites a value an earlier version stored raw the first time it '
-        'is read', () async {
-      bundle['github_account:p'] = matrixConfig;
+    test('rewrites every value an earlier version stored raw on first access, '
+        'including keys never read', () async {
+      bundle.addAll({
+        'github_account:active': matrixConfig,
+        'github_account:guest': '{"token":null}',
+        'api_key': 'sk-plain',
+      });
 
-      expect(await bundled().read(key: 'github_account:p'), matrixConfig);
+      expect(await bundled().read(key: 'api_key'), 'sk-plain');
+
       expect(
-        bundle['github_account:p'],
+        bundle['github_account:guest'],
         startsWith(SecureStorage.encodedPrefix),
       );
+      expect(bundle['api_key'], 'sk-plain');
       expect(jsonEncode(bundle), isNot(contains(r'\')));
+      final fresh = bundled();
+      expect(await fresh.read(key: 'github_account:active'), matrixConfig);
+      expect(await fresh.read(key: 'github_account:guest'), '{"token":null}');
+    });
+
+    test('encodes a value that itself starts with the prefix, so it reads '
+        'back unchanged', () async {
+      const lookalike = '${SecureStorage.encodedPrefix}not-base64!';
+      await bundled().write(key: 'api_key', value: lookalike);
+
+      expect(bundle['api_key'], isNot(lookalike));
+      expect(await bundled().read(key: 'api_key'), lookalike);
     });
 
     test('writes back the keys a blanked bundle lost before writing the new '
@@ -315,6 +333,19 @@ void main() {
         matrixConfig,
       );
       expect(bundle['matrix'], matrixConfig);
+    });
+
+    test('a value starting with the prefix is neither encoded nor decoded on '
+        'a keystore with one item per key', () async {
+      const lookalike = '${SecureStorage.encodedPrefix}not-base64!';
+      bundle['api_key'] = lookalike;
+      await SecureStorage(singleBundle: false).write(key: 'other', value: 'x');
+
+      expect(
+        await SecureStorage(singleBundle: false).read(key: 'api_key'),
+        lookalike,
+      );
+      expect(bundle['api_key'], lookalike);
     });
   });
 }

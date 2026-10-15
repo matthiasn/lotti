@@ -116,8 +116,11 @@ message, so neither the message nor a log line prints it.
   reloads its file (gnome-keyring#147). So on Linux a value the bundle's JSON
   would escape — a quote, a backslash, a control character, as in the Matrix
   config and the GitHub account record — is stored base64url-encoded behind a
-  `lotti-b64:` prefix, and a value an earlier version stored raw is rewritten
-  the first time it is read. And before every write or delete the bundle is
+  `lotti-b64:` prefix (as is a value that itself starts with the prefix, so a
+  read never mistakes it; other platforms neither encode nor decode). Before
+  its first access, `SecureStorage` rewrites every value an earlier version
+  stored raw in the bundle, including keys it never reads, such as another
+  profile's GitHub record. And before every write or delete the bundle is
   read back: a key the cache holds but the bundle has lost is written back
   first, logged as `secureStorage.repair` in the persistence domain, instead
   of being overwritten by the one key being written.

@@ -23,8 +23,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// - A value the bundle's JSON would escape (a quote, a backslash, a control
 ///   character) is stored base64url-encoded behind [encodedPrefix], so the
 ///   bundle never holds a backslash: an unencrypted gnome-keyring blanks any
-///   secret containing one when it reloads its file. A value stored raw by an
-///   earlier version is rewritten encoded the first time it is read.
+///   secret containing one when it reloads its file. Every value an earlier
+///   version stored raw is rewritten encoded before the first access, whether
+///   it is ever read or not.
 /// - Before every write or delete the bundle is read back; a key this process
 ///   knows to be stored but finds missing is written back from the cache
 ///   first, so a blanked bundle is repaired instead of overwritten with the
@@ -36,8 +37,9 @@ class SecureStorage {
   SecureStorage({bool? singleBundle, this._logging})
     : singleBundle = singleBundle ?? Platform.isLinux;
 
-  /// Marks a value stored base64url-encoded. Nothing stored raw starts with
-  /// it: the values are JSON objects, API keys and tokens.
+  /// Marks a value stored base64url-encoded, on a [singleBundle] keystore
+  /// only. A value that itself starts with it is encoded too, so a read never
+  /// mistakes it; elsewhere nothing is encoded and nothing decoded.
   @visibleForTesting
   static const encodedPrefix = 'lotti-b64:';
 
@@ -48,6 +50,7 @@ class SecureStorage {
   final _storage = const FlutterSecureStorage();
   final _state = <String, String>{};
   Future<void> _mutations = Future<void>.value();
+  bool _migrated = false;
 
   /// Returns the value for [key], reading from the keychain on a cache miss
   /// and memoising the result. `null` when the key is absent in both the cache
@@ -66,13 +69,12 @@ class SecureStorage {
         mOptions: await _mOptions(),
       );
       if (stored == null) return null;
-      final value = stored.startsWith(encodedPrefix)
+      final value = singleBundle && stored.startsWith(encodedPrefix)
           ? utf8.decode(
               base64Url.decode(stored.substring(encodedPrefix.length)),
             )
           : stored;
       _state[key] = value;
-      if (_encoded(value) != stored) await _put(key, value);
       return value;
     });
   }
@@ -143,18 +145,46 @@ class SecureStorage {
     );
   }
 
+  /// Rewrites every value an earlier version stored raw that the bundle's
+  /// JSON escapes — read or not, any profile's — so the bundle holds no
+  /// backslash. Runs once per instance, before its first keystore access; a
+  /// failed pass is tried again on the next one.
+  Future<void> _migrateBundle() async {
+    if (!singleBundle || _migrated) return;
+    final stored = await _storage.readAll(
+      iOptions: await _iOptions(),
+      mOptions: await _mOptions(),
+    );
+    for (final MapEntry(:key, :value) in stored.entries) {
+      if (!value.startsWith(encodedPrefix) && _encoded(value) != value) {
+        await _put(key, value);
+      }
+    }
+    _migrated = true;
+  }
+
   /// [value] as stored: encoded when [singleBundle] and the bundle's JSON
-  /// would escape one of its characters, raw otherwise.
+  /// would escape one of its characters, or it starts with [encodedPrefix]
+  /// so a read would take it for encoded; raw otherwise.
   String _encoded(String value) {
-    if (!singleBundle || !value.codeUnits.any(_escapedInJson)) return value;
+    if (!singleBundle ||
+        !value.startsWith(encodedPrefix) &&
+            !value.codeUnits.any(_escapedInJson)) {
+      return value;
+    }
     return '$encodedPrefix${base64Url.encode(utf8.encode(value))}';
   }
 
   static bool _escapedInJson(int unit) =>
       unit < 0x20 || unit == 0x22 || unit == 0x5c;
 
+  /// Runs [body] after every keystore access queued before it, migrating the
+  /// bundle first if this instance has not yet.
   Future<T> _serially<T>(Future<T> Function() body) {
-    final result = _mutations.then((_) => body());
+    final result = _mutations.then((_) async {
+      await _migrateBundle();
+      return body();
+    });
     _mutations = result.then<void>((_) {}, onError: (Object _) {});
     return result;
   }
