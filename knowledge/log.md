@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-14
+* **New**: [Companion](features/companion.md) — the animated character rig:
+  the frame loop, the gesture and speaking state machines, playhead-timed
+  mouth tracks, and why only her edges are supersampled, and only on Linux by
+  default.
+
 ## 2026-10-10
 * **Update**: [AI consumption](features/ai_consumption.md) — a Melious
   speech-to-text transcription reports no cost, so it is ledgered without

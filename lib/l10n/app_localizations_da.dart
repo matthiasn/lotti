@@ -10754,18 +10754,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Analog — VU-måler';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Fortsæt';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Vælg et look til mikrofonen. Du kan ændre det når som helst i Indstillinger.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Moderne — energikugle';
-
-  @override
-  String get onboardingRecordingStyleTitle =>
-      'Hvordan skal det føles at optage?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Prøv med din stemme';

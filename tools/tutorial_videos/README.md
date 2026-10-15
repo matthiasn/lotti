@@ -71,7 +71,8 @@ toggle is stored.
 Requirements:
 
 - `.env` at the repo root with `GEMINI_API_KEY`, `MELIOUS_API_KEY`,
-  `MELIOUS_BASE_URL` (never committed).
+  `MELIOUS_BASE_URL` (never committed), plus `ELEVENLABS_API_KEY` for
+  narrating with ElevenLabs (see "TTS engines" below).
 - A sibling **OpenMontage** checkout at `../OpenMontage`, set up and pinned
   per `config/openmontage.pin`.
 - Host packages: `Xvfb`, `ffmpeg`, `pactl`/`paplay` (PipeWire or PulseAudio),
@@ -120,7 +121,7 @@ One-time setup:
 ```mermaid
 flowchart LR
     subgraph cloud [Cloud]
-        GTTS[Gemini TTS]
+        GTTS[Gemini or ElevenLabs TTS]
         MEL[Melious: Voxtral chat + Qwen thinking]
     end
     subgraph host [Host orchestrator - python3 -m tutorial_videos]
@@ -174,8 +175,8 @@ Narration length differs per locale, cloud latency varies, and waits get
 fast-forwarded — so nothing is synced in real time:
 
 1. The **TTS pre-pass** (`tts/`) renders narrator + user-voice clips (Gemini
-   TTS, cached by content hash) and writes a **manifest** with measured
-   durations.
+   or ElevenLabs TTS, cached by content hash) and writes a **manifest** with
+   measured durations.
 2. The **Dart harness** paces each step to
    `max(min_duration, narration + pad)`, records every pure-wait span longer
    than 3s (`pumpUntil` instrumentation), and emits **`timeline.json`**:
@@ -263,6 +264,11 @@ from the fake-time policy, see `test/README.md`.
   animations at ~10fps, which reads as mushy cross-fades on video.
 - Start the timeline only after startup settles — the Logbook auto-select
   navigates on its own right after boot.
+- **A capture can drift off the app's clock** — under load x11grab once
+  wrote a 234s file for 181s of app time, and the picture lagged the
+  narration by almost a minute while every other check passed. `compose.py`
+  (`check_capture_length`) now refuses a capture more than 3s or 5% off the
+  head plus the timeline; the fix is to rebuild that video.
 - **OpenMontage output is stream-deterministic, not byte-identical** —
   compare decoded streams (`ffmpeg -f framemd5`), never file hashes.
 
@@ -289,6 +295,18 @@ scenario dictates or declares one, absent from a script that seeds nothing.
 The recipe is in
 [knowledge/conventions/screenshots.md](../../knowledge/conventions/screenshots.md#the-app-preview-is-the-same-world-walked-by-touch).
 
+## The onboarding scenario starts empty
+
+`onboarding_first_run` records the real first-run flow, so it is the one
+scenario that boots with **no demo world and no provider**
+(`seedDemoWorld: false`, `aiConfigs: const []`) and lets the FTUE welcome
+open by itself (`autoShowOnboarding: true`). The Melious key it pastes comes
+from `MELIOUS_API_KEY`; the field stays obscured and the test asserts that
+before and after typing, so the published video only ever shows dots. The
+harness registers the onboarding metrics store (in memory) because the
+first-task structuring reads it from getIt — without it the flow dies on the
+thinking frame.
+
 ## Adding a scenario or locale
 
 - **Locale**: add the locale's blocks to the scenario YAML (title, per-step
@@ -303,18 +321,143 @@ The recipe is in
 
 Full step-by-step runbook: `.claude/skills/tutorial-videos/SKILL.md`.
 
-## Future: character overlay
+## TTS engines
 
-The character engine (`lib/features/character/`) renders deterministic
-transparent-background PNG frames (`film_strip_test.dart`). Composition is
-layer-based: the overlay becomes an additional alpha layer keyed to
-`timeline.json` step ids — no pipeline changes required.
+`config/voices.yaml` configures each engine's model and its two voices
+(narrator, user voice); its `engine:` is the default, and `tts`/`build
+--tts-engine <name>` overrides it for one run — the way to hear a scenario
+in both before switching the default:
+
+```sh
+python3 -m tutorial_videos build --scenario category_setup --locale de --tts-engine elevenlabs
+```
+
+| Engine | Adapter | `.env` key | Delivery is set by |
+|---|---|---|---|
+| `gemini` (default) | `tts/gemini.py` | `GEMINI_API_KEY` | a spoken style instruction per locale (`style:`) |
+| `elevenlabs` | `tts/elevenlabs.py` | `ELEVENLABS_API_KEY` | the voice and its ElevenLabs `voice_settings` (`settings:`) |
+
+Both return 24 kHz mono PCM, wrapped into WAV by `tts/base.py`. ElevenLabs
+uses `eleven_multilingual_v2`, which reads the language off the text, so one
+voice narrates every locale. Clips are cached per engine, model, voice,
+style and settings — switching engines back and forth never re-synthesizes,
+and a voice without settings keeps the cache key it had before settings
+existed. Both builds of a scenario write the same output name, so the second
+overwrites the first: copy the MP4 away before building the other.
+
+## Talking avatar
+
+A narrator with a face: a cartoon character in a round badge presents the
+narration from a corner of the video. It does not just move its mouth: it
+nods on stressed syllables, re-poses its head for each phrase, lifts its
+brows for emphasis, breathes, darts its eyes, and in a pause watches the app
+before turning back to the viewer. Pip, a penguin, is the default; Theo, a
+man in round glasses, presents the onboarding. Stdlib-only (plus ffmpeg), in
+`tutorial_videos/avatar/`:
+
+```mermaid
+flowchart LR
+    MF[manifest + timeline] --> NT[narration_track.narration_levels\nnarrator clips on the warped clock]
+    NT --> LV[per-frame loudness]
+    WAV[a plain WAV] --> FL[lipsync.frame_levels\nRMS per video frame] --> LV
+    LV --> AC[acting.act\nphrases, stresses, glances,\nsprings, blinks]
+    AC --> PO[poses\nmouth, eyes, gaze, brows]
+    AC --> MO[motion\nhead roll, head/face/body offsets]
+    CH[characters.py\nbody, head, face layers] --> LA[render.render_layers\nstill layers, drawn once]
+    CH --> FI[render.render_pose_images\none face image per distinct pose]
+    PO --> FI
+    PO --> FC[render.write_concat\nffconcat: one entry per run]
+    FI --> FC
+    MO --> CM[render.write_commands\nsendcmd: per-frame moves]
+    LA --> FF[ffmpeg: rotate, overlay,\nround mask, scale down, slide in]
+    FC --> FF
+    CM --> FF
+```
+
+- **The characters** (`characters.py`) are Pip, a penguin from the demo
+  world whose beak does the talking, and Theo, head and shoulders of a man
+  with side-swept hair, round glasses, light stubble and a mustard crewneck.
+  A character is data split into layers the renderer moves on their own: a
+  `body` that only breathes, a `head` that rolls about the neck `pivot`, and
+  the face on top — `features`, `brows`, open/closed eyes and four mouth
+  shapes — which rolls with the head and slides a little further when it
+  turns, reading as a three-quarter turn. A `Pose` picks mouth, eyes, a gaze
+  from `GAZES` and lifted brows. `CHARACTERS` names the characters.
+- **Which character** a video gets: the scenario's optional `avatar:` key
+  (`onboarding_first_run.yaml` says `theo`), else Pip. `build
+  --avatar-character` overrides the scenario for one run; `avatar-preview`
+  and `avatar-overlay` take `--character`.
+- **What it lip-syncs to** (`narration_track.py`): the narrator clips
+  alone, each dropped at its step's warped start through the same
+  `timewarp.plan_segments` as `compose.py` and `captions.py`. The narration
+  mix beside the video also carries the dictation — the "user" speaking
+  into the app — so syncing to that file would make the avatar mouth the user's
+  words too; the manifest's clips are read instead, and the dictation clip
+  is never opened.
+- **Lip-sync** (`lipsync.py`) is loudness-driven: each frame's RMS, relative
+  to the 95th percentile of the frames above a small noise floor — the
+  track's own speech, however little of a mostly-silent tutorial it covers —
+  picks the mouth level, so it works on any WAV without word timings. The
+  mouth only closes after two quiet frames, so it doesn't snap shut between
+  syllables.
+- **Acting** (`acting.py`) reads the same loudness for its structure:
+  phrases (speech with gaps under 0.3 s merged) and stresses (sharp rises).
+  Each phrase gets its own head tilt, alternating sides, and a slight turn;
+  each stress kicks a springy nod, the strongest also a brow lift. A silence
+  of a second or more is spent watching the app — eyes down-left, head
+  turned — with a look back at the viewer every few seconds and small nods,
+  and the avatar faces the viewer again just before it speaks. Blinks come
+  at random, at every phrase start and on every glance. Damped springs give
+  every move ease, overshoot and settle; all of it is seeded, so a rebuild
+  acts identically.
+- **Rendering** (`render.py`) never draws frames in Python. The still layers
+  are drawn once at twice the badge size, the head and face on a canvas half
+  as large again and centred on the neck pivot (so nothing clips when it
+  rolls); one face image per distinct pose (a few dozen) goes into an
+  ffconcat list. The motion becomes an ffmpeg `sendcmd` file that rotates
+  and shifts the layers every frame; ffmpeg composites them, clips the badge
+  round, scales it down (whole supersampled pixels become smooth sub-pixel
+  motion) and slides it in from its edge after a beat. A three-minute video
+  costs about a minute.
+
+```sh
+# Pip saying a WAV, as a square preview -> build/tutorial_videos/avatar/avatar_pip.mp4
+python3 -m tutorial_videos avatar-preview --wav narration.wav
+# The same for Theo -> avatar_theo.mp4
+python3 -m tutorial_videos avatar-preview --wav narration.wav --character theo
+# Pip (or --character theo) in the corner of a built tutorial, lip-synced to the narrator clips its
+# manifest and timeline name (found beside the video) -> <stem>_avatar.mp4
+python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/category_setup_en.mp4
+# Or as part of the build, under the video's own name (publish and the docs
+# site need no change): `make tutorial_video TUTORIAL_AVATAR=1`
+python3 -m tutorial_videos build --scenario category_setup --locale en --avatar
+```
+
+The badge is 22% of the video height (desktop and mobile get the same
+proportions) and sits **top right** by default: bottom right covers the
+form's primary button on desktop (Create, Save) and the bottom navigation on
+mobile, while the top row holds only the page title on the left and the
+real-time HUD in the centre. `--position` / `--avatar-position` take
+`top_right`, `top_left`, `bottom_right` or `bottom_left`. The overlay always
+ends with the tutorial: the badge track is built one frame longer than the
+video and cut there (`shortest=1`) — without that, ffmpeg freezes the
+tutorial's last frame for as long as the badge track runs. The output may
+hold one more frame than the input: the composed video's first frame sits a
+few milliseconds in, and the overlay re-stamps from zero.
+
+For a video without a manifest and timeline, `avatar-overlay --narration
+<wav>` (or, those files missing, `<stem>.narration.wav` beside the video)
+syncs to a WAV instead — including whatever that WAV carries.
 
 ## Tests
 
 `tests/` (stdlib `unittest`, no network): scenario validation, TTS caching,
-manifest shape, time-warp planning, and the App Preview's pacing, cut and
-narration placement. Run from `tools/tutorial_videos`:
+manifest shape, time-warp planning, the App Preview's pacing, cut and
+narration placement, both TTS adapters with HTTP patched out
+(`test_tts_*.py`), and the avatar (`test_avatar_*.py`, one file per module),
+plus `test_main.py` for the CLI wiring. The avatar's two
+end-to-end ffmpeg tests skip themselves when `ffmpeg`/`ffprobe` are not
+installed. Run from `tools/tutorial_videos`:
 
 ```sh
 python3 -m unittest discover -s tests

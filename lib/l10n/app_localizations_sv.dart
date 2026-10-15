@@ -10768,17 +10768,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Analog — VU-mätare';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Fortsätt';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Välj en look till mikrofonen. Du kan ändra det när som helst i Inställningar.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Modern — energiklot';
-
-  @override
-  String get onboardingRecordingStyleTitle => 'Hur ska inspelning kännas?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Prova med din röst';

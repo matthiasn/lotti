@@ -153,6 +153,30 @@ void main() {
       expect(result.violations, isEmpty);
     });
 
+    test('illustration sources may draw in raw colours, nothing else', () {
+      final result = scanFixture({
+        'lib/features/companion/rig/face_painter.dart':
+            'void f() { Color(0xFF112233); Colors.red; }',
+        'lib/features/companion/model/companion_look.dart':
+            'void f() { Color(0xFF445566); }',
+        // Spacing in an illustration file still counts.
+        'lib/features/companion/rig/stage_painter.dart':
+            'void f() { Color(0xFF000000); EdgeInsets.all(8); }',
+        // The rest of the feature is interface code, and stays guarded.
+        'lib/features/companion/ui/companion_view.dart':
+            'void f() { Color(0xFF778899); }',
+      });
+
+      expect(result.counts.keys, {
+        'lib/features/companion/rig/stage_painter.dart',
+        'lib/features/companion/ui/companion_view.dart',
+      });
+      expect(result.violations.map((v) => v.toString()), [
+        contains('stage_painter.dart: introduces 1 raw spacing value'),
+        contains('companion_view.dart: introduces 1 raw color value'),
+      ]);
+    });
+
     test('a file at its baseline passes; categories ratchet independently', () {
       final atBaseline = scanFixture(
         {file: raw},

@@ -131,7 +131,9 @@ AGENTS.md makes the tokens mandatory, but for a long time nothing checked, and
 hundreds of numeric `EdgeInsets`, `SizedBox` gaps, `TextStyle`s and colour
 literals accumulated beside them. `tool/design_tokens/validate.dart` now counts
 three categories per file, everywhere in `lib/` except the token definitions
-(`lib/features/design_system/theme/`) and generated code:
+(`lib/features/design_system/theme/`) and generated code. Colour alone is
+also not counted in the guard's `illustrationSources` — the companion's look
+and rig, whose colours are a drawing's, not the interface's:
 
 | Category | Counts |
 |----------|--------|

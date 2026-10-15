@@ -4638,10 +4638,7 @@
     "description": "Positive boolean value in the onboarding metrics debug view."
   },
   "onboardingRecordingStyleAnalogue": "Analoga — Misuratore di VU",
-  "onboardingRecordingStyleContinue": "Continua",
-  "onboardingRecordingStyleExplanation": "Scegli un'occhiata al microfono, puoi cambiarlo in qualsiasi momento in Impostazioni.",
   "onboardingRecordingStyleModern": "Moderno — energia orb",
-  "onboardingRecordingStyleTitle": "Come dovrebbe la registrazione sentire?",
   "onboardingRecordingStyleTryVoice": "Prova con la tua voce",
   "onboardingSuccessContinue": "Iniziare",
   "onboardingSuccessSubtitle": "Il vostro cervello AI è collegato e pronto a trasformare le vostre parole in compiti.",

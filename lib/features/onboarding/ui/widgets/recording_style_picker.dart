@@ -21,13 +21,13 @@ final List<double> _idleAmplitudes = List<double>.generate(
 
 /// The two selectable recording-style cards (Modern orb+waveform, Analogue
 /// VU meter+waveform) plus the "Try with your voice" toggle — decoupled from
-/// any surrounding chrome (title/explanation copy, Continue CTA, backdrop) so
-/// onboarding and Settings render an identical picker.
+/// any surrounding chrome (title, backdrop), which the Recording Style
+/// settings page supplies.
 ///
-/// [surfaceTokens] supplies the card text/fill colors. Both onboarding and
-/// Settings pass their ambient `context.designTokens`, keeping the picker in
-/// sync with the active light/dark theme. Layout (spacing/radii/typography)
-/// stays ambient too.
+/// [surfaceTokens] supplies the card text/fill colors. Settings passes its
+/// ambient `context.designTokens`, keeping the picker in sync with the
+/// active light/dark theme. Layout (spacing/radii/typography) stays ambient
+/// too.
 ///
 ///  * **Modern** — the [AiVoiceInputShader] orb + a brand-tinted [LiveWaveform].
 ///  * **Analogue** — the skeuomorphic [AnalogVuMeter] + a neutral [LiveWaveform].

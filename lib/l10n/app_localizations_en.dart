@@ -10707,17 +10707,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingRecordingStyleAnalogue => 'Analogue — VU meter';
 
   @override
-  String get onboardingRecordingStyleContinue => 'Continue';
-
-  @override
-  String get onboardingRecordingStyleExplanation =>
-      'Pick a look for the mic. You can change it any time in Settings.';
-
-  @override
   String get onboardingRecordingStyleModern => 'Modern — energy orb';
-
-  @override
-  String get onboardingRecordingStyleTitle => 'How should recording feel?';
 
   @override
   String get onboardingRecordingStyleTryVoice => 'Try with your voice';

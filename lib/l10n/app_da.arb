@@ -4638,10 +4638,7 @@
     "description": "Positive boolean value in the onboarding metrics debug view."
   },
   "onboardingRecordingStyleAnalogue": "Analog — VU-måler",
-  "onboardingRecordingStyleContinue": "Fortsæt",
-  "onboardingRecordingStyleExplanation": "Vælg et look til mikrofonen. Du kan ændre det når som helst i Indstillinger.",
   "onboardingRecordingStyleModern": "Moderne — energikugle",
-  "onboardingRecordingStyleTitle": "Hvordan skal det føles at optage?",
   "onboardingRecordingStyleTryVoice": "Prøv med din stemme",
   "onboardingSuccessContinue": "Kom i gang",
   "onboardingSuccessSubtitle": "Din AI-hjerne er forbundet og klar til at omsætte dine ord til opgaver.",

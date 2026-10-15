@@ -31,10 +31,9 @@ typedef RecordingStyleLivePreviewBuilder =
 
 /// Drives a recording-style preview with either a looping simulated "speech"
 /// level or the real (throwaway) microphone level, toggled by "Try with your
-/// voice". Shared by the onboarding recording-style step and the Settings
-/// recording-style page so the live-preview lifecycle (start/stop the
-/// recorder, stream amplitudes, clean up the throwaway file, honor reduced
-/// motion) exists exactly once.
+/// voice", for the Settings recording-style page. It owns the live-preview
+/// lifecycle (start/stop the recorder, stream amplitudes, clean up the
+/// throwaway file, honor reduced motion) so the page stays declarative.
 ///
 /// A live-mic **"Try with your voice"** toggle swaps the preview onto the real
 /// microphone level: it records to a throwaway file (levels only — never

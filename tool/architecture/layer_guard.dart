@@ -77,6 +77,7 @@ const featureOrder = <String>[
   'goals',
   'projects',
   'daily_os_next',
+  'companion',
   'onboarding',
   'system_health',
   'settings',

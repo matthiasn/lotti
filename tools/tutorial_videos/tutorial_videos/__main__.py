@@ -6,6 +6,9 @@ Usage (from ``tools/tutorial_videos``)::
     python3 -m tutorial_videos tts      --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de
     python3 -m tutorial_videos publish  --scenario create_task_from_audio --locale de
+    python3 -m tutorial_videos build    --scenario create_task_from_audio --locale de --avatar
+    python3 -m tutorial_videos avatar-preview --wav narration.wav
+    python3 -m tutorial_videos avatar-overlay --video build/tutorial_videos/create_task_from_audio_de.mp4
 
 Every command also takes ``--device desktop|mobile`` (default ``desktop``).
 Mobile renders the real app at a phone-shaped window
@@ -15,6 +18,9 @@ desktop one). Desktop output keeps its original unsuffixed filename/R2 key
 for backward compatibility; mobile output gets a ``_mobile`` suffix
 (``<scenario>_<locale>_mobile.mp4`` etc.) so both variants coexist.
 
+``tts`` and ``build`` also take ``--tts-engine gemini|elevenlabs`` to override
+``config/voices.yaml``'s default engine for one run.
+
 ``validate`` checks the scenario is buildable for the locale without any
 network access. ``tts`` runs the pre-pass: renders (or reuses cached) clips
 and writes the durations manifest consumed by the Dart harness and the
@@ -23,9 +29,18 @@ the desktop and mobile builds of the same (scenario, locale). ``build`` runs
 the full pipeline: TTS pre-pass, then the real app under Xvfb driven by
 `flutter drive` with the virtual microphone and screen capture, then
 OpenMontage composition into the final MP4, then WebVTT captions (see
-``captions.py``) written alongside it. ``publish`` uploads the already-built
+``captions.py``) written alongside it; with ``--avatar`` the talking avatar
+is then laid into the MP4 under its own name (``--avatar-position`` picks
+the corner; the character is the scenario's ``avatar:``, or
+``--avatar-character``). ``publish`` uploads the already-built
 MP4 and its captions to Cloudflare R2 (see ``publish.py``) and prints their
 public URLs.
+
+``avatar-preview`` and ``avatar-overlay`` (see ``avatar/cli.py``) take no
+scenario: the first renders a talking avatar (Pip unless ``--character``
+names another) saying a WAV; the second lays it into the corner of an
+already-built MP4, lip-synced to the narrator clips its manifest and timeline
+name.
 """
 
 from __future__ import annotations
@@ -37,13 +52,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .avatar import AvatarError
+from .avatar.cli import overlay_in_place
+from .avatar.cli import register as register_avatar_commands
+from .avatar.characters import CHARACTERS
+from .avatar.render import DEFAULT_POSITION, POSITIONS
 from .captions import build_vtt
 from .compose import ComposeError, compose_video
 from .publish import PublishError, publish_video
 from .scenario import ScenarioError, load_scenario
 from .session import ScreenCapture, SessionError, VirtualMic, XvfbDisplay
-from .tts.base import load_voices, render_scenario_clips
-from .tts.gemini import GeminiTts, read_env_key
+from .tts.base import TtsError, load_voices, render_scenario_clips
+from .tts.engines import ENGINES, create_engine
+from .tts.gemini import read_env_key
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = TOOL_ROOT.parents[1]
@@ -99,10 +120,10 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_tts(args: argparse.Namespace) -> int:
     scenario = _load(args)
-    engine_name, model, streams = load_voices(TOOL_ROOT / "config" / "voices.yaml")
-    if engine_name != "gemini":
-        raise SystemExit(f"unknown TTS engine: {engine_name}")
-    engine = GeminiTts(read_env_key(REPO_ROOT / ".env", "GEMINI_API_KEY"), model)
+    engine_name, model, streams = load_voices(
+        TOOL_ROOT / "config" / "voices.yaml", engine=args.tts_engine
+    )
+    engine = create_engine(engine_name, model, REPO_ROOT / ".env")
 
     out_dir = Path(args.out_dir)
     manifest = render_scenario_clips(
@@ -197,6 +218,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
     manifest = json.loads(manifest_path.read_text())
+    timeline = json.loads(timeline_path.read_text())
     compose_video(
         repo_root=REPO_ROOT,
         capture=capture_path,
@@ -212,10 +234,20 @@ def cmd_build(args: argparse.Namespace) -> int:
         build_vtt(
             scenario=_load(args),
             locale=args.locale,
-            timeline=json.loads(timeline_path.read_text()),
+            timeline=timeline,
             manifest=manifest,
         )
     )
+
+    if args.avatar:
+        overlay_in_place(
+            video_path,
+            manifest=manifest,
+            timeline=timeline,
+            position=args.avatar_position,
+            work_dir=out_dir / "avatar_work" / scenario_locale,
+            character=args.avatar_character or _load(args).avatar,
+        )
 
     print(f"OK: {video_path}")
     return 0
@@ -259,15 +291,38 @@ def main(argv: list[str] | None = None) -> int:
             "--device", choices=sorted(DEVICE_SIZES), default="desktop"
         )
         p.add_argument("--out-dir", default=str(DEFAULT_OUT))
+        if name in ("tts", "build"):
+            # Overrides voices.yaml's default `engine:` for this run — e.g.
+            # to hear a scenario in ElevenLabs voices next to Gemini's.
+            p.add_argument("--tts-engine", choices=sorted(ENGINES))
+        if name == "build":
+            p.add_argument(
+                "--avatar",
+                action="store_true",
+                help="lay the talking avatar into the finished video",
+            )
+            p.add_argument(
+                "--avatar-character",
+                choices=sorted(CHARACTERS),
+                help="overrides the scenario's avatar: (default Pip)",
+            )
+            p.add_argument(
+                "--avatar-position",
+                choices=sorted(POSITIONS),
+                default=DEFAULT_POSITION,
+            )
         p.set_defaults(handler=handler)
+    register_avatar_commands(sub, default_out=DEFAULT_OUT)
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
     except (
+        AvatarError,
         ComposeError,
         PublishError,
         ScenarioError,
         SessionError,
+        TtsError,
         FileNotFoundError,
         KeyError,
     ) as err:

@@ -340,7 +340,6 @@
         "onboarding/providers",
         "onboarding/api-key",
         "onboarding/success",
-        "onboarding/recording-style",
         "onboarding/categories",
         "onboarding/first-task",
         "onboarding/task-created"

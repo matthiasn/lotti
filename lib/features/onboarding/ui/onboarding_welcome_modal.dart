@@ -17,7 +17,6 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.da
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
-import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -289,7 +288,6 @@ enum _FlowStep {
   connect,
   apiKey,
   success,
-  recordingStyle,
   category,
   firstTask,
 }
@@ -416,11 +414,6 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
           title: context.messages.onboardingSuccessTitle,
           subtitle: context.messages.onboardingSuccessSubtitle,
           continueLabel: context.messages.onboardingSuccessContinue,
-          onContinue: () => setState(() => _step = _FlowStep.recordingStyle),
-        );
-      case _FlowStep.recordingStyle:
-        return OnboardingRecordingStyleStep(
-          key: const ValueKey('onboarding-recording-style'),
           onContinue: () => setState(() => _step = _FlowStep.category),
         );
       case _FlowStep.category:
