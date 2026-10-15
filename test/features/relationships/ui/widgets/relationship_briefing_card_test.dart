@@ -313,6 +313,13 @@ void main() {
     find.byKey(const ValueKey('relationship-agent-status')),
   );
   final briefMe = find.byKey(const ValueKey('relationship-brief-me'));
+  final briefingMenu = find.byKey(const ValueKey('relationship-briefing-menu'));
+
+  /// Opens the header's menu, where a calm card keeps its upkeep.
+  Future<void> openMenu(WidgetTester tester) async {
+    await tester.tap(briefingMenu);
+    await tester.pumpAndSettle();
+  }
 
   group('relationshipAgentCardStateOf', () {
     final at = DateTime(2026, 8, 13, 13, 41);
@@ -483,10 +490,14 @@ void main() {
 
       expect(find.byType(AgentSummaryCardSurface), findsNothing);
       expect(find.byType(DesignSystemSectionCard), findsOneWidget);
-      expect(find.text('Briefing'), findsOneWidget);
-      // The band's and the pill's own words for this state, not a second
-      // name ("No agent for this person") for the same fact.
-      expect(statusText(tester), 'No reminders');
+      // Named for what it turns on, with no status line: *No reminders* is
+      // the absence the title already offers to fix.
+      expect(find.text('Reminders and briefings'), findsOneWidget);
+      expect(find.text('Briefing'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('relationship-agent-status')),
+        findsNothing,
+      );
       // The only pills are the interval choice: the status pills live in
       // the header above the card.
       expect(
@@ -508,16 +519,21 @@ void main() {
             ?.color,
         tokens.colors.text.highEmphasis,
       );
-      // Nothing under the action row: the footer closes symmetric.
+      // The offer's one action sits inside the card, under the choice it
+      // applies — no footer band of its own.
       expect(
-        tester
-            .widget<Container>(
-              find.byKey(const ValueKey('relationship-agent-footer')),
-            )
-            .padding!
-            .resolve(TextDirection.ltr)
-            .bottom,
-        tokens.spacing.step4,
+        find.byKey(const ValueKey('relationship-agent-footer')),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(
+          find.byKey(const ValueKey('relationship-agent-mark-important')),
+        ).dy,
+        greaterThan(
+          tester.getBottomLeft(
+            find.byKey(const ValueKey('relationship-agent-enrol-cadence')),
+          ).dy,
+        ),
       );
       // One noun for the enrolment axis: the band, the pill and the
       // summary all say *enrolled*, so the control that ends "Not enrolled"
@@ -551,6 +567,9 @@ void main() {
         tester,
         checkIns: onTrackCheckIns,
         current: report(),
+        // Out of date: the face whose footer offers the update beside the
+        // model row that discloses where it goes.
+        state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
         textScaler: const TextScaler.linear(2.5),
       );
 
@@ -870,22 +889,23 @@ void main() {
         find.byKey(const ValueKey('relationship-agent-body')),
         findsNothing,
       );
-      expect(briefMe, findsNothing);
-      // The quiet door stays open while the agent writes; nothing primary.
-      expect(find.byType(DesignSystemButton), findsOneWidget);
+      // A calm face: no footer, no button on the card — the activity log
+      // waits in the header's menu, and there is nothing to update yet.
+      expect(find.byType(DesignSystemButton), findsNothing);
+      expect(
+        find.byKey(const ValueKey('relationship-agent-footer')),
+        findsNothing,
+      );
+      // The spinner turns for as long as the agent writes: frames, not a
+      // settle.
+      await tester.tap(briefingMenu);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         find.byKey(const ValueKey('relationship-agent-see-activity')),
         findsOneWidget,
       );
-      // With no primary, the footer still washes the whole card.
-      expect(
-        tester
-            .getSize(find.byKey(const ValueKey('relationship-agent-footer')))
-            .width,
-        tester
-            .getSize(find.byKey(const ValueKey('relationship-briefing-card')))
-            .width,
-      );
+      expect(briefMe, findsNothing);
     });
 
     // An update must not blank the card: the briefing being replaced stays
@@ -1082,7 +1102,13 @@ void main() {
 
       expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.byType(DsPill), findsNothing);
-      expect(find.textContaining('· 38.2K tokens'), findsOneWidget);
+      // No footer: the model and the cost head the menu that holds Update
+      // now, so the update never goes anywhere unshown (ADR 0061).
+      expect(
+        find.byKey(const ValueKey('relationship-agent-footer')),
+        findsNothing,
+      );
+      expect(find.textContaining('38.2K tokens'), findsNothing);
       // Provenance waits behind Read more: collapsed, the summary outweighs
       // its sources. Under the fixed clock: a rebuild on the real one would
       // find the fixture overdue and swap the footer to Call.
@@ -1097,16 +1123,8 @@ void main() {
         find.text('Sources: 2 check-ins · contact channels never sent'),
         findsOneWidget,
       );
-      // The footer carries the agent's verbs and only those. Logging a
-      // check-in is the page's verb and lives on the sticky action bar, so
-      // offering it here too put the same action on screen twice — loud in
-      // one place, quiet in the other, primary in neither.
-      final quiet = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('relationship-agent-see-activity')),
-      );
-      expect(quiet.label, 'See activity');
-      expect(quiet.variant, DesignSystemButtonVariant.quiet);
-      // …and it is the card's one worded door to the agent's internals:
+      // The card carries the agent's verbs and only those: logging a
+      // check-in is the page's verb and lives on the sticky action bar.
       // "Open agent internals" beside Read more was a third way to the
       // same place, collapsed or expanded.
       expect(find.text('Open agent internals'), findsNothing);
@@ -1114,12 +1132,15 @@ void main() {
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
         findsNothing,
       );
-      final update = tester.widget<DesignSystemButton>(briefMe);
-      expect(update.label, 'Update now');
-      // Tertiary on a current briefing: the card's offer is the reading,
-      // not the rewrite. Accent is reserved for the faces that actually
-      // need regenerating (out of date, failed).
-      expect(update.variant, DesignSystemButtonVariant.tertiary);
+      expect(find.byType(DesignSystemButton), findsNothing);
+
+      // The upkeep waits behind the menu, under a heading that names the
+      // model, the provider and what the agent has used.
+      await openMenu(tester);
+      expect(find.textContaining('Gemini'), findsOneWidget);
+      expect(find.textContaining('38.2K tokens'), findsOneWidget);
+      expect(find.text('Update now'), findsOneWidget);
+      expect(find.text('See activity'), findsOneWidget);
     });
 
     testWidgets('the "as of" line moves on its own once the displayed bucket '
@@ -1345,13 +1366,14 @@ void main() {
       });
     });
 
-    testWidgets('the footer keeps a designed gap between its actions and the '
-        'model row, at every text size', (tester) async {
+    testWidgets('an out-of-date footer keeps a designed gap between its '
+        'actions and the model row, at every text size', (tester) async {
       for (final scale in [1.0, 1.6]) {
         await pump(
           tester,
           checkIns: onTrackCheckIns,
           current: report(),
+          state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
           textScaler: TextScaler.linear(scale),
         );
         final tokens = tester
@@ -1371,14 +1393,25 @@ void main() {
     // nothing rendered it: the verdict on a person was unfalsifiable by
     // inspection. "Why does it say that about her?" is the question a
     // briefing has to be able to answer.
-    testWidgets('the band says why, in the words the briefing wrote', (
-      tester,
-    ) async {
+    Future<void> expand(WidgetTester tester) async {
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(
+          find.byKey(const ValueKey('relationship-briefing-expand')),
+        );
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets('the band says why, in the words the briefing wrote — once '
+        'the reader opens it', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 
       final rationale = find.byKey(
         const ValueKey('relationship-agent-band-rationale'),
       );
+      // Collapsed, the summary is the 10-second read.
+      expect(rationale, findsNothing);
+      await expand(tester);
       expect(rationale, findsOneWidget);
       expect(tester.widget<Text>(rationale).data, 'Two good calls in a row.');
     });
@@ -1387,6 +1420,7 @@ void main() {
       tester,
     ) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
+      await expand(tester);
 
       expect(
         tester
@@ -1453,7 +1487,7 @@ void main() {
       );
       // The dot's offset is the text line less the dot, halved — computed,
       // not a fixed step, so it scales with the text.
-      final line = tokens.typography.styles.body.bodySmall;
+      final line = tokens.typography.styles.others.caption;
       final offset = tester
           .widget<Padding>(
             find.ancestor(of: dotFinder, matching: find.byType(Padding)).first,
@@ -1491,9 +1525,10 @@ void main() {
       expect(find.textContaining('tokens'), findsNothing);
     });
 
-    testWidgets('Update now requests a briefing', (tester) async {
+    testWidgets("the menu's Update now requests a briefing", (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 
+      await openMenu(tester);
       await tester.tap(briefMe);
       await tester.pumpAndSettle();
 
@@ -1688,7 +1723,8 @@ void main() {
 
   group('due', () {
     testWidgets('being overdue does not change who owns the doing verbs: '
-        'the footer stays See activity · Update now', (tester) async {
+        'the card offers no call or check-in, its menu See activity · '
+        'Update now', (tester) async {
       await pump(
         tester,
         entry: relationship(channels: const [mobile]),
@@ -1714,11 +1750,13 @@ void main() {
         findsNothing,
       );
 
-      final quiet = tester.widget<DesignSystemButton>(
+      expect(find.byType(DesignSystemButton), findsNothing);
+      await openMenu(tester);
+      expect(
         find.byKey(const ValueKey('relationship-agent-see-activity')),
+        findsOneWidget,
       );
-      expect(quiet.variant, DesignSystemButtonVariant.quiet);
-      expect(tester.widget<DesignSystemButton>(briefMe).label, 'Update now');
+      expect(briefMe, findsOneWidget);
       expect(
         statusText(tester),
         'Thriving · as of 1 h ago',
