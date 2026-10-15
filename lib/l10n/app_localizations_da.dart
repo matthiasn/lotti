@@ -12449,7 +12449,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAddToTimeline(String name) {
-    return 'Tilføj til ${name}s tidslinje';
+    return 'Tilføj til tidslinjen for $name';
   }
 
   @override

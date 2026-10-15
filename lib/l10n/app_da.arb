@@ -5352,7 +5352,7 @@
   "relationshipAddChannelFromContacts": "eller fra kontakter",
   "relationshipAddNote": "Tilføj en note om {name}",
   "relationshipAddPhotos": "Tilføj fotos",
-  "relationshipAddToTimeline": "Tilføj til {name}s tidslinje",
+  "relationshipAddToTimeline": "Tilføj til tidslinjen for {name}",
   "relationshipAgentAsOfBand": "{band} · opdateret {age}",
   "relationshipAgentBriefNow": "Brief nu",
   "relationshipAgentFailedBody": "Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.",

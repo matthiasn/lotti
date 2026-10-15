@@ -5058,7 +5058,7 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
-  "relationshipTimelineEmpty": "Rien pour l’instant. Parle après ta conversation avec {name}, ou ajoute une note, une tâche ou des photos.",
+  "relationshipTimelineEmpty": "Rien pour l’instant. Enregistre ce que tu retiens après avoir parlé à {name}, ou ajoute une note, une tâche ou des photos.",
   "relationshipTimelineFilterAll": "Tout",
   "relationshipTimelineFilterMeetings": "Rendez-vous",
   "relationshipTimelineFilterNotes": "Notes",

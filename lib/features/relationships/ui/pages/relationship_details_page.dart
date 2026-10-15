@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -44,7 +45,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One person's page (design panel 2026-10-15): who they are, what to know

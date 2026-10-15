@@ -12693,7 +12693,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAddToTimeline(String name) {
-    return 'Adăugați în cronologia lui $name';
+    return 'Adăugați în cronologia persoanei $name';
   }
 
   @override
@@ -12846,7 +12846,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipCallConfirmTitle(String name) {
-    return 'Îl sunați pe $name?';
+    return 'Sunați persoana $name?';
   }
 
   @override

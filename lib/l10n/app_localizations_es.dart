@@ -13378,7 +13378,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String relationshipTimelineEmpty(String name) {
-    return 'Aún no hay nada. Habla después de hablar con $name, o añade una nota, una tarea o fotos.';
+    return 'Aún no hay nada. Graba lo que quieras recordar después de hablar con $name, o añade una nota, una tarea o fotos.';
   }
 
   @override

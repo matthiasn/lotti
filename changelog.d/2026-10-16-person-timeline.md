@@ -10,6 +10,8 @@
   under the name, and calling always asks first.
 - **Check-ins are found by search.** A Logbook text search now finds
   check-ins by what was said, their topics and the notes for next time.
+  Older check-ins are found by their topics and notes once saved again, or
+  right away after *Recreate full-text index* in Settings › Maintenance.
 
 ### Fixed
 - **Closing a check-in after the microphone could not start asked to discard

@@ -5352,7 +5352,7 @@
   "relationshipAddChannelFromContacts": "eller från kontakter",
   "relationshipAddNote": "Lägg till en anteckning om {name}",
   "relationshipAddPhotos": "Lägg till foton",
-  "relationshipAddToTimeline": "Lägg till i {name}s tidslinje",
+  "relationshipAddToTimeline": "Lägg till i tidslinjen för {name}",
   "relationshipAgentAsOfBand": "{band} · uppdaterad {age}",
   "relationshipAgentBriefNow": "Briefa nu",
   "relationshipAgentFailedBody": "Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.",

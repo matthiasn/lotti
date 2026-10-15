@@ -861,8 +861,9 @@ deletion — the page would navigate away from a person who is still there.
 The cascade reaches the person's **timeline notes, voice notes and photos**
 too (`allPersonTimelineEntries`): they are about this one person and would
 otherwise survive as fragments of someone the user removed. **Tasks and
-meetings survive** — they belong to the user's own work and calendar, and
-only their links to the person are tombstoned (`tombstoneRelationshipLinks`).
+meetings survive** — they belong to the user's own work and calendar — and
+their `RelationshipLink` rows to the person are left as they are, like every
+other link (below): each reader already skips a link whose person is gone.
 
 ## What the cascade does not reach
 

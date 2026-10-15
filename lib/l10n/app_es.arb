@@ -5058,7 +5058,7 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
-  "relationshipTimelineEmpty": "Aún no hay nada. Habla después de hablar con {name}, o añade una nota, una tarea o fotos.",
+  "relationshipTimelineEmpty": "Aún no hay nada. Graba lo que quieras recordar después de hablar con {name}, o añade una nota, una tarea o fotos.",
   "relationshipTimelineFilterAll": "Todo",
   "relationshipTimelineFilterMeetings": "Reuniones",
   "relationshipTimelineFilterNotes": "Notas",

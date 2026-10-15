@@ -5547,7 +5547,7 @@
   "relationshipNicknameLabel": "Soprannome",
   "relationshipNoteHint": "Dove vi siete conosciuti, cosa ama, un’idea regalo…",
   "relationshipNotEnrolled": "Senza promemoria",
-  "relationshipNotePin": "Fissa in Su",
+  "relationshipNotePin": "Fissa in alto",
   "relationshipNoteSaveFailed": "Impossibile salvare la nota.",
   "relationshipNoteSheetTitle": "Nota su {name}",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
@@ -5668,7 +5668,7 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
-  "relationshipTimelineEmpty": "Ancora niente. Parla dopo aver parlato con {name}, oppure aggiungi una nota, un’attività o delle foto.",
+  "relationshipTimelineEmpty": "Ancora niente. Registra a voce cosa ricordare dopo aver parlato con {name}, oppure aggiungi una nota, un’attività o delle foto.",
   "relationshipTimelineFilterAll": "Tutto",
   "relationshipTimelineFilterMeetings": "Incontri",
   "relationshipTimelineFilterNotes": "Note",

@@ -13139,7 +13139,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipNotEnrolled => 'Senza promemoria';
 
   @override
-  String get relationshipNotePin => 'Fissa in Su';
+  String get relationshipNotePin => 'Fissa in alto';
 
   @override
   String get relationshipNoteSaveFailed => 'Impossibile salvare la nota.';
@@ -13369,7 +13369,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipTimelineEmpty(String name) {
-    return 'Ancora niente. Parla dopo aver parlato con $name, oppure aggiungi una nota, un’attività o delle foto.';
+    return 'Ancora niente. Registra a voce cosa ricordare dopo aver parlato con $name, oppure aggiungi una nota, un’attività o delle foto.';
   }
 
   @override

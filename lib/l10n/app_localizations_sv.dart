@@ -12464,7 +12464,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipAddToTimeline(String name) {
-    return 'Lägg till i ${name}s tidslinje';
+    return 'Lägg till i tidslinjen för $name';
   }
 
   @override

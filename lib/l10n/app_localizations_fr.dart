@@ -13431,7 +13431,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipTimelineEmpty(String name) {
-    return 'Rien pour l’instant. Parle après ta conversation avec $name, ou ajoute une note, une tâche ou des photos.';
+    return 'Rien pour l’instant. Enregistre ce que tu retiens après avoir parlé à $name, ou ajoute une note, une tâche ou des photos.';
   }
 
   @override
