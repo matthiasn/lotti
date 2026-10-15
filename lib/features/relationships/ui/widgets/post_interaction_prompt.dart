@@ -6,6 +6,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -202,7 +203,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     if (!mounted || generation != _refreshGeneration) return;
     setState(() {
       _pending = relationship == null ? null : pending;
-      _personName = relationship?.data.title;
+      _personName = relationship?.shortName;
     });
   }
 

@@ -24,11 +24,15 @@ class NextTimeFacts extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final (index, fact) in facts.indexed) ...[
-          if (index > 0) SizedBox(height: tokens.spacing.step3),
+          // Grouped by proximity: a label sits tight on its words, and the
+          // pairs stand apart.
+          if (index > 0) SizedBox(height: tokens.spacing.step4),
+          // Medium, not low emphasis: the label is the key to the words under
+          // it, and was the faintest text on the page.
           Text(
             fact.caption,
             style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
           SizedBox(height: tokens.spacing.step1),

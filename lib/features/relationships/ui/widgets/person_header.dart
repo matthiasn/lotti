@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
@@ -193,6 +194,9 @@ class PersonHeroAppBar extends StatelessWidget {
           AgentChatButton(
             key: const ValueKey('person-talk-to-agent'),
             onPressed: onTalkToAgent,
+            // On a banner, the glass the back and menu discs wear.
+            fill: glassFill,
+            foreground: onPhoto ? ink : null,
           ),
           SizedBox(width: tokens.spacing.step2),
         ],
@@ -214,7 +218,9 @@ class PersonHeroAppBar extends StatelessWidget {
       key: const ValueKey('person-hero'),
       pinned: true,
       delegate: _PersonHeroDelegate(
-        title: relationship.data.title,
+        // The folded bar names the person the way the page addresses them:
+        // the full name there ended under an ellipsis.
+        title: relationship.shortName,
         titleStyle: tokens.typography.styles.subtitle.subtitle2.copyWith(
           color: ink,
         ),
@@ -318,6 +324,10 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final collapsed = shrinkOffset >= foldable - collapseSlack;
     final bandOpen = 1 - (shrinkOffset / foldable).clamp(0.0, 1.0);
+    // The avatar is gone by the fold's halfway point: fading with the band,
+    // it was still half visible when its top slid under the back button
+    // (design panel 2026-10-15).
+    final avatarOpacity = ((bandOpen - 0.5) * 2).clamp(0.0, 1.0);
     // The clear strip under the band closes before the band itself folds,
     // so the wash — or the picture — keeps its height for the first
     // half-diameter of scroll while the avatar tucks up into it.
@@ -439,10 +449,10 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
           left: avatarInset,
           bottom: 0,
           child: IgnorePointer(
-            ignoring: collapsed || onAvatarTap == null,
+            ignoring: avatarOpacity == 0 || onAvatarTap == null,
             child: Opacity(
               key: const ValueKey('person-hero-avatar'),
-              opacity: bandOpen,
+              opacity: avatarOpacity,
               // The initial inside the circle is decoration to a screen
               // reader; the label says what the tap opens.
               child: Semantics(
@@ -636,11 +646,20 @@ class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
     required this.categoryName,
+    this.nextMeetingAt,
+    this.actions,
     super.key,
   });
 
   final RelationshipListItem item;
   final String? categoryName;
+
+  /// The person's contact actions, set in the pills' row so the block
+  /// spends one line on them rather than two.
+  final Widget? actions;
+
+  /// When the next meeting with the person starts, if one is booked.
+  final DateTime? nextMeetingAt;
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +734,15 @@ class PersonHeaderBlock extends StatelessWidget {
         Wrap(
           spacing: tokens.spacing.step2,
           runSpacing: tokens.spacing.step2,
-          children: personHeaderPills(context, item),
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ...personHeaderPills(
+              context,
+              item,
+              nextMeetingAt: nextMeetingAt,
+            ),
+            ?actions,
+          ],
         ),
       ],
     );
@@ -728,16 +755,24 @@ class PersonHeaderBlock extends StatelessWidget {
 ///
 /// One tinted chip at most, and it is the cadence: the health band lives on
 /// the briefing card, which dates it.
+///
+/// A lapsed cadence with a meeting already booked ([nextMeetingAt]) shows no
+/// cadence pill at all: the warning asked for something the user has
+/// already done, and nagged with nothing left to do about it, while the
+/// meeting itself leads *Before you talk* (design panel 2026-10-15).
 List<Widget> personHeaderPills(
   BuildContext context,
-  RelationshipListItem item,
-) {
+  RelationshipListItem item, {
+  DateTime? nextMeetingAt,
+}) {
   final tokens = context.designTokens;
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
+  final meetingBooked =
+      nextMeetingAt != null && pill.kind == PeopleCadencePillKind.overdue;
   final pills = <Widget>[
-    relationshipCadencePill(context, item),
+    if (!meetingBooked) relationshipCadencePill(context, item),
     // `isEnrolled`, not the raw flag: a dormant or archived person keeps
     // `important` while the runtime clears their reminders.
     if (isEnrolled(item.relationship))

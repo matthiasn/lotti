@@ -10135,5 +10135,25 @@
         "type": "int"
       }
     }
+  },
+  "relationshipNextMeeting": "Next: {title} · {time}",
+  "@relationshipNextMeeting": {
+    "description": "Lead line of 'Before you talk': the next booked meeting with the person.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeShowAvoid": "And what to avoid",
+  "@relationshipNextTimeShowAvoid": {
+    "description": "Disclosure under the first next-time note on a phone, revealing the 'Better to avoid' note."
+  },
+  "relationshipRemindersOfferTitle": "Reminders and briefings",
+  "@relationshipRemindersOfferTitle": {
+    "description": "Title of the card offering to turn on reminders and the briefing agent for a person."
   }
 }

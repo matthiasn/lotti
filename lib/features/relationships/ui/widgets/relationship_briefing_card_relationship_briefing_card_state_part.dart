@@ -465,20 +465,18 @@ class _NotEnrolledCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Named for what it turns on. The header pill already says *No
+          // reminders*; a status line here said it a second time.
           _BriefingHeader(
-            icon: LottiIcons.people,
+            icon: LottiIcons.notification,
             plain: true,
-            status: _StatusLine(
-              tiers: [
-                if (paused)
-                  relationshipStatusLabel(context, data.status)
-                else
-                  // The band and the pill's own words for this state, so
-                  // one fact has one name on the list and on the page.
-                  messages.relationshipNotEnrolled,
-              ],
-              color: tokens.colors.text.lowEmphasis,
-            ),
+            title: messages.relationshipRemindersOfferTitle,
+            status: paused
+                ? _StatusLine(
+                    tiers: [relationshipStatusLabel(context, data.status)],
+                    color: tokens.colors.text.lowEmphasis,
+                  )
+                : null,
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -570,14 +568,19 @@ class _NotEnrolledCard extends StatelessWidget {
 /// cards' own.
 class _BriefingHeader extends StatelessWidget {
   const _BriefingHeader({
-    required this.status,
+    this.status,
+    this.title,
     this.trailing,
     this.onTap,
     this.icon,
     this.plain = false,
   });
 
-  final _StatusLine status;
+  /// What the agent is doing; none on the offer, whose body says it.
+  final _StatusLine? status;
+
+  /// The card's title; *Briefing* unless the face is about something else.
+  final String? title;
   final Widget? trailing;
   final VoidCallback? onTap;
   final IconData? icon;
@@ -589,7 +592,7 @@ class _BriefingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final messages = context.messages;
     return TldrHeader(
-      title: messages.relationshipBriefingTitle,
+      title: title ?? messages.relationshipBriefingTitle,
       agentName: null,
       subtitle: status,
       plain: plain,

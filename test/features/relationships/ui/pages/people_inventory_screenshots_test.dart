@@ -1352,8 +1352,10 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('person-pill-reminders')));
     await tester.pumpAndSettle();
+    // The timeline's own filter (All) is a selected pill on the page under
+    // the sheet; the sheet's choice is the interval.
     expect(
-      _selectedPillLabels(tester),
+      _selectedPillLabels(tester).where((label) => label != 'All'),
       ['Weekly'],
       reason: "the sheet opens on Pip's own interval",
     );

@@ -298,9 +298,9 @@ class PersonTimelineRow extends StatelessWidget {
         onTap: () => actions.openEntry(row.photos.first),
       ),
       final TimelineTask row => (
-        icon: row.open
-            ? LottiIcons.checkboxUnchecked
-            : LottiIcons.checkboxChecked,
+        // A task's kind, not a checkbox: the tile marks the row, and a box
+        // that looked tickable completed nothing when tapped.
+        icon: row.open ? LottiIcons.clipboardText : LottiIcons.factCheck,
         kind: messages.relationshipTimelineTask,
         time: switch (row) {
           TimelineTask(open: true, due: final due?) => _dueLabel(

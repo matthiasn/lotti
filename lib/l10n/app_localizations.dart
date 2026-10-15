@@ -28162,6 +28162,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 note} other{{count} notes}}'**
   String relationshipAboutPinnedCount(int count);
+
+  /// Lead line of 'Before you talk': the next booked meeting with the person.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {title} · {time}'**
+  String relationshipNextMeeting(String title, String time);
+
+  /// Disclosure under the first next-time note on a phone, revealing the 'Better to avoid' note.
+  ///
+  /// In en, this message translates to:
+  /// **'And what to avoid'**
+  String get relationshipNextTimeShowAvoid;
+
+  /// Title of the card offering to turn on reminders and the briefing agent for a person.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders and briefings'**
+  String get relationshipRemindersOfferTitle;
 }
 
 class _AppLocalizationsDelegate

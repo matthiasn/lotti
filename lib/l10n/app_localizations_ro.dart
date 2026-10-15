@@ -17312,4 +17312,15 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String relationshipNextMeeting(String title, String time) {
+    return 'Next: $title · $time';
+  }
+
+  @override
+  String get relationshipNextTimeShowAvoid => 'And what to avoid';
+
+  @override
+  String get relationshipRemindersOfferTitle => 'Reminders and briefings';
 }

@@ -29,11 +29,16 @@ Future<PersonCreateChoice?> showPersonCreateMenu({
             key: ValueKey('person-create-${choice.name}'),
             icon: icon,
             title: title,
-            tone: DsActionRowTone.accent,
             onTap: () => Navigator.of(sheetContext).pop(choice),
           );
+      // The check-in first: logging a conversation is what the page is for.
       return DsActionModalList(
         children: [
+          row(
+            PersonCreateChoice.checkIn,
+            LottiIcons.forum,
+            messages.relationshipLogCheckIn,
+          ),
           row(
             PersonCreateChoice.note,
             LottiIcons.note,
@@ -48,11 +53,6 @@ Future<PersonCreateChoice?> showPersonCreateMenu({
             PersonCreateChoice.photos,
             LottiIcons.addPhoto,
             messages.relationshipAddPhotos,
-          ),
-          row(
-            PersonCreateChoice.checkIn,
-            LottiIcons.forum,
-            messages.relationshipLogCheckIn,
           ),
         ],
       );

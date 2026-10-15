@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/action_modal/ds_action_m
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
@@ -75,11 +76,7 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
     setState(() => _reachable = reachable);
   }
 
-  String get _name {
-    final data = widget.relationship.data;
-    final nickname = data.nickname?.trim();
-    return nickname == null || nickname.isEmpty ? data.title : nickname;
-  }
+  String get _name => widget.relationship.shortName;
 
   Future<void> _pressed(
     ContactAction action,

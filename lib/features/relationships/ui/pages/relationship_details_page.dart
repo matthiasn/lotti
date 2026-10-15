@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/relationships/service/person_photo_timeline_trigg
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart';
@@ -210,7 +213,6 @@ class _RelationshipDetailsPageState
 
     final relationship = detail.relationship;
     final checkIns = detail.checkIns;
-    final data = relationship.data;
     final latest = checkIns.firstOrNull;
     final item = (relationship: relationship, lastCheckIn: latest);
     final categoryId = relationship.meta.categoryId;
@@ -242,10 +244,17 @@ class _RelationshipDetailsPageState
     final hasAgent = identity == null
         ? isEnrolled(relationship)
         : usableRelationshipAgent(identity) != null;
-    final personName = data.nickname?.trim().isNotEmpty ?? false
-        ? data.nickname!.trim()
-        : data.title;
+    final personName = relationship.shortName;
     final now = clock.now();
+    final upcoming = buildPersonTimeline(
+      now: now,
+      checkIns: const [],
+      entries: detail.timelineEntries,
+      tasks: const [],
+    ).sections.where((s) => s.kind == PersonTimelineSectionKind.upcoming);
+    final nextMeeting = upcoming.isEmpty
+        ? null
+        : upcoming.first.items.whereType<TimelineMeeting>().firstOrNull;
     final timeline = buildPersonTimeline(
       now: now,
       checkIns: checkIns,
@@ -300,9 +309,12 @@ class _RelationshipDetailsPageState
 
     final gap = SizedBox(height: tokens.spacing.sectionGap);
     final whoBlock = <Widget>[
-      PersonHeaderBlock(item: item, categoryName: categoryName),
-      SizedBox(height: tokens.spacing.step4),
-      PersonContactRow(relationship: relationship),
+      PersonHeaderBlock(
+        item: item,
+        categoryName: categoryName,
+        nextMeetingAt: nextMeeting?.event.meta.dateFrom,
+        actions: PersonContactRow(relationship: relationship),
+      ),
       gap,
       // Under the person's name: the reminder the user just tapped says it
       // is paused, and until when.
@@ -319,18 +331,32 @@ class _RelationshipDetailsPageState
       ),
     ];
     final nextTime = NextTimeLead.sourceOf(checkIns);
+    final hasNotes = NextTimeLead.hasContent(nextTime);
     // What to know before you talk: the user's own notes for next time, on
     // the page itself — never under the agent's tint, so their words read
     // as theirs — then the agent's briefing, then what they pinned About
     // the person.
+    //
+    // The heading leads with the next meeting when one is booked — the moment
+    // this page is opened for — and is left out for a person with neither
+    // notes nor an agent, whose card is then only the offer to start one.
     List<Widget> briefing({required bool compact}) => [
-      PersonCardHeader(
-        key: const ValueKey('person-before-you-talk'),
-        title: context.messages.relationshipBeforeYouTalkTitle,
-      ),
-      SizedBox(height: tokens.spacing.step3),
-      if (NextTimeLead.hasContent(nextTime)) ...[
-        NextTimeLead(source: nextTime),
+      if (hasNotes || nextMeeting != null || isEnrolled(relationship)) ...[
+        PersonCardHeader(
+          key: const ValueKey('person-before-you-talk'),
+          title: context.messages.relationshipBeforeYouTalkTitle,
+          caption: hasNotes
+              ? NextTimeLead.provenanceOf(context, nextTime!)
+              : null,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+      ],
+      if (nextMeeting != null) ...[
+        _NextMeetingLine(meeting: nextMeeting, now: now),
+        SizedBox(height: tokens.spacing.step4),
+      ],
+      if (hasNotes) ...[
+        NextTimeLead(source: nextTime, compact: compact),
         SizedBox(height: tokens.spacing.step4),
       ],
       // Always present: an unenrolled person gets the offer that explains
@@ -348,23 +374,16 @@ class _RelationshipDetailsPageState
       gap,
     ];
 
+    final bar = RelationshipActionBar(
+      personName: personName,
+      onSpeak: () => unawaited(
+        _openComposer(context, latest: latest, startSpeaking: true),
+      ),
+      onAdd: () => unawaited(create()),
+    );
+
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
-      // extendBody so the glass strip's BackdropFilter has body content
-      // underneath to blur; the Scaffold reserves the bar's height as the
-      // body's bottom inset, consumed by the trailing spacer below.
-      extendBody: true,
-      bottomNavigationBar: RelationshipActionBar(
-        personName: personName,
-        onSpeak: () => unawaited(
-          _openComposer(context, latest: latest, startSpeaking: true),
-        ),
-        onAdd: () => unawaited(create()),
-      ),
-      // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it reads
-      // the Scaffold-modified value, and the column is centred within the
-      // width this page actually has — the detail pane on the desktop split,
-      // not the window.
       body: LayoutBuilder(
         builder: (context, constraints) {
           final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -374,7 +393,8 @@ class _RelationshipDetailsPageState
           // panel 2026-10-15). Flex shares of the pane, so no width of its
           // own is invented.
           final wide = constraints.maxWidth >= kDesktopBreakpoint;
-          Widget page(BoxConstraints constraints) {
+          Widget pageBody(BuildContext context, BoxConstraints constraints) {
+            final bottomInset = MediaQuery.paddingOf(context).bottom;
             final insets = detailContentInsets(
               context,
               availableWidth: constraints.maxWidth,
@@ -437,6 +457,25 @@ class _RelationshipDetailsPageState
             );
           }
 
+          // The page — hero, header, timeline — with the capture bar docked
+          // under it: its own Scaffold, so on a wide pane the bar sits on the
+          // timeline's column, centred over the history it adds to, and
+          // never covers the rail. extendBody so the glass strip's
+          // BackdropFilter has content underneath to blur; the Scaffold
+          // reserves the bar's height as the body's bottom inset, which the
+          // trailing spacer consumes.
+          Widget page(BoxConstraints constraints) => Scaffold(
+            backgroundColor: tokens.colors.background.level01,
+            extendBody: true,
+            bottomNavigationBar: bar,
+            // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it
+            // reads this Scaffold's value, and the column is centred within
+            // the width the page actually has.
+            body: LayoutBuilder(
+              builder: pageBody,
+            ),
+          );
+
           if (!wide) return page(constraints);
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -457,10 +496,12 @@ class _RelationshipDetailsPageState
                     ),
                   ),
                   child: SingleChildScrollView(
+                    // The page column's own gutter, so the two columns
+                    // share one rhythm.
                     padding: EdgeInsets.fromLTRB(
-                      tokens.spacing.step6,
-                      MediaQuery.paddingOf(context).top + tokens.spacing.step6,
-                      tokens.spacing.step6,
+                      tokens.spacing.step5,
+                      MediaQuery.paddingOf(context).top + tokens.spacing.step5,
+                      tokens.spacing.step5,
                       bottomInset + tokens.spacing.sectionGap,
                     ),
                     child: Column(
@@ -474,6 +515,55 @@ class _RelationshipDetailsPageState
           );
         },
       ),
+    );
+  }
+}
+
+/// The next booked meeting, as the first line of *Before you talk*: what it
+/// is and when, the time in the timestamp style.
+class _NextMeetingLine extends StatelessWidget {
+  const _NextMeetingLine({required this.meeting, required this.now});
+
+  final TimelineMeeting meeting;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final start = meeting.event.meta.dateFrom;
+    final title = meeting.event.data.title;
+    final style = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    // One line, whatever fits: the day and time first shed the time, then
+    // the title — when it is, is the fact the line exists for.
+    return Row(
+      key: const ValueKey('person-next-meeting'),
+      children: [
+        Icon(
+          LottiIcons.calendar,
+          size: IconSizes.s,
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Expanded(
+          child: DsTieredText(
+            tiers: [
+              messages.relationshipNextMeeting(
+                title,
+                relationshipTimestampLabelOf(context, start, now: now),
+              ),
+              messages.relationshipNextMeeting(
+                title,
+                relationshipDayLabelOf(context, start),
+              ),
+              relationshipTimestampLabelOf(context, start, now: now),
+            ],
+            style: style,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
@@ -156,7 +157,15 @@ class DesignSystemTimelineRow extends StatelessWidget {
                             child: meta,
                           ),
                         ),
-                        ?body,
+                        // Prose at a reading measure, however wide the
+                        // column: the meta and footer may run on.
+                        if (body case final body?)
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: kProseMeasureWidth,
+                            ),
+                            child: body,
+                          ),
                         if (footer != null) ...[
                           SizedBox(height: spacing.step3),
                           footer!,

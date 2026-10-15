@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -25,7 +27,7 @@ Future<void> showPersonNoteSheet({
   required RelationshipEntry person,
   JournalEntry? note,
 }) {
-  final name = _displayName(person);
+  final name = person.shortName;
   // The action modal's header, so the title sits on the same rail as the
   // field under it, like the create menu this sheet is opened from.
   return DsActionModal.show<void>(
@@ -33,11 +35,6 @@ Future<void> showPersonNoteSheet({
     title: context.messages.relationshipNoteSheetTitle(name),
     builder: (sheetContext) => PersonNoteForm(person: person, note: note),
   );
-}
-
-String _displayName(RelationshipEntry person) {
-  final nickname = person.data.nickname?.trim();
-  return nickname == null || nickname.isEmpty ? person.data.title : nickname;
 }
 
 /// The note sheet's body: the words, the pin, and the sheet's actions.
@@ -113,53 +110,66 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final note = widget.note;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DesignSystemTextarea(
-          key: const ValueKey('person-note-text'),
-          controller: _text,
-          hintText: messages.relationshipNoteHint,
-          minLines: 4,
-          growWithContent: true,
-          semanticsLabel: messages.relationshipNoteSheetTitle(
-            _displayName(widget.person),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        DesignSystemToggle(
-          key: const ValueKey('person-note-pin'),
-          value: _pinned,
-          label: messages.relationshipNotePin,
-          onChanged: (value) => setState(() => _pinned = value),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemModalActionBar(
-          primary: DesignSystemButton(
-            key: const ValueKey('person-note-save'),
-            label: messages.saveButtonLabel,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
-            onPressed: _canSave ? () => unawaited(_save()) : null,
-          ),
-          secondary: [
-            if (note != null)
-              DesignSystemButton(
-                key: const ValueKey('person-note-delete'),
-                label: messages.deleteButton,
-                variant: DesignSystemButtonVariant.danger,
-                onPressed: _saving ? null : () => unawaited(_delete(note)),
-              ),
-            DesignSystemButton(
-              key: const ValueKey('person-note-cancel'),
-              label: messages.cancelButton,
-              variant: DesignSystemButtonVariant.quiet,
-              onPressed: () => Navigator.of(context).pop(),
+    void saveIfReady() {
+      if (_canSave) unawaited(_save());
+    }
+
+    // ⌘/Ctrl+Enter saves, as in the check-in composer.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.enter, meta: true):
+            saveIfReady,
+        const SingleActivator(LogicalKeyboardKey.enter, control: true):
+            saveIfReady,
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DesignSystemTextarea(
+            key: const ValueKey('person-note-text'),
+            controller: _text,
+            hintText: messages.relationshipNoteHint,
+            minLines: 4,
+            growWithContent: true,
+            semanticsLabel: messages.relationshipNoteSheetTitle(
+              widget.person.shortName,
             ),
-          ],
-        ),
-      ],
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          DesignSystemToggle(
+            key: const ValueKey('person-note-pin'),
+            value: _pinned,
+            label: messages.relationshipNotePin,
+            onChanged: (value) => setState(() => _pinned = value),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          DesignSystemModalActionBar(
+            primary: DesignSystemButton(
+              key: const ValueKey('person-note-save'),
+              label: messages.saveButtonLabel,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+              onPressed: _canSave ? () => unawaited(_save()) : null,
+            ),
+            secondary: [
+              if (note != null)
+                DesignSystemButton(
+                  key: const ValueKey('person-note-delete'),
+                  label: messages.deleteButton,
+                  variant: DesignSystemButtonVariant.danger,
+                  onPressed: _saving ? null : () => unawaited(_delete(note)),
+                ),
+              DesignSystemButton(
+                key: const ValueKey('person-note-cancel'),
+                label: messages.cancelButton,
+                variant: DesignSystemButtonVariant.quiet,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
