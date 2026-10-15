@@ -207,9 +207,9 @@ sequenceDiagram
   utterance gets a fresh clock: two clips both open at zero, and a clock that
   still held the first one's zero would start the second at its full lead.
 
-In the app she is shown in `CompanionFraming.torso`: head to just below the
-hips, wide enough that both wrists stay inside it with room for the hand in
-every gesture (a test walks each gesture through its phases). Her box is
+In the app she is shown in `CompanionFraming.full`: head to toe, wide enough
+that both wrists stay inside it with room for the hand in every gesture (a
+test walks each gesture through its phases). Her box is
 `ControlSizes.companionCard` high, its width following from
 `CompanionFraming.aspectRatio`.
 

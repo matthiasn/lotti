@@ -81,14 +81,14 @@ void main() {
       expect(find.byType(CompanionSpeaker), findsNothing);
     });
 
-    testWidgets("speaks this task's utterance, framed to the torso", (
+    testWidgets("speaks this task's utterance, framed head to toe", (
       tester,
     ) async {
       await _pumpCard(tester);
 
       final speaker = _speaker(tester);
       expect(speaker.sourceId, AgentTestBench.taskId);
-      expect(speaker.framing, CompanionFraming.torso);
+      expect(speaker.framing, CompanionFraming.full);
     });
 
     testWidgets('mouths the full report when it is read expanded', (
@@ -146,7 +146,7 @@ void main() {
       expect(
         her.width,
         closeTo(
-          ControlSizes.companionCard * CompanionFraming.torso.aspectRatio,
+          ControlSizes.companionCard * CompanionFraming.full.aspectRatio,
           0.01,
         ),
       );

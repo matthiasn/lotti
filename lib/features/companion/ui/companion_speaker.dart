@@ -31,7 +31,7 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
     required this.sourceId,
     this.look = CompanionLook.grandma,
     this.mood = CompanionMood.calm,
-    this.framing = CompanionFraming.torso,
+    this.framing = CompanionFraming.full,
     super.key,
   });
 

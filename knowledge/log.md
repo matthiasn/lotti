@@ -3,7 +3,7 @@
 ## 2026-10-15
 * **Update**: [Companion](features/companion.md) — how she speaks with the
   on-device voice (`CompanionSpeaker`, the clip read once, the playhead clock),
-  the torso framing, and her new rank just above `tts`.
+  the full-length framing, and her new rank just above `tts`.
 * **Update**: [Text-to-speech](features/tts.md) — `clip`, the clip and its
   words a listener may read while an utterance plays;
   [agents UI surfaces](features/agents/ui-surfaces.md) — the companion beside

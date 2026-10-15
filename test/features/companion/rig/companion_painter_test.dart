@@ -46,20 +46,12 @@ void main() {
     });
   });
 
-  group('torso framing', () {
-    const torso = CompanionFraming.torso;
+  group('full framing', () {
+    const full = CompanionFraming.full;
 
-    test('ends above her feet: the legs are never in it', () {
-      // The ankles stand 20 above the floor; the shins reach up from there.
-      expect(torso.window.bottom, lessThan(pelvisY + 40));
-      expect(torso.window.bottom, lessThan(-20 - shin));
-    });
-
-    test('keeps her head in, as the full framing does', () {
-      expect(
-        torso.window.top,
-        lessThanOrEqualTo(CompanionFraming.full.window.top),
-      );
+    test('keeps her feet in, down to the floor she stands on', () {
+      // The floor is y = 0; her shoes rest on it.
+      expect(full.window.bottom, greaterThan(0));
     });
 
     // A hand is drawn around its wrist; this is room for the palm and fingers.
@@ -78,7 +70,7 @@ void main() {
             for (final (arm, side) in [(pose.left, -1), (pose.right, 1)]) {
               final wrist = frame.armSpine(arm, side).last;
               expect(
-                torso.window.deflate(handReach).contains(wrist),
+                full.window.deflate(handReach).contains(wrist),
                 isTrue,
                 reason: 'wrist $wrist at ${i / 60}s',
               );

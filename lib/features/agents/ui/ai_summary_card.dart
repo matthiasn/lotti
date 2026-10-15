@@ -570,7 +570,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         ? SizedBox(
             height: ControlSizes.companionCard,
             child: AspectRatio(
-              aspectRatio: CompanionFraming.torso.aspectRatio,
+              aspectRatio: CompanionFraming.full.aspectRatio,
               child: CompanionSpeaker(
                 key: const ValueKey('taskAgentCompanion'),
                 sourceId: widget.taskId,

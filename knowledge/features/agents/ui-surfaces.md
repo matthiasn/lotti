@@ -84,7 +84,7 @@ Contents:
   name; it is never the task title.
 - **The companion** — with `enable_companion` on, the drawn character of
   [the companion feature](../companion.md) stands left of the summary
-  (`CompanionSpeaker`, torso framing, `ControlSizes.companionCard` high). She
+  (`CompanionSpeaker`, full framing, `ControlSizes.companionCard` high). She
   is the read-aloud control's face: shown only while that control is, and
   speaking its utterance — the task id as `sourceId`, in the words the
   voice was given at the tap — so a tap on the control is what makes her

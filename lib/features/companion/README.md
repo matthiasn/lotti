@@ -64,9 +64,9 @@ in as widget parameters.
 She is drawn through `SupersampledPainter`, 4 samples per pixel on Linux and
 none elsewhere, because Impeller on a GL driver without multisampling (as in
 a Linux VM) draws paths without anti-aliasing: her outline would show stair
-steps that crawl as she moves. In the app she is framed at the torso (head
-to hips, both hands in view, never the legs). `stage: true` stands her on the pitch videos' dark stage
-(`rig/stage_painter.dart`).
+steps that crawl as she moves. In the app she is framed head to toe, both
+hands in view in every gesture. `stage: true` stands her on the pitch
+videos' dark stage (`rig/stage_painter.dart`).
 
 ## Where she comes from
 

@@ -128,13 +128,13 @@ void main() {
     logger = MockDomainLogger();
   });
 
-  testWidgets('shows her in the look, mood and torso framing', (tester) async {
+  testWidgets('shows her in the look, mood and full framing', (tester) async {
     await pumpSpeaker(tester);
 
     final shown = view(tester);
     expect(shown.look, CompanionLook.cat);
     expect(shown.mood, CompanionMood.bright);
-    expect(shown.framing, CompanionFraming.torso);
+    expect(shown.framing, CompanionFraming.full);
   });
 
   testWidgets('is silent while nothing plays', (tester) async {
