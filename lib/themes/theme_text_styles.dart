@@ -158,6 +158,17 @@ const numericBadgeFontFeatures = <FontFeature>[
   FontFeature.slashedZero(),
 ];
 
+/// [numericBadgeFontFeatures] for a date or a time set in running text —
+/// `Sat 1 Aug 12:40` in a row's meta line: the same tabular, open digits, so
+/// a column of dates still lines up, without the slashed zero, which in a
+/// line of prose makes a date read as a code (`10:05`).
+const dateFigureFontFeatures = <FontFeature>[
+  FontFeature.tabularFigures(),
+  FontFeature('cv02'),
+  FontFeature('cv03'),
+  FontFeature('cv04'),
+];
+
 const habitCompletionHeaderStyle = TextStyle(
   fontSize: 22, // Increased
 );

@@ -408,6 +408,15 @@ void main() {
       expect(style.fontFamily, isNot('Inconsolata'));
     });
 
+    // Design panel 2026-10-15: the badges' slashed zero made `10:05` in a
+    // row's meta line read as a code rather than a time.
+    test('sets dates without the slashed zero badges use', () {
+      expect(
+        relationshipTimestampStyle(tokens).fontFeatures,
+        isNot(contains(const FontFeature.slashedZero())),
+      );
+    });
+
     test('inside a line of prose it keeps the host size and takes the '
         "caller's colour — only the figures change", () {
       final host = tokens.typography.styles.body.bodyLarge;
