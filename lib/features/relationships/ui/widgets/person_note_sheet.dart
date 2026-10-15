@@ -7,8 +7,6 @@ import 'package:lotti/features/design_system/components/action_modal/ds_action_m
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
@@ -57,6 +55,11 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
   late bool _pinned = widget.note?.meta.starred ?? false;
   var _saving = false;
 
+  /// The last save failed. Said under the field, inside the sheet: a toast
+  /// raised from here is hosted by the page's messenger and would render
+  /// behind the sheet it explains.
+  var _failed = false;
+
   @override
   void initState() {
     super.initState();
@@ -71,7 +74,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
     super.dispose();
   }
 
-  void _changed() => setState(() {});
+  void _changed() => setState(() => _failed = false);
 
   bool get _canSave => !_saving && _text.text.trim().isNotEmpty;
 
@@ -92,11 +95,10 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
       Navigator.of(context).pop();
       return;
     }
-    setState(() => _saving = false);
-    context.showToast(
-      tone: DesignSystemToastTone.error,
-      title: context.messages.relationshipNoteSaveFailed,
-    );
+    setState(() {
+      _saving = false;
+      _failed = true;
+    });
   }
 
   Future<void> _delete(JournalEntry note) async {
@@ -130,6 +132,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
             key: const ValueKey('person-note-text'),
             controller: _text,
             hintText: messages.relationshipNoteHint,
+          errorText: _failed ? messages.relationshipNoteSaveFailed : null,
             minLines: 4,
             growWithContent: true,
             semanticsLabel: messages.relationshipNoteSheetTitle(

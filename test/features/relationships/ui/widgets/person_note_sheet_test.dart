@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -120,8 +119,16 @@ void main() {
     await open(tester);
 
     await tester.enterText(field(), 'Prefers mornings.');
+    await tester.pump();
     await tester.tap(find.byKey(const ValueKey('person-note-save')));
     await tester.pumpAndSettle();
+    verify(
+      () => repository.createNote(
+        person: any(named: 'person'),
+        text: any(named: 'text'),
+        pinned: any(named: 'pinned'),
+      ),
+    ).called(1);
 
     expect(find.text('Could not save the note.'), findsOneWidget);
     expect(find.text('Note about Pip'), findsOneWidget);
