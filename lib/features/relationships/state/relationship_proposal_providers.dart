@@ -193,7 +193,7 @@ relationshipSuggestionListProvider = FutureProvider.autoDispose
       );
     });
 
-/// Briefly marks newly confirmed tasks on the person's linked-task card.
+/// Briefly marks newly confirmed tasks on the person's timeline.
 final relationshipTaskHighlightProvider =
     NotifierProvider<RelationshipTaskHighlight, Set<String>>(
       RelationshipTaskHighlight.new,

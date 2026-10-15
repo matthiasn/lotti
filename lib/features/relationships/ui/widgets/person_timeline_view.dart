@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
+import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
@@ -111,7 +113,7 @@ String _filterLabel(BuildContext context, PersonTimelineFilter filter) {
 ///
 /// An empty timeline teaches instead: one line naming what the page's bar
 /// adds, so the first visit says what to do rather than showing a void.
-class PersonTimelineSliver extends StatelessWidget {
+class PersonTimelineSliver extends ConsumerWidget {
   const PersonTimelineSliver({
     required this.timeline,
     required this.personName,
@@ -132,9 +134,12 @@ class PersonTimelineSliver extends StatelessWidget {
   final DateTime now;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // A task just confirmed from the agent's suggestions is marked for a
+    // moment, so the reader sees where it landed.
+    final highlighted = ref.watch(relationshipTaskHighlightProvider);
     // The sliver is outdented by the rows' own inset (see the page), so a
     // row's tile — and the hover fill behind it — reaches the page's text
     // edge; the heading and the empty state take that inset back.
@@ -186,6 +191,7 @@ class PersonTimelineSliver extends StatelessWidget {
             key: ValueKey('person-timeline-row-${item.id}'),
             item: item,
             last: index == section.items.length - 1,
+            highlighted: highlighted.contains(item.id),
             actions: actions,
             now: now,
           ),
@@ -206,10 +212,12 @@ class PersonTimelineRow extends StatelessWidget {
     required this.actions,
     required this.now,
     this.last = false,
+    this.highlighted = false,
     super.key,
   });
 
   final PersonTimelineItem item;
+  final bool highlighted;
   final PersonTimelineActions actions;
   final DateTime now;
   final bool last;
@@ -358,6 +366,7 @@ class PersonTimelineRow extends StatelessWidget {
             ),
       footer: row.footer,
       last: last,
+      highlighted: highlighted,
       onTap: row.onTap,
       onLongPress: switch (item) {
         final TimelineTask row => () => actions.unlinkTask(row.task),

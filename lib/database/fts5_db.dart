@@ -73,6 +73,13 @@ class Fts5Db extends _$Fts5Db {
     final title = entry.maybeMap(
       task: (task) => task.data.title,
       survey: (survey) => survey.data.taskResult.identifier,
+      // A check-in is found by what it was about and what to bring up next
+      // time, not only by its note (ADR 0139).
+      checkIn: (checkIn) => [
+        ...checkIn.data.topics,
+        ?checkIn.data.payAttentionTo,
+        ?checkIn.data.avoid,
+      ].join(' '),
       orElse: () => '',
     );
 

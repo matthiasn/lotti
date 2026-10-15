@@ -4,15 +4,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
-import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_task_actions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,12 +15,31 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-/// The card's rendering contract. The link/create/unlink flows run through
-/// the person page and are exercised end to end in its test, where the
-/// repository, picker and toasts are all wired.
+/// Runs one of the actions from a button, the way the person page does.
+class _Host extends ConsumerWidget {
+  const _Host(this.onPressed);
+
+  final void Function(BuildContext context, WidgetRef ref) onPressed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Center(
+    child: TextButton(
+      key: const ValueKey('go'),
+      onPressed: () => onPressed(context, ref),
+      child: const Text('go'),
+    ),
+  );
+}
+
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
   late MockRelationshipRepository repository;
+
+  const actions = PersonTaskActions(
+    relationshipId: 'rel-1',
+    linkedTaskIds: {'t1'},
+    personName: 'Pip',
+  );
 
   setUpAll(registerAllFallbackValues);
 
@@ -33,11 +47,7 @@ void main() {
     repository = MockRelationshipRepository();
   });
 
-  Task task(
-    String id, {
-    String title = 'Prepare the call',
-    TaskStatus? status,
-  }) =>
+  Task task(String id, {String title = 'Prepare the call'}) =>
       JournalEntity.task(
             meta: Metadata(
               id: id,
@@ -47,13 +57,11 @@ void main() {
               dateTo: testDate,
             ),
             data: TaskData(
-              status:
-                  status ??
-                  TaskStatus.open(
-                    id: 'ts-$id',
-                    createdAt: testDate,
-                    utcOffset: 0,
-                  ),
+              status: TaskStatus.open(
+                id: 'ts-$id',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
               dateFrom: testDate,
               dateTo: testDate,
               statusHistory: const [],
@@ -62,129 +70,167 @@ void main() {
           )
           as Task;
 
-  Future<void> pump(WidgetTester tester, List<Task> tasks) async {
+  Future<void> pump(
+    WidgetTester tester,
+    void Function(BuildContext context, WidgetRef ref) onPressed,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        LinkedTasksCard(relationshipId: 'rel-1', tasks: tasks),
+        _Host(onPressed),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
         ],
       ),
     );
+    await tester.tap(find.byKey(const ValueKey('go')));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the empty state names the section, offers Link task and says '
-      'nothing is linked', (tester) async {
-    await pump(tester, const []);
+  group('pickTask', () {
+    late MockJournalDb db;
 
-    expect(find.text('Tasks'), findsOneWidget);
-    expect(find.byKey(const ValueKey('person-link-task')), findsOneWidget);
-    expect(find.text('No tasks linked yet.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('person-tasks-count')), findsNothing);
-    expect(find.byType(DesignSystemListItem), findsNothing);
-  });
-
-  testWidgets('rows carry the title, the localized status, the status glyph '
-      'and an unlink action; the header counts them', (tester) async {
-    await pump(tester, [
-      task('t1'),
-      task(
-        't2',
-        title: 'Draft the comms plan',
-        status: TaskStatus.groomed(
-          id: 'ts-t2',
-          createdAt: testDate,
-          utcOffset: 0,
+    setUp(() {
+      db = MockJournalDb();
+      final fts = MockFts5Db();
+      final cache = MockEntitiesCacheService();
+      when(() => cache.sortedCategories).thenReturn([]);
+      when(
+        () => db.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
         ),
-      ),
-    ]);
+      ).thenAnswer(
+        (_) async => [task('t1'), task('t9', title: 'Send photos')],
+      );
+      when(
+        () => fts.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.value(const <String>[]));
+      getIt
+        ..registerSingleton<JournalDb>(db)
+        ..registerSingleton<Fts5Db>(fts)
+        ..registerSingleton<EntitiesCacheService>(cache);
+    });
 
-    // One count grammar across the feature: the page title reads
-    // `People · 5`, the bands read `Due · 1`, and a card heading reads the
-    // same way instead of inventing `2 linked` in a chip of its own.
-    expect(find.text('· 2'), findsOneWidget);
-    expect(find.text('2 linked'), findsNothing);
-    expect(find.text('Prepare the call'), findsOneWidget);
-    expect(find.text('Draft the comms plan'), findsOneWidget);
-    expect(find.text('Open'), findsOneWidget);
-    expect(find.text('Groomed'), findsOneWidget);
-    expect(find.byType(StatusGlyph), findsNWidgets(2));
-    expect(find.byIcon(LottiIcons.linkOff), findsNWidgets(2));
-    expect(find.text('No tasks linked yet.'), findsNothing);
-  });
-
-  testWidgets('an untitled task uses the localized fallback', (tester) async {
-    await pump(tester, [task('t1', title: '')]);
-
-    expect(find.text('(untitled)'), findsOneWidget);
-  });
-
-  testWidgets('tapping a row beams to the task', (tester) async {
-    await pump(tester, [task('t1')]);
-    final beamedTo = <String>[];
-    beamToNamedOverride = beamedTo.add;
-    addTearDown(() => beamToNamedOverride = null);
-
-    await tester.tap(find.text('Prepare the call'));
-    await tester.pump();
-
-    expect(beamedTo, ['/tasks/t1']);
-  });
-
-  testWidgets('Link task opens the picker, excluding the tasks already '
-      'linked', (tester) async {
-    final db = MockJournalDb();
-    final fts = MockFts5Db();
-    final cache = MockEntitiesCacheService();
-    when(() => cache.sortedCategories).thenReturn([]);
-    when(
-      () => db.getTasks(
-        starredStatuses: any(named: 'starredStatuses'),
-        taskStatuses: any(named: 'taskStatuses'),
-        categoryIds: any(named: 'categoryIds'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => [task('t1'), task('t9', title: 'Send photos')]);
-    when(
-      () => fts.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(const <String>[]));
-    getIt
-      ..registerSingleton<JournalDb>(db)
-      ..registerSingleton<Fts5Db>(fts)
-      ..registerSingleton<EntitiesCacheService>(cache);
-    addTearDown(() async {
+    tearDown(() async {
       await getIt.unregister<JournalDb>();
       await getIt.unregister<Fts5Db>();
       await getIt.unregister<EntitiesCacheService>();
     });
 
-    await pump(tester, [task('t1')]);
-    await tester.tap(find.byKey(const ValueKey('person-link-task')));
-    await tester.pumpAndSettle();
+    testWidgets("the picker says what the create menu's row said, and "
+        'leaves out the tasks already linked', (tester) async {
+      await pump(tester, actions.pickTask);
 
-    // The picker lists the other task and not the one already linked.
-    expect(find.text('Send photos'), findsOneWidget);
-    expect(find.text('Prepare the call'), findsOneWidget);
+      expect(find.text('Add a task for Pip'), findsOneWidget);
+      expect(find.text('Send photos'), findsOneWidget);
+      expect(find.text('Prepare the call'), findsNothing);
+    });
+
+    testWidgets('picking a task links it to the person and closes the '
+        'picker', (tester) async {
+      when(
+        () => repository.linkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer((_) async => true);
+      await pump(tester, actions.pickTask);
+
+      await tester.tap(find.text('Send photos'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.linkTask(relationshipId: 'rel-1', taskId: 't9'),
+      ).called(1);
+      expect(find.text('Add a task for Pip'), findsNothing);
+      expect(
+        find.text('Could not link the task. Please try again.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a link that did not land says so', (tester) async {
+      when(
+        () => repository.linkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer((_) async => false);
+      await pump(tester, actions.pickTask);
+
+      await tester.tap(find.text('Send photos'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not link the task. Please try again.'),
+        findsOneWidget,
+      );
+    });
   });
 
-  testWidgets(
-    'newly confirmed tasks highlight briefly without selecting other rows',
-    (tester) async {
-      await pump(tester, [task('new'), task('existing')]);
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(LinkedTasksCard)),
+  group('unlinkTask', () {
+    void Function(BuildContext, WidgetRef) unlink(Task task) =>
+        (context, ref) => actions.unlinkTask(context, ref, task);
+
+    testWidgets('asks first, naming the task, then unlinks it', (
+      tester,
+    ) async {
+      when(
+        () => repository.unlinkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer((_) async => true);
+      await pump(tester, unlink(task('t1')));
+
+      expect(
+        find.text('Unlink “Prepare the call”? The task itself is not deleted.'),
+        findsOneWidget,
       );
-      container
-          .read(relationshipTaskHighlightProvider.notifier)
-          .highlight('new');
-      await tester.pump();
-      DesignSystemListItem row(String id) =>
-          tester.widget(find.byKey(ValueKey('person-task-$id')));
-      expect(row('new').activated, isTrue);
-      expect(row('existing').activated, isFalse);
-      await tester.pump(const Duration(seconds: 3));
-      expect(row('new').activated, isFalse);
-    },
-  );
+      await tester.tap(find.text('Unlink Task'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.unlinkTask(relationshipId: 'rel-1', taskId: 't1'),
+      ).called(1);
+      expect(
+        find.text("Couldn't unlink the task. Please try again."),
+        findsNothing,
+      );
+    });
+
+    testWidgets('cancelling unlinks nothing', (tester) async {
+      await pump(tester, unlink(task('t1')));
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => repository.unlinkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+    });
+
+    testWidgets('an unlink that was refused says so', (tester) async {
+      when(
+        () => repository.unlinkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer((_) async => false);
+      await pump(tester, unlink(task('t1')));
+
+      await tester.tap(find.text('Unlink Task'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("Couldn't unlink the task. Please try again."),
+        findsOneWidget,
+      );
+    });
+  });
 }

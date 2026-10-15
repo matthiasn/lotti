@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -135,6 +136,37 @@ void main() {
 
         final matches = await db.watchFullTextMatches('test entry text').first;
         expect(matches, contains(testTextEntry.meta.id));
+      });
+
+      // ADR 0139: a check-in is found by its topics and its notes for next
+      // time, not only by the note it was logged with.
+      test('insertText with a check-in indexes its topics and next-time '
+          'notes', () async {
+        final checkIn = JournalEntity.checkIn(
+          meta: testTextEntry.meta.copyWith(id: 'check-in-1'),
+          entryText: const EntryText(plainText: 'Walked the launch window.'),
+          data: const CheckInData(
+            relationshipId: 'pip',
+            interactionType: CheckInInteractionType.call,
+            topics: ['krill logistics'],
+            payAttentionTo: 'The contract deadline',
+            avoid: 'Pad three',
+          ),
+        );
+        await db.insertText(checkIn);
+
+        for (final query in [
+          'launch window',
+          'krill logistics',
+          'contract deadline',
+          'Pad three',
+        ]) {
+          expect(
+            await db.watchFullTextMatches(query).first,
+            contains('check-in-1'),
+            reason: query,
+          );
+        }
       });
 
       test('insertText with task entry indexes the task title', () async {

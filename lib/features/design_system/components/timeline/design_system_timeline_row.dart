@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -82,6 +83,7 @@ class DesignSystemTimelineRow extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.last = false,
+    this.highlighted = false,
     super.key,
   }) : assert(
          semanticsLabel.trim().isNotEmpty,
@@ -107,6 +109,10 @@ class DesignSystemTimelineRow extends StatelessWidget {
 
   /// The last row of its section: the rail stops at the tile.
   final bool last;
+
+  /// Draws the row in the lists' activated fill — a row the user just
+  /// brought into being, briefly marked so the eye finds it.
+  final bool highlighted;
 
   final String semanticsLabel;
 
@@ -198,6 +204,7 @@ class DesignSystemTimelineRow extends StatelessWidget {
       container: true,
       label: semanticsLabel,
       button: tap != null,
+      selected: highlighted,
       onTap: tap,
       onLongPress: onLongPress,
       child: tap == null
@@ -206,9 +213,9 @@ class DesignSystemTimelineRow extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onLongPress: onLongPress,
               child: GroupedCardRowSurface(
-                selected: false,
+                selected: highlighted,
                 hoverColor: tokens.colors.surface.hover,
-                selectedColor: tokens.colors.surface.hover,
+                selectedColor: DesignSystemListPalette.activatedFill(tokens),
                 padding: EdgeInsets.zero,
                 backgroundBorderRadius: BorderRadius.circular(tokens.radii.m),
                 onTap: tap,
