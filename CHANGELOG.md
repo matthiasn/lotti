@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.55]
+
+### Added
+
+- **Check-ins count the time you spend on them.** A spoken check-in counts its
+  recording; a written one counts the time you spend writing it, with a clock
+  you can pause or set by hand. Every check-in on a goal's timeline shows its
+  minutes, and you can correct them there.
+- **Goals can ask for reflection time.** Add *Check-in time* from the goal
+  editor's signal picker to aim for at least a few minutes of checking in a
+  day; it is tracked like any other part of the goal, and a check-in moves
+  the progress card straight away.
+- **A daily briefing for every goal.** Each morning, for a goal with automatic
+  updates on, the goal's agent writes a short read of where things stand and
+  what to do next — concrete steps drawn from your data and your check-ins,
+  following up on yesterday's — unless the day already has its report. The
+  goal page leads its summary with *What's next*.
+- **A Today card on the Goals page.** One card gathers each goal's one-line
+  read and next step from that day's briefing, the goals that need attention
+  first.
+- **Agent internals for people.** A person's page offers *Agent internals* in
+  its menu: the agent's reports, conversations and activity.
+- **What an agent has cost.** Every agent's internals now show its lifetime
+  cost and footprint beside its token usage.
+
+### Changed
+
+- **One way into an agent's conversation, and one menu.** A goal's page and a
+  person's page now offer the same *Talk to agent* button — the agent's
+  sparkle in the AI accent, instead of a small grey pill — and their overflow
+  menus read alike: the page's own actions, then the agent's, *Agent
+  internals* named the same on both, and delete last.
+
+### Fixed
+
+- **Talking to an agent on desktop no longer squeezes the page.** Opening a
+  goal's or a person's conversation used to shove the page aside to make
+  room, leaving it in a narrow strip. The conversation now slides in as a side
+  panel over the dimmed page — the same panel the Daily OS check-in uses — and
+  the page keeps its full width.
+- **Agent internals open where you are.** A goal's or a person's agent in the
+  sidebar's wake list used to jump to its Settings page; it now opens the
+  agent's internals in the same side panel over what you were doing.
+- **The Agent internals title is readable in the light theme.** It was drawn
+  in white on the panel's pale background.
+
 ## [1.1.54]
 
 ### Added
