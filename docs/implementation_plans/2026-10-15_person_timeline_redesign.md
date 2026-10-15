@@ -571,3 +571,20 @@ before it is opened, with before/after pairs from the inventory rig published vi
 | Q2 | Meetings vs `enableEventsFlag` | **Always on people** — a person's meetings show on their timeline and the Day view regardless; only the Events tab stays gated. |
 | Q3 | Search and embeddings | **Searchable** (revised the same day) — search and embeddings are local-only (Ollama is the sole embedding path) and only the user can run them, so hiding protects nothing; the `private` flag, which timeline items inherit, covers the shared-screen case. Notes, voice notes and photos on a person's timeline are ordinary searchable entries; check-in contents stay as they are. Check-ins themselves stay out of search per ADR 0064 unless revisited. |
 | Q4 | Briefings without reminders | **Out of scope** for this plan (ADR 0111 unchanged). |
+| Q5 | Check-ins in search | **Lifted in PR 1** — check-ins are searchable by their words, topics and notes for next time ([ADR 0139](../adr/0139-check-ins-are-searchable.md), superseding ADR 0064 decision 3). |
+| Q6 | Prose measure | **A constant** — `kProseMeasureWidth` caps a timeline row's words on a wide pane. |
+| Q7 | The agent's hue | **A hue of its own** — violet (`aiCard.accent`), so teal means only "press this". |
+| Q8 | Type on the person page | **Four sizes** — title, heading, body, caption; labels take the caption's size at a heavier weight (`captionLabelStyle`). |
+
+### Where PR 1 landed
+
+The bar became *Speak* (filled, opens the composer recording) beside *+ Add*,
+in place of *Log check-in* and the mic. Design panel scores across six rounds,
+experts / personas, target 9: baseline 4.5 / 4.3, then 6.29 / 6.83,
+6.71 / 6.67, 7.0 / 6.83, 7.21 / 7.0 and 7.27 / 7.17, every persona *would use*
+with no blockers from round 1 on. Round 6 (four type sizes, both notes for
+next time open, a tappable next meeting, one About fold, the post-call offer as
+a section card) shipped unrated. Still open from the panels: in-page timeline
+search, per-filter empty states, keyboard paths into creation on desktop,
+pinning the filter pills, collapsing the hero band when there is no banner,
+and one *overdue* rule shared by the list and the page.
