@@ -24,7 +24,13 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
     }
     if (_avoidController.text.trim() != (data?.avoid ?? '')) return true;
     if (_sentiment != data?.sentiment) return true;
-    return _phase is! CheckInSpeechIdle || _takes.isNotEmpty;
+    // A recorder that failed to start recorded nothing: a composer opened
+    // speaking, onto a busy recorder, still closes at once.
+    final speaking = switch (_phase) {
+      CheckInSpeechIdle() || CheckInSpeechFailed() => false,
+      _ => true,
+    };
+    return speaking || _takes.isNotEmpty;
   }
 
   /// Leaves the composer, asking first when [_isDirty]. The question names

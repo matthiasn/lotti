@@ -1902,6 +1902,22 @@ void main() {
       verifyNoSave();
     });
 
+    testWidgets('a recorder that would not start recorded nothing: the '
+        'close leaves at once, with no question about a draft', (
+      tester,
+    ) async {
+      recorder.recordFailure = AudioRecordingFailure.busy;
+      await openSheet(tester);
+      await startDictation(tester);
+      expect(inlineRecorder, findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Discard this check-in'), findsNothing);
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      verifyNoSave();
+    });
+
     testWidgets('a draft guards every way out: the close asks, keeping the '
         'draft on Keep and leaving on Discard; a recording names itself', (
       tester,

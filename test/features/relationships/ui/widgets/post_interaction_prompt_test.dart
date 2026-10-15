@@ -15,6 +15,7 @@ import 'package:lotti/features/relationships/service/pending_interaction_store.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -180,17 +181,14 @@ void main() {
     });
 
     testWidgets('states when it started and about how long it has been, in '
-        'the timestamp style — tabular figures, the UI face', (tester) async {
+        'the timestamp style — open digits, the UI face', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
       final meta = tester.widget<Text>(
         find.byKey(const ValueKey('person-post-call-meta')),
       );
       expect(meta.data, 'started 11:30 · about 11 min');
-      expect(
-        meta.style?.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
-      );
+      expect(meta.style?.fontFeatures, dateFigureFontFeatures);
       expect(meta.style?.fontFamily, isNot('Inconsolata'));
     });
 
@@ -241,17 +239,20 @@ void main() {
       expect(find.byType(Card), findsNothing);
     });
 
-    testWidgets('offers both logging and declining, logging as a secondary '
-        "button: the page's bar already carries the one filled Log "
-        'check-in', (tester) async {
+    testWidgets('offers logging as the one primary action and declining as '
+        'a quiet one, worded as an answer to the question', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
       final yes = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('person-post-call-yes')),
       );
       expect(yes.label, 'Yes, log it');
-      expect(yes.variant, DesignSystemButtonVariant.secondary);
-      expect(find.text('Dismiss'), findsOneWidget);
+      expect(yes.variant, DesignSystemButtonVariant.primary);
+      expect(yes.leadingIcon, LottiIcons.mic);
+      final no = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Not this time'),
+      );
+      expect(no.variant, DesignSystemButtonVariant.quiet);
     });
   });
 
@@ -357,7 +358,7 @@ void main() {
     testWidgets('drops the prompt', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       expect(offer, findsNothing);
@@ -372,7 +373,7 @@ void main() {
         resolves: person(),
       );
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       expect(store.clearCount, 1);
@@ -382,7 +383,7 @@ void main() {
     testWidgets('does not reappear on the next resume', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -450,7 +451,7 @@ void main() {
     });
 
     testWidgets('a second tap while the first is still claiming opens nothing '
-        'more, and Dismiss holds until it is done', (tester) async {
+        'more, and declining holds until it is done', (tester) async {
       final store = await pump(tester, pending: marker(), resolves: person());
       // The claim reads the marker, then waits on clearing it.
       final gate = store.clearGate = Completer<void>();
@@ -470,7 +471,7 @@ void main() {
       expect(
         tester
             .widget<DesignSystemButton>(
-              find.widgetWithText(DesignSystemButton, 'Dismiss'),
+              find.widgetWithText(DesignSystemButton, 'Not this time'),
             )
             .onPressed,
         isNull,
@@ -523,6 +524,9 @@ void main() {
     ) async {
       var current = now;
       final store = _FakePendingInteractionStore(marker());
+      recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.busy,
+      );
       when(
         () => repository.getRelationshipById(any()),
       ).thenAnswer((_) async => person());
@@ -533,6 +537,10 @@ void main() {
             overrides: [
               pendingInteractionStoreProvider.overrideWithValue(store),
               relationshipRepositoryProvider.overrideWithValue(repository),
+              audioRecorderControllerProvider.overrideWith(() => recorder),
+              checkInTranscriptionServiceProvider.overrideWithValue(
+                StubCheckInTranscriptionService(),
+              ),
             ],
           ),
         );
