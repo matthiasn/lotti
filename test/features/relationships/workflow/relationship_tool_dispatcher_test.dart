@@ -52,6 +52,9 @@ void main() {
     when(
       () => relationships.getAllTimelineEntries(any()),
     ).thenAnswer((_) async => []);
+    when(
+      () => relationships.getTimelineLinksChangedAt(any()),
+    ).thenAnswer((_) async => null);
     persistence = MockPersistenceLogic();
     cache = MockEntitiesCacheService();
     agents = MockTaskAgentService();

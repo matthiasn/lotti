@@ -390,6 +390,9 @@ Future<RelationshipCadenceDerivation> deriveEvalCadence(
     () => relationshipRepository.getAllTimelineEntries(any()),
   ).thenAnswer((_) async => []);
   when(
+    () => relationshipRepository.getTimelineLinksChangedAt(any()),
+  ).thenAnswer((_) async => null);
+  when(
     () => agentRepository.getEntity(any()),
   ).thenAnswer((_) async => null);
   when(

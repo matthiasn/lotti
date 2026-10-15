@@ -45,6 +45,29 @@ Future<Set<String>> personTimelineLinkTargets(
   };
 }
 
+/// When [personId]'s timeline last changed shape — the newest write to a
+/// [RelationshipLink] from the person, a tombstone included — or null when
+/// there is none. Adding an older note, or taking an entry off, changes what
+/// the briefing reads without touching any entry's own `updatedAt`, so the
+/// agent counts this as evidence too.
+Future<DateTime?> personTimelineLinksChangedAt(
+  JournalDb journalDb,
+  String personId,
+) async {
+  // Removed links included: a tombstone's write is when the entry left.
+  final links = await journalDb.linksForEntryIdsBidirectionalIncludingRemoved(
+    {personId},
+  );
+  DateTime? newest;
+  for (final link in links) {
+    if (link is! RelationshipLink || link.fromId != personId) continue;
+    if (newest == null || link.updatedAt.isAfter(newest)) {
+      newest = link.updatedAt;
+    }
+  }
+  return newest;
+}
+
 /// Every live note, voice note, photo and meeting on [personId]'s timeline,
 /// private ones included — the agent's and the delete cascade's read, which
 /// a display preference must never scope (the reason
@@ -177,11 +200,34 @@ class PersonTimelineRepository {
     );
     if (!(await _persistenceLogic.createDbEntity(note) ?? false)) return null;
     final written = note as JournalEntry;
-    if (await addToTimeline(personId: person.meta.id, entryId: note.meta.id)) {
-      return written;
+    bool linked;
+    try {
+      linked = await addToTimeline(
+        personId: person.meta.id,
+        entryId: note.meta.id,
+      );
+    } catch (_) {
+      // A link write that throws is as refused as one that answers false:
+      // the note must not outlive it, or a retry writes a second copy.
+      linked = false;
     }
+    if (linked) return written;
     await deleteNote(written);
     return null;
+  }
+
+  /// Saves [entryId] again so its `updatedAt` advances — what the agent
+  /// reads as "this evidence changed" — when something it holds arrived
+  /// later, such as a photo's description. Answers whether it was saved.
+  Future<bool> touch(String entryId) async {
+    final entity = await _journalDb.journalEntityById(entryId);
+    if (entity == null || entity.meta.deletedAt != null) return false;
+    final result = await _persistenceLogic.updateDbEntity(
+      entity.copyWith(
+        meta: await _persistenceLogic.updateMetadata(entity.meta),
+      ),
+    );
+    return result ?? false;
   }
 
   /// Pins [note] under the person's *About*, or unpins it.

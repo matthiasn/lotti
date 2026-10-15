@@ -254,6 +254,41 @@ void main() {
       );
     });
 
+    test('a link write that throws is a failed link: the note is removed '
+        'again, so a retry cannot write a second copy', () async {
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenThrow(Exception('database locked'));
+      when(
+        () => persistence.updateMetadata(
+          any(),
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (call) async => (call.positionalArguments.first as Metadata).copyWith(
+          deletedAt: call.namedArguments[#deletedAt] as DateTime?,
+        ),
+      );
+      when(
+        () => persistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      expect(
+        await repository.createNote(person: person, text: 'Gift: a scarf'),
+        isNull,
+      );
+      final removed =
+          verify(
+                () => persistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(removed.meta.deletedAt, isNotNull);
+    });
+
     test('a note whose timeline link fails is removed again, so nothing '
         'about the person is left where their page cannot reach it', () async {
       when(
@@ -288,6 +323,77 @@ void main() {
               as JournalEntity;
       expect(removed.id, 'new-note');
       expect(removed.meta.deletedAt, isNotNull);
+    });
+  });
+
+  group('personTimelineLinksChangedAt', () {
+    Future<void> linkAt(String to, DateTime updatedAt, {DateTime? deletedAt}) =>
+        db.upsertEntryLink(
+          EntryLink.relationship(
+            id: 'person=>$to',
+            fromId: 'person',
+            toId: to,
+            createdAt: at,
+            updatedAt: updatedAt,
+            vectorClock: null,
+            deletedAt: deletedAt,
+          ),
+        );
+
+    test('is null for a person with no timeline links', () async {
+      expect(await personTimelineLinksChangedAt(db, 'person'), isNull);
+    });
+
+    test("is the newest write to the person's own links, a tombstone "
+        'included — taking an entry off is a change too', () async {
+      final added = DateTime(2026, 8, 15, 9);
+      final removed = DateTime(2026, 8, 16, 18);
+      await linkAt('note', added);
+      await linkAt('photo', removed, deletedAt: removed);
+      // A link pointing at the person is not theirs, however new.
+      await db.upsertEntryLink(
+        EntryLink.relationship(
+          id: 'other=>person',
+          fromId: 'other',
+          toId: 'person',
+          createdAt: at,
+          updatedAt: DateTime(2026, 9),
+          vectorClock: null,
+        ),
+      );
+
+      expect(await personTimelineLinksChangedAt(db, 'person'), removed);
+    });
+  });
+
+  group('touch', () {
+    test('saves the entry again so its updatedAt advances', () async {
+      final photo = testImageEntry.copyWith(meta: meta('photo'));
+      await db.updateJournalEntity(photo);
+      final later = DateTime(2026, 8, 20, 8);
+      when(() => persistence.updateMetadata(any())).thenAnswer(
+        (call) async => (call.positionalArguments.first as Metadata).copyWith(
+          updatedAt: later,
+        ),
+      );
+      when(
+        () => persistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      expect(await repository.touch('photo'), isTrue);
+
+      final saved =
+          verify(
+                () => persistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(saved.id, 'photo');
+      expect(saved.meta.updatedAt, later);
+    });
+
+    test('touches nothing that is gone', () async {
+      expect(await repository.touch('missing'), isFalse);
+      verifyNever(() => persistence.updateDbEntity(any()));
     });
   });
 

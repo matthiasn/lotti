@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -14,14 +15,20 @@ import 'package:lotti/services/domain_logging.dart';
 /// picture to, which is also what gives a private person's photo the private
 /// flag. That plain link alone would leave the photo off the timeline: a
 /// person's plain links carry their avatar and banner too.
+///
+/// A description is evidence the briefing reads, and it lands as an entry of
+/// its own, after the photo: once one is written the photo is saved again,
+/// so the agent sees the change — as the check-in photo trigger does.
 class PersonPhotoTimelineTrigger extends AutomaticImageAnalysisTrigger {
   PersonPhotoTimelineTrigger({
     required super.ref,
     required super.loggingService,
     required this._timeline,
+    required this._relationships,
   });
 
   final PersonTimelineRepository _timeline;
+  final RelationshipRepository _relationships;
 
   @override
   Future<void> triggerAutomaticImageAnalysis({
@@ -56,6 +63,23 @@ class PersonPhotoTimelineTrigger extends AutomaticImageAnalysisTrigger {
       imageEntryId: imageEntryId,
       subjectId: personId,
     );
+
+    // Only a written description changes what the next briefing reads; a
+    // run that wrote none must not buy another inference.
+    try {
+      final described = await _relationships.getImageDescriptions({
+        imageEntryId,
+      });
+      if (described.isEmpty) return;
+      await _timeline.touch(imageEntryId);
+    } catch (exception, stackTrace) {
+      loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'personPhotoTimeline',
+      );
+    }
   }
 }
 
@@ -65,6 +89,7 @@ final personPhotoTimelineTriggerProvider = Provider<PersonPhotoTimelineTrigger>(
     ref: ref,
     loggingService: ref.watch(domainLoggerProvider),
     timeline: ref.watch(personTimelineRepositoryProvider),
+    relationships: ref.watch(relationshipRepositoryProvider),
   ),
   name: 'personPhotoTimelineTriggerProvider',
 );

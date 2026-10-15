@@ -157,6 +157,9 @@ void main() {
     when(
       () => relationshipRepository.getAllTimelineEntries(any()),
     ).thenAnswer((_) async => []);
+    when(
+      () => relationshipRepository.getTimelineLinksChangedAt(any()),
+    ).thenAnswer((_) async => null);
     reminders = _RecordingReminderSink(events);
     phaseA = RelationshipAgentPhaseA(
       repository: repository,
@@ -547,6 +550,35 @@ void main() {
       expect(derivation.lastCheckInAt, call);
       expect(derivation.lastCheckInDay, DateTime.utc(2026, 8, 10));
     });
+
+    // Linking an older note, or taking an entry off, changes what the
+    // briefing reads while no entry's own `updatedAt` moves: the link write
+    // is the evidence.
+    test(
+      'a timeline link written after every entry moves the evidence',
+      () async {
+        final call = DateTime.utc(2026, 8, 10, 9);
+        final linked = DateTime.utc(2026, 8, 19, 7);
+        when(
+          () => relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => [checkIn('c-1', call)]);
+        when(
+          () =>
+              relationshipRepository.getTimelineLinksChangedAt(relationshipId),
+        ).thenAnswer((_) async => linked);
+
+        final derivation = await phaseA.deriveCadenceFacts(
+          agentId: agentId,
+          relationship: relationship(),
+          now: DateTime.utc(2026, 8, 20, 12),
+        );
+
+        expect(derivation.lastEvidenceAt, linked);
+        expect(derivation.lastCheckInAt, call);
+      },
+    );
 
     test('the escalation workspace key and its deadline are minted from the '
         'same UTC day, across a month boundary', () async {

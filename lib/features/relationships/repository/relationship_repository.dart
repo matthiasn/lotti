@@ -579,6 +579,11 @@ class RelationshipRepository implements RelationshipCascade {
   Future<List<JournalEntity>> getAllTimelineEntries(String relationshipId) =>
       allPersonTimelineEntries(_journalDb, relationshipId);
 
+  /// When the person's timeline last gained or lost an entry
+  /// ([personTimelineLinksChangedAt]).
+  Future<DateTime?> getTimelineLinksChangedAt(String relationshipId) =>
+      personTimelineLinksChangedAt(_journalDb, relationshipId);
+
   // ── Task links ─────────────────────────────────────────────────────────────
 
   /// Links [taskId] to the relationship with a [RelationshipLink]

@@ -420,6 +420,18 @@ class RelationshipAgentPhaseA {
         lastEvidenceKey = relationshipEvidenceKey(entry.meta.updatedAt);
       }
     }
+    // Putting an older note on the timeline, or taking an entry off it,
+    // changes what the briefing reads without touching any entry: the link
+    // write is the change.
+    final linksChangedAt = await _relationshipRepository
+        .getTimelineLinksChangedAt(relationship.meta.id);
+    if (linksChangedAt != null) {
+      final changed = linksChangedAt.toUtc();
+      if (lastEvidenceAt == null || changed.isAfter(lastEvidenceAt)) {
+        lastEvidenceAt = changed;
+        lastEvidenceKey = relationshipEvidenceKey(linksChangedAt);
+      }
+    }
     // Baseline: the newest check-in, or tracking start (ADR 0039 — the
     // first reminder fires one cadence after marking, never suppressed
     // waiting for a first check-in). The person's own `dateFrom` stands in

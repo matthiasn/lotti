@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -20,6 +21,7 @@ void main() {
   late MockProfileAutomationService automation;
   late MockSkillInferenceRunner runner;
   late MockPersonTimelineRepository timeline;
+  late MockRelationshipRepository relationships;
   late MockDomainLogger logger;
   late ProviderContainer container;
 
@@ -29,6 +31,12 @@ void main() {
     automation = MockProfileAutomationService();
     runner = MockSkillInferenceRunner();
     timeline = MockPersonTimelineRepository();
+    relationships = MockRelationshipRepository();
+    // No description by default: the analysis ran but wrote nothing.
+    when(
+      () => relationships.getImageDescriptions(any()),
+    ).thenAnswer((_) async => const {});
+    when(() => timeline.touch(any())).thenAnswer((_) async => true);
     logger = MockDomainLogger();
     await setUpTestGetIt(
       additionalSetup: () {
@@ -78,6 +86,7 @@ void main() {
     ref: container.read(_refProvider),
     loggingService: logger,
     timeline: timeline,
+    relationships: relationships,
   );
 
   test("puts each imported photo on the person's timeline, then asks the "
@@ -100,6 +109,7 @@ void main() {
         profileAutomationServiceProvider.overrideWithValue(automation),
         skillInferenceRunnerProvider.overrideWithValue(runner),
         personTimelineRepositoryProvider.overrideWithValue(timeline),
+        relationshipRepositoryProvider.overrideWithValue(relationships),
         domainLoggerProvider.overrideWithValue(logger),
       ]),
     );
@@ -114,6 +124,45 @@ void main() {
 
     verify(
       () => timeline.addToTimeline(personId: 'pip', entryId: 'photo-9'),
+    ).called(1);
+  });
+
+  test('a description that landed saves the photo again, so the briefing '
+      'reads it; a run that wrote none touches nothing', () async {
+    await trigger().triggerAutomaticImageAnalysis(
+      imageEntryId: 'photo-1',
+      linkedTaskId: 'pip',
+    );
+    verifyNever(() => timeline.touch(any()));
+
+    when(
+      () => relationships.getImageDescriptions({'photo-2'}),
+    ).thenAnswer((_) async => {'photo-2': 'Pip on the launch pad.'});
+    await trigger().triggerAutomaticImageAnalysis(
+      imageEntryId: 'photo-2',
+      linkedTaskId: 'pip',
+    );
+    verify(() => timeline.touch('photo-2')).called(1);
+  });
+
+  test('a description lookup that throws is logged, not thrown', () async {
+    when(
+      () => relationships.getImageDescriptions(any()),
+    ).thenThrow(Exception('database locked'));
+
+    await trigger().triggerAutomaticImageAnalysis(
+      imageEntryId: 'photo-1',
+      linkedTaskId: 'pip',
+    );
+
+    verifyNever(() => timeline.touch(any()));
+    verify(
+      () => logger.error(
+        LogDomain.persistence,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'personPhotoTimeline',
+      ),
     ).called(1);
   });
 

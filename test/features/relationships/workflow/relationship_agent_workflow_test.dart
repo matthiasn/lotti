@@ -185,6 +185,9 @@ void main() {
     when(
       () => relationshipRepository.getAllTimelineEntries(any()),
     ).thenAnswer((_) async => []);
+    when(
+      () => relationshipRepository.getTimelineLinksChangedAt(any()),
+    ).thenAnswer((_) async => null);
     aiConfigRepository = MockAiConfigRepository();
     conversationManager = MockConversationManager();
     conversationRepository = MockConversationRepository(conversationManager);
