@@ -112,11 +112,17 @@ class ImageImportConstants {
 /// Lets the user add images from wherever this platform keeps them: the
 /// photo library on macOS and mobile, a file dialog on Linux and Windows,
 /// which have no gallery picker.
+///
+/// [onExisting] runs for a picked photo the journal already holds — a
+/// gallery asset's entry id is deterministic, so picking it again links the
+/// entry rather than creating it, and [analysisTrigger] (which runs only for
+/// what an import created) never sees it.
 Future<void> importImagesForPlatform(
   BuildContext context, {
   String? linkedId,
   String? categoryId,
   ImageAnalysisTrigger? analysisTrigger,
+  Future<void> Function(String entryId)? onExisting,
 }) async {
   if (isLinux || isWindows) {
     await importImagePickerFiles(
@@ -134,6 +140,7 @@ Future<void> importImagesForPlatform(
     linkedId: linkedId,
     categoryId: categoryId,
     analysisTrigger: analysisTrigger,
+    onExisting: onExisting,
   );
   // coverage:ignore-end
 }
@@ -148,16 +155,20 @@ Future<void> importImageAssets(
   String? linkedId,
   String? categoryId,
   ImageAnalysisTrigger? analysisTrigger,
+  Future<void> Function(String entryId)? onExisting,
 }) async {
   final assets = await _pickAssets(context, maxAssets: 50);
   if (assets == null) return;
   for (final asset in assets) {
-    await _importAsset(
+    final imported = await _importAsset(
       asset,
       linkedId: linkedId,
       categoryId: categoryId,
       analysisTrigger: analysisTrigger,
     );
+    if (imported != null && !imported.created) {
+      await onExisting?.call(imported.id);
+    }
   }
 }
 

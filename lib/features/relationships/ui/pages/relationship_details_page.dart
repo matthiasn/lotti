@@ -44,6 +44,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One person's page (design panel 2026-10-15): who they are, what to know
@@ -303,6 +304,12 @@ class _RelationshipDetailsPageState
             linkedId: relationshipId,
             categoryId: categoryId,
             analysisTrigger: ref.read(personPhotoTimelineTriggerProvider),
+            // A photo the journal already holds is linked, not created, so
+            // the trigger above never puts it on the timeline.
+            onExisting: (entryId) => ref
+                .read(personTimelineRepositoryProvider)
+                .addToTimeline(personId: relationshipId, entryId: entryId)
+                .then((_) {}),
           );
         case PersonCreateChoice.checkIn:
           await _openComposer(context, latest: latest);

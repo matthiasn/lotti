@@ -54,6 +54,10 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
   /// until the platform has been asked.
   Map<ContactAction, List<ContactChannel>>? _reachable;
 
+  /// Which resolution is current: a probe that finishes after the channels
+  /// changed again answers for channels the person no longer has.
+  var _generation = 0;
+
   List<ContactChannel> get _channels =>
       widget.relationship.data.contactChannels;
 
@@ -67,6 +71,10 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
   void didUpdateWidget(PersonContactRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.relationship.data.contactChannels != _channels) {
+      // The old answers name channels that may be gone: offer nothing until
+      // the new ones are known, rather than a button that dials a removed
+      // number.
+      setState(() => _reachable = null);
       _resolve();
     }
   }
@@ -75,9 +83,11 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
   /// `initState` without awaiting, so it owns its errors: a channel the
   /// platform cannot answer for is one the row does not offer.
   Future<void> _resolve() async {
+    final generation = ++_generation;
+    final channels = _channels;
     final launcher = ref.read(contactLauncherProvider);
     final reachable = <ContactAction, List<ContactChannel>>{};
-    for (final channel in _channels) {
+    for (final channel in channels) {
       for (final action in contactActionsFor(channel.type)) {
         bool launchable;
         try {
@@ -90,7 +100,7 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
         }
       }
     }
-    if (!mounted) return;
+    if (!mounted || generation != _generation) return;
     setState(() => _reachable = reachable);
   }
 
