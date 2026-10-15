@@ -1,476 +1,93 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/check_in_data.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/service/contact_launcher.dart';
-import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
-import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
-import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
-import '../../helpers/check_in_speech_fakes.dart';
-
-/// A launcher whose answers are scripted per action and whose calls are
-/// recorded — the bar's two decisions, which channel to offer and what a
-/// press does, are both observable.
-class _FakeContactLauncher implements ContactLauncher {
-  _FakeContactLauncher({required this.launchable, this.launchSucceeds = true});
-
-  final Set<ContactAction> launchable;
-  final bool launchSucceeds;
-  final List<(ContactChannel, ContactAction)> launched = [];
-  int probes = 0;
-
-  /// When set, every availability answer waits on it — so a test can hold a
-  /// resolution open while the widget's channels change under it.
-  Completer<void>? gate;
-
-  @override
-  Future<bool> canLaunch(ContactChannel channel, ContactAction action) async {
-    probes++;
-    if (gate case final gate?) await gate.future;
-    return launchable.contains(action) &&
-        contactChannelUri(channel, action) != null;
-  }
-
-  @override
-  Future<bool> launch(ContactChannel channel, ContactAction action) async {
-    launched.add((channel, action));
-    return launchSucceeds;
-  }
-}
-
-class _FakePendingInteractionStore implements PendingInteractionStore {
-  PendingInteraction? remembered;
-
-  @override
-  Future<void> remember({
-    required String relationshipId,
-    required CheckInInteractionType interactionType,
-  }) async {
-    remembered = (
-      relationshipId: relationshipId,
-      interactionType: interactionType,
-      startedAt: DateTime(2026, 8, 17),
-    );
-  }
-
-  @override
-  Future<PendingInteraction?> read() async => remembered;
-
-  @override
-  Future<void> put(PendingInteraction p) async => remembered = p;
-
-  @override
-  Future<void> clear() async => remembered = null;
-}
 
 void main() {
-  final testDate = DateTime(2026, 8, 17, 12);
-  const email = ContactChannel(
-    type: ContactChannelType.email,
-    value: 'pip@example.com',
-  );
-  const mobile = ContactChannel(
-    type: ContactChannelType.mobile,
-    value: '+15550109999',
-  );
-
-  RelationshipEntry person(List<ContactChannel> channels) => RelationshipEntry(
-    meta: Metadata(
-      id: 'rel-1',
-      createdAt: testDate,
-      updatedAt: testDate,
-      dateFrom: testDate,
-      dateTo: testDate,
-    ),
-    data: RelationshipData(
-      title: 'Pip',
-      contactChannels: channels,
-      status: RelationshipStatus.active(
-        id: 'status-1',
-        createdAt: testDate,
-        utcOffset: 0,
-      ),
-    ),
-  );
-
-  late _FakePendingInteractionStore store;
-  var logged = 0;
-  var spoke = 0;
+  late int speaks;
+  late int adds;
 
   setUp(() {
-    store = _FakePendingInteractionStore();
-    logged = 0;
-    spoke = 0;
+    speaks = 0;
+    adds = 0;
   });
 
-  Future<_FakeContactLauncher> pump(
-    WidgetTester tester, {
-    List<ContactChannel> channels = const [],
-    Set<ContactAction> launchable = const {
-      ContactAction.call,
-      ContactAction.message,
-      ContactAction.email,
-    },
-    bool launchSucceeds = true,
-    Size? surface,
-  }) async {
-    if (surface != null) setTestSurfaceSize(tester, surface);
-    final launcher = _FakeContactLauncher(
-      launchable: launchable,
-      launchSucceeds: launchSucceeds,
-    );
+  Future<void> pump(WidgetTester tester, {Size? size}) async {
+    if (size != null) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         RelationshipActionBar(
-          relationship: person(channels),
-          onLogCheckIn: () => logged++,
-          onSpeak: () => spoke++,
+          personName: 'Pip',
+          onSpeak: () => speaks++,
+          onAdd: () => adds++,
         ),
-        overrides: [
-          contactLauncherProvider.overrideWithValue(launcher),
-          pendingInteractionStoreProvider.overrideWithValue(store),
-          // The record button watches the app-wide recorder for this
-          // person's running take.
-          audioRecorderControllerProvider.overrideWith(
-            FakeAudioRecorderController.new,
-          ),
-        ],
       ),
     );
-    await tester.pumpAndSettle();
-    return launcher;
   }
 
-  final channelButton = find.byKey(const ValueKey('person-action-channel'));
-
-  testWidgets('sits on the glass strip with the labelled primary pill and the '
-      'mic, in the interactive accent', (tester) async {
-    await pump(tester);
-
-    expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
-    final pill = tester.widget<DsGlassPill>(
-      find.byKey(const ValueKey('person-action-log-check-in')),
-    );
-    final tokens = tester
-        .element(find.byKey(const ValueKey('person-action-log-check-in')))
-        .designTokens;
-    expect(pill.label, 'Log check-in');
-    expect(pill.fillColor, tokens.colors.interactive.enabled);
-    // Hugging, not stretched: the primary is as wide as its word, the
-    // shape the task and entry bars give theirs.
-    expect(pill.expand, isFalse);
-    // The app's one record button, as the task and entry bars carry it —
-    // not a mic pill of this bar's own.
-    final mic = tester.widget<GlassRecordButton>(
-      find.byKey(const ValueKey('person-action-speak')),
-    );
-    expect(mic.linkedId, 'rel-1');
-    expect(find.text('Dictate'), findsNothing);
-  });
-
-  testWidgets('on a wide window the primary keeps its measure and the '
-      'controls sit centred, like the task bar — never a column-wide slab', (
+  testWidgets('two labelled controls: Speak, the filled primary, and Add', (
     tester,
   ) async {
-    await pump(
-      tester,
-      channels: const [mobile],
-      surface: const Size(1280, 800),
-    );
-
-    final primaryKey = find.byKey(const ValueKey('person-action-log-check-in'));
-    final primary = tester.getRect(primaryKey);
-    final channel = tester.getRect(channelButton);
-    final strip = tester.getRect(find.byType(DesignSystemGlassStrip));
-    final context = tester.element(primaryKey);
-
-    expect(
-      primary.width,
-      closeTo(
-        DsGlassPill.intrinsicWidth(context, label: 'Log check-in'),
-        0.5,
-      ),
-      reason: 'the pill hugs its label',
-    );
-    expect(primary.width, lessThan(strip.width / 3));
-    // The group — primary · Dictate · Call — is centred on the strip.
-    expect(
-      (primary.left + channel.right) / 2,
-      closeTo(strip.center.dx, 0.5),
-    );
-    // Neighbours one `step4` apart, the row's own gap.
-    final tokens = context.designTokens;
-    final mic = tester.getRect(
-      find.byKey(const ValueKey('person-action-speak')),
-    );
-    expect(mic.left - primary.right, closeTo(tokens.spacing.step4, 0.5));
-    expect(channel.left - mic.right, closeTo(tokens.spacing.step4, 0.5));
-  });
-
-  testWidgets('at large text on a narrow phone the controls wrap to a second '
-      'line rather than overflow', (tester) async {
-    setTestSurfaceSize(tester, const Size(320, 640));
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await pump(tester, channels: const [mobile]);
-
-    expect(tester.takeException(), isNull);
-    final primary = tester.getRect(
-      find.byKey(const ValueKey('person-action-log-check-in')),
-    );
-    final channel = tester.getRect(channelButton);
-    expect(
-      channel.top,
-      greaterThan(primary.bottom - 1),
-      reason: 'a second line',
-    );
-  });
-
-  testWidgets('the pill and the mic call back', (tester) async {
     await pump(tester);
 
-    await tester.tap(find.byKey(const ValueKey('person-action-log-check-in')));
-    await tester.tap(find.byKey(const ValueKey('person-action-speak')));
-    await tester.pump();
-
-    expect(logged, 1);
-    expect(spoke, 1);
+    final pills = tester.widgetList<DsGlassPill>(find.byType(DsGlassPill));
+    expect(pills.map((p) => p.label), ['Speak', 'Add']);
+    expect(pills.first.fillColor, isNotNull, reason: 'Speak is the primary');
+    expect(pills.last.fillColor, isNull, reason: 'Add is glass');
+    // No unlabelled discs: every control says what it does.
+    expect(find.byType(DsGlassRoundButton), findsNothing);
   });
 
-  group('the channel control', () {
-    testWidgets('is absent for a person without channels', (tester) async {
-      await pump(tester);
+  testWidgets('each control does its own thing', (tester) async {
+    await pump(tester);
 
-      expect(channelButton, findsNothing);
-    });
+    await tester.tap(find.byKey(const ValueKey('person-action-speak')));
+    await tester.tap(find.byKey(const ValueKey('person-action-add')));
 
-    testWidgets('is absent when nothing is launchable, so the user never taps '
-        'a control that does nothing', (tester) async {
-      await pump(tester, channels: const [mobile, email], launchable: const {});
+    expect(speaks, 1);
+    expect(adds, 1);
+  });
 
-      expect(channelButton, findsNothing);
-    });
+  testWidgets('Add names whose timeline it adds to, for a screen reader', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester);
 
-    testWidgets('offers the first channel the platform can open, in the '
-        "person's own order — a call on a phone", (tester) async {
-      await pump(tester, channels: const [mobile, email]);
+    expect(find.bySemanticsLabel("Add to Pip's timeline"), findsOneWidget);
+    handle.dispose();
+  });
 
-      expect(channelButton, findsOneWidget);
-      expect(find.byIcon(LottiIcons.call), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mail), findsNothing);
-    });
-
-    testWidgets('skips to email where there is no dialer — a desktop', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        channels: const [mobile, email],
-        launchable: const {ContactAction.email},
-      );
-
-      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
-      expect(find.byIcon(LottiIcons.call), findsNothing);
-      // A round glass button at every width, like the task bar's: the word
-      // lives in its accessible name, the row keeps one filled pill and
-      // discs around it.
-      expect(
-        tester.widget<DsGlassRoundButton>(channelButton).semanticLabel,
-        'Email',
-      );
-      expect(find.text('Email'), findsNothing);
-    });
-
-    testWidgets('too narrow for the words, the controls fall back to glyphs '
-        'rather than squeezing the primary', (tester) async {
-      // The labels are budgeted against the row's real width with the
-      // design system's own `intrinsicWidth`, one control at a time. On a
-      // narrow phone the primary keeps its measure and the two trailing
-      // controls stay discs — still labelled for a screen reader, which is
-      // what `semanticLabel` is for.
-      await pump(
-        tester,
-        channels: const [mobile],
-        surface: const Size(320, 640),
-      );
-
-      expect(find.byType(DsGlassPill), findsOneWidget);
-      expect(
-        tester.widget<DsGlassPill>(find.byType(DsGlassPill)).label,
-        'Log check-in',
-      );
-      final channel = tester.widget<DsGlassRoundButton>(channelButton);
-      expect(channel.semanticLabel, 'Call');
-      // The record button is a disc at every width; it never joins the
-      // budgeting.
-      expect(
-        find.byKey(const ValueKey('person-action-speak')),
-        findsOneWidget,
-      );
-      expect(find.byType(GlassRecordButton), findsOneWidget);
-    });
-
-    testWidgets('the glyph fallback still launches the channel', (
-      tester,
-    ) async {
-      final launcher = await pump(
-        tester,
-        channels: const [mobile],
-        surface: const Size(320, 640),
-      );
-
-      await tester.tap(channelButton);
-      await tester.pumpAndSettle();
-
-      expect(launcher.launched, [(mobile, ContactAction.call)]);
-      expect(store.remembered?.relationshipId, person(const []).id);
-    });
-
-    testWidgets('a press launches the channel and remembers the interaction '
-        'for the post-call offer', (tester) async {
-      final launcher = await pump(tester, channels: const [mobile]);
-
-      await tester.tap(channelButton);
-      await tester.pumpAndSettle();
-
-      expect(launcher.launched, [(mobile, ContactAction.call)]);
-      expect(store.remembered?.relationshipId, 'rel-1');
-      expect(store.remembered?.interactionType, CheckInInteractionType.call);
-    });
-
-    testWidgets('a launch the platform refuses remembers nothing and says so', (
-      tester,
-    ) async {
-      await pump(tester, channels: const [mobile], launchSucceeds: false);
-
-      await tester.tap(channelButton);
-      await tester.pumpAndSettle();
-
-      expect(store.remembered, isNull);
-      expect(
-        find.text('Nothing on this device can open that'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('a resolution that started before the channels changed is '
-        'discarded, so a removed channel can never be offered', (
-      tester,
-    ) async {
-      final launcher = _FakeContactLauncher(
-        launchable: const {ContactAction.call, ContactAction.email},
-      );
-      Widget bar(List<ContactChannel> channels) =>
-          makeTestableWidgetWithScaffold(
-            RelationshipActionBar(
-              relationship: person(channels),
-              onLogCheckIn: () {},
-              onSpeak: () {},
-            ),
-            overrides: [
-              contactLauncherProvider.overrideWithValue(launcher),
-              pendingInteractionStoreProvider.overrideWithValue(store),
-              audioRecorderControllerProvider.overrideWith(
-                FakeAudioRecorderController.new,
-              ),
-            ],
-          );
-
-      // The first resolution (mobile → call) is held open...
-      final first = Completer<void>();
-      launcher.gate = first;
-      await tester.pumpWidget(bar(const [mobile]));
-      await tester.pump();
-
-      // ...while the person loses the number; the second resolution runs
-      // unhindered and lands first.
-      launcher.gate = null;
-      await tester.pumpWidget(bar(const []));
-      await tester.pumpAndSettle();
-      expect(channelButton, findsNothing);
-
-      // The stale answer arrives last and must be ignored.
-      first.complete();
-      await tester.pumpAndSettle();
-
-      expect(channelButton, findsNothing);
-      expect(find.byIcon(LottiIcons.call), findsNothing);
-    });
-
-    testWidgets('a rebuilt person with the same channels does not probe the '
-        'platform again — channels compare by value', (tester) async {
-      final launcher = _FakeContactLauncher(
-        launchable: const {ContactAction.call},
-      );
-      Widget bar() => makeTestableWidgetWithScaffold(
-        RelationshipActionBar(
-          // A fresh entity and a fresh list each build.
-          relationship: person([mobile]),
-          onLogCheckIn: () {},
-          onSpeak: () {},
+  testWidgets('at a narrow width and large text the controls wrap rather '
+      'than overflow', (tester) async {
+    await pump(tester, size: const Size(240, 600));
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(
+          size: Size(240, 600),
+          textScaler: TextScaler.linear(2),
         ),
-        overrides: [
-          contactLauncherProvider.overrideWithValue(launcher),
-          pendingInteractionStoreProvider.overrideWithValue(store),
-          // The record button watches the app-wide recorder for this
-          // person's running take.
-          audioRecorderControllerProvider.overrideWith(
-            FakeAudioRecorderController.new,
+        child: makeTestableWidgetWithScaffold(
+          RelationshipActionBar(
+            personName: 'Pip',
+            onSpeak: () {},
+            onAdd: () {},
           ),
-        ],
-      );
+        ),
+      ),
+    );
 
-      await tester.pumpWidget(bar());
-      await tester.pumpAndSettle();
-      final probesAfterFirstBuild = launcher.probes;
-      expect(probesAfterFirstBuild, greaterThan(0));
-
-      await tester.pumpWidget(bar());
-      await tester.pumpAndSettle();
-
-      expect(launcher.probes, probesAfterFirstBuild);
-      expect(channelButton, findsOneWidget);
-    });
-
-    testWidgets('re-resolves when the channels change under it', (
-      tester,
-    ) async {
-      final launcher = _FakeContactLauncher(
-        launchable: const {ContactAction.call, ContactAction.email},
-      );
-      Widget bar(List<ContactChannel> channels) =>
-          makeTestableWidgetWithScaffold(
-            RelationshipActionBar(
-              relationship: person(channels),
-              onLogCheckIn: () {},
-              onSpeak: () {},
-            ),
-            overrides: [
-              contactLauncherProvider.overrideWithValue(launcher),
-              pendingInteractionStoreProvider.overrideWithValue(store),
-              audioRecorderControllerProvider.overrideWith(
-                FakeAudioRecorderController.new,
-              ),
-            ],
-          );
-
-      await tester.pumpWidget(bar(const []));
-      await tester.pumpAndSettle();
-      expect(channelButton, findsNothing);
-
-      await tester.pumpWidget(bar(const [email]));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
-    });
+    expect(tester.takeException(), isNull);
+    final speak = tester.getRect(
+      find.byKey(const ValueKey('person-action-speak')),
+    );
+    final add = tester.getRect(find.byKey(const ValueKey('person-action-add')));
+    expect(add.top, greaterThan(speak.top), reason: 'Add took a second line');
   });
 }
