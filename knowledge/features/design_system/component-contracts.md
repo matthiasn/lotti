@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/features/design_system/components
     title: Design-system components
     last_modified: 2026-09-28
+  - id: timeline-row
+    resource: ../../../lib/features/design_system/components/timeline/design_system_timeline_row.dart
+    title: DesignSystemTimelineRow — one row of a timeline, on its rail
+    last_modified: 2026-10-15
   - id: contact-row
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
@@ -473,6 +477,49 @@ keeps its alert colour on the state word and its age in the meta ink; the
 widget is then a `Text.rich`, and a test reads the chosen wording through
 its span. Hosts: the check-in composer header, the briefing card's status
 line, and the agent identity region's model route and attribution rows.
+
+## Things through time: `DesignSystemTimelineRow`
+
+`DesignSystemTimelineRow`
+([timeline/design_system_timeline_row.dart](../../../lib/features/design_system/components/timeline/design_system_timeline_row.dart))
+is one row of a timeline where rows of different kinds share one grammar:
+calls, notes, voice notes, photos, tasks, meetings, agent suggestions. The
+person page is the first host (ADR 0138).
+
+**Anatomy.**
+
+- A leading `DesignSystemTimelineTile`: a `ControlSizes.iconChipCompact`
+  circle carrying one glyph, compact because the tile marks the row rather
+  than carries it.
+- A hairline rail in `decorative.level01`, running from below the tile to
+  the bottom of the row. The rail is what makes stacked rows read as one line
+  through time.
+- A meta line, centred on the tile, usually a `DsTieredText`.
+- Optional body and footer slots, and a trailing slot aligned with the meta
+  line.
+
+**Layout and shells.**
+
+- Rows sit on the page itself, with no card and no divider. A timeline is
+  the page, not one more box on it.
+- `last` ends the rail at the end of a section.
+- `DesignSystemTimelineSectionHeader` heads each run of rows in the calm
+  eyebrow, upper case, as a semantics header.
+
+**One colour of its own.** A kind is told by its glyph, never by a colour.
+Every tile wears the neutral `background.level03` fill with
+`text.mediumEmphasis` ink. The single exception is the `agent` tone, which
+wears the AI card's background, border and accent, so that what the agent
+wrote or suggests is never mistaken for what the user did.
+
+**Accessibility at construction.**
+
+- `semanticsLabel` is asserted non-blank, and the row speaks as that one
+  sentence: its glyph and text fragments are excluded from semantics.
+- With `onTap` the row is a button with tap and long-press actions, and
+  hover and focus use `GroupedCardRowSurface`'s fill.
+- The trailing slot keeps its own semantics, because a suggestion's ✓ and ✕
+  are real controls.
 
 ## The floating readout: `DsTooltip`
 
