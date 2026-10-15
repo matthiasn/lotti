@@ -144,15 +144,40 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
   /// person's whole check-in history is never deserialized only to be
   /// discarded. Respects the private-entry filter.
   Future<List<Task>> getLiveTasksByIds(Set<String> ids) async {
-    if (ids.isEmpty) return const [];
+    final rows = await _liveRowsOfTypes(ids, types: const {'Task'});
+    return rows
+        .where((row) => row.task)
+        .map(fromDbEntity)
+        .whereType<Task>()
+        .toList();
+  }
+
+  /// The live entities among [ids] whose journal `type` is one of [types],
+  /// for resolving what a person's `RelationshipLink`s point at: the link
+  /// rows alone cannot say whether a target is a check-in, a task, a note or
+  /// a photo, so the kind is filtered on the indexed `type` column before
+  /// any payload is deserialized. Respects the private-entry filter.
+  Future<List<JournalEntity>> getLiveEntitiesOfTypesByIds(
+    Set<String> ids, {
+    required Set<String> types,
+  }) async {
+    final rows = await _liveRowsOfTypes(ids, types: types);
+    return rows.map(fromDbEntity).toList();
+  }
+
+  Future<List<JournalDbEntity>> _liveRowsOfTypes(
+    Set<String> ids, {
+    required Set<String> types,
+  }) async {
+    if (ids.isEmpty || types.isEmpty) return const [];
     final idList = ids.toList(growable: false);
+    final typeList = types.toList(growable: false);
 
     Future<List<JournalDbEntity>> run({List<bool>? privateStatuses}) {
       return (select(journal)..where((t) {
             var predicate =
                 t.id.isIn(idList) &
-                t.type.equals('Task') &
-                t.task.equals(true) &
+                t.type.isIn(typeList) &
                 t.deleted.equals(false);
             if (privateStatuses != null) {
               predicate = predicate & t.private.isIn(privateStatuses);
@@ -162,11 +187,10 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
           .get();
     }
 
-    final rows = await _queryWithPrivateFilter(
+    return _queryWithPrivateFilter(
       allPrivate: run,
       filtered: (statuses) => run(privateStatuses: statuses),
     );
-    return rows.map(fromDbEntity).whereType<Task>().toList();
   }
 
   SimpleSelectStatement<Journal, JournalDbEntity> _relationshipRows({

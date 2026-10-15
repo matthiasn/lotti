@@ -10,6 +10,8 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -132,6 +134,13 @@ void main() {
     when(() => mockDb.getConfigFlag(any())).thenAnswer((_) async => false);
     // No check-in holds entries unless a test says so.
     when(() => mockDb.linksFromIds(any())).thenReturn(MockSelectable([]));
+    // Nothing is on a person's timeline unless a test says so (ADR 0138).
+    when(
+      () => mockDb.typedLinksForTaskIds(any(), types: any(named: 'types')),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+    ).thenReturn(MockSelectable([]));
     // No person is stored unless a test says so: an update reads the stored
     // one to own `importantSince`.
     when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
@@ -1827,6 +1836,92 @@ void main() {
         );
       },
     );
+
+    group("the person's timeline (ADR 0138)", () {
+      Future<void> onTimeline(String to) => db.upsertEntryLink(
+        EntryLink.relationship(
+          id: 'rel-001=>$to',
+          fromId: 'rel-001',
+          toId: to,
+          createdAt: at,
+          updatedAt: at,
+          vectorClock: null,
+        ),
+      );
+
+      setUp(() async {
+        await db.updateJournalEntity(relationshipEntry());
+        await db.updateJournalEntity(
+          JournalEntity.journalEntry(
+            meta: entryMeta('note', at),
+            entryText: const EntryText(plainText: 'Met at the ice summit.'),
+          ),
+        );
+        await db.updateJournalEntity(
+          testImageEntry.copyWith(meta: entryMeta('timeline-photo', at)),
+        );
+        await db.updateJournalEntity(
+          JournalEntity.event(
+            meta: entryMeta('meeting', at),
+            data: const EventData(
+              title: 'Coffee with Pip',
+              stars: 0,
+              status: EventStatus.planned,
+            ),
+          ),
+        );
+        for (final id in ['note', 'timeline-photo', 'meeting', 'task']) {
+          await onTimeline(id);
+        }
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      Future<Set<String>> tombstonedIds() async => verify(
+        () => mockPersistence.updateDbEntity(captureAny()),
+      ).captured.cast<JournalEntity>().map((e) => e.id).toSet();
+
+      test('deleting the person deletes the notes and photos on their '
+          'timeline, never a meeting or a task', () async {
+        expect(await real.deleteRelationship('rel-001'), isTrue);
+
+        final gone = await tombstonedIds();
+        expect(gone, containsAll(['rel-001', 'note', 'timeline-photo']));
+        expect(gone, isNot(contains('meeting')));
+        expect(gone, isNot(contains('task')));
+      });
+
+      test('a timeline photo that a live check-in also holds outlives the '
+          'person only through that check-in, not through the person', () async {
+        await link('c-2', 'timeline-photo');
+
+        await real.deleteRelationship('rel-001');
+
+        // c-2 is tombstoned in the same cascade, so it is no live owner.
+        expect(await tombstonedIds(), contains('timeline-photo'));
+      });
+
+      test('a photo another live entry holds survives the person', () async {
+        await db.updateJournalEntity(taskEntry('other-task', dateFrom: at));
+        await link('other-task', 'timeline-photo');
+
+        await real.deleteRelationship('rel-001');
+
+        expect(await tombstonedIds(), isNot(contains('timeline-photo')));
+      });
+
+      test('deleting a check-in keeps what is still on the timeline of the '
+          'live person', () async {
+        await link('c-1', 'note');
+
+        expect(await real.deleteCheckIn('c-1'), isTrue);
+
+        final gone = await tombstonedIds();
+        expect(gone, containsAll(['c-1', 'take', 'photo']));
+        expect(gone, isNot(contains('note')));
+      });
+    });
 
     // Codex review on #4347: a dictation is recorded against the person, so
     // its recording is linked from the person as well as the check-in —

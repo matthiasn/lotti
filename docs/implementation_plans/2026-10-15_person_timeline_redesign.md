@@ -95,7 +95,7 @@ from how those parts are stacked, so the redesign is a recomposition, not a rewr
 
 | # | Finding |
 |---|---|
-| L1 | Check-ins are kept out of search on purpose (ADR 0037, 0064), but a check-in's **comments and recordings are ordinary entries and are searchable** in the Logbook. Decide this once for the timeline, and fix it for check-in contents in the same stroke (see open question Q3). |
+| L1 | Check-ins are kept out of search on purpose (ADR 0037, 0064), but a check-in's **comments and recordings are ordinary entries and are searchable** in the Logbook. Decided in Q3: search is local-only, so timeline items stay searchable and check-in contents are left as they are. |
 | L2 | `knownTerms` ("Names that come up") is the only free-text field in the editor, and it is a spelling aid, not a notes field. Margit read it as notes. |
 
 ---
@@ -569,5 +569,5 @@ before it is opened, with before/after pairs from the inventory rig published vi
 |---|---|---|
 | Q1 | Bar create control | **+** — the toolbar ⋮ stays "manage this person"; the bar's + opens the create menu. |
 | Q2 | Meetings vs `enableEventsFlag` | **Always on people** — a person's meetings show on their timeline and the Day view regardless; only the Events tab stays gated. |
-| Q3 | Search and embeddings | **Hidden** — notes, voice notes and photos on a person's timeline are excluded from Logbook search and embeddings like check-ins, and check-in contents are fixed to match, in PR 1. |
+| Q3 | Search and embeddings | **Searchable** (revised the same day) — search and embeddings are local-only (Ollama is the sole embedding path) and only the user can run them, so hiding protects nothing; the `private` flag, which timeline items inherit, covers the shared-screen case. Notes, voice notes and photos on a person's timeline are ordinary searchable entries; check-in contents stay as they are. Check-ins themselves stay out of search per ADR 0064 unless revisited. |
 | Q4 | Briefings without reminders | **Out of scope** for this plan (ADR 0111 unchanged). |
