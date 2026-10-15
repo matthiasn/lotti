@@ -1,7 +1,7 @@
 # People — the person timeline redesign
 
-Status: **proposal, awaiting product-owner review.** No production code is written
-until this document is approved. It supersedes the page composition of
+Status: **approved by the product owner on 2026-10-15** (decisions below); PR 1 in
+progress. It supersedes the page composition of
 [2026-09-06_people_redesign.md](2026-09-06_people_redesign.md) (the card stack),
 while keeping the parts of it the panels rated well: the recorder, the cover hero,
 the truthful cadence pills, the post-call loop and the token discipline.
@@ -162,7 +162,7 @@ from how those parts are stacked, so the redesign is a recomposition, not a rewr
 │ …                                    │
 │ Show earlier                         │
 ├──────────────────────────────────────┤
-│ [ 🎙 Speak            ] [✎]  [ + ]    │ sticky glass bar (see Q1 on + vs ⋮)
+│ [ 🎙 Speak            ] [✎]  [ + ]    │ sticky glass bar
 └──────────────────────────────────────┘
 ```
 
@@ -174,7 +174,7 @@ from how those parts are stacked, so the redesign is a recomposition, not a rewr
     "Speak your mind").
   - **✎ Check-in** (`DsGlassRoundButton`, labelled tooltip) opens today's composer
     for a typed or explicit check-in (option A).
-  - **+ / ⋮** (`DsGlassRoundButton`) opens the create menu, as a `DsActionModal` on
+  - **+** (`DsGlassRoundButton`) opens the create menu, as a `DsActionModal` on
     phone and a `DesignSystemContextMenu` on desktop: *Add a note about Pip* ·
     *Create a task for Pip* · *Add photos* · *Plan a meeting* · *Log a check-in*.
   - Call leaves the bar.
@@ -563,24 +563,11 @@ before it is opened, with before/after pairs from the inventory rig published vi
 - **Locally**, only the touched test files run via dart-mcp. CI runs the sharded
   suite.
 
-### Open questions for the product owner
+### Decisions (product owner, 2026-10-15)
 
-- **Q1 — The bar's create button: `+` or `⋮`?** The brief asks for ⋮. The panel
-  advises **+**: the toolbar ⋮ already means "manage this person", and two kebabs
-  with different scopes on one screen confuse users, while a + reads as "add" without
-  a label. *Recommendation: +.*
-- **Q2 — Meetings and the Events flag.** Meetings are `JournalEvent`s, which are
-  hidden everywhere while `enableEventsFlag` is off.
-  - Either *Plan a meeting* requires the flag (and is hidden without it),
-  - or a person's meetings show on their timeline regardless and only the Events tab
-    stays gated.
-  - *Recommendation: the latter.*
-- **Q3 — Search and person notes.** Check-ins are deliberately unsearchable (ADR
-  0037/0064), but their comments and recordings are searchable today (L1).
-  - Should notes, voice notes and photos on a person's timeline be hidden from
-    Logbook search and embeddings like check-ins, or searchable like any entry?
-  - *Recommendation: hidden, and fix check-in contents to match, in PR 1.*
-- **Q4 — Briefings without reminders.** Today a briefing requires turning reminders
-  on (enrolment creates the agent). The panel suggests offering the briefing to anyone
-  with history, separately from the cadence. That touches ADR 0111, so it is out of
-  this plan unless you want it in.
+| # | Question | Decision |
+|---|---|---|
+| Q1 | Bar create control | **+** — the toolbar ⋮ stays "manage this person"; the bar's + opens the create menu. |
+| Q2 | Meetings vs `enableEventsFlag` | **Always on people** — a person's meetings show on their timeline and the Day view regardless; only the Events tab stays gated. |
+| Q3 | Search and embeddings | **Hidden** — notes, voice notes and photos on a person's timeline are excluded from Logbook search and embeddings like check-ins, and check-in contents are fixed to match, in PR 1. |
+| Q4 | Briefings without reminders | **Out of scope** for this plan (ADR 0111 unchanged). |
