@@ -1892,15 +1892,18 @@ void main() {
         expect(gone, isNot(contains('task')));
       });
 
-      test('a timeline photo that a live check-in also holds outlives the '
-          'person only through that check-in, not through the person', () async {
-        await link('c-2', 'timeline-photo');
+      test(
+        'a timeline photo that a live check-in also holds outlives the '
+        'person only through that check-in, not through the person',
+        () async {
+          await link('c-2', 'timeline-photo');
 
-        await real.deleteRelationship('rel-001');
+          await real.deleteRelationship('rel-001');
 
-        // c-2 is tombstoned in the same cascade, so it is no live owner.
-        expect(await tombstonedIds(), contains('timeline-photo'));
-      });
+          // c-2 is tombstoned in the same cascade, so it is no live owner.
+          expect(await tombstonedIds(), contains('timeline-photo'));
+        },
+      );
 
       test('a photo another live entry holds survives the person', () async {
         await db.updateJournalEntity(taskEntry('other-task', dateFrom: at));
