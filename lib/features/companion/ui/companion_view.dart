@@ -26,6 +26,10 @@ class CompanionController {
   /// detached. A silent line can be timed against it.
   double get time => _animator?.time ?? 0;
 
+  /// The gesture the attached view is playing, or null while she stands at
+  /// ready or no view is attached.
+  GestureName? get gesture => _animator?.gesture;
+
   /// Plays [gesture] now; ignored while no view is attached.
   void play(GestureName gesture) => _animator?.play(gesture);
 
@@ -51,6 +55,7 @@ class CompanionView extends StatefulWidget {
     this.lookAt,
     this.autoGestures = true,
     this.controller,
+    this.holding,
     this.seed = 11,
     super.key,
   });
@@ -87,6 +92,11 @@ class CompanionView extends StatefulWidget {
   final bool autoGestures;
   final CompanionController? controller;
 
+  /// A gesture she keeps up for as long as this is set — listening while
+  /// someone records, thinking while something is worked out: played at
+  /// once, and again whenever it relaxes. Null lets her stand at ready.
+  final GestureName? holding;
+
   /// Seeds her blinks, glances and gesture picks.
   final int seed;
 
@@ -117,6 +127,10 @@ class _CompanionViewState extends State<CompanionView>
       oldWidget.controller?._animator = null;
       widget.controller?._animator = _animator;
     }
+    final holding = widget.holding;
+    if (holding != null && holding != oldWidget.holding) {
+      _animator.play(holding);
+    }
   }
 
   @override
@@ -127,6 +141,8 @@ class _CompanionViewState extends State<CompanionView>
   }
 
   CompanionPose _advance(double dt) {
+    final holding = widget.holding;
+    if (holding != null && _animator.gesture == null) _animator.play(holding);
     final track = widget.track;
     final position = widget.playhead?.call();
     return _animator.step(

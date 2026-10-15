@@ -179,6 +179,7 @@ void main() {
     controller.play(GestureName.wave); // Ignored while detached.
 
     expect(controller.time, 0);
+    expect(controller.gesture, isNull);
     await tester.pumpWidget(_host(CompanionView(controller: controller)));
     expect(controller.isAttached, isTrue);
     controller.play(GestureName.wave);
@@ -188,6 +189,40 @@ void main() {
 
     await tester.pumpWidget(_host(const SizedBox()));
     expect(controller.isAttached, isFalse);
+  });
+
+  testWidgets('a held gesture is kept up past its hold, and let go when '
+      'cleared', (tester) async {
+    final controller = CompanionController();
+    await tester.pumpWidget(
+      _host(
+        CompanionView(controller: controller, holding: GestureName.listen),
+      ),
+    );
+
+    // Well past listen's hold: replayed each time it relaxes.
+    await _frames(tester, 4);
+    expect(controller.gesture, GestureName.listen);
+
+    await tester.pumpWidget(_host(CompanionView(controller: controller)));
+    await _frames(tester, 4);
+    expect(controller.gesture, isNull);
+  });
+
+  testWidgets('a new held gesture starts at once', (tester) async {
+    final controller = CompanionController();
+    await tester.pumpWidget(
+      _host(
+        CompanionView(controller: controller, holding: GestureName.listen),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+
+    await tester.pumpWidget(
+      _host(CompanionView(controller: controller, holding: GestureName.think)),
+    );
+
+    expect(controller.gesture, GestureName.think);
   });
 
   testWidgets('a manual blink shuts her eyes', (tester) async {

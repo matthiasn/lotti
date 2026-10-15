@@ -8,10 +8,11 @@ rig, another species.
 **Status: first appearance, behind a flag.** With **Companion**
 (`enable_companion`, Settings › Advanced Settings › Config Flags) and **AI
 summary playback** on, she stands beside a task's AI summary and speaks it
-when its read-aloud control is pressed, and sits in the Day page header,
-briefing the day when tapped. Everywhere else she is in the widgetbook
-only. The plan she comes from, and the branches still ahead (onboarding,
-a mood read from the record, character choice, talking back), is
+when its read-aloud control is pressed, sits in the Day page header,
+briefing the day when tapped, and greets a new user in onboarding. Everywhere
+else she is in the widgetbook only. The plan she comes from, and the branches
+still ahead (a mood read from the record, character choice, talking back,
+nudges), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does

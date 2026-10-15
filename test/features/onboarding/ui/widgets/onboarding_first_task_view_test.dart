@@ -44,6 +44,7 @@ void main() {
     String selectedCategoryId = 'c1',
     bool reduceMotion = true,
     String createdTaskTitle = '',
+    Widget? companion,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -78,6 +79,7 @@ void main() {
               onSuggestionTap: suggestionTaps.add,
               onRatherType: () => ratherTypeTaps++,
               onOpenTask: () => openTaskTaps++,
+              companion: companion,
               transcript: 'call the dentist and book the car service',
               amplitudes: const [0.2, 0.6, 0.4, 0.8, 0.3],
               dbfs: -20,
@@ -448,5 +450,28 @@ void main() {
 
       expect(find.text('Where should this land?'), findsNothing);
     });
+  });
+
+  testWidgets('the companion stands above the headline, hero-avatar sized', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      OnboardingFirstTaskPhase.prompt,
+      companion: const ColoredBox(key: ValueKey('her'), color: Colors.red),
+    );
+
+    final her = tester.getRect(find.byKey(const ValueKey('her')));
+    expect(her.size, const Size.square(ControlSizes.avatarHero));
+    expect(
+      her.bottom,
+      lessThan(tester.getTopLeft(find.text('Create your first task')).dy),
+    );
+  });
+
+  testWidgets('without a companion, the headline leads', (tester) async {
+    await pumpView(tester, OnboardingFirstTaskPhase.prompt);
+
+    expect(find.byKey(const ValueKey('her')), findsNothing);
   });
 }
