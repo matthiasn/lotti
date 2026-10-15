@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -16,7 +17,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('each fact is a medium-emphasis caption over a body line, the '
+  testWidgets('each fact is a medium-emphasis label over a body line, the '
       'words carrying the key', (tester) async {
     await pump(tester, const [
       (
@@ -31,9 +32,14 @@ void main() {
     final body = tester.widget<Text>(find.byKey(attention));
     expect(body.data, 'The krill deadline.');
     expect(caption.style?.color, tokens.colors.text.mediumEmphasis);
+    // The page's one label style, not a caption of its own.
     expect(
       caption.style?.fontSize,
-      tokens.typography.styles.others.caption.fontSize,
+      calmEyebrowStyle(tokens).fontSize,
+    );
+    expect(
+      caption.style?.fontWeight,
+      calmEyebrowStyle(tokens).fontWeight,
     );
     expect(body.style?.color, tokens.colors.text.highEmphasis);
     expect(

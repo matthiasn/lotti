@@ -1,4 +1,5 @@
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One "next time" fact: its caption (`Pay attention to`, `Better to
@@ -27,11 +28,13 @@ class NextTimeFacts extends StatelessWidget {
           // Grouped by proximity: a label sits tight on its words, and the
           // pairs stand apart.
           if (index > 0) SizedBox(height: tokens.spacing.step4),
-          // Medium, not low emphasis: the label is the key to the words under
-          // it, and was the faintest text on the page.
+          // The page's one label style — the calm eyebrow the category and
+          // the timeline's sections wear — in the medium ink: the label is
+          // the key to the words under it.
           Text(
             fact.caption,
-            style: tokens.typography.styles.others.caption.copyWith(
+            style: calmEyebrowStyle(
+              tokens,
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),

@@ -708,7 +708,7 @@ class PersonHeaderBlock extends StatelessWidget {
             // cost it the measure the category name needs.
             style: calmEyebrowStyle(
               tokens,
-              color: tokens.colors.text.lowEmphasis,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
           SizedBox(height: tokens.spacing.step2),

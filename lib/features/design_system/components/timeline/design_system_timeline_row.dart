@@ -236,8 +236,8 @@ class DesignSystemTimelineRow extends StatelessWidget {
 }
 
 /// The heading over a run of timeline rows — *Upcoming*, *This week*,
-/// *August* — in the calm eyebrow, aligned with the rows' text column, with
-/// an optional [trailing] control (a filter, a count).
+/// *August* — in the calm eyebrow as written, aligned with the rows' text
+/// column, with an optional [trailing] control (a filter, a count).
 class DesignSystemTimelineSectionHeader extends StatelessWidget {
   const DesignSystemTimelineSectionHeader({
     required this.label,
@@ -264,9 +264,15 @@ class DesignSystemTimelineSectionHeader extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
+              // The calm eyebrow as it is everywhere else — as written, in the
+              // medium ink — not an upper-cased variant of it: one label style
+              // on a page, not two (product owner, 2026-10-15).
               child: Text(
-                label.toUpperCase(),
-                style: calmEyebrowStyle(tokens),
+                label,
+                style: calmEyebrowStyle(
+                  tokens,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
             ),
             ?trailing,

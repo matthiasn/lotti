@@ -10,15 +10,18 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 
 /// In-memory stand-in for the settings-backed marker store, so the prompt's
 /// reads and clears are both scriptable and observable.
@@ -122,13 +125,21 @@ void main() {
     startedAt: startedAt ?? DateTime(2026, 8, 17, 11, 30),
   );
 
+  /// The app-wide recorder. *Yes, log it* opens the composer recording;
+  /// this one refuses to start unless a test says otherwise, so the tests
+  /// about what the form is prefilled with read the typed form it falls
+  /// back to.
+  late FakeAudioRecorderController recorder;
+
   Future<_FakePendingInteractionStore> pump(
     WidgetTester tester, {
     PendingInteraction? pending,
     RelationshipEntry? resolves,
     double bottomGap = 0,
     String relationshipId = 'rel-1',
+    AudioRecordingFailure? recordFailure = AudioRecordingFailure.busy,
   }) async {
+    recorder = FakeAudioRecorderController(recordFailure: recordFailure);
     final store = _FakePendingInteractionStore(pending);
     when(
       () => repository.getRelationshipById(any()),
@@ -144,6 +155,10 @@ void main() {
           overrides: [
             pendingInteractionStoreProvider.overrideWithValue(store),
             relationshipRepositoryProvider.overrideWithValue(repository),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              StubCheckInTranscriptionService(),
+            ),
           ],
         ),
       );
@@ -378,6 +393,24 @@ void main() {
   });
 
   group('accepting', () {
+    // Right after a call, speaking is the quickest way to say what it was
+    // about: the composer opens recording against the person.
+    testWidgets('opens the composer recording against the person', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(),
+        resolves: person(),
+        recordFailure: null,
+      );
+
+      await tester.tap(find.text('Yes, log it'));
+      await tester.pumpAndSettle();
+
+      expect(recorder.recordCalls.map((c) => c.linkedId), ['rel-1']);
+    });
+
     testWidgets('takes the marker while the form is open, so the offer does '
         'not ask about a call already being logged', (tester) async {
       final store = await pump(

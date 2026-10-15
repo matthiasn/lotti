@@ -504,7 +504,8 @@ person page is the first host (ADR 0138).
   the page, not one more box on it.
 - `last` ends the rail at the end of a section.
 - `DesignSystemTimelineSectionHeader` heads each run of rows in the calm
-  eyebrow, upper case, as a semantics header.
+  eyebrow, as written and in the medium ink, as a semantics header. It is
+  the page's one label style, not an upper-cased variant of it.
 
 **One colour of its own.** A kind is told by its glyph, never by a colour.
 Every tile wears the neutral `background.level03` fill with

@@ -330,16 +330,19 @@ void main() {
     testWidgets('on a phone it folds to one line until opened', (
       tester,
     ) async {
+      final handle = tester.ensureSemantics();
       await pumpAbout(tester, compact: true);
 
       expect(find.byKey(const ValueKey('person-about-preview')), findsOne);
-      expect(find.text('4 notes'), findsOneWidget);
+      // One row; how many notes it holds is said to a screen reader.
+      expect(find.bySemanticsLabel('About Pip · 4 notes'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('person-about-toggle')));
       await tester.pump();
 
       expect(find.byKey(const ValueKey('person-about-preview')), findsNothing);
       expect(find.text('pinned 3'), findsOneWidget);
+      handle.dispose();
     });
 
     testWidgets('renders nothing when nothing is pinned', (tester) async {

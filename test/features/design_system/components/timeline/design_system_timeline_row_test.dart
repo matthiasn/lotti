@@ -190,8 +190,8 @@ void main() {
     expect(inkOf('agent'), tokens.colors.aiCard.accent);
   });
 
-  testWidgets('the section header is a heading, set as an eyebrow in upper '
-      'case', (tester) async {
+  testWidgets('the section header is a heading, set in the calm eyebrow as '
+      'written', (tester) async {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       makeTestableWidget2(
@@ -204,10 +204,10 @@ void main() {
       ),
     );
 
-    expect(find.text('THIS WEEK'), findsOneWidget);
+    expect(find.text('This week'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(
-      tester.getSemantics(find.text('THIS WEEK')).flagsCollection.isHeader,
+      tester.getSemantics(find.text('This week')).flagsCollection.isHeader,
       isTrue,
     );
     handle.dispose();
