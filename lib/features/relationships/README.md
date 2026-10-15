@@ -144,7 +144,8 @@ agent reads.
 
 People live in the People tab. Their check-ins also appear in the Logbook,
 as a filter type of their own, named for the person and opening on the
-person's page; a person's name is still not searchable from global search. Data stays on-device and syncs through the user's own end-to-end
+person's page. Check-ins are found by a Logbook search like any entry;
+a person's name alone is not a search term. Data stays on-device and syncs through the user's own end-to-end
 encrypted Matrix rooms. Private people are hidden from both list and detail
 routes when private entries are hidden; new check-ins inherit that privacy.
 Contact channels never enter agent context.

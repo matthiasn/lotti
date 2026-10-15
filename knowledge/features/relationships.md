@@ -221,12 +221,15 @@ opens-elsewhere glyph, as an event row does. `Relationship` is not in
 `entryTypes`; its card branch exists only because the switch over the
 sealed union is exhaustive. A Logbook selection saved before `CheckIn`
 existed gains it once (see [browse and linking](journal/browse-and-linking.md)).
-**Search never returns them**: a Logbook text search drops `CheckIn` from
-the queried types (`JournalQueryRunner.runQuery`), and check-ins are not
-embedded, so neither a person's name nor a check-in's note is findable
-outside the People tab — a privacy posture (ADR 0037: relationship data
-describes third parties), not an oversight. The People list itself is short
-by design and needs no local search.
+**Search returns them** like any entry (ADR 0139, superseding ADR 0064
+decision 3): a Logbook text search queries `CheckIn` with the other selected
+types, and the full-text index carries a check-in's note, its topics and its
+*Pay attention to* / *Avoid* lines (`Fts5Db.insertText`). Search runs on the
+device for its own user, so hiding them protected nothing; the `private`
+flag a check-in inherits from its person hides it in search as in the feed.
+Check-ins are not embedded — vector search resolves its hits to tasks only.
+A person is still not a Logbook type, so a name alone is not a search term.
+The People list itself is short by design and needs no local search.
 
 # Bound twice, on purpose
 

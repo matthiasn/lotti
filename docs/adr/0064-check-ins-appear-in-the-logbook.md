@@ -1,6 +1,7 @@
 # ADR 0064: Check-ins Appear in the Logbook
 
-- Status: Accepted
+- Status: Accepted — decision 3 (search) superseded by
+  [ADR 0139](./0139-check-ins-are-searchable.md)
 - Date: 2026-09-19
 - Amends: ADR 0038 Decision 2 (where check-ins are shown); keeps ADR 0037's
   search boundary

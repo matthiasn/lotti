@@ -55,7 +55,8 @@ Two links already run from a person to journal entries:
      and only the user can run them, so excluding these entries would protect
      nothing.
    - The `private` flag, which they inherit, covers the shared-screen case.
-   - Check-ins themselves stay out of search, as ADR 0064 decided.
+   - Check-ins themselves became searchable too, by
+     [ADR 0139](./0139-check-ins-are-searchable.md).
 6. **The briefing reads the timeline.**
    - ADR 0040 decision 4's context boundary gains bounded sections: pinned
      and recent notes, voice-note transcripts, and upcoming meetings.
