@@ -1954,6 +1954,76 @@
   "dailyOsNextBlockMoveTooltip": "Přesunout blok",
   "dailyOsNextBlockResizeEndTooltip": "Upravit konec",
   "dailyOsNextBlockResizeStartTooltip": "Upravit začátek",
+  "dailyOsNextBriefingBlockCount": "{count, plural, =0{Zatím nemáš nic naplánováno.} =1{Máš naplánovaný jeden blok.} few{Máš naplánované {count} bloky.} other{Máš naplánováno {count} bloků.}}",
+  "@dailyOsNextBriefingBlockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingFree": "Ve tvém dni zbývá ještě {duration} volného času.",
+  "@dailyOsNextBriefingFree": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFullyBooked": "Tvůj den je plně obsazený.",
+  "dailyOsNextBriefingHours": "{count, plural, =1{1 hodina} few{{count} hodiny} other{{count} hodin}}",
+  "@dailyOsNextBriefingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingHoursAndMinutes": "{hours} a {minutes}",
+  "@dailyOsNextBriefingHoursAndMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingLongest": "Nejdelší je {title}, s délkou {duration}.",
+  "@dailyOsNextBriefingLongest": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingMinutes": "{count, plural, =1{1 minuta} few{{count} minuty} other{{count} minut}}",
+  "@dailyOsNextBriefingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingNext": "Další v {time}: {title}.",
+  "@dailyOsNextBriefingNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingNoPlan": "Pro tento den zatím nemáš plán. Krátký check-in ho vytvoří.",
+  "dailyOsNextBriefingNothingLeft": "Na dnešek už nemáš nic naplánováno.",
+  "dailyOsNextBriefingPlayTooltip": "Poslechni si svůj den",
+  "dailyOsNextBriefingStopTooltip": "Zastavit přehled",
   "dailyOsNextCaptureCaptured": "Rozumím.",
   "dailyOsNextCaptureDoneCta": "Hotovo",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Nahrávku se nepodařilo uložit.",

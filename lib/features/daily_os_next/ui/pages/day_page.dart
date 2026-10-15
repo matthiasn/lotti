@@ -20,6 +20,7 @@ import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
@@ -364,6 +365,10 @@ class _DayPageState extends ConsumerState<DayPage> {
               onInspectAgent: () => unawaited(_openAgentInternals()),
               onSettings: () => nav_service.beamToNamed('/settings/daily-os'),
               onDeletePlan: () => unawaited(_confirmDeletePlan()),
+              companion: DayBriefingCompanion(
+                draft: widget.draft,
+                hasPlan: widget.hasPlan,
+              ),
             ),
             if (setupStatus?.needsAttention ?? false)
               _DailyOsSetupNudge(

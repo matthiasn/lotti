@@ -8,10 +8,10 @@ rig, another species.
 **Status: first appearance, behind a flag.** With **Companion**
 (`enable_companion`, Settings › Advanced Settings › Config Flags) and **AI
 summary playback** on, she stands beside a task's AI summary and speaks it
-when its read-aloud control is pressed. Everywhere else she is in the
-widgetbook only. The plan she comes from, and the branches still ahead (the
-Daily OS briefing, onboarding, a mood read from the record, character choice,
-talking back), is
+when its read-aloud control is pressed, and sits in the Day page header,
+briefing the day when tapped. Everywhere else she is in the widgetbook
+only. The plan she comes from, and the branches still ahead (onboarding,
+a mood read from the record, character choice, talking back), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does
@@ -64,8 +64,8 @@ in as widget parameters.
 She is drawn through `SupersampledPainter`, 4 samples per pixel on Linux and
 none elsewhere, because Impeller on a GL driver without multisampling (as in
 a Linux VM) draws paths without anti-aliasing: her outline would show stair
-steps that crawl as she moves. In the app she is framed head to toe, both
-hands in view in every gesture. `stage: true` stands her on the pitch
+steps that crawl as she moves. Beside the summary she is framed head to toe,
+both hands in view in every gesture; in the Day header, as a bust. `stage: true` stands her on the pitch
 videos' dark stage (`rig/stage_painter.dart`).
 
 ## Where she comes from

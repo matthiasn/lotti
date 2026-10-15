@@ -185,6 +185,30 @@ stateDiagram-v2
   again, while every date-change path (chevrons, `Today`, the picker, the
   sidebar month calendar) keeps whichever view the user picked.
 
+## The day briefing
+
+With `enable_companion` and `enable_ai_summary_tts` on and a device voice,
+the [companion](../companion.md) leads the header's actions as a bust,
+`ControlSizes.avatar` square (`DayBriefingCompanion`,
+`ui/widgets/day_briefing_companion.dart`). Off, she takes no room, so the
+header lays out exactly as before.
+
+- **Daily OS writes the words, she speaks them.** A tap computes
+  `DayBriefing.of` (`logic/day_briefing.dart`) from the page's `DraftPlan`
+  as of `clock.now()`, and `composeDayBriefing` turns it into localized
+  sentences: how many blocks are planned, the next block and its start, the
+  longest block, and the time still free. Without a plan she only invites a
+  check-in. There is no model call.
+- **What counts.** Buffers and dropped blocks are not planned work. Free time
+  is `capacityMinutes − scheduledMinutes`, the same numbers the capacity ring
+  reads. "Nothing else is planned" is said only on today.
+- **One utterance per day.** The `sourceId` is `day-briefing:<yyyy-MM-dd>`,
+  so stepping to another day never animates her for the last day's words. A
+  tap while the voice is preparing or playing her utterance stops it. The
+  voice ignores `speak` while any utterance is busy, so a tap while another
+  one is (another day's briefing, a task summary) stops that one first and
+  then briefs.
+
 ## Tracked time
 
 "Today so far" is one shared widget, `TimeSpentCard`: calm eyebrow plus

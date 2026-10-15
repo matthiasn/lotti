@@ -4517,6 +4517,77 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Start anpassen';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Du hast $count Blöcke geplant.',
+      one: 'Du hast einen Block geplant.',
+      zero: 'Noch ist nichts geplant.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Du hast noch $duration frei.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Dein Tag ist voll verplant.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Stunden',
+      one: '1 Stunde',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours und $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Am längsten ist $title, mit $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Minuten',
+      one: '1 Minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Als Nächstes um $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Für diesen Tag gibt es noch keinen Plan. Ein kurzes Check-in erstellt einen.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Für heute ist nichts mehr geplant.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Deinen Tag anhören';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Briefing stoppen';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Hab\'s.';
 
   @override

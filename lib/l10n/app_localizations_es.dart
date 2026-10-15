@@ -4544,6 +4544,77 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustar inicio';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tienes $count bloques planificados.',
+      one: 'Tienes un bloque planificado.',
+      zero: 'Todavía no hay nada planificado.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Todavía tienes $duration sin planificar.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Tu día está completo.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count horas',
+      one: '1 hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours y $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'El más largo es $title, con $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutos',
+      one: '1 minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'A continuación, a las $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Todavía no hay un plan para este día. Un breve check-in creará uno.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'No queda nada más planificado para hoy.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Escuchar tu día';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Detener el resumen';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Entendido.';
 
   @override

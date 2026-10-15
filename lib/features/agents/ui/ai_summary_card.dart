@@ -34,6 +34,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -580,17 +581,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         : null;
 
     // Surface a toast when playback fails for this card's summary.
-    ref.listen(ttsPlaybackControllerProvider, (previous, next) {
-      if (next.status == TtsPlaybackStatus.error &&
-          next.sourceId == widget.taskId &&
-          previous?.status != TtsPlaybackStatus.error) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.commonError,
-          clearQueue: true,
-        );
-      }
-    });
+    listenForPlaybackFailure(ref, context, widget.taskId);
 
     final agentState = ref
         .watch(agentStateProvider(agentId))

@@ -63,7 +63,7 @@ speaks.
 She ranks just above `tts` in the layer order
 (`tool/architecture/layer_guard.dart`): she imports the voice and the design
 system, and every surface that shows her ranks above her. So the words she
-says are always the host's — the task agent's summary, later the day's plan —
+says are always the host's — the task agent's summary, the day's plan —
 and she never reaches up for data.
 
 # The frame loop
@@ -207,11 +207,16 @@ sequenceDiagram
   utterance gets a fresh clock: two clips both open at zero, and a clock that
   still held the first one's zero would start the second at its full lead.
 
-In the app she is shown in `CompanionFraming.full`: head to toe, wide enough
-that both wrists stay inside it with room for the hand in every gesture (a
-test walks each gesture through its phases). Her box is
-`ControlSizes.companionCard` high, its width following from
-`CompanionFraming.aspectRatio`.
+She has two hosts, each with its own framing:
+
+| Host | Framing | Box | Utterance (`sourceId`) |
+|---|---|---|---|
+| AI summary card (`agents/ui/ai_summary_card.dart`) | `full` | `ControlSizes.companionCard` high, width from `CompanionFraming.aspectRatio` | the task id |
+| Day page header ([Daily OS](daily_os_next/ui-surfaces.md#the-day-briefing)) | `bust` | `ControlSizes.avatar` square | `day-briefing:<yyyy-MM-dd>` |
+
+`full` is head to toe, wide enough that both wrists stay inside it with room
+for the hand in every gesture (a test walks each gesture through its phases).
+`bust` is head, shoulders and raised hands, square, for small sizes.
 
 # Gotchas
 

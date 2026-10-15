@@ -4529,6 +4529,77 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustar início';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tens $count blocos planeados.',
+      one: 'Tens um bloco planeado.',
+      zero: 'Ainda não há nada planeado.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Ainda tens $duration por planear.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'O teu dia está cheio.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count horas',
+      one: '1 hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours e $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'O mais longo é $title, com $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutos',
+      one: '1 minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'A seguir, às $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Ainda não há um plano para este dia. Um check-in rápido cria um.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Não há mais nada planeado para hoje.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Ouvir o teu dia';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Parar o resumo';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Entendi.';
 
   @override

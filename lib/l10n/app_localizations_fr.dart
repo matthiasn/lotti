@@ -4553,6 +4553,77 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajuster le début';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tu as $count blocs prévus.',
+      one: 'Tu as un bloc prévu.',
+      zero: 'Rien n\'est encore prévu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Il te reste $duration de libre dans ta journée.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Ta journée est complète.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count heures',
+      one: '1 heure',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours et $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Le plus long est $title, avec $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Ensuite, à $time : $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Il n\'y a pas encore de plan pour cette journée. Un petit point rapide en créera un.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Plus rien n\'est prévu pour aujourd\'hui.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Écouter ta journée';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Arrêter le résumé';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'C\'est noté.';
 
   @override

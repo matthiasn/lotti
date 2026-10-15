@@ -4466,6 +4466,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Adjust start';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have $count blocks planned.',
+      one: 'You have one block planned.',
+      zero: 'Nothing is planned yet.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return '$duration of your day is still free.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Your day is fully booked.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours and $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'The longest is $title, at $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Next up at $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'There\'s no plan for this day yet. A short check-in will make one.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Nothing else is planned for today.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Hear your day';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Stop the briefing';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Got it.';
 
   @override

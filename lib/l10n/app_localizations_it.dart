@@ -4540,6 +4540,77 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Regolare l\'inizio';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Hai $count blocchi in programma.',
+      one: 'Hai un blocco in programma.',
+      zero: 'Non c\'è ancora niente in programma.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Hai ancora $duration a disposizione.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'La tua giornata è al completo.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ore',
+      one: '1 ora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours e $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Il più lungo è $title, con $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minuti',
+      one: '1 minuto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Il prossimo alle $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Non c\'è ancora un piano per questa giornata. Un breve check-in ne creerà uno.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Per oggi non c\'è più niente in programma.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Ascolta la tua giornata';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Ferma il riepilogo';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Ricevuto.';
 
   @override

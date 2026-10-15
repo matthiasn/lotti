@@ -1,20 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/state/spoken_track.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../tts/test_utils.dart';
 import 'day_page_test_helpers.dart';
 
 /// Layout tests for the day header's custom render object
@@ -223,6 +233,43 @@ void main() {
         find.text('Krill deliveries go better before 10am'),
         findsOneWidget,
       );
+    });
+  });
+  group('DayHeader companion', () {
+    testWidgets('she leads the actions, level with the agent chip', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1024, 900));
+      await tester.pumpWidget(
+        wrapDayPage(
+          DayPage(draft: draftedPlan()),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(1024, 900),
+          ),
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(
+                flagName == enableCompanionFlag ||
+                    flagName == enableAiSummaryTtsFlag,
+              ),
+            ),
+            ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+            spokenTrackLoaderProvider.overrideWithValue(
+              (clip, text) => Completer<MouthTrack>().future,
+            ),
+          ],
+        ),
+      );
+      // Her ticker never settles: pump frames rather than settle.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+
+      final her = tester.getRect(find.byType(CompanionSpeaker));
+      final chip = tester.getRect(find.byType(DayAgentStatusChip));
+      expect(her.right, lessThanOrEqualTo(chip.left));
+      expect(her.center.dy, closeTo(chip.center.dy, 0.5));
+      expect(tester.takeException(), isNull);
     });
   });
 }
