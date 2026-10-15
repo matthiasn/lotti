@@ -1,8 +1,8 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13), shown in the widgetbook only — see "Proof of concept"
-Branch: `feat/onboarding-guided-first-task`
+Status: proof of concept built (2026-10-13), shown in the widgetbook only — see "Proof of concept"; delivery planned as a branch stack (2026-10-15) — see "Delivery"
+Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
 [2026-10-07_tutorial_avatar_and_onboarding_video.md](2026-10-07_tutorial_avatar_and_onboarding_video.md)
@@ -261,6 +261,10 @@ baselined.
 Phases 0–2 are the proof of concept: one character, talking, in one place.
 That is enough to judge whether it is worth the rest, and enough to film.
 
+These phases are superseded by "Delivery" below: the proof of concept took
+a shorter road, so phases 0 and 1 are done or dropped, and the rest is cut
+into branches.
+
 ## Proof of concept (2026-10-13)
 
 A first cut of phases 1 and 2 exists in `lib/features/companion/`, behind no
@@ -294,6 +298,186 @@ the phases above:
   setting does not), and any localized line.
 
 The feature's README has the map of the code.
+
+## Delivery: a stack of branches (2026-10-15)
+
+`feat/companion-widgetbook` (PR #4782) is the parent: the rig, the three
+species and the widgetbook. Every branch below starts from the tip of the one
+above it, is one PR with that branch as its base, and is one commit. When a
+parent is amended or merged, its child is rebased onto it
+(`git rebase --onto <parent> <old-parent-tip>`).
+
+```mermaid
+flowchart TD
+  P["feat/companion-widgetbook<br/>PR #4782: rig + widgetbook"] --> B1
+  B1["1 · feat/companion-speaks<br/>voice binding, flag, task summary card"] --> B2
+  B2["2 · feat/companion-day-briefing<br/>Daily OS briefs the day"] --> B3
+  B3["3 · feat/companion-onboarding<br/>greets, listens, celebrates"] --> B4
+  B4["4 · feat/companion-mood<br/>mood from the record"] --> B5
+  B5["5 · feat/companion-character-choice<br/>species + look, synced"] --> B6
+  B6["6 · feat/companion-talk-back<br/>hold her to talk"] --> B7
+  B7["7 · feat/companion-nudges<br/>nudges and celebrations"]
+```
+
+Branches 1–3 are the investor demo: she briefs the day, reads what is left on
+a task, and greets a new user. Everything after makes her a product.
+
+### Two decisions every branch inherits
+
+- **Her rank in the layer order moves down.** `companion` sits between
+  `daily_os_next` and `onboarding` in `tool/architecture/layer_guard.dart`,
+  so Daily OS, the agents and the tasks cannot mount her. She imports only
+  herself and `design_system` today, and branch 1 adds `tts`. Branch 1 moves
+  her to directly after `tts`. Every host is then above her, and the words
+  she says are written by the host that owns the data (Daily OS writes the
+  briefing, the task agent the summary), never by the companion. Anything
+  she needs from higher up (the chosen character, branch 5) is handed down
+  by inversion, not imported.
+- **The voice stays ignorant of her.** `tts` never imports `companion`.
+  `TtsPlaybackState` gains one field, the path of the clip being played; the
+  companion reads the clip itself and builds the mouth from it.
+
+### 1 · `feat/companion-speaks`: her mouth on the on-device voice
+
+The binding everything else uses, with one real host so it is not unused code.
+
+- **Layer order.** Move `companion` to directly after `tts`; `make
+  layer_check` green, no baseline entry added.
+- **`TtsPlaybackState.clipPath`.** Set when the status turns `playing`,
+  cleared on stop, completion and error. Documented in the tts concept.
+- **`CompanionSpeech`** (`companion/state/`). For one `sourceId` and the
+  text the host asked to speak, it watches `ttsPlaybackControllerProvider`.
+  When that source starts playing, it reads the clip once
+  (`SpeechEnvelope.fromWav`; Supertonic writes 16-bit PCM, which `fromWav`
+  takes) and builds a `VoicedTextTrack`. If the clip cannot be read, the
+  fallback is `TextLipSync` on the text. Another source playing, or none,
+  leaves her silent. It changes only when an utterance starts or ends:
+  per-frame values never pass through a provider.
+- **`PlayheadClock`.** The player reports its position in coarse steps. The
+  clock extrapolates between reports from a monotonic stopwatch, scaled by
+  the playback speed, so the mouth moves every frame and still re-syncs on
+  every report.
+- **`CompanionSpeaker`** (`companion/ui/`). `CompanionView` plus the
+  binding. The host gives a `sourceId`, the text, a look, a mood and a
+  framing.
+- **`CompanionFraming.torso`.** Head to hips, both hands in view.
+- **Flag `enable_companion`.** Seeded off, in the advanced group, with labels
+  in every catalog. She is shown only when this flag is on and the speak
+  control is shown (`enable_ai_summary_tts` on, engine supported).
+- **First host: the AI summary card** (`agents/ui/ai_summary_card.dart`). She is
+  framed at the torso, beside the TL;DR. She speaks when its speak control
+  plays, through the same `sourceId`.
+- **Tests:**
+  - binding: silent for another source; the clip becomes a track; an
+    unreadable clip falls back to the text; stop clears the track;
+  - the clock, under `fakeAsync`;
+  - the card with the flag on and off;
+  - `clipPath` across the playback states.
+
+  Each regression test is re-run with its fix reverted.
+- **Docs:** the companion README and concept (the binding, with a diagram),
+  the tts concept (`clipPath`), and the layer-order rationale. No changelog
+  fragment, because the flag is off.
+
+**Commit:** `feat(companion): she speaks the task summary, her mouth on the on-device voice`
+
+### 2 · `feat/companion-day-briefing`: she tells you what your day looks like
+
+- **`DayBriefing`** (`daily_os_next/logic/`). A pure function from
+  `DayPlanData`, the plan's tasks and `now` to a few localized sentences, for
+  example: how many blocks are planned, the next block's title and time, the
+  longest block, and minutes left unscheduled (`remainingMinutes`). With no
+  plan, it invites a check-in. It uses data only, with no model call, and
+  ICU plurals in every catalog.
+- **A briefing slot on the Day page,** by the header. She briefs when tapped
+  (`sourceId` `day-briefing:<date>`). An auto-brief on the first visit of the
+  day is a Daily OS setting, off by default. Her mood is `calm` until
+  branch 4.
+- **Tests:**
+  - `DayBriefing`, one test per sentence, on deterministic dates;
+  - a glados property that every block count yields a sentence in every
+    locale;
+  - the slot, with the flag on and off.
+
+**Commit:** `feat(daily-os): the companion briefs the day from the plan`
+
+### 3 · `feat/companion-onboarding`: the first minute has a face
+
+- She replaces the hero of the welcome step. Then she follows the
+  first-capture flow:
+  - `listen` while the user records;
+  - `think` while the task is structured;
+  - `celebrate` when it appears.
+- **The voice is not there yet on a first run.** The model weights download
+  on the first synthesis, so onboarding cannot rely on her voice. Lines are
+  captions; she speaks them only when the model is already installed.
+- **Tests:** the gesture for each first-capture state, and captions with the
+  model absent.
+
+**Commit:** `feat(onboarding): the companion greets, listens and celebrates the first task`
+
+### 4 · `feat/companion-mood`: her mood follows the record, without guilt
+
+- A mood provider in `daily_os_next/state/`, because that feature owns
+  capacity and due tasks. It implements the "Mood without guilt" diagram,
+  only the states the data can reach, and the diagram is corrected to match
+  the code.
+- It recomputes on database notifications, never on a timer, and keeps the
+  last mood while reloading.
+- Hosts pass the mood. She never notifies.
+- **Tests:** one test per diagram edge, on deterministic dates.
+
+**Commit:** `feat(companion): her mood follows the day, without guilt`
+
+### 5 · `feat/companion-character-choice`: grandma, cat or red panda
+
+- A species-and-look picker in settings, with a live preview.
+- The choice syncs the way the theme selection does (`features/theming`).
+- Hosts sit above the store but she sits below it. So the shell provides the
+  choice to her through a `CompanionLookScope` that she reads, instead of her
+  importing the store.
+- **Tests:** the picker; the choice survives a restart; the scope reaches a
+  host.
+
+**Commit:** `feat(companion): choose her — grandma, cat or red panda — synced across devices`
+
+### 6 · `feat/companion-talk-back`: hold her to talk
+
+- Press and hold her to record with the existing recorder.
+  - On a task or project, the words go to its query chat (`QueryCompanion`
+    scope), and she speaks the answer through `query_audio_controller`.
+  - On Daily OS, they go to refine, so you can say "push the dentist to
+    tomorrow".
+- She plays `listen` while recording and `think` while waiting.
+- **Tests:** routing for each host, and the gestures for each state.
+
+**Commit:** `feat(companion): hold her to talk, and she answers`
+
+### 7 · `feat/companion-nudges`: nudges and celebrations
+
+- The nudge banner dock shows her, with a mood for each nudge kind.
+- A habit streak plays `celebrate`.
+- The shutdown recap gets one spoken line.
+- **Tests:** one test per nudge kind, plus the streak trigger.
+
+**Commit:** `feat(companion): she delivers nudges and celebrates streaks`
+
+### Decisions (2026-10-15)
+
+- **Framing: torso and hands, never the legs.** In the app she is shown from
+  the head to just below the hips, so her hands are in view even when they
+  rest. Branch 1 adds a `CompanionFraming.torso` window for this, set by
+  rendering every gesture in the widgetbook so that no resting or raised
+  hand leaves the window. `full` stays for the widgetbook and the videos,
+  and `bust` stays for small sizes.
+- **Her own flag, `enable_companion`.** A demo can show her without turning
+  on the voice everywhere.
+- **Naming.** The chat side pane is `QueryCompanion`. She is
+  `CompanionSpeaker`, and the docs say which is which.
+- **Still open: the size of her box on the summary card and in the Day
+  header.** This is a container dimension, so it belongs in
+  `sizing_tokens.dart` as a named token, not as a number in the host. It
+  needs the owner's approval before it is added.
 
 ## Testing
 
