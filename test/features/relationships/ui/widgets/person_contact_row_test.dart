@@ -203,6 +203,34 @@ void main() {
     });
   });
 
+  testWidgets('a message to one of several numbers asks which, under the '
+      "action's name, and an unlabelled number is named by its kind", (
+    tester,
+  ) async {
+    const unlabelled = ContactChannel(
+      type: ContactChannelType.mobile,
+      value: '+15550100789',
+    );
+    await pump(tester, const [mobile, unlabelled]);
+
+    await tester.tap(action(ContactAction.message));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Message'), findsWidgets);
+    expect(launcher.launched, isEmpty);
+    final choice = find.byKey(
+      const ValueKey('person-contact-choice-+15550100789'),
+    );
+    expect(
+      find.descendant(of: choice, matching: find.text('Mobile')),
+      findsOneWidget,
+    );
+
+    await tester.tap(choice);
+    await tester.pumpAndSettle();
+    expect(launcher.launched, [(unlabelled, ContactAction.message)]);
+  });
+
   testWidgets('a message to the one number that takes it opens at once', (
     tester,
   ) async {

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -538,6 +539,27 @@ void main() {
       expect(find.text('pinned 3'), findsOneWidget);
     });
 
+    testWidgets('a pinned note answers a hover in the action ink', (
+      tester,
+    ) async {
+      await pumpAbout(tester);
+      final tokens = tester
+          .element(find.byType(PersonAboutSection))
+          .designTokens;
+      final first = find.text('pinned 0');
+      expect(
+        tester.widget<Text>(first).style?.color,
+        tokens.colors.text.highEmphasis,
+      );
+
+      await _hover(tester, first);
+
+      expect(
+        tester.widget<Text>(first).style?.color,
+        tokens.colors.interactive.enabled,
+      );
+    });
+
     testWidgets('renders nothing when nothing is pinned', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -552,4 +574,13 @@ void main() {
       expect(find.byKey(const ValueKey('person-about')), findsNothing);
     });
   });
+}
+
+/// Puts a mouse over [target] and settles, so hover styling shows.
+Future<void> _hover(WidgetTester tester, Finder target) async {
+  final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await mouse.addPointer(location: Offset.zero);
+  addTearDown(mouse.removePointer);
+  await mouse.moveTo(tester.getCenter(target));
+  await tester.pumpAndSettle();
 }

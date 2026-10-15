@@ -470,6 +470,36 @@ void main() {
     });
   });
 
+  test("the timeline's last change is the newest write to the person's own "
+      'links, a removed one included', () async {
+    final removed = DateTime(2026, 8, 16, 18);
+    when(
+      () => mockDb.linksForEntryIdsBidirectionalIncludingRemoved({'rel-001'}),
+    ).thenAnswer(
+      (_) async => [
+        EntryLink.relationship(
+          id: 'l-1',
+          fromId: 'rel-001',
+          toId: 'photo-1',
+          createdAt: testDate,
+          updatedAt: removed,
+          vectorClock: null,
+          deletedAt: removed,
+        ),
+        EntryLink.basic(
+          id: 'l-2',
+          fromId: 'rel-001',
+          toId: 'avatar-1',
+          createdAt: testDate,
+          updatedAt: DateTime(2026, 9),
+          vectorClock: null,
+        ),
+      ],
+    );
+
+    expect(await repository.getTimelineLinksChangedAt('rel-001'), removed);
+  });
+
   group('the maintenance reads (ADR 0111)', () {
     test('isRelationshipDeleted tells a tombstone — purged too — from a '
         'person that has not arrived', () async {

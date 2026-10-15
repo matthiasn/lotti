@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
@@ -919,6 +920,18 @@ void main() {
               )
               .dy,
         ),
+      );
+
+      // A way into the meeting, and it says so under a pointer.
+      final line = find.descendant(
+        of: meeting,
+        matching: find.byType(DsTieredText),
+      );
+      final tokens = tester.element(meeting).designTokens;
+      await _hover(tester, meeting);
+      expect(
+        tester.widget<DsTieredText>(line).style.color,
+        tokens.colors.interactive.enabled,
       );
 
       await tester.tap(meeting);
@@ -2411,4 +2424,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Anna'), findsOneWidget);
   });
+}
+
+/// Puts a mouse over [target] and settles, so hover styling shows.
+Future<void> _hover(WidgetTester tester, Finder target) async {
+  final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await mouse.addPointer(location: Offset.zero);
+  addTearDown(mouse.removePointer);
+  await mouse.moveTo(tester.getCenter(target));
+  await tester.pumpAndSettle();
 }
