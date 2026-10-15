@@ -94,7 +94,13 @@ class GoalAgentPhaseA {
     this._onReportStale,
     this._onReportRefreshNeeded,
     this._offTrackAlerts,
+    this._goalEntryIdFor,
   });
+
+  /// The journal row of the goal coached by an agent — where check-in time
+  /// leaves find the goal's check-ins. Optional like the journal mirror:
+  /// without it those leaves read no check-ins.
+  final String Function(String agentId)? _goalEntryIdFor;
 
   /// Projects a status transition onto the OS alert channel — see
   /// [_projectOffTrackAlert]. Optional so the tier keeps working, and stays
@@ -173,6 +179,7 @@ class GoalAgentPhaseA {
     final deferredReportRefresh =
         goalDeferredReportRefreshRequested(triggerTokens) &&
         (agentIdentity.config.automaticUpdatesEnabled ?? true);
+    final cadenceTick = goalCadenceTickRequested(triggerTokens);
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
@@ -242,8 +249,16 @@ class GoalAgentPhaseA {
               )
             : null,
       );
+      // The daily briefing: the day's first look writes today's report even
+      // when nothing transitioned, so every goal opens the day with a read
+      // of where it stands and what comes next. Only the cadence tick asks —
+      // one inference a day at most, and a Phase B that fails is not
+      // retried on every signal wake but by tomorrow's tick.
+      final dailyBriefingDue = cadenceTick && !facts.periodReported;
       final needsEscalation =
-          facts.needsEscalation || (activeAdExpired && replacementEligible);
+          facts.needsEscalation ||
+          (activeAdExpired && replacementEligible) ||
+          dailyBriefingDue;
 
       // New evidence after today's earlier tick means the standing report
       // now describes an outdated picture — record the dirty state durably
@@ -361,12 +376,15 @@ class GoalAgentPhaseA {
       // synced since would decide it differently.
       if ((rowNow is GoalProgressEntity ? rowNow : null) !=
               derivation.existingToday ||
-          await _reportedStatus(
+          await _periodReport(
                 agentId,
                 periodKey: derivation.periodKey,
                 versionId: derivation.version.id,
               ) !=
-              derivation.facts.reportedStatus) {
+              (
+                covered: derivation.facts.periodReported,
+                status: derivation.facts.reportedStatus,
+              )) {
         outcome = GoalPersistOutcome.stale;
         return;
       }
@@ -509,6 +527,7 @@ class GoalAgentPhaseA {
       includeTimeEntryEvidence: includeTimeEntryEvidence,
       timeEntryEvidenceStart: timeEntryEvidenceStart,
       timeEntryEndExclusive: timeEntryEndExclusive,
+      goalEntryId: _goalEntryIdFor?.call(agentId),
     );
     final evaluation = _evaluator.evaluate(version.criteria, signals, now);
     final shortTerm = _evaluator.shortTermAttainment(
@@ -522,7 +541,7 @@ class GoalAgentPhaseA {
     final existingToday = await _repository.getEntity(
       goalProgressId(agentId, periodKey),
     );
-    final reportedStatus = await _reportedStatus(
+    final periodReport = await _periodReport(
       agentId,
       periodKey: periodKey,
       versionId: version.id,
@@ -562,7 +581,8 @@ class GoalAgentPhaseA {
         labelTimeEvidenceEnd: signals.labelTimeEvidenceEnd,
         hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
         hasActiveLabelTimer: signals.hasActiveLabelTimer,
-        reportedStatus: reportedStatus,
+        reportedStatus: periodReport.status,
+        periodReported: periodReport.covered,
       ),
       periodKey: periodKey,
       priors: priors,
@@ -570,9 +590,10 @@ class GoalAgentPhaseA {
     );
   }
 
-  /// The status today's standing report states for [versionId], or null
-  /// when the current report is for another day or spec, or states none.
-  Future<GoalTrackStatus?> _reportedStatus(
+  /// Whether a standing report already covers [periodKey] under
+  /// [versionId], and the status it states (null when it states none, or
+  /// when no report covers the period).
+  Future<({bool covered, GoalTrackStatus? status})> _periodReport(
     String agentId, {
     required String periodKey,
     required String versionId,
@@ -584,12 +605,15 @@ class GoalAgentPhaseA {
     if (report == null ||
         report.provenance['periodKey'] != periodKey ||
         report.provenance['specVersionId'] != versionId) {
-      return null;
+      return (covered: false, status: null);
     }
     final name = report.provenance['trackStatus'];
-    return GoalTrackStatus.values
-        .where((status) => status.name == name)
-        .firstOrNull;
+    return (
+      covered: true,
+      status: GoalTrackStatus.values
+          .where((status) => status.name == name)
+          .firstOrNull,
+    );
   }
 
   /// Recurrence by re-arm: every run schedules the next cadence tick, and
@@ -783,6 +807,9 @@ AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
     updatedAt: now,
     vectorClock: null,
     workspaceKey: goalCadenceWorkspaceKey,
+    // The tick names itself, so Phase A can tell the day's first look from
+    // a signal wake — the daily briefing is due on the former only.
+    triggerTokens: const [goalCadenceWorkspaceKey],
   );
 }
 

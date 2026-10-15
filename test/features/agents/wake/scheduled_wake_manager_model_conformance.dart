@@ -93,6 +93,7 @@ class _FixedSignalReader extends GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
+    String? goalEntryId,
   }) async => const GoalSignalWindow();
 }
 

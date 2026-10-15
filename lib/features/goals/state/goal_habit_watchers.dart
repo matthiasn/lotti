@@ -33,7 +33,8 @@ String? goalCriterionIdForHabit(GoalCriterion criterion, String habitId) =>
       GoalCriterionMetric() ||
       GoalCriterionMeasurable() ||
       GoalCriterionCategoryTime() ||
-      GoalCriterionLabelTime() => null,
+      GoalCriterionLabelTime() ||
+      GoalCriterionCheckInTime() => null,
     };
 
 /// The active goals whose current spec names the habit.

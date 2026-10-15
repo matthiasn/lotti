@@ -15,6 +15,7 @@ typedef _LeafOrderEntry = ({
   String? categoryId,
   String? labelId,
   bool isSteps,
+  bool isCheckIn,
 });
 
 /// Lossless bridge between the goal criterion tree and WP5's observable
@@ -22,7 +23,8 @@ typedef _LeafOrderEntry = ({
 ///
 /// The flow deliberately edits only the criterion shapes it can explain:
 /// rolling-seven-day habit, measurable, supported health, category-time, and
-/// steps leaves, optionally grouped by one supported composite. Anything
+/// steps leaves, and the daily check-in time leaf, optionally grouped by
+/// one supported composite. Anything
 /// richer remains intact and is presented read-only instead of being silently
 /// flattened.
 class GoalFormMapping {
@@ -50,6 +52,10 @@ class GoalFormMapping {
     required this.labelTimeCriterionTitles,
     required this.stepsCriterionId,
     required this.stepsCriterionTitle,
+    required this.watchesCheckInTime,
+    required this.checkInMinutesTarget,
+    required this.checkInCriterionId,
+    required this.checkInCriterionTitle,
     required this.compositeCriterionId,
     required this.compositeTitle,
     required this.wasComposite,
@@ -83,6 +89,10 @@ class GoalFormMapping {
       labelTimeCriterionTitles = const {},
       stepsCriterionId = 'steps',
       stepsCriterionTitle = null,
+      watchesCheckInTime = false,
+      checkInMinutesTarget = defaultCheckInMinutes,
+      checkInCriterionId = 'check-in-time',
+      checkInCriterionTitle = null,
       compositeCriterionId = 'routine',
       compositeTitle = null,
       wasComposite = false,
@@ -102,6 +112,10 @@ class GoalFormMapping {
     num stepsTarget = 10000;
     var stepsCriterionId = 'steps';
     String? stepsCriterionTitle;
+    var watchesCheckInTime = false;
+    var checkInMinutesTarget = defaultCheckInMinutes;
+    var checkInCriterionId = 'check-in-time';
+    String? checkInCriterionTitle;
     final habitTargets = <String, int>{};
     final habitCriterionIds = <String, String>{};
     final habitCriterionTitles = <String, String?>{};
@@ -151,6 +165,7 @@ class GoalFormMapping {
             categoryId: null,
             labelId: null,
             isSteps: true,
+            isCheckIn: false,
           ));
         case GoalCriterionMetric(
               :final criterionId,
@@ -177,6 +192,7 @@ class GoalFormMapping {
             categoryId: null,
             labelId: null,
             isSteps: false,
+            isCheckIn: false,
           ));
         case GoalCriterionHabit(
               :final criterionId,
@@ -199,6 +215,7 @@ class GoalFormMapping {
             categoryId: null,
             labelId: null,
             isSteps: false,
+            isCheckIn: false,
           ));
         case GoalCriterionMeasurable(
               :final criterionId,
@@ -224,6 +241,7 @@ class GoalFormMapping {
             categoryId: null,
             labelId: null,
             isSteps: false,
+            isCheckIn: false,
           ));
         case GoalCriterionCategoryTime(
               :final criterionId,
@@ -251,6 +269,7 @@ class GoalFormMapping {
             categoryId: categoryId,
             labelId: null,
             isSteps: false,
+            isCheckIn: false,
           ));
         case GoalCriterionLabelTime(
               :final criterionId,
@@ -280,6 +299,33 @@ class GoalFormMapping {
             categoryId: null,
             labelId: labelId,
             isSteps: false,
+            isCheckIn: false,
+          ));
+        case GoalCriterionCheckInTime(
+              :final criterionId,
+              :final window,
+              :final aggregation,
+              :final targetMinutes,
+              :final direction,
+              :final title,
+            )
+            when window == const GoalWindow.day() &&
+                aggregation == GoalAggregation.sum &&
+                direction == GoalDirection.atLeast &&
+                targetMinutes > 0 &&
+                !watchesCheckInTime:
+          watchesCheckInTime = true;
+          checkInMinutesTarget = targetMinutes;
+          checkInCriterionId = criterionId;
+          checkInCriterionTitle = title;
+          leafOrder.add((
+            habitId: null,
+            healthDataType: null,
+            measurableId: null,
+            categoryId: null,
+            labelId: null,
+            isSteps: false,
+            isCheckIn: true,
           ));
         default:
           return GoalFormMapping._(
@@ -306,6 +352,10 @@ class GoalFormMapping {
             labelTimeCriterionTitles: const {},
             stepsCriterionId: 'steps',
             stepsCriterionTitle: null,
+            watchesCheckInTime: false,
+            checkInMinutesTarget: defaultCheckInMinutes,
+            checkInCriterionId: 'check-in-time',
+            checkInCriterionTitle: null,
             compositeCriterionId: 'routine',
             compositeTitle: null,
             wasComposite: false,
@@ -343,6 +393,10 @@ class GoalFormMapping {
       labelTimeCriterionTitles: Map.unmodifiable(labelTimeCriterionTitles),
       stepsCriterionId: stepsCriterionId,
       stepsCriterionTitle: stepsCriterionTitle,
+      watchesCheckInTime: watchesCheckInTime,
+      checkInMinutesTarget: checkInMinutesTarget,
+      checkInCriterionId: checkInCriterionId,
+      checkInCriterionTitle: checkInCriterionTitle,
       compositeCriterionId: switch (criteria) {
         GoalCriterionAllOf(:final criterionId) ||
         GoalCriterionAnyOf(:final criterionId) ||
@@ -396,6 +450,18 @@ class GoalFormMapping {
   final Map<String, String?> labelTimeCriterionTitles;
   final String stepsCriterionId;
   final String? stepsCriterionTitle;
+
+  /// Whether the goal measures the time spent checking in on it, and the
+  /// daily minutes it asks for.
+  final bool watchesCheckInTime;
+  final num checkInMinutesTarget;
+  final String checkInCriterionId;
+  final String? checkInCriterionTitle;
+
+  /// The daily check-in minutes a newly picked check-in time signal starts
+  /// at — a short reflection, which is the point.
+  static const num defaultCheckInMinutes = 3;
+
   final String compositeCriterionId;
   final String? compositeTitle;
   final bool wasComposite;
@@ -430,6 +496,9 @@ class GoalFormMapping {
     Map<String, String?> labelTimeCategoryIds = const {},
     bool? watchesSteps,
     num? stepsTarget,
+    String? checkInTitle,
+    bool? watchesCheckInTime,
+    num? checkInMinutesTarget,
     GoalFormCompositeRule? compositeRule,
     int? requiredSuccesses,
   }) {
@@ -439,6 +508,10 @@ class GoalFormMapping {
     final includeSteps = watchesSteps ?? this.watchesSteps;
     final resolvedStepsTarget = stepsTarget ?? this.stepsTarget;
     if (includeSteps && resolvedStepsTarget <= 0) return null;
+    final includeCheckIn = watchesCheckInTime ?? this.watchesCheckInTime;
+    final resolvedCheckInMinutes =
+        checkInMinutesTarget ?? this.checkInMinutesTarget;
+    if (includeCheckIn && resolvedCheckInMinutes <= 0) return null;
     if (habitTargets.values.any((count) => count < 1 || count > 7)) {
       return null;
     }
@@ -460,13 +533,15 @@ class GoalFormMapping {
       ...categoryTimeCriterionIds.values,
       ...labelTimeCriterionIds.values,
       if (this.watchesSteps) stepsCriterionId,
+      if (this.watchesCheckInTime) checkInCriterionId,
       if (wasComposite ||
           habitTargets.length +
                   measurableTargets.length +
                   healthTargets.length +
                   categoryTimeTargets.length +
                   labelTimeTargets.length +
-                  (includeSteps ? 1 : 0) >
+                  (includeSteps ? 1 : 0) +
+                  (includeCheckIn ? 1 : 0) >
               1)
         compositeCriterionId,
     };
@@ -489,6 +564,19 @@ class GoalFormMapping {
             window: const GoalWindow.rollingDays(count: 7),
             aggregation: GoalAggregation.dailySumThenAverage,
             target: resolvedStepsTarget,
+          )
+        : null;
+    final checkInLeaf = includeCheckIn
+        ? GoalCriterion.checkInTime(
+            criterionId: this.watchesCheckInTime
+                ? checkInCriterionId
+                : allocateId('check-in-time'),
+            title: this.watchesCheckInTime
+                ? checkInCriterionTitle
+                : checkInTitle,
+            window: const GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            targetMinutes: resolvedCheckInMinutes,
           )
         : null;
     final habitLeaves = {
@@ -583,11 +671,15 @@ class GoalFormMapping {
     final orderedCategoryIds = <String>{};
     final orderedLabelIds = <String>{};
     var stepsAdded = false;
+    var checkInAdded = false;
     final leaves = <GoalCriterion>[];
     for (final entry in _leafOrder) {
       if (entry.isSteps && stepsLeaf != null && !stepsAdded) {
         leaves.add(stepsLeaf);
         stepsAdded = true;
+      } else if (entry.isCheckIn && checkInLeaf != null && !checkInAdded) {
+        leaves.add(checkInLeaf);
+        checkInAdded = true;
       } else if (entry.habitId case final habitId?) {
         final habit = habitLeaves[habitId];
         if (habit != null && orderedHabitIds.add(habitId)) {
@@ -616,6 +708,7 @@ class GoalFormMapping {
       }
     }
     if (stepsLeaf != null && !stepsAdded) leaves.add(stepsLeaf);
+    if (checkInLeaf != null && !checkInAdded) leaves.add(checkInLeaf);
     for (final entry in habitLeaves.entries) {
       if (!orderedHabitIds.contains(entry.key)) leaves.add(entry.value);
     }

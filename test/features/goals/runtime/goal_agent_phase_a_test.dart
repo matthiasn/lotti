@@ -29,6 +29,10 @@ class _FakeSignalReader extends GoalSignalReader {
 
   final GoalSignalWindow window;
 
+  /// The goal row every read was asked for — check-in time reads its
+  /// check-ins through it.
+  final goalEntryIds = <String?>[];
+
   @override
   Future<GoalSignalWindow> read({
     required GoalCriterion criteria,
@@ -37,7 +41,11 @@ class _FakeSignalReader extends GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
-  }) async => window;
+    String? goalEntryId,
+  }) async {
+    goalEntryIds.add(goalEntryId);
+    return window;
+  }
 }
 
 /// Records every read and holds the first one until [release].
@@ -62,6 +70,7 @@ class _GatedSignalReader extends GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
+    String? goalEntryId,
   }) async {
     reads.add('read');
     if (!_held) {
@@ -293,6 +302,31 @@ void main() {
     },
   );
 
+  test(
+    "wake facts read the goal's own row, where its check-ins live",
+    () async {
+      stubSpec();
+      final reader = _FakeSignalReader(const GoalSignalWindow());
+
+      await withClock(
+        fixedClock,
+        () =>
+            GoalAgentPhaseA(
+              repository: repository,
+              syncService: syncService,
+              signalReader: reader,
+              goalEntryIdFor: (id) => 'goal-row-of-$id',
+            ).deriveWakeFacts(
+              agentId: agentId,
+              version: specVersion as GoalSpecVersionEntity,
+              now: now,
+            ),
+      );
+
+      expect(reader.goalEntryIds, ['goal-row-of-$agentId']);
+    },
+  );
+
   GoalProgressEntity progressRow({
     required String periodKey,
     required GoalTrackStatus status,
@@ -433,6 +467,110 @@ void main() {
       ),
       isEmpty,
     );
+  });
+
+  group('the daily briefing', () {
+    // An unchanged on-track day: nothing transitions, so nothing else would
+    // escalate.
+    void stubUnchangedDay() {
+      stubSpec();
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      ).thenAnswer(
+        (_) async => progressRow(
+          periodKey: '2026-08-08',
+          status: GoalTrackStatus.onTrack,
+          attainment: 1,
+        ),
+      );
+    }
+
+    Future<void> tick(
+      Set<String> tokens, {
+      AgentIdentityEntity? agent,
+    }) => withClock(
+      fixedClock,
+      () => phaseA(onTrackSignals()).execute(
+        agentIdentity: agent ?? identity,
+        runKey: 'run-1',
+        triggerTokens: tokens,
+        threadId: 'thread-1',
+      ),
+    );
+
+    test("the day's cadence tick arms today's briefing when no report "
+        'covers the day', () async {
+      stubUnchangedDay();
+
+      await tick(const {goalCadenceWorkspaceKey});
+
+      expect(escalations(), hasLength(1));
+      expect(
+        escalations().single.workspaceKey,
+        goalEscalationWorkspaceKey('2026-08-08'),
+      );
+    });
+
+    test('a day that already has its report is not briefed twice', () async {
+      stubUnchangedDay();
+      when(
+        () => repository.getLatestReport(agentId, AgentReportScopes.current),
+      ).thenAnswer(
+        (_) async =>
+            AgentDomainEntity.agentReport(
+                  id: 'report-today',
+                  agentId: agentId,
+                  scope: AgentReportScopes.current,
+                  createdAt: now,
+                  vectorClock: null,
+                  content: 'On track.',
+                  provenance: {
+                    'periodKey': '2026-08-08',
+                    'specVersionId': specVersion.id,
+                    'trackStatus': GoalTrackStatus.onTrack.name,
+                  },
+                )
+                as AgentReportEntity,
+      );
+
+      await tick(const {goalCadenceWorkspaceKey});
+
+      expect(escalations(), isEmpty);
+    });
+
+    test("a signal wake never asks for the briefing — only the day's "
+        'first look does', () async {
+      stubUnchangedDay();
+
+      await tick(const {'cumulative_step_count'});
+
+      expect(escalations(), isEmpty);
+    });
+
+    test('with automatic updates off, no briefing is written', () async {
+      stubUnchangedDay();
+
+      await tick(
+        const {goalCadenceWorkspaceKey},
+        agent: identity.copyWith(
+          config: identity.config.copyWith(automaticUpdatesEnabled: false),
+        ),
+      );
+
+      expect(escalations(), isEmpty);
+    });
+
+    test('the re-armed cadence record names itself as the tick', () async {
+      stubUnchangedDay();
+
+      await tick(const {goalCadenceWorkspaceKey});
+
+      final cadence = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+        (wake) => wake.workspaceKey == goalCadenceWorkspaceKey,
+      );
+      expect(cadence.triggerTokens, [goalCadenceWorkspaceKey]);
+      expect(goalCadenceTickRequested(cadence.triggerTokens.toSet()), isTrue);
+    });
   });
 
   GoalNudgeEntity stampedNudge({

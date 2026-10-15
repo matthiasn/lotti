@@ -151,6 +151,9 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         labelTimeEvidenceEnd: derivation.facts.labelTimeEvidenceEnd,
         hasActiveCategoryTimer: derivation.facts.hasActiveCategoryTimer,
         hasActiveLabelTimer: derivation.facts.hasActiveLabelTimer,
+        // Whether today already has its report decides the daily briefing;
+        // dropping it here made every wake look like the morning's first.
+        periodReported: derivation.facts.periodReported,
       ),
     );
   }
@@ -190,6 +193,8 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required bool reportRefresh,
     required bool userRequestedReport,
     required bool userRequestedAd,
+    bool dailyBriefing = false,
+    Map<String, Object?>? previousBriefing,
   }) async {
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -205,10 +210,15 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       ],
       userVoice: userVoice,
       criterionNames: await _criterionNames(version.criteria),
+      dailyBriefing: dailyBriefing,
+      previousBriefing: previousBriefing,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
         : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
+    if (dailyBriefing) {
+      factsBlock = '$factsBlock\n\n$goalDailyBriefingInstruction';
+    }
     if (reportRefresh) {
       factsBlock =
           '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER WATCHED '

@@ -81,6 +81,9 @@ GoalRevisionResult applyGoalRevisionChanges({
           GoalCriterionMeasurable() => c.copyWith(target: targetValue),
           GoalCriterionCategoryTime() => c.copyWith(targetHours: targetValue),
           GoalCriterionLabelTime() => c.copyWith(targetHours: targetValue),
+          GoalCriterionCheckInTime() => c.copyWith(
+            targetMinutes: targetValue,
+          ),
           _ => c,
         },
       );
@@ -102,6 +105,7 @@ GoalRevisionResult applyGoalRevisionChanges({
           GoalCriterionMeasurable() => c.copyWith(window: window),
           GoalCriterionCategoryTime() => c.copyWith(window: window),
           GoalCriterionLabelTime() => c.copyWith(window: window),
+          GoalCriterionCheckInTime() => c.copyWith(window: window),
           _ => c,
         },
       );
@@ -200,7 +204,8 @@ GoalCriterion? _resolveQuantitativeLeaf(GoalCriterion root, Object? metric) {
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         leaves.add(c);
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria) ||
@@ -241,6 +246,7 @@ num _leafTarget(GoalCriterion leaf) => switch (leaf) {
   GoalCriterionMeasurable(:final target) => target,
   GoalCriterionCategoryTime(:final targetHours) => targetHours,
   GoalCriterionLabelTime(:final targetHours) => targetHours,
+  GoalCriterionCheckInTime(:final targetMinutes) => targetMinutes,
   _ => 0,
 };
 
@@ -257,7 +263,8 @@ List<GoalCriterionHabit> _habitLeaves(GoalCriterion root) {
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         break;
     }
   }

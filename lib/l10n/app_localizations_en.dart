@@ -7078,6 +7078,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalChatYou => 'You';
 
   @override
+  String get goalCheckInAddTime => 'Add time';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Add a voice note';
 
   @override
@@ -7107,6 +7110,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalCheckInKindVoice => 'VOICE CHECK-IN';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate =>
       'Kept separate from your typed note';
 
@@ -7126,6 +7134,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.';
 
   @override
+  String get goalCheckInSessionEdit => 'Edit time';
+
+  @override
+  String get goalCheckInSessionPause => 'Pause';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'Paused · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Resume';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Reflecting · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'See all check-ins';
 
   @override
@@ -7137,8 +7164,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint => 'How long did this check-in take?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Time spent: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Time spent';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Time spent · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Automatic updates are off for this goal, so your check-in was not transcribed. Tap Retry to transcribe it now.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Write instead';
@@ -7290,6 +7336,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Tracked category time';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Time spent checking in';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount of $targetCount this window';
   }
@@ -7413,6 +7462,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Hours per rolling 7 days';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minutes per day';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min of check-ins a day';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minutes spent checking in on this goal';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Check-in time';
 
   @override
   String get goalFormChooseHabit => 'Choose an existing habit';
@@ -7893,10 +7961,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalReportSectionCoverage => 'Data coverage';
 
   @override
+  String get goalReportSectionNext => 'What\'s next';
+
+  @override
   String get goalReportSectionStanding => 'Where things stand';
 
   @override
   String get goalReportSectionWindow => 'The wider window';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Next: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'Today';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

@@ -27,7 +27,19 @@ sources:
   - id: signal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — journal-backed daily aggregates
-    last_modified: 2026-08-29
+    last_modified: 2026-10-14
+  - id: daily-briefing
+    resource: ../../lib/features/goals/workflow/goal_daily_briefing.dart
+    title: The daily briefing — due rule, previous-briefing facts, instruction
+    last_modified: 2026-10-14
+  - id: today-briefing
+    resource: ../../lib/features/goals/logic/goal_today_briefing.dart
+    title: The Today card's roll-up and the stored next-steps reader
+    last_modified: 2026-10-14
+  - id: checkin-duration
+    resource: ../../lib/features/goals/ui/checkins/goal_checkin_duration.dart
+    title: A check-in's time — label, picker, beat chip
+    last_modified: 2026-10-14
   - id: evaluator
     resource: ../../lib/features/goals/evaluation/goal_progress_evaluator.dart
     title: GoalProgressEvaluator — pure criteria-tree fold
@@ -183,7 +195,7 @@ flowchart TD
         SIG[localUpdateStream signals\nleaf dataTypes, habitIds,\nmeasurable ids] --> ORCH[WakeOrchestrator\nsubscription match]
         LOCALTIME[local tracked-time mutation] --> STALE[advance report-stale watermark\nno wake]
         SYNC[syncUpdateStream] --> DISP[GoalSignalSyncDispatcher]
-        CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
+        CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local,\ntrigger token goal-cadence] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
         STORE --> RECOVER[recovery record goal-chat:messageId\ndue in 30 min, lease-elected,\nconsumed by the answering wake]
@@ -212,12 +224,12 @@ flowchart TD
     REG --> ALERT{persisted status\ntransition?}
     ALERT -- "into a slip" --> ARM[GoalOffTrackSink.arm\nafter the transaction — one\nalert per slip, next 09:00]
     ALERT -- "out of one" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
-    REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\nor eligible banner expiry?}
+    REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\neligible banner expiry, or the\ncadence tick with no report\nfor the day — the daily briefing?}
     MATERIAL -- no --> DONE[return — the €0 no-op]
     MATERIAL -- yes --> STALE2[advance report-stale watermark]
     STALE2 --> AUTO{automatic report\nupdates enabled?}
     AUTO -- no --> DONE
-    AUTO -- "status or banner" --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
+    AUTO -- "status, banner\nor daily briefing" --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
     AUTO -- "evidence only" --> DEFER[local goal-report-refresh job\n120-second visible countdown\nfirst deadline wins]
     DEFER --> DPA[GoalAgentPhaseA\ndeferred refresh trigger]
     DPA --> ESC
@@ -228,6 +240,7 @@ flowchart TD
     USERWAKE --> PB
     REFREG --> PB
     CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — never a wake,\nconsumed by the next cadence tick]
+    CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 8-tool contract]
@@ -1872,6 +1885,107 @@ Invariants worth not breaking:
   transcription skill on request. The timeline combines the live inference
   state with the latest durable audio-transcription attribution, so the failure
   and Retry action survive provider disposal and app restart.
+
+## Timed check-ins and check-in time
+
+A check-in is also a **measurable activity**: the time the user spends on it is
+the span stored on its own journal entry, so "at least 3 minutes of reflection
+a day" is an ordinary criterion over ordinary evidence.
+
+- **Spoken:** the recorder already stores the recording's span on the
+  `JournalAudio` entry.
+- **Written:** the composer counts a writing session from the moment the user
+  switches to writing — a running clock they can pause and resume, or replace
+  by hand with a picked length — and `saveCheckInText` stores
+  `dateFrom` = session start, `dateTo` = start + time counted. Switching back
+  to the recorder stops the writing clock: the recording is its own session.
+- **Corrected later:** every check-in beat on the timeline carries a time
+  chip (`GoalCheckInTimeChip`). Picking a length rewrites the entry's
+  `dateTo` through `JournalRepository.updateJournalEntityDate`, keeping its
+  start, so the beat stays where it is.
+
+`goalCheckInFrom` (`model/goal_timeline_item.dart`) is the one rule for what
+counts as a check-in — not deleted; audio from the moment it is saved; a
+written entry only with words — shared by the timeline and the criterion, so
+what the rail shows is what the goal counts. `goalCheckInTimeSpent` is the
+span, never negative.
+
+**`GoalCriterion.checkInTime`** (`targetMinutes`, window, aggregation,
+`atLeast` by default) is a leaf like the tracked-time ones, in minutes:
+
+```mermaid
+flowchart LR
+  CI["check-ins linked to the goal row<br/>(goalCheckInFrom)"] --> RD["GoalSignalReader.read(goalEntryId)<br/>minutes per local day,<br/>started in range, not after reference"]
+  RD --> W["GoalSignalWindow.checkInDailyMinutes<br/>(one series per goal)"]
+  W --> EV["GoalProgressEvaluator<br/>zero-filled like tracked time"]
+  EV --> REGI["register · FACTS checkInTime leaf ·<br/>progress card in min"]
+```
+
+- The reader needs the goal's journal row, so `read` takes `goalEntryId`;
+  Phase A and the progress view pass `GoalRepository.goalIdForAgent`. Without
+  it the leaf reads no check-ins.
+- A check-in write notifies the goal row (the two are linked), so a goal whose
+  criteria measure check-in time (`goalCriteriaMeasureCheckInTime`) adds that
+  row to its **immediate** subscription tokens: a check-in re-runs the €0
+  evaluator at once, the habit check-off precedent. Goals that do not measure
+  it keep the stale-only `GoalCheckInNotifier` path.
+- The validator treats it like the hour leaves (no `count` aggregation, a
+  finite non-negative target); a revision may move its minute target or
+  window; the FACTS leaf names `targetMinutes` and points the agent at
+  `userVoice` for what was said.
+- The goal editor offers it from the *Add signal* picker, not as an
+  always-suggested row: a daily window, summed minutes, at least N (3 by
+  default), round-tripped by `GoalFormMapping`. Other shapes stay read-only.
+- The card titles the dimension from the criterion's `title` (written in the
+  author's language by the editor) and reads it in a localized minutes unit,
+  resolved at render time because the state layer has no locale.
+
+## The daily briefing
+
+The briefing is not a new artifact: it is the **day's first standing report**,
+written whether or not anything transitioned, with its weight on what comes
+next.
+
+```mermaid
+flowchart TD
+  TICK["cadence tick (goal-cadence token)"] --> COV{a report already covers\nthe period under this spec?\nGoalWakeFacts.periodReported}
+  COV -- yes --> NOOP["no briefing — at most one a day"]
+  COV -- no --> AU{automatic updates on?}
+  AU -- no --> NOOP
+  AU -- yes --> ARM["arm the period's escalation\n(same path as a transition)"]
+  ARM --> PB["Phase B: goalDailyBriefingDue\n(no pending chat message)"]
+  PB --> FACTS["FACTS reporting:\ndailyBriefing, materialChange=true,\npreviousBriefing {tldr, nextSteps}\n+ appended DAILY BRIEFING instruction"]
+  FACTS --> REP{report written?}
+  REP -- no --> RETRY["one pinned retry:\nupdate_goal_report only"]
+  REP -- yes --> OUTB["report: tldr + nextActions\n(later leads with concrete steps)"]
+  RETRY --> OUTB
+  OUTB --> PAGE["goal page: summary, then\n'What's next' and its steps"]
+  OUTB --> TODAY["Goals page Today card:\none-liner + first next step per goal,\ngoals behind first — no inference"]
+```
+
+- **Only the cadence tick asks.** A tick without a report for the day arms
+  the briefing; signal wakes never do, so a Phase B that fails is retried by
+  tomorrow's tick rather than by every check-off. The cadence record carries
+  `goal-cadence` as a trigger token for this (`goalCadenceTickRequested`);
+  records written before re-arm with it on their next run.
+- **The rule rides the wake, not the system prompt.** The prompt is at its
+  hard ceiling and holds only rules every turn needs; the briefing's
+  instruction (`goalDailyBriefingInstruction`) is appended to FACTS on the
+  wakes it applies to. `materialChangeSinceLastReport` is true for a new
+  period without its report, so prompt rule 5 never tells the model to stay
+  silent on the morning read.
+- **Continuity.** `goalPreviousBriefingFacts` hands the wake the previous
+  period's report as stored — its `tldr`, and `nextSteps` from the persisted
+  `nextActions` list (the steps the user actually saw). Today's briefing says
+  which of them the evidence shows happened.
+- **Chat is never the briefing.** A turn answering the user does not take the
+  briefing instruction or its forced retry, even before the day has a report.
+- **Where it reads.** The goal page's summary is followed by a *What's next*
+  heading over the report's steps. `GoalTodayBriefingCard` on the Goals page
+  rolls every goal's one-liner and first step (`goalReportNextSteps`) into one
+  card, behind-first, from reports the agents already wrote; a report for a
+  superseded spec is left out, and with no briefings yet the card takes no
+  room.
 
 ## Gotchas
 

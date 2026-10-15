@@ -98,6 +98,7 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
     // watermark so the detail page shows the badge and Update now CTA.
     onReportStale: (agentId) =>
         ref.read(agentServiceProvider).markReportStale(agentId),
+    goalEntryIdFor: ref.watch(goalRepositoryProvider)?.goalIdForAgent,
     onReportRefreshNeeded: (agentId) => ref
         .read(goalAgentServiceProvider)
         .scheduleAutomaticReportRefresh(agentId),
@@ -147,6 +148,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     offTrackAlerts: ref.watch(goalOffTrackAlertServiceProvider),
+    goalEntryIdFor: ref.watch(goalRepositoryProvider)?.goalIdForAgent,
   ),
   name: 'goalAgentServiceProvider',
 );
@@ -684,7 +686,8 @@ bool _attainmentTrendIsSound(GoalCriterion criterion) => switch (criterion) {
   GoalCriterionMeasurable(:final window) ||
   GoalCriterionHabit(:final window) ||
   GoalCriterionCategoryTime(:final window) ||
-  GoalCriterionLabelTime(:final window) => window is GoalWindowRollingDays,
+  GoalCriterionLabelTime(:final window) ||
+  GoalCriterionCheckInTime(:final window) => window is GoalWindowRollingDays,
   GoalCriterionAllOf(:final criteria) ||
   GoalCriterionAnyOf(:final criteria) ||
   GoalCriterionAtLeastCount(:final criteria) => criteria.every(

@@ -71,6 +71,8 @@ class GoalFactsRenderer {
     List<Map<String, Object>> recentDialogue = const [],
     List<Map<String, Object?>> userVoice = const [],
     Map<String, String> criterionNames = const {},
+    bool dailyBriefing = false,
+    Map<String, Object?>? previousBriefing,
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -212,8 +214,13 @@ class GoalFactsRenderer {
               'criterion results',
         },
       'reporting': {
-        'materialChangeSinceLastReport': facts.statusTransitioned,
+        // A new period without its report is a material change on its own:
+        // the day's briefing is due even when the status held.
+        'materialChangeSinceLastReport':
+            facts.statusTransitioned || dailyBriefing,
         'lastReportStatus': facts.previousStatus?.name,
+        if (dailyBriefing) 'dailyBriefing': true,
+        'previousBriefing': ?previousBriefing,
       },
       'ads': {
         'active': [
@@ -368,7 +375,8 @@ class GoalFactsRenderer {
           criteria.forEach(visit);
         case GoalCriterionMeasurable() ||
             GoalCriterionCategoryTime() ||
-            GoalCriterionLabelTime():
+            GoalCriterionLabelTime() ||
+            GoalCriterionCheckInTime():
       }
     }
 
@@ -854,6 +862,19 @@ Map<String, Object?> criterionJson(
     'evidence':
         'tracked Lotti time entries carrying this label; '
         'matching entry markdown is supplied in signals',
+  },
+  GoalCriterionCheckInTime() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'checkInTime': true,
+    'aggregation': criterion.aggregation.name,
+    'window': _windowLabel(criterion.window),
+    'targetMinutes': criterion.targetMinutes,
+    'direction': criterion.direction.name,
+    'evidence':
+        "the time the user spent on this goal's own check-ins — "
+        'recordings, written check-ins, or the time they corrected it to; '
+        'what they said is in userVoice',
   },
   GoalCriterionAllOf() => {
     'criterionId': criterion.criterionId,

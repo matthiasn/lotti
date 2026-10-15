@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
@@ -51,6 +52,10 @@ class GoalSignalReader {
   /// the deterministic criterion's authored evaluation window. A completed
   /// historical period may supply [timeEntryEndExclusive] as the following
   /// local midnight; live periods default to clipping at [reference].
+  ///
+  /// [goalEntryId] is the journal row of the goal being evaluated: check-in
+  /// time leaves read the check-ins linked to it. Without it they read no
+  /// check-ins and evaluate as zero minutes.
   Future<GoalSignalWindow> read({
     required GoalCriterion criteria,
     required DateTime reference,
@@ -58,6 +63,7 @@ class GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
+    String? goalEntryId,
   }) async {
     final needs = _SignalNeeds()..collect(criteria);
     final rangeStart = _rangeStart(criteria, reference, shortTermDays);
@@ -311,7 +317,16 @@ class GoalSignalReader {
       }
     }
 
+    final checkInMinutes = needs.checkInTime && goalEntryId != null
+        ? await _checkInMinutesByDay(
+            goalEntryId: goalEntryId,
+            rangeStart: rangeStart,
+            notAfter: reference,
+          )
+        : const <DateTime, num>{};
+
     return GoalSignalWindow(
+      checkInDailyMinutes: checkInMinutes,
       quantitativeDailySums: quantitative,
       quantitativeObservationsByType: quantitativeObservations,
       habitSuccessesByDay: habits,
@@ -602,6 +617,35 @@ class GoalSignalReader {
     return observations;
   }
 
+  /// Minutes spent checking in on the goal at [goalEntryId], per day.
+  ///
+  /// A check-in counts its stored span on the day it began — the same day
+  /// key every other leaf uses. Only check-ins that began in
+  /// [rangeStart]..[notAfter] are read, so a historical period never borrows
+  /// time from the live day.
+  Future<Map<DateTime, num>> _checkInMinutesByDay({
+    required String goalEntryId,
+    required DateTime rangeStart,
+    required DateTime notAfter,
+  }) async {
+    final links = await _journalDb.linksFromIds([goalEntryId]).get();
+    final ids = {for (final link in links) link.toId};
+    if (ids.isEmpty) return const {};
+    final entities = await _journalDb.getJournalEntitiesForIds(ids);
+    final minutesByDay = <DateTime, num>{};
+    for (final entity in entities) {
+      final checkIn = goalCheckInFrom(entity);
+      if (checkIn == null) continue;
+      final at = entity.meta.dateFrom;
+      if (at.isBefore(rangeStart) || at.isAfter(notAfter)) continue;
+      final day = GoalWindow.dayUtc(at);
+      minutesByDay[day] =
+          (minutesByDay[day] ?? 0) +
+          checkIn.timeSpent.inSeconds / Duration.secondsPerMinute;
+    }
+    return minutesByDay;
+  }
+
   /// Earliest day any leaf's period (or the short-term lookback, or the
   /// grace-period prior window) reaches back to, as a local date.
   DateTime _rangeStart(
@@ -618,7 +662,8 @@ class GoalSignalReader {
             GoalCriterionMeasurable(:final window) ||
             GoalCriterionHabit(:final window) ||
             GoalCriterionCategoryTime(:final window) ||
-            GoalCriterionLabelTime(:final window):
+            GoalCriterionLabelTime(:final window) ||
+            GoalCriterionCheckInTime(:final window):
           // One extra period back so the policy's prior-attainment grace
           // check can be computed from the same window.
           final start = window.periodRange(reference).start;
@@ -651,6 +696,11 @@ Set<String> goalImmediateSignalTriggerTokens(GoalCriterion criteria) {
     ...needs.measurableTypeIds,
   };
 }
+
+/// Whether [criteria] measures the time spent checking in on the goal — and
+/// so must re-evaluate whenever a check-in linked to it changes.
+bool goalCriteriaMeasureCheckInTime(GoalCriterion criteria) =>
+    (_SignalNeeds()..collect(criteria)).checkInTime;
 
 /// Goal signals that also invalidate model-facing evidence directly.
 ///
@@ -688,6 +738,9 @@ class _SignalNeeds {
   final categoryTimeCriteria = <GoalCriterionCategoryTime>[];
   final labelTimeCriteria = <GoalCriterionLabelTime>[];
 
+  /// Whether any leaf measures the time spent checking in.
+  bool checkInTime = false;
+
   void collect(GoalCriterion criterion) {
     switch (criterion) {
       case GoalCriterionMetric(:final dataType):
@@ -700,6 +753,8 @@ class _SignalNeeds {
         categoryTimeCriteria.add(categoryTime);
       case final GoalCriterionLabelTime labelTime:
         labelTimeCriteria.add(labelTime);
+      case GoalCriterionCheckInTime():
+        checkInTime = true;
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria) ||
           GoalCriterionAtLeastCount(:final criteria):

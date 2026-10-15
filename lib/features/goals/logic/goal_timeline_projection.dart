@@ -30,7 +30,7 @@ List<GoalTimelineItem> goalTimelineItems({
   String? specVersionId,
 }) {
   final items = <GoalTimelineItem>[
-    for (final entity in entries) ?_checkIn(entity),
+    for (final entity in entries) ?goalCheckInFrom(entity),
     if (specVersionId != null)
       for (final record in latestAssessmentsByDay(assessments).values)
         GoalReflectionItem(record),
@@ -42,20 +42,6 @@ List<GoalTimelineItem> goalTimelineItems({
     // the rail reshuffles itself between rebuilds.
     return byTime != 0 ? byTime : b.id.compareTo(a.id);
   });
-}
-
-GoalTimelineItem? _checkIn(JournalEntity entity) {
-  // A deleted check-in stays linked — the link is not tombstoned with the
-  // entry — so without this the user's deleted words remain visible and
-  // playable here long after they removed them.
-  if (entity.isDeleted) return null;
-  return switch (entity) {
-    final JournalAudio audio => GoalAudioCheckIn(audio),
-    final JournalEntry entry
-        when (entry.entryText?.plainText.trim() ?? '').isNotEmpty =>
-      GoalTextCheckIn(entry),
-    _ => null,
-  };
 }
 
 /// One labelled run of items per local calendar day, in the order [items]

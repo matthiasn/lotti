@@ -149,6 +149,61 @@ void main() {
     });
   });
 
+  group('check-in time leaf — minutes a day', () {
+    const criterion = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+    );
+
+    test('two minutes of check-ins is most of the way there', () {
+      final evaluation = evaluator.evaluate(
+        criterion,
+        GoalSignalWindow(checkInDailyMinutes: {d(8): 2}),
+        saturday,
+      );
+
+      expect(evaluation.results['reflect']!.actual, 2);
+      expect(evaluation.attainment, closeTo(2 / 3, 1e-9));
+      expect(evaluation.satisfied, isFalse);
+    });
+
+    test('three and a half minutes meets the daily floor', () {
+      final evaluation = evaluator.evaluate(
+        criterion,
+        GoalSignalWindow(checkInDailyMinutes: {d(8): 3.5}),
+        saturday,
+      );
+
+      expect(evaluation.satisfied, isTrue);
+      expect(evaluation.attainment, 1);
+    });
+
+    test('a day without a check-in counts as zero minutes, not missing '
+        'data', () {
+      final evaluation = evaluator.evaluate(
+        criterion,
+        // Yesterday's check-in does not carry today.
+        GoalSignalWindow(checkInDailyMinutes: {d(7): 10}),
+        saturday,
+      );
+
+      expect(evaluation.results['reflect']!.actual, 0);
+      expect(evaluation.satisfied, isFalse);
+    });
+
+    test('short-term attainment re-windows the same check-in minutes', () {
+      final attainment = evaluator.shortTermAttainment(
+        criterion,
+        GoalSignalWindow(checkInDailyMinutes: {d(6): 1, d(7): 1, d(8): 1}),
+        saturday,
+      );
+
+      expect(attainment, 1);
+    });
+  });
+
   group('metric leaf — directions and aggregations', () {
     test('atMost is satisfied under the cap and decays over it', () {
       const espresso = GoalCriterion.metric(

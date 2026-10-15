@@ -311,6 +311,25 @@ summaries ride into the wake through the
 commitments; they never override deterministic criterion results. Checking in
 marks the standing report stale rather than waking the agent per recording.
 
+A check-in is also **time spent**. A recording counts its length; a written
+check-in counts its writing session, which the user can pause or set by hand;
+and every beat on the timeline shows its minutes and can be corrected there.
+A goal can make that time a target of its own — *check-in time*, at least N
+minutes a day — added from the editor's signal picker and evaluated like any
+other criterion, so "three minutes of reflection a day" sits beside the walks
+and the blood pressure it is about. For such a goal a check-in moves the card
+at once instead of waiting for the day's tick.
+
+Each goal's agent writes a **daily briefing**: the day's first standing report,
+written on the morning tick whether or not anything changed (one inference a
+day at most, and only with automatic updates on). It keeps where things stand
+to a sentence or two and leads with what comes next — concrete steps grounded
+in the goal's evidence and the user's check-ins — following up on the steps
+it recommended the day before. The goal page shows those steps under *What's
+next*, and the Goals page opens with a **Today** card: every goal's one-line
+read and first next step, the goals that are behind first, composed from the
+briefings the agents already wrote rather than generated again.
+
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs

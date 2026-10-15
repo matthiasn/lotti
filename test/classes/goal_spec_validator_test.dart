@@ -293,6 +293,51 @@ void main() {
       expect(issues, anyElement(contains('targetHours')));
     });
 
+    test('check-in time needs a non-negative minute target and a minute '
+        'aggregation', () {
+      const criterion = GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.count,
+        targetMinutes: -3,
+      );
+
+      final issues = GoalSpecValidator.criterionIssues(criterion);
+
+      expect(
+        issues,
+        anyElement(contains('targetMinutes must not be negative')),
+      );
+      expect(
+        issues,
+        anyElement(contains('invalid for a minute target')),
+      );
+    });
+
+    test('a plain daily check-in time target is valid', () {
+      const criterion = GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      );
+
+      expect(GoalSpecValidator.criterionIssues(criterion), isEmpty);
+      expect(GoalSpecValidator.authoringIssues(criterion), isEmpty);
+    });
+
+    test("check-in time's raw window is checked like every other leaf", () {
+      final issues = GoalSpecValidator.criterionJsonIssues({
+        'runtimeType': 'checkInTime',
+        'criterionId': 'reflect',
+        'window': {'runtimeType': 'rollingDays', 'count': 2.5},
+        'aggregation': 'sum',
+        'targetMinutes': 3,
+      });
+
+      expect(issues, anyElement(contains('fractional')));
+    });
+
     test('duplicate criterion ids are rejected before they can shadow '
         'results', () {
       const duped = GoalCriterion.allOf(

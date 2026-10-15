@@ -14,7 +14,10 @@ import '../../../../widget_test_utils.dart';
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
 
-  late List<({String text, String goalEntryId})> saved;
+  late List<
+    ({String text, String goalEntryId, DateTime started, Duration timeSpent})
+  >
+  saved;
   late List<String> recorded;
   var saveSucceeds = true;
   String? recorderResult;
@@ -31,8 +34,10 @@ void main() {
     String? captureTarget = 'goal-1',
     String? preparedLine,
     String? personaName,
+    Clock? clockOverride,
+    Duration? pickedDuration,
   }) => withClock(
-    Clock.fixed(now),
+    clockOverride ?? Clock.fixed(now),
     () => tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         GoalCheckInComposer(
@@ -41,10 +46,24 @@ void main() {
           preparedLine: preparedLine,
           personaName: personaName,
           categoryId: 'cat-1',
-          saveText: ({required text, required goalEntryId, categoryId}) async {
-            saved.add((text: text, goalEntryId: goalEntryId));
-            return saveSucceeds;
-          },
+          saveText:
+              ({
+                required text,
+                required goalEntryId,
+                required started,
+                required timeSpent,
+                categoryId,
+              }) async {
+                saved.add((
+                  text: text,
+                  goalEntryId: goalEntryId,
+                  started: started,
+                  timeSpent: timeSpent,
+                ));
+                return saveSucceeds;
+              },
+          pickDuration: ({required context, required initialDuration}) async =>
+              pickedDuration,
           openRecorder: (context, {required goalEntryId, categoryId}) async {
             recorded.add(goalEntryId);
             return recorderResult;
@@ -69,7 +88,12 @@ void main() {
       getIt.registerSingleton<DomainLogger>(MockDomainLogger());
 
       expect(
-        await saveCheckInText(text: 'Walked.', goalEntryId: 'goal-1'),
+        await saveCheckInText(
+          text: 'Walked.',
+          goalEntryId: 'goal-1',
+          started: now,
+          timeSpent: const Duration(minutes: 3),
+        ),
         isFalse,
       );
     });
@@ -244,5 +268,167 @@ void main() {
 
     // An absent prompt is normal; capture is the job, the prompt is additive.
     expect(find.textContaining('prepared for you'), findsNothing);
+  });
+
+  group('the writing session', () {
+    // A clock the test moves by hand. The composer reads it on every tap and
+    // on every tick, so each step below runs inside it.
+    late DateTime current;
+    late Clock movable;
+
+    setUp(() {
+      current = now;
+      movable = Clock(() => current);
+    });
+
+    Future<void> elapse(WidgetTester tester, Duration by) async {
+      current = current.add(by);
+      // The ticker only repaints; one tick is enough to read the new time.
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    String sessionLabel(WidgetTester tester) => tester
+        .widget<Text>(find.byKey(const ValueKey('goal-checkin-session-label')))
+        .data!;
+
+    Future<void> startWriting(WidgetTester tester) async {
+      await tester.pump();
+      await tester.tap(find.text('Write instead'));
+      await tester.pump();
+    }
+
+    Future<void> saveText(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(DesignSystemTextarea), text);
+      await tester.tap(find.text('Save check-in'));
+      await tester.pump();
+    }
+
+    testWidgets('stores the time spent writing, from when writing began', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(tester, clockOverride: movable);
+        // Time spent looking at the recorder is not time spent writing.
+        await elapse(tester, const Duration(minutes: 4));
+        await startWriting(tester);
+
+        await elapse(tester, const Duration(minutes: 2, seconds: 30));
+        expect(sessionLabel(tester), 'Reflecting · 2:30');
+
+        await saveText(tester, 'Gym bag is packed.');
+      });
+
+      expect(saved.single.started, now.add(const Duration(minutes: 4)));
+      expect(saved.single.timeSpent, const Duration(minutes: 2, seconds: 30));
+    });
+
+    testWidgets('a paused session stops counting until resumed', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(tester, clockOverride: movable);
+        await startWriting(tester);
+        await elapse(tester, const Duration(minutes: 1));
+
+        await tester.tap(find.text('Pause'));
+        await tester.pump();
+        await elapse(tester, const Duration(minutes: 5));
+        expect(sessionLabel(tester), 'Paused · 1:00');
+
+        await tester.tap(find.text('Resume'));
+        await tester.pump();
+        await elapse(tester, const Duration(seconds: 30));
+        expect(sessionLabel(tester), 'Reflecting · 1:30');
+
+        await saveText(tester, 'Walked.');
+      });
+
+      expect(saved.single.timeSpent, const Duration(minutes: 1, seconds: 30));
+    });
+
+    testWidgets('a time set by hand replaces the counted time', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(
+          tester,
+          clockOverride: movable,
+          pickedDuration: const Duration(minutes: 5),
+        );
+        await startWriting(tester);
+        await elapse(tester, const Duration(seconds: 40));
+
+        await tester.tap(find.text('Edit time'));
+        await tester.pump();
+        expect(sessionLabel(tester), 'Time spent · 5 min');
+        // The user's number is final: no clock left to pause.
+        expect(find.text('Pause'), findsNothing);
+
+        await elapse(tester, const Duration(minutes: 3));
+        await saveText(tester, 'Walked.');
+      });
+
+      expect(saved.single.timeSpent, const Duration(minutes: 5));
+    });
+
+    testWidgets('a time set to zero by hand reads as zero minutes', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(
+          tester,
+          clockOverride: movable,
+          pickedDuration: Duration.zero,
+        );
+        await startWriting(tester);
+        await tester.tap(find.text('Edit time'));
+        await tester.pump();
+        expect(sessionLabel(tester), 'Time spent · 0 min');
+        await saveText(tester, 'Walked.');
+      });
+
+      expect(saved.single.timeSpent, Duration.zero);
+    });
+
+    testWidgets('backing out of the picker keeps the clock running', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(tester, clockOverride: movable);
+        await startWriting(tester);
+        await elapse(tester, const Duration(minutes: 1));
+
+        await tester.tap(find.text('Edit time'));
+        await tester.pump();
+        await elapse(tester, const Duration(minutes: 1));
+        expect(sessionLabel(tester), 'Reflecting · 2:00');
+      });
+    });
+
+    testWidgets('switching to the recorder stops the writing clock', (
+      tester,
+    ) async {
+      await withClock(movable, () async {
+        await pump(tester, clockOverride: movable);
+        await startWriting(tester);
+        await elapse(tester, const Duration(minutes: 1));
+
+        // The recorder's own span is a voice check-in's time.
+        await tester.tap(find.text('Record a check-in').last);
+        await tester.pump();
+        await elapse(tester, const Duration(minutes: 10));
+
+        await tester.tap(find.text('Write instead'));
+        await tester.pump();
+        await elapse(tester, const Duration(minutes: 1));
+        expect(sessionLabel(tester), 'Reflecting · 2:00');
+
+        await saveText(tester, 'Walked.');
+      });
+
+      // The session still began when writing first began.
+      expect(saved.single.started, now);
+      expect(saved.single.timeSpent, const Duration(minutes: 2));
+    });
   });
 }

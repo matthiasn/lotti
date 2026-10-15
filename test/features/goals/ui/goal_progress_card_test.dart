@@ -2179,6 +2179,33 @@ void main() {
     expect(find.text('This dimension is currently on track.'), findsNothing);
   });
 
+  testWidgets('a check-in time dimension reads in minutes, says where they '
+      'come from, and wears the check-in glyph', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              criterionId: 'reflect',
+              sourceId: 'reflect',
+              name: 'Check-in time',
+              target: 3,
+              kind: GoalDimensionKind.checkInTime,
+              aggregation: GoalAggregation.sum,
+              window: const GoalWindow.day(),
+              days: [day(0, 2)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Time spent checking in'), findsOneWidget);
+    expect(find.text('2 of 3 min'), findsOneWidget);
+    expect(find.byIcon(LottiIcons.mic), findsWidgets);
+  });
+
   testWidgets('renders an observed-pattern card for every category dimension', (
     tester,
   ) async {

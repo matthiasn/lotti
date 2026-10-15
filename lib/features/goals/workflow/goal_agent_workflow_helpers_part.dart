@@ -43,7 +43,8 @@ List<String> goalRollingAggregateStrings(
       case GoalCriterionHabit() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         break;
     }
   }

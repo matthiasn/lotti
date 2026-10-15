@@ -41,6 +41,43 @@ void main() {
         },
       );
 
+  test('a check-in time sibling adds no health evidence to the banner '
+      'digest', () {
+    final weightFacts = facts([
+      GoalMetricObservation(
+        recordedAt: DateTime(2026, 8, 9, 8),
+        value: 88,
+        tieBreaker: 'latest',
+      ),
+    ]);
+    expect(
+      goalFactsDigest(
+        weightFacts,
+        criteria: const GoalCriterion.allOf(
+          criterionId: 'root',
+          criteria: [
+            criteria,
+            GoalCriterion.checkInTime(
+              criterionId: 'reflect',
+              window: GoalWindow.day(),
+              aggregation: GoalAggregation.sum,
+              targetMinutes: 3,
+            ),
+          ],
+        ),
+        evaluationReference: reference,
+      ),
+      goalFactsDigest(
+        weightFacts,
+        criteria: const GoalCriterion.allOf(
+          criterionId: 'root',
+          criteria: [criteria],
+        ),
+        evaluationReference: reference,
+      ),
+    );
+  });
+
   test('exact health evidence changes the banner digest but not the aggregate '
       'register digest', () {
     final original = facts([

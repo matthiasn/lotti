@@ -636,6 +636,59 @@ void main() {
     verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
   });
 
+  group('check-in time', () {
+    const reflect = GoalCriterion.checkInTime(
+      criterionId: 'reflect',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 3,
+    );
+
+    GoalAgentService withGoalRows() => GoalAgentService(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      orchestrator: orchestrator,
+      updateNotifications: updateNotifications,
+      goalEntryIdFor: (agentId) => 'goal-row-of-$agentId',
+    );
+
+    test('a goal measuring check-in time watches its own journal row, so '
+        'every linked check-in evaluates at once', () {
+      withGoalRows().registerSignalSubscription(
+        agentId,
+        const GoalCriterion.allOf(
+          criterionId: 'mindful',
+          criteria: [criteria, reflect],
+        ),
+      );
+
+      final immediate = verify(() => orchestrator.addSubscription(captureAny()))
+          .captured
+          .cast<AgentSubscription>()
+          .singleWhere(
+            (subscription) =>
+                subscription.id == goalSignalSubscriptionId(agentId),
+          );
+      expect(immediate.matchEntityIds, {'gym-habit', 'goal-row-of-$agentId'});
+      expect(immediate.drainImmediately, isTrue);
+    });
+
+    test('a goal that does not measure it never wakes on its check-ins', () {
+      withGoalRows().registerSignalSubscription(agentId, criteria);
+
+      final immediate = verify(() => orchestrator.addSubscription(captureAny()))
+          .captured
+          .cast<AgentSubscription>()
+          .singleWhere(
+            (subscription) =>
+                subscription.id == goalSignalSubscriptionId(agentId),
+          );
+      // Check-ins only mark its report stale, through the check-in notifier.
+      expect(immediate.matchEntityIds, {'gym-habit'});
+    });
+  });
+
   test('health samples both evaluate and mark exact report evidence stale', () {
     const weight = GoalCriterion.metric(
       criterionId: 'weight',

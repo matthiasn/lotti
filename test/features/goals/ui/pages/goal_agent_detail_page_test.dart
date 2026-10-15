@@ -1605,8 +1605,13 @@ void main() {
     expect(find.textContaining('Delayed historical report'), findsNothing);
     expect(find.text('Show more'), findsOneWidget);
     expect(find.textContaining('The current routine needs'), findsNothing);
-    // ...but the action is already on screen, unexpanded.
+    // ...but the action is already on screen, unexpanded, under the
+    // heading that names it: the briefing leads with what comes next.
     expect(find.textContaining('Walk on Saturday.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-report-next-heading')),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
     // Sections, under headings the APP supplies — the sentences are authored
@@ -1617,8 +1622,9 @@ void main() {
     expect(find.text('The wider window'), findsOneWidget);
     // The actions no longer live inside the expansion — they sit with the
     // summary in the COLLAPSED card, because an action reachable only behind
-    // "Show more" is one most readers never see.
-    expect(find.text("What's next"), findsNothing);
+    // "Show more" is one most readers never see. Expanding adds no second
+    // "What's next" heading of its own.
+    expect(find.text("What's next"), findsOneWidget);
     // A slot the model left empty gets no heading rather than an empty one.
     expect(find.text('Data coverage'), findsNothing);
     // ...and it closes again, easing shut rather than snapping.

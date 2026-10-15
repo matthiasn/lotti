@@ -7182,6 +7182,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalChatYou => 'Ty';
 
   @override
+  String get goalCheckInAddTime => 'Přidat čas';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Přidat hlasovou poznámku';
 
   @override
@@ -7212,6 +7215,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInKindVoice => 'HLASOVÉ HLÁŠENÍ';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate =>
       'Uchováno odděleně od napsané poznámky';
 
@@ -7231,6 +7239,25 @@ class AppLocalizationsCs extends AppLocalizations {
       'Řekni svému agentovi, co se skutečně děje — třicet sekund, vlastními slovy, kdykoli to stojí za řeč.';
 
   @override
+  String get goalCheckInSessionEdit => 'Upravit čas';
+
+  @override
+  String get goalCheckInSessionPause => 'Pozastavit';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'Pozastaveno · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Pokračovat';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Přemýšlíš · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'Zobrazit všechna hlášení';
 
   @override
@@ -7242,8 +7269,28 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint =>
+      'Jak dlouho ti tohle hlášení trvalo?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Strávený čas: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Strávený čas';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Strávený čas · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Automatické aktualizace jsou pro tento cíl vypnuté, takže tvoje ohlášení nebylo přepsáno. Klepni na Zkusit znovu a přepiš ho hned.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Napsat místo toho';
@@ -7397,6 +7444,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Čas strávený hlášeními';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount z $targetCount tohoto okna';
   }
@@ -7523,6 +7573,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Hodiny za klouzavých 7 dní';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minut denně';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min hlášení denně';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minuty strávené hlášeními k tomuto cíli';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Čas na hlášení';
 
   @override
   String get goalFormChooseHabit => 'Vyber existující návyk';
@@ -8008,10 +8077,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalReportSectionCoverage => 'Pokrytí dat';
 
   @override
+  String get goalReportSectionNext => 'Co dál';
+
+  @override
   String get goalReportSectionStanding => 'Jak to vypadá';
 
   @override
   String get goalReportSectionWindow => 'Širší okno';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Dál: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'Dnes';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

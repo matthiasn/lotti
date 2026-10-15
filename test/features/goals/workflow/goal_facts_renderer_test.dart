@@ -1246,6 +1246,41 @@ void main() {
     });
   });
 
+  test('criterionJson names check-in time in minutes and points at the '
+      "user's own words", () {
+    final json = criterionJson(
+      const GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        title: 'Check-in time',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      ),
+    );
+
+    expect(json['checkInTime'], isTrue);
+    expect(json['targetMinutes'], 3);
+    expect(json['title'], 'Check-in time');
+    expect(json['direction'], 'atLeast');
+    expect(json.containsKey('targetHours'), isFalse);
+    expect(json['evidence'], contains('userVoice'));
+  });
+
+  test('a check-in time goal renders its leaf and asks for no health '
+      'logging', () {
+    final json = renderedJson(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      ),
+    );
+
+    expect(jsonEncode(json), contains('"checkInTime":true'));
+    expect(jsonEncode(json), contains('"healthLoggingNeededCriterionIds":[]'));
+  });
+
   test('label-time facts retain a bounded recent markdown sample', () {
     final entries = [
       for (var index = 0; index < 205; index++)

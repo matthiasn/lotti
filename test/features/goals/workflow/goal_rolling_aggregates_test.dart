@@ -103,6 +103,12 @@ void main() {
           aggregation: GoalAggregation.dailySumThenAverage,
           target: 4,
         ),
+        const GoalCriterion.checkInTime(
+          criterionId: 'reflect',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetMinutes: 3,
+        ),
         const GoalCriterion.categoryTime(
           criterionId: 'deep-work',
           categoryId: 'category-1',

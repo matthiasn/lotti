@@ -22,6 +22,10 @@ class _MappingStep extends StatelessWidget {
     required this.habitTargets,
     required this.watchesSteps,
     required this.stepsTarget,
+    required this.watchesCheckInTime,
+    required this.checkInMinutes,
+    required this.onCheckInTimeChanged,
+    required this.onCheckInMinutesChanged,
     required this.chosenSignalOrder,
     required this.suggestedSignalOrder,
     required this.targetErrors,
@@ -74,6 +78,12 @@ class _MappingStep extends StatelessWidget {
   final Map<String, int> habitTargets;
   final bool watchesSteps;
   final TextEditingController stepsTarget;
+
+  /// The time spent checking in on the goal, as one of its signals.
+  final bool watchesCheckInTime;
+  final TextEditingController checkInMinutes;
+  final ValueChanged<bool> onCheckInTimeChanged;
+  final VoidCallback onCheckInMinutesChanged;
   final TextEditingController title;
 
   /// Non-null only while editing: the goal statement lives at the top of
@@ -213,6 +223,53 @@ class _MappingStep extends StatelessWidget {
                 )
               : null,
           onTap: () => onStepsChanged(!watchesSteps),
+        ),
+        _signalRowDivider(tokens),
+      ],
+    );
+  }
+
+  /// The check-in time signal, once picked: the minutes a day the user
+  /// spends checking in on this goal — reflection as a measurable activity —
+  /// with its daily minutes on the secondary line while selected.
+  Widget _checkInTimeRow(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Column(
+      children: [
+        DesignSystemSelectionRow(
+          key: const ValueKey('goal-form-check-in-time-row'),
+          title: messages.goalFormCheckInTimeTitle,
+          subtitle: messages.goalFormCheckInTimeSignal,
+          leading: Icon(
+            LottiIcons.mic,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: watchesCheckInTime,
+          showSelectedBackground: false,
+          secondaryLine: watchesCheckInTime
+              ? KeyedSubtree(
+                  key: anchorFor('check-in-time'),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kInlineTargetInputWidth,
+                    ),
+                    child: DesignSystemTextInput(
+                      key: const ValueKey('goal-form-check-in-time-target'),
+                      controller: checkInMinutes,
+                      label: messages.goalFormCheckInMinutesPerDay,
+                      keyboardType: TextInputType.number,
+                      errorText: targetErrors.contains('check-in-time')
+                          ? messages.goalFormValidationTarget
+                          : null,
+                      onChanged: (_) => onCheckInMinutesChanged(),
+                    ),
+                  ),
+                )
+              : null,
+          onTap: () => onCheckInTimeChanged(!watchesCheckInTime),
         ),
         _signalRowDivider(tokens),
       ],
@@ -420,6 +477,7 @@ class _MappingStep extends StatelessWidget {
     final noObservableMatch =
         mapping.isEditable &&
         !watchesSteps &&
+        !watchesCheckInTime &&
         selectedIds.isEmpty &&
         measurableTargets.isEmpty &&
         healthTargets.isEmpty &&
@@ -460,7 +518,8 @@ class _MappingStep extends StatelessWidget {
         healthTargets.length +
         categoryTimeTargets.length +
         labelTimeTargets.length +
-        (watchesSteps ? 1 : 0);
+        (watchesSteps ? 1 : 0) +
+        (watchesCheckInTime ? 1 : 0);
     // Rows render in the order frozen at step entry — a tapped row stays
     // put. The page appends a signal selected after the snapshot (via the
     // picker) to the chosen group in the same setState that selects it, and
@@ -470,6 +529,7 @@ class _MappingStep extends StatelessWidget {
       if (descriptor == 'blood-pressure') return _bloodPressureRow(context);
       if (descriptor == 'weight') return _weightRow(context);
       if (descriptor == 'steps') return _stepsRow(context);
+      if (descriptor == 'check-in-time') return _checkInTimeRow(context);
       final habitId = descriptor.substring('habit:'.length);
       // A descriptor in the frozen order renders as long as the habit is
       // resolvable (or still selected under privacy): deselecting a
@@ -708,6 +768,8 @@ class _MappingStep extends StatelessWidget {
                 selectedLabelIds: labelTimeTargets.keys.toSet(),
                 watchesSteps: watchesSteps,
                 onStepsChanged: onStepsChanged,
+                watchesCheckInTime: watchesCheckInTime,
+                onCheckInTimeChanged: onCheckInTimeChanged,
                 onHabitChanged: onHabitChanged,
                 onMeasurableChanged: onMeasurableChanged,
                 onHealthSelected: onHealthSelected,

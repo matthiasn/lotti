@@ -7225,6 +7225,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalChatYou => 'Dvs.';
 
   @override
+  String get goalCheckInAddTime => 'Adăugați timp';
+
+  @override
   String get goalCheckInAddVoiceNote => 'Adăugați o notă vocală';
 
   @override
@@ -7255,6 +7258,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCheckInKindVoice => 'RAPORTARE VOCALĂ';
 
   @override
+  String goalCheckInMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
   String get goalCheckInNoteKeptSeparate => 'Păstrată separat de nota scrisă';
 
   @override
@@ -7273,6 +7281,25 @@ class AppLocalizationsRo extends AppLocalizations {
       'Spuneți-i agentului ce se întâmplă cu adevărat — treizeci de secunde, cu propriile cuvinte, ori de câte ori merită.';
 
   @override
+  String get goalCheckInSessionEdit => 'Modificați timpul';
+
+  @override
+  String get goalCheckInSessionPause => 'Pauză';
+
+  @override
+  String goalCheckInSessionPaused(String elapsed) {
+    return 'În pauză · $elapsed';
+  }
+
+  @override
+  String get goalCheckInSessionResume => 'Reluați';
+
+  @override
+  String goalCheckInSessionRunning(String elapsed) {
+    return 'Reflecție · $elapsed';
+  }
+
+  @override
   String get goalCheckInsSeeAll => 'Vedeți toate raportările';
 
   @override
@@ -7284,8 +7311,27 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTimeQuickPickHint => 'Cât a durat această raportare?';
+
+  @override
+  String goalCheckInTimeSemanticsLabel(String label) {
+    return 'Timp petrecut: $label';
+  }
+
+  @override
+  String get goalCheckInTimeSpentTitle => 'Timp petrecut';
+
+  @override
+  String goalCheckInTimeSpentValue(String label) {
+    return 'Timp petrecut · $label';
+  }
+
+  @override
   String get goalCheckInTranscriptionOff =>
       'Actualizările automate sunt dezactivate pentru acest obiectiv, așa că notificarea dvs. nu a fost transcrisă. Apăsați Reîncercați pentru a o transcrie acum.';
+
+  @override
+  String get goalCheckInUnderAMinute => '< 1 min';
 
   @override
   String get goalCheckInWriteInstead => 'Scrieți în schimb';
@@ -7456,6 +7502,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDimensionCategoryTimeSource => 'Timp de categorie urmărit';
 
   @override
+  String get goalDimensionCheckInTimeSource => 'Timp petrecut cu raportările';
+
+  @override
   String goalDimensionHabitReading(int currentCount, int targetCount) {
     return '$currentCount din $targetCount această fereastră';
   }
@@ -7579,6 +7628,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormCategoryTimeTarget => 'Ore în ultimele 7 zile';
+
+  @override
+  String get goalFormCheckInMinutesPerDay => 'Minute pe zi';
+
+  @override
+  String goalFormCheckInTimeCadence(num minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    return '$minutesString min de raportări pe zi';
+  }
+
+  @override
+  String get goalFormCheckInTimeSignal =>
+      'minute petrecute cu raportările pentru acest obiectiv';
+
+  @override
+  String get goalFormCheckInTimeTitle => 'Timp de raportare';
 
   @override
   String get goalFormChooseHabit => 'Alegeți un obicei existent';
@@ -8065,10 +8133,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalReportSectionCoverage => 'Acoperirea datelor';
 
   @override
+  String get goalReportSectionNext => 'Pașii următori';
+
+  @override
   String get goalReportSectionStanding => 'Cum stați';
 
   @override
   String get goalReportSectionWindow => 'Fereastra mai largă';
+
+  @override
+  String goalTodayBriefingNext(String step) {
+    return 'Următorul pas: $step';
+  }
+
+  @override
+  String get goalTodayBriefingTitle => 'Astăzi';
+
+  @override
+  String get goalUnitMinutes => 'min';
 
   @override
   String goalWatchingMetric(String windowLabel) {

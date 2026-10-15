@@ -137,6 +137,24 @@ class GoalProgressEvaluator {
           direction,
           countPositiveValues: true,
         );
+      case GoalCriterionCheckInTime(
+        :final aggregation,
+        :final targetMinutes,
+        :final direction,
+      ):
+        final range = window.periodRange(reference);
+        final series = _zeroFilledTime(
+          recorded: signals.checkInTimeInRange(range.start, range.end),
+          range: range,
+          reference: reference,
+        );
+        return _leafRatio(
+          series,
+          aggregation,
+          targetMinutes,
+          direction,
+          countPositiveValues: true,
+        );
       case GoalCriterionHabit(
         :final habitId,
         :final window,
@@ -286,6 +304,30 @@ class GoalProgressEvaluator {
           reference: reference,
           aggregation: aggregation,
           target: targetHours,
+          direction: direction,
+          countPositiveValues: true,
+        ),
+      GoalCriterionCheckInTime(
+        :final criterionId,
+        :final window,
+        :final aggregation,
+        :final targetMinutes,
+        :final direction,
+      ) =>
+        _metricLeaf(
+          criterionId: criterionId,
+          series: _zeroFilledTime(
+            recorded: signals.checkInTimeInRange(
+              window.periodRange(reference).start,
+              window.periodRange(reference).end,
+            ),
+            range: window.periodRange(reference),
+            reference: reference,
+          ),
+          window: window,
+          reference: reference,
+          aggregation: aggregation,
+          target: targetMinutes,
           direction: direction,
           countPositiveValues: true,
         ),
@@ -459,6 +501,9 @@ class GoalProgressEvaluator {
         :final criterionId,
       ) ||
       GoalCriterionLabelTime(
+        :final criterionId,
+      ) ||
+      GoalCriterionCheckInTime(
         :final criterionId,
       ) => results[criterionId]?.satisfied ?? false,
       GoalCriterionAllOf(:final criteria) =>

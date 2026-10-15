@@ -33,6 +33,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
+import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -58,6 +59,7 @@ class _FakeReader extends GoalSignalReader {
     bool includeTimeEntryEvidence = true,
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
+    String? goalEntryId,
   }) async => window;
 }
 
@@ -2837,6 +2839,173 @@ void main() {
     expect(progress.specVersionId, '$agentId:spec-v1');
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.oneLiner, 'The edited day is accounted for.');
+  });
+
+  test("the day's first report is its briefing: it reads yesterday's next "
+      'steps, and a turn that writes nothing is asked once for it', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-09'),
+        agentId: agentId,
+        periodKey: '2026-08-09',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    // Yesterday's report: today's briefing follows up on its next steps.
+    when(
+      () => repository.getLatestReport(agentId, AgentReportScopes.current),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'report-yesterday',
+                agentId: agentId,
+                scope: AgentReportScopes.current,
+                createdAt: now.subtract(const Duration(days: 1)),
+                vectorClock: null,
+                content: 'Yesterday.',
+                tldr: 'One walk short of pace.',
+                provenance: {
+                  'periodKey': '2026-08-08',
+                  'specVersionId': '$agentId:spec-v1',
+                  GoalReportProvenanceKeys.sections: {
+                    GoalReportSectionKeys.currentPeriod: 'No walk yet.',
+                    GoalReportSectionKeys.nextActions: [
+                      'Walk after lunch on Monday.',
+                    ],
+                  },
+                },
+              )
+              as AgentReportEntity,
+    );
+    conversationRepository.maxDelegateCalls = 2;
+    var calls = 0;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          if (calls == 1) {
+            expect(message, contains(goalDailyBriefingInstruction));
+            expect(message, contains('"dailyBriefing": true'));
+            expect(message, contains('"materialChangeSinceLastReport": true'));
+            expect(message, contains('Walk after lunch on Monday.'));
+          } else {
+            expect(message, contains(goalDailyBriefingReportInstruction));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.updateGoalReport],
+            );
+          }
+          return null;
+        };
+
+    final result = await run();
+
+    expect(result.success, isTrue);
+    expect(calls, 2, reason: 'primary turn plus one forced briefing turn');
+  });
+
+  test('a wake on a day that already has its report is not the briefing — '
+      'Phase B keeps what Phase A derived', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getLatestReport(agentId, AgentReportScopes.current),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'report-today',
+                agentId: agentId,
+                scope: AgentReportScopes.current,
+                createdAt: now,
+                vectorClock: null,
+                content: 'Today.',
+                provenance: {
+                  'periodKey': '2026-08-09',
+                  'specVersionId': '$agentId:spec-v1',
+                  'trackStatus': GoalTrackStatus.insufficientData.name,
+                },
+              )
+              as AgentReportEntity,
+    );
+    final messages = <String>[];
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          messages.add(message);
+          return null;
+        };
+
+    await run();
+
+    for (final message in messages) {
+      expect(message, isNot(contains(goalDailyBriefingInstruction)));
+      expect(message, isNot(contains(goalDailyBriefingReportInstruction)));
+    }
+  });
+
+  test('a chat turn is never the briefing, even before the day has its '
+      'report', () async {
+    stubSpec();
+    stubGlmResolution();
+    final messages = <String>[];
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          messages.add(message);
+          return null;
+        };
+
+    await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-1',
+        triggerTokens: const {'goal-escalation:2026-08-09'},
+        threadId: 'thread-1',
+        pendingUserMessage: 'How am I doing?',
+      ),
+    );
+
+    expect(messages, isNotEmpty);
+    expect(messages.first, isNot(contains(goalDailyBriefingInstruction)));
   });
 
   test('the forced report pins no tool choice for a model that answers one '

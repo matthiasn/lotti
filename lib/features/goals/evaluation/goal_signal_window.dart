@@ -91,6 +91,7 @@ class GoalSignalWindow {
     this.categoryTimeEvidenceEnd,
     this.hasActiveCategoryTimer = false,
     this.hasActiveLabelTimer = false,
+    this.checkInDailyMinutes = const {},
   });
 
   /// Journal quantitative data: data type string → day key → sum of that
@@ -160,6 +161,12 @@ class GoalSignalWindow {
   /// Whether a currently running timer matches a label-time criterion.
   final bool hasActiveLabelTimer;
 
+  /// Minutes the user spent checking in on this goal: day key → minutes.
+  ///
+  /// One series for the goal, not per criterion: every check-in-time leaf
+  /// reads the same check-ins, and nothing filters them further.
+  final Map<DateTime, num> checkInDailyMinutes;
+
   bool get hasActiveTrackedTimer =>
       hasActiveCategoryTimer || hasActiveLabelTimer;
 
@@ -190,6 +197,10 @@ class GoalSignalWindow {
     DateTime start,
     DateTime end,
   ) => _inRange(categoryTimeDailyHours[criterionId], start, end);
+
+  /// Check-in minutes restricted to [start]..[end] (inclusive).
+  Map<DateTime, num> checkInTimeInRange(DateTime start, DateTime end) =>
+      _inRange(checkInDailyMinutes, start, end);
 
   /// Tracked hours for label-time [criterionId] in [start]..[end].
   Map<DateTime, num> labelTimeInRange(

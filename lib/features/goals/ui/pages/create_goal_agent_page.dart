@@ -49,6 +49,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _title = TextEditingController();
   final _persona = TextEditingController();
   final _stepsTarget = TextEditingController(text: '10000');
+  final _checkInMinutes = TextEditingController(
+    text: '${GoalFormMapping.defaultCheckInMinutes}',
+  );
   late _GoalFormStep _step = _visibleSteps.first;
   var _mapping = const GoalFormMapping.empty();
   final _habitTargets = <String, int>{};
@@ -73,6 +76,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   List<LabelDefinition> _knownLabels = const [];
   var _measurableDefinitionsLoaded = false;
   var _watchesSteps = false;
+  var _watchesCheckInTime = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
   final Set<String> _matchedHabitIds = {};
@@ -131,6 +135,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _title.dispose();
     _persona.dispose();
     _stepsTarget.dispose();
+    _checkInMinutes.dispose();
     super.dispose();
   }
 
@@ -323,6 +328,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final hasMapping =
         !_mapping.isEditable ||
         _watchesSteps ||
+        _watchesCheckInTime ||
         _habitTargets.isNotEmpty ||
         _measurableTargets.isNotEmpty ||
         _healthTargets.isNotEmpty ||
@@ -331,6 +337,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final invalidKeys = <String>{
       if (_watchesSteps && (stepsTarget == null || stepsTarget <= 0)) 'steps',
+      if (_checkInMinutesInvalid) 'check-in-time',
       for (final entry in _healthTargets.entries)
         if (entry.value == null || entry.value! <= 0) 'health:${entry.key}',
       for (final entry in _measurableTargets.entries)
@@ -691,6 +698,29 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               habitTargets: _habitTargets,
                               watchesSteps: _watchesSteps,
                               stepsTarget: _stepsTarget,
+                              watchesCheckInTime: _watchesCheckInTime,
+                              checkInMinutes: _checkInMinutes,
+                              onCheckInTimeChanged: (selected) => setState(() {
+                                _watchesCheckInTime = selected;
+                                // Picked after the order was frozen: it joins
+                                // the chosen group, and keeps its place there
+                                // when deselected.
+                                if (selected &&
+                                    !_chosenSignalOrder.contains(
+                                      'check-in-time',
+                                    )) {
+                                  _chosenSignalOrder = [
+                                    ..._chosenSignalOrder,
+                                    'check-in-time',
+                                  ];
+                                }
+                                _validation = null;
+                                _targetErrors.remove('check-in-time');
+                              }),
+                              onCheckInMinutesChanged: () => setState(() {
+                                _validation = null;
+                                _targetErrors.remove('check-in-time');
+                              }),
                               chosenSignalOrder: _chosenSignalOrder,
                               suggestedSignalOrder: _suggestedSignalOrder,
                               targetErrors: _targetErrors,

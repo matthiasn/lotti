@@ -14,6 +14,10 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
     _baseVersionId = spec.id;
     _mapping = GoalFormMapping.fromCriteria(spec.criteria);
     _watchesSteps = _mapping.watchesSteps;
+    _watchesCheckInTime = _mapping.watchesCheckInTime;
+    _checkInMinutes.text = NumberFormat.decimalPattern(
+      context.messages.localeName,
+    ).format(_mapping.checkInMinutesTarget);
     _stepsTarget.text = NumberFormat.decimalPattern(
       context.messages.localeName,
     ).format(_mapping.stepsTarget);
@@ -133,6 +137,7 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
       if (bloodPressureSelected) 'blood-pressure',
       if (weightSelected) 'weight',
       if (_watchesSteps) 'steps',
+      if (_watchesCheckInTime) 'check-in-time',
     ];
     _suggestedSignalOrder = [
       for (final id in _matchedHabitIds)
@@ -251,6 +256,10 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
           NumberFormat.decimalPattern(
             context.messages.localeName,
           ).format(_parseLocalizedTarget(_stepsTarget.text) ?? 0),
+        ),
+      if (_watchesCheckInTime)
+        context.messages.goalFormCheckInTimeCadence(
+          _parseLocalizedTarget(_checkInMinutes.text) ?? 0,
         ),
       for (final entry in _habitTargets.entries)
         context.messages.goalFormHabitCadence(

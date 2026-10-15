@@ -19,12 +19,59 @@ sealed class GoalTimelineItem {
   String get id;
 }
 
+/// A check-in the user made in their own words — spoken or written. Both are
+/// journal entries linked to the goal, and both carry the time the user spent
+/// on them as the entry's own span.
+@immutable
+sealed class GoalCheckIn extends GoalTimelineItem {
+  const GoalCheckIn();
+
+  /// The journal entry behind the beat.
+  JournalEntity get entity;
+
+  /// How long the user spent on this check-in: the recording for a spoken
+  /// one, the counted writing session for a written one, or whatever the user
+  /// corrected it to. Never negative — a span stored backwards is no time.
+  Duration get timeSpent => goalCheckInTimeSpent(entity);
+}
+
+/// The check-in [entity] stands for, or null when it is not one.
+///
+/// The one rule for what counts as a check-in — shared by the goal's
+/// timeline and the check-in time criterion, so what the rail shows is what
+/// the goal counts. A deleted entry stays linked (links are not tombstoned
+/// with their entry), so it is dropped here; a written entry needs words,
+/// while a recording counts from the moment it is saved, before any
+/// transcript lands.
+GoalCheckIn? goalCheckInFrom(JournalEntity entity) {
+  if (entity.isDeleted) return null;
+  return switch (entity) {
+    final JournalAudio audio => GoalAudioCheckIn(audio),
+    final JournalEntry entry
+        when (entry.entryText?.plainText.trim() ?? '').isNotEmpty =>
+      GoalTextCheckIn(entry),
+    _ => null,
+  };
+}
+
+/// The time a check-in entry stands for, read from its own span.
+///
+/// The one rule the rail's chip and the check-in time criterion share, so the
+/// minutes the user sees are the minutes the goal counts.
+Duration goalCheckInTimeSpent(JournalEntity entity) {
+  final span = entity.meta.dateTo.difference(entity.meta.dateFrom);
+  return span.isNegative ? Duration.zero : span;
+}
+
 /// A spoken check-in: the headline case, and the reason the feature exists.
 @immutable
-class GoalAudioCheckIn extends GoalTimelineItem {
+class GoalAudioCheckIn extends GoalCheckIn {
   const GoalAudioCheckIn(this.audio);
 
   final JournalAudio audio;
+
+  @override
+  JournalEntity get entity => audio;
 
   @override
   DateTime get at => audio.meta.dateFrom;
@@ -42,10 +89,13 @@ class GoalAudioCheckIn extends GoalTimelineItem {
 
 /// A written check-in — the "Write instead" fallback.
 @immutable
-class GoalTextCheckIn extends GoalTimelineItem {
+class GoalTextCheckIn extends GoalCheckIn {
   const GoalTextCheckIn(this.entry);
 
   final JournalEntry entry;
+
+  @override
+  JournalEntity get entity => entry;
 
   @override
   DateTime get at => entry.meta.dateFrom;

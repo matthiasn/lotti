@@ -35,6 +35,8 @@ Future<GoalProgressView?> _progressView(
         // shared range reaches further back (plus a week so rolling
         // verdicts at the span's oldest day still see their window).
         shortTermDays: math.max(43, (historyDays ?? 0) + 7),
+        // Check-in time leaves read the check-ins linked to the goal's row.
+        goalEntryId: ref.watch(goalRepositoryProvider)?.goalIdForAgent(agentId),
       );
 
   if (disposed) return null;
@@ -46,7 +48,8 @@ Future<GoalProgressView?> _progressView(
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         return;
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(collect);
@@ -79,7 +82,9 @@ Future<GoalProgressView?> _progressView(
       case GoalCriterionLabelTime(:final labelId, :final categoryId):
         labelIds.add(labelId);
         if (categoryId != null) categoryIds.add(categoryId);
-      case GoalCriterionMetric() || GoalCriterionHabit():
+      case GoalCriterionMetric() ||
+          GoalCriterionHabit() ||
+          GoalCriterionCheckInTime():
         return;
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(collectDefinitions);

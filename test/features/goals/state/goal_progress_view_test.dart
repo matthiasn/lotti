@@ -656,6 +656,44 @@ void main() {
     },
   );
 
+  test('check-in time projects daily minutes under its own title', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        title: 'Check-in time',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      ),
+      signals: GoalSignalWindow(checkInDailyMinutes: {today: 2.5}),
+      reference: today,
+    );
+
+    expect(view.metric?.kind, GoalDimensionKind.checkInTime);
+    expect(view.metric?.name, 'Check-in time');
+    expect(view.metric?.target, 3);
+    expect(view.metric?.days.single.value, 2.5);
+    expect(view.metric?.days.single.isObserved, isTrue);
+  });
+
+  test('a check-in day without a check-in reads as zero minutes observed, '
+      'and an untitled leaf falls back to its id', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'reflect',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 3,
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+    );
+
+    expect(view.metric?.name, 'reflect');
+    expect(view.metric?.days.single.value, 0);
+    expect(view.metric?.days.single.isObserved, isTrue);
+  });
+
   test('sum and count metrics compare the aggregated rolling period', () {
     GoalProgressView build(GoalAggregation aggregation) =>
         buildGoalProgressView(

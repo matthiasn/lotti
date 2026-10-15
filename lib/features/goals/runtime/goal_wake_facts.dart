@@ -187,7 +187,8 @@ Map<String, List<GoalMetricObservation>> _renderedHealthEvidence({
           GoalCriterionHabit() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
-          GoalCriterionLabelTime():
+          GoalCriterionLabelTime() ||
+          GoalCriterionCheckInTime():
         break;
     }
   }
@@ -258,6 +259,7 @@ class GoalWakeFacts {
     this.hasActiveCategoryTimer = false,
     this.hasActiveLabelTimer = false,
     this.reportedStatus,
+    this.periodReported = false,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -297,6 +299,11 @@ class GoalWakeFacts {
   /// The status today's standing report states, when it was written for
   /// today under the same spec; null otherwise.
   final GoalTrackStatus? reportedStatus;
+
+  /// Whether a standing report already covers this evaluation period under
+  /// the active spec — whatever status it states. The daily briefing is due
+  /// when none does.
+  final bool periodReported;
 
   /// Whether today's standing report states a status the day no longer has.
   ///

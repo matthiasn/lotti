@@ -44,7 +44,7 @@ abstract final class GoalSpecValidator {
       case 'habit':
         requireIntegral('targetCount');
         _windowJsonIssues(json['window'], '$path.window', issues);
-      case 'metric' || 'measurable':
+      case 'metric' || 'measurable' || 'checkInTime':
         _windowJsonIssues(json['window'], '$path.window', issues);
       case 'categoryTime' || 'labelTime':
         _windowJsonIssues(json['window'], '$path.window', issues);
@@ -153,7 +153,7 @@ abstract final class GoalSpecValidator {
         _requireIdentifier(id, 'categoryId', categoryId, issues);
         _validateTimeTarget(
           id: id,
-          targetHours: targetHours,
+          target: targetHours,
           aggregation: aggregation,
           window: window,
           dailyTimeRange: dailyTimeRange,
@@ -173,10 +173,25 @@ abstract final class GoalSpecValidator {
         }
         _validateTimeTarget(
           id: id,
-          targetHours: targetHours,
+          target: targetHours,
           aggregation: aggregation,
           window: window,
           dailyTimeRange: dailyTimeRange,
+          issues: issues,
+        );
+      case GoalCriterionCheckInTime(
+        :final targetMinutes,
+        :final window,
+        :final aggregation,
+      ):
+        _validateTimeTarget(
+          id: id,
+          target: targetMinutes,
+          targetName: 'targetMinutes',
+          unit: 'a minute',
+          aggregation: aggregation,
+          window: window,
+          dailyTimeRange: null,
           issues: issues,
         );
       case GoalCriterionAllOf(:final criteria) ||
@@ -232,6 +247,7 @@ abstract final class GoalSpecValidator {
           GoalCriterionMeasurable(:final window) ||
           GoalCriterionCategoryTime(:final window) ||
           GoalCriterionLabelTime(:final window) ||
+          GoalCriterionCheckInTime(:final window) ||
           GoalCriterionHabit(:final window):
         if (window case GoalWindowRollingDays(
           :final count,
@@ -293,20 +309,22 @@ abstract final class GoalSpecValidator {
 
   static void _validateTimeTarget({
     required String id,
-    required num targetHours,
+    required num target,
     required GoalAggregation aggregation,
     required GoalWindow window,
     required GoalDailyTimeRange? dailyTimeRange,
     required List<String> issues,
+    String targetName = 'targetHours',
+    String unit = 'an hour',
   }) {
-    _requireFiniteTarget(id, targetHours, issues);
-    if (targetHours < 0) {
-      issues.add('$id: targetHours must not be negative, was $targetHours');
+    _requireFiniteTarget(id, target, issues);
+    if (target < 0) {
+      issues.add('$id: $targetName must not be negative, was $target');
     }
     if (aggregation == GoalAggregation.count) {
       issues.add(
-        '$id: count aggregation uses day units and is invalid for an '
-        'hour target',
+        '$id: count aggregation uses day units and is invalid for '
+        '$unit target',
       );
     }
     _requirePositiveRollingCount(id, window, issues);
