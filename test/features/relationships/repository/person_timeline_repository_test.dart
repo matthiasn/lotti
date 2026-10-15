@@ -293,8 +293,12 @@ void main() {
 
   group('setPinned', () {
     test('stars or unstars the note and saves it', () async {
+      // A note always has words: one emptied in its sheet is deleted there.
       final note =
-          JournalEntity.journalEntry(meta: meta('note', starred: false))
+          JournalEntity.journalEntry(
+                meta: meta('note', starred: false),
+                entryText: const EntryText(plainText: 'Loves krill.'),
+              )
               as JournalEntry;
       when(() => persistence.updateMetadata(any())).thenAnswer(
         (call) async => call.positionalArguments.first as Metadata,
@@ -311,6 +315,7 @@ void main() {
               ).captured.single
               as JournalEntity;
       expect(saved.meta.starred, isTrue);
+      expect(saved.entryText?.plainText, 'Loves krill.');
     });
   });
 
