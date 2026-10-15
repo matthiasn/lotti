@@ -467,6 +467,10 @@ class _PhotoStrip extends StatelessWidget {
         for (final (index, photo) in shown.indexed)
           GestureDetector(
             key: ValueKey('person-timeline-photo-${photo.meta.id}'),
+            // The whole square, picture or not: a thumbnail whose file has not
+            // arrived yet draws nothing, and a tap there fell through to the
+            // row and opened the day's first photo instead.
+            behavior: HitTestBehavior.opaque,
             onTap: () => onOpen(photo),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(tokens.radii.s),
