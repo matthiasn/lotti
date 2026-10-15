@@ -126,6 +126,7 @@ import '../../../agents/test_data/entity_factories.dart';
 import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 const _subdir = 'people';
 
@@ -802,6 +803,7 @@ void main() {
     AudioRecorderController Function()? recorder,
   }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
+    personTimelineOverride(),
     // The check-in page's crumb reads the person's category from here, as
     // production's bootstrap wires it.
     entitiesCacheServiceProvider.overrideWithValue(

@@ -49,6 +49,7 @@ import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 import '../../helpers/fake_pending_interaction_store.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 /// Answers the speak flow's pre-flight probe with "no", so the mic test can
 /// prove the form opened in speaking mode without a recorder on screen.
@@ -208,6 +209,7 @@ void main() {
     mediaQueryData: mediaQueryData,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
+      personTimelineOverride(),
       // The action bar's record button watches the app-wide recorder.
       audioRecorderControllerProvider.overrideWith(
         FakeAudioRecorderController.new,
@@ -1109,6 +1111,7 @@ void main() {
         mediaQueryData: phoneMediaQueryData,
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          personTimelineOverride(),
           // The action bar's record button watches the app-wide recorder.
           audioRecorderControllerProvider.overrideWith(
             FakeAudioRecorderController.new,

@@ -39,6 +39,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
 class _RecordingNavigatorObserver extends NavigatorObserver {
@@ -141,6 +142,7 @@ void main() {
         const RelationshipsPage(),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          personTimelineOverride(),
           // The person page's record button watches the app-wide recorder.
           audioRecorderControllerProvider.overrideWith(
             FakeAudioRecorderController.new,
@@ -277,6 +279,7 @@ void main() {
         ),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          personTimelineOverride(),
           // The person page's record button watches the app-wide recorder.
           audioRecorderControllerProvider.overrideWith(
             FakeAudioRecorderController.new,
@@ -345,6 +348,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            personTimelineOverride(),
             // The person page's record button watches the app-wide recorder.
             audioRecorderControllerProvider.overrideWith(
               FakeAudioRecorderController.new,
@@ -564,6 +568,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            personTimelineOverride(),
             // The person page's record button watches the app-wide recorder.
             audioRecorderControllerProvider.overrideWith(
               FakeAudioRecorderController.new,
@@ -850,6 +855,7 @@ void main() {
             mediaQueryData: MediaQueryData(size: Size(width, 800)),
             overrides: [
               relationshipRepositoryProvider.overrideWithValue(mockRepository),
+              personTimelineOverride(),
               // The person page's record button watches the app-wide recorder.
               audioRecorderControllerProvider.overrideWith(
                 FakeAudioRecorderController.new,

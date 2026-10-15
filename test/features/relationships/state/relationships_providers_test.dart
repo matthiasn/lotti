@@ -6,6 +6,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/get_it.dart';
@@ -20,6 +21,7 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
+  late MockPersonTimelineRepository mockTimeline;
   late MockUpdateNotifications mockNotifications;
   late StreamController<Set<String>> updateStreamController;
   late ProviderContainer container;
@@ -88,6 +90,11 @@ void main() {
 
   setUp(() {
     mockRepository = MockRelationshipRepository();
+    mockTimeline = MockPersonTimelineRepository();
+    // Nothing on anyone's timeline unless a test says so.
+    when(
+      () => mockTimeline.getTimelineEntries(any()),
+    ).thenAnswer((_) async => []);
     mockNotifications = MockUpdateNotifications();
     // Synchronous delivery: `add` runs the controllers' listeners (and their
     // `invalidateSelf`) before it returns, so a refetch assertion needs no
@@ -109,6 +116,7 @@ void main() {
     container = ProviderContainer(
       overrides: withServiceOverrides([
         relationshipRepositoryProvider.overrideWithValue(mockRepository),
+        personTimelineRepositoryProvider.overrideWithValue(mockTimeline),
       ]),
     );
   });
@@ -582,6 +590,44 @@ void main() {
       expect(calls, 2);
       subscription.close();
     });
+
+    test(
+      'carries the timeline entries and refetches when one of them '
+      'changes — a note edited, a transcript landing on a voice note',
+      () async {
+        var calls = 0;
+        final note = JournalEntity.journalEntry(meta: meta('note-1'));
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          return relationship('rel-1');
+        });
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTimeline.getTimelineEntries('rel-1'),
+        ).thenAnswer((_) async => [note]);
+
+        final subscription = container.listen(
+          relationshipDetailControllerProvider('rel-1'),
+          (_, _) {},
+        );
+        final detail = await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+        expect(detail?.timelineEntries, [note]);
+
+        updateStreamController.add({'note-1'});
+        await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+
+        expect(calls, 2);
+        subscription.close();
+      },
+    );
 
     test(
       'refetches on a relationship edit, local or synced — every entity write '

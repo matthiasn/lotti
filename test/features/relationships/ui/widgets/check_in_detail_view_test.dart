@@ -47,6 +47,7 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 /// What the timeline's link list holds, changeable mid-test so a link can
 /// land after the detail it belongs to.
@@ -173,6 +174,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(repository),
+            personTimelineOverride(),
             checkInTranscriptionServiceProvider.overrideWithValue(
               transcription,
             ),
@@ -1140,6 +1142,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(repository),
+            personTimelineOverride(),
             checkInTranscriptionServiceProvider.overrideWithValue(
               transcription,
             ),

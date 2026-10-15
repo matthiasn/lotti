@@ -17,6 +17,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 void main() {
   // The status line picks its wording by measuring it; the wide test font
@@ -106,6 +107,7 @@ void main() {
         ),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
+          personTimelineOverride(),
         ],
       ),
     );

@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 void main() {
   const relationshipId = 'person-1';
@@ -94,6 +95,7 @@ void main() {
         mediaQueryData: MediaQueryData(size: size),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
+          personTimelineOverride(),
           agentIdentityProvider(
             agentId,
           ).overrideWith((ref) async => identity()),
@@ -369,6 +371,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(repository),
+            personTimelineOverride(),
             relationshipSuggestionListProvider(relationshipId).overrideWith(
               (ref) async => const RelationshipProposalSnapshot.empty(),
             ),

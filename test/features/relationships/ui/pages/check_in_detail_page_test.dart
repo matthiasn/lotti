@@ -10,6 +10,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -38,6 +39,7 @@ void main() {
         const CheckInDetailPage(relationshipId: 'rel-001', checkInId: 'c-1'),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
+          personTimelineOverride(),
         ],
       ),
     );
