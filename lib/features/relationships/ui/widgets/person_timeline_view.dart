@@ -306,7 +306,9 @@ class PersonTimelineRow extends StatelessWidget {
             context,
             due,
           ),
-          TimelineTask(open: false) => messages.relationshipTimelineTaskDone,
+          TimelineTask(open: false) => messages.relationshipTimelineTaskDoneAt(
+            at(row.at),
+          ),
           _ => day(row.at),
         },
         tail: const <String>[],
@@ -504,7 +506,7 @@ class _PhotoStrip extends StatelessWidget {
                         child: Center(
                           child: Text(
                             '+$more',
-                            style: tokens.typography.styles.subtitle.subtitle2
+                            style: tokens.typography.styles.others.caption
                                 .copyWith(color: PhotoNeutralGlass.glyph),
                           ),
                         ),
@@ -558,63 +560,22 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
     final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
-    final folded = widget.compact && !_expanded;
-    final shown = folded
-        ? const <TimelineNote>[]
-        : (_expanded || widget.compact ? pinned : pinned.take(_folded))
-              .toList();
-    final title = messages.relationshipAboutTitle(widget.personName);
-    if (folded) {
-      // One row: the heading, the first note's opening and the chevron — the
-      // whole row opens it.
-      return DsQuietInk(
-        key: const ValueKey('person-about'),
-        onTap: () => setState(() => _expanded = true),
-        builder: (context, highlighted) => Semantics(
-          button: true,
-          label:
-              '$title · ${messages.relationshipAboutPinnedCount(pinned.length)}',
-          excludeSemantics: true,
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-            child: Row(
-              key: const ValueKey('person-about-toggle'),
-              children: [
-                Text(
-                  title,
-                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    pinned.first.note.entryText?.plainText.trim() ?? '',
-                    key: const ValueKey('person-about-preview'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: bodyStyle.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Icon(
-                  LottiIcons.expand,
-                  size: IconSizes.s,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    // A phone shows the first note on one line; a wide pane the first three
+    // in full. The heading always stands on its own line, and the page's one
+    // disclosure opens the rest — the same shape as every other fold here.
+    final foldAt = widget.compact ? 1 : _folded;
+    final folded = !_expanded && pinned.length > foldAt;
+    final shown = folded ? pinned.take(foldAt) : pinned;
+    final oneLine = widget.compact && folded;
     return Column(
       key: const ValueKey('person-about'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PersonCardHeader(title: title),
+        PersonCardHeader(
+          title: messages.relationshipAboutTitle(widget.personName),
+          count: pinned.length,
+          countKey: const ValueKey('person-about-count'),
+        ),
         for (final note in shown)
           DsQuietInk(
             key: ValueKey('person-about-${note.id}'),
@@ -623,6 +584,8 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
               padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
               child: Text(
                 note.note.entryText?.plainText.trim() ?? '',
+                maxLines: oneLine ? 1 : null,
+                overflow: oneLine ? TextOverflow.ellipsis : null,
                 style: highlighted
                     ? bodyStyle.copyWith(
                         color: tokens.colors.interactive.enabled,
@@ -631,7 +594,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
               ),
             ),
           ),
-        if (widget.compact || pinned.length > _folded)
+        if (pinned.length > foldAt)
           personDisclosure(
             context,
             key: const ValueKey('person-about-toggle'),

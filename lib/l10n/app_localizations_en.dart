@@ -12405,11 +12405,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentEnrolPerson(String name) {
-    return 'Remind me about $name';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
       'The provider returned an error before the briefing was written. Your check-ins are unchanged.';
 
@@ -16784,9 +16779,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTimelineTask => 'Task';
 
   @override
-  String get relationshipTimelineTaskDone => 'Done';
-
-  @override
   String relationshipTimelineTaskOverdue(String day) {
     return 'Overdue since $day';
   }
@@ -16890,19 +16882,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipNextMeeting(String title, String time) {
-    return 'Next: $title · $time';
-  }
-
-  @override
-  String get relationshipNextTimeShowAvoid => 'And what to avoid';
-
-  @override
   String get relationshipRemindersOfferTitle => 'Reminders and briefings';
 
   @override
-  String relationshipNextMeetingAt(String time) {
-    return 'Next: $time';
+  String get relationshipNextMeetingLabel => 'Next meeting';
+
+  @override
+  String get relationshipTurnOnReminders => 'Turn on reminders';
+
+  @override
+  String relationshipTimelineTaskDoneAt(String time) {
+    return 'Done $time';
   }
 }
 

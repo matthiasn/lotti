@@ -50,6 +50,17 @@ TextStyle calmEyebrowStyle(DsTokens tokens, {Color? color}) {
   );
 }
 
+/// A label at the caption's own size — `Upcoming`, `Pay attention to`,
+/// `Penguin Operations` — told from the caption metadata beside it by weight
+/// alone, so a page using it sets four sizes, not five: title, heading,
+/// body, caption. `text.mediumEmphasis` by default: a label is the key to
+/// the words under it, not metadata to fade.
+TextStyle captionLabelStyle(DsTokens tokens, {Color? color}) =>
+    tokens.typography.styles.others.caption.copyWith(
+      fontWeight: tokens.typography.weight.semiBold,
+      color: color ?? tokens.colors.text.mediumEmphasis,
+    );
+
 /// The title of an entry's detail page — a task's, a check-in's: heading2,
 /// a clear step above the card and section headers (subtitle2) so the page
 /// cascades title → section → body, with a slightly looser line height so a

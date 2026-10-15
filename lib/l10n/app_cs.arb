@@ -4769,7 +4769,6 @@
   "relationshipAgentAsOfBand": "{band} · aktualizováno {age}",
   "relationshipAgentBriefNow": "Vytvořit briefing teď",
   "relationshipAgentCall": "Zavolat {name}",
-  "relationshipAgentEnrolPerson": "Připomínat {name}",
   "relationshipAgentFailedBody": "Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.",
   "relationshipAgentFailedNoModel": "Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.",
   "relationshipAgentFailedPlain": "Poslední běh selhal",

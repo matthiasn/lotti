@@ -31,8 +31,8 @@ import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The person page's cover-style hero (design 2026-09-06 §2–3): a teal wash
-/// with no imagery, carrying back · Talk to agent · edit · kebab, with the
+/// The person page's cover-style hero (design 2026-09-06 §2–3): a quiet
+/// decorative wash, or the person's banner picture, carrying back · Talk to agent · edit · kebab, with the
 /// persona avatar overlapping its lower edge. Pinned, so the actions stay
 /// reachable while the page scrolls; once the wash band has folded away
 /// the bar names the person the hero itself leaves to the header block.
@@ -221,7 +221,9 @@ class PersonHeroAppBar extends StatelessWidget {
         // The folded bar names the person the way the page addresses them:
         // the full name there ended under an ellipsis.
         title: relationship.shortName,
-        titleStyle: tokens.typography.styles.subtitle.subtitle2.copyWith(
+        // The heading tier, so the folded name still outranks the labelled
+        // Talk to agent beside it.
+        titleStyle: tokens.typography.styles.subtitle.subtitle1.copyWith(
           color: ink,
         ),
         wash: washColor(tokens),
@@ -712,7 +714,7 @@ class PersonHeaderBlock extends StatelessWidget {
             // a clock. It used to borrow the mono timestamp style, which
             // made the first string on the page the only monospaced one and
             // cost it the measure the category name needs.
-            style: calmEyebrowStyle(
+            style: captionLabelStyle(
               tokens,
               color: tokens.colors.text.mediumEmphasis,
             ),

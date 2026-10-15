@@ -4762,7 +4762,6 @@
   "relationshipAgentAsOfBand": "{band} · actualizat {age}",
   "relationshipAgentBriefNow": "Creați briefingul acum",
   "relationshipAgentCall": "Sunați pe {name}",
-  "relationshipAgentEnrolPerson": "Amintiți-mi de {name}",
   "relationshipAgentFailedBody": "Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.",
   "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.",
   "relationshipAgentFailedPlain": "Ultima rulare a eșuat",

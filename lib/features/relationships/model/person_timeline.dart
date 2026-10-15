@@ -100,9 +100,12 @@ final class TimelineTask extends PersonTimelineItem {
   String get id => task.meta.id;
 
   /// An open task with a due date sits at its due date (it is ahead of the
-  /// user); every other task at when it was written.
+  /// user), an open one without at when it was written, and a closed one at
+  /// when it was closed — the moment its row reports.
   @override
-  DateTime get at => (open ? due : null) ?? task.meta.dateFrom;
+  DateTime get at => open
+      ? due ?? task.meta.dateFrom
+      : task.data.status.createdAt;
 }
 
 /// A meeting with the person.

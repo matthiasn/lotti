@@ -96,35 +96,18 @@ void main() {
       expect(line.date, 'Thu 13 Aug');
     });
 
-    testWidgets('compact shows the first note and folds the second behind '
-        'a disclosure that opens it', (tester) async {
+    testWidgets('shows both notes — what to avoid is never folded away — '
+        'with no disclosure to open', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           NextTimeLead(
             source: checkIn(attention: 'The move', avoid: 'Politics.'),
-            compact: true,
           ),
         ),
       );
 
       expect(find.text('The move'), findsOneWidget);
-      expect(find.text('Politics.'), findsNothing);
-
-      await tester.tap(find.byKey(const ValueKey('person-next-time-toggle')));
-      await tester.pumpAndSettle();
-
       expect(find.text('Politics.'), findsOneWidget);
-    });
-
-    testWidgets('compact with a single note offers nothing to open', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NextTimeLead(source: checkIn(attention: 'The move'), compact: true),
-        ),
-      );
-
       expect(
         find.byKey(const ValueKey('person-next-time-toggle')),
         findsNothing,

@@ -7540,14 +7540,6 @@
       }
     }
   },
-  "relationshipAgentEnrolPerson": "Remind me about {name}",
-  "@relationshipAgentEnrolPerson": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
   "relationshipAgentFailedPlain": "Last run failed",
@@ -9999,7 +9991,6 @@
     "description": "Kind label of a recording on a person's timeline that is not part of a check-in."
   },
   "relationshipTimelineTask": "Task",
-  "relationshipTimelineTaskDone": "Done",
   "relationshipTimelineTaskOverdue": "Overdue since {day}",
   "@relationshipTimelineTaskOverdue": {
     "placeholders": {
@@ -10136,29 +10127,21 @@
       }
     }
   },
-  "relationshipNextMeeting": "Next: {title} · {time}",
-  "@relationshipNextMeeting": {
-    "description": "Lead line of 'Before you talk': the next booked meeting with the person.",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipNextTimeShowAvoid": "And what to avoid",
-  "@relationshipNextTimeShowAvoid": {
-    "description": "Disclosure under the first next-time note on a phone, revealing the 'Better to avoid' note."
-  },
   "relationshipRemindersOfferTitle": "Reminders and briefings",
   "@relationshipRemindersOfferTitle": {
     "description": "Title of the card offering to turn on reminders and the briefing agent for a person."
   },
-  "relationshipNextMeetingAt": "Next: {time}",
-  "@relationshipNextMeetingAt": {
-    "description": "The next booked meeting when its title no longer fits on the line.",
+  "relationshipNextMeetingLabel": "Next meeting",
+  "@relationshipNextMeetingLabel": {
+    "description": "Label over the next booked meeting with a person, at the head of Before you talk on the person page."
+  },
+  "relationshipTurnOnReminders": "Turn on reminders",
+  "@relationshipTurnOnReminders": {
+    "description": "Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval."
+  },
+  "relationshipTimelineTaskDoneAt": "Done {time}",
+  "@relationshipTimelineTaskDoneAt": {
+    "description": "Meta line of a finished task on a person's timeline: when it was done.",
     "placeholders": {
       "time": {
         "type": "String"

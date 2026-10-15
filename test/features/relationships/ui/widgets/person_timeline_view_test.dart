@@ -327,22 +327,32 @@ void main() {
       expect(opened, ['p3']);
     });
 
-    testWidgets('on a phone it folds to one line until opened', (
+    testWidgets('on a phone it shows the heading with its count and the '
+        'first note on one line, the rest behind the same disclosure', (
       tester,
     ) async {
-      final handle = tester.ensureSemantics();
       await pumpAbout(tester, compact: true);
 
-      expect(find.byKey(const ValueKey('person-about-preview')), findsOne);
-      // One row; how many notes it holds is said to a screen reader.
-      expect(find.bySemanticsLabel('About Pip · 4 notes'), findsOneWidget);
+      expect(find.text('About Pip'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('person-about-count')))
+            .data,
+        '· 4',
+      );
+      final first = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-about')),
+          matching: find.byType(Text),
+        ).at(2),
+      );
+      expect(first.maxLines, 1);
+      expect(find.text('pinned 3'), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('person-about-toggle')));
+      await tester.tap(find.text('Show all (4)'));
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('person-about-preview')), findsNothing);
       expect(find.text('pinned 3'), findsOneWidget);
-      handle.dispose();
     });
 
     testWidgets('renders nothing when nothing is pinned', (tester) async {

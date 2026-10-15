@@ -42,6 +42,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/relative_age_label.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'relationship_briefing_card_relationship_briefing_card_state_part.dart';

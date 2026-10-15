@@ -86,18 +86,17 @@ class PersonCardHeader extends StatelessWidget {
 /// erase the notes this block exists to keep. Which check-in they are from
 /// is said by the heading above ([provenanceOf]).
 ///
-/// [compact] (a phone) shows the first note and folds the second behind a
-/// disclosure, so the person's history reaches the first screen.
-class NextTimeLead extends StatefulWidget {
+/// Both notes show on every width: what to leave alone matters as much as
+/// what to bring up, and a fold over it was the tap forgotten in the minute
+/// before a call (design panel 2026-10-15).
+class NextTimeLead extends StatelessWidget {
   const NextTimeLead({
     required this.source,
-    this.compact = false,
     this.onOpenSource,
     super.key,
   });
 
   final CheckInEntry? source;
-  final bool compact;
 
   /// Opens the check-in the notes are from; the provenance line is then a
   /// way into it.
@@ -144,18 +143,11 @@ class NextTimeLead extends StatefulWidget {
   }
 
   @override
-  State<NextTimeLead> createState() => _NextTimeLeadState();
-}
-
-class _NextTimeLeadState extends State<NextTimeLead> {
-  var _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final from = widget.source;
-    final attention = NextTimeLead._attentionOf(from);
-    final avoid = NextTimeLead._avoidOf(from);
+    final from = source;
+    final attention = _attentionOf(from);
+    final avoid = _avoidOf(from);
     if (from == null || (attention == null && avoid == null)) {
       return const SizedBox.shrink();
     }
@@ -173,30 +165,21 @@ class _NextTimeLeadState extends State<NextTimeLead> {
           key: const ValueKey('person-next-time-avoid'),
         ),
     ];
-    final folded = widget.compact && !_expanded && facts.length > 1;
-    final open = widget.onOpenSource;
+    final open = onOpenSource;
     final day = relationshipDayLabelOf(context, from.meta.dateFrom);
     return Column(
       key: const ValueKey('person-next-time'),
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        NextTimeFacts(facts: folded ? facts.take(1).toList() : facts),
-        if (widget.compact && facts.length > 1)
-          personDisclosure(
-            context,
-            key: const ValueKey('person-next-time-toggle'),
-            open: !folded,
-            label: folded
-                ? messages.relationshipNextTimeShowAvoid
-                : messages.relationshipAboutShowLess,
-            onPressed: () => setState(() => _expanded = !_expanded),
-          ),
+        NextTimeFacts(facts: facts),
         // Where the notes came from, after them and as a way into that
-        // check-in: a quiet link with its chevron, never a third grey label
-        // stacked on the notes' own.
+        // check-in: a quiet link with its chevron, set apart by the gap
+        // between pairs so it reads as a footnote to both, never a third
+        // grey label stacked on the last one.
+        SizedBox(height: context.designTokens.spacing.step3),
         if (open == null)
-          NextTimeLead.provenanceOf(context, from)
+          provenanceOf(context, from)
         else
           DesignSystemButton(
             key: const ValueKey('person-next-time-open'),

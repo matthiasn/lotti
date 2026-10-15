@@ -4762,7 +4762,6 @@
   "relationshipAgentAsOfBand": "{band} · actualizado {age}",
   "relationshipAgentBriefNow": "Crear briefing ahora",
   "relationshipAgentCall": "Llamar a {name}",
-  "relationshipAgentEnrolPerson": "Recordarme a {name}",
   "relationshipAgentFailedBody": "El proveedor devolvió un error antes de que se escribiera el briefing. Tus check-ins no han cambiado.",
   "relationshipAgentFailedNoModel": "No hay ningún modelo configurado para briefings. Elige uno en Ajustes de IA › Agentes. Los detalles están en la pestaña Actividad.",
   "relationshipAgentFailedPlain": "La última ejecución falló",

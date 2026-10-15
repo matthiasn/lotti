@@ -20761,12 +20761,6 @@ abstract class AppLocalizations {
   /// **'Call {name}'**
   String relationshipAgentCall(String name);
 
-  /// No description provided for @relationshipAgentEnrolPerson.
-  ///
-  /// In en, this message translates to:
-  /// **'Remind me about {name}'**
-  String relationshipAgentEnrolPerson(String name);
-
   /// No description provided for @relationshipAgentFailedBody.
   ///
   /// In en, this message translates to:
@@ -28013,12 +28007,6 @@ abstract class AppLocalizations {
   /// **'Task'**
   String get relationshipTimelineTask;
 
-  /// No description provided for @relationshipTimelineTaskDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get relationshipTimelineTaskDone;
-
   /// No description provided for @relationshipTimelineTaskOverdue.
   ///
   /// In en, this message translates to:
@@ -28163,29 +28151,29 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 note} other{{count} notes}}'**
   String relationshipAboutPinnedCount(int count);
 
-  /// Lead line of 'Before you talk': the next booked meeting with the person.
-  ///
-  /// In en, this message translates to:
-  /// **'Next: {title} · {time}'**
-  String relationshipNextMeeting(String title, String time);
-
-  /// Disclosure under the first next-time note on a phone, revealing the 'Better to avoid' note.
-  ///
-  /// In en, this message translates to:
-  /// **'And what to avoid'**
-  String get relationshipNextTimeShowAvoid;
-
   /// Title of the card offering to turn on reminders and the briefing agent for a person.
   ///
   /// In en, this message translates to:
   /// **'Reminders and briefings'**
   String get relationshipRemindersOfferTitle;
 
-  /// The next booked meeting when its title no longer fits on the line.
+  /// Label over the next booked meeting with a person, at the head of Before you talk on the person page.
   ///
   /// In en, this message translates to:
-  /// **'Next: {time}'**
-  String relationshipNextMeetingAt(String time);
+  /// **'Next meeting'**
+  String get relationshipNextMeetingLabel;
+
+  /// Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on reminders'**
+  String get relationshipTurnOnReminders;
+
+  /// Meta line of a finished task on a person's timeline: when it was done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done {time}'**
+  String relationshipTimelineTaskDoneAt(String time);
 }
 
 class _AppLocalizationsDelegate

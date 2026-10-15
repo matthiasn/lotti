@@ -14,6 +14,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The person's reminder interval, in every enrolled state, as the header's
@@ -180,7 +181,8 @@ class _PersonRemindersSheetState extends ConsumerState<PersonRemindersSheet> {
       children: [
         Text(
           messages.relationshipCadencePromptLabel,
-          style: tokens.typography.styles.others.caption.copyWith(
+          style: captionLabelStyle(
+            tokens,
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),

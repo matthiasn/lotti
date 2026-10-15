@@ -42,6 +42,8 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One person's page (design panel 2026-10-15): who they are, what to know
@@ -359,13 +361,16 @@ class _RelationshipDetailsPageState
       // On a phone the meeting leads; on a wide pane the timeline's own
       // Upcoming row sits right beside this rail and says it already.
       if (nextMeeting != null && compact) ...[
-        _NextMeetingLine(meeting: nextMeeting, now: now),
+        _NextMeetingLine(
+          meeting: nextMeeting,
+          now: now,
+          onOpen: () => actions.openEntry(nextMeeting.event),
+        ),
         SizedBox(height: tokens.spacing.step4),
       ],
       if (hasNotes) ...[
         NextTimeLead(
           source: nextTime,
-          compact: compact,
           onOpenSource: () => actions.openCheckIn(nextTime!),
         ),
         SizedBox(height: tokens.spacing.step4),
@@ -530,13 +535,19 @@ class _RelationshipDetailsPageState
   }
 }
 
-/// The next booked meeting, as the first line of *Before you talk*: what it
-/// is and when, the time in the timestamp style.
+/// The next booked meeting, as the first pair of *Before you talk*: the
+/// page's label over what it is and when, in the same grammar as the notes
+/// under it — and a way into the meeting, as its chevron says.
 class _NextMeetingLine extends StatelessWidget {
-  const _NextMeetingLine({required this.meeting, required this.now});
+  const _NextMeetingLine({
+    required this.meeting,
+    required this.now,
+    required this.onOpen,
+  });
 
   final TimelineMeeting meeting;
   final DateTime now;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -544,41 +555,47 @@ class _NextMeetingLine extends StatelessWidget {
     final messages = context.messages;
     final start = meeting.event.meta.dateFrom;
     final title = meeting.event.data.title;
-    final style = tokens.typography.styles.body.bodyMedium.copyWith(
-      color: tokens.colors.text.highEmphasis,
-    );
-    // One line, whatever fits: the title gives way before the time — when
-    // it is, is the fact the line exists for.
-    return Row(
+    final when = relationshipTimestampLabelOf(context, start, now: now);
+    final quiet = tokens.colors.text.mediumEmphasis;
+    return DsQuietInk(
       key: const ValueKey('person-next-meeting'),
-      children: [
-        Icon(
-          LottiIcons.calendar,
-          size: IconSizes.s,
-          color: tokens.colors.text.mediumEmphasis,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Expanded(
-          child: DsTieredText(
-            tiers: [
-              messages.relationshipNextMeeting(
-                title,
-                relationshipTimestampLabelOf(context, start, now: now),
-              ),
-              // The weekday alone is enough for a meeting this close.
-              messages.relationshipNextMeeting(
-                title,
-                '${relationshipWeekdayLabelOf(context, start)} '
-                '${relationshipTimeLabel(start)}',
-              ),
-              messages.relationshipNextMeetingAt(
-                relationshipTimestampLabelOf(context, start, now: now),
-              ),
-            ],
-            style: style,
+      onTap: onOpen,
+      builder: (BuildContext context, bool highlighted) => Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  messages.relationshipNextMeetingLabel,
+                  style: captionLabelStyle(tokens, color: quiet),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                // One line, whatever fits: the title gives way before the
+                // time — when it is, is the fact the line exists for.
+                DsTieredText(
+                  tiers: [
+                    if (title.isNotEmpty) ...[
+                      '$title · $when',
+                      // The weekday alone is enough for a meeting this close.
+                      '$title · ${relationshipWeekdayLabelOf(context, start)} '
+                          '${relationshipTimeLabel(start)}',
+                    ],
+                    when,
+                  ],
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: highlighted
+                        ? tokens.colors.interactive.enabled
+                        : tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          SizedBox(width: tokens.spacing.step2),
+          Icon(LottiIcons.chevronRight, size: IconSizes.s, color: quiet),
+        ],
+      ),
     );
   }
 }

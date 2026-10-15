@@ -4762,7 +4762,6 @@
   "relationshipAgentAsOfBand": "{band} · Stand {age}",
   "relationshipAgentBriefNow": "Jetzt briefen",
   "relationshipAgentCall": "{name} anrufen",
-  "relationshipAgentEnrolPerson": "An {name} erinnern",
   "relationshipAgentFailedBody": "Der Anbieter hat einen Fehler gemeldet, bevor das Briefing geschrieben wurde. Deine Check-ins sind unverändert.",
   "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins unter KI-Einstellungen › Agenten. Details stehen im Aktivitäts-Tab.",
   "relationshipAgentFailedPlain": "Letzter Lauf fehlgeschlagen",

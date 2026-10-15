@@ -32,14 +32,19 @@ void main() {
     final body = tester.widget<Text>(find.byKey(attention));
     expect(body.data, 'The krill deadline.');
     expect(caption.style?.color, tokens.colors.text.mediumEmphasis);
-    // The page's one label style, not a caption of its own.
+    // The page's one label style: the caption's size, told apart from the
+    // caption metadata by weight.
     expect(
       caption.style?.fontSize,
-      calmEyebrowStyle(tokens).fontSize,
+      tokens.typography.styles.others.caption.fontSize,
     );
     expect(
       caption.style?.fontWeight,
-      calmEyebrowStyle(tokens).fontWeight,
+      captionLabelStyle(tokens).fontWeight,
+    );
+    expect(
+      caption.style?.fontWeight,
+      isNot(tokens.typography.styles.others.caption.fontWeight),
     );
     expect(body.style?.color, tokens.colors.text.highEmphasis);
     expect(

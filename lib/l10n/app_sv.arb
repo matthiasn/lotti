@@ -5372,7 +5372,6 @@
   "relationshipAgentAsOfBand": "{band} · uppdaterad {age}",
   "relationshipAgentBriefNow": "Briefa nu",
   "relationshipAgentCall": "Ring {name}",
-  "relationshipAgentEnrolPerson": "Påminn mig om {name}",
   "relationshipAgentFailedBody": "Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.",
   "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.",
   "relationshipAgentFailedPlain": "Senaste körningen misslyckades",

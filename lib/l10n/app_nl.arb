@@ -5371,7 +5371,6 @@
   "relationshipAgentAsOfBand": "{band} · bijgewerkt {age}",
   "relationshipAgentBriefNow": "Nu briefen",
   "relationshipAgentCall": "{name} bellen",
-  "relationshipAgentEnrolPerson": "Herinner me aan {name}",
   "relationshipAgentFailedBody": "De provider gaf een fout voordat de briefing geschreven was. Je check-ins zijn ongewijzigd.",
   "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
   "relationshipAgentFailedPlain": "Laatste run mislukt",

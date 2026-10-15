@@ -512,9 +512,11 @@ class _NotEnrolledCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // The page's one label style.
                   Text(
                     messages.relationshipCadencePromptLabel,
-                    style: tokens.typography.styles.others.caption.copyWith(
+                    style: captionLabelStyle(
+                      tokens,
                       color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
@@ -551,13 +553,13 @@ class _NotEnrolledCard extends StatelessWidget {
               ),
               child: Align(
                 alignment: AlignmentDirectional.centerEnd,
+                // Secondary: the bar's Speak stays the page's one filled
+                // control, and the body above already names the person.
                 child: DesignSystemButton(
                   key: const ValueKey('relationship-agent-mark-important'),
                   tapTargetSize: MaterialTapTargetSize.padded,
-                  // Named with the same verb the state uses.
-                  label: messages.relationshipAgentEnrolPerson(
-                    data.nickname ?? data.title,
-                  ),
+                  label: messages.relationshipTurnOnReminders,
+                  variant: DesignSystemButtonVariant.secondary,
                   leadingIcon: LottiIcons.notification,
                   isLoading: marking,
                   onPressed: marking ? null : onMarkImportant,
@@ -636,7 +638,7 @@ class _BandRationale extends StatelessWidget {
         key: const ValueKey('relationship-agent-band-rationale'),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
+        style: tokens.typography.styles.body.bodyMedium.copyWith(color: color),
       ),
     );
   }

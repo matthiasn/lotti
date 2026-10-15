@@ -539,7 +539,13 @@ void main() {
       // summary all say *enrolled*, so the control that ends "Not enrolled"
       // says it too rather than naming a second concept ("important") the
       // user has to connect to the first.
-      expect(find.text('Remind me about Pip'), findsOneWidget);
+      // Secondary and name-free: the bar's Speak stays the one filled
+      // control, and the body above already names the person.
+      final enrol = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      expect(enrol.label, 'Turn on reminders');
+      expect(enrol.variant, DesignSystemButtonVariant.secondary);
       expect(find.text('Mark important'), findsNothing);
 
       // No privacy caption. It read "Only what you start yourself uses AI"

@@ -5372,7 +5372,6 @@
   "relationshipAgentAsOfBand": "{band} · opdateret {age}",
   "relationshipAgentBriefNow": "Brief nu",
   "relationshipAgentCall": "Ring til {name}",
-  "relationshipAgentEnrolPerson": "Mind mig om {name}",
   "relationshipAgentFailedBody": "Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.",
   "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.",
   "relationshipAgentFailedPlain": "Seneste kørsel mislykkedes",

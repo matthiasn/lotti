@@ -4762,7 +4762,6 @@
   "relationshipAgentAsOfBand": "{band} · mis à jour {age}",
   "relationshipAgentBriefNow": "Briefer maintenant",
   "relationshipAgentCall": "Appeler {name}",
-  "relationshipAgentEnrolPerson": "Me rappeler {name}",
   "relationshipAgentFailedBody": "Le fournisseur a renvoyé une erreur avant que le briefing soit rédigé. Tes points sont inchangés.",
   "relationshipAgentFailedNoModel": "Aucun modèle n'est configuré pour les briefings. Choisis-en un dans Réglages IA › Agents. Les détails sont dans l'onglet Activité.",
   "relationshipAgentFailedPlain": "Dernière exécution échouée",

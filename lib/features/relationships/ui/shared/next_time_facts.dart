@@ -28,12 +28,11 @@ class NextTimeFacts extends StatelessWidget {
           // Grouped by proximity: a label sits tight on its words, and the
           // pairs stand apart.
           if (index > 0) SizedBox(height: tokens.spacing.step4),
-          // The page's one label style — the calm eyebrow the category and
-          // the timeline's sections wear — in the medium ink: the label is
-          // the key to the words under it.
+          // The page's one label style — the caption label the category and
+          // the timeline's sections wear: the key to the words under it.
           Text(
             fact.caption,
-            style: calmEyebrowStyle(
+            style: captionLabelStyle(
               tokens,
               color: tokens.colors.text.mediumEmphasis,
             ),
