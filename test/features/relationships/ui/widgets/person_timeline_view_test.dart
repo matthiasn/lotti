@@ -7,14 +7,14 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_data/test_data.dart';
@@ -278,7 +278,7 @@ void main() {
       DateTime? due,
       bool done = false,
     }) => testTask.copyWith(
-      meta: meta(id, DateTime(2026, 8, 1)),
+      meta: meta(id, DateTime(2026, 8)),
       data: testTask.data.copyWith(
         title: title,
         due: due,

@@ -3,12 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';

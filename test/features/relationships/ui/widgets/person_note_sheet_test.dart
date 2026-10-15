@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -5,11 +6,10 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_note_sheet.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/providers/service_providers.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -248,7 +248,6 @@ void main() {
       () => repository.createNote(
         person: pip,
         text: 'Prefers mornings.',
-        pinned: false,
       ),
     ).called(1);
     expect(find.text('Note about Pip'), findsNothing);
